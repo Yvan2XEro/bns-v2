@@ -170,7 +170,16 @@
 			"fileName": "orders"
 		},
 		"bulkProgress": "Working… {progress}",
-		"bulkRetry": "Retry"
+		"bulkRetry": "Retry",
+		"slipsTitle": "Delivery slips",
+		"slipsHeading": "{count, plural, one {# delivery slip} other {# delivery slips}}",
+		"slipsPrint": "Print",
+		"slipsNone": "No order selected.",
+		"slipsQr": "Open order {number}",
+		"slipsCollect": "To collect: {amount}",
+		"slipsPaid": "Already paid — nothing to collect",
+		"printSlip": "Print the delivery slip",
+		"printSlips": "{count, plural, one {Print the slip} other {Print # slips}}"
 	},
 	"SellerDashboard": {
 		"pendingActions": "{count, plural, =0 {no pending actions} one {# pending action} other {# pending actions}}",
@@ -3735,7 +3744,9 @@
 		"event_completed": "Order completed",
 		"event_commission_accrued": "Commission recorded",
 		"event_note_added": "Note added",
-		"event_other": "Order updated"
+		"event_other": "Order updated",
+		"whatsappBuyer": "Hello {name}, this is about your order {number} on BuyNSellem.",
+		"whatsappBuyerAction": "WhatsApp"
 	},
 	"Billing": {
 		"title": "Billing",

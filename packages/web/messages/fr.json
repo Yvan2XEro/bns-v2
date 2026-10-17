@@ -170,7 +170,16 @@
 			"fileName": "commandes"
 		},
 		"bulkProgress": "En cours… {progress}",
-		"bulkRetry": "Réessayer"
+		"bulkRetry": "Réessayer",
+		"slipsTitle": "Bons de livraison",
+		"slipsHeading": "{count, plural, one {# bon de livraison} other {# bons de livraison}}",
+		"slipsPrint": "Imprimer",
+		"slipsNone": "Aucune commande sélectionnée.",
+		"slipsQr": "Ouvrir la commande {number}",
+		"slipsCollect": "À encaisser : {amount}",
+		"slipsPaid": "Déjà payée — rien à encaisser",
+		"printSlip": "Imprimer le bon de livraison",
+		"printSlips": "{count, plural, one {Imprimer le bon} other {Imprimer # bons}}"
 	},
 	"SellerDashboard": {
 		"pendingActions": "{count, plural, =0 {aucune action en attente} one {# action en attente} other {# actions en attente}}",
@@ -3735,7 +3744,9 @@
 		"event_completed": "Commande terminée",
 		"event_commission_accrued": "Commission comptabilisée",
 		"event_note_added": "Note ajoutée",
-		"event_other": "Mise à jour de la commande"
+		"event_other": "Mise à jour de la commande",
+		"whatsappBuyer": "Bonjour {name}, c’est au sujet de votre commande {number} sur BuyNSellem.",
+		"whatsappBuyerAction": "WhatsApp"
 	},
 	"Billing": {
 		"title": "Facturation",

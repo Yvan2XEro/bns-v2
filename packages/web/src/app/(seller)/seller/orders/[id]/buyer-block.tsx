@@ -2,7 +2,9 @@
 
 import { MapPin, Phone } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { WhatsAppIcon } from "~/components/icons/whatsapp-icon";
 import type { OrderView } from "~/types/order";
+import { whatsappChatUrl } from "../../../../../../../api/src/contracts/whatsapp";
 import { districtLabel, mapsUrl, telHref } from "../seller-orders";
 import { TierBadge } from "../tier-badge";
 
@@ -15,6 +17,17 @@ export function BuyerBlock({ order }: { order: OrderView }) {
 	const t = useTranslations("SellerOrders");
 	const { delivery } = order;
 	const tel = telHref(delivery);
+	// WhatsApp is where most buyers answer: the message names the order.
+	const whatsapp =
+		tel && !delivery.phoneMasked
+			? whatsappChatUrl(
+					delivery.phone,
+					t("whatsappBuyer", {
+						name: delivery.recipientName,
+						number: order.orderNumber,
+					}),
+				)
+			: null;
 	const maps = mapsUrl(delivery);
 	const place = [districtLabel(delivery), delivery.city]
 		.filter(Boolean)
@@ -74,6 +87,17 @@ export function BuyerBlock({ order }: { order: OrderView }) {
 					>
 						<Phone aria-hidden="true" className="h-4 w-4" />
 						{t("callBuyer")}
+					</a>
+				)}
+				{whatsapp && (
+					<a
+						href={whatsapp}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#25D366] px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#1EBE5A]"
+					>
+						<WhatsAppIcon className="h-4 w-4" />
+						{t("whatsappBuyerAction")}
 					</a>
 				)}
 				{maps ? (

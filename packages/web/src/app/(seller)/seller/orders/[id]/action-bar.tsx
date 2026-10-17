@@ -1,5 +1,7 @@
 "use client";
 
+import { Printer } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -48,6 +50,7 @@ export function ActionBar({
 	onHandoverFailed: () => void;
 }) {
 	const t = useTranslations("SellerOrders");
+	const tList = useTranslations("SellerOrderList");
 	const tRoot = useTranslations();
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const [dialog, setDialog] = useState<DialogAction | null>(null);
@@ -129,6 +132,13 @@ export function ActionBar({
 					{items.length === 0 && (
 						<p className="text-ink-muted text-sm">{t("noActions")}</p>
 					)}
+					<Link
+						href={`/seller/orders/slips?ids=${encodeURIComponent(order.id)}`}
+						className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line px-4 font-medium text-sm hover:bg-subtle"
+					>
+						<Printer aria-hidden="true" className="h-4 w-4" />
+						{tList("printSlip")}
+					</Link>
 				</div>
 			)}
 

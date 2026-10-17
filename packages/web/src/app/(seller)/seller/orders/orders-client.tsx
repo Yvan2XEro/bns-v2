@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Download, MapPin, Search } from "lucide-react";
+import { CalendarDays, Download, MapPin, Printer, Search } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { toast } from "sonner";
@@ -463,6 +464,13 @@ export function OrdersClient({
 								: tList("declineSelected", { count: refuseIds.length })}
 						</button>
 					)}
+					<Link
+						href={`/seller/orders/slips?ids=${[...selected].map(encodeURIComponent).join(",")}`}
+						className="inline-flex h-[34px] items-center gap-1.5 rounded-lg border border-line bg-surface px-3 font-semibold text-[13px] text-ink hover:bg-canvas"
+					>
+						<Printer aria-hidden="true" className="h-4 w-4" />
+						{tList("printSlips", { count: selected.size })}
+					</Link>
 					{acceptIds.length > 0 && (
 						<button
 							type="button"
