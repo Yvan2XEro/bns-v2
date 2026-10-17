@@ -23,37 +23,42 @@ export default async function OpsLayout({
 		: {};
 	if (!isModerator(body.user)) notFound();
 
-	const [tShell, tNav] = await Promise.all([
-		getTranslations("Moderation"),
-		getTranslations("ModerationDisputes"),
-	]);
-	const entries = [
-		{ href: "/moderation/verification", label: tNav("navVerification") },
-		{ href: "/moderation/disputes", label: tNav("navDisputes") },
-	];
+	const tShell = await getTranslations("Moderation");
+	const name = body.user?.name ?? body.user?.email ?? "";
 	return (
-		<div className="min-h-screen bg-[#F8FAFC] lg:flex">
-			<aside className="border-[#1E293B] border-b bg-[#0F172A] lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
+		<div className="min-h-screen bg-canvas lg:flex">
+			<aside className="border-[#1E293B] border-b bg-[#0F172A] lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-b-0">
 				<div className="p-4">
-					<p className="font-bold text-sm text-white">
+					<p className="font-bold font-heading text-sm text-white">
 						{tShell("shell.title")}
 					</p>
 					<p className="text-[#94A3B8] text-xs">{tShell("shell.subtitle")}</p>
 				</div>
-				<OpsNav entries={entries} />
+				<OpsNav />
+				<div className="hidden lg:mt-auto lg:block">
+					<p className="m-3 rounded-lg bg-white/5 p-3 text-[#CBD5E1] text-xs">
+						{tShell("shell.auditNotice")}
+					</p>
+					<div className="flex items-center gap-3 border-[#1E293B] border-t px-4 py-3">
+						<span
+							aria-hidden="true"
+							className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1E40AF] font-bold text-white text-xs"
+						>
+							{name.slice(0, 1).toUpperCase()}
+						</span>
+						<p className="min-w-0 truncate text-[#CBD5E1] text-xs">
+							{tShell("shell.signedInAs", { name })}
+						</p>
+					</div>
+				</div>
 				<div className="px-2 pb-2">
 					<LocaleSwitcher />
 				</div>
-				<p className="m-3 hidden rounded-lg bg-white/5 p-3 text-[#CBD5E1] text-xs lg:block">
-					{tShell("shell.auditNotice")}
-				</p>
 			</aside>
 			<div className="min-w-0 flex-1">
-				<div className="mx-auto max-w-6xl px-4 py-8">{children}</div>
-				<p className="px-4 pb-4 text-[#94A3B8] text-xs">
-					{tShell("shell.signedInAs", {
-						name: body.user?.name ?? body.user?.email ?? "",
-					})}
+				<div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">{children}</div>
+				<p className="px-4 pb-4 text-ink-muted text-xs lg:hidden">
+					{tShell("shell.signedInAs", { name })}
 				</p>
 			</div>
 		</div>

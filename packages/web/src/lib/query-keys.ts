@@ -58,6 +58,14 @@ export const moderationVerificationKeys = {
 	detail: (id: string) => ["moderation", "verification", "detail", id] as const,
 };
 
+/** The console's merged queue and its counts; a decision anywhere invalidates the root. */
+export const moderationConsoleKeys = {
+	root: ["moderation", "console"] as const,
+	summary: ["moderation", "console", "summary"] as const,
+	queue: (filters: { type?: string; mine?: boolean }) =>
+		["moderation", "console", "queue", filters] as const,
+};
+
 export const caseKeys = {
 	root: ["cases"] as const,
 	returns: ["cases", "returns"] as const,

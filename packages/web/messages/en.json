@@ -1698,7 +1698,7 @@
 		"shell": {
 			"title": "BuyNSellem moderation",
 			"subtitle": "Internal team space",
-			"auditNotice": "Every document view is written to the audit log.",
+			"auditNotice": "Every document view and every decision is written to the moderation log.",
 			"signedInAs": "Signed in as {name}",
 			"errorTitle": "Something went wrong",
 			"errorBody": "Please try again in a moment.",
@@ -4833,7 +4833,8 @@
 		"title": "Nothing here",
 		"body": "This item is not in the moderation queue, or it has already been handled.",
 		"verification": "Verification queue",
-		"disputes": "Disputes queue"
+		"disputes": "Disputes queue",
+		"queue": "Moderation queue"
 	},
 	"NotFoundBare": {
 		"title": "This link is not valid",
@@ -5415,5 +5416,205 @@
 		"system": "Match device",
 		"light": "Light",
 		"dark": "Dark"
+	},
+	"ModerationConsole": {
+		"nav": {
+			"label": "Moderation sections",
+			"queue": "Queue",
+			"reports": "Reports",
+			"verification": "Verifications",
+			"disputes": "Disputes",
+			"risk": "Risk",
+			"shops": "Shops",
+			"log": "Log"
+		},
+		"queue": {
+			"title": "Queue",
+			"subtitle": "{total, plural, =0 {Nothing waiting} one {# item waiting} other {# items waiting}} · {overdue, plural, =0 {none overdue} one {# overdue} other {# overdue}}",
+			"subtitleLoading": "Everything awaiting a decision, most urgent first.",
+			"filtersLabel": "Filter the queue",
+			"all": "All",
+			"mine": "My items",
+			"takeNext": "Take the next one",
+			"takingNext": "Taking…",
+			"nothingLeft": "Nothing left to take: every verification, dispute and risk flag is already assigned.",
+			"takeNextError": "The next item could not be assigned.",
+			"loadMore": "Load more",
+			"loadingMore": "Loading…",
+			"truncated": "The queue is very long: the oldest items are not listed. Filter by type to see them.",
+			"empty": "Nothing is waiting for a decision.",
+			"emptyMine": "Nothing is assigned to you.",
+			"emptyType": "Nothing of this type is waiting.",
+			"loading": "Loading the queue",
+			"loadError": "The queue could not be loaded.",
+			"retry": "Try again",
+			"overdue": "Overdue",
+			"due": "Due {date}",
+			"unassigned": "Unassigned",
+			"me": "Me",
+			"col": {
+				"type": "Type",
+				"item": "Item",
+				"detail": "Reason",
+				"age": "Age",
+				"due": "Deadline",
+				"assignee": "Assignee"
+			}
+		},
+		"type": {
+			"listing": "Listing",
+			"report": "Report",
+			"verification": "Verification",
+			"dispute": "Dispute",
+			"risk": "Risk",
+			"payoutAccount": "Payout account"
+		},
+		"level": "Level {level}",
+		"severity": {
+			"high": "High",
+			"medium": "Medium",
+			"low": "Low"
+		},
+		"reportReason": {
+			"spam": "Spam or scam",
+			"inappropriate": "Inappropriate content",
+			"fraud": "Fraud",
+			"prohibited": "Prohibited item",
+			"harassment": "Harassment",
+			"other": "Other",
+			"delivery_contested": "Delivery contested",
+			"cod_remittance": "Cash-on-delivery remittance",
+			"return_overdue": "Return overdue"
+		},
+		"target": {
+			"listing": "Listing",
+			"user": "Account",
+			"message": "Message",
+			"shop": "Shop",
+			"order": "Order",
+			"shipment": "Shipment",
+			"phone": "Phone number",
+			"device": "Device"
+		},
+		"riskSignal": {
+			"velocity_orders_per_phone": "Many orders from one phone",
+			"velocity_checkout_attempts": "Repeated checkout attempts",
+			"velocity_payout_account_changes": "Frequent payout account changes",
+			"velocity_shop_creation": "Many shops created quickly",
+			"velocity_accounts_per_device": "Many accounts on one device",
+			"identity_duplicate_document": "Identity document used twice",
+			"identity_duplicate_payout_account": "Payout account shared between shops",
+			"orders_seller_cancellation_ratio": "High seller cancellation rate",
+			"orders_dispute_ratio": "High dispute rate",
+			"cod_refusal_streak": "Cash-on-delivery refusal streak",
+			"cod_refusal_ratio_shop": "High cash-on-delivery refusal rate",
+			"resale_self_dealing": "Resale to oneself",
+			"resale_shared_identity": "Reseller and supplier share an identity",
+			"resale_handover_at_supplier": "Resale handed over at the supplier",
+			"resale_buyer_concentration": "Resale buyers concentrated",
+			"resale_cancellation_pattern": "Resale cancellation pattern",
+			"resale_refusal_pattern": "Resale refusal pattern",
+			"dispute_lost_seller": "Seller lost a dispute",
+			"counterfeit_confirmed": "Counterfeit confirmed",
+			"refund_overdue": "Refund overdue",
+			"seller_no_response": "Seller did not respond",
+			"unavailable_after_confirmation": "Unavailable after confirmation",
+			"dispute_abuse_buyer": "Buyer dispute abuse",
+			"cod_refusal_abuse": "Cash-on-delivery refusal abuse",
+			"serial_withdrawal": "Serial withdrawals",
+			"evidence_reused": "Evidence reused",
+			"review_extortion": "Review extortion",
+			"resale_collusion_suspected": "Suspected resale collusion",
+			"commission_credit_unpaid": "Commission credit unpaid"
+		},
+		"logAction": {
+			"listing_approve": "Listing approved",
+			"listing_reject": "Listing rejected",
+			"listing_takedown": "Listing taken down",
+			"listing_holdRelease": "Listing hold released",
+			"user_suspend": "Account suspended",
+			"user_unsuspend": "Account suspension lifted",
+			"shop_suspend": "Shop suspended",
+			"shop_unsuspend": "Shop suspension lifted",
+			"report_resolve": "Report resolved",
+			"report_dismiss": "Report dismissed",
+			"verification_claim": "Verification claimed",
+			"verification_release": "Verification released",
+			"verification_request_info": "Information requested from the seller",
+			"verification_approve": "Verification approved",
+			"verification_reject": "Verification rejected",
+			"verification_revoke": "Verification revoked",
+			"verification_expire": "Verification expired",
+			"order_cancel": "Order cancelled",
+			"commission_waive": "Commission waived",
+			"payout_hold": "Payout held",
+			"payout_release": "Payout released",
+			"payout_account_approve": "Payout account approved",
+			"payout_account_reject": "Payout account rejected",
+			"dispute_resolve": "Dispute resolved",
+			"dispute_request_info": "Information requested in a dispute",
+			"dispute_redact_message": "Dispute message redacted",
+			"dispute_assign": "Dispute assigned",
+			"strike_revoke": "Strike revoked",
+			"resale_link_suspend": "Resale link suspended",
+			"resale_link_unsuspend": "Resale link restored",
+			"risk_flag_review": "Risk flag reviewed",
+			"risk_flag_dismiss": "Risk flag dismissed",
+			"risk_flag_action": "Risk flag actioned",
+			"risk_flag_assign": "Risk flag assigned",
+			"review_photo_remove": "Review photo removed"
+		},
+		"panel": {
+			"label": "Item details",
+			"close": "Close",
+			"back": "Back to the list",
+			"created": "Received",
+			"detail": "Reason",
+			"assignee": "Assignee",
+			"severity": "Severity",
+			"score": "Score",
+			"target": "Subject",
+			"shop": "Shop",
+			"due": "Deadline",
+			"open": {
+				"report": "Open in Reports",
+				"listing": "Open in Reports",
+				"risk": "Open in Risk",
+				"payoutAccount": "Open the shop sheet",
+				"verification": "Open the verification",
+				"dispute": "Open the dispute"
+			},
+			"claim": "Assign to me",
+			"claiming": "Assigning…",
+			"claimError": "The flag could not be assigned to you.",
+			"emptyTitle": "No item selected",
+			"emptyBody": "Pick an item in the list to see its summary here.",
+			"notFoundTitle": "Item not in the list",
+			"notFoundBody": "It has already been handled, or it is further down the queue."
+		},
+		"placeholder": {
+			"body": "This view arrives with the next release. Until then, its items are reachable from the queue.",
+			"toQueue": "Go to the queue",
+			"reports": {
+				"title": "Reports",
+				"subtitle": "Reports and listings awaiting review."
+			},
+			"risk": {
+				"title": "Risk",
+				"subtitle": "Open risk flags, by severity."
+			},
+			"shops": {
+				"title": "Shops",
+				"subtitle": "Find a shop, its reports and its strikes."
+			},
+			"shop": {
+				"title": "Shop sheet",
+				"subtitle": "Standing, reports, strikes and payout account."
+			},
+			"log": {
+				"title": "Moderation log",
+				"subtitle": "Every decision and document view, newest first."
+			}
+		}
 	}
 }

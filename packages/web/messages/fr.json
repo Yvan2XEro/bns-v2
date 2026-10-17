@@ -1698,7 +1698,7 @@
 		"shell": {
 			"title": "Modération BuyNSellem",
 			"subtitle": "Espace équipe interne",
-			"auditNotice": "Chaque consultation de pièce est inscrite au journal.",
+			"auditNotice": "Chaque consultation de document et chaque décision est inscrite au journal de modération.",
 			"signedInAs": "Connecté : {name}",
 			"errorTitle": "Une erreur est survenue",
 			"errorBody": "Réessayez dans un instant.",
@@ -4833,7 +4833,8 @@
 		"title": "Rien ici",
 		"body": "Cet élément n'est pas dans la file de modération, ou il a déjà été traité.",
 		"verification": "File de vérification",
-		"disputes": "File des litiges"
+		"disputes": "File des litiges",
+		"queue": "File d'attente"
 	},
 	"NotFoundBare": {
 		"title": "Ce lien n'est pas valide",
@@ -5415,5 +5416,205 @@
 		"system": "Comme l'appareil",
 		"light": "Clair",
 		"dark": "Sombre"
+	},
+	"ModerationConsole": {
+		"nav": {
+			"label": "Sections de modération",
+			"queue": "File d'attente",
+			"reports": "Signalements",
+			"verification": "Vérifications",
+			"disputes": "Litiges",
+			"risk": "Risques",
+			"shops": "Boutiques",
+			"log": "Journal"
+		},
+		"queue": {
+			"title": "File d'attente",
+			"subtitle": "{total, plural, =0 {Rien en attente} one {# élément en attente} other {# éléments en attente}} · {overdue, plural, =0 {aucun en retard} one {# en retard} other {# en retard}}",
+			"subtitleLoading": "Tout ce qui attend une décision, le plus urgent d'abord.",
+			"filtersLabel": "Filtrer la file",
+			"all": "Tout",
+			"mine": "Mes demandes",
+			"takeNext": "Prendre la suivante",
+			"takingNext": "Attribution…",
+			"nothingLeft": "Plus rien à prendre : chaque vérification, litige et alerte de risque est déjà attribué.",
+			"takeNextError": "La demande suivante n'a pas pu vous être attribuée.",
+			"loadMore": "Afficher plus",
+			"loadingMore": "Chargement…",
+			"truncated": "La file est très longue : les éléments les plus anciens ne sont pas listés. Filtrez par type pour les voir.",
+			"empty": "Rien n'attend de décision.",
+			"emptyMine": "Rien ne vous est attribué.",
+			"emptyType": "Rien de ce type n'est en attente.",
+			"loading": "Chargement de la file",
+			"loadError": "La file n'a pas pu être chargée.",
+			"retry": "Réessayer",
+			"overdue": "En retard",
+			"due": "Échéance {date}",
+			"unassigned": "Non attribué",
+			"me": "Moi",
+			"col": {
+				"type": "Type",
+				"item": "Élément",
+				"detail": "Motif",
+				"age": "Ancienneté",
+				"due": "Échéance",
+				"assignee": "Attribué à"
+			}
+		},
+		"type": {
+			"listing": "Annonce",
+			"report": "Signalement",
+			"verification": "Vérification",
+			"dispute": "Litige",
+			"risk": "Risque",
+			"payoutAccount": "Compte de versement"
+		},
+		"level": "Niveau {level}",
+		"severity": {
+			"high": "Élevée",
+			"medium": "Moyenne",
+			"low": "Faible"
+		},
+		"reportReason": {
+			"spam": "Spam ou arnaque",
+			"inappropriate": "Contenu inapproprié",
+			"fraud": "Fraude",
+			"prohibited": "Article prohibé",
+			"harassment": "Harcèlement",
+			"other": "Autre",
+			"delivery_contested": "Livraison contestée",
+			"cod_remittance": "Reversement du paiement à la livraison",
+			"return_overdue": "Retour en retard"
+		},
+		"target": {
+			"listing": "Annonce",
+			"user": "Compte",
+			"message": "Message",
+			"shop": "Boutique",
+			"order": "Commande",
+			"shipment": "Expédition",
+			"phone": "Numéro de téléphone",
+			"device": "Appareil"
+		},
+		"riskSignal": {
+			"velocity_orders_per_phone": "Nombreuses commandes depuis un même téléphone",
+			"velocity_checkout_attempts": "Tentatives de paiement répétées",
+			"velocity_payout_account_changes": "Changements fréquents de compte de versement",
+			"velocity_shop_creation": "Nombreuses boutiques créées rapidement",
+			"velocity_accounts_per_device": "Nombreux comptes sur un même appareil",
+			"identity_duplicate_document": "Pièce d'identité utilisée deux fois",
+			"identity_duplicate_payout_account": "Compte de versement partagé entre boutiques",
+			"orders_seller_cancellation_ratio": "Taux d'annulation vendeur élevé",
+			"orders_dispute_ratio": "Taux de litiges élevé",
+			"cod_refusal_streak": "Série de refus à la livraison",
+			"cod_refusal_ratio_shop": "Taux de refus à la livraison élevé",
+			"resale_self_dealing": "Revente à soi-même",
+			"resale_shared_identity": "Revendeur et fournisseur partagent une identité",
+			"resale_handover_at_supplier": "Revente remise chez le fournisseur",
+			"resale_buyer_concentration": "Acheteurs de revente concentrés",
+			"resale_cancellation_pattern": "Schéma d'annulations en revente",
+			"resale_refusal_pattern": "Schéma de refus en revente",
+			"dispute_lost_seller": "Litige perdu par le vendeur",
+			"counterfeit_confirmed": "Contrefaçon confirmée",
+			"refund_overdue": "Remboursement en retard",
+			"seller_no_response": "Vendeur sans réponse",
+			"unavailable_after_confirmation": "Indisponible après confirmation",
+			"dispute_abuse_buyer": "Abus de litiges par l'acheteur",
+			"cod_refusal_abuse": "Abus de refus à la livraison",
+			"serial_withdrawal": "Retraits en série",
+			"evidence_reused": "Preuve réutilisée",
+			"review_extortion": "Chantage à l'avis",
+			"resale_collusion_suspected": "Collusion en revente suspectée",
+			"commission_credit_unpaid": "Crédit de commission impayé"
+		},
+		"logAction": {
+			"listing_approve": "Annonce validée",
+			"listing_reject": "Annonce rejetée",
+			"listing_takedown": "Annonce retirée",
+			"listing_holdRelease": "Blocage de l'annonce levé",
+			"user_suspend": "Compte suspendu",
+			"user_unsuspend": "Suspension du compte levée",
+			"shop_suspend": "Boutique suspendue",
+			"shop_unsuspend": "Suspension de la boutique levée",
+			"report_resolve": "Signalement traité",
+			"report_dismiss": "Signalement écarté",
+			"verification_claim": "Vérification prise en charge",
+			"verification_release": "Vérification relâchée",
+			"verification_request_info": "Informations demandées au vendeur",
+			"verification_approve": "Vérification approuvée",
+			"verification_reject": "Vérification rejetée",
+			"verification_revoke": "Vérification révoquée",
+			"verification_expire": "Vérification expirée",
+			"order_cancel": "Commande annulée",
+			"commission_waive": "Commission annulée",
+			"payout_hold": "Versement bloqué",
+			"payout_release": "Versement débloqué",
+			"payout_account_approve": "Compte de versement approuvé",
+			"payout_account_reject": "Compte de versement rejeté",
+			"dispute_resolve": "Litige tranché",
+			"dispute_request_info": "Informations demandées dans un litige",
+			"dispute_redact_message": "Message de litige masqué",
+			"dispute_assign": "Litige attribué",
+			"strike_revoke": "Avertissement révoqué",
+			"resale_link_suspend": "Lien de revente suspendu",
+			"resale_link_unsuspend": "Lien de revente rétabli",
+			"risk_flag_review": "Alerte de risque examinée",
+			"risk_flag_dismiss": "Alerte de risque écartée",
+			"risk_flag_action": "Alerte de risque traitée",
+			"risk_flag_assign": "Alerte de risque attribuée",
+			"review_photo_remove": "Photo d'avis retirée"
+		},
+		"panel": {
+			"label": "Détail de l'élément",
+			"close": "Fermer",
+			"back": "Retour à la liste",
+			"created": "Reçu",
+			"detail": "Motif",
+			"assignee": "Attribué à",
+			"severity": "Gravité",
+			"score": "Score",
+			"target": "Objet",
+			"shop": "Boutique",
+			"due": "Échéance",
+			"open": {
+				"report": "Ouvrir dans Signalements",
+				"listing": "Ouvrir dans Signalements",
+				"risk": "Ouvrir dans Risques",
+				"payoutAccount": "Ouvrir la fiche boutique",
+				"verification": "Ouvrir la vérification",
+				"dispute": "Ouvrir le litige"
+			},
+			"claim": "M'attribuer",
+			"claiming": "Attribution…",
+			"claimError": "L'alerte n'a pas pu vous être attribuée.",
+			"emptyTitle": "Aucun élément sélectionné",
+			"emptyBody": "Choisissez un élément dans la liste pour en voir le résumé ici.",
+			"notFoundTitle": "Élément absent de la liste",
+			"notFoundBody": "Il a déjà été traité, ou il se trouve plus loin dans la file."
+		},
+		"placeholder": {
+			"body": "Cette vue arrive avec la prochaine livraison. En attendant, ses éléments sont accessibles depuis la file d'attente.",
+			"toQueue": "Aller à la file d'attente",
+			"reports": {
+				"title": "Signalements",
+				"subtitle": "Signalements et annonces à examiner."
+			},
+			"risk": {
+				"title": "Risques",
+				"subtitle": "Alertes de risque ouvertes, par gravité."
+			},
+			"shops": {
+				"title": "Boutiques",
+				"subtitle": "Retrouver une boutique, ses signalements et ses avertissements."
+			},
+			"shop": {
+				"title": "Fiche boutique",
+				"subtitle": "Situation, signalements, avertissements et compte de versement."
+			},
+			"log": {
+				"title": "Journal de modération",
+				"subtitle": "Chaque décision et chaque consultation, de la plus récente à la plus ancienne."
+			}
+		}
 	}
 }

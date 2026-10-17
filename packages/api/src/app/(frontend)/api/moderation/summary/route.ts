@@ -1,3 +1,4 @@
+import type { ModerationSummary } from "@/contracts/moderationConsole";
 import { handleModerationError, requireModerator } from "@/lib/moderationRoute";
 import { pendingVerificationsWhere } from "@/lib/verificationQueue";
 
@@ -73,7 +74,7 @@ export async function GET(request: Request) {
 			}),
 		]);
 
-		return Response.json({
+		const summary: ModerationSummary = {
 			pendingListings: listings.totalDocs,
 			pendingReports: reports.totalDocs,
 			pendingVerifications: verifications.totalDocs,
@@ -89,7 +90,8 @@ export async function GET(request: Request) {
 				payoutAccounts.totalDocs +
 				disputes.totalDocs +
 				highRiskFlags.totalDocs,
-		});
+		};
+		return Response.json(summary);
 	} catch (error) {
 		return handleModerationError("summary", error);
 	}

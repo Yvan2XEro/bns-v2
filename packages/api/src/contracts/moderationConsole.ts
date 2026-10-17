@@ -1,4 +1,26 @@
-/** Shapes served to the web moderation console by `/api/moderation/{queue,shops,log}`. */
+/** Shapes served to the web moderation console by `/api/moderation/{summary,queue,shops,log}`. */
+
+import type { ModerationLog, Report, RiskFlag } from "../payload-types";
+
+/** The codes a queue item's `detail` and a log row's `action` carry, for the apps to translate. */
+export type ReportReason = Report["reason"];
+export type ReportTargetType = Report["targetType"];
+export type RiskSignal = RiskFlag["signal"];
+export type RiskSubjectType = RiskFlag["subjectType"];
+export type ModerationLogAction = ModerationLog["action"];
+
+export interface ModerationSummary {
+	pendingListings: number;
+	pendingReports: number;
+	/** Unclaimed requests only; a claimed one is listed in the queue but not counted here. */
+	pendingVerifications: number;
+	pendingPayoutAccounts: number;
+	disputesPending: number;
+	disputesOverdue: number;
+	openRiskFlags: number;
+	highRiskFlags: number;
+	total: number;
+}
 
 export const MODERATION_QUEUE_TYPES = [
 	"listing",
