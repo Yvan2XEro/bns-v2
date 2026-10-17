@@ -51,7 +51,7 @@ export function ShopHero({
 					<ShopInitials
 						name={shop.name}
 						logoUrl={shop.logo?.url}
-						className="-mt-12 sm:-mt-14 h-24 w-24 rounded-3xl border-[5px] border-white bg-[var(--shop-header-bg,var(--c-ink))] text-3xl text-[var(--shop-header-fg,#F59E0B)] shadow-[0_6px_18px_rgba(15,23,42,0.2)] sm:h-28 sm:w-28 sm:text-4xl"
+						className="-mt-12 sm:-mt-14 h-24 w-24 rounded-3xl border-[5px] border-surface bg-[var(--shop-header-bg,var(--c-ink))] text-3xl text-[var(--shop-header-fg,#F59E0B)] shadow-[0_6px_18px_rgba(15,23,42,0.2)] sm:h-28 sm:w-28 sm:text-4xl"
 					/>
 					<div className="flex min-w-0 flex-1 flex-col gap-4 sm:pt-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
 						<div className="min-w-0">

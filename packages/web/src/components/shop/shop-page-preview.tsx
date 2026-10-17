@@ -112,7 +112,7 @@ export function ShopPagePreview({
 							<ShopInitials
 								name={name}
 								logoUrl={draft.logoUrl}
-								className="h-[76px] w-[76px] rounded-[20px] border-4 border-white bg-[var(--shop-header-bg)] font-extrabold text-[26px] text-[var(--shop-header-fg)] shadow-[0_4px_12px_rgba(15,23,42,0.18)]"
+								className="h-[76px] w-[76px] rounded-[20px] border-4 border-surface bg-[var(--shop-header-bg)] font-extrabold text-[26px] text-[var(--shop-header-fg)] shadow-[0_4px_12px_rgba(15,23,42,0.18)]"
 							/>
 							{!mobile && (
 								<div className="ml-auto flex gap-2 pb-1">

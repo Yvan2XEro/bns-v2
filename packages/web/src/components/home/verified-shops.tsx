@@ -46,7 +46,7 @@ export function VerifiedShops({ shops }: { shops: ShopSearchHit[] }) {
 								<ShopInitials
 									name={shop.name}
 									logoUrl={shop.logoUrl}
-									className="h-14 w-14 rounded-[14px] border-[3px] border-white bg-night text-[#F59E0B] text-lg"
+									className="h-14 w-14 rounded-[14px] border-[3px] border-surface bg-night text-[#F59E0B] text-lg"
 								/>
 								<h3 className="truncate font-bold text-ink">{shop.name}</h3>
 								<LevelBadge
