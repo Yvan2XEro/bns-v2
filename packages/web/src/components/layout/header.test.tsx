@@ -190,7 +190,7 @@ describe("Header in shop mode", () => {
 		expect(html).toContain("data-shop-mode");
 		expect(html).toContain(`--shop-head-bg:${theme.light.headerBg}`);
 		expect(html).toContain(
-			`@media (prefers-color-scheme: dark){.bns-shop-head{--shop-head-bg:${theme.dark.headerBg}`,
+			`.dark .bns-shop-head{--shop-head-bg:${theme.dark.headerBg}`,
 		);
 		expect(html).toContain("bg-[var(--shop-head-bg)]");
 	});
