@@ -213,6 +213,7 @@
 		"cancel": "Cancel"
 	},
 	"Common": {
+		"offline": "Offline · the page will update when you're back online",
 		"search": "Search...",
 		"loading": "Loading...",
 		"save": "Save",

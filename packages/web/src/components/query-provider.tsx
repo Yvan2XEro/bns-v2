@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { OfflineBanner } from "~/components/layout/offline-banner";
 
 /**
  * Single TanStack Query client for the app. Created inside the component so a
@@ -17,6 +18,9 @@ export function QueryProvider({ children }: { children: ReactNode }) {
 	);
 
 	return (
-		<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+		<QueryClientProvider client={queryClient}>
+			{children}
+			<OfflineBanner />
+		</QueryClientProvider>
 	);
 }

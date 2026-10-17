@@ -213,6 +213,7 @@
 		"cancel": "Annuler"
 	},
 	"Common": {
+		"offline": "Hors ligne · la page se mettra à jour au retour du réseau",
 		"search": "Rechercher...",
 		"loading": "Chargement...",
 		"save": "Enregistrer",
