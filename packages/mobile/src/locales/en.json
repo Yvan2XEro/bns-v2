@@ -1057,7 +1057,7 @@
 	},
 	"privacy": {
 		"title": "Privacy Policy",
-		"lastUpdated": "Last updated: 1 August 2026",
+		"lastUpdated": "Last updated: 17 October 2026",
 		"sections": {
 			"intro": {
 				"title": "1. About this policy",
@@ -1100,8 +1100,8 @@
 				"body": "Your session token is kept in your device's secure storage (Keychain on iOS, Keystore on Android) so that you stay signed in. It is removed when you sign out or delete your account. The app uses no advertising cookies or comparable identifiers."
 			},
 			"noTracking": {
-				"title": "11. No tracking and no advertising",
-				"body": "The app contains no analytics, advertising or attribution SDK. We do not collect the advertising identifier (IDFA on iOS, Advertising ID on Android), we do not build advertising profiles, and we do not track you across other companies' apps or websites. We never sell your personal data."
+				"title": "11. Analytics and diagnostics, no advertising",
+				"body": "To fix failures and improve the app we use Sentry, which receives the technical details of an error or crash (screen, device model, system version, code trace), and PostHog, which measures the screens viewed and the steps of a purchase (added to cart, checkout started, order placed). Both send through our servers. No identifier is stored on your device for analytics; if you are signed in, only your account identifier is sent — never your name, email, phone number or address. Sentry does not receive your IP address; PostHog derives your country and city from it without keeping it. The app contains no advertising or attribution SDK, we do not collect the advertising identifier (IDFA on iOS, Advertising ID on Android), we do not build advertising profiles, and we do not track you across other companies' apps or websites. We never sell your personal data."
 			},
 			"visibility": {
 				"title": "12. What other people can see",
@@ -1109,7 +1109,7 @@
 			},
 			"sharing": {
 				"title": "13. Who we share data with",
-				"body": "We share data only where a feature requires it: our SMS provider (AvlyText or MTarget) receives your phone number in order to deliver a verification code; Novu receives your push token and basic profile details in order to deliver notifications; Google, Apple or Facebook are involved only if you choose to sign in with them; and our hosting and file-storage providers hold the data on our behalf. We also disclose data where we are legally required to. We do not sell personal data and we do not share it for advertising."
+				"body": "We share data only where a feature requires it: our SMS provider (AvlyText or MTarget) receives your phone number in order to deliver a verification code; Novu receives your push token and basic profile details in order to deliver notifications; Google, Apple or Facebook are involved only if you choose to sign in with them; and our hosting and file-storage providers hold the data on our behalf. We also disclose data where we are legally required to. We do not sell personal data and we do not share it for advertising. Sentry (error diagnostics) and PostHog (analytics) receive only the technical data described in section 11."
 			},
 			"deletion": {
 				"title": "14. Deleting your account",

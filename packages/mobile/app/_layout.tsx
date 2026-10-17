@@ -44,6 +44,7 @@ import {
 } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
+import { MonitoringBridge } from "@/src/components/MonitoringBridge";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { SellerBrandProvider } from "@/src/components/shop/sellerBrand";
 import { AlertProvider } from "@/src/contexts/AlertContext";
@@ -57,6 +58,7 @@ import { api } from "@/src/lib/api";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
 import { setContentLocale } from "@/src/lib/contentLocale";
 import { notificationUrl, toAppPath } from "@/src/lib/deepLinks";
+import { reportError } from "@/src/lib/monitoring";
 import {
 	registerForPushNotificationsAsync,
 	syncPushTokenWithBackend,
@@ -81,6 +83,7 @@ export function ErrorBoundary({
 	error: Error;
 	retry: () => Promise<void>;
 }) {
+	useEffect(() => reportError(error), [error]);
 	return (
 		<View style={errorStyles.container}>
 			<Text style={errorStyles.title}>Une erreur est survenue</Text>
@@ -218,6 +221,7 @@ export default function RootLayout() {
 												<PushNotificationHandler />
 												<RootLayoutNav />
 												<OfflineBanner />
+												<MonitoringBridge />
 											</AlertProvider>
 										</ChatProvider>
 									</NovuWrapper>

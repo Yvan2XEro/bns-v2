@@ -971,7 +971,7 @@
 	},
 	"privacy": {
 		"title": "Politique de confidentialité",
-		"lastUpdated": "Dernière mise à jour : 1er août 2026",
+		"lastUpdated": "Dernière mise à jour : 17 octobre 2026",
 		"sections": {
 			"intro": {
 				"title": "1. À propos de cette politique",
@@ -1014,8 +1014,8 @@
 				"body": "Votre jeton de session est conservé dans le stockage sécurisé de votre appareil (Keychain sur iOS, Keystore sur Android) afin que vous restiez connecté. Il est supprimé lorsque vous vous déconnectez ou supprimez votre compte. L'application n'utilise aucun cookie publicitaire ni identifiant comparable."
 			},
 			"noTracking": {
-				"title": "11. Aucun suivi, aucune publicité",
-				"body": "L'application ne contient aucun SDK d'analyse, de publicité ou d'attribution. Nous ne collectons pas l'identifiant publicitaire (IDFA sur iOS, Advertising ID sur Android), nous ne constituons pas de profils publicitaires et nous ne vous suivons pas à travers les applications ou sites d'autres sociétés. Nous ne vendons jamais vos données personnelles."
+				"title": "11. Mesure d'audience et diagnostic, aucune publicité",
+				"body": "Pour corriger les pannes et améliorer l'application, nous utilisons Sentry, qui reçoit le détail technique d'une erreur ou d'un plantage (écran, modèle d'appareil, version du système, trace du code), et PostHog, qui mesure les écrans consultés et les étapes d'achat (ajout au panier, début de commande, commande passée). Leurs envois passent par nos serveurs. Aucun identifiant n'est enregistré sur votre appareil pour la mesure d'audience ; si vous êtes connecté, seul votre identifiant de compte est transmis — jamais votre nom, votre e-mail, votre téléphone ou votre adresse. Sentry ne reçoit pas votre adresse IP ; PostHog en déduit votre pays et votre ville sans la conserver. L'application ne contient aucun SDK de publicité ou d'attribution, nous ne collectons pas l'identifiant publicitaire (IDFA sur iOS, Advertising ID sur Android), nous ne constituons pas de profils publicitaires et nous ne vous suivons pas à travers les applications ou sites d'autres sociétés. Nous ne vendons jamais vos données personnelles."
 			},
 			"visibility": {
 				"title": "12. Ce que les autres peuvent voir",
@@ -1023,7 +1023,7 @@
 			},
 			"sharing": {
 				"title": "13. Avec qui nous partageons vos données",
-				"body": "Nous ne partageons des données que lorsqu'une fonctionnalité l'exige : notre prestataire SMS (AvlyText ou MTarget) reçoit votre numéro de téléphone pour vous livrer un code de vérification ; Novu reçoit votre jeton push et des informations de profil de base pour délivrer les notifications ; Google, Apple ou Facebook ne sont impliqués que si vous choisissez de vous connecter avec eux ; et nos prestataires d'hébergement et de stockage de fichiers conservent les données pour notre compte. Nous divulguons également des données lorsque la loi nous y oblige. Nous ne vendons pas vos données personnelles et ne les partageons pas à des fins publicitaires."
+				"body": "Nous ne partageons des données que lorsqu'une fonctionnalité l'exige : notre prestataire SMS (AvlyText ou MTarget) reçoit votre numéro de téléphone pour vous livrer un code de vérification ; Novu reçoit votre jeton push et des informations de profil de base pour délivrer les notifications ; Google, Apple ou Facebook ne sont impliqués que si vous choisissez de vous connecter avec eux ; et nos prestataires d'hébergement et de stockage de fichiers conservent les données pour notre compte. Nous divulguons également des données lorsque la loi nous y oblige. Nous ne vendons pas vos données personnelles et ne les partageons pas à des fins publicitaires. Sentry (diagnostic d'erreurs) et PostHog (mesure d'audience) reçoivent les seules données techniques décrites à la section 11."
 			},
 			"deletion": {
 				"title": "14. Suppression de votre compte",

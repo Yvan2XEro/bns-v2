@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Platform } from "react-native";
+import { track } from "@/src/lib/monitoring";
 import type { CheckoutGroupView } from "../../../api/src/contracts/checkoutGroup";
+import { ANALYTICS_EVENTS } from "../../../api/src/contracts/monitoring";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { checkoutGroupFlow } from "../lib/checkoutGroupFlow";
@@ -64,6 +66,10 @@ export function useSplitPlace() {
 				source: Platform.OS === "ios" ? "ios" : "android",
 			}),
 		onSuccess: (_placed, input) => {
+			track(ANALYTICS_EVENTS.orderPlaced, {
+				payment_method: input.paymentMethod,
+				split: true,
+			});
 			queryClient.invalidateQueries({ queryKey: cartKey });
 			queryClient.invalidateQueries({ queryKey: purchasesRootKey });
 			if (input.saveAddress)

@@ -5,6 +5,10 @@ import { setMarket } from "@/src/lib/market";
 import type { LaunchCityOption } from "@/src/types/order";
 import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
 import {
+	type MonitoringConfig,
+	NO_MONITORING,
+} from "../../../api/src/contracts/monitoring";
+import {
 	normalizePhotoLimit,
 	PHOTO_LIMIT,
 } from "../../../api/src/contracts/photoLimit";
@@ -46,6 +50,8 @@ export interface AppConfig {
 	buyerProtection: BuyerProtectionConfig;
 	/** Photos a listing or a product may carry (admin setting); the API refuses more. */
 	photosIncluded: number;
+	/** Sentry and PostHog, configured on the API; off until it sends them. */
+	monitoring: MonitoringConfig;
 	/** Absent from an API that predates markets; money and phone then use the M9 fallbacks. */
 	market?: MarketConfig;
 }
@@ -74,6 +80,7 @@ const DEFAULT: AppConfig = {
 	resalePrepaidEnabled: false,
 	buyerProtection: { bps: 300, min: 100, max: 15_000 },
 	photosIncluded: PHOTO_LIMIT.default,
+	monitoring: NO_MONITORING,
 };
 
 const AppConfigContext = createContext<AppConfig>(DEFAULT);

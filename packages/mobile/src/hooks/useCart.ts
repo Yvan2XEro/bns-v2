@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { track } from "@/src/lib/monitoring";
+import { ANALYTICS_EVENTS } from "../../../api/src/contracts/monitoring";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { hapticOutcome } from "../lib/haptics";
@@ -47,8 +49,12 @@ export function useAddCartItem() {
 	return useMutation({
 		mutationFn: (input: AddCartItemInput) =>
 			api.post<CartView>("/api/cart/items", input),
-		onSuccess: () => {
+		onSuccess: (_cart, input) => {
 			hapticOutcome("success");
+			track(ANALYTICS_EVENTS.addToCart, {
+				listing_id: input.listingId,
+				quantity: input.quantity,
+			});
 			invalidate();
 		},
 		onError: () => hapticOutcome("error"),

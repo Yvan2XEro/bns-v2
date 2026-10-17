@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { AppState, Platform } from "react-native";
+import { track } from "@/src/lib/monitoring";
 import type { DeliveryQuote } from "../../../api/src/contracts/deliveryQuote";
+import { ANALYTICS_EVENTS } from "../../../api/src/contracts/monitoring";
 import { api } from "../lib/api";
 import { shouldRefetchOnForeground } from "../lib/paymentFlow";
 import type { PaymentChannel } from "../lib/paymentStatus";
@@ -75,6 +77,10 @@ export function usePlaceOrder() {
 				source: Platform.OS === "ios" ? "ios" : "android",
 			}),
 		onSuccess: (_placed, input) => {
+			track(ANALYTICS_EVENTS.orderPlaced, {
+				payment_method: input.paymentMethod,
+				split: false,
+			});
 			queryClient.invalidateQueries({ queryKey: cartKey });
 			queryClient.invalidateQueries({ queryKey: purchasesRootKey });
 			if (input.saveAddress)

@@ -3,6 +3,7 @@ import {
 	type Dispatch,
 	type ReactNode,
 	useContext,
+	useEffect,
 	useReducer,
 	useState,
 } from "react";
@@ -19,12 +20,14 @@ import {
 } from "@/src/lib/checkoutFlow";
 import { addressFieldOf } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
+import { track } from "@/src/lib/monitoring";
 import type {
 	AddressInput,
 	DeliveryOption,
 	PaymentMethod,
 	QuoteResponse,
 } from "@/src/types/order";
+import { ANALYTICS_EVENTS } from "../../../../api/src/contracts/monitoring";
 
 /** Which saved address the buyer used, or the new one to save at placement. */
 export interface AddressChoice {
@@ -71,6 +74,8 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 	const quote = useCheckoutQuote();
 	const place = usePlaceOrder();
 	const locale = useAppLocale();
+
+	useEffect(() => track(ANALYTICS_EVENTS.checkoutStarted), []);
 
 	const requestQuote: CheckoutContextValue["requestQuote"] = (
 		address,
