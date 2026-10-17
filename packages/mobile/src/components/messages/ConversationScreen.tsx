@@ -142,7 +142,7 @@ export function ConversationScreen({
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const { chatClient, onlineUsers } = useChatClient();
-	const { showError, showAlert } = useAlert();
+	const { showAlert } = useAlert();
 	const queryClient = useQueryClient();
 	const [text, setText] = useState("");
 	const [isOtherTyping, setIsOtherTyping] = useState(false);

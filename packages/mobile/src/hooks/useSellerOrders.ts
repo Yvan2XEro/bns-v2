@@ -45,6 +45,10 @@ export function useSellerOrders(
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (last) => last.nextCursor ?? undefined,
 		enabled: Boolean(shopId),
+		// Orders wait a limited time for acceptance: polled while the app is in
+		// the foreground, and refetched on return to it (`appFocus`).
+		staleTime: 30_000,
+		refetchInterval: 60_000,
 	});
 }
 

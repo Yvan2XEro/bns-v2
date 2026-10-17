@@ -1,5 +1,6 @@
 import type { Overrides } from "@novu/api/models/components";
 import { ChatOrPushProviderEnum } from "@novu/api/models/components";
+import { pushChannelFor } from "../contracts/pushChannels";
 import { getNotificationProvider } from "../services/notificationProvider";
 
 type NotificationPayloadValue = string | number | boolean | null | undefined;
@@ -247,7 +248,7 @@ function mergeOverrides(
 			expo: {
 				sound: "default",
 				priority: "high",
-				channelId: "default",
+				channelId: pushChannelFor(event, getStringValue(payload, "audience")),
 				...(overrides?.providers?.expo ?? {}),
 				...(expoData ? { data: expoData } : {}),
 			},

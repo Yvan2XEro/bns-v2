@@ -1179,7 +1179,9 @@
 		"read": "Lu",
 		"unread": "Non lu",
 		"archive": "Archiver",
-		"restore": "Restaurer"
+		"restore": "Restaurer",
+		"channelDefault": "Général",
+		"channelOrders": "Nouvelles commandes"
 	},
 	"onboarding": {
 		"skip": "Ignorer",

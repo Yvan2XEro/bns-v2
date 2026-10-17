@@ -27,7 +27,11 @@ import { ThemeSwitcher } from "~/components/layout/theme-switcher";
 import { ShopInitials } from "~/components/shop/shop-initials";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useMyShops } from "~/hooks/use-my-shops";
-import { useSellerOrderQueue } from "~/hooks/use-seller-orders";
+import {
+	useNewOrdersRefresh,
+	useSellerOrderQueue,
+} from "~/hooks/use-seller-orders";
+import { useTitleCount } from "~/hooks/use-title-count";
 import {
 	activeNavKey,
 	type SellerNavKey,
@@ -111,6 +115,9 @@ export function SellerSidebar({
 		ordersEnabled && can(role, "orders.view") ? shopId : null,
 	);
 	const toProcess = (queue.data?.toAccept ?? 0) + (queue.data?.toShip ?? 0);
+	useNewOrdersRefresh(queue.data ? shopId : null, queue.data?.toAccept);
+	// Only orders waiting for acceptance have a clock running.
+	useTitleCount(queue.data?.toAccept ?? 0);
 	const level = badge ? BADGE_LEVEL[badge] : null;
 	const items = visibleSellerNav(
 		role,

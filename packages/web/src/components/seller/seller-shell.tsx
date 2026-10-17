@@ -1,6 +1,7 @@
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Toaster } from "sonner";
 import { LocaleSwitcher } from "~/components/layout/locale-switcher";
+import { NotificationInbox } from "~/components/layout/notification-inbox";
 import { isBrandColor, shopTheme } from "~/lib/shop-theme";
 import type { MyShopResponse } from "~/types";
 import { SellerSidebar } from "./seller-sidebar";
@@ -15,6 +16,8 @@ export async function SellerShell({
 	children: React.ReactNode;
 }) {
 	const locale = await getLocale();
+	const t = await getTranslations("Nav");
+	const novuAppId = process.env.NOVU_APPLICATION_IDENTIFIER;
 	const { shop, role, roleReason } = mine;
 	// A shop without a colour keeps the platform's dashboard as it is.
 	const theme = isBrandColor(shop.brandColor)
@@ -36,8 +39,17 @@ export async function SellerShell({
 					roleReason={roleReason}
 				/>
 				<div className="min-w-0 flex-1">
-					<div className="flex justify-end border-line border-b bg-surface px-2 lg:hidden">
-						<LocaleSwitcher />
+					<div className="flex items-center justify-end gap-1 border-line border-b bg-surface px-2 lg:px-6">
+						{novuAppId && (
+							<NotificationInbox
+								applicationIdentifier={novuAppId}
+								label={t("alerts")}
+								tone="text-ink-muted hover:bg-subtle hover:text-ink"
+							/>
+						)}
+						<div className="lg:hidden">
+							<LocaleSwitcher />
+						</div>
 					</div>
 					<SuspensionBanner shop={shop} locale={locale} />
 					<div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">{children}</div>

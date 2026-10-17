@@ -1,7 +1,9 @@
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { PUSH_CHANNELS } from "../../../api/src/contracts/pushChannels";
 import { api } from "./api";
+import i18n from "./i18n";
 
 Notifications.setNotificationHandler({
 	handleNotification: async () => ({
@@ -21,11 +23,22 @@ export async function registerForPushNotificationsAsync(): Promise<
 	// of these native calls would surface as an app-level crash.
 	try {
 		if (Platform.OS === "android") {
-			await Notifications.setNotificationChannelAsync("default", {
-				name: "default",
+			await Notifications.setNotificationChannelAsync(PUSH_CHANNELS.default, {
+				name: i18n.t("notifications.channelDefault"),
 				importance: Notifications.AndroidImportance.MAX,
 				vibrationPattern: [0, 250, 250, 250],
 				lightColor: "#1e40af",
+			});
+			// Its own channel, so a seller can give new orders a distinct sound
+			// in Android's settings without hearing it for every message.
+			await Notifications.setNotificationChannelAsync(PUSH_CHANNELS.orders, {
+				name: i18n.t("notifications.channelOrders"),
+				importance: Notifications.AndroidImportance.MAX,
+				sound: "default",
+				vibrationPattern: [0, 400, 200, 400, 200, 400],
+				lightColor: "#F59E0B",
+				lockscreenVisibility:
+					Notifications.AndroidNotificationVisibility.PUBLIC,
 			});
 		}
 

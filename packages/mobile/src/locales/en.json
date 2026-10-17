@@ -1040,7 +1040,9 @@
 		"read": "Read",
 		"unread": "Unread",
 		"archive": "Archive",
-		"restore": "Restore"
+		"restore": "Restore",
+		"channelDefault": "General",
+		"channelOrders": "New orders"
 	},
 	"onboarding": {
 		"skip": "Skip",

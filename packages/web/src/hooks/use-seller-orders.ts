@@ -1,6 +1,11 @@
 "use client";
 
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+	useInfiniteQuery,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import type { ApiError } from "~/lib/apiError";
 import type { ShopOrderTab } from "~/lib/order-status";
 import {
@@ -101,7 +106,36 @@ export function useSellerOrderQueue(shopId: string | null) {
 		enabled: Boolean(shopId),
 		retry: false,
 		staleTime: 30_000,
+		// An order waits a limited time for acceptance: the count is polled,
+		// in a background tab too, so the seller never works from a stale one.
+		refetchInterval: QUEUE_POLL_MS,
+		refetchIntervalInBackground: true,
 	});
+}
+
+const QUEUE_POLL_MS = 60_000;
+
+/**
+ * Reloads the shop's order lists as soon as the polled queue shows a new
+ * order to accept, so an open list doesn't sit on yesterday's state.
+ */
+export function useNewOrdersRefresh(
+	shopId: string | null,
+	toAccept: number | undefined,
+) {
+	const queryClient = useQueryClient();
+	const previous = useRef<number | undefined>(undefined);
+	useEffect(() => {
+		const before = previous.current;
+		previous.current = toAccept;
+		if (!shopId || toAccept === undefined || before === undefined) return;
+		if (toAccept > before) {
+			queryClient.invalidateQueries({
+				queryKey: shopOrdersRootKey(shopId),
+				predicate: (query) => query.queryKey.at(-1) !== "queue",
+			});
+		}
+	}, [queryClient, shopId, toAccept]);
 }
 
 /** The dashboard's rolling seven days. */

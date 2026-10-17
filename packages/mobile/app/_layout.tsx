@@ -55,6 +55,7 @@ import {
 	useOnboarding,
 } from "@/src/contexts/OnboardingContext";
 import { api } from "@/src/lib/api";
+import "@/src/lib/appFocus";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
 import { setContentLocale } from "@/src/lib/contentLocale";
 import { notificationUrl, toAppPath } from "@/src/lib/deepLinks";
