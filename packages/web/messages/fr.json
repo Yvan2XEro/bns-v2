@@ -485,7 +485,9 @@
 		"shopsSellingAll": "Voir les boutiques",
 		"shopView": "Voir",
 		"shopNew": "Nouvelle",
-		"shopProducts": "{count, plural, =0 {Aucun produit} one {# produit} other {# produits}}"
+		"shopProducts": "{count, plural, =0 {Aucun produit} one {# produit} other {# produits}}",
+		"resultCount": "{count, plural, one {<b>#</b> résultat} other {<b>#</b> résultats}}",
+		"savedSearchDefault": "Ma recherche"
 	},
 	"LocationPicker": {
 		"title": "Choisir une localisation",
@@ -655,7 +657,11 @@
 		"safetyShopTip2": "Ne réglez jamais un vendeur en dehors de la plateforme",
 		"safetyShopTip3": "Vérifiez le colis avant de donner votre code de remise",
 		"barOrder": "Commander",
-		"barContact": "Contacter le vendeur"
+		"barContact": "Contacter le vendeur",
+		"photoCount": "{count, plural, one {# photo} other {# photos}}",
+		"viewCount": "{count, plural, one {# vue} other {# vues}}",
+		"breadcrumbHome": "Accueil",
+		"breadcrumbSearch": "Recherche"
 	},
 	"CreateListing": {
 		"category": "Catégorie",

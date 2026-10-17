@@ -27,7 +27,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
-import { parseDate } from "@/src/lib/formatDate";
+import { appDateLocale, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
@@ -305,7 +305,7 @@ export default function BoostHistoryScreen() {
 			Array.from({ length: 6 }, (_, i) => {
 				const d = new Date();
 				d.setMonth(d.getMonth() - (5 - i));
-				return d.toLocaleDateString("fr-FR", { month: "short" });
+				return d.toLocaleDateString(appDateLocale(), { month: "short" });
 			}),
 		[],
 	);

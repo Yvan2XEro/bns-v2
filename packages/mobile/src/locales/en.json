@@ -921,7 +921,11 @@
 		"weeksAgo_one": "{{count}} week ago",
 		"weeksAgo": "{{count}} weeks ago",
 		"monthsAgo_one": "{{count}} month ago",
-		"monthsAgo": "{{count}} months ago"
+		"monthsAgo": "{{count}} months ago",
+		"minutesShort": "{{count}} min",
+		"hoursShort": "{{count}} h",
+		"daysShort": "{{count}} d",
+		"monthsShort": "{{count}} mo"
 	},
 	"safety": {
 		"title": "Safety Tips",

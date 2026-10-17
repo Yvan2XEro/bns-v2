@@ -295,13 +295,13 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 			{
 				"@type": "ListItem",
 				position: 1,
-				name: "Accueil",
+				name: t("breadcrumbHome"),
 				item: WEB_URL,
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
-				name: "Recherche",
+				name: t("breadcrumbSearch"),
 				item: `${WEB_URL}/search`,
 			},
 			...(category
@@ -430,10 +430,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									<Clock className="h-4 w-4" />
 									{timeAgo(listing.createdAt, locale, { maxDays: 30 })}
 								</span>
-								{listing.views !== undefined && (
+								{typeof listing.views === "number" && (
 									<span className="flex items-center gap-1">
 										<Eye className="h-4 w-4" />
-										{listing.views} {t("views")}
+										{t("viewCount", { count: listing.views })}
 									</span>
 								)}
 								{expiresAt &&

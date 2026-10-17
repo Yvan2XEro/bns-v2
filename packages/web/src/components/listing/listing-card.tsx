@@ -109,7 +109,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 					{/* Image count */}
 					{imageCount > 1 && (
 						<div className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 font-medium text-[10px] text-white">
-							{imageCount} photos
+							{t("photoCount", { count: imageCount })}
 						</div>
 					)}
 				</div>

@@ -26,8 +26,10 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
+import { appDateLocale } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { can } from "@/src/lib/shopRoles";
+import { compactTimeAgo } from "@/src/lib/timeAgo";
 
 /** The shape this screen needs off a conversation row — a narrow, typed view over the loosely-typed `api.get` payload, not `any`. */
 interface ConversationListRow {
@@ -76,13 +78,13 @@ function orderNumberOf(conv: ConversationListRow): string | null {
 
 function formatTime(dateStr: string): string {
 	const d = new Date(dateStr);
-	const now = new Date();
-	const diff = now.getTime() - d.getTime();
-	if (diff < 60000) return "maintenant";
-	if (diff < 3600000) return `${Math.floor(diff / 60000)}min`;
-	if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
-	if (diff < 604800000) return `${Math.floor(diff / 86400000)}j`;
-	return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+	// A week on, the date reads better than "9 d".
+	if (Date.now() - d.getTime() >= 604_800_000)
+		return d.toLocaleDateString(appDateLocale(), {
+			day: "2-digit",
+			month: "short",
+		});
+	return compactTimeAgo(d) ?? "";
 }
 
 type FilterTab = "all" | "unread" | "orders";

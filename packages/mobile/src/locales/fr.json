@@ -924,7 +924,11 @@
 		"weeksAgo_one": "Il y a {{count}} semaine",
 		"weeksAgo": "Il y a {{count}} semaines",
 		"monthsAgo_one": "Il y a {{count}} mois",
-		"monthsAgo": "Il y a {{count}} mois"
+		"monthsAgo": "Il y a {{count}} mois",
+		"minutesShort": "{{count}} min",
+		"hoursShort": "{{count}} h",
+		"daysShort": "{{count}} j",
+		"monthsShort": "{{count}} mois"
 	},
 	"safety": {
 		"title": "Conseils de sécurité",

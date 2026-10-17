@@ -485,7 +485,9 @@
 		"shopsSellingAll": "See the shops",
 		"shopView": "View",
 		"shopNew": "New",
-		"shopProducts": "{count, plural, =0 {No products} one {# product} other {# products}}"
+		"shopProducts": "{count, plural, =0 {No products} one {# product} other {# products}}",
+		"resultCount": "{count, plural, one {<b>#</b> result} other {<b>#</b> results}}",
+		"savedSearchDefault": "My search"
 	},
 	"LocationPicker": {
 		"title": "Choose a location",
@@ -655,7 +657,11 @@
 		"safetyShopTip2": "Never pay a seller outside the platform",
 		"safetyShopTip3": "Check the parcel before you give your handover code",
 		"barOrder": "Order",
-		"barContact": "Contact the seller"
+		"barContact": "Contact the seller",
+		"photoCount": "{count, plural, one {# photo} other {# photos}}",
+		"viewCount": "{count, plural, one {# view} other {# views}}",
+		"breadcrumbHome": "Home",
+		"breadcrumbSearch": "Search"
 	},
 	"CreateListing": {
 		"category": "Category",

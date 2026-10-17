@@ -13,6 +13,7 @@
  */
 
 import { Ionicons } from "@expo/vector-icons";
+import i18next from "i18next";
 import { useCallback, useEffect, useState } from "react";
 import {
 	Modal,
@@ -93,7 +94,7 @@ export default function CustomAlert({
 	type = "info",
 	title,
 	message,
-	buttons = [{ text: "OK" }],
+	buttons = [{ text: i18next.t("common.ok") }],
 	onClose,
 }: CustomAlertProps) {
 	const isDark = useColorScheme() === "dark";
@@ -396,7 +397,7 @@ export function useCustomAlert() {
 		type: "info",
 		title: "",
 		message: undefined,
-		buttons: [{ text: "OK" }],
+		buttons: [{ text: i18next.t("common.ok") }],
 	});
 
 	const showAlert = useCallback(
@@ -411,7 +412,7 @@ export function useCustomAlert() {
 				type,
 				title,
 				message,
-				buttons: buttons ?? [{ text: "OK" }],
+				buttons: buttons ?? [{ text: i18next.t("common.ok") }],
 			});
 		},
 		[],
@@ -442,8 +443,16 @@ export function useCustomAlert() {
 			onCancel?: () => void,
 		) => {
 			showAlert(title, message, "confirm", [
-				{ text: "Annuler", style: "cancel", onPress: onCancel },
-				{ text: "Confirmer", style: "default", onPress: onConfirm },
+				{
+					text: i18next.t("common.cancel"),
+					style: "cancel",
+					onPress: onCancel,
+				},
+				{
+					text: i18next.t("common.confirm"),
+					style: "default",
+					onPress: onConfirm,
+				},
 			]);
 		},
 		[showAlert],

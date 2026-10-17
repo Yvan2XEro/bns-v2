@@ -830,7 +830,7 @@ export default function HomeScreen() {
 												<Text style={styles.featuredPrice}>
 													{listing.price
 														? formatPrice(listing.price, i18n.language)
-														: "Sur demande"}
+														: t("listing.priceOnRequest")}
 												</Text>
 												<Text style={styles.featuredTitle} numberOfLines={1}>
 													{listing.title}

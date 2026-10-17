@@ -22,6 +22,7 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { withContentLocale } from "@/src/lib/contentLocale";
+import { appDateLocale } from "@/src/lib/formatDate";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
@@ -94,7 +95,7 @@ function StatusBadge({
 }
 
 function formatDate(dateStr: string) {
-	return new Date(dateStr).toLocaleDateString("fr-FR", {
+	return new Date(dateStr).toLocaleDateString(appDateLocale(), {
 		day: "2-digit",
 		month: "short",
 		year: "numeric",
@@ -258,7 +259,7 @@ export default function MyListingsScreen() {
 					<Text style={[styles.price, { color: primaryColor }]}>
 						{item.price
 							? formatPrice(item.price, i18n.language)
-							: "Sur demande"}
+							: i18n.t("listing.priceOnRequest")}
 					</Text>
 					<View style={styles.metaRow}>
 						<StatusBadge status={item.status ?? "pending"} t={t} />

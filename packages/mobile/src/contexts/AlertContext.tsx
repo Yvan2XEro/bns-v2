@@ -1,3 +1,4 @@
+import i18next from "i18next";
 import {
 	createContext,
 	type ReactNode,
@@ -50,7 +51,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
 		type: "info",
 		title: "",
 		message: undefined,
-		buttons: [{ text: "OK" }],
+		buttons: [{ text: i18next.t("common.ok") }],
 	});
 
 	const showAlert = useCallback(
@@ -65,7 +66,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
 				type,
 				title,
 				message,
-				buttons: buttons ?? [{ text: "OK" }],
+				buttons: buttons ?? [{ text: i18next.t("common.ok") }],
 			});
 		},
 		[],
@@ -100,8 +101,16 @@ export function AlertProvider({ children }: { children: ReactNode }) {
 				title,
 				message,
 				[
-					{ text: "Annuler", style: "cancel", onPress: onCancel },
-					{ text: "Confirmer", style: "default", onPress: onConfirm },
+					{
+						text: i18next.t("common.cancel"),
+						style: "cancel",
+						onPress: onCancel,
+					},
+					{
+						text: i18next.t("common.confirm"),
+						style: "default",
+						onPress: onConfirm,
+					},
 				],
 				"confirm",
 			);

@@ -31,22 +31,19 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useTranslation } from "@/src/lib/i18n";
 import { registerForPushNotificationsAsync } from "@/src/lib/notifications";
+import { compactTimeAgo } from "@/src/lib/timeAgo";
 
 const SWIPE_BTN_WIDTH = 72;
 
-function timeAgo(date: string, t: (key: string) => string): string {
-	const diff = Date.now() - new Date(date).getTime();
-	const minutes = Math.floor(diff / 60_000);
-	if (minutes < 1) return t("time.justNow");
-	if (minutes < 60) return `${minutes}min`;
-	const hours = Math.floor(minutes / 60);
-	if (hours < 24) return `${hours}h`;
-	const days = Math.floor(hours / 24);
-	if (days < 7) return `${days}j`;
-	return new Date(date).toLocaleDateString(undefined, {
-		day: "numeric",
-		month: "short",
-	});
+function timeAgo(date: string, locale: string): string {
+	const parsed = new Date(date);
+	// A week on, the date reads better than "9 d".
+	if (Date.now() - parsed.getTime() >= 7 * 86_400_000)
+		return parsed.toLocaleDateString(locale, {
+			day: "numeric",
+			month: "short",
+		});
+	return compactTimeAgo(parsed) ?? "";
 }
 
 function notificationIcon(tags: string[]): {
@@ -157,7 +154,7 @@ function NotificationRow({
 	primaryColor: string;
 	cardBg: string;
 }) {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const icon = notificationIcon(item.tags ?? []);
 	const unreadBg = isDark ? "rgba(30,58,95,0.4)" : "#eff6ff";
 	const rowBg = item.isRead ? cardBg : unreadBg;
@@ -302,7 +299,7 @@ function NotificationRow({
 						{item.body}
 					</Text>
 					<Text style={[styles.itemTime, { color: mutedColor }]}>
-						{timeAgo(item.createdAt, t)}
+						{timeAgo(item.createdAt, i18n.language)}
 					</Text>
 
 					{hasActions && (

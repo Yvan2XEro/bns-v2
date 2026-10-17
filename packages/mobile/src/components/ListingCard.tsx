@@ -26,6 +26,7 @@ import {
 import { listingShopName } from "@/src/lib/listingShop";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
+import { compactTimeAgo } from "@/src/lib/timeAgo";
 
 const PRESS_SPRING = { damping: 18, stiffness: 300, mass: 0.6 };
 
@@ -51,21 +52,6 @@ interface ListingCardProps {
 	onToggleFavorite: (id: string) => void;
 	onPress: (id: string) => void;
 	width?: number;
-}
-
-/** Relative age, or null when `createdAt` is missing/unparsable (was "NaNmois"). */
-function timeAgo(dateStr: string | undefined): string | null {
-	const date = parseDate(dateStr);
-	if (!date) return null;
-	const diff = Date.now() - date.getTime();
-	const mins = Math.floor(diff / 60000);
-	if (mins < 1) return "À l'instant";
-	if (mins < 60) return `${mins}min`;
-	const hours = Math.floor(mins / 60);
-	if (hours < 24) return `${hours}h`;
-	const days = Math.floor(hours / 24);
-	if (days < 30) return `${days}j`;
-	return `${Math.floor(days / 30)}mois`;
 }
 
 export function ListingCard({
@@ -111,7 +97,7 @@ export function ListingCard({
 			? conditionLabelKey(conditionValue)
 			: null;
 	const conditionLabel = conditionKey ? i18n.t(conditionKey) : null;
-	const age = timeAgo(listing.createdAt);
+	const age = compactTimeAgo(listing.createdAt);
 	const shopName = listingShopName(listing);
 	// On a shop's page the card takes the shop's colour, as on web.
 	const shopAccent = useShopBrandIfAny()?.accentText ?? "#1e40af";
@@ -251,7 +237,7 @@ export function ListingCard({
 					>
 						{listing.price
 							? formatPrice(listing.price, i18n.language)
-							: "Sur demande"}
+							: i18n.t("listing.priceOnRequest")}
 					</Text>
 
 					{/* Title — 2-line clamp */}

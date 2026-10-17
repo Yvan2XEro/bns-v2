@@ -218,7 +218,7 @@ export function SearchClient({
 		setSaveStatus("saving");
 		setSaveError("");
 		const result = await saveSearch({
-			name: saveName || filters.q || "My saved search",
+			name: saveName || filters.q || t("savedSearchDefault"),
 			query: filters.q,
 			filters: {
 				category: filters.category,
@@ -618,8 +618,12 @@ export function SearchClient({
 								t("loading")
 							) : (
 								<>
-									<span className="font-semibold text-ink">{total}</span>{" "}
-									{t("results")}
+									{t.rich("resultCount", {
+										count: total,
+										b: (chunk) => (
+											<span className="font-semibold text-ink">{chunk}</span>
+										),
+									})}
 								</>
 							)}
 						</p>
@@ -629,7 +633,7 @@ export function SearchClient({
 							onOpenChange={(open) => {
 								setSaveDialogOpen(open);
 								if (open) {
-									setSaveName(filters.q || "My saved search");
+									setSaveName(filters.q || t("savedSearchDefault"));
 									setSaveStatus("idle");
 									setSaveError("");
 								}
