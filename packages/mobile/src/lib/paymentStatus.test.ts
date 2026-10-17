@@ -230,8 +230,9 @@ describe("the payments namespace", () => {
 		// screens, a paradigm web's inline-disabled-button approach does not
 		// need the same copy for. The protected-pay screen redesign added six
 		// more mobile-only keys (protectedBadge, pay_mobileMoney and the four
-		// money_* rows of "where does your money go").
-		expect(Object.keys(enNs)).toHaveLength(165);
+		// money_* rows of "where does your money go"). The pending screen's
+		// exact amount and USSD dial button added two more, mirrored to web.
+		expect(Object.keys(enNs)).toHaveLength(167);
 	});
 
 	test("carries the same placeholders in both languages, in i18next's double braces", () => {

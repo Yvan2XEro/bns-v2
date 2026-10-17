@@ -210,8 +210,9 @@ describe("the Payments namespace", () => {
 		// the "this was not me" confirmation. +6 at Task 28's landing: states
 		// only mobile renders as text today, mirrored here verbatim so the
 		// cross-client byte-parity spec stays whole-namespace. +6 for the
-		// mobile protected-pay redesign's labels, mirrored the same way.
-		expect(Object.keys(enNs)).toHaveLength(165);
+		// mobile protected-pay redesign's labels, mirrored the same way. +2 for
+		// the pending screen's exact amount and USSD dial button.
+		expect(Object.keys(enNs)).toHaveLength(167);
 	});
 
 	test("carries the same placeholders in both languages, in next-intl's single braces", () => {

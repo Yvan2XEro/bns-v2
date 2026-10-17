@@ -246,7 +246,7 @@
 		"favoriteRemoved": "Retiré des favoris",
 		"saved": "Sauvegardé",
 		"save": "Sauvegarder",
-		"shareTitle": "Découvrez cette annonce sur BuyNSellem",
+		"shareTitle": "Découvrez cette annonce sur Buy'N'Sellem",
 		"share": "Partager",
 		"reportListing": "Signaler cette annonce",
 		"similarListings": "Annonces similaires",
@@ -1095,11 +1095,11 @@
 		"sections": {
 			"acceptance": {
 				"title": "1. Acceptation des conditions",
-				"body": "En utilisant BuyNSellem, vous acceptez les présentes conditions d'utilisation dans leur intégralité. Si vous n'acceptez pas ces conditions, veuillez cesser d'utiliser notre application."
+				"body": "En utilisant Buy'N'Sellem, vous acceptez les présentes conditions d'utilisation dans leur intégralité. Si vous n'acceptez pas ces conditions, veuillez cesser d'utiliser notre application."
 			},
 			"service": {
 				"title": "2. Description du service",
-				"body": "BuyNSellem est une plateforme de petites annonces permettant aux utilisateurs d'acheter et vendre des articles entre particuliers au Cameroun et dans la sous-région."
+				"body": "Buy'N'Sellem est une plateforme de petites annonces permettant aux utilisateurs d'acheter et vendre des articles entre particuliers au Cameroun et dans la sous-région."
 			},
 			"eligibility": {
 				"title": "3. Qui peut utiliser le service",
@@ -1111,7 +1111,7 @@
 			},
 			"responsibility": {
 				"title": "5. Responsabilité des utilisateurs",
-				"body": "Les utilisateurs sont entièrement responsables du contenu qu'ils publient et des transactions qu'ils effectuent. BuyNSellem n'est pas partie prenante des échanges entre acheteurs et vendeurs."
+				"body": "Les utilisateurs sont entièrement responsables du contenu qu'ils publient et des transactions qu'ils effectuent. Buy'N'Sellem n'est pas partie prenante des échanges entre acheteurs et vendeurs."
 			},
 			"moderation": {
 				"title": "6. Modération des annonces",
@@ -1119,7 +1119,7 @@
 			},
 			"intellectualProperty": {
 				"title": "7. Propriété intellectuelle",
-				"body": "Les photos et contenus publiés sur la plateforme restent la propriété de leurs auteurs. En les publiant, vous accordez à BuyNSellem une licence d'affichage non exclusive au sein du service."
+				"body": "Les photos et contenus publiés sur la plateforme restent la propriété de leurs auteurs. En les publiant, vous accordez à Buy'N'Sellem une licence d'affichage non exclusive au sein du service."
 			},
 			"dataProtection": {
 				"title": "8. Protection des données",
@@ -1131,7 +1131,7 @@
 			},
 			"changes": {
 				"title": "10. Modification des conditions",
-				"body": "BuyNSellem se réserve le droit de modifier ces conditions à tout moment. La date affichée en haut indique la version en vigueur, et les utilisateurs seront informés dans l'application des changements importants."
+				"body": "Buy'N'Sellem se réserve le droit de modifier ces conditions à tout moment. La date affichée en haut indique la version en vigueur, et les utilisateurs seront informés dans l'application des changements importants."
 			}
 		}
 	},
@@ -1214,7 +1214,7 @@
 		"skip": "Ignorer",
 		"next": "Suivant →",
 		"start": "Commencer",
-		"slide1Title": "Bienvenue sur\nBuyNSellem",
+		"slide1Title": "Bienvenue sur\nBuy'N'Sellem",
 		"slide1Desc": "La marketplace simple pour acheter et vendre près de chez vous.",
 		"slide2Title": "Des milliers\nd'annonces",
 		"slide2Desc": "Trouvez les meilleures offres dans votre région en quelques secondes.",
@@ -3562,11 +3562,11 @@
 		"descriptionLabel": "Décrivez le problème (20 caractères minimum)",
 		"nextTitle": "Et ensuite ?",
 		"nextShop": "La boutique est invitée à répondre",
-		"nextMediation": "Sans accord, la médiation BuyNSellem décide",
+		"nextMediation": "Sans accord, la médiation Buy'N'Sellem décide",
 		"nextKeepItem": "Gardez l'article et son emballage d'ici là",
 		"threadTitle": "Litige · {{number}}",
 		"authorBuyer": "Acheteur",
-		"authorStaff": "Médiation BuyNSellem",
+		"authorStaff": "Médiation Buy'N'Sellem",
 		"staffBadge": "Équipe"
 	},
 	"returns": {

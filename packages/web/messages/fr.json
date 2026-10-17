@@ -4032,7 +4032,9 @@
 		"money_heldTitle": "Détenu par le prestataire de paiement",
 		"money_releaseTitle": "Versé à la boutique après la livraison",
 		"money_refundTitle": "Remboursé si la commande n'aboutit pas",
-		"pay_mobileMoney": "Mobile money"
+		"pay_mobileMoney": "Mobile money",
+		"pending_amount": "Montant à valider : {amount}",
+		"pending_dialMenu": "Ouvrir le menu de validation ({code})"
 	},
 	"PaymentsPay": {
 		"operatorRequired": "Choisissez un opérateur."

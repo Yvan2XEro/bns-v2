@@ -279,7 +279,8 @@ describe("the payments copy is the same on web and mobile", () => {
 			// into web verbatim so the byte-parity above stays whole-namespace.
 			// 159 → 165: the mobile protected-pay redesign's six labels, mirrored
 			// the same way.
-			expect(Object.keys(webStrings)).toHaveLength(165);
+			// 165 → 167: the pending screen's exact amount and USSD dial button.
+			expect(Object.keys(webStrings)).toHaveLength(167);
 		});
 	}
 

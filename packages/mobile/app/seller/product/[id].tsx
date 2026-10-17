@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { usePreventRemove } from "@react-navigation/native";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import {
 	type Dispatch,
@@ -76,16 +75,22 @@ export default function ProductScreen() {
 		creating &&
 		!savedId &&
 		JSON.stringify(form) !== JSON.stringify(emptyProductForm());
-	usePreventRemove(dirty, ({ data }) => {
-		showAlert(t("create.discardTitle"), t("create.discardMsg"), [
-			{ text: t("common.cancel"), style: "cancel" },
-			{
-				text: t("create.discardConfirm"),
-				style: "destructive",
-				onPress: () => navigation.dispatch(data.action),
-			},
-		]);
-	});
+	// `beforeRemove` through expo-router's own navigation: the separate
+	// @react-navigation package reads a provider that is never mounted.
+	useEffect(() => {
+		if (!dirty) return;
+		return navigation.addListener("beforeRemove", (event) => {
+			event.preventDefault();
+			showAlert(t("create.discardTitle"), t("create.discardMsg"), [
+				{ text: t("common.cancel"), style: "cancel" },
+				{
+					text: t("create.discardConfirm"),
+					style: "destructive",
+					onPress: () => navigation.dispatch(event.data.action),
+				},
+			]);
+		});
+	}, [dirty, navigation, showAlert, t]);
 
 	// Any edit may be the fix for what the server refused, so its verdict is
 	// dropped and the form's own rules take over again.

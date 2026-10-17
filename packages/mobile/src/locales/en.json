@@ -241,7 +241,7 @@
 		"deleteListingConfirm": "Are you sure you want to delete this listing? This action cannot be undone.",
 		"favoriteAdded": "Added to favorites",
 		"favoriteRemoved": "Removed from favorites",
-		"shareTitle": "Check out this listing on BuyNSellem",
+		"shareTitle": "Check out this listing on Buy'N'Sellem",
 		"reportListing": "Report this listing",
 		"similarListings": "Similar listings",
 		"safetyTips": {
@@ -1075,7 +1075,7 @@
 		"skip": "Skip",
 		"next": "Next →",
 		"start": "Get Started",
-		"slide1Title": "Welcome to\nBuyNSellem",
+		"slide1Title": "Welcome to\nBuy'N'Sellem",
 		"slide1Desc": "The simple marketplace to buy and sell near you.",
 		"slide2Title": "Thousands of\nlistings",
 		"slide2Desc": "Find the best deals in your area in seconds.",
@@ -1183,11 +1183,11 @@
 		"sections": {
 			"acceptance": {
 				"title": "1. Acceptance of these terms",
-				"body": "By using BuyNSellem you accept these terms of service in full. If you do not accept them, please stop using the app."
+				"body": "By using Buy'N'Sellem you accept these terms of service in full. If you do not accept them, please stop using the app."
 			},
 			"service": {
 				"title": "2. What the service is",
-				"body": "BuyNSellem is a classifieds platform that lets people buy and sell items directly with each other in Cameroon and the surrounding region."
+				"body": "Buy'N'Sellem is a classifieds platform that lets people buy and sell items directly with each other in Cameroon and the surrounding region."
 			},
 			"eligibility": {
 				"title": "3. Who can use it",
@@ -1199,7 +1199,7 @@
 			},
 			"responsibility": {
 				"title": "5. User responsibility",
-				"body": "Users are entirely responsible for the content they publish and for the transactions they carry out. BuyNSellem is not a party to exchanges between buyers and sellers."
+				"body": "Users are entirely responsible for the content they publish and for the transactions they carry out. Buy'N'Sellem is not a party to exchanges between buyers and sellers."
 			},
 			"moderation": {
 				"title": "6. Listing moderation",
@@ -1207,7 +1207,7 @@
 			},
 			"intellectualProperty": {
 				"title": "7. Intellectual property",
-				"body": "The photos and content you publish on the platform remain yours. By publishing them you grant BuyNSellem a non-exclusive licence to display them within the service."
+				"body": "The photos and content you publish on the platform remain yours. By publishing them you grant Buy'N'Sellem a non-exclusive licence to display them within the service."
 			},
 			"dataProtection": {
 				"title": "8. Data protection",
@@ -1219,7 +1219,7 @@
 			},
 			"changes": {
 				"title": "10. Changes to these terms",
-				"body": "BuyNSellem may change these terms at any time. The date at the top shows the current version, and users will be told in the app about significant changes."
+				"body": "Buy'N'Sellem may change these terms at any time. The date at the top shows the current version, and users will be told in the app about significant changes."
 			}
 		}
 	},
@@ -3559,11 +3559,11 @@
 		"descriptionLabel": "Describe the problem (at least 20 characters)",
 		"nextTitle": "What happens next?",
 		"nextShop": "The shop is asked to respond",
-		"nextMediation": "Without an agreement, BuyNSellem mediation decides",
+		"nextMediation": "Without an agreement, Buy'N'Sellem mediation decides",
 		"nextKeepItem": "Keep the item and its packaging until then",
 		"threadTitle": "Dispute · {{number}}",
 		"authorBuyer": "Buyer",
-		"authorStaff": "BuyNSellem mediation",
+		"authorStaff": "Buy'N'Sellem mediation",
 		"staffBadge": "Team"
 	},
 	"returns": {
