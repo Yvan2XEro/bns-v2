@@ -171,135 +171,198 @@ export function CatalogueTable({
 	const allSelected =
 		selectable.length > 0 && selectable.every((id) => selected.has(id));
 
+	const hrefOf = (row: CatalogueRow) =>
+		isResale(row)
+			? row.listingStatus === "published"
+				? `/listing/${row.listingId}`
+				: "/seller/resale/catalogue"
+			: `/seller/catalogue/${row.id}`;
+
 	return (
-		<div className="overflow-x-auto rounded-xl border border-line bg-surface">
-			<table className="w-full min-w-[880px] text-sm">
-				<caption className="sr-only">{t("title")}</caption>
-				<thead className="border-line border-b bg-canvas text-left text-ink-muted text-xs uppercase">
-					<tr>
-						<th scope="col" className="w-9 py-3 pl-4">
-							<input
-								type="checkbox"
-								aria-label={tc("selectAll")}
-								checked={allSelected}
-								disabled={selectable.length === 0}
-								onChange={() => onToggleAll(selectable, !allSelected)}
-								className="h-4 w-4 rounded border-line-strong accent-[var(--shop-accent,var(--c-brand))]"
-							/>
-						</th>
-						<th scope="col" className="px-4 py-3 font-semibold">
-							{t("colProduct")}
-						</th>
-						{showProvenance && (
-							<th scope="col" className="px-4 py-3 font-semibold">
-								{tc("colProvenance")}
-							</th>
-						)}
-						<th scope="col" className="px-4 py-3 font-semibold">
-							{t("colPrice", { currency: currencyCode })}
-						</th>
-						<th scope="col" className="px-4 py-3 font-semibold">
-							{t("colStock")}
-						</th>
-						<th scope="col" className="px-4 py-3 font-semibold">
-							{t("colStatus")}
-						</th>
-						<th scope="col" className="w-10 px-2 py-3">
-							<span className="sr-only">{tc("colActions")}</span>
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{rows.map((row) => {
-						const resale = isResale(row);
-						const href = resale
-							? row.listingStatus === "published"
-								? `/listing/${row.listingId}`
-								: "/seller/resale/catalogue"
-							: `/seller/catalogue/${row.id}`;
-						return (
-							<tr
-								key={row.id}
-								className="border-subtle border-b last:border-0 hover:bg-canvas"
-							>
-								<td className="py-3 pl-4">
-									{!resale && (
-										<input
-											type="checkbox"
-											aria-label={tc("select", { title: row.title })}
-											checked={selected.has(row.id)}
-											onChange={() => onToggle(row.id)}
-											className="h-4 w-4 rounded border-line-strong accent-[var(--shop-accent,var(--c-brand))]"
+		<>
+			{/* Below md each product is a card: the table's status and menu would
+			    otherwise sit off-screen. */}
+			<ul className="space-y-3 md:hidden">
+				{rows.map((row) => {
+					const resale = isResale(row);
+					return (
+						<li
+							key={row.id}
+							className="flex items-start gap-3 rounded-xl border border-line bg-surface p-3"
+						>
+							{!resale && (
+								<input
+									type="checkbox"
+									aria-label={tc("select", { title: row.title })}
+									checked={selected.has(row.id)}
+									onChange={() => onToggle(row.id)}
+									className="mt-3 h-5 w-5 rounded border-line-strong accent-[var(--shop-accent,var(--c-brand))]"
+								/>
+							)}
+							<Link href={hrefOf(row)} className="flex min-w-0 flex-1 gap-3">
+								<div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-subtle">
+									{row.image?.url && (
+										// biome-ignore lint/performance/noImgElement: thumbnails come from arbitrary storage hosts
+										<img
+											src={row.image.thumbnailURL ?? row.image.url}
+											alt=""
+											className="h-full w-full object-cover"
 										/>
 									)}
-								</td>
-								<td className="px-4 py-3">
-									<Link href={href} className="flex items-center gap-3">
-										<div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-subtle">
-											{row.image?.url && (
-												// biome-ignore lint/performance/noImgElement: thumbnails come from arbitrary storage hosts
-												<img
-													src={row.image.thumbnailURL ?? row.image.url}
-													alt=""
-													className="h-full w-full object-cover"
-												/>
-											)}
-										</div>
-										<div className="min-w-0">
-											<p className="truncate font-semibold text-ink">
-												{row.title}
-											</p>
-											<p className="truncate text-ink-faint text-xs">
-												<SubTitle row={row} />
-											</p>
-										</div>
-									</Link>
-								</td>
-								{showProvenance && (
-									<td className="px-4 py-3">
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="truncate font-semibold text-ink">{row.title}</p>
+									<p className="text-ink text-sm tabular-nums">
+										{formatOrderMoneyRange(
+											formatOrderMoney,
+											row.priceMin,
+											row.priceMax,
+										)}
+									</p>
+									<div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+										<StatusChip kind={row.status} />
 										{resale ? (
-											<span className="inline-flex items-center whitespace-nowrap rounded-full bg-[#EDE9FE] px-2.5 py-0.5 font-semibold text-[#5B21B6] text-xs">
-												{tc("provenanceResale")}
-											</span>
+											<ResaleStockCell row={row} />
 										) : (
-											<span className="whitespace-nowrap text-[13px] text-ink-mid">
-												{tc("provenanceOwn")}
-											</span>
+											<CatalogueStockCell row={row} />
+										)}
+									</div>
+								</div>
+							</Link>
+							<RowMenu
+								row={row}
+								canArchive={canArchive}
+								onSetStatus={onSetStatus}
+							/>
+						</li>
+					);
+				})}
+			</ul>
+			<div className="hidden overflow-x-auto rounded-xl border border-line bg-surface md:block">
+				<table className="w-full min-w-[880px] text-sm">
+					<caption className="sr-only">{t("title")}</caption>
+					<thead className="border-line border-b bg-canvas text-left text-ink-muted text-xs uppercase">
+						<tr>
+							<th scope="col" className="w-9 py-3 pl-4">
+								<input
+									type="checkbox"
+									aria-label={tc("selectAll")}
+									checked={allSelected}
+									disabled={selectable.length === 0}
+									onChange={() => onToggleAll(selectable, !allSelected)}
+									className="h-4 w-4 rounded border-line-strong accent-[var(--shop-accent,var(--c-brand))]"
+								/>
+							</th>
+							<th scope="col" className="px-4 py-3 font-semibold">
+								{t("colProduct")}
+							</th>
+							{showProvenance && (
+								<th scope="col" className="px-4 py-3 font-semibold">
+									{tc("colProvenance")}
+								</th>
+							)}
+							<th scope="col" className="px-4 py-3 font-semibold">
+								{t("colPrice", { currency: currencyCode })}
+							</th>
+							<th scope="col" className="px-4 py-3 font-semibold">
+								{t("colStock")}
+							</th>
+							<th scope="col" className="px-4 py-3 font-semibold">
+								{t("colStatus")}
+							</th>
+							<th scope="col" className="w-10 px-2 py-3">
+								<span className="sr-only">{tc("colActions")}</span>
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						{rows.map((row) => {
+							const resale = isResale(row);
+							const href = hrefOf(row);
+							return (
+								<tr
+									key={row.id}
+									className="border-subtle border-b last:border-0 hover:bg-canvas"
+								>
+									<td className="py-3 pl-4">
+										{!resale && (
+											<input
+												type="checkbox"
+												aria-label={tc("select", { title: row.title })}
+												checked={selected.has(row.id)}
+												onChange={() => onToggle(row.id)}
+												className="h-4 w-4 rounded border-line-strong accent-[var(--shop-accent,var(--c-brand))]"
+											/>
 										)}
 									</td>
-								)}
-								<td className="whitespace-nowrap px-4 py-3 text-ink tabular-nums">
-									{formatOrderMoneyRange(
-										formatOrderMoney,
-										row.priceMin,
-										row.priceMax,
+									<td className="px-4 py-3">
+										<Link href={href} className="flex items-center gap-3">
+											<div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-subtle">
+												{row.image?.url && (
+													// biome-ignore lint/performance/noImgElement: thumbnails come from arbitrary storage hosts
+													<img
+														src={row.image.thumbnailURL ?? row.image.url}
+														alt=""
+														className="h-full w-full object-cover"
+													/>
+												)}
+											</div>
+											<div className="min-w-0">
+												<p className="truncate font-semibold text-ink">
+													{row.title}
+												</p>
+												<p className="truncate text-ink-faint text-xs">
+													<SubTitle row={row} />
+												</p>
+											</div>
+										</Link>
+									</td>
+									{showProvenance && (
+										<td className="px-4 py-3">
+											{resale ? (
+												<span className="inline-flex items-center whitespace-nowrap rounded-full bg-[#EDE9FE] px-2.5 py-0.5 font-semibold text-[#5B21B6] text-xs">
+													{tc("provenanceResale")}
+												</span>
+											) : (
+												<span className="whitespace-nowrap text-[13px] text-ink-mid">
+													{tc("provenanceOwn")}
+												</span>
+											)}
+										</td>
 									)}
-								</td>
-								<td className="px-4 py-3">
-									{resale ? (
-										<ResaleStockCell row={row} />
-									) : (
-										<CatalogueStockCell row={row} />
-									)}
-								</td>
-								<td className="px-4 py-3">
-									<div className="flex flex-wrap items-center gap-2">
-										<StatusChip kind={row.status} />
-										<ListingNote row={row} />
-									</div>
-								</td>
-								<td className="px-2 py-3">
-									<RowMenu
-										row={row}
-										canArchive={canArchive}
-										onSetStatus={onSetStatus}
-									/>
-								</td>
-							</tr>
-						);
-					})}
-				</tbody>
-			</table>
-		</div>
+									<td className="whitespace-nowrap px-4 py-3 text-ink tabular-nums">
+										{formatOrderMoneyRange(
+											formatOrderMoney,
+											row.priceMin,
+											row.priceMax,
+										)}
+									</td>
+									<td className="px-4 py-3">
+										{resale ? (
+											<ResaleStockCell row={row} />
+										) : (
+											<CatalogueStockCell row={row} />
+										)}
+									</td>
+									<td className="px-4 py-3">
+										<div className="flex flex-wrap items-center gap-2">
+											<StatusChip kind={row.status} />
+											<ListingNote row={row} />
+										</div>
+									</td>
+									<td className="px-2 py-3">
+										<RowMenu
+											row={row}
+											canArchive={canArchive}
+											onSetStatus={onSetStatus}
+										/>
+									</td>
+								</tr>
+							);
+						})}
+					</tbody>
+				</table>
+			</div>
+		</>
 	);
 }

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { activeNavKey, SELLER_NAV, visibleSellerNav } from "./seller-nav";
+import {
+	activeNavKey,
+	groupSellerNav,
+	SELLER_NAV,
+	visibleSellerNav,
+} from "./seller-nav";
 
 const keys = (entries: { key: string }[]) => entries.map((entry) => entry.key);
 
@@ -122,5 +127,24 @@ describe("the settings entry", () => {
 		expect(SELLER_NAV.some((e) => e.href.startsWith("/shop/manage"))).toBe(
 			false,
 		);
+	});
+});
+
+describe("groupSellerNav", () => {
+	it("groups the entries under the dashboard, in order, without empty groups", () => {
+		const grouped = groupSellerNav(
+			SELLER_NAV.filter((entry) =>
+				["dashboard", "orders", "inbox", "settings"].includes(entry.key),
+			),
+		);
+		expect(grouped.map((section) => section.group)).toEqual([
+			"main",
+			"sales",
+			"shop",
+		]);
+		expect(grouped[1]?.entries.map((entry) => entry.key)).toEqual([
+			"orders",
+			"inbox",
+		]);
 	});
 });

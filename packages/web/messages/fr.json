@@ -201,7 +201,11 @@
 	},
 	"SellerShell": {
 		"toProcess": "{count, plural, one {# commande à traiter} other {# commandes à traiter}}",
-		"level": "Niv. {level}"
+		"level": "Niv. {level}",
+		"group_sales": "Ventes",
+		"group_catalogue": "Catalogue",
+		"group_shop": "Boutique",
+		"help": "Aide"
 	},
 	"ShopSettingsPreview": {
 		"title": "Aperçu de la page publique",

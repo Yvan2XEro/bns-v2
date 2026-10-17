@@ -201,7 +201,11 @@
 	},
 	"SellerShell": {
 		"toProcess": "{count, plural, one {# order to process} other {# orders to process}}",
-		"level": "Lvl {level}"
+		"level": "Lvl {level}",
+		"group_sales": "Sales",
+		"group_catalogue": "Catalogue",
+		"group_shop": "Shop",
+		"help": "Help"
 	},
 	"ShopSettingsPreview": {
 		"title": "Public page preview",

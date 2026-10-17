@@ -3,6 +3,18 @@ import type { ShopPermission } from "./shop-roles";
 import { can } from "./shop-roles";
 
 /**
+ * Thirteen flat entries are hard to scan: they are shown in three groups —
+ * what was sold, what is sold, and the shop itself — under the dashboard.
+ */
+export const SELLER_NAV_GROUPS = [
+	"main",
+	"sales",
+	"catalogue",
+	"shop",
+] as const;
+export type SellerNavGroup = (typeof SELLER_NAV_GROUPS)[number];
+
+/**
  * The seller sidebar's entries, in canvas order. `permission: null` means
  * every member sees the entry; anything else is gated with `can`, so staff
  * never see a link to a screen the server would refuse them. `orders`
@@ -14,6 +26,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller",
 		key: "dashboard",
+		group: "main",
 		exact: true,
 		permission: null,
 		orders: false,
@@ -21,6 +34,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/orders",
 		key: "orders",
+		group: "sales",
 		exact: false,
 		permission: "orders.view",
 		orders: true,
@@ -28,6 +42,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/returns",
 		key: "returns",
+		group: "sales",
 		exact: false,
 		permission: "orders.view",
 		orders: false,
@@ -35,6 +50,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/disputes",
 		key: "disputes",
+		group: "sales",
 		exact: false,
 		permission: "orders.view",
 		orders: true,
@@ -42,6 +58,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/catalogue",
 		key: "catalogue",
+		group: "catalogue",
 		exact: false,
 		permission: "catalogue.edit",
 		orders: false,
@@ -49,6 +66,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/stock",
 		key: "stock",
+		group: "catalogue",
 		exact: false,
 		permission: "stock.move",
 		orders: false,
@@ -56,6 +74,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/resale",
 		key: "resale",
+		group: "catalogue",
 		exact: false,
 		permission: "resale.manage",
 		orders: true,
@@ -64,6 +83,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/messages",
 		key: "inbox",
+		group: "sales",
 		exact: false,
 		permission: "inbox.reply",
 		orders: false,
@@ -71,6 +91,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/delivery",
 		key: "delivery",
+		group: "shop",
 		exact: false,
 		permission: "settings.edit",
 		orders: true,
@@ -79,6 +100,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/payments",
 		key: "payments",
+		group: "shop",
 		exact: false,
 		permission: "payments.view",
 		orders: false,
@@ -89,6 +111,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/team",
 		key: "team",
+		group: "shop",
 		exact: false,
 		permission: "team.view",
 		orders: false,
@@ -96,6 +119,7 @@ export const SELLER_NAV = [
 	{
 		href: "/seller/verification",
 		key: "verification",
+		group: "shop",
 		exact: false,
 		permission: "verification.submit",
 		orders: false,
@@ -104,6 +128,7 @@ export const SELLER_NAV = [
 		// Decision 2: shop settings live in the workspace; /shop/manage 308s here.
 		href: "/seller/settings",
 		key: "settings",
+		group: "shop",
 		exact: false,
 		permission: "settings.edit",
 		orders: false,
@@ -111,6 +136,7 @@ export const SELLER_NAV = [
 ] as const satisfies ReadonlyArray<{
 	href: string;
 	key: string;
+	group: SellerNavGroup;
 	exact: boolean;
 	permission: ShopPermission | null;
 	orders: boolean;
@@ -169,4 +195,14 @@ export function activeNavKey(pathname: string): SellerNavKey | null {
 	return pathname === "/seller" || pathname.startsWith("/seller/")
 		? "dashboard"
 		: null;
+}
+
+/** The visible entries by group, in group order; empty groups are left out. */
+export function groupSellerNav(
+	entries: SellerNavEntry[],
+): { group: SellerNavGroup; entries: SellerNavEntry[] }[] {
+	return SELLER_NAV_GROUPS.map((group) => ({
+		group,
+		entries: entries.filter((entry) => entry.group === group),
+	})).filter((section) => section.entries.length > 0);
 }
