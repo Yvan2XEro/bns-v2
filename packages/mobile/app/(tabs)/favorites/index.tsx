@@ -28,6 +28,7 @@ import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
+import { useTranslation } from "@/src/lib/i18n";
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<any[]>);
 
@@ -35,16 +36,25 @@ const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<any[]>);
 const EXPANDED_ROW_H = 60;
 
 const SORTS = [
-	{ key: "recent", label: "Récents", icon: "time-outline" },
-	{ key: "price_asc", label: "Prix ↑", icon: "arrow-up-outline" },
-	{ key: "price_desc", label: "Prix ↓", icon: "arrow-down-outline" },
-	{ key: "az", label: "A-Z", icon: "text-outline" },
+	{ key: "recent", labelKey: "favorites.sortRecent", icon: "time-outline" },
+	{
+		key: "price_asc",
+		labelKey: "favorites.sortPriceAsc",
+		icon: "arrow-up-outline",
+	},
+	{
+		key: "price_desc",
+		labelKey: "favorites.sortPriceDesc",
+		icon: "arrow-down-outline",
+	},
+	{ key: "az", labelKey: "favorites.sortAZ", icon: "text-outline" },
 ] as const;
 
 type SortKey = (typeof SORTS)[number]["key"];
 
 export default function FavoritesScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const pathname = usePathname();
 	const { columns, cardWidth } = useResponsive();
@@ -153,14 +163,16 @@ export default function FavoritesScreen() {
 					<View style={[styles.heartIconWrap, { backgroundColor: "#fee2e2" }]}>
 						<Ionicons name="heart" size={22} color="#ef4444" />
 					</View>
-					<Text style={[styles.pageTitle, { color: textColor }]}>Favoris</Text>
+					<Text style={[styles.pageTitle, { color: textColor }]}>
+						{t("favorites.title")}
+					</Text>
 				</View>
 				<View style={[styles.contentWrap, { backgroundColor: bg }]}>
 					<EmptyState
 						icon="heart-outline"
-						title="Connectez-vous"
-						subtitle="Créez un compte pour sauvegarder vos annonces favorites"
-						ctaLabel="Se connecter"
+						title={t("favorites.signIn")}
+						subtitle={t("favorites.signInSub")}
+						ctaLabel={t("auth.login")}
 						onCta={() =>
 							router.push({
 								pathname: "/auth/login",
@@ -194,8 +206,8 @@ export default function FavoritesScreen() {
 						{favorites.length > 0 && (
 							<Text style={[styles.expandedCount, { color: mutedColor }]}>
 								{filtered.length !== favorites.length
-									? `${filtered.length} / ${favorites.length} annonce${favorites.length > 1 ? "s" : ""}`
-									: `${favorites.length} annonce${favorites.length > 1 ? "s" : ""} sauvegardée${favorites.length > 1 ? "s" : ""}`}
+									? `${filtered.length} / ${t("favorites.listingCount", { count: favorites.length })}`
+									: t("favorites.listingsSaved", { count: favorites.length })}
 							</Text>
 						)}
 					</View>
@@ -268,7 +280,7 @@ export default function FavoritesScreen() {
 						<TextInput
 							value={query}
 							onChangeText={setQuery}
-							placeholder="Rechercher dans mes favoris…"
+							placeholder={t("favorites.searchPlaceholder")}
 							placeholderTextColor={mutedColor}
 							style={[styles.searchInput, { color: textColor }]}
 						/>
@@ -318,7 +330,7 @@ export default function FavoritesScreen() {
 											{ color: active ? "#fff" : mutedColor },
 										]}
 									>
-										{s.label}
+										{t(s.labelKey)}
 									</Text>
 								</Pressable>
 							);
@@ -336,9 +348,9 @@ export default function FavoritesScreen() {
 				) : favorites.length === 0 ? (
 					<EmptyState
 						icon="heart-outline"
-						title="Aucun favori"
-						subtitle="Ajoutez des annonces à vos favoris pour les retrouver facilement"
-						ctaLabel="Parcourir"
+						title={t("favorites.noFavorites")}
+						subtitle={t("favorites.noFavoritesSub")}
+						ctaLabel={t("favorites.browse")}
 						onCta={() => router.push("/(tabs)/home")}
 					/>
 				) : filtered.length === 0 ? (
@@ -350,17 +362,17 @@ export default function FavoritesScreen() {
 							style={{ marginBottom: 12 }}
 						/>
 						<Text style={[styles.noResultTitle, { color: textColor }]}>
-							Aucun résultat
+							{t("favorites.noResults")}
 						</Text>
 						<Text style={[styles.noResultSub, { color: mutedColor }]}>
-							Aucun favori ne correspond à « {query} »
+							{t("favorites.noResultsFor", { query })}
 						</Text>
 						<Pressable
 							onPress={() => setQuery("")}
 							style={[styles.clearBtn, { borderColor: primaryColor }]}
 						>
 							<Text style={[styles.clearBtnText, { color: primaryColor }]}>
-								Effacer
+								{t("favorites.clear")}
 							</Text>
 						</Pressable>
 					</View>
@@ -381,7 +393,7 @@ export default function FavoritesScreen() {
 								))}
 							</View>
 						)}
-						keyExtractor={(_: any, i: number) => String(i)}
+						keyExtractor={(row: any[]) => row.map((fav) => fav.id).join("|")}
 						contentContainerStyle={styles.list}
 						onScroll={scrollHandler}
 						scrollEventThrottle={16}

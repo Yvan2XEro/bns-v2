@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	FlatList,
 	KeyboardAvoidingView,
 	Modal,
 	Platform,
@@ -549,10 +549,12 @@ export default function SearchScreen() {
 						}}
 					/>
 				) : (
-					<FlatList
+					// Recycled rows keyed by their listings, so a page appended at
+					// the end never re-renders the ones above it.
+					<FlashList
 						data={pairs}
 						renderItem={renderRow}
-						keyExtractor={(_, i) => String(i)}
+						keyExtractor={(row) => row.map((listing) => listing.id).join("|")}
 						contentContainerStyle={styles.list}
 						refreshControl={
 							<RefreshControl
