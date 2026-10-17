@@ -5590,19 +5590,12 @@
 			"emptyTitle": "No item selected",
 			"emptyBody": "Pick an item in the list to see its summary here.",
 			"notFoundTitle": "Item not in the list",
-			"notFoundBody": "It has already been handled, or it is further down the queue."
+			"notFoundBody": "It has already been handled, or it is further down the queue.",
+			"loading": "Loading"
 		},
 		"placeholder": {
 			"body": "This view arrives with the next release. Until then, its items are reachable from the queue.",
 			"toQueue": "Go to the queue",
-			"reports": {
-				"title": "Reports",
-				"subtitle": "Reports and listings awaiting review."
-			},
-			"risk": {
-				"title": "Risk",
-				"subtitle": "Open risk flags, by severity."
-			},
 			"shops": {
 				"title": "Shops",
 				"subtitle": "Find a shop, its reports and its strikes."
@@ -5614,6 +5607,226 @@
 			"log": {
 				"title": "Moderation log",
 				"subtitle": "Every decision and document view, newest first."
+			}
+		},
+		"decision": {
+			"title": "Decision",
+			"optional": "(optional)",
+			"cancel": "Cancel",
+			"sending": "Sending…",
+			"apply": "Apply",
+			"confirm": "Confirm",
+			"failed": "The decision could not be recorded.",
+			"logged": "Recorded in the moderation log."
+		},
+		"reports": {
+			"title": "Reports",
+			"subtitle": "{reports, plural, =0 {No report waiting} one {# report waiting} other {# reports waiting}} · {listings, plural, =0 {no listing to review} one {# listing to review} other {# listings to review}}",
+			"subtitleLoading": "Reports and listings awaiting review.",
+			"sectionsLabel": "Reports or listings",
+			"tabReports": "Reports",
+			"tabListings": "Pending listings",
+			"filtersLabel": "Filter the reports",
+			"reasonFilter": "Reason",
+			"targetFilter": "Reported item",
+			"anyReason": "Any reason",
+			"anyTarget": "Any item",
+			"loading": "Loading the reports",
+			"loadError": "The reports could not be loaded.",
+			"empty": "No report is waiting for a decision.",
+			"emptyFiltered": "No report matches these filters.",
+			"status": {
+				"pending": "Pending",
+				"resolved": "Resolved",
+				"reviewed": "Dismissed"
+			},
+			"col": {
+				"reason": "Reason",
+				"target": "Reported",
+				"reporter": "Reporter",
+				"received": "Received",
+				"status": "Status"
+			},
+			"reportedBy": "Reported by {name}",
+			"description": "What the reporter wrote",
+			"noDescription": "The reporter added no description.",
+			"target": "Reported {type}",
+			"targetGone": "This item could not be loaded: it may have been deleted.",
+			"targetNoPage": "There is no page to open for this kind of item on the web yet.",
+			"openPublic": "Open the public page",
+			"reviewListing": "Review this listing",
+			"email": "Email",
+			"standing": "Standing",
+			"suspended": "Suspended",
+			"active": "Active",
+			"closed": "Closed",
+			"reportsAgainst": "Reports against",
+			"openShop": "Open the shop sheet",
+			"others": "{count, plural, =0 {Other reports on this item} one {# other report on this item} other {# other reports on this item}}",
+			"noOthers": "No other report on this item.",
+			"resolution": "Resolution",
+			"listingStatus": {
+				"draft": "Draft",
+				"pending": "Awaiting review",
+				"published": "Published",
+				"rejected": "Rejected",
+				"sold": "Sold",
+				"expired": "Expired",
+				"deleted": "Deleted"
+			},
+			"decision": {
+				"resolved": "Resolve",
+				"resolvedBody": "The report was founded and has been acted on (listing removed, account or shop sanctioned).",
+				"dismissed": "Dismiss",
+				"dismissedBody": "Nothing breaks the rules; the report is closed without action.",
+				"note": "Resolution note",
+				"notePlaceholder": "What was found and what was done.",
+				"noteRequired": "Write what was done before resolving.",
+				"confirmResolved": "Resolve this report?",
+				"confirmDismissed": "Dismiss this report?"
+			}
+		},
+		"listings": {
+			"loading": "Loading the listings",
+			"loadError": "The listings could not be loaded.",
+			"empty": "No listing is waiting for review.",
+			"col": {
+				"listing": "Listing",
+				"shop": "Shop",
+				"price": "Price",
+				"submitted": "Submitted"
+			},
+			"photos": "{count, plural, one {# photo} other {# photos}}",
+			"photoAlt": "Photo of {title}",
+			"noPhotos": "No photo",
+			"category": "Category",
+			"shop": "Shop",
+			"seller": "Seller",
+			"submitted": "Submitted",
+			"description": "Description",
+			"notPending": "This listing is no longer awaiting review ({status}).",
+			"decision": {
+				"approve": "Approve",
+				"approveBody": "The listing is published as it stands.",
+				"reject": "Reject",
+				"rejectBody": "The listing is not published; the seller sees the reason and can correct it.",
+				"reason": "Reason shown to the seller",
+				"reasonPlaceholder": "What the seller must change.",
+				"reasonRequired": "Give the seller a reason before rejecting.",
+				"note": "Internal note",
+				"confirmApprove": "Publish this listing?",
+				"confirmReject": "Reject this listing?"
+			}
+		},
+		"risk": {
+			"title": "Risk",
+			"subtitle": "{open, plural, =0 {No open signal} one {# open signal} other {# open signals}} · scores recalculated on every sensitive event",
+			"subtitleLoading": "Open risk signals, by severity.",
+			"tabsLabel": "Filter the risk signals",
+			"tab": {
+				"open": "Open",
+				"shop": "Shops",
+				"user": "Accounts",
+				"phone": "Phones",
+				"device": "Devices",
+				"reviewed": "Watched",
+				"dismissed": "Dismissed"
+			},
+			"loading": "Loading the risk signals",
+			"loadError": "The risk signals could not be loaded.",
+			"empty": "No open signal here.",
+			"emptyDecided": "No signal here.",
+			"col": {
+				"subject": "Subject",
+				"signal": "Signal",
+				"score": "Score",
+				"detected": "Detected",
+				"status": "Status"
+			},
+			"occurrences": "{count, plural, one {# occurrence} other {# occurrences}}",
+			"status": {
+				"new": "New",
+				"mine": "Mine",
+				"inReview": "In review",
+				"monitored": "Watched",
+				"dismissed": "Dismissed",
+				"actioned": "Actioned"
+			},
+			"kpi": {
+				"highScore": "Score {threshold} and over",
+				"highScoreNote": "among {open, plural, one {# open signal} other {# open signals}}",
+				"payoutHeld": "Payouts held",
+				"payoutHeldNote": "open signals with an automatic payout hold",
+				"falsePositives": "False positives, 30 days",
+				"falsePositivesNote": "{dismissed, plural, one {# signal dismissed} other {# signals dismissed}} out of {decided} decided"
+			},
+			"autoEffect": {
+				"payout_hold": "Payouts held",
+				"commission_hold": "Commission held",
+				"limit_applied": "Limit applied"
+			},
+			"resolution": {
+				"none": "None",
+				"warned": "Warned",
+				"limited": "Limited",
+				"user_suspended": "Account suspended",
+				"shop_suspended": "Shop suspended",
+				"payouts_held": "Payouts held",
+				"resale_link_suspended": "Resale link suspended",
+				"order_cancelled": "Order cancelled",
+				"false_positive": "False positive"
+			},
+			"reference": "Signal {id}",
+			"firstSeen": "First detected",
+			"lastSeen": "Last detected",
+			"autoEffects": "Automatic effects",
+			"anotherModerator": "Another moderator",
+			"decidedAt": "Decided",
+			"resolutionLabel": "Resolution",
+			"subject": "Subject · {type}",
+			"evidence": "Evidence",
+			"noEvidence": "No evidence can be shown for this signal.",
+			"value": {
+				"yes": "Yes",
+				"no": "No",
+				"none": "—"
+			},
+			"related": "Related signals",
+			"history": "Moderation history",
+			"accountAge": "Account age",
+			"days": "{count, plural, one {# day} other {# days}}",
+			"level": "Level",
+			"noShop": "No shop on this account.",
+			"cancellationRate": "Seller cancellations, 30 days",
+			"openDisputes": "Open disputes",
+			"linkedShop": "Shop …{id}",
+			"linkedAccounts": "{count, plural, one {# linked account} other {# linked accounts}}",
+			"noLinks": "No account or shop linked yet.",
+			"decision": {
+				"dismiss": "Dismiss",
+				"dismissBody": "False positive; the reason helps tune the rule.",
+				"monitor": "Watch for 30 days",
+				"monitorBody": "Leaves the open list; it can still be dismissed or sanctioned for 30 days.",
+				"suspend_shop": "Suspend the shop",
+				"suspend_shopBody": "Listings taken down, orders blocked, payouts held.",
+				"hold_payouts": "Hold the payouts",
+				"hold_payoutsBody": "The shop keeps selling; its payouts wait until the hold ends.",
+				"suspend_user": "Suspend the account",
+				"suspend_userBody": "The account can no longer sign in to sell or buy; its listings are taken down.",
+				"releasesHold": "The automatic payout hold is released.",
+				"duration": "Duration",
+				"untilLifted": "Until lifted",
+				"note": "Reason",
+				"notePlaceholder": "What the evidence shows and why this decision.",
+				"noteRequired": "Write the reason for this decision.",
+				"confirm": {
+					"dismiss": "Dismiss this signal as a false positive?",
+					"monitor": "Watch this signal for 30 days?",
+					"suspend_shop": "Suspend this shop?",
+					"hold_payouts": "Hold this shop's payouts?",
+					"suspend_user": "Suspend this account?"
+				},
+				"sanctionFootnote": "Recorded in the moderation log with the sanction it applies."
 			}
 		}
 	}

@@ -282,7 +282,7 @@ export function workspaceHref(item: QueueSelection): string | null {
 
 /**
  * Where a panel item is decided. Reports and listings land in the reports
- * section and risk flags in the risk section (Lot 3 builds those panels); a
+ * section and risk flags in the risk section; a
  * payout account is reviewed from its shop's sheet (Lot 4).
  */
 export function handledHref(

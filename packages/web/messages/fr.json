@@ -5590,19 +5590,12 @@
 			"emptyTitle": "Aucun élément sélectionné",
 			"emptyBody": "Choisissez un élément dans la liste pour en voir le résumé ici.",
 			"notFoundTitle": "Élément absent de la liste",
-			"notFoundBody": "Il a déjà été traité, ou il se trouve plus loin dans la file."
+			"notFoundBody": "Il a déjà été traité, ou il se trouve plus loin dans la file.",
+			"loading": "Chargement"
 		},
 		"placeholder": {
 			"body": "Cette vue arrive avec la prochaine livraison. En attendant, ses éléments sont accessibles depuis la file d'attente.",
 			"toQueue": "Aller à la file d'attente",
-			"reports": {
-				"title": "Signalements",
-				"subtitle": "Signalements et annonces à examiner."
-			},
-			"risk": {
-				"title": "Risques",
-				"subtitle": "Alertes de risque ouvertes, par gravité."
-			},
 			"shops": {
 				"title": "Boutiques",
 				"subtitle": "Retrouver une boutique, ses signalements et ses avertissements."
@@ -5614,6 +5607,226 @@
 			"log": {
 				"title": "Journal de modération",
 				"subtitle": "Chaque décision et chaque consultation, de la plus récente à la plus ancienne."
+			}
+		},
+		"decision": {
+			"title": "Décision",
+			"optional": "(facultatif)",
+			"cancel": "Annuler",
+			"sending": "Envoi…",
+			"apply": "Appliquer",
+			"confirm": "Confirmer",
+			"failed": "La décision n'a pas pu être enregistrée.",
+			"logged": "Inscrit au journal de modération."
+		},
+		"reports": {
+			"title": "Signalements",
+			"subtitle": "{reports, plural, =0 {Aucun signalement en attente} one {# signalement en attente} other {# signalements en attente}} · {listings, plural, =0 {aucune annonce à examiner} one {# annonce à examiner} other {# annonces à examiner}}",
+			"subtitleLoading": "Signalements et annonces en attente d'examen.",
+			"sectionsLabel": "Signalements ou annonces",
+			"tabReports": "Signalements",
+			"tabListings": "Annonces en attente",
+			"filtersLabel": "Filtrer les signalements",
+			"reasonFilter": "Motif",
+			"targetFilter": "Élément signalé",
+			"anyReason": "Tous les motifs",
+			"anyTarget": "Tous les éléments",
+			"loading": "Chargement des signalements",
+			"loadError": "Les signalements n'ont pas pu être chargés.",
+			"empty": "Aucun signalement n'attend de décision.",
+			"emptyFiltered": "Aucun signalement ne correspond à ces filtres.",
+			"status": {
+				"pending": "En attente",
+				"resolved": "Traités",
+				"reviewed": "Écartés"
+			},
+			"col": {
+				"reason": "Motif",
+				"target": "Signalé",
+				"reporter": "Auteur",
+				"received": "Reçu",
+				"status": "Statut"
+			},
+			"reportedBy": "Signalé par {name}",
+			"description": "Ce qu'a écrit l'auteur",
+			"noDescription": "L'auteur n'a ajouté aucune description.",
+			"target": "Élément signalé · {type}",
+			"targetGone": "Cet élément n'a pas pu être chargé : il a peut-être été supprimé.",
+			"targetNoPage": "Aucune page ne permet encore d'ouvrir ce type d'élément sur le web.",
+			"openPublic": "Ouvrir la page publique",
+			"reviewListing": "Examiner cette annonce",
+			"email": "E-mail",
+			"standing": "Situation",
+			"suspended": "Suspendu",
+			"active": "Actif",
+			"closed": "Fermée",
+			"reportsAgainst": "Signalements reçus",
+			"openShop": "Ouvrir la fiche boutique",
+			"others": "{count, plural, =0 {Autres signalements sur cet élément} one {# autre signalement sur cet élément} other {# autres signalements sur cet élément}}",
+			"noOthers": "Aucun autre signalement sur cet élément.",
+			"resolution": "Résolution",
+			"listingStatus": {
+				"draft": "Brouillon",
+				"pending": "En attente d'examen",
+				"published": "Publiée",
+				"rejected": "Refusée",
+				"sold": "Vendue",
+				"expired": "Expirée",
+				"deleted": "Supprimée"
+			},
+			"decision": {
+				"resolved": "Traiter",
+				"resolvedBody": "Le signalement était fondé et une mesure a été prise (annonce retirée, compte ou boutique sanctionné).",
+				"dismissed": "Écarter",
+				"dismissedBody": "Rien n'enfreint les règles ; le signalement est clos sans mesure.",
+				"note": "Note de résolution",
+				"notePlaceholder": "Ce qui a été constaté et ce qui a été fait.",
+				"noteRequired": "Indiquez ce qui a été fait avant de traiter.",
+				"confirmResolved": "Traiter ce signalement ?",
+				"confirmDismissed": "Écarter ce signalement ?"
+			}
+		},
+		"listings": {
+			"loading": "Chargement des annonces",
+			"loadError": "Les annonces n'ont pas pu être chargées.",
+			"empty": "Aucune annonce n'attend d'examen.",
+			"col": {
+				"listing": "Annonce",
+				"shop": "Boutique",
+				"price": "Prix",
+				"submitted": "Soumise"
+			},
+			"photos": "{count, plural, one {# photo} other {# photos}}",
+			"photoAlt": "Photo de {title}",
+			"noPhotos": "Aucune photo",
+			"category": "Catégorie",
+			"shop": "Boutique",
+			"seller": "Vendeur",
+			"submitted": "Soumise",
+			"description": "Description",
+			"notPending": "Cette annonce n'attend plus d'examen ({status}).",
+			"decision": {
+				"approve": "Approuver",
+				"approveBody": "L'annonce est publiée telle quelle.",
+				"reject": "Refuser",
+				"rejectBody": "L'annonce n'est pas publiée ; le vendeur voit le motif et peut la corriger.",
+				"reason": "Motif communiqué au vendeur",
+				"reasonPlaceholder": "Ce que le vendeur doit modifier.",
+				"reasonRequired": "Indiquez un motif au vendeur avant de refuser.",
+				"note": "Note interne",
+				"confirmApprove": "Publier cette annonce ?",
+				"confirmReject": "Refuser cette annonce ?"
+			}
+		},
+		"risk": {
+			"title": "Risques",
+			"subtitle": "{open, plural, =0 {Aucun signal ouvert} one {# signal ouvert} other {# signaux ouverts}} · scores recalculés à chaque événement sensible",
+			"subtitleLoading": "Signaux de risque ouverts, par gravité.",
+			"tabsLabel": "Filtrer les signaux de risque",
+			"tab": {
+				"open": "Ouverts",
+				"shop": "Boutiques",
+				"user": "Comptes",
+				"phone": "Téléphones",
+				"device": "Appareils",
+				"reviewed": "Surveillés",
+				"dismissed": "Écartés"
+			},
+			"loading": "Chargement des signaux de risque",
+			"loadError": "Les signaux de risque n'ont pas pu être chargés.",
+			"empty": "Aucun signal ouvert ici.",
+			"emptyDecided": "Aucun signal ici.",
+			"col": {
+				"subject": "Sujet",
+				"signal": "Signal",
+				"score": "Score",
+				"detected": "Détecté",
+				"status": "Statut"
+			},
+			"occurrences": "{count, plural, one {# occurrence} other {# occurrences}}",
+			"status": {
+				"new": "Nouveau",
+				"mine": "À moi",
+				"inReview": "En revue",
+				"monitored": "Surveillé",
+				"dismissed": "Écarté",
+				"actioned": "Sanctionné"
+			},
+			"kpi": {
+				"highScore": "Score {threshold} et plus",
+				"highScoreNote": "sur {open, plural, one {# signal ouvert} other {# signaux ouverts}}",
+				"payoutHeld": "Versements gelés",
+				"payoutHeldNote": "signaux ouverts avec gel automatique des versements",
+				"falsePositives": "Faux positifs sur 30 jours",
+				"falsePositivesNote": "{dismissed, plural, one {# signal écarté} other {# signaux écartés}} sur {decided} décidés"
+			},
+			"autoEffect": {
+				"payout_hold": "Versements gelés",
+				"commission_hold": "Commission retenue",
+				"limit_applied": "Plafond appliqué"
+			},
+			"resolution": {
+				"none": "Aucune",
+				"warned": "Averti",
+				"limited": "Limité",
+				"user_suspended": "Compte suspendu",
+				"shop_suspended": "Boutique suspendue",
+				"payouts_held": "Versements gelés",
+				"resale_link_suspended": "Lien de revente suspendu",
+				"order_cancelled": "Commande annulée",
+				"false_positive": "Faux positif"
+			},
+			"reference": "Signal {id}",
+			"firstSeen": "Première détection",
+			"lastSeen": "Dernière détection",
+			"autoEffects": "Effets automatiques",
+			"anotherModerator": "Un autre modérateur",
+			"decidedAt": "Décidé le",
+			"resolutionLabel": "Résolution",
+			"subject": "Sujet · {type}",
+			"evidence": "Éléments",
+			"noEvidence": "Aucun élément ne peut être affiché pour ce signal.",
+			"value": {
+				"yes": "Oui",
+				"no": "Non",
+				"none": "—"
+			},
+			"related": "Signaux liés",
+			"history": "Historique de modération",
+			"accountAge": "Ancienneté du compte",
+			"days": "{count, plural, one {# jour} other {# jours}}",
+			"level": "Niveau",
+			"noShop": "Aucune boutique sur ce compte.",
+			"cancellationRate": "Annulations vendeur, 30 jours",
+			"openDisputes": "Litiges ouverts",
+			"linkedShop": "Boutique …{id}",
+			"linkedAccounts": "{count, plural, one {# compte lié} other {# comptes liés}}",
+			"noLinks": "Aucun compte ni boutique lié pour l'instant.",
+			"decision": {
+				"dismiss": "Écarter",
+				"dismissBody": "Faux positif ; le motif sert à ajuster la règle.",
+				"monitor": "Surveiller 30 jours",
+				"monitorBody": "Sort de la liste des ouverts ; peut encore être écarté ou sanctionné pendant 30 jours.",
+				"suspend_shop": "Suspendre la boutique",
+				"suspend_shopBody": "Annonces retirées, commandes bloquées, versements gelés.",
+				"hold_payouts": "Geler les versements",
+				"hold_payoutsBody": "La boutique continue de vendre ; ses versements attendent la fin du gel.",
+				"suspend_user": "Suspendre le compte",
+				"suspend_userBody": "Le compte ne peut plus vendre ni acheter ; ses annonces sont retirées.",
+				"releasesHold": "Le gel automatique des versements est levé.",
+				"duration": "Durée",
+				"untilLifted": "Jusqu'à levée",
+				"note": "Motif",
+				"notePlaceholder": "Ce que montrent les éléments et pourquoi cette décision.",
+				"noteRequired": "Indiquez le motif de cette décision.",
+				"confirm": {
+					"dismiss": "Écarter ce signal comme faux positif ?",
+					"monitor": "Surveiller ce signal pendant 30 jours ?",
+					"suspend_shop": "Suspendre cette boutique ?",
+					"hold_payouts": "Geler les versements de cette boutique ?",
+					"suspend_user": "Suspendre ce compte ?"
+				},
+				"sanctionFootnote": "Inscrit au journal de modération avec la sanction appliquée."
 			}
 		}
 	}

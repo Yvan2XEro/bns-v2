@@ -56,7 +56,7 @@ export function useModerationQueue(filters: QueueFilters) {
 	});
 }
 
-function useInvalidateModeration() {
+export function useInvalidateModeration() {
 	const client = useQueryClient();
 	return () =>
 		Promise.all([

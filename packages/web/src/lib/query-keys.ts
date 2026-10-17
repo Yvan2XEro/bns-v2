@@ -64,6 +64,19 @@ export const moderationConsoleKeys = {
 	summary: ["moderation", "console", "summary"] as const,
 	queue: (filters: { type?: string; mine?: boolean }) =>
 		["moderation", "console", "queue", filters] as const,
+	reports: (filters: { status: string; reason?: string; target?: string }) =>
+		["moderation", "console", "reports", filters] as const,
+	report: (id: string) => ["moderation", "console", "report", id] as const,
+	targetReports: (type: string, id: string) =>
+		["moderation", "console", "target-reports", type, id] as const,
+	reportTarget: (type: string, id: string) =>
+		["moderation", "console", "report-target", type, id] as const,
+	listings: ["moderation", "console", "listings"] as const,
+	listing: (id: string) => ["moderation", "console", "listing", id] as const,
+	riskFlags: (tab: string) =>
+		["moderation", "console", "risk-flags", tab] as const,
+	riskFlag: (id: string) => ["moderation", "console", "risk-flag", id] as const,
+	riskStats: ["moderation", "console", "risk-stats"] as const,
 };
 
 export const caseKeys = {

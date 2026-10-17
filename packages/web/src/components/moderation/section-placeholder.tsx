@@ -9,17 +9,9 @@ import {
 } from "~/components/moderation/master-detail";
 import { useUrlSelection } from "~/hooks/use-url-selection";
 
-export type PlaceholderSection = "reports" | "risk" | "shops" | "shop" | "log";
+export type PlaceholderSection = "shops" | "shop" | "log";
 
 const COPY: Record<PlaceholderSection, { title: string; subtitle: string }> = {
-	reports: {
-		title: "placeholder.reports.title",
-		subtitle: "placeholder.reports.subtitle",
-	},
-	risk: {
-		title: "placeholder.risk.title",
-		subtitle: "placeholder.risk.subtitle",
-	},
 	shops: {
 		title: "placeholder.shops.title",
 		subtitle: "placeholder.shops.subtitle",
@@ -32,7 +24,7 @@ const COPY: Record<PlaceholderSection, { title: string; subtitle: string }> = {
 };
 
 /**
- * A console section still to be built (Lots 3–4): the header and the
+ * A console section still to be built (Lot 4): the header and the
  * master-detail shell, with nothing listed yet. A shared `?item=` link
  * opens the panel and says the item is not listed here.
  */

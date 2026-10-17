@@ -27,7 +27,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 /**
  * The compact summary a panel item shows in the queue, with the way to where
- * it is decided. Lot 3 replaces it with full report/listing/risk panels.
+ * it is decided: the full report, listing and risk panels live in their sections.
  */
 export function QueueItemPanel({
 	item,
