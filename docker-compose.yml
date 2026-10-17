@@ -175,6 +175,15 @@ services:
       # Photon geocoder (komoot/photon) served to web and mobile through
       # /api/public/config — clients carry no geocoder setting of their own.
       PHOTON_URL: ${PHOTON_URL:-https://photon.overbrand.net}
+      # Sentry and PostHog: set here only; /api/public/config hands the apps
+      # their send-only keys and /api/relay/* forwards their events.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_WEB_DSN: ${SENTRY_WEB_DSN:-}
+      SENTRY_MOBILE_DSN: ${SENTRY_MOBILE_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
+      POSTHOG_PROJECT_KEY: ${POSTHOG_PROJECT_KEY:-}
+      POSTHOG_HOST: ${POSTHOG_HOST:-https://eu.i.posthog.com}
       # Storage
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
       S3_BUCKET: ${S3_BUCKET:-}
