@@ -353,6 +353,15 @@ export function sanitizePriceInput(input: string): string {
 	return input.replace(/[^0-9]/g, "");
 }
 
+/**
+ * "1500000" shown as "1 500 000" while typing, so a missing or extra zero is
+ * seen before publishing. Narrow no-break spaces keep the number on one line;
+ * the stored value stays digits only.
+ */
+export function groupPriceDigits(digits: string): string {
+	return digits.replace(/\B(?=(\d{3})+(?!\d))/g, "\u202F");
+}
+
 export function parseNumberValue(input: unknown): number | null {
 	if (typeof input === "number") {
 		return Number.isFinite(input) ? input : null;

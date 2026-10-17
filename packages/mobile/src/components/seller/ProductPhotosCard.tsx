@@ -1,21 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
-import { type Dispatch, type SetStateAction, useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import type { Dispatch, SetStateAction } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { PendingPhotoTile } from "@/src/components/PendingPhotoTile";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
-import { api } from "@/src/lib/api";
+import { usePhotoUploads } from "@/src/hooks/usePhotoUploads";
 import { useTranslation } from "@/src/lib/i18n";
-import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { photoLimitStatus } from "@/src/lib/photoLimit";
 import type { ProductFormState } from "@/src/lib/productForm";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
@@ -34,54 +27,19 @@ export function ProductPhotosCard({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const { showError, showAlert } = useAlert();
-	const [uploading, setUploading] = useState(false);
+	const { showAlert } = useAlert();
 	const { photosIncluded } = useAppConfig();
-	const photos = photoLimitStatus(form.images.length, photosIncluded);
-
-	const pick = async (fromCamera: boolean) => {
-		const permission = fromCamera
-			? await ImagePicker.requestCameraPermissionsAsync()
-			: await ImagePicker.requestMediaLibraryPermissionsAsync();
-		if (permission.status !== "granted") {
-			showError(t("create.permissionDenied"), t("create.galleryPermissionMsg"));
-			return;
-		}
-		const result = fromCamera
-			? await ImagePicker.launchCameraAsync({ quality: 0.85 })
-			: await ImagePicker.launchImageLibraryAsync({
-					mediaTypes: ["images"],
-					allowsMultipleSelection: true,
-					selectionLimit: photos.remaining,
-					quality: 0.85,
-				});
-		if (result.canceled) return;
-
-		setUploading(true);
-		try {
-			for (const asset of result.assets.slice(0, photos.remaining)) {
-				const base = `product_${Date.now()}`;
-				const data = await createMediaUploadFormData(asset, {
-					defaultBaseName: base,
-					alt: form.title || base,
-				});
-				const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
-					"/api/media",
-					data,
-				);
-				const id = uploaded?.doc?.id;
-				if (!id) throw new Error("upload_failed");
-				setForm((s) => ({
-					...s,
-					images: [...s.images, { id, uri: uploaded.doc.url ?? asset.uri }],
-				}));
-			}
-		} catch {
-			showError(t("create.uploadError"), t("create.uploadErrorMsg"));
-		} finally {
-			setUploading(false);
-		}
-	};
+	const uploads = usePhotoUploads({
+		alt: form.title,
+		onUploaded: (photo) =>
+			setForm((s) => ({ ...s, images: [...s.images, photo] })),
+	});
+	const photos = photoLimitStatus(
+		form.images.length + uploads.pending.length,
+		photosIncluded,
+	);
+	const pick = (fromCamera: boolean) =>
+		void uploads.pick(fromCamera, photos.remaining);
 
 	const addPhoto = () =>
 		showAlert(t("create.addPhotoTitle"), t("create.addPhotoSource"), [
@@ -130,9 +88,18 @@ export function ProductPhotosCard({
 						</Pressable>
 					</View>
 				))}
+				{uploads.pending.map((photo) => (
+					<PendingPhotoTile
+						key={photo.key}
+						photo={photo}
+						onRetry={() => uploads.retry(photo.key)}
+						onRemove={() => uploads.remove(photo.key)}
+						style={styles.photo}
+					/>
+				))}
 				<Pressable
 					onPress={addPhoto}
-					disabled={uploading || photos.full}
+					disabled={photos.full}
 					style={[
 						styles.photo,
 						styles.add,
@@ -141,18 +108,12 @@ export function ProductPhotosCard({
 					]}
 					accessibilityRole="button"
 					accessibilityLabel={t("product.addPhoto")}
-					accessibilityState={{ disabled: uploading || photos.full }}
+					accessibilityState={{ disabled: photos.full }}
 				>
-					{uploading ? (
-						<ActivityIndicator color={c.primary} />
-					) : (
-						<>
-							<Ionicons name="camera-outline" size={20} color={c.primary} />
-							<Text style={[f.hint, { color: c.primary }]}>
-								{t("product.addPhoto")}
-							</Text>
-						</>
-					)}
+					<Ionicons name="camera-outline" size={20} color={c.primary} />
+					<Text style={[f.hint, { color: c.primary }]}>
+						{t("product.addPhoto")}
+					</Text>
 				</Pressable>
 			</View>
 			{photos.full ? (
@@ -189,9 +150,9 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		top: 4,
 		right: 4,
-		width: 20,
-		height: 20,
-		borderRadius: 10,
+		width: 28,
+		height: 28,
+		borderRadius: 14,
 		backgroundColor: "rgba(15,23,42,0.75)",
 		alignItems: "center",
 		justifyContent: "center",

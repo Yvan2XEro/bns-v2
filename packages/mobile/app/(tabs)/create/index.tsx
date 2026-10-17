@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import { router, usePathname } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
+	Linking,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -13,6 +13,7 @@ import {
 	TextInput,
 	View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, {
 	Easing,
 	useAnimatedStyle,
@@ -25,6 +26,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { CityPicker } from "@/src/components/CityPicker";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
+import { PendingPhotoTile } from "@/src/components/PendingPhotoTile";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
 import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
@@ -37,6 +39,7 @@ import {
 	CATEGORIES_QUERY_KEY,
 	CATEGORIES_STALE_TIME_MS,
 } from "@/src/hooks/useListings";
+import { usePhotoUploads } from "@/src/hooks/usePhotoUploads";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
@@ -45,6 +48,12 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { createCategorySuggester } from "@/src/lib/categorySuggest";
 import { pruneTagIds } from "@/src/lib/categoryTags";
+import {
+	clearCreateDraft,
+	isDraftWorthKeeping,
+	loadCreateDraft,
+	saveCreateDraft,
+} from "@/src/lib/createDraft";
 import { type FieldIssue, serverFieldIssues } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -55,6 +64,7 @@ import {
 	getCategoryAttributes,
 	getListingFormPreset,
 	groupListingAttributes,
+	groupPriceDigits,
 	isProductListingCategory,
 	type ListingAttribute,
 	listingDraftIssues,
@@ -63,12 +73,13 @@ import {
 	sanitizePriceInput,
 	serializeAttributeValues,
 } from "@/src/lib/listingForm";
-import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { isSuspended } from "@/src/lib/moderation";
 import { canAddPhoto } from "@/src/lib/photoLimit";
+import { makeMain } from "@/src/lib/photoQueue";
 import type { Place } from "@/src/lib/places";
 import { useUserLocation } from "@/src/lib/useUserLocation";
 import { listingIssueStep } from "../../../../api/src/contracts/listingValidation";
+import { whatsappShareUrl } from "../../../../api/src/contracts/whatsapp";
 
 const DURATIONS = [30, 60, 90];
 
@@ -222,10 +233,12 @@ export default function CreateScreen() {
 		// that category asks, and answering them right after choosing it keeps
 		// one train of thought. Price and duration are about selling
 		// rather than about the thing, so they come after.
+		// Photos come right after the title: a seller holding the thing takes
+		// its picture first, and a listing with photos sells.
 		const list: StepId[] = ["describe"];
+		if (preset.fields.photos?.enabled !== false) list.push("photos");
 		if (hasAttributes) list.push("attributes");
 		list.push("details");
-		if (preset.fields.photos?.enabled !== false) list.push("photos");
 		list.push("review");
 		return list;
 	}, [hasAttributes, preset]);
@@ -306,6 +319,45 @@ export default function CreateScreen() {
 					},
 		);
 	}, [locationHydrated, rememberedPlace]);
+
+	// The ad lives on the phone as it is written: a killed app, a call or a
+	// flat battery no longer costs the seller what they typed.
+	const userId = user?.id ? String(user.id) : null;
+	const draftCheckedRef = useRef<string | null>(null);
+	const [published, setPublished] = useState<{
+		id: string;
+		title: string;
+	} | null>(null);
+	useEffect(() => {
+		if (!userId || draftCheckedRef.current === userId) return;
+		draftCheckedRef.current = userId;
+		void loadCreateDraft<FormData>(userId).then((saved) => {
+			if (!saved || !isDraftWorthKeeping(saved)) return;
+			showAlert(t("create.resumeTitle"), t("create.resumeMsg"), [
+				{
+					text: t("create.resumeDiscard"),
+					style: "destructive",
+					onPress: () => void clearCreateDraft(userId),
+				},
+				{
+					text: t("create.resumeConfirm"),
+					onPress: () => {
+						// A category in the draft was the seller's answer or an
+						// accepted guess: either way, the title no longer moves it.
+						categoryChosenRef.current = Boolean(saved.category);
+						setForm({ ...createEmptyForm(), ...saved });
+					},
+				},
+			]);
+		});
+	}, [userId, showAlert, t]);
+	useEffect(() => {
+		if (!userId) return;
+		const timer = setTimeout(() => {
+			if (isDraftWorthKeeping(form)) void saveCreateDraft(userId, form);
+		}, 500);
+		return () => clearTimeout(timer);
+	}, [form, userId]);
 
 	/**
 	 * Moves the form to a category, dropping whatever belonged to the previous
@@ -531,14 +583,7 @@ export default function CreateScreen() {
 	};
 
 	/** Anything the seller would be sorry to lose. */
-	const hasDraft = Boolean(
-		form.title.trim() ||
-			form.description.trim() ||
-			form.category ||
-			form.price ||
-			form.images.length > 0 ||
-			form.tags.length > 0,
-	);
+	const hasDraft = isDraftWorthKeeping(form);
 
 	const resetForm = () => {
 		const blank = createEmptyForm();
@@ -553,6 +598,7 @@ export default function CreateScreen() {
 					: null;
 		}
 		setForm(blank);
+		if (userId) void clearCreateDraft(userId);
 		categoryChosenRef.current = false;
 		dismissedTitleRef.current = null;
 		setCategoryWasGuessed(false);
@@ -570,6 +616,16 @@ export default function CreateScreen() {
 			},
 		]);
 	};
+
+	if (published) {
+		return (
+			<PublishedView
+				listing={published}
+				colors={colors}
+				onAnother={() => setPublished(null)}
+			/>
+		);
+	}
 
 	return (
 		<SafeAreaView
@@ -691,7 +747,10 @@ export default function CreateScreen() {
 							form={form}
 							attributes={categoryAttributes}
 							setStep={goToStep}
-							onPublished={resetForm}
+							onPublished={(listing: { id: string; title: string } | null) => {
+								resetForm();
+								if (listing) setPublished(listing);
+							}}
 							readyToSubmit={readyToSubmit}
 							onRefused={handleRefused}
 							serverIssues={serverIssues}
@@ -738,7 +797,8 @@ function DescribeStep({
 	);
 
 	return (
-		<ScrollView
+		<KeyboardAwareScrollView
+			bottomOffset={24}
 			style={{ flex: 1, backgroundColor: bg }}
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 			showsVerticalScrollIndicator={false}
@@ -847,7 +907,7 @@ function DescribeStep({
 				active={canProceed && !gate.blocked}
 				colors={colors}
 			/>
-		</ScrollView>
+		</KeyboardAwareScrollView>
 	);
 }
 
@@ -911,7 +971,8 @@ function DetailsStep({
 		form.location.trim();
 
 	return (
-		<ScrollView
+		<KeyboardAwareScrollView
+			bottomOffset={24}
 			style={{ flex: 1, backgroundColor: bg }}
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 			showsVerticalScrollIndicator={false}
@@ -945,9 +1006,10 @@ function DetailsStep({
 					/>
 					<View style={styles.priceRow}>
 						<TextInput
-							value={form.price}
+							value={groupPriceDigits(form.price)}
 							// Prices are whole XAF amounts: a decimal separator typed on the
-							// "numeric" keypad used to reach the server as NaN.
+							// "numeric" keypad used to reach the server as NaN. Shown grouped
+							// ("1 500 000") so a zero too many is seen; stored as digits.
 							onChangeText={(v) => update("price", sanitizePriceInput(v))}
 							placeholder={t("create.pricePlaceholder")}
 							placeholderTextColor={mutedColor}
@@ -1082,7 +1144,7 @@ function DetailsStep({
 				active={!!canProceed && !gate.blocked}
 				colors={colors}
 			/>
-		</ScrollView>
+		</KeyboardAwareScrollView>
 	);
 }
 
@@ -1114,7 +1176,8 @@ function AttributesStep({
 	const canProceed = areAttributesValid(list, form.attributes ?? {});
 
 	return (
-		<ScrollView
+		<KeyboardAwareScrollView
+			bottomOffset={24}
 			style={{ flex: 1, backgroundColor: bg }}
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 			keyboardShouldPersistTaps="handled"
@@ -1156,7 +1219,7 @@ function AttributesStep({
 				active={canProceed && !gate.blocked}
 				colors={colors}
 			/>
-		</ScrollView>
+		</KeyboardAwareScrollView>
 	);
 }
 
@@ -1358,78 +1421,17 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 	// Whether a photo is mandatory is the category's call, not this screen's.
 	const photosRequired = getListingFormPreset(form.category).fields.photos
 		.required;
-	const { showAlert, showError, showWarning } = useAlert();
-	const [uploading, setUploading] = useState(false);
-	const full = !canAddPhoto(form.images.length, photoLimit);
-
-	const pickImage = async (fromCamera: boolean) => {
-		try {
-			if (fromCamera) {
-				const { status } = await ImagePicker.requestCameraPermissionsAsync();
-				if (status !== "granted") {
-					showError(
-						t("create.permissionDenied"),
-						t("create.cameraPermissionMsg"),
-					);
-					return;
-				}
-			} else {
-				const { status } =
-					await ImagePicker.requestMediaLibraryPermissionsAsync();
-				if (status !== "granted") {
-					showError(
-						t("create.permissionDenied"),
-						t("create.galleryPermissionMsg"),
-					);
-					return;
-				}
-			}
-
-			const result = fromCamera
-				? await ImagePicker.launchCameraAsync({
-						allowsEditing: true,
-						aspect: [4, 3],
-						quality: 0.85,
-					})
-				: await ImagePicker.launchImageLibraryAsync({
-						mediaTypes: ["images"],
-						allowsEditing: true,
-						aspect: [4, 3],
-						quality: 0.85,
-					});
-
-			if (result.canceled || !result.assets?.[0]) return;
-			const asset = result.assets[0];
-
-			setUploading(true);
-			try {
-				const defaultBaseName = `photo_${Date.now()}`;
-				const formData = await createMediaUploadFormData(asset, {
-					defaultBaseName,
-					alt: asset.fileName ?? defaultBaseName,
-				});
-
-				const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
-					"/api/media",
-					formData,
-				);
-				const mediaId = uploaded?.doc?.id;
-				const mediaUri = uploaded?.doc?.url ?? asset.uri;
-
-				if (!mediaId) throw new Error("upload_failed");
-
-				setForm((f: any) => ({
-					...f,
-					images: [...f.images, { id: mediaId, uri: mediaUri }],
-				}));
-			} finally {
-				setUploading(false);
-			}
-		} catch (_err: any) {
-			setUploading(false);
-			showError(t("create.uploadError"), t("create.uploadErrorMsg"));
-		}
-	};
+	const { showAlert, showWarning } = useAlert();
+	const uploads = usePhotoUploads({
+		alt: form.title,
+		onUploaded: (photo) =>
+			setForm((f: any) => ({ ...f, images: [...f.images, photo] })),
+	});
+	const taken = form.images.length + uploads.pending.length;
+	const full = !canAddPhoto(taken, photoLimit);
+	const remaining = Math.max(0, photoLimit - taken);
+	const pickImage = (fromCamera: boolean) =>
+		void uploads.pick(fromCamera, remaining);
 
 	const showPicker = () => {
 		if (full) {
@@ -1499,20 +1501,48 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 							style={{ width: "100%", height: "100%", borderRadius: 12 }}
 							contentFit="cover"
 						/>
-						{i === 0 && (
+						{i === 0 ? (
 							<View
 								style={[styles.photoPrimaryBadge, { backgroundColor: primary }]}
 							>
 								<Text style={styles.photoPrimaryText}>{t("create.main")}</Text>
 							</View>
+						) : (
+							// The first photo is the one on every card: any other can
+							// take its place.
+							<Pressable
+								onPress={() =>
+									setForm((f: any) => ({ ...f, images: makeMain(f.images, i) }))
+								}
+								accessibilityRole="button"
+								accessibilityLabel={t("create.makeMain")}
+								style={[styles.photoMakeMainBtn]}
+							>
+								<Ionicons name="star-outline" size={14} color="#fff" />
+							</Pressable>
 						)}
 						<Pressable
 							onPress={() => removeImage(i)}
+							hitSlop={10}
+							accessibilityRole="button"
+							accessibilityLabel={t("create.removePhoto")}
 							style={styles.photoDeleteBtn}
 						>
-							<Ionicons name="close-circle" size={22} color="#ef4444" />
+							<Ionicons name="close-circle" size={26} color="#ef4444" />
 						</Pressable>
 					</View>
+				))}
+				{uploads.pending.map((photo) => (
+					<PendingPhotoTile
+						key={photo.key}
+						photo={photo}
+						onRetry={() => uploads.retry(photo.key)}
+						onRemove={() => uploads.remove(photo.key)}
+						style={[
+							styles.photoThumb,
+							{ backgroundColor: cardBg, borderColor: border },
+						]}
+					/>
 				))}
 
 				<Pressable
@@ -1525,12 +1555,12 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 						full && { opacity: 0.4 },
 					]}
 					onPress={showPicker}
-					disabled={uploading || full}
-					accessibilityState={{ disabled: uploading || full }}
+					disabled={full}
+					accessibilityRole="button"
+					accessibilityLabel={t("create.addPhoto")}
+					accessibilityState={{ disabled: full }}
 				>
-					{uploading ? (
-						<ActivityIndicator color={primary} />
-					) : (
+					{
 						<>
 							<View
 								style={[
@@ -1544,7 +1574,7 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 								{t("create.addPhoto")}
 							</Text>
 						</>
-					)}
+					}
 				</Pressable>
 			</View>
 			<PhotoLimitNote
@@ -1559,6 +1589,11 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 				</Text>
 			)}
 			<FieldIssueList issues={gate.issues} attributes={[]} />
+			{uploads.uploading && (
+				<Text style={[styles.stepSub, { color: mutedColor }]}>
+					{t("create.photosStillUploading")}
+				</Text>
+			)}
 			<NextButton
 				label={t("create.continue")}
 				onPress={gate.blocked ? gate.onBlocked : onNext}
@@ -1620,19 +1655,18 @@ function ReviewStep({
 					? { attributes: serializedAttributes }
 					: {}),
 			}),
-		onSuccess: (_data, status) => {
-			showSuccess(
-				status === "draft"
-					? t("create.draftSavedTitle")
-					: t("create.publishSuccess"),
-				status === "draft"
-					? t("create.draftSavedMsg")
-					: t("create.publishSuccessMsg"),
-			);
+		onSuccess: (data, status) => {
 			// The Create tab is never unmounted, so without this the ad that was
 			// just published is still sitting in the form the next time it opens.
-			onPublished?.();
-			router.push("/(tabs)/account");
+			if (status === "draft") {
+				showSuccess(t("create.draftSavedTitle"), t("create.draftSavedMsg"));
+				onPublished?.(null);
+				router.push("/(tabs)/account");
+				return;
+			}
+			const id = data?.doc?.id ?? data?.id;
+			onPublished?.(id ? { id: String(id), title: form.title } : null);
+			if (!id) router.push("/(tabs)/account");
 		},
 		onError: (err: any) => {
 			const refused = serverFieldIssues(err);
@@ -1840,6 +1874,91 @@ function formatPrice(
 	return `${amount.toLocaleString()} ${t("common.currency", { defaultValue: "XAF" })}`;
 }
 
+// ─── Published ─────────────────────────────────────────────────────────────────
+
+/**
+ * After sending: the ad is under review, not live, and the next useful step
+ * is right here — see it, share it on WhatsApp, or post another — instead of
+ * landing on the account screen.
+ */
+function PublishedView({
+	listing,
+	colors,
+	onAnother,
+}: {
+	listing: { id: string; title: string };
+	colors: {
+		bg: string;
+		textColor: string;
+		mutedColor: string;
+		primary: string;
+		cardBg: string;
+		border: string;
+	};
+	onAnother: () => void;
+}) {
+	const { t } = useTranslation();
+	const { webUrl } = useAppConfig();
+	const { bg, textColor, mutedColor, primary, cardBg, border } = colors;
+	const share = () => {
+		const url = `${webUrl ?? ""}/listing/${listing.id}`;
+		void Linking.openURL(whatsappShareUrl(`${listing.title} ${url}`)).catch(
+			() => undefined,
+		);
+	};
+	return (
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: bg }]}
+		>
+			<View style={styles.publishedWrap}>
+				<View
+					style={[
+						styles.lockCircle,
+						{ backgroundColor: "#dcfce7", alignSelf: "center" },
+					]}
+				>
+					<Ionicons name="checkmark" size={36} color="#15803d" />
+				</View>
+				<Text style={[styles.noUserHeading, { color: textColor }]}>
+					{t("create.publishSuccess")}
+				</Text>
+				<Text style={[styles.noUserSub, { color: mutedColor }]}>
+					{t("create.publishSuccessMsg")}
+				</Text>
+				<Pressable
+					onPress={() => router.push(`/listing/${listing.id}`)}
+					accessibilityRole="button"
+					style={[styles.loginBtn, { backgroundColor: primary }]}
+				>
+					<Text style={styles.loginBtnText}>{t("create.viewListing")}</Text>
+				</Pressable>
+				<Pressable
+					onPress={share}
+					accessibilityRole="button"
+					style={[styles.loginBtn, { backgroundColor: "#25D366" }]}
+				>
+					<Text style={[styles.loginBtnText, { color: "#0f172a" }]}>
+						{t("create.shareWhatsApp")}
+					</Text>
+				</Pressable>
+				<Pressable
+					onPress={onAnother}
+					accessibilityRole="button"
+					style={[
+						styles.loginBtn,
+						{ backgroundColor: cardBg, borderWidth: 1, borderColor: border },
+					]}
+				>
+					<Text style={[styles.loginBtnText, { color: textColor }]}>
+						{t("create.postAnother")}
+					</Text>
+				</Pressable>
+			</View>
+		</SafeAreaView>
+	);
+}
+
 // ─── Shared sub-components ─────────────────────────────────────────────────────
 
 function FieldHeader({ icon, label, required, colors }: any) {
@@ -1888,6 +2007,13 @@ function NextButton({ label, onPress, active, colors }: any) {
 // ─── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+	publishedWrap: {
+		flex: 1,
+		alignItems: "stretch",
+		justifyContent: "center",
+		padding: 24,
+		gap: 12,
+	},
 	safe: { flex: 1 },
 
 	/* ── No-user ── */
@@ -2248,6 +2374,17 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontSize: 9,
 		fontFamily: Fonts.displayBold,
+	},
+	photoMakeMainBtn: {
+		position: "absolute",
+		bottom: 6,
+		left: 6,
+		width: 30,
+		height: 30,
+		borderRadius: 15,
+		backgroundColor: "rgba(15,23,42,0.65)",
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	photoDeleteBtn: {
 		position: "absolute",

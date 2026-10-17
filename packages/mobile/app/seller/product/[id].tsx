@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { usePreventRemove } from "@react-navigation/native";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import {
 	type Dispatch,
 	type SetStateAction,
@@ -45,7 +46,7 @@ export default function ProductScreen() {
 	const creating = id === "new";
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const { showError, showSuccess } = useAlert();
+	const { showError, showSuccess, showAlert } = useAlert();
 	const mine = useMyShop();
 	const shop = mine.data?.shop;
 	const detail = useProductDetail(creating ? undefined : id);
@@ -61,6 +62,30 @@ export default function ProductScreen() {
 	const [showErrors, setShowErrors] = useState(false);
 	const [serverIssues, setServerIssues] = useState<FieldIssue[]>([]);
 	const readOnly = shop?.status !== "active";
+
+	// A new product half written is not dropped by a tap on the close button
+	// or a back gesture: leaving asks first. Saving clears the guard.
+	const navigation = useNavigation();
+	// Set once the new product is saved: the guard is off on the next render,
+	// and only then does the screen move to the saved product.
+	const [savedId, setSavedId] = useState<string | null>(null);
+	useEffect(() => {
+		if (savedId) router.replace(`/seller/product/${savedId}` as never);
+	}, [savedId]);
+	const dirty =
+		creating &&
+		!savedId &&
+		JSON.stringify(form) !== JSON.stringify(emptyProductForm());
+	usePreventRemove(dirty, ({ data }) => {
+		showAlert(t("create.discardTitle"), t("create.discardMsg"), [
+			{ text: t("common.cancel"), style: "cancel" },
+			{
+				text: t("create.discardConfirm"),
+				style: "destructive",
+				onPress: () => navigation.dispatch(data.action),
+			},
+		]);
+	});
 
 	// Any edit may be the fix for what the server refused, so its verdict is
 	// dropped and the form's own rules take over again.
@@ -157,7 +182,7 @@ export default function ProductScreen() {
 							? t("product.publishedMessage")
 							: t("product.draftMessage"),
 					);
-					router.replace(`/seller/product/${result.product.id}` as never);
+					setSavedId(String(result.product.id));
 					return;
 				}
 				// A server refusal must never leave the form showing what it
