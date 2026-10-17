@@ -43,6 +43,8 @@ interface Listing {
 	isBoosted?: boolean;
 	attributes?: Record<string, unknown> | null;
 	status?: string;
+	/** Bought on the platform (protected payment or cash on delivery). */
+	orderable?: boolean | null;
 }
 
 interface ListingCardProps {
@@ -202,6 +204,25 @@ export function ListingCard({
 								</Text>
 							</View>
 						)}
+						{listing.orderable && (
+							// Bought on the platform, not arranged with a stranger.
+							<View
+								style={[
+									styles.conditionBadge,
+									styles.orderableBadge,
+									{
+										backgroundColor: isDark
+											? "rgba(15,23,42,0.85)"
+											: "rgba(255,255,255,0.92)",
+									},
+								]}
+							>
+								<Ionicons name="shield-checkmark" size={10} color="#15803d" />
+								<Text style={[styles.conditionText, { color: "#15803d" }]}>
+									{i18n.t("listing.orderableBadge")}
+								</Text>
+							</View>
+						)}
 					</View>
 
 					{/* Top-right — favorite button */}
@@ -347,6 +368,7 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displayBold,
 		letterSpacing: 0.4,
 	},
+	orderableBadge: { flexDirection: "row", alignItems: "center", gap: 3 },
 	conditionBadge: {
 		borderRadius: 4,
 		paddingHorizontal: 5,

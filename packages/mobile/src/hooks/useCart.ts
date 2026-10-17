@@ -3,8 +3,9 @@ import { track } from "@/src/lib/monitoring";
 import { ANALYTICS_EVENTS } from "../../../api/src/contracts/monitoring";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { type AnyCart, patchCartLine } from "../lib/cartCount";
 import { hapticOutcome } from "../lib/haptics";
-import type { CartView, SplitCartView } from "../types/order";
+import type { CartLineView, CartView, SplitCartView } from "../types/order";
 
 /**
  * One active cart per buyer, so no parameter and no shop scope: the cart is
@@ -61,23 +62,68 @@ export function useAddCartItem() {
 	});
 }
 
+/**
+ * The change shows at once; the server's revalidated cart replaces it when
+ * it answers, and a refusal puts the previous cart back.
+ */
+function useOptimisticCartLine<TVars>(
+	lineIdOf: (vars: TVars) => string,
+	change: (vars: TVars) => (line: CartLineView) => CartLineView | null,
+) {
+	const queryClient = useQueryClient();
+	return {
+		onMutate: async (vars: TVars) => {
+			await queryClient.cancelQueries({ queryKey: cartKey });
+			const previous = queryClient.getQueryData<AnyCart>(cartKey);
+			if (previous)
+				queryClient.setQueryData<AnyCart>(
+					cartKey,
+					patchCartLine(previous, lineIdOf(vars), change(vars)),
+				);
+			return { previous };
+		},
+		onError: (
+			_error: unknown,
+			_vars: TVars,
+			context: { previous?: AnyCart } | undefined,
+		) => {
+			if (context?.previous)
+				queryClient.setQueryData(cartKey, context.previous);
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({ queryKey: cartKey });
+		},
+	};
+}
+
 export function useSetCartItemQuantity() {
-	const invalidate = useInvalidateCart();
+	const optimistic = useOptimisticCartLine(
+		(vars: { lineId: string; quantity: number }) => vars.lineId,
+		({ quantity }) =>
+			(line) => ({
+				...line,
+				quantity,
+				lineSubtotal: line.unitPrice * quantity,
+			}),
+	);
 	return useMutation({
 		mutationFn: ({ lineId, quantity }: { lineId: string; quantity: number }) =>
 			api.patch<CartView>(`/api/cart/items/${encodeURIComponent(lineId)}`, {
 				quantity,
 			}),
-		onSuccess: invalidate,
+		...optimistic,
 	});
 }
 
 export function useRemoveCartItem() {
-	const invalidate = useInvalidateCart();
+	const optimistic = useOptimisticCartLine(
+		(lineId: string) => lineId,
+		() => () => null,
+	);
 	return useMutation({
 		mutationFn: (lineId: string) =>
 			api.delete<CartView>(`/api/cart/items/${encodeURIComponent(lineId)}`),
-		onSuccess: invalidate,
+		...optimistic,
 	});
 }
 

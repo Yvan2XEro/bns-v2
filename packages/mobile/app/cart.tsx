@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -24,6 +25,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import {
+	useAddCartItem,
 	useCart,
 	useRemoveCartItem,
 	useSetCartItemQuantity,
@@ -44,7 +46,39 @@ export default function CartScreen() {
 	const cart = useCart();
 	const setQuantity = useSetCartItemQuantity();
 	const remove = useRemoveCartItem();
-	const busy = setQuantity.isPending || remove.isPending;
+	const add = useAddCartItem();
+	// Quantity and removal show at once (`useCart`), so one line's request no
+	// longer freezes the whole cart; only a whole-group removal does.
+	const [groupRemoving, setGroupRemoving] = useState(false);
+	const busy = groupRemoving;
+	// The last line removed, offered back for a few seconds.
+	const [removed, setRemoved] = useState<CartLineView | null>(null);
+	useEffect(() => {
+		if (!removed) return;
+		const timer = setTimeout(() => setRemoved(null), 5000);
+		return () => clearTimeout(timer);
+	}, [removed]);
+	const removeLine = (line: CartLineView) => {
+		setRemoved(line);
+		remove.mutate(line.id, {
+			onError: (error) => {
+				setRemoved(null);
+				onError(error);
+			},
+		});
+	};
+	const undoRemove = () => {
+		if (!removed) return;
+		add.mutate(
+			{
+				listingId: removed.listingId,
+				variantId: removed.variantId,
+				quantity: removed.quantity,
+			},
+			{ onError },
+		);
+		setRemoved(null);
+	};
 	const cityLabel = (key: string | null) =>
 		launchCities.find((city) => city.key === key)?.label ?? null;
 	const flatCart = cart.data && !isSplitCart(cart.data) ? cart.data : null;
@@ -59,10 +93,13 @@ export default function CartScreen() {
 
 	// The API has no group delete; each line goes, one request at a time.
 	const removeGroup = async (group: SplitCartGroup) => {
+		setGroupRemoving(true);
 		try {
 			for (const line of group.items) await remove.mutateAsync(line.id);
 		} catch (error) {
 			onError(error);
+		} finally {
+			setGroupRemoving(false);
 		}
 	};
 
@@ -99,7 +136,10 @@ export default function CartScreen() {
 			onQuantity={(lineId, quantity) =>
 				setQuantity.mutate({ lineId, quantity }, { onError })
 			}
-			onRemoveLine={(lineId) => remove.mutate(lineId, { onError })}
+			onRemoveLine={(lineId) => {
+				const line = lines.find((candidate) => candidate.id === lineId);
+				if (line) removeLine(line);
+			}}
 			onRemoveGroup={(group) => void removeGroup(group)}
 		/>
 	) : (
@@ -121,7 +161,7 @@ export default function CartScreen() {
 					onQuantity={(quantity) =>
 						setQuantity.mutate({ lineId: item.id, quantity }, { onError })
 					}
-					onRemove={() => remove.mutate(item.id, { onError })}
+					onRemove={() => removeLine(item)}
 				/>
 			)}
 			ListFooterComponent={<CartSummary cart={cart.data} locale={locale} />}
@@ -142,6 +182,22 @@ export default function CartScreen() {
 				}
 			/>
 			<View style={styles.body}>{body}</View>
+			{removed ? (
+				<View style={[styles.undoBar, { backgroundColor: c.text }]}>
+					<Text style={[styles.undoText, { color: c.bg }]} numberOfLines={1}>
+						{t("cart.removed", { title: removed.title })}
+					</Text>
+					<Pressable
+						onPress={undoRemove}
+						accessibilityRole="button"
+						hitSlop={8}
+					>
+						<Text style={[styles.undoAction, { color: c.bg }]}>
+							{t("cart.undo")}
+						</Text>
+					</Pressable>
+				</View>
+			) : null}
 			{ordersEnabled && user && flatCart && lines.length > 0 ? (
 				<CartCheckoutBar cart={flatCart} locale={locale} />
 			) : null}
@@ -181,6 +237,18 @@ function ShopRow({
 }
 
 const styles = StyleSheet.create({
+	undoBar: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		marginHorizontal: 16,
+		marginBottom: 8,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderRadius: 12,
+	},
+	undoText: { flex: 1, fontSize: 14 },
+	undoAction: { fontSize: 14, fontWeight: "700" },
 	safe: { flex: 1 },
 	body: { flex: 1 },
 	list: { padding: 16 },

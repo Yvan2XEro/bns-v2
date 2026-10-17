@@ -84,8 +84,9 @@ export default function SearchScreen() {
 
 	useFocusEffect(
 		useCallback(() => {
-			if (params.q) inputRef.current?.focus();
-		}, [params.q]),
+			// Opened from the home's search field: the keyboard is already up.
+			if (params.q || params.focus) inputRef.current?.focus();
+		}, [params.q, params.focus]),
 	);
 
 	const handleQueryChange = (text: string) => {
@@ -111,6 +112,7 @@ export default function SearchScreen() {
 	}
 
 	const verifiedOnly = params.verified === "1";
+	const orderableOnly = params.orderable === "1";
 
 	const activeFilterCount = [
 		params.category,
@@ -119,6 +121,7 @@ export default function SearchScreen() {
 		params.category && params.tags,
 		params.location,
 		verifiedOnly,
+		orderableOnly,
 		...Object.values(attrParams),
 	].filter(Boolean).length;
 
@@ -134,6 +137,7 @@ export default function SearchScreen() {
 				location: (params.location as string) ?? "",
 				radius: (params.radius as string) ?? "",
 				verified: (params.verified as string) ?? "",
+				orderable: (params.orderable as string) ?? "",
 				...attrParams,
 			},
 		});
@@ -155,6 +159,7 @@ export default function SearchScreen() {
 			? { radius: params.radius as string }
 			: {}),
 		...(verifiedOnly ? { minShopLevel: "2" } : {}),
+		...(orderableOnly ? { orderable: "1" } : {}),
 		...attrParams,
 	};
 	const queryString = Object.entries(searchParams)

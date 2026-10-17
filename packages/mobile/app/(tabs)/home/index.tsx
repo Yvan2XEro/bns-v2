@@ -566,7 +566,15 @@ export default function HomeScreen() {
 						ref={inputRef}
 						value={query}
 						onChangeText={handleQueryChange}
-						onFocus={onSearchFocus}
+						// One search for the whole app: the full screen has the recent
+						// searches, category suggestions and shops this field lacked.
+						onFocus={() => {
+							inputRef.current?.blur();
+							router.push({
+								pathname: "/(tabs)/search",
+								params: { focus: "1" },
+							});
+						}}
 						onClear={() => {
 							setQuery("");
 							setDebouncedQuery("");

@@ -296,7 +296,8 @@
 		"whatsapp": "WhatsApp",
 		"whatsappAbout": "Hello, is your listing \"{{title}}\" on BuyNSellem still available? {{url}}",
 		"barOrder": "Order",
-		"orderAction": "Order · {{price}}"
+		"orderAction": "Order · {{price}}",
+		"orderableBadge": "Buy online"
 	},
 	"create": {
 		"title": "Post a Listing",
@@ -898,7 +899,10 @@
 		"postedWithin": "Posted within",
 		"today": "Today",
 		"week": "This week",
-		"month": "This month"
+		"month": "This month",
+		"orderable": "Buy online (protected payment or cash on delivery)",
+		"showCount_one": "Show {{count}} listing",
+		"showCount": "Show {{count}} listings"
 	},
 	"errors": {
 		"generic": "An unexpected error occurred. Please try again.",
@@ -2833,7 +2837,9 @@
 		"deliveryNext": "Delivery method and fee on the next step.",
 		"codNote": "You pay on delivery, in cash or by mobile money. You have {{days}} days after delivery to withdraw.",
 		"headerLabel_one": "Cart, {{count}} item",
-		"headerLabel": "Cart, {{count}} items"
+		"headerLabel": "Cart, {{count}} items",
+		"removed": "\"{{title}}\" removed",
+		"undo": "Undo"
 	},
 	"addresses": {
 		"title": "My addresses",

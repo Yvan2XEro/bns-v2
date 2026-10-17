@@ -299,7 +299,8 @@
 		"whatsapp": "WhatsApp",
 		"whatsappAbout": "Bonjour, votre annonce « {{title}} » sur BuyNSellem est-elle toujours disponible ? {{url}}",
 		"barOrder": "Commander",
-		"orderAction": "Commander · {{price}}"
+		"orderAction": "Commander · {{price}}",
+		"orderableBadge": "Achat en ligne"
 	},
 	"create": {
 		"title": "Publier une annonce",
@@ -901,7 +902,10 @@
 		"postedWithin": "Publié dans",
 		"today": "Aujourd'hui",
 		"week": "Cette semaine",
-		"month": "Ce mois-ci"
+		"month": "Ce mois-ci",
+		"orderable": "Achat en ligne (paiement protégé ou à la livraison)",
+		"showCount_one": "Voir {{count}} annonce",
+		"showCount": "Voir {{count}} annonces"
 	},
 	"errors": {
 		"generic": "Une erreur inattendue s'est produite. Veuillez réessayer.",
@@ -2836,7 +2840,9 @@
 		"deliveryNext": "Mode et frais de livraison à l'étape suivante.",
 		"codNote": "Vous payez à la livraison, en espèces ou par mobile money. Vous disposez de {{days}} jours après réception pour vous rétracter.",
 		"headerLabel_one": "Panier, {{count}} article",
-		"headerLabel": "Panier, {{count}} articles"
+		"headerLabel": "Panier, {{count}} articles",
+		"removed": "« {{title}} » retiré",
+		"undo": "Annuler"
 	},
 	"addresses": {
 		"title": "Mes adresses",

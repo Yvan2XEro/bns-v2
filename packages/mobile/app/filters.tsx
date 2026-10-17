@@ -69,6 +69,9 @@ export default function FiltersModal() {
 		rawParams.tags ? (rawParams.tags as string).split(",").filter(Boolean) : [],
 	);
 	const [verifiedOnly, setVerifiedOnly] = useState(rawParams.verified === "1");
+	const [orderableOnly, setOrderableOnly] = useState(
+		rawParams.orderable === "1",
+	);
 
 	// Tags belong to categories: only the selected category's are offered, and
 	// a picked tag the new category does not get is dropped.
@@ -122,7 +125,7 @@ export default function FiltersModal() {
 	}, [selectedCategory, categories]);
 
 	// ── Handlers ────────────────────────────────────────────────
-	const handleApply = () => {
+	const buildFilterParams = () => {
 		const filterParams: Record<string, string> = {};
 		if (selectedCategory) filterParams.category = selectedCategory;
 		if (minPrice) filterParams.minPrice = minPrice;
@@ -134,10 +137,37 @@ export default function FiltersModal() {
 		if (location) filterParams.radius = String(radius);
 		if (location && locationLat != null) filterParams.lat = String(locationLat);
 		if (location && locationLng != null) filterParams.lng = String(locationLng);
+		if (orderableOnly) filterParams.orderable = "1";
 		for (const [slug, value] of Object.entries(attributeFilters)) {
 			if (value) filterParams[`attr_${slug}`] = value;
 		}
+		return filterParams;
+	};
 
+	// The apply button says how many listings it leads to, so a filter that
+	// empties the results is seen before leaving the sheet.
+	const countParams = (() => {
+		const { verified, ...rest } = buildFilterParams();
+		return new URLSearchParams({
+			...rest,
+			...(verified ? { minShopLevel: "2" } : {}),
+			limit: "0",
+		}).toString();
+	})();
+	const [debouncedCount, setDebouncedCount] = useState(countParams);
+	useEffect(() => {
+		const timer = setTimeout(() => setDebouncedCount(countParams), 300);
+		return () => clearTimeout(timer);
+	}, [countParams]);
+	const { data: countData } = useQuery({
+		queryKey: ["listings", "count", debouncedCount],
+		queryFn: () =>
+			api.get<{ total: number }>(`/api/public/search?${debouncedCount}`),
+		staleTime: 60_000,
+	});
+
+	const handleApply = () => {
+		const filterParams = buildFilterParams();
 		if (returnTo) {
 			router.navigate({ pathname: returnTo as any, params: filterParams });
 		} else {
@@ -154,6 +184,7 @@ export default function FiltersModal() {
 		setRadius(10);
 		setAttributeFilters({});
 		setVerifiedOnly(false);
+		setOrderableOnly(false);
 	};
 
 	const activeCount = [
@@ -163,6 +194,7 @@ export default function FiltersModal() {
 		selectedTags.length > 0,
 		location,
 		verifiedOnly,
+		orderableOnly,
 		...Object.values(attributeFilters).filter(Boolean),
 	].filter(Boolean).length;
 
@@ -290,6 +322,38 @@ export default function FiltersModal() {
 						{t("filters.verified")}
 					</Text>
 					{verifiedOnly && (
+						<Ionicons name="checkmark-circle" size={18} color="#fff" />
+					)}
+				</Pressable>
+
+				{/* ── Achat en ligne ── */}
+				<Pressable
+					onPress={() => setOrderableOnly((prev) => !prev)}
+					accessibilityRole="switch"
+					accessibilityState={{ checked: orderableOnly }}
+					accessibilityLabel={t("filters.orderable")}
+					style={[
+						styles.verifiedRow,
+						{
+							backgroundColor: orderableOnly ? primaryColor : cardBg,
+							borderColor: orderableOnly ? primaryColor : borderColor,
+						},
+					]}
+				>
+					<Ionicons
+						name="bag-check"
+						size={18}
+						color={orderableOnly ? "#fff" : mutedColor}
+					/>
+					<Text
+						style={[
+							styles.verifiedText,
+							{ color: orderableOnly ? "#fff" : textColor },
+						]}
+					>
+						{t("filters.orderable")}
+					</Text>
+					{orderableOnly && (
 						<Ionicons name="checkmark-circle" size={18} color="#fff" />
 					)}
 				</Pressable>
@@ -503,7 +567,11 @@ export default function FiltersModal() {
 					onPress={handleApply}
 					style={[styles.applyBtn, { backgroundColor: primaryColor }]}
 				>
-					<Text style={styles.applyText}>{t("filters.apply")}</Text>
+					<Text style={styles.applyText}>
+						{typeof countData?.total === "number"
+							? t("filters.showCount", { count: countData.total })
+							: t("filters.apply")}
+					</Text>
 				</Pressable>
 			</View>
 		</SafeAreaView>
