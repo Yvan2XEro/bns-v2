@@ -68,13 +68,13 @@ const PROVIDERS: Record<
 		label: "Google",
 		Icon: GoogleIcon,
 		className:
-			"border border-[#747775] bg-surface text-[#1F1F1F] hover:bg-canvas focus-visible:ring-brand",
+			"border border-[#747775] bg-white text-[#1F1F1F] hover:bg-[#F8FAFC] focus-visible:ring-brand dark:border-[#8E918F] dark:bg-[#131314] dark:text-[#E3E3E3] dark:hover:bg-[#1F1F1F]",
 	},
 	apple: {
 		label: "Apple",
 		Icon: AppleIcon,
 		className:
-			"border border-black bg-black text-white hover:bg-[#1F1F1F] focus-visible:ring-brand",
+			"border border-black bg-black text-white hover:bg-[#1F1F1F] focus-visible:ring-brand dark:border-white dark:bg-white dark:text-black dark:hover:bg-[#E5E5E5]",
 	},
 	facebook: {
 		label: "Facebook",
