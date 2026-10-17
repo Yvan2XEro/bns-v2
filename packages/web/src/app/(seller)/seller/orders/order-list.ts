@@ -152,6 +152,8 @@ export function refusableSelection(
 export interface BulkOutcome {
 	done: number;
 	failures: unknown[];
+	/** The orders that failed, to retry those alone. */
+	failedIds: string[];
 }
 
 /**
@@ -162,16 +164,23 @@ export interface BulkOutcome {
 export async function runOneByOne(
 	ids: readonly string[],
 	run: (id: string) => Promise<unknown>,
+	/** Called after each order, so twenty orders on 3G show "7/20", not a frozen button. */
+	onProgress?: (finished: number, total: number) => void,
 ): Promise<BulkOutcome> {
 	const failures: unknown[] = [];
+	const failedIds: string[] = [];
+	let finished = 0;
 	for (const id of ids) {
 		try {
 			await run(id);
 		} catch (error) {
 			failures.push(error);
+			failedIds.push(id);
 		}
+		finished += 1;
+		onProgress?.(finished, ids.length);
 	}
-	return { done: ids.length - failures.length, failures };
+	return { done: ids.length - failures.length, failures, failedIds };
 }
 
 export interface ItemLines {

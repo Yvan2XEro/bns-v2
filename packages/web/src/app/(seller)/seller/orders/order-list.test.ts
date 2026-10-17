@@ -232,13 +232,20 @@ describe("bulk refuse (W2)", () => {
 
 	test("runs every order even when one fails, and counts both", async () => {
 		const seen: string[] = [];
-		const outcome = await runOneByOne(["a", "b", "c"], async (id) => {
-			seen.push(id);
-			if (id === "b") throw new Error("nope");
-		});
+		const progress: string[] = [];
+		const outcome = await runOneByOne(
+			["a", "b", "c"],
+			async (id) => {
+				seen.push(id);
+				if (id === "b") throw new Error("nope");
+			},
+			(finished, total) => progress.push(`${finished}/${total}`),
+		);
 		expect(seen).toEqual(["a", "b", "c"]);
 		expect(outcome.done).toBe(2);
 		expect(outcome.failures).toHaveLength(1);
+		expect(outcome.failedIds).toEqual(["b"]);
+		expect(progress).toEqual(["1/3", "2/3", "3/3"]);
 	});
 });
 

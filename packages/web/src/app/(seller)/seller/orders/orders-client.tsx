@@ -13,6 +13,7 @@ import {
 	type SellerOrderFilters,
 	useSellerOrders,
 } from "~/hooks/use-seller-orders";
+import { useUrlFilters } from "~/hooks/use-url-filters";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { DISTRICTS } from "~/lib/checkout-form";
 import { orderActionPath } from "~/lib/order-actions";
@@ -29,6 +30,7 @@ import {
 	acceptableSelection,
 	areaLabel,
 	type BulkOutcome,
+	isListTab,
 	type ListTab,
 	PERIODS,
 	type Period,
@@ -95,16 +97,28 @@ export function OrdersClient({
 	const queryClient = useQueryClient();
 	const now = useMinuteClock();
 	const resaleText = useResaleText();
-	const [state, patch] = useReducer(reducer, {
-		tab: initialTab,
-		search: "",
-		district: "",
-		period: "all",
-	});
+	// Tab, search, area and period live in the URL: back from an order they
+	// are still set, and a view can be sent to a teammate.
+	const urlDefaults = useMemo(
+		() => ({ tab: initialTab, search: "", district: "", period: "all" }),
+		[initialTab],
+	);
+	const url = useUrlFilters(urlDefaults);
+	const [state, patch] = useReducer(reducer, url.initial, (read) => ({
+		tab: isListTab(read.tab) ? read.tab : initialTab,
+		search: read.search,
+		district: read.district,
+		period: (PERIODS as readonly string[]).includes(read.period)
+			? (read.period as Period)
+			: "all",
+	}));
+	useEffect(() => url.sync(state), [url, state]);
 	const [selected, setSelected] = useState<Set<string>>(() => new Set());
 	const q = useDebouncedValue(state.search.trim(), 300);
 	// Fixed per period choice, so the query key does not change every minute.
-	const [since, setSince] = useState<string | undefined>(undefined);
+	const [since, setSince] = useState<string | undefined>(() =>
+		state.period === "all" ? undefined : periodSince(state.period, new Date()),
+	);
 	const filters: SellerOrderFilters = {
 		tab: state.tab,
 		q: q || undefined,
@@ -156,12 +170,23 @@ export function OrdersClient({
 	const failureReason = (failures: unknown[]) =>
 		resolveErrorMessage(failures[0], tRoot, tLegacy("actionFailed"));
 
+	const [progress, setProgress] = useState<string | null>(null);
+	const onProgress = (finished: number, total: number) =>
+		setProgress(`${finished}/${total}`);
 	const bulkAccept = useMutation({
 		mutationFn: (ids: string[]) =>
-			runOneByOne(ids, (id) => apiPost(orderActionPath("accept", id))),
-		onSettled: refreshOrders,
-		onSuccess: ({ done, failures }) => {
-			setSelected(new Set());
+			runOneByOne(
+				ids,
+				(id) => apiPost(orderActionPath("accept", id)),
+				onProgress,
+			),
+		onSettled: () => {
+			setProgress(null);
+			refreshOrders();
+		},
+		onSuccess: ({ done, failures, failedIds }) => {
+			// Only the failures stay selected: retrying never redoes the rest.
+			setSelected(new Set(failedIds));
 			if (done > 0) toast.success(tList("bulkAccepted", { count: done }));
 			if (failures.length > 0) {
 				toast.error(
@@ -169,6 +194,12 @@ export function OrdersClient({
 						count: failures.length,
 						reason: failureReason(failures),
 					}),
+					{
+						action: {
+							label: tList("bulkRetry"),
+							onClick: () => bulkAccept.mutate(failedIds),
+						},
+					},
 				);
 			}
 		},
@@ -182,10 +213,17 @@ export function OrdersClient({
 			ids: string[];
 			input: { reason: SellerEndReason; note?: string };
 		}): Promise<BulkOutcome> =>
-			runOneByOne(ids, (id) => apiPost(orderActionPath("decline", id), input)),
-		onSettled: refreshOrders,
-		onSuccess: ({ done, failures }) => {
-			setSelected(new Set());
+			runOneByOne(
+				ids,
+				(id) => apiPost(orderActionPath("decline", id), input),
+				onProgress,
+			),
+		onSettled: () => {
+			setProgress(null);
+			refreshOrders();
+		},
+		onSuccess: ({ done, failures, failedIds }) => {
+			setSelected(new Set(failedIds));
 			setDeclineOpen(false);
 			const summary = tList("bulkDeclined", { count: done });
 			if (failures.length === 0) {
@@ -420,7 +458,9 @@ export function OrdersClient({
 							onClick={() => setDeclineOpen(true)}
 							className="inline-flex h-[34px] items-center rounded-lg border border-bad-line bg-surface px-3 font-semibold text-[13px] text-bad-ink-soft hover:bg-bad-faint disabled:opacity-50"
 						>
-							{tList("declineSelected", { count: refuseIds.length })}
+							{bulkDecline.isPending && progress
+								? tList("bulkProgress", { progress })
+								: tList("declineSelected", { count: refuseIds.length })}
 						</button>
 					)}
 					{acceptIds.length > 0 && (
@@ -434,7 +474,9 @@ export function OrdersClient({
 							}
 							className="inline-flex h-[34px] items-center rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-3 font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-50"
 						>
-							{tList("acceptSelected", { count: acceptIds.length })}
+							{bulkAccept.isPending && progress
+								? tList("bulkProgress", { progress })
+								: tList("acceptSelected", { count: acceptIds.length })}
 						</button>
 					)}
 				</div>

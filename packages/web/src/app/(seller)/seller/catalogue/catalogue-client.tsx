@@ -3,7 +3,8 @@
 import { Plus, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useCallback, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { toast } from "sonner";
 import { CatalogueEmpty } from "~/components/seller/catalogue-empty";
 import { CatalogueFilters } from "~/components/seller/catalogue-filters";
 import { CatalogueImportDialog } from "~/components/seller/catalogue-import-dialog";
@@ -13,12 +14,16 @@ import { useCatalogue } from "~/hooks/use-catalogue";
 import { useSetProductsStatus } from "~/hooks/use-catalogue-actions";
 import { useCatalogueStockT } from "~/hooks/use-catalogue-stock-t";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
+import { useUrlFilters } from "~/hooks/use-url-filters";
 import { resolveErrorMessage } from "~/lib/apiError";
 import {
+	CATALOGUE_PROVENANCES,
+	CATALOGUE_SORTS,
 	type CatalogueFilter,
 	type CatalogueProvenance,
 	type CatalogueSort,
 	catalogueParamsFor,
+	isCatalogueFilter,
 } from "~/lib/catalogue";
 import type { Category, ProductStatus } from "~/types";
 
@@ -60,15 +65,57 @@ export function CatalogueClient({
 	const tc = useCatalogueStockT("catalogue");
 	const tRoot = useTranslations();
 	const [importOpen, setImportOpen] = useState(false);
-	const [state, patch] = useReducer(reducer, {
-		filter: initialFilter,
-		query: "",
-		page: 1,
-		category: "",
-		provenance: permissions.resale ? ("any" as const) : ("own" as const),
-		sort: "updated",
+	// Filter, search, category, origin, sort and page live in the URL: back
+	// from a product they are still set, and a view can be shared.
+	const urlDefaults = useMemo(
+		() => ({
+			filter: initialFilter as string,
+			query: "",
+			page: "1",
+			category: "",
+			provenance: permissions.resale ? "any" : "own",
+			sort: "updated",
+		}),
+		[initialFilter, permissions.resale],
+	);
+	const url = useUrlFilters(urlDefaults);
+	const [state, patch] = useReducer(reducer, url.initial, (read) => ({
+		filter: isCatalogueFilter(read.filter) ? read.filter : initialFilter,
+		query: read.query,
+		page: Math.max(1, Number.parseInt(read.page, 10) || 1),
+		category: read.category,
+		provenance: (CATALOGUE_PROVENANCES as readonly string[]).includes(
+			read.provenance,
+		)
+			? (read.provenance as CatalogueProvenance)
+			: permissions.resale
+				? "any"
+				: "own",
+		sort: (CATALOGUE_SORTS as readonly string[]).includes(read.sort)
+			? (read.sort as CatalogueSort)
+			: "updated",
 		selected: NONE,
-	});
+	}));
+	useEffect(
+		() =>
+			url.sync({
+				filter: state.filter,
+				query: state.query,
+				page: String(state.page),
+				category: state.category,
+				provenance: state.provenance,
+				sort: state.sort,
+			}),
+		[
+			url,
+			state.filter,
+			state.query,
+			state.page,
+			state.category,
+			state.provenance,
+			state.sort,
+		],
+	);
 	const debouncedQuery = useDebouncedValue(
 		state.query.trim(),
 		SEARCH_DEBOUNCE_MS,
@@ -94,10 +141,38 @@ export function CatalogueClient({
 		void refetch();
 	}, [refetch]);
 
-	const applyStatus = (productIds: string[], status: ProductStatus) => {
+	const applyStatus = (
+		productIds: string[],
+		status: ProductStatus,
+		undoing = false,
+	) => {
+		// Each product's status before the change, so Undo puts back exactly
+		// what was there, mixed statuses included.
+		const before = new Map<ProductStatus, string[]>();
+		for (const row of data?.docs ?? []) {
+			if (!productIds.includes(row.id) || row.status === status) continue;
+			before.set(row.status, [...(before.get(row.status) ?? []), row.id]);
+		}
 		setStatus.mutate(
 			{ productIds, status },
-			{ onSuccess: () => patch({ selected: NONE }) },
+			{
+				onSuccess: ({ updated }) => {
+					patch({ selected: NONE });
+					if (undoing) return;
+					toast.success(t("bulkDone", { count: updated.length }), {
+						action:
+							before.size > 0
+								? {
+										label: t("bulkUndo"),
+										onClick: () => {
+											for (const [previous, ids] of before)
+												applyStatus(ids, previous, true);
+										},
+									}
+								: undefined,
+					});
+				},
+			},
 		);
 	};
 
