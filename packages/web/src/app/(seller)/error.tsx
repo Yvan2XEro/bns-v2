@@ -3,8 +3,16 @@
 import { RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useReportError } from "~/hooks/use-report-error";
 
-export default function SellerError({ reset }: { reset: () => void }) {
+export default function SellerError({
+	error,
+	reset,
+}: {
+	error: globalThis.Error & { digest?: string };
+	reset: () => void;
+}) {
+	useReportError(error);
 	const t = useTranslations();
 	return (
 		<div className="flex flex-col items-center py-16 text-center">

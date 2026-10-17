@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { savedAddressesKey } from "~/hooks/use-addresses";
 import type { ApiError } from "~/lib/apiError";
+import { track } from "~/lib/monitoring";
 import { cartKey, checkoutGroupKey, purchasesRootKey } from "~/lib/query-keys";
 import { apiGet, apiPost } from "~/lib/shop-api";
 import type {
@@ -12,6 +13,7 @@ import type {
 	SplitQuoteView,
 } from "~/types/order";
 import type { CheckoutGroupView } from "../../../api/src/contracts/checkoutGroup";
+import { ANALYTICS_EVENTS } from "../../../api/src/contracts/monitoring";
 
 export { checkoutGroupKey };
 
@@ -51,6 +53,10 @@ export function useSplitPlace() {
 			}),
 		retry: false,
 		onSuccess: (_placed, input) => {
+			track(ANALYTICS_EVENTS.orderPlaced, {
+				payment_method: input.paymentMethod,
+				split: true,
+			});
 			void queryClient.invalidateQueries({ queryKey: cartKey() });
 			void queryClient.invalidateQueries({ queryKey: purchasesRootKey() });
 			if (input.saveAddress)

@@ -862,7 +862,7 @@
 	},
 	"Privacy": {
 		"title": "Privacy Policy",
-		"lastUpdated": "Last updated: August 1, 2026",
+		"lastUpdated": "Last updated: October 17, 2026",
 		"infoCollect": "1. Information We Collect",
 		"infoProvide": "1.1 Information You Provide",
 		"accountInfo": "Account information: Name, email address, password, phone number, location, and profile photo.",
@@ -885,7 +885,7 @@
 		"sharing": "3. Information Sharing",
 		"sharingIntro": "We do not sell your personal information. We may share information with:",
 		"share1": "Other users: your public profile (name, avatar, city, rating) is visible. Your email address is never displayed. If you have verified your phone number and chosen to attach it to your listings, it can be revealed to interested buyers from the listing page.",
-		"share2": "Service providers: NotchPay processes boost payments made on the website. Our notification provider receives your account identifier in order to deliver alerts. Our SMS providers, AvlyText (avlytext.com) and MTarget (m-target.com), receive your number during verification.",
+		"share2": "Service providers: NotchPay processes boost payments made on the website. Our notification provider receives your account identifier in order to deliver alerts. Our SMS providers, AvlyText (avlytext.com) and MTarget (m-target.com), receive your number during verification. Sentry (error diagnostics) and PostHog (analytics) receive only the technical data described in the \"Analytics, diagnostics and no advertising\" section.",
 		"share3": "Law enforcement: When required by law or to protect safety.",
 		"security": "4. Data Security",
 		"securityDesc": "We implement industry-standard security measures to protect your data, including encrypted connections (HTTPS), secure password hashing, and access controls. However, no system is 100% secure, and we cannot guarantee absolute security.",
@@ -914,8 +914,8 @@
 		"mobilePush": "Notifications: to alert you about new messages and activity on your listings.",
 		"mobilePhone": "Phone number: if you choose to verify it, a one-time code is sent to you by SMS. The code is stored hashed and expires after ten minutes.",
 		"mobileSocial": "Google, Apple or Facebook sign-in: we receive your name, email address and your identifier at the provider. For Apple, a refresh token is stored so we can revoke access if you delete your account.",
-		"noTrackingTitle": "No advertising tracking",
-		"noTrackingDesc": "We do not embed any analytics, advertising or third-party tracking SDK, and we do not use any advertising identifier. Your data is neither sold nor shared for advertising purposes."
+		"noTrackingTitle": "Analytics, diagnostics and no advertising",
+		"noTrackingDesc": "To fix failures and improve the service we use two tools, called from our own servers: Sentry, which receives the technical details of an error (page or screen, browser or device, code trace), and PostHog, which measures the pages and screens viewed and the steps of a purchase (added to cart, checkout started, order placed). Neither sets a cookie or stores an identifier on your device. If you are signed in, only your account identifier is sent to them — never your name, email, phone number or address. Sentry does not receive your IP address; PostHog derives your country and city from it without keeping it. On the website, your browser's \"Do Not Track\" signal turns analytics off. We embed no advertising or cross-site tracking tool and use no advertising identifier. Your data is neither sold nor shared for advertising purposes."
 	},
 	"Cookies": {
 		"title": "Cookie Policy",

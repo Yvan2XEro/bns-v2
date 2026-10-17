@@ -3,6 +3,7 @@
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useReportError } from "~/hooks/use-report-error";
 
 /** The route-level error screen, shared by the root and public segments. */
 export function ErrorView({
@@ -12,6 +13,7 @@ export function ErrorView({
 	error: globalThis.Error & { digest?: string };
 	reset: () => void;
 }) {
+	useReportError(error);
 	const t = useTranslations("Error");
 	return (
 		<div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16">

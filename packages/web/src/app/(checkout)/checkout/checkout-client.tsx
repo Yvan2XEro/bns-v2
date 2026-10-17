@@ -24,6 +24,7 @@ import {
 } from "~/lib/checkout-form";
 import { cartLinesOf, isSplitCart } from "~/lib/checkout-group-flow";
 import { reusableAddress } from "~/lib/checkout-prefill";
+import { track } from "~/lib/monitoring";
 import {
 	preselectedAddress,
 	type SavedAddress,
@@ -37,6 +38,7 @@ import type {
 	PaymentMethod,
 	QuoteResponse,
 } from "~/types/order";
+import { ANALYTICS_EVENTS } from "../../../../../api/src/contracts/monitoring";
 import { type AddressChoice, CheckoutAddressPanel } from "./address-panel";
 import { CheckoutSection } from "./checkout-section";
 import { CheckoutSummary } from "./checkout-summary";
@@ -145,6 +147,7 @@ function SafetyReminders() {
  * amounts, and placement sends exactly what it priced.
  */
 export function CheckoutClient() {
+	useEffect(() => track(ANALYTICS_EVENTS.checkoutStarted), []);
 	const t = useTranslations("Checkout");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const router = useRouter();

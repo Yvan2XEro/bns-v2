@@ -1,5 +1,9 @@
 import type { LaunchCityOption } from "~/types/order";
 import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
+import {
+	type MonitoringConfig,
+	NO_MONITORING,
+} from "../../../api/src/contracts/monitoring";
 import { PHOTO_LIMIT } from "../../../api/src/contracts/photoLimit";
 
 export interface BoostPrice {
@@ -48,6 +52,8 @@ export interface AppConfig {
 	resalePrepaidEnabled: boolean;
 	/** Photos a listing or a product may carry; read it through `usePhotoLimit`. */
 	photosIncluded: number;
+	/** Sentry and PostHog, configured on the API; off until it sends them. */
+	monitoring: MonitoringConfig;
 	/** Absent before the markets migration, or when the request named no live country. */
 	market?: MarketConfig;
 }
@@ -76,4 +82,5 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	resaleEnabled: false,
 	resalePrepaidEnabled: false,
 	photosIncluded: PHOTO_LIMIT.default,
+	monitoring: NO_MONITORING,
 };

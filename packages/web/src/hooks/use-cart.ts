@@ -2,9 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiError } from "~/lib/apiError";
+import { track } from "~/lib/monitoring";
 import { cartKey } from "~/lib/query-keys";
 import { apiDelete, apiGet, apiPatch, apiPost } from "~/lib/shop-api";
 import type { CartView, SplitCartView } from "~/types/order";
+import { ANALYTICS_EVENTS } from "../../../api/src/contracts/monitoring";
 
 export { cartKey };
 
@@ -56,9 +58,14 @@ function useCartMutation<TInput>(
 }
 
 export function useAddCartItem() {
-	return useCartMutation<AddCartItemInput>(["cart", "add"], (input) =>
-		apiPost<CartView>("/api/cart/items", input),
-	);
+	return useCartMutation<AddCartItemInput>(["cart", "add"], async (input) => {
+		const cart = await apiPost<CartView>("/api/cart/items", input);
+		track(ANALYTICS_EVENTS.addToCart, {
+			listing_id: input.listingId,
+			quantity: input.quantity,
+		});
+		return cart;
+	});
 }
 
 export function useSetCartItemQuantity() {

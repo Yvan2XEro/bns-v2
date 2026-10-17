@@ -862,7 +862,7 @@
 	},
 	"Privacy": {
 		"title": "Politique de confidentialité",
-		"lastUpdated": "Dernière mise à jour : 1er août 2026",
+		"lastUpdated": "Dernière mise à jour : 17 octobre 2026",
 		"infoCollect": "1. Informations que nous collectons",
 		"infoProvide": "1.1 Informations que vous fournissez",
 		"accountInfo": "Informations du compte : Nom, adresse email, mot de passe, numéro de téléphone, localisation et photo de profil.",
@@ -885,7 +885,7 @@
 		"sharing": "3. Partage d'informations",
 		"sharingIntro": "Nous ne vendons pas vos informations personnelles. Nous pouvons partager des informations avec :",
 		"share1": "Autres utilisateurs : votre profil public (nom, avatar, ville, note) est visible. Votre adresse email n'est jamais affichée. Si vous avez vérifié votre numéro de téléphone et choisi de l'associer à vos annonces, il peut être révélé aux personnes intéressées depuis la page de l'annonce.",
-		"share2": "Prestataires : NotchPay traite les paiements de boost effectués depuis le site web. Notre prestataire de notifications reçoit votre identifiant de compte afin d'acheminer les alertes. Nos prestataires d'envoi de SMS, AvlyText (avlytext.com) et MTarget (m-target.com), reçoivent votre numéro lors de la vérification.",
+		"share2": "Prestataires : NotchPay traite les paiements de boost effectués depuis le site web. Notre prestataire de notifications reçoit votre identifiant de compte afin d'acheminer les alertes. Nos prestataires d'envoi de SMS, AvlyText (avlytext.com) et MTarget (m-target.com), reçoivent votre numéro lors de la vérification. Sentry (diagnostic d'erreurs) et PostHog (mesure d'audience) reçoivent les seules données techniques décrites dans la section « Mesure d'audience, diagnostic et absence de publicité ».",
 		"share3": "Forces de l'ordre : Lorsque requis par la loi ou pour protéger la sécurité.",
 		"security": "4. Sécurité des données",
 		"securityDesc": "Nous mettons en œuvre des mesures de sécurité conformes aux normes industrielles pour protéger vos données, y compris des connexions chiffrées (HTTPS), un hachage sécurisé des mots de passe et des contrôles d'accès. Cependant, aucun système n'est sécurisé à 100 % et nous ne pouvons garantir une sécurité absolue.",
@@ -914,8 +914,8 @@
 		"mobilePush": "Notifications : pour vous prévenir des nouveaux messages et de l'activité sur vos annonces.",
 		"mobilePhone": "Numéro de téléphone : si vous choisissez de le vérifier, un code à usage unique vous est envoyé par SMS. Le code est stocké sous forme hachée et expire au bout de dix minutes.",
 		"mobileSocial": "Connexion Google, Apple ou Facebook : nous recevons votre nom, votre adresse email et votre identifiant chez le fournisseur. Pour Apple, un jeton de renouvellement est conservé afin de pouvoir révoquer l'accès si vous supprimez votre compte.",
-		"noTrackingTitle": "Absence de suivi publicitaire",
-		"noTrackingDesc": "Nous n'intégrons aucun outil de mesure d'audience, de publicité ou de suivi tiers, et nous n'utilisons aucun identifiant publicitaire. Vos données ne sont ni vendues ni partagées à des fins publicitaires."
+		"noTrackingTitle": "Mesure d'audience, diagnostic et absence de publicité",
+		"noTrackingDesc": "Pour corriger les pannes et améliorer le service, nous utilisons deux outils, appelés depuis nos propres serveurs : Sentry, qui reçoit le détail technique d'une erreur (page ou écran, navigateur ou appareil, trace du code), et PostHog, qui mesure les pages et écrans consultés et les étapes d'achat (ajout au panier, début de commande, commande passée). Aucun des deux ne dépose de cookie ni n'enregistre d'identifiant sur votre appareil. Si vous êtes connecté, seul votre identifiant de compte leur est transmis — jamais votre nom, votre e-mail, votre téléphone ou votre adresse. Sentry ne reçoit pas votre adresse IP ; PostHog en déduit votre pays et votre ville sans la conserver. Sur le site, le signal « Do Not Track » de votre navigateur désactive la mesure d'audience. Nous n'intégrons aucun outil de publicité ni de suivi entre sites, et n'utilisons aucun identifiant publicitaire. Vos données ne sont ni vendues ni partagées à des fins publicitaires."
 	},
 	"Cookies": {
 		"title": "Politique de cookies",

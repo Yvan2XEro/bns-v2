@@ -3,6 +3,7 @@
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useReportError } from "~/hooks/use-report-error";
 
 export default function CheckoutError({
 	error: err,
@@ -11,6 +12,7 @@ export default function CheckoutError({
 	error: globalThis.Error & { digest?: string };
 	reset: () => void;
 }) {
+	useReportError(err);
 	const t = useTranslations("Checkout.shell");
 	return (
 		<div className="flex min-h-[50vh] flex-col items-center justify-center px-4 py-16 text-center">

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { savedAddressesKey } from "~/hooks/use-addresses";
 import type { ApiError } from "~/lib/apiError";
+import { track } from "~/lib/monitoring";
 import { isTerminalStatus, pollIntervalMs } from "~/lib/payment-flow";
 import { cartKey, paymentStatusKey, purchasesRootKey } from "~/lib/query-keys";
 import { apiGet, apiPost, query } from "~/lib/shop-api";
@@ -16,6 +17,7 @@ import type {
 	QuoteResponse,
 } from "~/types/order";
 import type { DeliveryQuote } from "../../../api/src/contracts/deliveryQuote";
+import { ANALYTICS_EVENTS } from "../../../api/src/contracts/monitoring";
 
 export interface CheckoutQuoteInput {
 	address: AddressInput;
@@ -109,6 +111,10 @@ export function usePlaceOrder() {
 			}),
 		retry: false,
 		onSuccess: (_placed, input) => {
+			track(ANALYTICS_EVENTS.orderPlaced, {
+				payment_method: input.paymentMethod,
+				split: false,
+			});
 			void queryClient.invalidateQueries({ queryKey: cartKey() });
 			void queryClient.invalidateQueries({ queryKey: purchasesRootKey() });
 			if (input.saveAddress)

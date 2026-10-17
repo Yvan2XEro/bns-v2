@@ -3,6 +3,7 @@ import { DM_Sans, Outfit } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
+import { Monitoring } from "~/components/monitoring";
 import { QueryProvider } from "~/components/query-provider";
 import { AppConfigProvider } from "~/hooks/use-app-config";
 import { AuthProvider } from "~/hooks/use-auth";
@@ -120,6 +121,7 @@ export default async function RootLayout({
 						<AppConfigProvider initialConfig={config}>
 							<AuthProvider>
 								<ChatProvider>{children}</ChatProvider>
+								<Monitoring />
 							</AuthProvider>
 						</AppConfigProvider>
 					</QueryProvider>

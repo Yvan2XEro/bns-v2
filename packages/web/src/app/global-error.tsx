@@ -1,5 +1,7 @@
 "use client";
 
+import { useReportError } from "~/hooks/use-report-error";
+
 /**
  * Replaces the root layout, so no translations are loaded here: the copy is
  * French first, the site's default, with English after it.
@@ -11,6 +13,7 @@ export default function GlobalError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
+	useReportError(error);
 	return (
 		<html lang="fr">
 			<body
