@@ -74,11 +74,13 @@ import {
 	serializeAttributeValues,
 } from "@/src/lib/listingForm";
 import { isSuspended } from "@/src/lib/moderation";
+import { track } from "@/src/lib/monitoring";
 import { canAddPhoto } from "@/src/lib/photoLimit";
 import { makeMain } from "@/src/lib/photoQueue";
 import type { Place } from "@/src/lib/places";
 import { useUserLocation } from "@/src/lib/useUserLocation";
 import { listingIssueStep } from "../../../../api/src/contracts/listingValidation";
+import { ANALYTICS_EVENTS } from "../../../../api/src/contracts/monitoring";
 import { whatsappShareUrl } from "../../../../api/src/contracts/whatsapp";
 
 const DURATIONS = [30, 60, 90];
@@ -351,6 +353,18 @@ export default function CreateScreen() {
 			]);
 		});
 	}, [userId, showAlert, t]);
+	// Once per ad: the moment the seller starts, to measure the time to publish.
+	const startedRef = useRef(false);
+	const worthKeeping = isDraftWorthKeeping(form);
+	useEffect(() => {
+		if (!worthKeeping) {
+			startedRef.current = false;
+			return;
+		}
+		if (startedRef.current) return;
+		startedRef.current = true;
+		track(ANALYTICS_EVENTS.listingStarted, { platform: "mobile" });
+	}, [worthKeeping]);
 	useEffect(() => {
 		if (!userId) return;
 		const timer = setTimeout(() => {
@@ -1665,6 +1679,11 @@ function ReviewStep({
 				return;
 			}
 			const id = data?.doc?.id ?? data?.id;
+			track(ANALYTICS_EVENTS.listingPublished, {
+				platform: "mobile",
+				photos: form.images.length,
+				category_id: form.category?.id ?? null,
+			});
 			onPublished?.(id ? { id: String(id), title: form.title } : null);
 			if (!id) router.push("/(tabs)/account");
 		},

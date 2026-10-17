@@ -63,9 +63,11 @@ import {
 	webListingIssues,
 } from "~/lib/listing-issues";
 import { mediaUploadForm } from "~/lib/media-upload";
+import { track } from "~/lib/monitoring";
 import { hasListingPrice } from "~/lib/price";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import type { Category } from "~/types";
+import { ANALYTICS_EVENTS } from "../../../../../api/src/contracts/monitoring";
 import {
 	type Place,
 	placeCoords,
@@ -535,6 +537,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			const listing = await res.json();
 			submittedRef.current = true;
 			clearListingDraft();
+			track(ANALYTICS_EVENTS.listingPublished, {
+				platform: "web",
+				photos: images.length,
+				category_id: selectedCategory.id,
+			});
 			// The listing page greets its new owner with a share moment.
 			router.push(`/listing/${listing.doc?.id || listing.id}?sent=1`);
 		} catch {
@@ -560,6 +567,18 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		Boolean(draft.title.trim() || draft.description.trim() || draft.price) ||
 		images.length > 0;
 	const submittedRef = useRef(false);
+
+	// Once per ad: the moment the seller starts, to measure the time to publish.
+	const startedRef = useRef(false);
+	useEffect(() => {
+		if (!draftWorthKeeping) {
+			startedRef.current = false;
+			return;
+		}
+		if (startedRef.current) return;
+		startedRef.current = true;
+		track(ANALYTICS_EVENTS.listingStarted, { platform: "web" });
+	}, [draftWorthKeeping]);
 
 	const [resumable, setResumable] = useState<ListingDraft | null>(null);
 	useEffect(() => {

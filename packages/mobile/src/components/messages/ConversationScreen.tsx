@@ -31,6 +31,7 @@ import {
 } from "@/src/lib/conversationView";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
+import { track } from "@/src/lib/monitoring";
 import { askForPushInContext } from "@/src/lib/notifications";
 import { isSystemMessage } from "@/src/lib/systemMessage";
 import type {
@@ -39,6 +40,7 @@ import type {
 	PayloadDoc,
 	UserDoc,
 } from "@/src/types/api";
+import { ANALYTICS_EVENTS } from "../../../../api/src/contracts/monitoring";
 import { SystemChip } from "./SystemChip";
 
 function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
@@ -317,7 +319,11 @@ export function ConversationScreen({
 		};
 
 		// Kept on screen, marked as not sent, so the text can be retried.
-		const onFailed = ({ tempId }: { tempId: string }) => {
+		const onFailed = ({ tempId, error }: { tempId: string; error: string }) => {
+			track(ANALYTICS_EVENTS.messageFailed, {
+				platform: "mobile",
+				reason: error,
+			});
 			queryClient.setQueryData(["messages", conversationId], (old: any) => {
 				if (!old) return old;
 				return {

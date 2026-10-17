@@ -54,6 +54,7 @@ import {
 	conversationHeader,
 	messageAuthorLabel,
 } from "~/lib/conversation-view";
+import { track } from "~/lib/monitoring";
 import { can } from "~/lib/shop-roles";
 import { isSystemMessage } from "~/lib/system-message";
 import type {
@@ -65,6 +66,7 @@ import type {
 	ShopRole,
 	User,
 } from "~/types";
+import { ANALYTICS_EVENTS } from "../../../../../api/src/contracts/monitoring";
 
 /** The populated shop of a conversation, or null for a classic one or an unpopulated id. */
 function shopOf(conv: ConversationWithDetails): Shop | null {
@@ -264,7 +266,8 @@ export function MessagesClient({
 			);
 		});
 
-		client.on("message:failed", ({ tempId }) => {
+		client.on("message:failed", ({ tempId, error }) => {
+			track(ANALYTICS_EVENTS.messageFailed, { platform: "web", reason: error });
 			// Keep the text on screen, marked as not sent, so it can be retried.
 			setFailedIds((prev) => new Set(prev).add(tempId));
 		});

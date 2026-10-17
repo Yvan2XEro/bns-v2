@@ -138,6 +138,11 @@ export const ANALYTICS_EVENTS = {
 	addToCart: "add_to_cart",
 	checkoutStarted: "checkout_started",
 	orderPlaced: "order_placed",
+	/** A listing form got its first real input: the start of time-to-first-listing. */
+	listingStarted: "listing_started",
+	listingPublished: "listing_published",
+	/** The chat service refused a message (the app keeps it to retry). */
+	messageFailed: "message_failed",
 } as const;
 
 export type AnalyticsEvent =
