@@ -76,7 +76,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 							alt={listing.title}
 							fill
 							className="object-cover transition-transform duration-300 group-hover:scale-105"
-							sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+							sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
 						/>
 					) : (
 						<div className="flex h-full w-full items-center justify-center">
@@ -87,7 +87,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 					{/* Top-left badges */}
 					<div className="absolute top-2 left-2 flex flex-col gap-1">
 						{isBoosted && (
-							<span className="flex items-center gap-[3px] rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[10px] text-ink uppercase">
+							<span className="flex items-center gap-[3px] rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[#0F172A] text-[10px] uppercase">
 								{t("listingFeatured")}
 							</span>
 						)}

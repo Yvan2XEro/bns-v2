@@ -118,7 +118,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 								</Button>
 							</Link>
 							<Link href="/create">
-								<Button className="rounded-xl bg-[#F59E0B] font-bold text-ink shadow-amber-500/15 shadow-md hover:bg-[#D97706]">
+								<Button className="rounded-xl bg-[#F59E0B] font-bold text-[#0F172A] shadow-amber-500/15 shadow-md hover:bg-[#D97706]">
 									<PlusCircle className="mr-2 h-4 w-4" />
 									{t("newListing")}
 								</Button>

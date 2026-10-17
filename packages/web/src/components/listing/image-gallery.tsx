@@ -79,6 +79,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 							src={images[currentIndex]}
 							alt={`${title} ${currentIndex + 1}`}
 							fill
+							sizes="(min-width: 1024px) 760px, 100vw"
 							className="object-cover"
 							priority
 						/>
@@ -86,7 +87,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 					{isBoosted && (
 						<span className="pointer-events-none absolute top-3 left-3 flex items-center gap-1 rounded bg-[#F59E0B] px-2 py-1 font-bold text-white text-xs shadow">
 							<Zap className="h-3 w-3" />
-							Featured
+							{t("listingFeatured")}
 						</span>
 					)}
 					{images.length > 1 && (
@@ -134,6 +135,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 									src={url}
 									alt={`${title} ${i + 1}`}
 									fill
+									sizes="(min-width: 1024px) 128px, 17vw"
 									className="object-cover"
 								/>
 							</button>

@@ -248,7 +248,7 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 							href={gatedHref(signedIn, "/create")}
 							aria-label={t("postAd")}
 							title={t("postAd")}
-							className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F59E0B] font-extrabold text-ink text-sm hover:bg-[#D97706] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 md:flex"
+							className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F59E0B] font-extrabold text-[#0F172A] text-sm hover:bg-[#D97706] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 md:flex"
 						>
 							<Plus aria-hidden="true" className="h-5 w-5" />
 						</Link>

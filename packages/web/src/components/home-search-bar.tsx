@@ -60,7 +60,7 @@ export function HomeSearchBar() {
 					</div>
 					<button
 						type="submit"
-						className="flex h-14 items-center justify-center gap-2 rounded-[10px] bg-[#F59E0B] px-6 font-bold text-ink transition-all duration-200 hover:bg-[#D97706] active:scale-[0.98] sm:h-[62px] sm:px-8"
+						className="flex h-14 items-center justify-center gap-2 rounded-[10px] bg-[#F59E0B] px-6 font-bold text-[#0F172A] transition-all duration-200 hover:bg-[#D97706] active:scale-[0.98] sm:h-[62px] sm:px-8"
 					>
 						{t("searchButton")}
 					</button>
