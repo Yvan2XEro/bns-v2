@@ -163,6 +163,26 @@ export function ShopSheet({
 				</div>
 			</header>
 
+			{/* Seven sections make a long scroll: jump straight to one. */}
+			<nav
+				aria-label={t("shop.sectionsLabel")}
+				className="-mx-1 sticky top-0 z-10 flex gap-1 overflow-x-auto bg-canvas/95 px-1 py-2 backdrop-blur"
+			>
+				{SHEET_ANCHORS.map(({ id, key, count }) => (
+					<a
+						key={id}
+						href={`#shop-${id}`}
+						className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3 font-medium text-ink text-xs hover:bg-subtle"
+					>
+						{t(`shop.${key}`)}
+						{count?.(sheet) ? (
+							<span className="rounded-full bg-subtle px-1.5 text-[11px] text-ink-muted">
+								{count(sheet)}
+							</span>
+						) : null}
+					</a>
+				))}
+			</nav>
 			<div className="lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-5">
 				<div className="min-w-0 space-y-5">
 					<section aria-label={t("shop.statsLabel")}>
@@ -200,11 +220,37 @@ export function ShopSheet({
 	);
 }
 
+const SHEET_ANCHORS: {
+	id: string;
+	key: string;
+	count?: (sheet: ModerationShopSheet) => number;
+}[] = [
+	{
+		id: "reports",
+		key: "reportsTitle",
+		count: (sheet) => sheet.reports.length,
+	},
+	{
+		id: "strikes",
+		key: "strikesTitle",
+		count: (sheet) => sheet.standing.activeWeight,
+	},
+	{ id: "suspension", key: "suspensionTitle" },
+	{ id: "payments", key: "paymentsTitle" },
+	{
+		id: "history",
+		key: "historyTitle",
+		count: (sheet) => sheet.history.length,
+	},
+	{ id: "team", key: "teamTitle" },
+	{ id: "activity", key: "activityTitle" },
+];
+
 function ReportsSection({ sheet }: { sheet: ModerationShopSheet }) {
 	const t = useTranslations("ModerationConsole");
 	const { day } = useDates();
 	return (
-		<section className={CARD}>
+		<section id="shop-reports" className={`${CARD} scroll-mt-16`}>
 			<h2 className="font-bold font-heading text-ink">
 				{t("shop.reportsTitle")}
 			</h2>
@@ -273,7 +319,7 @@ function StrikesSection({ sheet }: { sheet: ModerationShopSheet }) {
 			"shop.restriction.protectedUnavailable",
 	].filter((key): key is string => typeof key === "string");
 	return (
-		<section className={CARD}>
+		<section id="shop-strikes" className={`${CARD} scroll-mt-16`}>
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
 				<h2 className="font-bold font-heading text-ink">
 					{t("shop.strikesTitle")}
@@ -321,7 +367,7 @@ function HistorySection({ sheet }: { sheet: ModerationShopSheet }) {
 	const tRoot = useTranslations();
 	const { time } = useDates();
 	return (
-		<section className={CARD}>
+		<section id="shop-history" className={`${CARD} scroll-mt-16`}>
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
 				<h2 className="font-bold font-heading text-ink">
 					{t("shop.historyTitle")}
@@ -379,7 +425,7 @@ function TeamSection({ sheet }: { sheet: ModerationShopSheet }) {
 	const tActivity = useTranslations("shopActivity");
 	const { day } = useDates();
 	return (
-		<section className={CARD}>
+		<section id="shop-team" className={`${CARD} scroll-mt-16`}>
 			<h2 className="font-bold font-heading text-ink">{t("shop.teamTitle")}</h2>
 			{sheet.team.length === 0 ? (
 				<p className="text-ink-muted text-sm">{t("shop.noTeam")}</p>
@@ -414,7 +460,7 @@ function ActivitySection({ sheet }: { sheet: ModerationShopSheet }) {
 	const { time } = useDates();
 	if (sheet.activity.length === 0) return null;
 	return (
-		<section className={CARD}>
+		<section id="shop-activity" className={`${CARD} scroll-mt-16`}>
 			<h2 className="font-bold font-heading text-ink">
 				{t("shop.activityTitle")}
 			</h2>
@@ -459,7 +505,7 @@ function SuspensionCard({
 	const suspended = shop.status === "suspended";
 
 	return (
-		<section className={CARD}>
+		<section id="shop-suspension" className={`${CARD} scroll-mt-16`}>
 			<h2 className="font-bold font-heading text-ink">
 				{t("shop.suspensionTitle")}
 			</h2>
@@ -762,7 +808,7 @@ function PaymentsCard({
 	const account = payments.connectedAccount;
 
 	return (
-		<section className={CARD}>
+		<section id="shop-payments" className={`${CARD} scroll-mt-16`}>
 			<h2 className="font-bold font-heading text-ink">
 				{t("shop.paymentsTitle")}
 			</h2>

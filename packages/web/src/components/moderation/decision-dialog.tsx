@@ -123,6 +123,14 @@ function DecisionForm({
 		requestedLevel === 3 &&
 		!checklistComplete(checklist);
 
+	const sellerTemplate = (reason: string) =>
+		t(
+			`review.dialog.sellerTemplate.${action === "reject" ? "reject" : "requestInfo"}`,
+			{
+				reason: t(`review.reasonCode.${reason}`),
+			},
+		);
+
 	const form = useForm<FormValues>({
 		resolver: zodResolver(decisionSchema(action)),
 		defaultValues: { reasonCode: "", sellerMessage: "", note: "" },
@@ -172,7 +180,21 @@ function DecisionForm({
 							control={form.control}
 							name="reasonCode"
 							render={({ field }) => (
-								<Select value={field.value} onValueChange={field.onChange}>
+								<Select
+									value={field.value}
+									onValueChange={(reason) => {
+										field.onChange(reason);
+										// A starting point the moderator edits, never a blank
+										// page: replaced only while it is still untouched.
+										if (!needsSellerMessage) return;
+										const current = form.getValues("sellerMessage");
+										const previous = field.value
+											? sellerTemplate(field.value)
+											: "";
+										if (current.trim() === "" || current === previous)
+											form.setValue("sellerMessage", sellerTemplate(reason));
+									}}
+								>
 									<SelectTrigger id={`reason-${action}`}>
 										<SelectValue
 											placeholder={t("review.dialog.reasonPlaceholder")}

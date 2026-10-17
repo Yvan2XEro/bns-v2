@@ -1937,6 +1937,10 @@
 					"title": "Révoquer ce niveau",
 					"description": "La boutique perd les capacités accordées par ce niveau.",
 					"confirm": "Révoquer"
+				},
+				"sellerTemplate": {
+					"reject": "Bonjour, votre demande de vérification n’a pas pu être acceptée : {reason}. Vous pouvez corriger ce point et soumettre une nouvelle demande.",
+					"requestInfo": "Bonjour, il nous manque un élément pour vérifier votre boutique : {reason}. Merci de compléter votre demande."
 				}
 			},
 			"reasonCode": {
@@ -5997,7 +6001,8 @@
 			"payoutOrigin": {
 				"platform_release": "Libéré par la plateforme",
 				"provider_schedule": "Calendrier du prestataire"
-			}
+			},
+			"sectionsLabel": "Sections de la fiche"
 		},
 		"log": {
 			"title": "Journal de modération",
@@ -6052,6 +6057,15 @@
 				"riskFlag": "Signal de risque",
 				"review": "Avis"
 			}
+		},
+		"consoleTitle": "Modération",
+		"shortcuts": {
+			"title": "Raccourcis clavier",
+			"next": "Élément suivant",
+			"previous": "Élément précédent",
+			"takeNext": "Prendre le suivant",
+			"close": "Fermer le panneau",
+			"help": "Afficher les raccourcis"
 		}
 	}
 }

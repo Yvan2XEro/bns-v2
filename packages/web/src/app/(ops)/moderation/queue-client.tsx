@@ -1,6 +1,6 @@
 "use client";
 
-import { Zap } from "lucide-react";
+import { Keyboard, Zap } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -12,6 +12,7 @@ import {
 	MasterDetail,
 } from "~/components/moderation/master-detail";
 import { QueueItemPanel } from "~/components/moderation/queue-item-panel";
+import { ShortcutsDialog } from "~/components/moderation/shortcuts-dialog";
 import { useAuth } from "~/hooks/use-auth";
 import {
 	useClaimRiskFlag,
@@ -19,6 +20,7 @@ import {
 	useModerationSummary,
 	useTakeNextQueueItem,
 } from "~/hooks/use-moderation-console";
+import { useQueueShortcuts } from "~/hooks/use-queue-shortcuts";
 import { useUrlSelection } from "~/hooks/use-url-selection";
 import { resolveErrorMessage } from "~/lib/apiError";
 import {
@@ -57,6 +59,7 @@ export function QueueClient() {
 	const truncated = queue.data?.pages.some((page) => page.truncated) ?? false;
 	const total = all.data?.pages[0]?.total;
 	const selected = selectedQueueItem(items, selection, taken);
+	const [helpOpen, setHelpOpen] = useState(false);
 
 	const onTakeNext = () => {
 		setNothingLeft(false);
@@ -75,6 +78,17 @@ export function QueueClient() {
 			},
 		});
 	};
+
+	// Walking the queue with j/k replaces the open item instead of stacking
+	// one history entry per item.
+	useQueueShortcuts({
+		items,
+		selection,
+		select: (item) =>
+			item ? router.replace(hrefFor(item), { scroll: false }) : select(null),
+		onTakeNext,
+		onHelp: () => setHelpOpen(true),
+	});
 
 	const chips = [
 		{
@@ -165,15 +179,27 @@ export function QueueClient() {
 						: t("queue.subtitleLoading")
 				}
 				actions={
-					<button
-						type="button"
-						onClick={onTakeNext}
-						disabled={takeNext.isPending}
-						className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-fill px-4 font-semibold text-sm text-white hover:bg-brand-strong focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2 disabled:opacity-60"
-					>
-						<Zap aria-hidden="true" className="h-4 w-4" />
-						{takeNext.isPending ? t("queue.takingNext") : t("queue.takeNext")}
-					</button>
+					<>
+						<button
+							type="button"
+							onClick={() => setHelpOpen(true)}
+							aria-keyshortcuts="?"
+							className="inline-flex h-10 items-center rounded-lg border border-line-strong bg-surface px-3 font-semibold text-ink text-sm hover:bg-subtle focus-visible:outline-2 focus-visible:outline-brand"
+						>
+							<Keyboard aria-hidden="true" className="h-4 w-4" />
+							<span className="sr-only">{t("shortcuts.title")}</span>
+						</button>
+						<button
+							type="button"
+							onClick={onTakeNext}
+							aria-keyshortcuts="n"
+							disabled={takeNext.isPending}
+							className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-fill px-4 font-semibold text-sm text-white hover:bg-brand-strong focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2 disabled:opacity-60"
+						>
+							<Zap aria-hidden="true" className="h-4 w-4" />
+							{takeNext.isPending ? t("queue.takingNext") : t("queue.takeNext")}
+						</button>
+					</>
 				}
 			/>
 			{nothingLeft ? (
@@ -215,6 +241,7 @@ export function QueueClient() {
 					{t("queue.mine")}
 				</FilterChip>
 			</nav>
+			<ShortcutsDialog open={helpOpen} onOpenChange={setHelpOpen} />
 			<MasterDetail
 				list={list}
 				open={selection !== null}

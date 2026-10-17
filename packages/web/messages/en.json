@@ -1937,6 +1937,10 @@
 					"title": "Revoke this level",
 					"description": "The shop loses the capabilities this level granted.",
 					"confirm": "Revoke"
+				},
+				"sellerTemplate": {
+					"reject": "Hello, your verification request could not be accepted: {reason}. You can fix this and submit a new request.",
+					"requestInfo": "Hello, we need one more thing to verify your shop: {reason}. Please complete your request."
 				}
 			},
 			"reasonCode": {
@@ -5997,7 +6001,8 @@
 			"payoutOrigin": {
 				"platform_release": "Released by the platform",
 				"provider_schedule": "Provider schedule"
-			}
+			},
+			"sectionsLabel": "Sheet sections"
 		},
 		"log": {
 			"title": "Moderation log",
@@ -6052,6 +6057,15 @@
 				"riskFlag": "Risk signal",
 				"review": "Review"
 			}
+		},
+		"consoleTitle": "Moderation",
+		"shortcuts": {
+			"title": "Keyboard shortcuts",
+			"next": "Next item",
+			"previous": "Previous item",
+			"takeNext": "Take the next one",
+			"close": "Close the panel",
+			"help": "Show the shortcuts"
 		}
 	}
 }

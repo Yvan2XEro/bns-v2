@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { RiskClient } from "./risk-client";
 
-export const metadata: Metadata = { title: "Risk flags" };
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("ModerationConsole");
+	return { title: `${t("nav.risk")} · ${t("consoleTitle")}` };
+}
 
 export default function RiskPage() {
 	return (
