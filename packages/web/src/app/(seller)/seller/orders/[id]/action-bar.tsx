@@ -26,7 +26,7 @@ import { HandoverDialog, HandoverFallbacks } from "./handover-dialog";
 const VARIANTS = {
 	primary: "default",
 	secondary: "outline",
-	danger: "destructive",
+	danger: "ghost",
 } as const;
 
 /**
@@ -71,7 +71,9 @@ export function ActionBar({
 	return (
 		<aside
 			aria-labelledby="action-bar-title"
-			className="h-fit space-y-3 rounded-xl border border-line bg-surface p-5 lg:sticky lg:top-4"
+			// Below lg the panel would come after the buyer, summary, shipment and
+			// history blocks: what the seller has to do next goes first instead.
+			className="order-first h-fit space-y-3 rounded-xl border border-line bg-surface p-5 lg:sticky lg:top-4 lg:order-none"
 		>
 			<h2 id="action-bar-title" className="font-semibold text-ink">
 				{t("actions")}
@@ -110,7 +112,13 @@ export function ActionBar({
 								key={action}
 								type="button"
 								variant={VARIANTS[tone]}
-								className="min-h-11"
+								className={
+									// Refusing or cancelling stays reachable without looking
+									// like the next step.
+									tone === "danger"
+										? "min-h-11 bg-transparent text-red-700 underline-offset-4 hover:bg-red-50 hover:underline dark:text-red-400 dark:hover:bg-red-950/40"
+										: "min-h-11"
+								}
 								disabled={pending}
 								onClick={onClick}
 							>

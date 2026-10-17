@@ -2814,7 +2814,9 @@
 		"headerSummary_one": "{{count}} item · 1 shop",
 		"headerSummary": "{{count}} items · 1 shop",
 		"deliveryNext": "Delivery method and fee on the next step.",
-		"codNote": "You pay on delivery, in cash or by mobile money. You have {{days}} days after delivery to withdraw."
+		"codNote": "You pay on delivery, in cash or by mobile money. You have {{days}} days after delivery to withdraw.",
+		"headerLabel_one": "Cart, {{count}} item",
+		"headerLabel": "Cart, {{count}} items"
 	},
 	"addresses": {
 		"title": "My addresses",

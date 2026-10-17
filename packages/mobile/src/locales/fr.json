@@ -2817,7 +2817,9 @@
 		"headerSummary_one": "{{count}} article · 1 boutique",
 		"headerSummary": "{{count}} articles · 1 boutique",
 		"deliveryNext": "Mode et frais de livraison à l'étape suivante.",
-		"codNote": "Vous payez à la livraison, en espèces ou par mobile money. Vous disposez de {{days}} jours après réception pour vous rétracter."
+		"codNote": "Vous payez à la livraison, en espèces ou par mobile money. Vous disposez de {{days}} jours après réception pour vous rétracter.",
+		"headerLabel_one": "Panier, {{count}} article",
+		"headerLabel": "Panier, {{count}} articles"
 	},
 	"addresses": {
 		"title": "Mes adresses",

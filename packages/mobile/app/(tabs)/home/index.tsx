@@ -37,6 +37,7 @@ import {
 } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { CartHeaderButton } from "@/src/components/CartHeaderButton";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
@@ -505,6 +506,12 @@ export default function HomeScreen() {
 					</Animated.Text>
 
 					<View style={{ flex: 1 }} />
+
+					<CartHeaderButton
+						style={[styles.bellBtn, { backgroundColor: cardBg, borderColor }]}
+						color={mutedColor}
+						size={18}
+					/>
 
 					{/* Bell icon — only rendered after NovuProvider context is established */}
 					{user && novuReady && (

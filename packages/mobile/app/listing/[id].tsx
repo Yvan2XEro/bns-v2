@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CallSellerButton } from "@/src/components/CallSellerButton";
+import { CartHeaderButton } from "@/src/components/CartHeaderButton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { BuyBox } from "@/src/components/order/BuyBox";
@@ -367,6 +368,7 @@ export default function ListingDetail() {
 					<Ionicons name="chevron-back" size={22} color="#0f172a" />
 				</Pressable>
 				<View style={styles.topBarEnd}>
+					<CartHeaderButton style={styles.floatBtn} color="#0f172a" />
 					<Pressable
 						onPress={handleShare}
 						style={styles.floatBtn}

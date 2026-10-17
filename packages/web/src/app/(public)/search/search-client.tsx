@@ -102,6 +102,16 @@ export function SearchClient({
 		verified: initialParams.verified === "1" ? "1" : "",
 	});
 
+	// Typed prices apply when the field is left or Enter is pressed: one
+	// search per price, not one per digit.
+	const [priceDraft, setPriceDraft] = useState({
+		minPrice: initialParams.minPrice || "",
+		maxPrice: initialParams.maxPrice || "",
+	});
+	function commitPrice(key: "minPrice" | "maxPrice") {
+		if (priceDraft[key] !== filters[key]) updateFilter(key, priceDraft[key]);
+	}
+
 	// Local state for the top search input — avoids router.push on every keystroke
 	const [searchInput, setSearchInput] = useState(initialParams.q || "");
 	const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -258,7 +268,8 @@ export function SearchClient({
 		for (const [key, value] of Object.entries(attributeFilters)) {
 			if (value) newParams.set(`attr_${key}`, value);
 		}
-		router.push(`/search?${newParams.toString()}`);
+		// A filter refines the same search: replacing keeps Back for leaving it.
+		router.replace(`/search?${newParams.toString()}`, { scroll: false });
 	}
 
 	function updateAttributeFilter(key: string, value: string) {
@@ -272,7 +283,7 @@ export function SearchClient({
 		for (const [k, v] of Object.entries(newAttrs)) {
 			if (v) newParams.set(`attr_${k}`, v);
 		}
-		router.push(`/search?${newParams.toString()}`);
+		router.replace(`/search?${newParams.toString()}`, { scroll: false });
 	}
 
 	function handlePlaceChange(place: Place | null) {
@@ -301,6 +312,7 @@ export function SearchClient({
 			verified: "",
 		});
 		setAttributeFilters({});
+		setPriceDraft({ minPrice: "", maxPrice: "" });
 		router.push("/search");
 	}
 
@@ -370,16 +382,32 @@ export function SearchClient({
 						type="number"
 						placeholder={t("minPrice")}
 						className="h-9 rounded-lg text-sm"
-						value={filters.minPrice}
-						onChange={(e) => updateFilter("minPrice", e.target.value)}
+						inputMode="numeric"
+						aria-label={t("minPrice")}
+						value={priceDraft.minPrice}
+						onChange={(e) =>
+							setPriceDraft((d) => ({ ...d, minPrice: e.target.value }))
+						}
+						onBlur={() => commitPrice("minPrice")}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") commitPrice("minPrice");
+						}}
 					/>
 					<span className="flex items-center text-ink-faint">—</span>
 					<Input
 						type="number"
 						placeholder={t("maxPrice")}
 						className="h-9 rounded-lg text-sm"
-						value={filters.maxPrice}
-						onChange={(e) => updateFilter("maxPrice", e.target.value)}
+						inputMode="numeric"
+						aria-label={t("maxPrice")}
+						value={priceDraft.maxPrice}
+						onChange={(e) =>
+							setPriceDraft((d) => ({ ...d, maxPrice: e.target.value }))
+						}
+						onBlur={() => commitPrice("maxPrice")}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") commitPrice("maxPrice");
+						}}
 					/>
 				</div>
 			</div>
