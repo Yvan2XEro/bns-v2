@@ -806,7 +806,8 @@
 		"browseListings": "Browse listings",
 		"save": "Save",
 		"saved": "Saved",
-		"saveFailed": "Couldn’t save, try again"
+		"saveFailed": "Couldn’t save, try again",
+		"unavailableCount": "{count, plural, one {# favourite is no longer available (sold, expired or withdrawn).} other {# favourites are no longer available (sold, expired or withdrawn).}}"
 	},
 	"Home": {
 		"heroTitle": "Buy & Sell Locally",

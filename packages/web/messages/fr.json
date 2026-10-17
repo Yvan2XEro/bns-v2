@@ -806,7 +806,8 @@
 		"browseListings": "Parcourir les annonces",
 		"save": "Sauvegarder",
 		"saved": "Sauvegardé",
-		"saveFailed": "Impossible d’enregistrer, réessayez"
+		"saveFailed": "Impossible d’enregistrer, réessayez",
+		"unavailableCount": "{count, plural, one {# favori n’est plus disponible (vendu, expiré ou retiré).} other {# favoris ne sont plus disponibles (vendus, expirés ou retirés).}}"
 	},
 	"Home": {
 		"heroTitle": "Acheter & Vendre Localement",

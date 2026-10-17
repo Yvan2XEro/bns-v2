@@ -7,10 +7,11 @@ import type { Favorite, Listing } from "~/types";
 async function getFavorites(): Promise<{
 	listings: Listing[];
 	favoriteIds: string[];
+	unavailable: number;
 }> {
 	try {
 		const res = await serverFetch("/api/favorites?depth=2&limit=100");
-		if (!res.ok) return { listings: [], favoriteIds: [] };
+		if (!res.ok) return { listings: [], favoriteIds: [], unavailable: 0 };
 
 		const json = await res.json();
 		const data: Favorite[] = json.docs || json;
@@ -32,22 +33,30 @@ async function getFavorites(): Promise<{
 			}),
 		);
 
+		const available = listings.filter(Boolean) as Listing[];
 		return {
-			listings: listings.filter(Boolean) as Listing[],
+			listings: available,
 			favoriteIds,
+			// Sold, expired or withdrawn: said, rather than silently gone.
+			unavailable: data.length - available.length,
 		};
 	} catch {
-		return { listings: [], favoriteIds: [] };
+		return { listings: [], favoriteIds: [], unavailable: 0 };
 	}
 }
 
 export default async function FavoritesPage() {
 	const t = await getTranslations("Favorites");
-	const { listings, favoriteIds } = await getFavorites();
+	const { listings, favoriteIds, unavailable } = await getFavorites();
 
 	return (
 		<div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 			<h1 className="mb-6 font-bold text-2xl text-ink">{t("favorites")}</h1>
+			{unavailable > 0 && (
+				<p className="mb-4 rounded-lg bg-subtle px-3 py-2 text-ink-muted text-sm">
+					{t("unavailableCount", { count: unavailable })}
+				</p>
+			)}
 
 			{listings.length > 0 ? (
 				<ListingGrid listings={listings} favorites={favoriteIds} />
