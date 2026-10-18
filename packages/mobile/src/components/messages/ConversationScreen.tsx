@@ -112,6 +112,8 @@ function TypingDots({ color }: { color: string }) {
 export interface ConversationScreenProps {
 	conversationId: string;
 	listingParam?: string;
+	/** A drafted first message (a visit, an application, a quote), never sent for the buyer. */
+	initialDraft?: string;
 	/**
 	 * Replaces the default buyer-facing header entirely — the shop inbox
 	 * screen renders its own (buyer, listing, assignee chip, status) instead
@@ -137,6 +139,7 @@ export interface ConversationScreenProps {
 export function ConversationScreen({
 	conversationId,
 	listingParam,
+	initialDraft = "",
 	renderHeader,
 	onLatestMessage,
 }: ConversationScreenProps) {
@@ -147,7 +150,7 @@ export function ConversationScreen({
 	const { chatClient, onlineUsers } = useChatClient();
 	const { showAlert } = useAlert();
 	const queryClient = useQueryClient();
-	const [text, setText] = useState("");
+	const [text, setText] = useState(initialDraft);
 	const [isOtherTyping, setIsOtherTyping] = useState(false);
 	const [readByOther, setReadByOther] = useState<Set<string>>(new Set());
 	const listRef = useRef<FlatList>(null);

@@ -23,6 +23,7 @@ import {
 	conditionLabelKey,
 	listingConditionValue,
 } from "@/src/lib/listingCondition";
+import { kindPriceText } from "@/src/lib/listingKind";
 import { listingShopName } from "@/src/lib/listingShop";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
@@ -45,6 +46,8 @@ interface Listing {
 	status?: string;
 	/** Bought on the platform (protected payment or cash on delivery). */
 	orderable?: boolean | null;
+	kind?: string | null;
+	priceUnit?: string | null;
 }
 
 interface ListingCardProps {
@@ -122,19 +125,19 @@ export function ListingCard({
 		onToggleFavorite(listing.id);
 	};
 
+	// "/ month" after a rent, "On quote" for a service without a price.
+	const priceText = kindPriceText(
+		listing.price ? formatPrice(listing.price, i18n.language) : null,
+		listing,
+		(key) => i18n.t(`listingKind.${key}`),
+	);
+
 	return (
 		<Pressable
 			onPress={() => onPress(listing.id)}
 			// One summary instead of a dozen fragments read one by one.
 			accessibilityRole="link"
-			accessibilityLabel={[
-				listing.title,
-				listing.price
-					? formatPrice(listing.price, i18n.language)
-					: i18n.t("listing.priceOnRequest"),
-				listing.location,
-				shopName,
-			]
+			accessibilityLabel={[listing.title, priceText, listing.location, shopName]
 				.filter(Boolean)
 				.join(", ")}
 			onPressIn={() => {
@@ -273,9 +276,7 @@ export function ListingCard({
 						style={[styles.price, { color: textPrimary }]}
 						numberOfLines={1}
 					>
-						{listing.price
-							? formatPrice(listing.price, i18n.language)
-							: i18n.t("listing.priceOnRequest")}
+						{priceText}
 					</Text>
 
 					{/* Title — 2-line clamp */}

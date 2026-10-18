@@ -17,9 +17,10 @@ function shopIdOf(conv: Conversation | undefined): string | null {
 }
 
 export default function MessagesConversationScreen() {
-	const { conversationId, listing } = useLocalSearchParams<{
+	const { conversationId, listing, draft } = useLocalSearchParams<{
 		conversationId: string;
 		listing?: string;
+		draft?: string;
 	}>();
 
 	// Shares its cache with `ConversationScreen`'s own query (same key), so
@@ -64,6 +65,7 @@ export default function MessagesConversationScreen() {
 		<ConversationScreen
 			conversationId={conversationId}
 			listingParam={listing}
+			initialDraft={draft}
 		/>
 	);
 }

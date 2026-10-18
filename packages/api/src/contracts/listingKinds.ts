@@ -153,6 +153,44 @@ export function listingAction(input: {
 	return input.isShopProduct ? "order" : listingKindRules(input.kind).action;
 }
 
+/** Actions that open the conversation on a drafted message. */
+export const DRAFT_ACTIONS = ["visit", "apply", "quote"] as const;
+export type DraftAction = (typeof DRAFT_ACTIONS)[number];
+
+export function isDraftAction(value: unknown): value is DraftAction {
+	return (
+		typeof value === "string" &&
+		(DRAFT_ACTIONS as readonly string[]).includes(value)
+	);
+}
+
+/** Kinds with safety tips of their own; goods keep the marketplace's. */
+export function safetyKind(
+	kind: unknown,
+): Extract<ListingKind, "rental" | "job" | "service"> | null {
+	const resolved = kindOf(kind);
+	return resolved === "rental" || resolved === "job" || resolved === "service"
+		? resolved
+		: null;
+}
+
+/**
+ * "150 000 / month" for a rent, "Salary not stated" for a job without one.
+ * `money` is the price already formatted in the market's currency, or null.
+ * `t` resolves the clients' kind messages: `unit.<unit>` and
+ * `missingPrice.<case>`, from web's `ListingKind` or mobile's `listingKind`.
+ */
+export function kindPriceText(
+	money: string | null,
+	listing: { kind?: unknown; priceUnit?: unknown },
+	t: (key: string) => string,
+): string {
+	if (!money)
+		return t(`missingPrice.${listingKindRules(listing.kind).missingPrice}`);
+	const unit = displayPriceUnit(listing.kind, listing.priceUnit);
+	return unit ? `${money} ${t(`unit.${unit}`)}` : money;
+}
+
 // ── Shop profiles ────────────────────────────────────────────────────────────
 
 export const SHOP_PROFILES = [

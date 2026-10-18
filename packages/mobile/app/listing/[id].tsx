@@ -42,6 +42,14 @@ import { withContentLocale } from "@/src/lib/contentLocale";
 import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
+import {
+	type DraftAction,
+	isDraftAction,
+	kindPriceText,
+	listingAction,
+	listingKindRules,
+	safetyKind,
+} from "@/src/lib/listingKind";
 import { formatPrice, formatPriceRange } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { publicShopBadge } from "@/src/lib/verification";
@@ -100,6 +108,12 @@ function isListingTag(value: unknown): value is ListingTag {
 		typeof value.name === "string"
 	);
 }
+
+const DRAFT_ICONS: Record<DraftAction, keyof typeof Ionicons.glyphMap> = {
+	visit: "calendar-outline",
+	apply: "briefcase-outline",
+	quote: "document-text-outline",
+};
 
 export default function ListingDetail() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -222,6 +236,14 @@ export default function ListingDetail() {
 		!ownShop &&
 		Boolean(listingShop) &&
 		!listingShop?.ordersRestrictedAt;
+	// Order for a shop product, else what the kind calls for: a visit, an
+	// application, a quote.
+	const action = listingAction({
+		kind: listing?.kind,
+		isShopProduct: Boolean(productId),
+	});
+	const draftAction = isDraftAction(action) ? action : null;
+	const tipsKind = productId ? null : safetyKind(listing?.kind);
 	const priceLabel =
 		summary?.priceMin != null &&
 		summary.priceMax != null &&
@@ -269,6 +291,12 @@ export default function ListingDetail() {
 		});
 	};
 
+	const messageLabel = draftAction
+		? t(`listingKind.action.${draftAction}`)
+		: listingShop
+			? t("listing.messageShop")
+			: t("listing.contactSeller");
+
 	const handleMessage = () => {
 		if (!user) {
 			router.push({
@@ -283,7 +311,22 @@ export default function ListingDetail() {
 		// `MessageSellerButton` on web, which this mirrors.
 		startConversation.mutate(id, {
 			onSuccess: ({ conversationId }) => {
-				router.push(`/messages/${conversationId}?listing=${id}`);
+				// A visit, an application or a quote opens on a drafted message,
+				// only ever placed in the composer: the buyer edits and sends it.
+				router.push({
+					pathname: "/messages/[conversationId]",
+					params: {
+						conversationId,
+						listing: id,
+						...(draftAction && listing
+							? {
+									draft: t(`listingKind.draft.${draftAction}`, {
+										title: listing.title,
+									}),
+								}
+							: {}),
+					},
+				});
 			},
 			onError: (error) => {
 				showError(t("common.error"), resolveErrorMessage(error, t));
@@ -502,8 +545,17 @@ export default function ListingDetail() {
 					{/* Price, title, chips, meta — straight on the sheet, no card */}
 					<View style={styles.hero}>
 						<Text style={[styles.price, { color: primaryColor }]}>
-							{priceLabel ?? t("listing.priceOnRequest")}
+							{kindPriceText(priceLabel, listing, (key) =>
+								t(`listingKind.${key}`),
+							)}
 						</Text>
+						{listing.status === "sold" && (
+							<Text style={[styles.title, { color: mutedColor, fontSize: 14 }]}>
+								{t(
+									`listingKind.closedAs.${listingKindRules(listing.kind).closedAs}`,
+								)}
+							</Text>
+						)}
 						<Text style={[styles.title, { color: textColor }]}>
 							{listing.title}
 						</Text>
@@ -773,7 +825,9 @@ export default function ListingDetail() {
 						<Text style={[styles.safetyStripText, { color: mutedColor }]}>
 							{productId
 								? t("listing.safetyTips.stripShop")
-								: t("listing.safetyTips.strip")}
+								: tipsKind
+									? t(`listingKind.safety.${tipsKind}.tip1`)
+									: t("listing.safetyTips.strip")}
 						</Text>
 					</View>
 
@@ -885,11 +939,7 @@ export default function ListingDetail() {
 							onPress={handleMessage}
 							disabled={startConversation.isPending}
 							accessibilityRole="button"
-							accessibilityLabel={
-								listingShop
-									? t("listing.messageShop")
-									: t("listing.contactSeller")
-							}
+							accessibilityLabel={messageLabel}
 							style={[
 								// With an order button beside it, messaging steps back to
 								// a square secondary action.
@@ -907,17 +957,17 @@ export default function ListingDetail() {
 								/>
 							) : (
 								<Ionicons
-									name="chatbubble-outline"
+									name={
+										draftAction
+											? DRAFT_ICONS[draftAction]
+											: "chatbubble-outline"
+									}
 									size={18}
 									color={canOrder ? textColor : "#fff"}
 								/>
 							)}
 							{!canOrder && (
-								<Text style={styles.msgBtnText}>
-									{listingShop
-										? t("listing.messageShop")
-										: t("listing.contactSeller")}
-								</Text>
+								<Text style={styles.msgBtnText}>{messageLabel}</Text>
 							)}
 						</Pressable>
 					)}

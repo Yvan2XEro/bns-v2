@@ -7,6 +7,11 @@
  *  • /api/public/*   → custom Next.js routes, own response shapes (see below)
  *  • /api/{collection}/* → Payload REST — standard PayloadPage<T> shape
  */
+import type {
+	ListingKind,
+	PriceUnit,
+	ShopProfile,
+} from "../../../api/src/contracts/listingKinds";
 import type { ShopTrust } from "../../../api/src/contracts/shopTrust";
 import type { VerificationRequirement } from "../../../api/src/contracts/verificationRequirements";
 import type {
@@ -268,6 +273,10 @@ export interface ListingHit {
 	shopLevel?: number | null;
 	priceMax?: number | null;
 	available?: number | null;
+	/** From the category; decides the ad's actions (contracts/listingKinds.ts). */
+	kind?: ListingKind | null;
+	/** What the price covers; empty for a one-off price. */
+	priceUnit?: PriceUnit | null;
 }
 
 /**
@@ -636,6 +645,8 @@ export interface PublicShop {
 	id: string;
 	handle: string;
 	name: string;
+	/** The kind of business; absent from a server older than profiles. */
+	profile?: ShopProfile;
 	description: string | null;
 	logo: MediaRef | null;
 	banner: MediaRef | null;
@@ -958,6 +969,7 @@ export interface ListingShopRef {
 	id: string;
 	handle: string;
 	name: string;
+	profile?: ShopProfile;
 	level: number;
 	status?: ShopStatus;
 	logo?: Media | string | null;

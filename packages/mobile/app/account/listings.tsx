@@ -24,6 +24,7 @@ import { useAuth } from "@/src/lib/auth";
 import { withContentLocale } from "@/src/lib/contentLocale";
 import { appDateLocale } from "@/src/lib/formatDate";
 import i18n, { useTranslation } from "@/src/lib/i18n";
+import { kindPriceText, listingKindRules } from "@/src/lib/listingKind";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
@@ -75,12 +76,21 @@ function getStatusConfig(t: (key: string) => string) {
 
 function StatusBadge({
 	status,
+	kind,
 	t,
 }: {
 	status: string;
+	/** A flat is let and a job filled, not sold. */
+	kind?: string | null;
 	t: (key: string) => string;
 }) {
-	const cfg = getStatusConfig(t)[status] ?? {
+	const known = getStatusConfig(t)[status];
+	const cfg = (known && status === "sold"
+		? {
+				...known,
+				label: t(`listingKind.closedAs.${listingKindRules(kind).closedAs}`),
+			}
+		: known) ?? {
 		label: status,
 		bg: "#f3f4f6",
 		text: "#374151",
@@ -257,12 +267,18 @@ export default function MyListingsScreen() {
 						{item.title}
 					</Text>
 					<Text style={[styles.price, { color: primaryColor }]}>
-						{item.price
-							? formatPrice(item.price, i18n.language)
-							: i18n.t("listing.priceOnRequest")}
+						{kindPriceText(
+							item.price ? formatPrice(item.price, i18n.language) : null,
+							item,
+							(key) => i18n.t(`listingKind.${key}`),
+						)}
 					</Text>
 					<View style={styles.metaRow}>
-						<StatusBadge status={item.status ?? "pending"} t={t} />
+						<StatusBadge
+							status={item.status ?? "pending"}
+							kind={item.kind}
+							t={t}
+						/>
 						{item.createdAt && (
 							<Text style={[styles.date, { color: mutedColor }]}>
 								{formatDate(item.createdAt)}
@@ -287,7 +303,9 @@ export default function MyListingsScreen() {
 						<Pressable
 							onPress={() =>
 								showConfirm(
-									t("listings.markAsSold"),
+									t(
+										`listingKind.markClosed.${listingKindRules(item.kind).closedAs}`,
+									),
 									t("listings.markAsSoldConfirm"),
 									() => markSold(item.id),
 								)

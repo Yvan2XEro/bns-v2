@@ -14,6 +14,7 @@ const LAUNCH_ICONS: Record<LaunchActionKey, IoniconsName> = {
 	shareWhatsapp: "logo-whatsapp",
 	boost: "rocket-outline",
 	addProducts: "add-circle-outline",
+	addListing: "add-circle-outline",
 	verify: "shield-checkmark-outline",
 	addWhatsapp: "call-outline",
 	replyFast: "chatbubbles-outline",
