@@ -59,5 +59,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packa
 USER nextjs
 EXPOSE 3001
 ENV PORT=3001
+ENV HOSTNAME=0.0.0.0
 WORKDIR /app/packages/web
-CMD HOSTNAME="0.0.0.0" node server.js
+CMD ["node", "server.js"]
