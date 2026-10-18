@@ -1,5 +1,5 @@
-import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "@/src/lib/i18n";
 import { listingKindRules, type PriceUnit } from "@/src/lib/listingKind";
 
 /**
