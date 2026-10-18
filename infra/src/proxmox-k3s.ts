@@ -133,6 +133,9 @@ export function createProxmoxCluster(
 					{ bridge, model: "virtio", ...(vlanId ? { vlanId } : {}) },
 				],
 				operatingSystem: { type: "l26" },
+				// The provider's default CD-ROM is the host's physical drive; a
+				// server without one makes QEMU refuse to start. Left empty.
+				cdrom: { fileId: "none" },
 				initialization: {
 					type: "nocloud",
 					datastoreId,
