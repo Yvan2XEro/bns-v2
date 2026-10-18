@@ -26,6 +26,7 @@ export const createShopEndpoint: Endpoint = {
 				country: body.country,
 				countryCode: body.countryCode,
 				categories: body.categories,
+				profile: body.profile,
 			});
 			return Response.json({ shop }, { status: 201 });
 		} catch (error) {

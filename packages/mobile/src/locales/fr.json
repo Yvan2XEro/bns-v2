@@ -1264,7 +1264,8 @@
 		},
 		"listing": {
 			"notFound": "Cette annonce n'est plus disponible.",
-			"categoryNotFound": "Cette catégorie n'est plus disponible."
+			"categoryNotFound": "Cette catégorie n'est plus disponible.",
+			"categoryNotSellable": "Seuls les biens vont au catalogue : publiez les locations, les offres d'emploi et les services comme des annonces."
 		},
 		"upload": {
 			"tooLarge": "Ce fichier est trop volumineux.",
@@ -1288,7 +1289,8 @@
 			"notMember": "Vous n'êtes pas membre de cette boutique.",
 			"inactive": "Cette boutique n'est pas active.",
 			"notFound": "Cette boutique n'existe pas ou n'est pas disponible.",
-			"forbidden": "Votre rôle dans cette boutique ne permet pas cette action."
+			"forbidden": "Votre rôle dans cette boutique ne permet pas cette action.",
+			"profileHasProducts": "Archivez les produits actifs du catalogue avant de changer de type d'activité."
 		},
 		"stock": {
 			"negative": "Le stock ne peut pas passer sous zéro.",

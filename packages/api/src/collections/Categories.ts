@@ -7,7 +7,9 @@ import {
 } from "../lib/caseSettings";
 import { ERROR_CODES } from "../lib/errors";
 import { decorateCategoryWithFormPreset } from "../lib/listingFormPreset";
+import { relationId } from "../lib/relationId";
 import { CodedAPIError } from "../lib/serviceError";
+import { syncListingKinds } from "../services/listingKinds";
 
 const staffOnlyWrite = {
 	create: ({ req: { user } }: { req: { user: { role?: string } | null } }) =>
@@ -86,6 +88,18 @@ export const Categories: CollectionConfig = {
 	},
 	hooks: {
 		beforeChange: [enforceWithdrawalExclusionGate],
+		afterChange: [
+			async ({ doc, previousDoc, operation, req }) => {
+				// Every category below inherits the kind, and each listing stores
+				// its own copy: resync them all when the kind or the parent moves.
+				const kindOrParentMoved =
+					operation === "update" &&
+					(doc.listingForm?.type !== previousDoc?.listingForm?.type ||
+						relationId(doc.parent) !== relationId(previousDoc?.parent));
+				if (kindOrParentMoved) await syncListingKinds(req.payload, { req });
+				return doc;
+			},
+		],
 		afterRead: [
 			({ doc }) => {
 				if (!doc || typeof doc !== "object") return doc;

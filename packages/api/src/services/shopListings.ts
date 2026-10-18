@@ -1,5 +1,6 @@
 import type { Payload, PayloadRequest, Where } from "payload";
 import { PRODUCT_SERVICE_CONTEXT } from "../collections/Products";
+import { listingKindRules } from "../contracts/listingKinds";
 import { queueMembershipChange } from "../hooks/membershipEvents";
 import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
@@ -172,7 +173,8 @@ export async function attachListings(
 	shopId: string,
 	input: { listingIds?: unknown; all?: unknown },
 ): Promise<{
-	attached: { listingId: string; productId: string }[];
+	/** `productId` is null for an ad that joined the shop as an ad: only goods become products. */
+	attached: { listingId: string; productId: string | null }[];
 	skipped: { listingId: string; reason: SkipReason }[];
 }> {
 	return withTransaction(
@@ -205,7 +207,7 @@ export async function attachListings(
 				})
 			).docs;
 
-			const attached: { listingId: string; productId: string }[] = [];
+			const attached: { listingId: string; productId: string | null }[] = [];
 			const skipped: { listingId: string; reason: SkipReason }[] = [];
 			for (const listing of listings) {
 				const listingId = String(listing.id);
@@ -221,6 +223,17 @@ export async function attachListings(
 					listing.title.trim().length < 3
 				) {
 					skipped.push({ listingId, reason: "status" });
+				} else if (!listingKindRules(listing.kind).sellable) {
+					// A flat, a job or a service has no stock to sell: it joins the
+					// shop as an ad and keeps its contact flow.
+					await req.payload.update({
+						collection: "listings",
+						id: listingId,
+						data: { shop: shopId },
+						overrideAccess: true,
+						req,
+					});
+					attached.push({ listingId, productId: null });
 				} else {
 					attached.push({
 						listingId,

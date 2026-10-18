@@ -24,7 +24,14 @@ function seed() {
 				{ id: "u-1", name: "Aïcha" },
 				{ id: "u-2", name: "Blaise" },
 			],
-			categories: [{ id: "cat-1", name: "Téléphones" }],
+			categories: [
+				{ id: "cat-1", name: "Téléphones" },
+				{
+					id: "cat-job",
+					name: "Offres d'emploi",
+					listingForm: { type: "job" },
+				},
+			],
 			shops: [
 				{
 					id: "s-1",
@@ -357,6 +364,12 @@ describe("createProduct", () => {
 		).rejects.toMatchObject({ code: "generic.validation" });
 	});
 
+	it("refuses a category whose ads are not goods", async () => {
+		await expect(
+			createProduct(seed(), U1, "s-1", input({ category: "cat-job" })),
+		).rejects.toMatchObject({ code: "listing.categoryNotSellable" });
+	});
+
 	it("refuses a non-member", async () => {
 		await expect(
 			createProduct(seed(), { id: "u-9" }, "s-1", input()),
@@ -406,6 +419,35 @@ describe("updateProduct", () => {
 			price: 400000,
 			productSummary: { priceMin: 400000, priceMax: 400000 },
 		});
+	});
+
+	it("keeps editing a product filed in a non-goods category before the rule, but never moves one there", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		const again = (category: string) =>
+			updateProduct(
+				payload,
+				U1,
+				product.id,
+				input({
+					category,
+					variants: asInput(variants, {
+						cost: 382000,
+						lowStockThreshold: 1,
+					}),
+				}),
+			);
+		await expect(again("cat-job")).rejects.toMatchObject({
+			code: "listing.categoryNotSellable",
+		});
+
+		payload.store.products[0].category = "cat-job";
+		await expect(again("cat-job")).resolves.toBeDefined();
 	});
 
 	it("keeps the shop warranty when a client does not send it, and clears it on null", async () => {

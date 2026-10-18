@@ -3,6 +3,7 @@ import { can } from "../access/shopRoles";
 import { PRODUCT_SERVICE_CONTEXT } from "../collections/Products";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import type { FieldIssue } from "../contracts/formIssues";
+import { listingKindRules } from "../contracts/listingKinds";
 import { photoLimitIssue } from "../contracts/photoLimit";
 import {
 	normalizeBarcode,
@@ -11,6 +12,7 @@ import {
 } from "../contracts/productValidation";
 import { validateListingAttributes } from "../hooks/validation";
 import { ERROR_CODES } from "../lib/errors";
+import { getListingCategoryType } from "../lib/listingFormPreset";
 import { getPhotosIncluded } from "../lib/mediaSettings";
 import { isRecord } from "../lib/payments/types";
 import { deriveListingData, listingStatusFor } from "../lib/productListing";
@@ -22,7 +24,13 @@ import {
 	type OptionDef,
 	redactManagerOnlyFields,
 } from "../lib/variants";
-import type { Listing, Product, ProductVariant, Shop } from "../payload-types";
+import type {
+	Category,
+	Listing,
+	Product,
+	ProductVariant,
+	Shop,
+} from "../payload-types";
 import { syncSupplierProductAvailability } from "./resale";
 import { requireShopMember } from "./shopGuards";
 import { isUniqueViolation, type ServiceUser } from "./shops";
@@ -284,20 +292,36 @@ export function parseProductInput(raw: Record<string, unknown>): ParsedProduct {
 	};
 }
 
+/**
+ * `previousCategory` is the product's category before this write: a product
+ * filed before the catalogue was limited to goods stays editable where it is,
+ * but nothing new goes into a rental, job or service category.
+ */
 async function validateCategory(
 	req: PayloadRequest,
 	input: ParsedProduct,
+	previousCategory: string | null = null,
 ): Promise<void> {
+	let category: Category;
 	try {
-		await req.payload.findByID({
+		// The kind is inherited down the tree: populate the ancestors.
+		category = await req.payload.findByID({
 			collection: "categories",
 			id: input.category,
-			depth: 0,
+			depth: 3,
 			req,
 		});
 	} catch {
 		throw new ServiceError(ERROR_CODES.categoryNotFound, 400, undefined, {
 			issues: [{ path: "category", rule: "notFound" }],
+		});
+	}
+	if (
+		input.category !== previousCategory &&
+		!listingKindRules(getListingCategoryType(category)).sellable
+	) {
+		throw new ServiceError(ERROR_CODES.categoryNotSellable, 400, undefined, {
+			issues: [{ path: "category", rule: "notSellable" }],
 		});
 	}
 	const errors = await validateListingAttributes({
@@ -777,7 +801,7 @@ export async function updateProduct(
 				throw new ServiceError(ERROR_CODES.shopForbidden, 403);
 			}
 			const costAllowed = can(role, "costs.view");
-			await validateCategory(req, input);
+			await validateCategory(req, input, relationId(product.category));
 			await assertUniqueSkus(req, shopId, input.variants);
 			await assertUniqueBarcodes(req, shopId, input.variants);
 

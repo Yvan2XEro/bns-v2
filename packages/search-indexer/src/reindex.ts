@@ -20,7 +20,7 @@ import {
  * it starts and, when they differ, rebuilds both indexes in place — search
  * keeps answering throughout — so a deploy never needs a manual reindex.
  */
-export const DOCUMENT_VERSION = "2026-10-19";
+export const DOCUMENT_VERSION = "2026-10-20";
 
 const PAYLOAD_API_URL =
 	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";

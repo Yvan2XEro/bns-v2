@@ -60,6 +60,7 @@ export const ERROR_CODES = {
 	// Listings and uploads
 	listingNotFound: "listing.notFound",
 	categoryNotFound: "listing.categoryNotFound",
+	categoryNotSellable: "listing.categoryNotSellable",
 	uploadTooLarge: "upload.tooLarge",
 	uploadInvalidType: "upload.invalidType",
 	photoLimit: "media.photoLimit",
@@ -101,6 +102,7 @@ export const ERROR_CODES = {
 	shopHandleInvalid: "shop.handleInvalid",
 	shopHandleReserved: "shop.handleReserved",
 	shopHandleTaken: "shop.handleTaken",
+	shopProfileHasProducts: "shop.profileHasProducts",
 	shopHandleCooldown: "shop.handleCooldown",
 	shopNotMember: "shop.notMember",
 	shopInactive: "shop.inactive",
@@ -345,6 +347,8 @@ const FALLBACKS: Record<ErrorCode, string> = {
 
 	[ERROR_CODES.listingNotFound]: "This listing is no longer available.",
 	[ERROR_CODES.categoryNotFound]: "This category is no longer available.",
+	[ERROR_CODES.categoryNotSellable]:
+		"Only goods can go in the catalogue: publish rentals, jobs and services as listings.",
 	[ERROR_CODES.uploadTooLarge]: "This file is too large.",
 	[ERROR_CODES.uploadInvalidType]: "This file type is not supported.",
 	[ERROR_CODES.photoLimit]: "You have reached the number of photos included.",
@@ -389,6 +393,8 @@ const FALLBACKS: Record<ErrorCode, string> = {
 		"Use 3 to 30 lowercase letters, digits or single hyphens.",
 	[ERROR_CODES.shopHandleReserved]: "This address is reserved.",
 	[ERROR_CODES.shopHandleTaken]: "This address is already taken.",
+	[ERROR_CODES.shopProfileHasProducts]:
+		"Archive the catalogue's active products before changing the kind of business.",
 	[ERROR_CODES.shopHandleCooldown]:
 		"The shop address can change once every 30 days.",
 	[ERROR_CODES.shopNotMember]: "You do not manage this shop.",

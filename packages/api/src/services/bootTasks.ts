@@ -14,6 +14,7 @@ import {
 	catchUpCategories,
 	categoryCatchUpFingerprint,
 } from "./categoryCatchUp";
+import { syncListingKinds } from "./listingKinds";
 import { isNotificationProviderConfigured } from "./notificationProvider";
 import {
 	ensureReviewUniqueIndex,
@@ -48,6 +49,17 @@ export function bootTasks(): DeployTask<Payload>[] {
 			run: async (payload) => {
 				await catchUpCategories(payload, {
 					log: (line) => payload.logger.info(`[categories] ${line.trim()}`),
+				});
+			},
+		},
+		{
+			// Listings written before `kind` was stored. Categories changed later
+			// resync from their own hook (collections/Categories.ts).
+			name: "listing-kinds",
+			fingerprint: "v1",
+			run: async (payload) => {
+				await syncListingKinds(payload, {
+					log: (line) => payload.logger.info(`[listing-kinds] ${line}`),
 				});
 			},
 		},

@@ -108,6 +108,9 @@ const serializeListingHit = (input: unknown) => {
 		priceMax: asNumber(summary?.priceMax) ?? asNumber(doc.priceMax),
 		available: asBoolean(summary?.available) ?? asBoolean(doc.available),
 		orderable: asBoolean(doc.orderable) ?? false,
+		// The card prints "/ month" from these (contracts/listingKinds.ts).
+		kind: asString(doc.kind),
+		priceUnit: asString(doc.priceUnit),
 	};
 };
 

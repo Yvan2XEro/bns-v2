@@ -617,6 +617,10 @@ export interface Shop {
     country?: string | null;
     countryCode?: string | null;
   };
+  /**
+   * The kind of business: a store sells goods from a catalogue; an agency, an employer and a provider publish rentals, job offers and services as ads, without stock or orders (contracts/listingKinds.ts).
+   */
+  profile: 'store' | 'agency' | 'employer' | 'provider';
   categories?: (string | Category)[] | null;
   owner: string | User;
   status: 'active' | 'suspended' | 'closed';
@@ -861,6 +865,14 @@ export interface Listing {
   title: string;
   description: string;
   price?: number | null;
+  /**
+   * What the price covers: a month's rent, a night, an hourly rate. Empty means a one-off price. Only the units the ad's kind allows are accepted (contracts/listingKinds.ts).
+   */
+  priceUnit?: ('total' | 'month' | 'week' | 'day' | 'night' | 'hour') | null;
+  /**
+   * Copied from the category's “Kind of ad” on every write that touches the category; decides the ad page's actions. Never set by a client.
+   */
+  kind?: ('product' | 'service' | 'job' | 'rental' | 'generic') | null;
   images?:
     | {
         image: string | Media;
@@ -4483,6 +4495,8 @@ export interface ListingsSelect<T extends boolean = true> {
   title?: T;
   description?: T;
   price?: T;
+  priceUnit?: T;
+  kind?: T;
   images?:
     | T
     | {
@@ -5381,6 +5395,7 @@ export interface ShopsSelect<T extends boolean = true> {
         country?: T;
         countryCode?: T;
       };
+  profile?: T;
   categories?: T;
   owner?: T;
   status?: T;

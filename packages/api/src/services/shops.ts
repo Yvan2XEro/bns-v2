@@ -3,6 +3,7 @@ import { isSuspended, suspensionSummary } from "../access/roles";
 import { resolveShopRole, type ShopRole } from "../access/shopRoles";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
+import { isShopProfile, profileOf } from "../contracts/listingKinds";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { type PublicShop, serializePublicShop } from "../lib/publicShop";
 import { relationId } from "../lib/relationId";
@@ -53,6 +54,8 @@ export interface CreateShopInput {
 	country?: unknown;
 	countryCode?: unknown;
 	categories?: unknown;
+	/** `store` when absent. */
+	profile?: unknown;
 }
 
 export type HandleAvailability = {
@@ -364,6 +367,9 @@ export async function createShop(
 		: [];
 	if (categories.length > 5)
 		throw new ServiceError(ERROR_CODES.validation, 400);
+	if (input.profile !== undefined && !isShopProfile(input.profile))
+		throw new ServiceError(ERROR_CODES.validation, 400);
+	const profile = profileOf(input.profile);
 
 	const availability = await checkHandleAvailability(payload, input.handle, {
 		now,
@@ -404,6 +410,7 @@ export async function createShop(
 						handle,
 						name,
 						description,
+						profile,
 						categories,
 						location,
 						owner: user.id,

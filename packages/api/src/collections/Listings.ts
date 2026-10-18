@@ -11,6 +11,11 @@ import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
 import { resolveShopRole, shopField } from "../access/shopRoles";
 import { staffOnlyField } from "../access/staff";
 import {
+	LISTING_KINDS,
+	normalizePriceUnit,
+	PRICE_UNITS,
+} from "../contracts/listingKinds";
+import {
 	keepApplicableTags,
 	listingTagIssues,
 	relationIds,
@@ -437,6 +442,9 @@ export const Listings: CollectionConfig = {
 					}
 				}
 
+				// The kind follows the category and only the check below sets it.
+				data.kind = originalDoc?.kind ?? null;
+
 				// System updates like boosts, view counters or background moderation
 				// should not revalidate the whole commercial form. Revalidating legacy
 				// listing content here can block unrelated updates such as boostedUntil.
@@ -466,6 +474,7 @@ export const Listings: CollectionConfig = {
 						depth: 3,
 					});
 					const formPreset = getListingFormPreset(category);
+					data.kind = formPreset.categoryType;
 
 					if (!formPreset.fields.price.enabled) {
 						data.price = null;
@@ -499,6 +508,29 @@ export const Listings: CollectionConfig = {
 							})),
 						});
 					}
+				}
+
+				if ("priceUnit" in data || "price" in data || "kind" in data) {
+					const unit = normalizePriceUnit(
+						data.kind,
+						data.price === undefined ? originalDoc?.price : data.price,
+						data.priceUnit === undefined
+							? originalDoc?.priceUnit
+							: data.priceUnit,
+					);
+					// A seller picking a unit the kind refuses is told; a unit that
+					// stopped fitting because the ad moved category is dropped.
+					if (
+						unit.invalid &&
+						data.priceUnit !== undefined &&
+						data.priceUnit !== originalDoc?.priceUnit
+					) {
+						throw fieldError(
+							"priceUnit",
+							"This price unit does not apply to this kind of ad",
+						);
+					}
+					data.priceUnit = unit.unit;
 				}
 
 				const selectedTags = relationIds(data.tags);
@@ -760,6 +792,28 @@ export const Listings: CollectionConfig = {
 			type: "number",
 			required: false,
 			index: true,
+		},
+		{
+			name: "priceUnit",
+			type: "select",
+			required: false,
+			options: PRICE_UNITS.map((value) => ({ label: value, value })),
+			admin: {
+				description:
+					"What the price covers: a month's rent, a night, an hourly rate. Empty means a one-off price. Only the units the ad's kind allows are accepted (contracts/listingKinds.ts).",
+			},
+		},
+		{
+			name: "kind",
+			type: "select",
+			required: false,
+			index: true,
+			options: LISTING_KINDS.map((value) => ({ label: value, value })),
+			admin: {
+				readOnly: true,
+				description:
+					"Copied from the category's “Kind of ad” on every write that touches the category; decides the ad page's actions. Never set by a client.",
+			},
 		},
 		{
 			name: "images",

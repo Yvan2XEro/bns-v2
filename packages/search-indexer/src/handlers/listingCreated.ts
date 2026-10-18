@@ -142,6 +142,10 @@ export function transformListing(
 		// that virtual existed carries no `orderable` key at all, and defaults
 		// to `false` rather than `undefined` reaching Meilisearch.
 		orderable: listing.orderable === true,
+		// Set by the API from the category (contracts/listingKinds.ts); cards
+		// print the price unit and the search can filter by kind.
+		kind: typeof listing.kind === "string" ? listing.kind : null,
+		priceUnit: typeof listing.priceUnit === "string" ? listing.priceUnit : null,
 	};
 
 	const coordinates = listing.coordinates as

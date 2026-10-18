@@ -273,6 +273,27 @@ describe("Shops beforeChange", () => {
 		);
 	});
 
+	it("lets a store become an agency once its catalogue has no live product", async () => {
+		const update = (products: Record<string, unknown>[]) =>
+			beforeChange({
+				operation: "update",
+				originalDoc: { ...original, profile: "store" },
+				data: { ...original, profile: "agency" },
+				req: {
+					payload: fakePayload({ users: [{ id: "u-1" }], products }),
+					user: { id: "u-1" },
+					context: {},
+				},
+			});
+
+		await expect(
+			update([{ id: "p-1", shop: "s-1", status: "active" }]),
+		).rejects.toMatchObject({ data: { code: "shop.profileHasProducts" } });
+		await expect(
+			update([{ id: "p-1", shop: "s-1", status: "archived" }]),
+		).resolves.toMatchObject({ profile: "agency" });
+	});
+
 	it("refuses a member's edit on a suspended shop", async () => {
 		const payload = fakePayload({ users: [{ id: "u-1" }] });
 		await expect(

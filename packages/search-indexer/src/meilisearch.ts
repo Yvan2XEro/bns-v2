@@ -58,6 +58,8 @@ export type ListingDocument = {
 	 * this rule, only carries the value through. See `transformListing`.
 	 */
 	orderable: boolean;
+	kind: string | null;
+	priceUnit: string | null;
 	[key: string]: unknown;
 };
 
@@ -184,6 +186,7 @@ export const STATIC_FILTERABLE_ATTRIBUTES = [
 	"shopId",
 	"shopLevel",
 	"orderable",
+	"kind",
 ];
 
 /** What the index was last configured with, to skip no-op settings updates. */

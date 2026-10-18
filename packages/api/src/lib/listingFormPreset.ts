@@ -17,15 +17,13 @@
  * picture" is a per-category rule rather than a platform one.
  */
 
+import { isListingKind, type ListingKind } from "../contracts/listingKinds";
+
 /** How a single core field behaves. `auto` means "inherit, then fall back". */
 export type ListingFormFieldMode = "auto" | "hidden" | "optional" | "required";
 
-export type ListingCategoryType =
-	| "product"
-	| "service"
-	| "job"
-	| "rental"
-	| "generic";
+/** The kinds live in contracts/listingKinds.ts, shared with the clients. */
+export type ListingCategoryType = ListingKind;
 
 /** The `listingForm` group as stored on a category. Every member is optional. */
 export interface CategoryListingFormConfig {
@@ -97,8 +95,6 @@ const PRESETS: Record<ListingCategoryType, PresetFields> = {
 		photos: { enabled: true, required: false },
 	},
 };
-
-const CATEGORY_TYPES = new Set<string>(Object.keys(PRESETS));
 
 /**
  * Depth cap for the ancestor walk. The tree is two levels deep in practice; the
@@ -181,7 +177,7 @@ function getListingCategoryTypeFromSlugs(slugs: string[]): ListingCategoryType {
 function readExplicitType(node: CategoryNode): ListingCategoryType | undefined {
 	const value = node.listingForm?.type;
 	if (typeof value !== "string" || value === "auto") return undefined;
-	return CATEGORY_TYPES.has(value) ? (value as ListingCategoryType) : undefined;
+	return isListingKind(value) ? value : undefined;
 }
 
 function readExplicitMode(

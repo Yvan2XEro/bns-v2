@@ -3,6 +3,11 @@ import { isAdmin, isModerator } from "../access/roles";
 import { can, memberShopIds, shopRoleFieldAccess } from "../access/shopRoles";
 import { staffOnlyField } from "../access/staff";
 import {
+	profileOf,
+	SHOP_PROFILES,
+	shopProfileRules,
+} from "../contracts/listingKinds";
+import {
 	normaliseShopReturnPolicy,
 	SHOP_RETURN_POLICY_MAX,
 } from "../contracts/shopReturnPolicy";
@@ -153,6 +158,30 @@ export const Shops: CollectionConfig = {
 
 				for (const field of SHOP_SERVICE_FIELDS) {
 					data[field] = originalDoc?.[field];
+				}
+
+				// Leaving retail would strand the catalogue's live products and
+				// their orders behind a workspace that no longer shows them.
+				if (
+					data.profile !== undefined &&
+					profileOf(data.profile) !== profileOf(originalDoc?.profile) &&
+					shopProfileRules(originalDoc?.profile).retail &&
+					!shopProfileRules(data.profile).retail
+				) {
+					const live = await req.payload.count({
+						collection: "products",
+						where: {
+							and: [
+								{ shop: { equals: originalDoc?.id } },
+								{ status: { equals: "active" } },
+							],
+						},
+						overrideAccess: true,
+						req,
+					});
+					if (live.totalDocs > 0) {
+						throw new CodedAPIError(ERROR_CODES.shopProfileHasProducts, 409);
+					}
 				}
 				const incomingOrderSettings = data.orderSettings as
 					| Record<string, unknown>
@@ -334,6 +363,17 @@ export const Shops: CollectionConfig = {
 					],
 				},
 			],
+		},
+		{
+			name: "profile",
+			type: "select",
+			required: true,
+			defaultValue: "store",
+			options: SHOP_PROFILES.map((value) => ({ label: value, value })),
+			admin: {
+				description:
+					"The kind of business: a store sells goods from a catalogue; an agency, an employer and a provider publish rentals, job offers and services as ads, without stock or orders (contracts/listingKinds.ts).",
+			},
 		},
 		{
 			name: "categories",

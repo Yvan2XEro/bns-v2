@@ -62,6 +62,7 @@ describe("a shop's pages take its colours", () => {
 			name: "Akwa",
 			handle: "akwa",
 			owner: "u1",
+			profile: "store",
 			status: "active",
 			createdAt: "2026-01-01T00:00:00.000Z",
 			updatedAt: "2026-01-01T00:00:00.000Z",

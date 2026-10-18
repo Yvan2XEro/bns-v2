@@ -1,4 +1,5 @@
 import type { BusinessType } from "../collections/VerificationRequests";
+import { profileOf, type ShopProfile } from "../contracts/listingKinds";
 import { mediaUrl } from "../contracts/media";
 import { normaliseShopReturnPolicy } from "../contracts/shopReturnPolicy";
 import { isBrandColor } from "../contracts/shopTheme";
@@ -39,6 +40,8 @@ export interface PublicShop {
 	description: string | null;
 	logo: MediaRef | null;
 	banner: MediaRef | null;
+	/** What kind of business it is: decides its wording and workspace. */
+	profile: ShopProfile;
 	/** "#RRGGBB", or null for the platform colour; turned into colours by `contracts/shopTheme`. */
 	brandColor: string | null;
 	contact: {
@@ -138,6 +141,7 @@ export function serializePublicShop(
 		description: str(shop.description),
 		logo: toMediaRef(shop.logo),
 		banner: toMediaRef(shop.banner),
+		profile: profileOf(shop.profile),
 		brandColor: isBrandColor(shop.brandColor) ? shop.brandColor : null,
 		contact: {
 			phone: str(shop.contact?.phone),
