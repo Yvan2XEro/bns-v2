@@ -45,6 +45,7 @@ Proxmox ──clones template 9000──► server VM (K3s server)  192.168.0.16
 | Variable catalog | `infra/src/app-env.ts`: whether each variable is secret, which services receive it, and whether the stack derives it or only Compose uses it |
 | `.env` → stack | `infra/scripts/env-to-stack.ts` (`bun run env:check` / `env:apply`) |
 | Proxmox template | `infra/scripts/create-proxmox-template.sh` |
+| Stack config templates | `infra/stacks/<stack>.example.yaml` → copied to `infra/Pulumi.<stack>.yaml` (git-ignored) |
 | Load test | `infra/loadtest/traffic.js` (`bun run loadtest`) |
 
 A stack is one environment: its VMs, its config and its secrets.
@@ -147,11 +148,20 @@ existing tokens. To add a single privilege:
 ```bash
 pulumi login --local                          # or Pulumi Cloud
 export PULUMI_CONFIG_PASSPHRASE='…'            # keep it: secrets cannot be read without it
-pulumi stack init proxmox-staging              # or: pulumi stack select proxmox-staging
 S=proxmox-staging
+# The stack's config file is local only (git ignores infra/Pulumi.*.yaml):
+# start it from the template, once.
+cp stacks/proxmox-staging.example.yaml Pulumi.$S.yaml
+pulumi stack init $S                            # or: pulumi stack select $S
 ```
 
-The non-secret Proxmox settings are in `infra/Pulumi.proxmox-staging.yaml`:
+> `Pulumi.<stack>.yaml` holds the stack's encryption salt, its encrypted secrets
+> and plain app values. It never goes into git, so **back it up** with the
+> state. With `pulumi login --local`, the state is in `~/.pulumi`. Losing the
+> file or the passphrase means setting every secret again. Pulumi Cloud keeps
+> both for you.
+
+The non-secret Proxmox settings come from the template, now in `infra/Pulumi.proxmox-staging.yaml`:
 endpoint, `nodeName`, `templateVmId`, `firstVmId`, `datastoreId`, `bridge`,
 `gateway`, `sshUser`, `controlPlaneIp`, `workerIps`, `k3sVersion`. Adjust them
 before the first deployment. **The IPs and VM IDs must be free.**
@@ -407,8 +417,9 @@ or grow the VMs.
 
 ## 11. Migrating production from Dokploy
 
-1. **Stack.** Run `pulumi stack init proxmox-prod`. Copy the `proxmox:*`
-   settings, changing `firstVmId` (300), the IPs (`.170+`) and the sizes. Leave
+1. **Stack.** Copy `stacks/proxmox-staging.example.yaml` to
+   `Pulumi.proxmox-prod.yaml`, then run `pulumi stack init proxmox-prod`. Adjust
+   the `proxmox:*` settings, changing `firstVmId` (300), the IPs (`.170+`) and the sizes. Leave
    `tlsIssuer` at its default, `letsencrypt`. Set the token and the SSH keys
    (§ 4).
 2. **Variables.** Copy Dokploy production's *Environment* into `.env.prod`. Add

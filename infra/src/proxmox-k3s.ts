@@ -12,7 +12,7 @@ import * as pulumi from "@pulumi/pulumi";
  * when its VM is replaced, so a second `pulumi up` changes nothing.
  *
  * The template must be a cloud image with cloud-init and qemu-guest-agent
- * (see Pulumi.proxmox-staging.yaml for how to build it).
+ * (scripts/create-proxmox-template.sh builds it).
  */
 export interface ProxmoxResult {
 	kubeconfig: pulumi.Output<string>;

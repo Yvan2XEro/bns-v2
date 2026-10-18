@@ -53,3 +53,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # MongoDB replica-set key file
 mongo-keyfile
 .mcp.json
+
+# Pulumi stack config: written by `pulumi config set` and env-to-stack, holds
+# the encryption salt, encrypted secrets and plain app values. Local only;
+# start one from infra/stacks/<stack>.example.yaml.
+infra/Pulumi.*.yaml

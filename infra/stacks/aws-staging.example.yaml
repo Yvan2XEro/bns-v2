@@ -1,0 +1,18 @@
+# Template for the aws-staging stack. Copy it once, then let Pulumi write to the copy:
+#   cp stacks/aws-staging.example.yaml Pulumi.aws-staging.yaml && pulumi stack init aws-staging
+# Pulumi.aws-staging.yaml is git-ignored: it receives the encryption salt, the
+# encrypted secrets and the app variables. Never put real values here.
+#
+config:
+  # App variables: copied from the production .env, never typed by hand —
+  #   bun run infra:env:check --env <.env> --stack <this stack>   (repo root)
+  #   bun run infra:env:apply --env <.env> --stack <this stack>
+  # It writes appEnv, appSecrets (encrypted), domain, acmeEmail and ghcrToken.
+  bns-infra:cloudProvider: aws
+  bns-infra:region: us-east-1
+  bns-infra:nodeCount: "2"
+  bns-infra:instanceType: t3.medium
+  bns-infra:imageRegistry: ghcr.io/yvan2xero/bns-v2
+  bns-infra:imageTag: dev
+  bns-infra:domain: staging.buynsellem.com
+  bns-infra:acmeEmail: your@email.com
