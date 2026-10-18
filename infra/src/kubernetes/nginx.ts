@@ -61,6 +61,11 @@ export function deployNginxStack(cfg: NginxConfig): pulumi.Resource[] {
 			timeout: 900,
 			values: {
 				controller: {
+					// The admission webhook only validates Ingress syntax, and the
+					// one Ingress here is Pulumi's. Its certificate is patched in by
+					// a Helm hook job; when a release times out first, every Ingress
+					// call fails with "x509: certificate signed by unknown authority".
+					admissionWebhooks: { enabled: false },
 					replicaCount: 2,
 					service: { type: "LoadBalancer" },
 					metrics: { enabled: false },
