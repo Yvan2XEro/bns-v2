@@ -5,9 +5,11 @@
     "": {
       "name": "bns-infra",
       "dependencies": {
+        "@muhlba91/pulumi-proxmoxve": "6",
         "@pulumi/aws": "^6",
         "@pulumi/awsx": "^2",
         "@pulumi/azure-native": "^2",
+        "@pulumi/command": "^1.2.1",
         "@pulumi/eks": "^3",
         "@pulumi/kubernetes": "^4",
         "@pulumi/pulumi": "^3",
@@ -96,6 +98,8 @@
     "@js-sdsl/ordered-map": ["@js-sdsl/ordered-map@4.4.2", "", {}, "sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw=="],
 
     "@logdna/tail-file": ["@logdna/tail-file@2.2.0", "", {}, "sha512-XGSsWDweP80Fks16lwkAUIr54ICyBs6PsI4mpfTLQaWgEJRtY9xEV+PeyDpJ+sJEGZxqINlpmAwe/6tS1pP8Ng=="],
+
+    "@muhlba91/pulumi-proxmoxve": ["@muhlba91/pulumi-proxmoxve@6.18.1", "", { "dependencies": { "@pulumi/pulumi": "^3.0.0" } }, "sha512-FErrkckhMcdguoXIkS0jRWjs8khwL2th7KeKCoyP9RnoKSX/MSqK5r9zTzVIideb1AahRgCbi4GsYWL0qQvVXQ=="],
 
     "@nodable/entities": ["@nodable/entities@2.1.0", "", {}, "sha512-nyT7T3nbMyBI/lvr6L5TyWbFJAI9FTgVRakNoBqCD+PmID8DzFrrNdLLtHMwMszOtqZa8PAOV24ZqDnQrhQINA=="],
 
@@ -190,6 +194,8 @@
     "@pulumi/awsx": ["@pulumi/awsx@2.22.0", "", { "dependencies": { "@aws-sdk/client-ecs": "^3.405.0", "@pulumi/aws": "^6.66.3", "@pulumi/docker": "^4.6.0", "@pulumi/docker-build": "^0.0.8", "@pulumi/pulumi": "^3.142.0", "@types/aws-lambda": "^8.10.23", "docker-classic": "npm:@pulumi/docker@3.6.1", "mime": "^2.0.0" } }, "sha512-uajrWX6zkk8G9DCCkCkRaH2yzeGRkCElkC8FOE9viUtb9WyVt01EbNqJkje+QwYq4g055jWqcq2YRn7xT1Y44w=="],
 
     "@pulumi/azure-native": ["@pulumi/azure-native@2.92.2", "", { "dependencies": { "@pulumi/pulumi": "^3.142.0" } }, "sha512-hdrrvS5arX7VZq0BUkf0a17Ix14w7VQIqB4G38CW7kkesMBsFgBiqHseun32ITtdns+JNNaVWJojip1Y4N+7xg=="],
+
+    "@pulumi/command": ["@pulumi/command@1.2.1", "", { "dependencies": { "@pulumi/pulumi": "^3.142.0" } }, "sha512-mutNDIUYP67yCBYOVIidQyxuTwZDY9v/sx9EGbgIv4PXfyfolOKGgGLeoHEbI1lxRwaw2wbTZ3VNIynDnA5VKA=="],
 
     "@pulumi/docker": ["@pulumi/docker@4.11.2", "", { "dependencies": { "@pulumi/pulumi": "^3.142.0", "semver": "^5.4.0" } }, "sha512-mm8Uscb/3S7OieYyg1E/vvFx3OS4bAkZvtFvi1yTqYda9NbnYOMbJi7a5fU5xB0N0Kd/uliS8olJ/e6nnvVVPg=="],
 

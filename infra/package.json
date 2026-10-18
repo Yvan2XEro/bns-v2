@@ -6,9 +6,11 @@
 		"build": "tsc"
 	},
 	"dependencies": {
+		"@muhlba91/pulumi-proxmoxve": "6",
 		"@pulumi/aws": "^6",
 		"@pulumi/awsx": "^2",
 		"@pulumi/azure-native": "^2",
+		"@pulumi/command": "^1.2.1",
 		"@pulumi/eks": "^3",
 		"@pulumi/kubernetes": "^4",
 		"@pulumi/pulumi": "^3"
