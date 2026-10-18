@@ -10,7 +10,8 @@
 		"env:check": "bun scripts/env-to-stack.ts --dry-run",
 		"env:apply": "bun scripts/env-to-stack.ts",
 		"preview": "pulumi preview",
-		"up": "pulumi up"
+		"up": "pulumi up",
+		"loadtest": "k6 run loadtest/traffic.js"
 	},
 	"dependencies": {
 		"@muhlba91/pulumi-proxmoxve": "6",

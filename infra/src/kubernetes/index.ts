@@ -21,6 +21,7 @@ export function deployKubernetes(kubeconfig: pulumi.Output<string>): void {
 		mongoPassword: config.mongoPassword,
 		redisPassword: config.redisPassword,
 		meiliMasterKey: config.meiliMasterKey,
+		autoscaling: config.autoscaling,
 	});
 
 	deployNginxStack({

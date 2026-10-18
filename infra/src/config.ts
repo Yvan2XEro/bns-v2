@@ -31,6 +31,30 @@ export const vmSize = cfg.get("vmSize") ?? "Standard_B2s";
 export const imageRegistry =
 	cfg.get("imageRegistry") ?? "ghcr.io/yvan2xero/bns-v2";
 export const imageTag = cfg.get("imageTag") ?? "latest";
+
+// Pods added under load (CPU above 70% of what each pod requests) and
+// removed when it falls. `pulumi config set --path autoscaling.api.max 8`.
+export interface ReplicaRange {
+	min: number;
+	max: number;
+}
+const scaling =
+	cfg.getObject<Partial<Record<"api" | "web", Partial<ReplicaRange>>>>(
+		"autoscaling",
+	) ?? {};
+function replicaRange(
+	name: "api" | "web",
+	defaults: ReplicaRange,
+): ReplicaRange {
+	const range = { ...defaults, ...scaling[name] };
+	if (range.min < 1 || range.max < range.min)
+		throw new Error(`autoscaling.${name}: need 1 <= min <= max`);
+	return range;
+}
+export const autoscaling = {
+	api: replicaRange("api", { min: 2, max: 6 }),
+	web: replicaRange("web", { min: 2, max: 4 }),
+};
 export const domain = cfg.require("domain");
 // How the ingress gets its certificate. `letsencrypt` needs a public domain
 // reachable on port 80; `local-ca` signs with a CA the cluster creates, for a

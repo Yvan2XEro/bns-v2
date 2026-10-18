@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { type AppService, appEnvFor } from "../app-env";
+import type { ReplicaRange } from "../config";
 
 export interface AppsConfig {
 	imageRegistry: string;
@@ -18,6 +19,7 @@ export interface AppsConfig {
 	mongoPassword: pulumi.Output<string>;
 	redisPassword: pulumi.Output<string>;
 	meiliMasterKey: pulumi.Output<string>;
+	autoscaling: { api: ReplicaRange; web: ReplicaRange };
 	provider: k8s.Provider;
 }
 
@@ -358,7 +360,7 @@ export function deployApps(cfg: AppsConfig): void {
 		{
 			metadata: { namespace: ns, name: "api" },
 			spec: {
-				replicas: 2,
+				replicas: cfg.autoscaling.api.min,
 				selector: { matchLabels: { app: "api" } },
 				template: {
 					metadata: { labels: { app: "api" }, annotations: podAnnotations },
@@ -409,7 +411,8 @@ export function deployApps(cfg: AppsConfig): void {
 				},
 			},
 		},
-		{ provider, dependsOn: appDeps },
+		// The autoscaler owns the replica count from here on.
+		{ provider, dependsOn: appDeps, ignoreChanges: ["spec.replicas"] },
 	);
 
 	new k8s.core.v1.Service(
@@ -430,7 +433,7 @@ export function deployApps(cfg: AppsConfig): void {
 		{
 			metadata: { namespace: ns, name: "web" },
 			spec: {
-				replicas: 2,
+				replicas: cfg.autoscaling.web.min,
 				selector: { matchLabels: { app: "web" } },
 				template: {
 					metadata: { labels: { app: "web" }, annotations: podAnnotations },
@@ -460,7 +463,7 @@ export function deployApps(cfg: AppsConfig): void {
 				},
 			},
 		},
-		{ provider, dependsOn: appDeps },
+		{ provider, dependsOn: appDeps, ignoreChanges: ["spec.replicas"] },
 	);
 
 	new k8s.core.v1.Service(
@@ -474,6 +477,39 @@ export function deployApps(cfg: AppsConfig): void {
 		},
 		baseOpts,
 	);
+
+	// ─── Autoscaling ─────────────────────────────────────────────────────────────
+	// K3s ships metrics-server. CPU is measured against each pod's request
+	// (api 100m, web 100m), so a busy pod is one using more than 70m.
+	for (const name of ["api", "web"] as const) {
+		const range = cfg.autoscaling[name];
+		new k8s.autoscaling.v2.HorizontalPodAutoscaler(
+			`${name}-hpa`,
+			{
+				metadata: { namespace: ns, name },
+				spec: {
+					scaleTargetRef: { apiVersion: "apps/v1", kind: "Deployment", name },
+					minReplicas: range.min,
+					maxReplicas: range.max,
+					metrics: [
+						{
+							type: "Resource",
+							resource: {
+								name: "cpu",
+								target: { type: "Utilization", averageUtilization: 70 },
+							},
+						},
+					],
+					behavior: {
+						// Up within a minute; down only after five calm minutes.
+						scaleUp: { stabilizationWindowSeconds: 30 },
+						scaleDown: { stabilizationWindowSeconds: 300 },
+					},
+				},
+			},
+			baseOpts,
+		);
+	}
 
 	// Chat service
 	new k8s.apps.v1.Deployment(
