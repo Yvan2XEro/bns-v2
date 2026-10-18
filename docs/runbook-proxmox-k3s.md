@@ -1,125 +1,130 @@
-# Runbook — BuyNSellem sur K3s / Proxmox
+# Runbook — BuyNSellem on K3s / Proxmox
 
-Déployer, exploiter et migrer BuyNSellem sur un cluster K3s créé par Pulumi sur
-un Proxmox. Toutes les commandes `pulumi` et `bun run` se lancent depuis
-`infra/`, sauf mention contraire.
+How to deploy, run and migrate BuyNSellem on a K3s cluster that Pulumi builds on
+Proxmox. Run every `pulumi` and `bun run` command from `infra/` unless stated
+otherwise.
 
-## Sommaire
+## Contents
 
-1. [Vue d'ensemble](#1-vue-densemble)
-2. [Prérequis](#2-prérequis)
-3. [Préparer Proxmox (une fois)](#3-préparer-proxmox-une-fois)
-4. [Créer et régler la stack](#4-créer-et-régler-la-stack)
-5. [Variables d'application](#5-variables-dapplication)
-6. [Déployer](#6-déployer)
-7. [Vérifier](#7-vérifier)
-8. [DNS et certificats](#8-dns-et-certificats)
-9. [Opérations courantes](#9-opérations-courantes)
-10. [Montée en charge et test de charge](#10-montée-en-charge-et-test-de-charge)
-11. [Migrer la prod depuis Dokploy](#11-migrer-la-prod-depuis-dokploy)
-12. [Dépannage](#12-dépannage)
-13. [Tout supprimer](#13-tout-supprimer)
+1. [Overview](#1-overview)
+2. [Prerequisites](#2-prerequisites)
+3. [Prepare Proxmox (once)](#3-prepare-proxmox-once)
+4. [Create and configure the stack](#4-create-and-configure-the-stack)
+5. [Application variables](#5-application-variables)
+6. [Deploy](#6-deploy)
+7. [Check](#7-check)
+8. [DNS and certificates](#8-dns-and-certificates)
+9. [Routine operations](#9-routine-operations)
+10. [Autoscaling and load testing](#10-autoscaling-and-load-testing)
+11. [Migrating production from Dokploy](#11-migrating-production-from-dokploy)
+12. [Troubleshooting](#12-troubleshooting)
+13. [Tearing down](#13-tearing-down)
 
 ---
 
-## 1. Vue d'ensemble
+## 1. Overview
 
 ```
-Poste (Pulumi, bun, kubectl)
-   │  API Proxmox :8006           SSH :22
+Workstation (Pulumi, bun, kubectl)
+   │  Proxmox API :8006           SSH :22
    ▼                               ▼
-Proxmox ──clone template 9000──► VM server (K3s server)  192.168.0.160
-                               └► VM worker-N (K3s agent) 192.168.0.161…
-                                     │
-                                     ├─ ingress-nginx (ports 80/443 de chaque nœud)
-                                     ├─ cert-manager (Let's Encrypt ou CA locale)
-                                     └─ namespace bns : api ×2–6, web ×2–4, chat-service,
-                                        search-indexer, mongodb (rs0), redis, meilisearch
+Proxmox ──clones template 9000──► server VM (K3s server)  192.168.0.160
+                                └► worker-N VMs (K3s agent) 192.168.0.161…
+                                      │
+                                      ├─ ingress-nginx (ports 80/443 on every node)
+                                      ├─ cert-manager (Let's Encrypt or a local CA)
+                                      └─ namespace bns: api ×2–6, web ×2–4, chat-service,
+                                         search-indexer, mongodb (rs0), redis, meilisearch
 ```
 
-| Élément | Où |
+| Piece | Where |
 |---|---|
-| Programme Pulumi | `infra/src/` (`index.ts` choisit aws, azure ou proxmox) |
-| VM et K3s | `infra/src/proxmox-k3s.ts` |
-| Déploiement de l'application | `infra/src/kubernetes/{apps,nginx}.ts` |
-| Catalogue des variables | `infra/src/app-env.ts` (chaque variable : secrète ou non, services, calculée, Compose uniquement) |
+| Pulumi program | `infra/src/` (`index.ts` picks aws, azure or proxmox) |
+| VMs and K3s | `infra/src/proxmox-k3s.ts` |
+| Application deployment | `infra/src/kubernetes/{apps,nginx}.ts` |
+| Variable catalog | `infra/src/app-env.ts`: whether each variable is secret, which services receive it, and whether the stack derives it or only Compose uses it |
 | `.env` → stack | `infra/scripts/env-to-stack.ts` (`bun run env:check` / `env:apply`) |
-| Template Proxmox | `infra/scripts/create-proxmox-template.sh` |
-| Test de charge | `infra/loadtest/traffic.js` (`bun run loadtest`) |
+| Proxmox template | `infra/scripts/create-proxmox-template.sh` |
+| Load test | `infra/loadtest/traffic.js` (`bun run loadtest`) |
 
-**Stacks** (une stack = un environnement, avec ses VM, sa config et ses secrets) :
+A stack is one environment: its VMs, its config and its secrets.
 
-| Stack | Usage | Domaine | Certificat | VM (IDs / IP) |
+| Stack | Purpose | Domain | Certificate | VMs (IDs / IPs) |
 |---|---|---|---|---|
-| `proxmox-staging` | essais sur le réseau local | `buynsellem.lan` (Pi-hole) | `local-ca` | 250+ / 192.168.0.160+ |
-| `proxmox-prod` | prod après migration | `buynsellem.com` | `letsencrypt` | 300+ / 192.168.0.170+ |
+| `proxmox-staging` | tests on the LAN | `buynsellem.lan` (Pi-hole) | `local-ca` | 250+ / 192.168.0.160+ |
+| `proxmox-prod` | production after the migration | `buynsellem.com` | `letsencrypt` | 300+ / 192.168.0.170+ |
 
-> Toujours passer `--stack <nom>`, ou faire `pulumi stack select <nom>` d'abord :
-> sans ça, `pulumi config set` écrit dans la stack sélectionnée, pas forcément celle voulue.
+> Always pass `--stack <name>`, or run `pulumi stack select <name>` first.
+> Otherwise `pulumi config set` writes to whichever stack is selected, which may
+> not be the one you meant.
 
 ---
 
-## 2. Prérequis
+## 2. Prerequisites
 
-### Sur le poste
+### On the workstation
 ```bash
-curl -fsSL https://get.pulumi.com | sh        # CLI Pulumi
-# bun, kubectl, k6 (test de charge), dig
+curl -fsSL https://get.pulumi.com | sh        # Pulumi CLI
+# also: bun, kubectl, k6 (load test), dig
 cd infra && bun install
 ```
 
-### Réseau
-Le poste doit joindre l'API Proxmox (`192.168.0.101:8006`) **et** les VM en SSH
-(`192.168.0.160+`).
+### Network
+The workstation must reach the Proxmox API (`192.168.0.101:8006`) **and** the
+VMs over SSH (`192.168.0.160+`).
 
-- Sur le réseau local : rien à faire.
-- À distance par Tailscale : publier le sous-réseau depuis le nœud.
+- On the LAN: nothing to do.
+- Remotely over Tailscale: advertise the subnet from the Proxmox node.
   ```bash
-  # sur le nœud
+  # on the node
   echo 'net.ipv4.ip_forward = 1' > /etc/sysctl.d/99-tailscale.conf && sysctl -p /etc/sysctl.d/99-tailscale.conf
   tailscale set --advertise-routes=192.168.0.0/24
   ```
-  Approuver la route dans la console Tailscale (machine *pve* → ⋯ → *Edit route
-  settings* → cocher `192.168.0.0/24`). Sur un poste Linux, lancer ensuite
-  `sudo tailscale set --accept-routes`.
+  Then approve the route in the Tailscale admin console: machine *pve* → ⋯ →
+  *Edit route settings* → tick `192.168.0.0/24`. On a Linux workstation, also
+  run `sudo tailscale set --accept-routes`.
 
-### Clé SSH dédiée
-Pulumi se connecte aux VM pour installer K3s.
+### Dedicated SSH key
+Pulumi connects to the VMs to install K3s. Use a key without a passphrase.
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/bns-k3s -N "" -C "bns-k3s-pulumi"   # sans phrase de passe
+ssh-keygen -t ed25519 -f ~/.ssh/bns-k3s -N "" -C "bns-k3s-pulumi"
 ```
 
 ---
 
-## 3. Préparer Proxmox (une fois)
+## 3. Prepare Proxmox (once)
 
-### 3.1 DNS du nœud
-Si Tailscale gère le DNS (`/etc/resolv.conf` → `100.100.100.100`) et que
-`ping deb.debian.org` échoue :
+### 3.1 Node DNS
+If Tailscale manages DNS (`/etc/resolv.conf` → `100.100.100.100`) and
+`ping deb.debian.org` fails, point the node back at the Pi-hole, with a public
+fallback:
 ```bash
 tailscale set --accept-dns=false
-printf 'nameserver 192.168.0.98\nnameserver 1.1.1.1\n' > /etc/resolv.conf   # Pi-hole puis secours
+printf 'nameserver 192.168.0.98\nnameserver 1.1.1.1\n' > /etc/resolv.conf
 ```
-Régler aussi le DNS dans l'interface : *nœud → Système → DNS*.
+Also set DNS in the web UI (*node → System → DNS*).
 
-### 3.2 Template cloud-init (VM 9000)
+### 3.2 Cloud-init template (VM 9000)
 ```bash
 scp infra/scripts/create-proxmox-template.sh root@192.168.0.101:/root/
 ssh root@192.168.0.101 'VMID=9000 STORAGE=local-lvm BRIDGE=vmbr0 bash /root/create-proxmox-template.sh'
 ```
-Le script installe `libguestfs-tools` (en lançant d'abord `apt-get update`),
-télécharge Ubuntu 24.04, y installe `qemu-guest-agent`, vide le machine-id et
-crée le template (disque de boot `scsi0`, lecteur cloud-init `ide2`, console
-série). Vérification :
+The script:
+- installs `libguestfs-tools`, running `apt-get update` first;
+- downloads Ubuntu 24.04 and installs `qemu-guest-agent` into the image;
+- empties the machine-id, so each clone gets its own;
+- builds the template: boot disk `scsi0`, cloud-init drive `ide2`, serial console.
+
+Check:
 ```bash
 qm config 9000 | grep -E 'template|scsi0|ide2|agent|boot'
 ```
-Ne pas agrandir le disque du template : chaque clone l'agrandit à la taille de
-son profil.
+Do not grow the template's disk: each clone grows it to its own profile's size.
 
-### 3.3 Rôle, utilisateur et token API
-Proxmox 9 (sur 8, remplacer `VM.GuestAgent.Audit` par `VM.Monitor`).
-`Sys.Console` est nécessaire à cause de la console série du template.
+### 3.3 Role, user and API token
+These privileges are for Proxmox 9; on Proxmox 8, replace `VM.GuestAgent.Audit`
+with `VM.Monitor`. `Sys.Console` is needed because the template has a serial
+console.
 ```bash
 PRIVS="VM.Allocate VM.Clone VM.Audit VM.PowerMgmt VM.Config.CDROM VM.Config.CPU VM.Config.Cloudinit VM.Config.Disk VM.Config.HWType VM.Config.Memory VM.Config.Network VM.Config.Options VM.GuestAgent.Audit Datastore.AllocateSpace Datastore.Audit SDN.Use Sys.Audit Sys.Console"
 if pveum role list --output-format json | grep -q '"roleid":"PulumiK3s"'; then
@@ -129,136 +134,138 @@ else
 fi
 pveum user add pulumi@pve 2>/dev/null || true
 pveum aclmod / -user pulumi@pve -role PulumiK3s
-pveum user token add pulumi@pve bns --privsep 0     # noter "value" : affichée une seule fois
+pveum user token add pulumi@pve bns --privsep 0     # write down "value": shown only once
 ```
-Le token complet s'écrit `pulumi@pve!bns=<value>`. Modifier le rôle vaut aussi
-pour les tokens existants. Pour ajouter un seul droit :
-`pveum role modify PulumiK3s -append 1 -privs <Droit>`.
+The full token is `pulumi@pve!bns=<value>`. Changing the role also applies to
+existing tokens. To add a single privilege:
+`pveum role modify PulumiK3s -append 1 -privs <Privilege>`.
 
 ---
 
-## 4. Créer et régler la stack
+## 4. Create and configure the stack
 
 ```bash
-pulumi login --local                         # ou Pulumi Cloud
-export PULUMI_CONFIG_PASSPHRASE='…'           # à conserver : sans elle, secrets illisibles
-pulumi stack init proxmox-staging             # ou: pulumi stack select proxmox-staging
+pulumi login --local                          # or Pulumi Cloud
+export PULUMI_CONFIG_PASSPHRASE='…'            # keep it: secrets cannot be read without it
+pulumi stack init proxmox-staging              # or: pulumi stack select proxmox-staging
 S=proxmox-staging
 ```
 
-Les valeurs Proxmox non secrètes sont dans `infra/Pulumi.proxmox-staging.yaml`
-(endpoint, `nodeName`, `templateVmId`, `firstVmId`, `datastoreId`, `bridge`,
-`gateway`, `sshUser`, `controlPlaneIp`, `workerIps`, `k3sVersion`). À ajuster
-avant le premier déploiement : **les IP et les IDs doivent être libres** :
+The non-secret Proxmox settings are in `infra/Pulumi.proxmox-staging.yaml`:
+endpoint, `nodeName`, `templateVmId`, `firstVmId`, `datastoreId`, `bridge`,
+`gateway`, `sshUser`, `controlPlaneIp`, `workerIps`, `k3sVersion`. Adjust them
+before the first deployment. **The IPs and VM IDs must be free.**
 ```bash
-for ip in 160 161 162; do ping -c1 -W1 192.168.0.$ip >/dev/null && echo "192.168.0.$ip OCCUPÉE"; done
-qm list | awk '$1>=250 && $1<=252'           # sur le nœud
+for ip in 160 161 162; do ping -c1 -W1 192.168.0.$ip >/dev/null && echo "192.168.0.$ip IN USE"; done
+qm list | awk '$1>=250 && $1<=252'           # on the node
 ```
 
-Secrets et réglages (le `--` est obligatoire avant une valeur qui commence par `-`) :
+Secrets and settings. A value that starts with `-` needs `--` before it.
 ```bash
 pulumi config set --stack $S --secret proxmox:apiToken -- 'pulumi@pve!bns=<value>'
 pulumi config set --stack $S --secret proxmox:sshPrivateKey < ~/.ssh/bns-k3s
 pulumi config set --stack $S proxmox:sshPublicKey -- "$(cat ~/.ssh/bns-k3s.pub)"
 
-# Domaine privé (.lan) : CA locale et DNS des VM sur le Pi-hole
+# Private domain (.lan): local CA, and the VMs resolve through the Pi-hole
 pulumi config set --stack $S tlsIssuer local-ca
 pulumi config set --stack $S --path 'proxmox:dnsServers[0]' 192.168.0.98
 
-# Taille : profil small (2 vCPU, 4 Go, 40 Go) | medium (4, 8, 64) | large (8, 16, 100)
+# Size: small (2 vCPU, 4 GB, 40 GB) | medium (4, 8, 64) | large (8, 16, 100)
 pulumi config set --stack $S instanceType small
-pulumi config set --stack $S nodeCount 1               # nombre de workers (+1 serveur)
+pulumi config set --stack $S nodeCount 1               # workers, plus one server
 
-# Autoscaling (facultatif ; par défaut api 2–6, web 2–4)
+# Autoscaling (optional; defaults: api 2–6, web 2–4)
 pulumi config set --stack $S --path autoscaling.api.max 6
 ```
 
-Vérifier la stack :
+Check the stack:
 ```bash
 pulumi config --stack $S
-grep sshPrivateKey Pulumi.$S.yaml      # doit afficher "secure: …"
+grep sshPrivateKey Pulumi.$S.yaml      # must show "secure: …"
 ```
 
-> **Règles de taille.** Un disque Proxmox s'agrandit mais ne se réduit jamais :
-> passer de `medium` à `small` sur des VM existantes échoue (`Cannot shrink`).
-> Choisir le profil avant le premier `up`, ou recréer les VM (§ 12).
-> Prévoir la mémoire du nœud : 3 VM `medium` = 24 Go.
+> **Sizing rules.** A Proxmox disk can grow but never shrink. Going from
+> `medium` to `small` on existing VMs fails with `Cannot shrink`. Pick the
+> profile before the first `up`, or recreate the VMs (§ 12). Mind the node's
+> memory: three `medium` VMs take 24 GB.
 
 ---
 
-## 5. Variables d'application
+## 5. Application variables
 
-Les variables viennent du `.env` de l'environnement Dokploy correspondant. On
-ne les tape jamais à la main.
+The variables come from the `.env` of the matching Dokploy environment. They
+are never typed by hand.
 
-### 5.1 Préparer le fichier (à la racine du dépôt)
-Les fichiers `.env.*` sont ignorés par git, sauf les `.env.example`.
-```bash
-# Dokploy → projet → Environment → copier tout le contenu dans :
-.env.proxmox-staging      # ou .env.prod pour la prod
-```
-Ajouter les deux lignes propres à Pulumi :
+### 5.1 Prepare the file (at the repo root)
+Git ignores every `.env.*` file except the `.env.example` files.
+
+In Dokploy, open the project's *Environment* tab and copy its whole content
+into `.env.proxmox-staging` (`.env.prod` for production).
+
+Add the two Pulumi-only lines:
 ```bash
 GHCR_TOKEN=ghp_…          # GitHub classic token, read:packages
-ACME_EMAIL=…              # seulement avec tlsIssuer letsencrypt
+ACME_EMAIL=…              # only with tlsIssuer letsencrypt
 ```
-Ajuster :
-- **`WEB_DOMAIN`** : le domaine de *ce* cluster. Deux déploiements ne peuvent
-  pas partager un domaine. `www.`, `api.` et `chat.` en sont dérivés : supprimer
-  `WEB_WWW_DOMAIN`, `API_DOMAIN` et `CHAT_DOMAIN`, ou les mettre exactement à ces
-  valeurs.
-- **`STORAGE_PROVIDER=s3`** (ou `azure`), avec `S3_ENDPOINT`, `S3_BUCKET`,
-  `S3_PRIVATE_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID` et
-  `S3_SECRET_ACCESS_KEY` joignables **depuis les VM**. Le stockage `local` est
-  refusé : l'API tourne sur plusieurs pods sans disque partagé.
-- **Novu** : un environnement de test doit avoir son propre environnement Novu
-  (`NOVU_SECRET_KEY`, `NOVU_APPLICATION_IDENTIFIER`), sinon il réécrit les
-  workflows de Dokploy. On peut aussi retirer ces deux lignes.
-- **Bucket S3** : un environnement de test ne doit pas écrire dans le bucket de
-  la prod.
 
-### 5.2 Vérifier puis appliquer
+Then adjust:
+- **`WEB_DOMAIN`**: this cluster's domain. Two deployments cannot share a
+  domain. The stack derives `www.`, `api.` and `chat.` from it, so either
+  delete `WEB_WWW_DOMAIN`, `API_DOMAIN` and `CHAT_DOMAIN`, or set them to
+  exactly those values.
+- **Storage**: set `STORAGE_PROVIDER=s3` (or `azure`). `S3_ENDPOINT`,
+  `S3_BUCKET`, `S3_PRIVATE_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID` and
+  `S3_SECRET_ACCESS_KEY` must be reachable **from the VMs**. `local` storage is
+  refused because the API runs several pods without a shared disk.
+- **Novu**: a test environment needs its own Novu environment
+  (`NOVU_SECRET_KEY`, `NOVU_APPLICATION_IDENTIFIER`). Otherwise it overwrites
+  Dokploy's workflows. You can also leave both lines out.
+- **S3 bucket**: a test environment must not write to the production bucket.
+
+### 5.2 Check, then apply
 ```bash
-# depuis la racine
+# from the repo root
 bun run infra:env:check --env .env.proxmox-staging --stack proxmox-staging
 bun run infra:env:apply --env .env.proxmox-staging --stack proxmox-staging
-# ou depuis infra/ : bun run env:check|env:apply --env ../.env.proxmox-staging --stack …
+# or from infra/: bun run env:check|env:apply --env ../.env.proxmox-staging --stack …
 ```
-`env:check` ne modifie rien. Il refuse le fichier dans ces cas :
-- une variable absente du catalogue (l'ajouter dans `infra/src/app-env.ts`) ;
-- une variable obligatoire manquante ;
-- une variable définie deux fois ;
-- un domaine incohérent ;
-- un stockage local.
 
-Il signale aussi les variables ignorées volontairement : celles calculées par
-la stack (`DATABASE_URI`, `REDIS_URL`, URLs publiques…) et celles réservées à
-Compose. `env:apply` remplace entièrement `appEnv` et `appSecrets` (chiffrés),
-ainsi que `domain`, `ghcrToken`, `acmeEmail`, `imageRegistry` et `imageTag`.
-Une fois la stack choisie, il affiche les ajouts, modifications et suppressions,
-sans jamais afficher les valeurs secrètes.
+`env:check` writes nothing. It refuses the file when it finds:
+- a name missing from the catalog (add it to `infra/src/app-env.ts`);
+- a missing required value;
+- the same name set twice;
+- hosts that don't match the domain layout;
+- local storage.
+
+It also lists the names it skips on purpose: those the stack derives
+(`DATABASE_URI`, `REDIS_URL`, public URLs…) and those only Compose uses.
+
+`env:apply` replaces `appEnv` and `appSecrets` (encrypted) as a whole, and sets
+`domain`, `ghcrToken`, `acmeEmail`, `imageRegistry` and `imageTag`. Once the
+stack is open, it shows what was added, changed or removed, never printing a
+secret value.
 
 ---
 
-## 6. Déployer
+## 6. Deploy
 
 ```bash
-pulumi preview --stack $S       # ~45 ressources : 2–3 VM, K3s, cluster
+pulumi preview --stack $S       # ~45 resources: 2–3 VMs, K3s, the cluster
 pulumi up --stack $S
 ```
-Durée : 10 à 20 min. Ordre :
-1. clone et démarrage des VM ;
-2. cloud-init ;
-3. installation de K3s (version figée, sans Traefik) et attente des nœuds `Ready` ;
-4. cert-manager et ingress-nginx (Helm, 15 min de délai) ;
-5. MongoDB (replica set `rs0`), Redis et Meilisearch ;
-6. api, web, chat-service, search-indexer et Ingress.
+It takes 10 to 20 minutes, in this order:
+1. clone and start the VMs;
+2. cloud-init;
+3. K3s, pinned and without Traefik, then wait for every node to be `Ready`;
+4. cert-manager and ingress-nginx through Helm, with a 15-minute timeout;
+5. MongoDB (replica set `rs0`), Redis and Meilisearch;
+6. api, web, chat-service, search-indexer and the Ingress.
 
-Si une étape échoue, corriger puis relancer `pulumi up` : ce qui est fait n'est
-pas refait. `pulumi refresh --yes` resynchronise l'état si des VM ont été
-modifiées ou supprimées à la main.
+If a step fails, fix it and run `pulumi up` again: finished steps are not
+redone. If VMs were changed or removed by hand, run `pulumi refresh --yes` to
+bring the state back in line.
 
-Récupérer le kubeconfig :
+Get the kubeconfig:
 ```bash
 mkdir -p ~/.kube
 ssh -i ~/.ssh/bns-k3s ubuntu@192.168.0.160 'sudo cat /etc/rancher/k3s/k3s.yaml' \
@@ -266,35 +273,34 @@ ssh -i ~/.ssh/bns-k3s ubuntu@192.168.0.160 'sudo cat /etc/rancher/k3s/k3s.yaml' 
 chmod 600 ~/.kube/bns-staging.yaml
 export KUBECONFIG=~/.kube/bns-staging.yaml
 ```
-Sans kubeconfig, tout `kubectl` passe aussi par le serveur :
+Without a kubeconfig, any `kubectl` command also works through the server:
 `ssh ubuntu@192.168.0.160 sudo k3s kubectl …`.
 
 ---
 
-## 7. Vérifier
+## 7. Check
 
 ```bash
-kubectl get nodes -o wide                    # tous Ready
-kubectl -n bns get pods                      # tous Running 1/1
-kubectl -n bns get hpa                       # api et web, TARGETS en %
+kubectl get nodes -o wide                    # all Ready
+kubectl -n bns get pods                      # all Running 1/1
+kubectl -n bns get hpa                       # api and web, TARGETS in %
 kubectl get certificate -A                   # bns-tls READY=True
-kubectl -n bns logs deploy/api --tail=50     # "Ready in …", pas d'erreur Mongo/S3
+kubectl -n bns logs deploy/api --tail=50     # "Ready in …", no Mongo/S3 errors
 
-# Les routes, en forçant la résolution vers un nœud (avant le DNS)
+# The routes, resolved to a node before DNS is set
 curl -sk --resolve api.buynsellem.lan:443:192.168.0.161 https://api.buynsellem.lan/api/public/config | head -c 200; echo
 curl -sk --resolve buynsellem.lan:443:192.168.0.161 -o /dev/null -w '%{http_code}\n' https://buynsellem.lan/
 ```
-`curl http://<ip>` sans nom renvoie un `404 nginx` : c'est normal, l'Ingress
-aiguille les requêtes par nom de domaine.
+`curl http://<ip>` without a host name returns `404 nginx`. That is expected:
+the Ingress routes by host name.
 
 ---
 
-## 8. DNS et certificats
+## 8. DNS and certificates
 
-### Domaine privé (Pi-hole, `tlsIssuer: local-ca`)
-Dans Pi-hole, aller dans *Local DNS → DNS Records* et faire pointer les quatre
-noms vers **l'IP d'un nœud**. ServiceLB de K3s expose les ports 80 et 443 sur
-chaque nœud.
+### Private domain (Pi-hole, `tlsIssuer: local-ca`)
+In Pi-hole, open *Local DNS → DNS Records* and point the four names at **a
+node's IP**. K3s' ServiceLB serves ports 80 and 443 on every node.
 
 | Domain | IP |
 |---|---|
@@ -303,72 +309,73 @@ chaque nœud.
 | `api.buynsellem.lan` | `192.168.0.161` |
 | `chat.buynsellem.lan` | `192.168.0.161` |
 
-Variante : un seul enregistrement A pour `buynsellem.lan`, plus des *CNAME
-Records* `www`, `api` et `chat` qui pointent vers `buynsellem.lan`. Aucun
-enregistrement n'est nécessaire pour MongoDB, Redis ou Meilisearch, qui
-restent internes au cluster.
+Alternative: one A record for `buynsellem.lan`, plus *CNAME Records* pointing
+`www`, `api` and `chat` at `buynsellem.lan`. MongoDB, Redis and Meilisearch need
+no records: they stay inside the cluster.
 
-Exporter la CA locale (valable 10 ans), puis l'approuver sur chaque appareil :
+Export the local CA (valid for ten years) and trust it on each device:
 ```bash
 kubectl -n cert-manager get secret bns-local-ca -o jsonpath='{.data.ca\.crt}' | base64 -d > bns-local-ca.crt
 sudo cp bns-local-ca.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates   # Linux
-# macOS : Trousseau → Toujours approuver ; Android/iOS : installer le profil puis activer la confiance
 ```
+- **macOS:** open it in Keychain Access and set it to *Always Trust*.
+- **Android or iOS:** install the profile, then enable full trust.
 
-### Domaine public (`tlsIssuer: letsencrypt`)
-- Chez le registrar : enregistrements A `@`, `www`, `api`, `chat` → IP publique.
-- Sur la box : redirection des ports **80 et 443** vers un nœud K3s.
-- Let's Encrypt valide par HTTP. Pour suivre l'émission :
-  `kubectl get certificate -A`, puis
+### Public domain (`tlsIssuer: letsencrypt`)
+- At the registrar: A records for `@`, `www`, `api` and `chat` → the public IP.
+- On the router: forward ports **80 and 443** to a K3s node.
+- Let's Encrypt validates over HTTP. Follow the issuance with
+  `kubectl get certificate -A`, then
   `kubectl describe certificate bns-tls -n bns`.
 
 ---
 
-## 9. Opérations courantes
+## 9. Routine operations
 
-### Changer une variable
-Modifier le `.env`, puis :
+### Change a variable
+Edit the `.env`, then:
 ```bash
 bun run infra:env:check --env .env.proxmox-staging --stack $S
 bun run infra:env:apply --env .env.proxmox-staging --stack $S
-pulumi up --stack $S        # les pods redémarrent (checksum des variables)
+pulumi up --stack $S        # pods restart (a checksum of the variables is in their template)
 ```
 
-### Déployer une nouvelle version
-La CI publie à chaque push sur `dev` les tags `dev` et `dev-<sha>`. Sur un
-tag `v*`, elle publie `<version>` et `latest`.
-- **Staging** (`imageTag: dev`) : les conteneurs ont `imagePullPolicy: Always`,
-  donc un redémarrage suffit.
+### Ship a new version
+CI publishes `dev` and `dev-<sha>` on every push to `dev`. On a `v*` tag it
+publishes `<version>` and `latest`.
+
+- **Staging** (`imageTag: dev`): containers use `imagePullPolicy: Always`, so a
+  restart picks up the new build.
   ```bash
   kubectl -n bns rollout restart deploy/api deploy/web deploy/chat-service deploy/search-indexer
   kubectl -n bns rollout status deploy/api
   ```
-- **Prod** : utiliser un tag immuable, puis lancer `pulumi up`.
+- **Production**: set an immutable tag, then run `pulumi up`.
   ```bash
-  pulumi config set --stack proxmox-prod imageTag 1.1.2      # ou dev-<sha>
+  pulumi config set --stack proxmox-prod imageTag 1.1.2      # or dev-<sha>
   ```
-  Pour revenir en arrière, repasser au tag précédent et relancer `pulumi up`.
+  To roll back, set the previous tag and run `pulumi up` again.
 
-### Réindexer la recherche
+### Reindex search
 ```bash
 kubectl -n bns exec deploy/search-indexer -- bun run src/reindex.ts
 ```
 
-### Ajouter un worker
+### Add a worker
 ```bash
 pulumi config set --stack $S nodeCount 2
 pulumi config set --stack $S --path 'proxmox:workerIps[1]' 192.168.0.162
 pulumi up --stack $S
 ```
-Retirer un worker (baisser `nodeCount`) supprime sa VM et son nœud Kubernetes.
-Les pods sont replanifiés ailleurs, mais **pas les données** des StatefulSets
-qui tournaient dessus (stockage local-path, cf. § 12).
+Lowering `nodeCount` removes that worker's VM and its Kubernetes node. Pods are
+rescheduled elsewhere, but **the data** of StatefulSets that ran on it is not
+moved (local-path storage, see § 12).
 
-### Agrandir les VM
-`small` → `medium` → `large` se fait en place avec `pulumi up`. Réduire
-impose de recréer les VM.
+### Grow the VMs
+`small` → `medium` → `large` is applied in place by `pulumi up`. Shrinking
+means recreating the VMs.
 
-### Sauvegarder MongoDB
+### Back up MongoDB
 ```bash
 PASS=$(pulumi config get --stack $S --path appSecrets.MONGO_PASSWORD)
 kubectl -n bns exec mongodb-0 -- mongodump -u bns -p "$PASS" --authenticationDatabase admin --archive --gzip > bns-$(date +%F).archive.gz
@@ -376,102 +383,103 @@ kubectl -n bns exec mongodb-0 -- mongodump -u bns -p "$PASS" --authenticationDat
 
 ---
 
-## 10. Montée en charge et test de charge
+## 10. Autoscaling and load testing
 
-L'API (2 à 6 pods) et le web (2 à 4 pods) ajoutent des pods quand le CPU
-dépasse 70 % de ce que chaque pod réserve. Un pod est ajouté en moins d'une
-minute. Les pods en trop sont retirés après 5 minutes de calme. MongoDB,
-Redis, Meilisearch et chat-service restent à 1 instance.
+The API (2 to 6 pods) and the web app (2 to 4 pods) add pods when CPU goes
+above 70% of what each pod requests. A pod is added within a minute. Extra pods
+are removed after five calm minutes. MongoDB, Redis, Meilisearch and
+chat-service stay at one instance.
 
 ```bash
 # terminal 1
 kubectl -n bns get hpa -w
 # terminal 2
 kubectl -n bns top pods
-# terminal 3 (depuis infra/)
-bun run loadtest -e DOMAIN=buynsellem.lan               # monte à 150 visiteurs
-bun run loadtest -e DOMAIN=buynsellem.lan -e PEAK=400   # plus fort
+# terminal 3 (from infra/)
+bun run loadtest -e DOMAIN=buynsellem.lan               # up to 150 visitors
+bun run loadtest -e DOMAIN=buynsellem.lan -e PEAK=400   # harder
 ```
-Les seuils du scénario : moins de 1 % d'erreurs et un temps de réponse
-inférieur à 1,5 s au 95e centile. Si les nouveaux pods restent `Pending`, les
-nœuds sont pleins : ajouter un worker ou agrandir les VM.
+The scenario's thresholds are under 1% errors and a 95th-percentile response
+time under 1.5 s. If new pods stay `Pending`, the nodes are full: add a worker
+or grow the VMs.
 
 ---
 
-## 11. Migrer la prod depuis Dokploy
+## 11. Migrating production from Dokploy
 
-1. **Stack** : `pulumi stack init proxmox-prod`. Copier les réglages
-   `proxmox:*` en changeant `firstVmId` (300), les IP (`.170+`) et les tailles.
-   Garder `tlsIssuer` sur `letsencrypt` (la valeur par défaut). Enregistrer le
-   token et les clés SSH (§ 4).
-2. **Variables** : copier l'*Environment* Dokploy prod dans `.env.prod`. Ajouter
-   `GHCR_TOKEN` et `ACME_EMAIL`. Mettre `imageTag` sur une version (§ 9).
-   Lancer `env:check`, puis `env:apply`. Les peppers et secrets de hachage
-   (`RISK_HASH_SECRET`, `ORDER_PHONE_PEPPER`, `VERIFICATION_HASH_PEPPER`)
-   doivent être **identiques** à la prod, sinon les données hachées
-   existantes deviennent illisibles.
-3. **Déployer** : `pulumi up --stack proxmox-prod`. Le cluster tourne alors à
-   vide, à côté de Dokploy.
-4. **Fenêtre de bascule** : mettre Dokploy en maintenance (arrêter l'API pour
-   figer la base).
-5. **Données MongoDB** :
+1. **Stack.** Run `pulumi stack init proxmox-prod`. Copy the `proxmox:*`
+   settings, changing `firstVmId` (300), the IPs (`.170+`) and the sizes. Leave
+   `tlsIssuer` at its default, `letsencrypt`. Set the token and the SSH keys
+   (§ 4).
+2. **Variables.** Copy Dokploy production's *Environment* into `.env.prod`. Add
+   `GHCR_TOKEN` and `ACME_EMAIL`, and set `imageTag` to a release (§ 9). Run
+   `env:check`, then `env:apply`. The hashing peppers and secrets
+   (`RISK_HASH_SECRET`, `ORDER_PHONE_PEPPER`, `VERIFICATION_HASH_PEPPER`) must
+   be **identical** to production, or the existing hashed data can no longer be
+   matched.
+3. **Deploy** with `pulumi up --stack proxmox-prod`. The new cluster runs
+   empty, alongside Dokploy.
+4. **Cut-over window.** Put Dokploy in maintenance and stop its API, so the
+   database stops changing.
+5. **MongoDB data.**
    ```bash
-   # côté Dokploy (conteneur mongodb)
+   # on the Dokploy host (mongodb container)
    docker exec <mongodb> mongodump -u "$MONGO_USER" -p "$MONGO_PASSWORD" --authenticationDatabase admin --archive --gzip > prod.archive.gz
-   # côté cluster
+   # into the cluster
    PASS=$(pulumi config get --stack proxmox-prod --path appSecrets.MONGO_PASSWORD)
    kubectl -n bns exec -i mongodb-0 -- mongorestore -u bns -p "$PASS" --authenticationDatabase admin --archive --gzip --drop < prod.archive.gz
    kubectl -n bns rollout restart deploy/api
    ```
-6. **Fichiers** : rien à copier si la prod est déjà sur S3 ou RustFS (même bucket).
-7. **Recherche** : réindexer (§ 9).
-8. **DNS** : faire pointer les enregistrements publics et les redirections 80/443
-   vers le nouveau cluster. Suivre l'émission du certificat Let's Encrypt.
-9. **Vérifier** (§ 7), puis tester un parcours complet : connexion, annonce,
-   commande, paiement en sandbox et message.
-10. **Garder Dokploy arrêté mais intact** quelques jours pour pouvoir revenir en
-    arrière (repointer le DNS).
+6. **Files.** Nothing to copy if production already stores files in S3 or
+   RustFS: the new cluster uses the same bucket.
+7. **Search.** Reindex (§ 9).
+8. **DNS.** Point the public records and the 80/443 forwards at the new
+   cluster, then follow the Let's Encrypt certificate.
+9. **Check** (§ 7), then run a full journey: sign-in, listing, order, sandbox
+   payment, message.
+10. **Keep Dokploy stopped but intact** for a few days. Pointing DNS back is
+    the rollback.
 
 ---
 
-## 12. Dépannage
+## 12. Troubleshooting
 
-| Symptôme | Cause | Correctif |
+| Symptom | Cause | Fix |
 |---|---|---|
-| `Temporary failure resolving` sur le nœud | DNS Tailscale (`100.100.100.100`) | § 3.1 |
-| `apt` : `404 Not Found` | liste des paquets périmée | `apt-get update` |
-| `failed to locate the entry point` | `main` manquant dans `package.json` | corrigé (`src/index.ts`) |
-| `bad flag syntax: -----BEGIN…` | valeur prise pour une option | `pulumi config set … -- "<valeur>"` ou `< fichier` |
-| `Missing required configuration variable` | valeur dans une autre stack | `pulumi config --stack $S`, voir § 4 |
-| `appSecrets.X is missing` | variables non appliquées | § 5.2 |
-| `403 Permission check failed (/, Sys.Console)` | droit manquant | § 3.3 |
-| `unable to create VM 200: config file already exists` | ID déjà pris | changer `proxmox:firstVmId`, ou supprimer *ses propres* VM |
-| `QEMU exited with code 1` | voir `qm start <id>` sur le nœud | — |
-| … `'host_cdrom' block driver requires a file name` | lecteur CD physique absent | corrigé (`cdrom: none`) |
-| `Cannot shrink … disk` | profil réduit sur des VM existantes | recréer les VM (ci-dessous) |
-| SSH : `no route to host` | VM éteinte, IP non appliquée ou route manquante | `qm status`, `qm cloudinit dump <id> network`, route Tailscale |
-| ConfigMap : `cannot unmarshal number` | valeurs numériques dans la config | corrigé (conversion en texte) |
-| Helm `context deadline exceeded` | images lentes à télécharger | délai porté à 15 min ; relancer |
-| `x509: certificate signed by unknown authority` (webhook nginx) | webhook resté d'une release en échec | `kubectl get validatingwebhookconfiguration -o name \| grep ingress-nginx \| xargs kubectl delete`, puis `pulumi up` |
-| cert-manager webhook `502` | webhook pas encore démarré | relancer `pulumi up` |
-| `api` jamais `Ready` | variables manquantes (S3…) | `kubectl -n bns logs deploy/api` |
-| `404 nginx` sur `curl http://<ip>` | pas de nom de domaine | § 7 (`--resolve`) |
-| Novu `Workflow limit exceeded` | limite de l'offre Novu ou environnement Novu partagé | environnement Novu dédié (§ 5.1) |
-| Pods `Pending` sous charge | nœuds pleins | ajouter un worker ou agrandir |
+| `Temporary failure resolving` on the node | Tailscale DNS (`100.100.100.100`) | § 3.1 |
+| `apt`: `404 Not Found` | stale package index | `apt-get update` |
+| `failed to locate the entry point` | `main` missing from `package.json` | fixed (`src/index.ts`) |
+| `bad flag syntax: -----BEGIN…` | the value is read as a flag | `pulumi config set … -- "<value>"` or `< file` |
+| `Missing required configuration variable` | the value went to another stack | `pulumi config --stack $S`, § 4 |
+| `appSecrets.X is missing` | variables not applied | § 5.2 |
+| `403 Permission check failed (/, Sys.Console)` | missing privilege | § 3.3 |
+| `unable to create VM 200: config file already exists` | VM ID taken | change `proxmox:firstVmId`, or remove *your own* stale VMs |
+| `QEMU exited with code 1` | see `qm start <id>` on the node | — |
+| … `'host_cdrom' block driver requires a file name` | no physical CD-ROM on the host | fixed (`cdrom: none`) |
+| `Cannot shrink … disk` | smaller profile on existing VMs | recreate the VMs (below) |
+| SSH: `no route to host` | VM stopped, IP not applied, or no route | `qm status`, `qm cloudinit dump <id> network`, Tailscale route |
+| ConfigMap: `cannot unmarshal number` | numeric values in config | fixed (converted to text) |
+| Helm `context deadline exceeded` | slow image pulls | timeout raised to 15 min; run `up` again |
+| `x509: certificate signed by unknown authority` (nginx webhook) | webhook left by a failed release | `kubectl get validatingwebhookconfiguration -o name \| grep ingress-nginx \| xargs kubectl delete`, then `pulumi up` |
+| cert-manager webhook `502` | webhook not started yet | run `pulumi up` again |
+| `api` never `Ready` | missing variables (S3…) | `kubectl -n bns logs deploy/api` |
+| `404 nginx` on `curl http://<ip>` | no host name | § 7 (`--resolve`) |
+| Novu `Workflow limit exceeded` | Novu plan limit or shared Novu environment | dedicated Novu environment (§ 5.1) |
+| Pods `Pending` under load | nodes full | add a worker or grow the VMs |
 
-### Recréer les VM d'un cluster de test
+### Recreate a test cluster's VMs
 ```bash
 pulumi up --stack $S \
   --replace "$(pulumi stack --stack $S --show-urns | grep -o 'urn:[^ ]*VirtualMachine::bns-proxmox-staging-server')" \
   --replace "$(pulumi stack --stack $S --show-urns | grep -o 'urn:[^ ]*VirtualMachine::bns-proxmox-staging-worker-1')"
 ```
-Les données des VM recréées sont perdues : MongoDB, Redis et Meilisearch
-utilisent le stockage local-path de K3s, attaché à un nœud.
+The recreated VMs lose their data. MongoDB, Redis and Meilisearch use K3s'
+local-path storage, which is tied to one node.
 
-### Diagnostics utiles
+### Useful diagnostics
 ```bash
-qm start <id>; qm status <id>; qm config <id>; qm cloudinit dump <id> network   # nœud Proxmox
-qm terminal <id>                                    # console série, sortie Ctrl+O
+qm start <id>; qm status <id>; qm config <id>; qm cloudinit dump <id> network   # Proxmox node
+qm terminal <id>                                    # serial console, exit with Ctrl+O
 kubectl get pods -A -o wide | grep -v Completed
 kubectl -n bns describe pod -l app=api | grep -A12 Events
 ssh ubuntu@192.168.0.161 'sudo systemctl status k3s-agent --no-pager | tail -15'
@@ -479,10 +487,10 @@ ssh ubuntu@192.168.0.161 'sudo systemctl status k3s-agent --no-pager | tail -15'
 
 ---
 
-## 13. Tout supprimer
+## 13. Tearing down
 
 ```bash
-pulumi destroy --stack $S        # supprime le cluster et ses VM (données incluses)
-pulumi stack rm $S               # supprime la stack et sa config
+pulumi destroy --stack $S        # removes the cluster and its VMs, data included
+pulumi stack rm $S               # removes the stack and its config
 ```
-Le template 9000, le rôle et le token Proxmox ne sont pas touchés.
+The template (VM 9000), the role and the Proxmox token stay in place.
