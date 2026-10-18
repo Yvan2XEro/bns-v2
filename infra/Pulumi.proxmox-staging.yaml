@@ -4,8 +4,11 @@
 # Template (once, on the Proxmox node, as root): scripts/create-proxmox-template.sh
 # The guest agent is required: the provider waits for it to report the IP.
 #
-# API token (Datacenter → Permissions → API Tokens), with VM.*, Datastore.*
-# and SDN.Use on the node, the datastore and the bridge:
+# API token, on the node (Proxmox 9; on 8 use VM.Monitor for VM.GuestAgent.Audit).
+# Sys.Console is needed because the template has a serial console:
+#   pveum role add PulumiK3s -privs "VM.Allocate VM.Clone VM.Audit VM.PowerMgmt VM.Config.CDROM VM.Config.CPU VM.Config.Cloudinit VM.Config.Disk VM.Config.HWType VM.Config.Memory VM.Config.Network VM.Config.Options VM.GuestAgent.Audit Datastore.AllocateSpace Datastore.Audit SDN.Use Sys.Audit Sys.Console"
+#   pveum user add pulumi@pve && pveum aclmod / -user pulumi@pve -role PulumiK3s
+#   pveum user token add pulumi@pve bns --privsep 0
 #   pulumi config set --secret proxmox:apiToken 'pulumi@pve!bns=<uuid>' --stack proxmox-staging
 #   pulumi config set --secret proxmox:sshPrivateKey "$(cat ~/.ssh/id_ed25519)" --stack proxmox-staging
 #   pulumi config set proxmox:sshPublicKey "$(cat ~/.ssh/id_ed25519.pub)" --stack proxmox-staging
