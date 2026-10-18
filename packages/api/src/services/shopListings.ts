@@ -475,3 +475,73 @@ export async function closeOwnedShops(
 	}
 	return shops.map((shop) => String(shop.id));
 }
+
+/** The views of a shop's ads: on the site, closed (let, filled, sold), lapsed. */
+export const SHOP_AD_FILTERS = ["all", "live", "closed", "expired"] as const;
+export type ShopAdFilter = (typeof SHOP_AD_FILTERS)[number];
+
+const SHOP_AD_STATUSES: Record<ShopAdFilter, Listing["status"][]> = {
+	all: ["draft", "pending", "published", "rejected", "sold", "expired"],
+	live: ["pending", "published"],
+	closed: ["sold"],
+	expired: ["expired", "rejected"],
+};
+
+/**
+ * The shop's ads that are not catalogue products — every ad of an agency, a
+ * recruiter or a provider, and a store's job offers. Any member who may edit
+ * the catalogue reads them, drafts and lapsed ones included, which the
+ * listings collection only shows to the ad's own seller.
+ */
+export async function listShopAds(
+	payload: Payload,
+	user: ServiceUser,
+	shopId: string,
+	input: { filter?: unknown; page?: unknown },
+): Promise<{
+	docs: Listing[];
+	totalDocs: number;
+	page: number;
+	hasNextPage: boolean;
+	counts: Record<ShopAdFilter, number>;
+}> {
+	await requireShopPermission(payload, user, shopId, "catalogue.edit");
+	const filter =
+		SHOP_AD_FILTERS.find((value) => value === input.filter) ?? "all";
+	const page = Math.max(1, Math.trunc(Number(input.page)) || 1);
+	const of = (statuses: Listing["status"][]): Where => ({
+		and: [
+			{ shop: { equals: shopId } },
+			{ product: { exists: false } },
+			{ status: { in: statuses } },
+		],
+	});
+
+	const [result, ...totals] = await Promise.all([
+		payload.find({
+			collection: "listings",
+			where: of(SHOP_AD_STATUSES[filter]),
+			sort: "-createdAt",
+			depth: 1,
+			limit: 24,
+			page,
+			overrideAccess: true,
+		}),
+		...SHOP_AD_FILTERS.map((key) =>
+			payload.count({
+				collection: "listings",
+				where: of(SHOP_AD_STATUSES[key]),
+				overrideAccess: true,
+			}),
+		),
+	]);
+	return {
+		docs: result.docs,
+		totalDocs: result.totalDocs,
+		page: result.page ?? page,
+		hasNextPage: result.hasNextPage,
+		counts: Object.fromEntries(
+			SHOP_AD_FILTERS.map((key, index) => [key, totals[index]?.totalDocs ?? 0]),
+		) as Record<ShopAdFilter, number>,
+	};
+}

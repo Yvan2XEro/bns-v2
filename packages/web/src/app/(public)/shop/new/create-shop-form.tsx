@@ -10,6 +10,7 @@ import { CategoryChips } from "~/components/shop/category-chips";
 import { HandleInput } from "~/components/shop/handle-input";
 import { PhoneRequirement } from "~/components/shop/phone-requirement";
 import { ShopPreviewCard } from "~/components/shop/shop-preview-card";
+import { ShopProfilePicker } from "~/components/shop/shop-profile-picker";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -35,6 +36,7 @@ const HANDLE_ERROR_CODES: string[] = [
 
 export function CreateShopForm({ categories }: { categories: Category[] }) {
 	const t = useTranslations("ShopCreate");
+	const tProfile = useTranslations("ShopProfile");
 	const tRoot = useTranslations();
 	const router = useRouter();
 	const createShop = useCreateShop();
@@ -53,7 +55,13 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 	} = useForm<CreateShopValues>({
 		resolver: zodResolver(createShopSchema),
 		mode: "onChange",
-		defaultValues: { name: "", handle: "", city: myPlace, categories: [] },
+		defaultValues: {
+			name: "",
+			handle: "",
+			city: myPlace,
+			categories: [],
+			profile: "store",
+		},
 	});
 
 	const name = useWatch({ control, name: "name" });
@@ -86,6 +94,7 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 				...(values.categories.length > 0
 					? { categories: values.categories }
 					: {}),
+				profile: values.profile,
 			});
 			router.push("/seller");
 			router.refresh();
@@ -106,6 +115,24 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 	return (
 		<form onSubmit={onSubmit} className="space-y-6" noValidate>
 			<ShopPreviewCard name={name} />
+
+			<fieldset className="space-y-2">
+				<legend className="mb-1 font-medium text-ink text-sm">
+					{tProfile("pickerLabel")}
+				</legend>
+				<p className="mb-2 text-ink-faint text-xs">{tProfile("pickerHint")}</p>
+				<Controller
+					control={control}
+					name="profile"
+					render={({ field }) => (
+						<ShopProfilePicker
+							value={field.value}
+							onChange={field.onChange}
+							disabled={createShop.isPending}
+						/>
+					)}
+				/>
+			</fieldset>
 
 			<div className="space-y-2">
 				<Label htmlFor="shop-name">{t("name")}</Label>

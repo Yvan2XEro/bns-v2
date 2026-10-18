@@ -40,6 +40,7 @@ const LAUNCH_ICONS: Record<LaunchActionKey, typeof Rocket> = {
 	shareWhatsapp: MessageCircle,
 	boost: Rocket,
 	addProducts: PlusCircle,
+	addListing: PlusCircle,
 	verify: ShieldCheck,
 	addWhatsapp: Phone,
 	replyFast: MessagesSquare,

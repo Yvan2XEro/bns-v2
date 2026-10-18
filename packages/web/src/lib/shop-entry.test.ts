@@ -6,6 +6,7 @@ const baseShop: MyShop = {
 	id: "shop-1",
 	handle: "my-shop",
 	name: "My Shop",
+	profile: "store",
 	description: null,
 	logo: null,
 	banner: null,

@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Toaster } from "sonner";
 import { LocaleSwitcher } from "~/components/layout/locale-switcher";
 import { NotificationInbox } from "~/components/layout/notification-inbox";
+import { shopProfileRules } from "~/lib/shop-profile";
 import { isBrandColor, shopTheme } from "~/lib/shop-theme";
 import type { MyShopResponse } from "~/types";
 import { SellerSidebar } from "./seller-sidebar";
@@ -37,6 +38,7 @@ export async function SellerShell({
 					lowStock={mine.counts?.lowStockVariants ?? 0}
 					role={role}
 					roleReason={roleReason}
+					retail={shopProfileRules(shop.profile).retail}
 				/>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center justify-end gap-1 border-line border-b bg-surface px-2 lg:px-6">

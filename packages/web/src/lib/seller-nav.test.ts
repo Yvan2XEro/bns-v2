@@ -148,3 +148,20 @@ describe("groupSellerNav", () => {
 		]);
 	});
 });
+
+describe("a business that is not a store", () => {
+	it("keeps its ads and drops the catalogue, stock and orders", () => {
+		const nav = keys(visibleSellerNav("owner", true, true, true, true, false));
+		expect(nav).toContain("listings");
+		for (const retailOnly of [
+			"orders",
+			"returns",
+			"disputes",
+			"catalogue",
+			"stock",
+			"resale",
+			"delivery",
+		])
+			expect(nav).not.toContain(retailOnly);
+	});
+});

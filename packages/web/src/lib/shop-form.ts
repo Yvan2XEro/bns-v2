@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Place } from "../../../api/src/contracts/places";
 import { E164_PATTERN } from "./phone-input";
 import { HANDLE_MAX, HANDLE_MIN, isHandleFormatValid } from "./shop-handle";
+import { SHOP_PROFILES } from "./shop-profile";
 import { normalizeBrandInput } from "./shop-theme";
 
 export const SHOP_NAME_MIN = 2;
@@ -23,6 +24,7 @@ export const createShopSchema = z.object({
 		.refine(isHandleFormatValid),
 	city: z.custom<Place | null>(),
 	categories: z.array(z.string()).max(SHOP_CATEGORIES_MAX),
+	profile: z.enum(SHOP_PROFILES),
 });
 
 export type CreateShopValues = z.infer<typeof createShopSchema>;

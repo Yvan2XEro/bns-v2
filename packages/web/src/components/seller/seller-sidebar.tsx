@@ -10,6 +10,7 @@ import {
 	LifeBuoy,
 	Lock,
 	type LucideIcon,
+	Megaphone,
 	Package,
 	RefreshCw,
 	RotateCcw,
@@ -70,6 +71,7 @@ const ICONS: Record<SellerNavKey, LucideIcon> = {
 	returns: RotateCcw,
 	resale: RefreshCw,
 	delivery: Truck,
+	listings: Megaphone,
 };
 
 export function SellerSidebar({
@@ -81,6 +83,7 @@ export function SellerSidebar({
 	lowStock,
 	role,
 	roleReason,
+	retail,
 }: {
 	shopId: string;
 	name: string;
@@ -97,6 +100,8 @@ export function SellerSidebar({
 	 * dormant or sanctioned member sees a reason instead of a sidebar that
 	 * quietly lost most of its entries. */
 	roleReason: MyShopRoleReason | null;
+	/** A store; an agency, a recruiter or a provider has no catalogue or orders. */
+	retail: boolean;
 }) {
 	const tSeller = useTranslations("Seller");
 	const tShell = useTranslations("SellerShell");
@@ -128,6 +133,7 @@ export function SellerSidebar({
 		protectedPaymentEnabled,
 		resaleEnabled,
 		deliveryZonesEnabled,
+		retail,
 	);
 
 	const lockedNotice =

@@ -1308,7 +1308,8 @@
 			"billing": "Facturation",
 			"orderSettings": "Réglages des commandes",
 			"payments": "Paiements",
-			"delivery": "Livraison"
+			"delivery": "Livraison",
+			"listings": "Annonces"
 		},
 		"viewShop": "Voir ma boutique",
 		"buyerMode": "Revenir en mode acheteur",
@@ -5354,6 +5355,11 @@
 				"title": "Transférer mes annonces",
 				"body": "{count, plural, one {# annonce personnelle à reprendre dans la boutique} other {# annonces personnelles à reprendre dans la boutique}}",
 				"done": "Rien à transférer"
+			},
+			"listing": {
+				"title": "Publier une première annonce",
+				"body": "Un bien, une offre d'emploi ou un service : les clients répondent par message ou par téléphone",
+				"done": "Vos annonces sont en ligne"
 			}
 		},
 		"launchTitle": "Décrochez votre première vente",
@@ -5382,6 +5388,10 @@
 			"replyFast": {
 				"title": "Répondre vite",
 				"body": "Votre délai de réponse s'affiche sur votre page"
+			},
+			"addListing": {
+				"title": "Publier d'autres annonces",
+				"body": "Plus d'annonces, plus de chances d'être trouvé"
 			}
 		},
 		"moreShare": "Autres façons de partager",
@@ -6140,5 +6150,75 @@
 				"tip3": "Payez par étapes, jamais tout d'avance"
 			}
 		}
+	},
+	"ShopProfile": {
+		"name": {
+			"store": "Boutique",
+			"agency": "Agence",
+			"employer": "Recruteur",
+			"provider": "Prestataire"
+		},
+		"description": {
+			"store": "Vendez des articles depuis un catalogue, avec stock, commandes et livraison.",
+			"agency": "Louez ou vendez des biens : appartements, maisons, bureaux, terrains.",
+			"employer": "Publiez des offres d'emploi et recevez des candidatures.",
+			"provider": "Proposez vos services et répondez aux demandes de devis."
+		},
+		"pickerLabel": "Quel type d'activité ?",
+		"pickerHint": "Il façonne votre espace et la façon dont vos clients vous voient. Vous pourrez le changer plus tard.",
+		"count": {
+			"store": "{count, plural, one {# produit} other {# produits}}",
+			"agency": "{count, plural, one {# bien} other {# biens}}",
+			"employer": "{count, plural, one {# offre d'emploi} other {# offres d'emploi}}",
+			"provider": "{count, plural, one {# service} other {# services}}"
+		},
+		"contact": {
+			"store": "Contacter la boutique",
+			"agency": "Contacter l'agence",
+			"employer": "Contacter le recruteur",
+			"provider": "Contacter le prestataire"
+		},
+		"settingsTitle": "Type d'activité",
+		"save": "Enregistrer",
+		"saved": "Enregistré",
+		"retailNote": "Seule une boutique gère un catalogue, du stock, des commandes et la livraison. Les autres types publient des annonces auxquelles les clients répondent par message ou par téléphone."
+	},
+	"SellerAds": {
+		"title": "Annonces",
+		"subtitle": {
+			"store": "Les annonces hors catalogue : offres d'emploi, services, locations.",
+			"agency": "Vos biens à louer ou à vendre.",
+			"employer": "Vos offres d'emploi.",
+			"provider": "Vos services."
+		},
+		"add": "Nouvelle annonce",
+		"filter": {
+			"all": "Toutes",
+			"live": "En ligne",
+			"closed": "Terminées",
+			"expired": "Expirées"
+		},
+		"status": {
+			"draft": "Brouillon",
+			"pending": "En vérification",
+			"published": "En ligne",
+			"rejected": "Refusée",
+			"expired": "Expirée",
+			"deleted": "Supprimée"
+		},
+		"empty": {
+			"store": "Aucune annonce hors catalogue pour l'instant",
+			"agency": "Aucun bien pour l'instant",
+			"employer": "Aucune offre d'emploi pour l'instant",
+			"provider": "Aucun service pour l'instant"
+		},
+		"emptyHint": "Publiez-en une avec « Nouvelle annonce » : elle apparaît sur la page de votre boutique.",
+		"edit": "Modifier",
+		"renew": "Renouveler",
+		"actionFailed": "L'action n'a pas abouti. Réessayez.",
+		"loadError": "Impossible de charger vos annonces.",
+		"retry": "Réessayer",
+		"previous": "Précédent",
+		"next": "Suivant"
 	}
 }

@@ -22,6 +22,7 @@ export function ShopHero({
 	tabs?: React.ReactNode;
 }) {
 	const t = useTranslations("Shop");
+	const tProfile = useTranslations("ShopProfile");
 
 	// Only the logo is pulled up over the banner; the name, badges and meta
 	// stay in normal flow beneath it, so no name length or wrap can reach
@@ -63,6 +64,12 @@ export function ShopHero({
 									{shop.name}
 								</h1>
 								<LevelBadge badge={shop.badge} />
+								{/* A shop is the default; anything else says what it is. */}
+								{shop.profile !== "store" && (
+									<span className="rounded-full border border-line bg-surface px-2.5 py-0.5 font-semibold text-ink-muted text-xs">
+										{tProfile(`name.${shop.profile}`)}
+									</span>
+								)}
 							</div>
 							<ShopTrustStrip shop={shop} rating={rating} locale={locale} />
 						</div>

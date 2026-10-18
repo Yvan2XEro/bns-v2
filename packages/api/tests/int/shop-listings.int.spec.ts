@@ -11,6 +11,7 @@ import {
 	closeOwnedShops,
 	closeShop,
 	detachListings,
+	listShopAds,
 } from "../../src/services/shopListings";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -223,6 +224,56 @@ describe("attachListings", () => {
 		expect(payload.store.listings.find((l) => l.id === "l-1")?.product).toBe(
 			winner?.attached[0].productId,
 		);
+	});
+});
+
+describe("ads that are not goods", () => {
+	function withJobAd() {
+		const payload = seed();
+		payload.store.listings.push({
+			id: "l-job",
+			title: "Comptable confirmé",
+			description: "CDI",
+			price: null,
+			kind: "job",
+			category: "cat-1",
+			attributes: {},
+			images: [],
+			status: "published",
+			seller: "u-1",
+			shop: null,
+			product: null,
+			location: "Douala",
+		});
+		return payload;
+	}
+
+	it("joins the shop as an ad instead of becoming a product", async () => {
+		const payload = withJobAd();
+		const result = await attachListings(payload, U1, "s-1", {
+			listingIds: ["l-job"],
+		});
+		expect(result.attached).toEqual([{ listingId: "l-job", productId: null }]);
+		expect(
+			payload.store.products.some((product) => product.listing === "l-job"),
+		).toBe(false);
+		expect(
+			payload.store.listings.find((listing) => listing.id === "l-job"),
+		).toMatchObject({ shop: "s-1", product: null });
+	});
+
+	it("lists the shop's ads that are not products, with a count per view", async () => {
+		const payload = withJobAd();
+		await attachListings(payload, U1, "s-1", { listingIds: ["l-job", "l-1"] });
+		const ads = await listShopAds(payload, U1, "s-1", { filter: "live" });
+		expect(ads.docs.map((ad) => ad.id)).toEqual(["l-job"]);
+		expect(ads.counts.live).toBe(1);
+	});
+
+	it("is for the shop's members only", async () => {
+		await expect(
+			listShopAds(withJobAd(), { id: "u-2" }, "s-1", {}),
+		).rejects.toMatchObject({ code: "shop.notMember" });
 	});
 });
 

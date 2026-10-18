@@ -1308,7 +1308,8 @@
 			"billing": "Billing",
 			"orderSettings": "Order settings",
 			"payments": "Payments",
-			"delivery": "Delivery"
+			"delivery": "Delivery",
+			"listings": "Listings"
 		},
 		"viewShop": "View my shop",
 		"buyerMode": "Back to buyer mode",
@@ -5354,6 +5355,11 @@
 				"title": "Move my listings",
 				"body": "{count, plural, one {# personal listing to bring into the shop} other {# personal listings to bring into the shop}}",
 				"done": "Nothing to move"
+			},
+			"listing": {
+				"title": "Publish a first listing",
+				"body": "A property, a job offer or a service: customers answer by message or phone",
+				"done": "Your listings are online"
 			}
 		},
 		"launchTitle": "Land your first sale",
@@ -5382,6 +5388,10 @@
 			"replyFast": {
 				"title": "Reply fast",
 				"body": "Your response time shows on your page"
+			},
+			"addListing": {
+				"title": "Publish more listings",
+				"body": "More listings, more chances to be found"
 			}
 		},
 		"moreShare": "Other ways to share",
@@ -6140,5 +6150,75 @@
 				"tip3": "Pay in stages, never everything upfront"
 			}
 		}
+	},
+	"ShopProfile": {
+		"name": {
+			"store": "Shop",
+			"agency": "Agency",
+			"employer": "Recruiter",
+			"provider": "Service provider"
+		},
+		"description": {
+			"store": "Sell goods from a catalogue, with stock, orders and delivery.",
+			"agency": "Rent out or sell property: flats, houses, offices, land.",
+			"employer": "Publish job offers and receive applications.",
+			"provider": "Offer your services and answer quote requests."
+		},
+		"pickerLabel": "What kind of business?",
+		"pickerHint": "It shapes your workspace and how customers see you. You can change it later.",
+		"count": {
+			"store": "{count, plural, one {# product} other {# products}}",
+			"agency": "{count, plural, one {# property} other {# properties}}",
+			"employer": "{count, plural, one {# job offer} other {# job offers}}",
+			"provider": "{count, plural, one {# service} other {# services}}"
+		},
+		"contact": {
+			"store": "Contact the shop",
+			"agency": "Contact the agency",
+			"employer": "Contact the recruiter",
+			"provider": "Contact the provider"
+		},
+		"settingsTitle": "Kind of business",
+		"save": "Save",
+		"saved": "Saved",
+		"retailNote": "Only a shop runs a catalogue, stock, orders and delivery. The other kinds publish ads that customers answer by message or phone."
+	},
+	"SellerAds": {
+		"title": "Listings",
+		"subtitle": {
+			"store": "Ads outside the catalogue: job offers, services, rentals.",
+			"agency": "Your properties for rent or for sale.",
+			"employer": "Your job offers.",
+			"provider": "Your services."
+		},
+		"add": "New listing",
+		"filter": {
+			"all": "All",
+			"live": "Online",
+			"closed": "Closed",
+			"expired": "Expired"
+		},
+		"status": {
+			"draft": "Draft",
+			"pending": "Under review",
+			"published": "Online",
+			"rejected": "Rejected",
+			"expired": "Expired",
+			"deleted": "Deleted"
+		},
+		"empty": {
+			"store": "No listing outside the catalogue yet",
+			"agency": "No property yet",
+			"employer": "No job offer yet",
+			"provider": "No service yet"
+		},
+		"emptyHint": "Publish one with “New listing”: it appears on your shop page.",
+		"edit": "Edit",
+		"renew": "Renew",
+		"actionFailed": "That did not work. Try again.",
+		"loadError": "Your listings could not be loaded.",
+		"retry": "Retry",
+		"previous": "Previous",
+		"next": "Next"
 	}
 }

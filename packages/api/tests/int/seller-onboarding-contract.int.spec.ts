@@ -22,6 +22,8 @@ const OWNER_CAN = {
 
 function facts(over: Partial<ShopOnboardingFacts> = {}): ShopOnboardingFacts {
 	return {
+		retail: true,
+		ads: { live: 0 },
 		profile: {
 			logo: false,
 			banner: false,
@@ -215,5 +217,33 @@ describe("pickSellerTip", () => {
 
 	it("returns null once every tip is dismissed", () => {
 		expect(pickSellerTip("active", facts(), [...SELLER_TIP_KEYS])).toBeNull();
+	});
+});
+
+describe("a business that is not a store", () => {
+	it("asks for a first ad instead of a first product, and never for delivery", () => {
+		const keys = buildSetupSteps(
+			facts({
+				retail: false,
+				delivery: { applies: false, zones: 0, pickupPoints: 0 },
+			}),
+		).map((step) => step.key);
+		expect(keys).toContain("listing");
+		expect(keys).not.toContain("product");
+		expect(keys).not.toContain("delivery");
+	});
+
+	it("counts its live ads as the step done", () => {
+		const step = buildSetupSteps(
+			facts({ retail: false, ads: { live: 2 } }),
+		).find((candidate) => candidate.key === "listing");
+		expect(step?.done).toBe(true);
+	});
+
+	it("offers to publish an ad rather than add products", () => {
+		expect(launchActions(facts({ retail: false }))).toContain("addListing");
+		expect(launchActions(facts({ retail: false }))).not.toContain(
+			"addProducts",
+		);
 	});
 });

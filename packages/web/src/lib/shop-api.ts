@@ -36,6 +36,7 @@ import { myShopPath, readActiveShopCookie } from "./active-shop";
 import { ApiError, apiErrorFrom, ERROR_CODES, fallbackFor } from "./apiError";
 import { browserContentLocale, withContentLocale } from "./content-locale";
 import { mediaUploadForm } from "./media-upload";
+import type { ShopProfile } from "./shop-profile";
 import type { BusinessType } from "./verification";
 
 /**
@@ -133,10 +134,25 @@ export interface CreateShopInput {
 	country?: string;
 	countryCode?: string;
 	categories?: string[];
+	profile?: ShopProfile;
 }
+
+/** One page of the shop's ads that are not products (`GET /api/shops/:id/listings`). */
+export interface ShopAdsResponse {
+	docs: Listing[];
+	totalDocs: number;
+	page: number;
+	hasNextPage: boolean;
+	counts: Record<ShopAdFilter, number>;
+}
+
+export const SHOP_AD_FILTERS = ["all", "live", "closed", "expired"] as const;
+export type ShopAdFilter = (typeof SHOP_AD_FILTERS)[number];
 
 export interface ShopUpdateInput {
 	name?: string;
+	/** Leaving `store` is refused while the catalogue has live products. */
+	profile?: ShopProfile;
 	description?: string | null;
 	returnPolicy?: string | null;
 	logo?: string | null;
@@ -207,6 +223,14 @@ export const shopApi = {
 			method: "POST",
 			body: JSON.stringify(input),
 		}),
+
+	listAds: (shopId: string, params: { filter: ShopAdFilter; page: number }) =>
+		request<ShopAdsResponse>(
+			`/api/shops/${encodeURIComponent(shopId)}/listings${query({
+				filter: params.filter,
+				page: String(params.page),
+			})}`,
+		),
 
 	handleAvailable: (handle: string) =>
 		request<HandleAvailability>(

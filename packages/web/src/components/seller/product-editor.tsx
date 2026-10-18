@@ -25,7 +25,7 @@ import { usePhotoLimit } from "~/hooks/use-app-config";
 import { useCatalogueStockT } from "~/hooks/use-catalogue-stock-t";
 import { useSaveProduct } from "~/hooks/use-save-product";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { pruneAttributeValues } from "~/lib/category-form";
+import { isProductCategory, pruneAttributeValues } from "~/lib/category-form";
 import {
 	clearProductDraft,
 	loadProductDraft,
@@ -109,6 +109,17 @@ export function ProductEditor({
 		defaultValues,
 	});
 
+	// Only goods go in the catalogue (the API refuses the rest); a product
+	// filed elsewhere before that rule keeps its own category on offer.
+	const sellableCategories = useMemo(
+		() =>
+			categories.filter(
+				(category) =>
+					isProductCategory(category) ||
+					category.id === defaultValues.categoryId,
+			),
+		[categories, defaultValues.categoryId],
+	);
 	const categoryId = useWatch({ control, name: "categoryId" });
 	const title = useWatch({ control, name: "title" });
 	const categoryContext = useMemo(
@@ -284,7 +295,7 @@ export function ProductEditor({
 						control={control}
 						register={register}
 						setValue={setValue}
-						categories={categories}
+						categories={sellableCategories}
 						categoryContext={categoryContext}
 						issueAt={issueAt}
 					/>

@@ -38,6 +38,7 @@ export const SELLER_NAV = [
 		exact: false,
 		permission: "orders.view",
 		orders: true,
+		retail: true,
 	},
 	{
 		href: "/seller/returns",
@@ -46,6 +47,7 @@ export const SELLER_NAV = [
 		exact: false,
 		permission: "orders.view",
 		orders: false,
+		retail: true,
 	},
 	{
 		href: "/seller/disputes",
@@ -54,10 +56,22 @@ export const SELLER_NAV = [
 		exact: false,
 		permission: "orders.view",
 		orders: true,
+		retail: true,
 	},
 	{
 		href: "/seller/catalogue",
 		key: "catalogue",
+		group: "catalogue",
+		exact: false,
+		permission: "catalogue.edit",
+		orders: false,
+		retail: true,
+	},
+	{
+		// The shop's ads that are not products: a flat, a job offer, a service.
+		// Every profile has some; an agency or a recruiter has nothing else.
+		href: "/seller/listings",
+		key: "listings",
 		group: "catalogue",
 		exact: false,
 		permission: "catalogue.edit",
@@ -70,6 +84,7 @@ export const SELLER_NAV = [
 		exact: false,
 		permission: "stock.move",
 		orders: false,
+		retail: true,
 	},
 	{
 		href: "/seller/resale",
@@ -79,6 +94,7 @@ export const SELLER_NAV = [
 		permission: "resale.manage",
 		orders: true,
 		resale: true,
+		retail: true,
 	},
 	{
 		href: "/seller/messages",
@@ -96,6 +112,7 @@ export const SELLER_NAV = [
 		permission: "settings.edit",
 		orders: true,
 		deliveryZones: true,
+		retail: true,
 	},
 	{
 		href: "/seller/payments",
@@ -143,6 +160,8 @@ export const SELLER_NAV = [
 	paymentsHub?: boolean;
 	resale?: boolean;
 	deliveryZones?: boolean;
+	/** Only a store runs a catalogue, stock and orders (`shops.profile`). */
+	retail?: boolean;
 }>;
 
 export type SellerNavEntry = (typeof SELLER_NAV)[number];
@@ -154,8 +173,10 @@ export function visibleSellerNav(
 	protectedPaymentEnabled = false,
 	resaleEnabled = false,
 	deliveryZonesEnabled = false,
+	retail = true,
 ): SellerNavEntry[] {
 	return SELLER_NAV.filter((entry) => {
+		const retailOnly = "retail" in entry && entry.retail === true;
 		const hub = "paymentsHub" in entry && entry.paymentsHub === true;
 		const gatedByResale = "resale" in entry && entry.resale === true;
 		const gatedByDelivery =
@@ -165,6 +186,7 @@ export function visibleSellerNav(
 			(!hub || ordersEnabled || protectedPaymentEnabled) &&
 			(resaleEnabled || !gatedByResale) &&
 			(deliveryZonesEnabled || !gatedByDelivery) &&
+			(retail || !retailOnly) &&
 			(entry.permission === null || can(role, entry.permission))
 		);
 	});

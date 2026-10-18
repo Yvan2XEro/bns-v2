@@ -6,6 +6,13 @@
  */
 
 export interface ShopOnboardingFacts {
+	/**
+	 * A store (`shops.profile`). An agency, a recruiter or a provider has no
+	 * catalogue, delivery or payouts: its first step is a first ad.
+	 */
+	retail: boolean;
+	/** The shop's ads that are not products, on the site or under review. */
+	ads: { live: number };
 	profile: {
 		logo: boolean;
 		banner: boolean;
@@ -45,6 +52,7 @@ export type SetupStepKey =
 	| "created"
 	| "profile"
 	| "product"
+	| "listing"
 	| "delivery"
 	| "payout"
 	| "verify"
@@ -101,9 +109,11 @@ export function buildSetupSteps(facts: ShopOnboardingFacts): SetupStep[] {
 		step("profile", missing.length === 0, true, can.editSettings, {
 			missing,
 		}),
-		step("product", facts.products.active > 0, true, can.editCatalogue, {
-			drafts: facts.products.drafts,
-		}),
+		facts.retail
+			? step("product", facts.products.active > 0, true, can.editCatalogue, {
+					drafts: facts.products.drafts,
+				})
+			: step("listing", facts.ads.live > 0, true, can.editCatalogue),
 	];
 	if (facts.delivery.applies) {
 		steps.push(
@@ -207,6 +217,7 @@ export type LaunchActionKey =
 	| "shareWhatsapp"
 	| "boost"
 	| "addProducts"
+	| "addListing"
 	| "verify"
 	| "addWhatsapp"
 	| "replyFast";
@@ -215,7 +226,8 @@ export type LaunchActionKey =
 export function launchActions(facts: ShopOnboardingFacts): LaunchActionKey[] {
 	const actions: LaunchActionKey[] = ["shareWhatsapp"];
 	if (facts.boostListingId) actions.push("boost");
-	else if (facts.can.editCatalogue) actions.push("addProducts");
+	else if (facts.can.editCatalogue)
+		actions.push(facts.retail ? "addProducts" : "addListing");
 	if (
 		facts.verification.applies &&
 		facts.verification.level < 2 &&
@@ -249,7 +261,7 @@ const TIP_RULES: Array<{
 	{
 		key: "firstPhoto",
 		stages: ["setup", "launch"],
-		applies: (f) => f.can.editCatalogue,
+		applies: (f) => f.retail && f.can.editCatalogue,
 	},
 	{
 		key: "whatsappStatus",

@@ -29,6 +29,8 @@ const get = (root: Json, path: string) =>
 		);
 
 const FACTS: ShopOnboardingFacts = {
+	retail: true,
+	ads: { live: 0 },
 	profile: {
 		logo: false,
 		banner: false,

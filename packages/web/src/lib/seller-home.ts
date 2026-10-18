@@ -30,6 +30,8 @@ export function stepTarget(step: SetupStep): SellerHomeTarget {
 			(step.drafts ?? 0) > 0
 				? route("/seller/catalogue?status=draft")
 				: route("/seller/catalogue/new"),
+		// An agency's or a recruiter's ads go through the ad form, in its shop.
+		listing: route("/create"),
 		delivery: route("/seller/delivery"),
 		payout: route("/seller/payments/setup"),
 		verify: route("/seller/verification"),
@@ -55,6 +57,8 @@ export function launchTarget(
 			return boost(facts);
 		case "addProducts":
 			return route("/seller/catalogue/new");
+		case "addListing":
+			return route("/create");
 		case "verify":
 			return route("/seller/verification");
 		case "addWhatsapp":

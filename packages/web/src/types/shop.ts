@@ -1,3 +1,4 @@
+import type { ShopProfile } from "~/lib/shop-profile";
 import type { ShopTrust } from "../../../api/src/contracts/shopTrust";
 import type { Category, Product } from "../../../api/src/payload-types";
 import type {
@@ -47,6 +48,8 @@ export interface PublicShop {
 	id: string;
 	handle: string;
 	name: string;
+	/** The kind of business; see `~/lib/shop-profile`. */
+	profile: ShopProfile;
 	description: string | null;
 	logo: MediaRef | null;
 	banner: MediaRef | null;
@@ -343,7 +346,8 @@ export interface StockSummary {
 }
 
 export interface AttachResult {
-	attached: { listingId: string; productId: string }[];
+	/** `productId` is null for an ad that joined as an ad: only goods become products. */
+	attached: { listingId: string; productId: string | null }[];
 	skipped: {
 		listingId: string;
 		reason: "notOwner" | "otherShop" | "alreadyAttached" | "status";

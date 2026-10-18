@@ -21,6 +21,7 @@ import {
 	type ShopTab,
 	shopPageHref,
 } from "~/lib/shop-page-params";
+import { type ShopProfile, shopProfileRules } from "~/lib/shop-profile";
 import { shopRating } from "~/lib/shop-rating";
 import { shopUrl } from "~/lib/shop-url";
 import type { Category, Listing } from "~/types";
@@ -114,6 +115,14 @@ interface PageProps {
 	}>;
 }
 
+/** schema.org's word for each kind of business. */
+const SCHEMA_TYPES: Record<ShopProfile, string> = {
+	store: "Store",
+	agency: "RealEstateAgent",
+	employer: "Organization",
+	provider: "LocalBusiness",
+};
+
 export async function generateMetadata({
 	params,
 }: PageProps): Promise<Metadata> {
@@ -197,9 +206,11 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 	const rating = shopRating(shop, shop.owner);
 	const totalPages = Math.max(1, Math.ceil(listings.total / PAGE_SIZE));
 
+	const retail = shopProfileRules(shop.profile).retail;
+	const tProfile = await getTranslations("ShopProfile");
 	const jsonLd = {
 		"@context": "https://schema.org",
-		"@type": "Store",
+		"@type": SCHEMA_TYPES[shop.profile] ?? "Store",
 		name: shop.name,
 		url: shopUrl(shop.handle),
 		...(shop.description && { description: shop.description }),
@@ -266,8 +277,13 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 						<ShopAbout shop={shop} locale={locale} full />
 					</div>
 					<div className="space-y-4">
-						<DeliveryCities shopId={shop.id} handle={shop.handle} />
-						<PickupPoints handle={shop.handle} />
+						{/* An agency or a recruiter delivers nothing. */}
+						{retail && (
+							<>
+								<DeliveryCities shopId={shop.id} handle={shop.handle} />
+								<PickupPoints handle={shop.handle} />
+							</>
+						)}
 					</div>
 				</div>
 			)}
@@ -288,9 +304,11 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 								) : undefined
 							}
 						/>
-						<div className="mt-4">
-							<DeliveryCities shopId={shop.id} handle={shop.handle} />
-						</div>
+						{retail && (
+							<div className="mt-4">
+								<DeliveryCities shopId={shop.id} handle={shop.handle} />
+							</div>
+						)}
 					</div>
 					<div className="min-w-0 lg:col-span-3">
 						{/* One category: the chip row would only repeat « Tout ». */}
@@ -321,7 +339,11 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 								/>
 							</div>
 							<span className="ml-auto shrink-0 text-ink-muted text-sm">
-								{t("products", { count: listings.total })}
+								{retail
+									? t("products", { count: listings.total })
+									: tProfile(`count.${shop.profile}`, {
+											count: listings.total,
+										})}
 							</span>
 							<ShopSortSelect value={sort} />
 						</form>

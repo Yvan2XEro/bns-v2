@@ -1,5 +1,6 @@
 import type { Payload, Where } from "payload";
 import { can } from "../access/shopRoles";
+import { shopProfileRules } from "../contracts/listingKinds";
 import type { ShopOnboardingFacts } from "../contracts/sellerOnboarding";
 import { isBrandColor } from "../contracts/shopTheme";
 import { getDeliverySettings } from "../lib/deliverySettings";
@@ -67,9 +68,12 @@ export async function getShopOnboarding(
 		getResaleSettings(payload),
 	]);
 	const capabilities = shopCapabilities(shop, now);
+	// An agency, a recruiter or a provider sells nothing through the platform.
+	const retail = shopProfileRules(shop.profile).retail;
 	const deliveryApplies =
-		orderSettings.enabled && deliverySettings.zonesEnabled;
+		retail && orderSettings.enabled && deliverySettings.zonesEnabled;
 	const payoutApplies =
+		retail &&
 		capabilities.protectedPayment &&
 		isProtectedPaymentOpen(
 			paymentSettings,
@@ -88,6 +92,7 @@ export async function getShopOnboarding(
 		orders,
 		conversations,
 		candidates,
+		liveAds,
 	] = await Promise.all([
 		count("products", [{ status: { equals: "active" } }]),
 		count("products", [{ status: { equals: "draft" } }]),
@@ -132,6 +137,10 @@ export async function getShopOnboarding(
 			depth: 0,
 			overrideAccess: true,
 		}),
+		count("listings", [
+			{ product: { exists: false } },
+			{ status: { in: ["pending", "published"] } },
+		]),
 	]);
 
 	let boostListingId: string | null = null;
@@ -146,6 +155,8 @@ export async function getShopOnboarding(
 	}
 
 	return {
+		retail,
+		ads: { live: liveAds },
 		profile: {
 			logo: Boolean(shop.logo),
 			banner: Boolean(shop.banner),
@@ -166,7 +177,9 @@ export async function getShopOnboarding(
 			active: payoutActive > 0,
 			pending: payoutPending > 0,
 		},
-		resale: { applies: resaleSettings.enabled && capabilities.resell },
+		resale: {
+			applies: retail && resaleSettings.enabled && capabilities.resell,
+		},
 		traction: { orders, conversations },
 		boostListingId,
 		can: {

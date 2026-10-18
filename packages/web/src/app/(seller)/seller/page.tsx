@@ -6,6 +6,7 @@ import { SectionTabs } from "~/components/seller/section-tabs";
 import { ShareShopButton } from "~/components/shop/share-shop-button";
 import { serverGet } from "~/lib/server-api";
 import { getMyShop } from "~/lib/server-shop";
+import { shopProfileRules } from "~/lib/shop-profile";
 import { can } from "~/lib/shop-roles";
 import { SellerHome } from "./seller-home";
 import { DashboardSubtitle } from "./today-cards";
@@ -21,6 +22,8 @@ export default async function SellerDashboardPage() {
 	]);
 	const shop = mine?.shop;
 	if (!shop) redirect("/shop/new");
+	const retail = shopProfileRules(shop.profile).retail;
+	const tAds = await getTranslations("SellerAds");
 	// Decision 3's tab row only when /seller/insights would let the viewer in
 	// (its page's own gate) — staff and flag-off shops otherwise get a tab that
 	// silently bounces back here.
@@ -83,11 +86,11 @@ export default async function SellerDashboardPage() {
 							label={tSeller("shareShop")}
 						/>
 						<Link
-							href="/seller/catalogue/new"
+							href={retail ? "/seller/catalogue/new" : "/create"}
 							className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 						>
 							<Plus aria-hidden="true" className="h-4 w-4" />
-							{tSeller("addProduct")}
+							{retail ? tSeller("addProduct") : tAds("add")}
 						</Link>
 					</div>
 				)}

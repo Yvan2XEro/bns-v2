@@ -16,6 +16,7 @@ import {
 } from "~/components/shop/profile-form";
 import { ReturnPolicyForm } from "~/components/shop/return-policy-form";
 import { ShopPagePreview } from "~/components/shop/shop-page-preview";
+import { ShopProfileForm } from "~/components/shop/shop-profile-form";
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { placeOfShopLocation } from "~/lib/shop-form";
@@ -72,6 +73,7 @@ export function ShopSettingsClient({
 }) {
 	const tManage = useTranslations("ShopManage");
 	const tBar = useTranslations("ShopSettingsPreview");
+	const tProfile = useTranslations("ShopProfile");
 	const [tab, setTab] = useState<Tab>(initialTab);
 	const [moveOpen, setMoveOpen] = useState(openMove);
 	const [bar, setBar] = useState<FormBarState | null>(null);
@@ -111,6 +113,18 @@ export function ShopSettingsClient({
 						{tBar("unsaved")}
 					</span>
 				)}
+			</div>
+			<div className="p-[18px]">{body}</div>
+		</div>
+	);
+
+	// Saved on its own: the profile form's Cancel / Save pair does not cover it.
+	const kindCard = (body: React.ReactNode) => (
+		<div className="rounded-xl border border-line bg-surface">
+			<div className="border-line border-b px-[18px] py-3.5">
+				<h2 className="font-bold text-base text-ink">
+					{tProfile("settingsTitle")}
+				</h2>
 			</div>
 			<div className="p-[18px]">{body}</div>
 		</div>
@@ -188,7 +202,16 @@ export function ShopSettingsClient({
 						</TabsTrigger>
 					)}
 				</TabsList>
-				<TabsContent value="profile" className="mt-[18px]">
+				<TabsContent value="profile" className="mt-[18px] space-y-[18px]">
+					<div className="max-w-4xl">
+						{kindCard(
+							<ShopProfileForm
+								shopId={shop.id}
+								profile={shop.profile}
+								readOnly={suspended || !can(role, "settings.edit")}
+							/>,
+						)}
+					</div>
 					<div className="grid items-start gap-[18px] xl:grid-cols-[minmax(0,1fr)_520px]">
 						{card(
 							tManage("tabProfile"),
