@@ -1,3 +1,5 @@
+# Full procedure: docs/runbook-proxmox-k3s.md
+#
 # K3s on Proxmox — one server VM plus `nodeCount` worker VMs, cloned from a
 # cloud-init template. `pulumi up --stack proxmox-staging`.
 #

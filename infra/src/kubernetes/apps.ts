@@ -370,6 +370,8 @@ export function deployApps(cfg: AppsConfig): void {
 							{
 								name: "api",
 								image: `${reg}/api:${tag}`,
+								// `dev` and `latest` move: a restart must fetch the new build.
+								imagePullPolicy: "Always",
 								ports: [{ containerPort: 3000 }],
 								env: [
 									...passThroughEnv("api"),
@@ -443,6 +445,8 @@ export function deployApps(cfg: AppsConfig): void {
 							{
 								name: "web",
 								image: `${reg}/web:${tag}`,
+								// `dev` and `latest` move: a restart must fetch the new build.
+								imagePullPolicy: "Always",
 								ports: [{ containerPort: 3001 }],
 								env: [
 									...passThroughEnv("web"),
@@ -530,6 +534,8 @@ export function deployApps(cfg: AppsConfig): void {
 							{
 								name: "chat-service",
 								image: `${reg}/chat-service:${tag}`,
+								// `dev` and `latest` move: a restart must fetch the new build.
+								imagePullPolicy: "Always",
 								ports: [{ containerPort: 4000 }],
 								env: [
 									...passThroughEnv("chat"),
@@ -582,6 +588,8 @@ export function deployApps(cfg: AppsConfig): void {
 							{
 								name: "search-indexer",
 								image: `${reg}/search-indexer:${tag}`,
+								// `dev` and `latest` move: a restart must fetch the new build.
+								imagePullPolicy: "Always",
 								env: [
 									...passThroughEnv("indexer"),
 									...redisEnv,
