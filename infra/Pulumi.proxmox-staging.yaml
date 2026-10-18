@@ -25,8 +25,8 @@ config:
   bns-infra:instanceType: medium
   bns-infra:imageRegistry: ghcr.io/yvan2xero/bns-v2
   bns-infra:imageTag: dev
-  bns-infra:domain: staging.buynsellem.com
-  bns-infra:acmeEmail: your@email.com
+  bns-infra:domain: staging.buynsellem.lan
+  bns-infra:acmeEmail: yvankanaj@gmail.com
   proxmox:endpoint: https://192.168.0.101:8006
   proxmox:insecure: "true"
   proxmox:nodeName: pve
