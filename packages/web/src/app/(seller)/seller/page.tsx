@@ -41,7 +41,8 @@ export default async function SellerDashboardPage() {
 	// A suspended shop cannot publish and its public page is hidden, so the
 	// actions that would lead there are left out rather than shown as usual.
 	const suspended = shop.status === "suspended";
-	const canViewOrders = can(mine.role, "orders.view");
+	// An agency, a recruiter or a provider takes no orders.
+	const canViewOrders = retail && can(mine.role, "orders.view");
 	const showOrders =
 		!suspended && canViewOrders && config?.ordersEnabled === true;
 	const pending = {

@@ -150,7 +150,26 @@ keep working; the seller sees why they cannot be edited into a new one.
 Each lot ships on its own and is committed and pushed when it passes
 type-checking and tests.
 
-## 5. Later
+## 5. Status — 18 October 2026
+
+All four lots are shipped on `dev`.
+
+**Deploy:**
+- The API's `listing-kinds` boot task fills `kind` on existing ads.
+- The search indexer rebuilds its documents (`DOCUMENT_VERSION` bumped).
+- Nothing to run by hand.
+
+**Known gaps:**
+- **Shop ads are the owner's to change.** A manager or staff member sees the
+  Listings page, but editing or closing an ad is refused by the listings
+  collection, whose seller is the owner.
+- **Ads that predate units show no unit.** An ad saved before units existed
+  shows its price without a unit until its seller picks one: an old flat for
+  sale must not suddenly read as a monthly rent.
+- **Profile badge on mobile.** The mobile shop header does not show the
+  profile badge the web hero shows.
+
+## 6. Later
 
 These are deliberately left out of this round:
 - an application form with a CV upload;
