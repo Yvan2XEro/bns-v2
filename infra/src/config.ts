@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import { APP_ENV_CONFIG_KEY, APP_SECRETS_CONFIG_KEY } from "./app-env";
+import { asEnvStrings } from "./env-plan";
 
 const cfg = new pulumi.Config();
 
@@ -49,11 +50,12 @@ export const acmeEmail =
 
 // The production `.env`, written by `scripts/env-to-stack.ts`: plain values
 // in `appEnv`, secrets in `appSecrets` (see app-env.ts for every name).
-export const appEnv =
-	cfg.getObject<Record<string, string>>(APP_ENV_CONFIG_KEY) ?? {};
-export const appSecrets: pulumi.Output<Record<string, string>> =
-	cfg.getSecretObject<Record<string, string>>(APP_SECRETS_CONFIG_KEY) ??
-	pulumi.secret<Record<string, string>>({});
+export const appEnv = asEnvStrings(
+	cfg.getObject<Record<string, unknown>>(APP_ENV_CONFIG_KEY),
+);
+export const appSecrets: pulumi.Output<Record<string, string>> = (
+	cfg.getSecret(APP_SECRETS_CONFIG_KEY) ?? pulumi.secret("{}")
+).apply((json) => asEnvStrings(JSON.parse(json) as Record<string, unknown>));
 
 /** One required secret out of `appSecrets`, failing the deployment when absent. */
 function requiredSecret(name: string): pulumi.Output<string> {

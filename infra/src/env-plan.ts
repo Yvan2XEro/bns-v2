@@ -144,3 +144,13 @@ export function planStackConfig(
 
 	return { plain, secret, stackKeys, errors, notes };
 }
+
+// `config set --path` stores 1, 0.1 or true as numbers and booleans, while
+// environment variables (and a ConfigMap's data) are text: back to strings.
+export function asEnvStrings(
+	values: Record<string, unknown> | undefined,
+): Record<string, string> {
+	return Object.fromEntries(
+		Object.entries(values ?? {}).map(([key, value]) => [key, String(value)]),
+	);
+}

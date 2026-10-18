@@ -29,6 +29,8 @@ export function deployNginxStack(cfg: NginxConfig): pulumi.Resource[] {
 			repositoryOpts: { repo: "https://charts.jetstack.io" },
 			namespace: "cert-manager",
 			version: "v1.15.0",
+			// Image pulls on a home connection can outlast Helm's 5 minutes.
+			timeout: 900,
 			values: { installCRDs: true },
 		},
 		{ provider, dependsOn: [certManagerNs] },
@@ -55,6 +57,8 @@ export function deployNginxStack(cfg: NginxConfig): pulumi.Resource[] {
 			repositoryOpts: { repo: "https://kubernetes.github.io/ingress-nginx" },
 			namespace: "ingress-nginx",
 			version: "4.10.0",
+			// Image pulls on a home connection can outlast Helm's 5 minutes.
+			timeout: 900,
 			values: {
 				controller: {
 					replicaCount: 2,

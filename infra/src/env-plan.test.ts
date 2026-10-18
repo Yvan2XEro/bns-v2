@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { appEnvFor } from "./app-env";
-import { parseEnv, planStackConfig } from "./env-plan";
+import { asEnvStrings, parseEnv, planStackConfig } from "./env-plan";
 
 const base = [
 	"WEB_DOMAIN=buynsellem.com",
@@ -91,5 +91,14 @@ describe("appEnvFor", () => {
 			"CHAT_SERVICE_EMAIL",
 			"CHAT_SERVICE_PASSWORD",
 		]);
+	});
+});
+
+describe("asEnvStrings", () => {
+	test("turns the numbers and booleans Pulumi stores back into text", () => {
+		expect(
+			asEnvStrings({ TRUSTED_PROXY_COUNT: 1, RATE: 0.05, FLAG: true, S: "x" }),
+		).toEqual({ TRUSTED_PROXY_COUNT: "1", RATE: "0.05", FLAG: "true", S: "x" });
+		expect(asEnvStrings(undefined)).toEqual({});
 	});
 });
