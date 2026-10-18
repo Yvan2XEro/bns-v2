@@ -2,9 +2,9 @@
  * Copies a production `.env` (the one Dokploy runs today) into a Pulumi stack,
  * so the Kubernetes deployment starts with exactly the same variables.
  *
- *   cd infra
- *   bun scripts/env-to-stack.ts --env ../.env.prod --stack proxmox-prod --dry-run
- *   bun scripts/env-to-stack.ts --env ../.env.prod --stack proxmox-prod
+ *   bun run infra:env:check --env .env.prod --stack proxmox-prod   (from the repo root)
+ *   bun run infra:env:apply --env .env.prod --stack proxmox-prod
+ * or, inside infra/: bun run env:check / env:apply with the same flags.
  *
  * Nothing is written unless every check passes:
  *   - every name in the file is known to src/app-env.ts (a variable added to
@@ -46,7 +46,12 @@ if (!envFile || !stackName) {
 // ── Plan ─────────────────────────────────────────────────────────────────────
 
 const { values, duplicates } = parseEnv(
-	readFileSync(path.resolve(envFile), "utf8"),
+	readFileSync(
+		// Relative to where the command was typed: the root package's
+		// shortcuts pass their directory, as `bun run --cwd` moves into infra/.
+		path.resolve(process.env.ENV_BASE_DIR ?? process.cwd(), envFile),
+		"utf8",
+	),
 );
 const { plain, secret, stackKeys, errors, notes } = planStackConfig(
 	values,

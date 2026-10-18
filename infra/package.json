@@ -3,7 +3,13 @@
 	"version": "1.0.0",
 	"private": true,
 	"scripts": {
-		"build": "tsc"
+		"build": "tsc",
+		"typecheck": "tsc --noEmit",
+		"test": "bun test src",
+		"env:check": "bun scripts/env-to-stack.ts --dry-run",
+		"env:apply": "bun scripts/env-to-stack.ts",
+		"preview": "pulumi preview",
+		"up": "pulumi up"
 	},
 	"dependencies": {
 		"@muhlba91/pulumi-proxmoxve": "6",

@@ -1,7 +1,7 @@
 config:
   # App variables: copied from the production .env, never typed by hand —
-  #   bun scripts/env-to-stack.ts --env <.env> --stack <this stack> --dry-run
-  #   bun scripts/env-to-stack.ts --env <.env> --stack <this stack>
+  #   bun run infra:env:check --env <.env> --stack <this stack>   (repo root)
+  #   bun run infra:env:apply --env <.env> --stack <this stack>
   # It writes appEnv, appSecrets (encrypted), domain, acmeEmail and ghcrToken.
   bns-infra:cloudProvider: aws
   bns-infra:region: us-east-1
