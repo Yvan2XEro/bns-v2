@@ -17,7 +17,7 @@ if qm status "$VMID" >/dev/null 2>&1; then
 	echo "VM $VMID already exists: pick another VMID or remove it (qm destroy $VMID)." >&2
 	exit 1
 fi
-command -v virt-customize >/dev/null || apt-get install -y libguestfs-tools
+command -v virt-customize >/dev/null || { apt-get update && apt-get install -y libguestfs-tools; }
 
 mkdir -p "$WORKDIR"
 BASE="$WORKDIR/$(basename "$IMAGE_URL")"
