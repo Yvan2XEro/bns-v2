@@ -1,39 +1,69 @@
+import { createHash } from "node:crypto";
 import * as k8s from "@pulumi/kubernetes";
-import type * as pulumi from "@pulumi/pulumi";
+import * as pulumi from "@pulumi/pulumi";
+import { type AppService, appEnvFor } from "../app-env";
 
 export interface AppsConfig {
 	imageRegistry: string;
 	imageTag: string;
 	domain: string;
 	ghcrToken: pulumi.Output<string>;
+	/** Plain values of the production `.env` (`appEnv`). */
+	appEnv: Record<string, string>;
+	/** Secret values of the production `.env` (`appSecrets`). */
+	appSecrets: pulumi.Output<Record<string, string>>;
+	mongoUser: string;
+	mongoDb: string;
+	meiliEnv: string;
 	mongoPassword: pulumi.Output<string>;
 	redisPassword: pulumi.Output<string>;
 	meiliMasterKey: pulumi.Output<string>;
-	payloadSecret: pulumi.Output<string>;
-	chatServicePassword: pulumi.Output<string>;
-	googleClientId: string;
-	googleClientSecret: pulumi.Output<string>;
-	novuSecretKey: pulumi.Output<string>;
-	novuAppIdentifier: string;
-	stripeSecretKey: pulumi.Output<string>;
-	stripePublishableKey: string;
-	stripeWebhookSecret: pulumi.Output<string>;
-	notchpayPublicKey: string;
-	notchpayHashKey: pulumi.Output<string>;
 	provider: k8s.Provider;
 }
 
-function secretRef(name: string, key: string): k8s.types.input.core.v1.EnvVar {
-	return { name: key, valueFrom: { secretKeyRef: { name, key } } };
+/** Kubernetes objects holding the `.env` values. */
+const ENV_SECRET = "bns-env";
+const ENV_CONFIG_MAP = "bns-config";
+/** Store credentials, kept apart from the app values. */
+const STORE_SECRET = "bns-stores";
+
+type EnvVar = k8s.types.input.core.v1.EnvVar;
+
+function fromSecret(name: string, key: string, envName = key): EnvVar {
+	return { name: envName, valueFrom: { secretKeyRef: { name, key } } };
 }
 
-function _stsVolume(claimName: string): k8s.types.input.core.v1.Volume {
-	return { name: "data", persistentVolumeClaim: { claimName } };
+/**
+ * The catalog's variables for one service, read from the Secret or the
+ * ConfigMap. `optional` lets a variable absent from the `.env` stay unset,
+ * exactly as Compose leaves it.
+ */
+function passThroughEnv(service: AppService): EnvVar[] {
+	return appEnvFor(service).map(({ name, secret }) =>
+		secret
+			? {
+					name,
+					valueFrom: {
+						secretKeyRef: { name: ENV_SECRET, key: name, optional: true },
+					},
+				}
+			: {
+					name,
+					valueFrom: {
+						configMapKeyRef: {
+							name: ENV_CONFIG_MAP,
+							key: name,
+							optional: true,
+						},
+					},
+				},
+	);
 }
 
 export function deployApps(cfg: AppsConfig): void {
 	const { provider, imageRegistry: reg, imageTag: tag, domain } = cfg;
 	const ns = "bns";
+	const webOrigins = `https://${domain},https://www.${domain}`;
 
 	const namespace = new k8s.core.v1.Namespace(
 		"bns-ns",
@@ -66,30 +96,57 @@ export function deployApps(cfg: AppsConfig): void {
 		baseOpts,
 	);
 
-	// App secrets
-	new k8s.core.v1.Secret(
-		"bns-secrets",
+	const storeSecret = new k8s.core.v1.Secret(
+		"bns-stores",
 		{
-			metadata: { namespace: ns, name: "bns-secrets" },
+			metadata: { namespace: ns, name: STORE_SECRET },
 			stringData: {
 				MONGO_PASSWORD: cfg.mongoPassword,
 				REDIS_PASSWORD: cfg.redisPassword,
 				MEILI_MASTER_KEY: cfg.meiliMasterKey,
-				PAYLOAD_SECRET: cfg.payloadSecret,
-				CHAT_SERVICE_PASSWORD: cfg.chatServicePassword,
-				GOOGLE_CLIENT_SECRET: cfg.googleClientSecret,
-				NOVU_SECRET_KEY: cfg.novuSecretKey,
-				STRIPE_SECRET_KEY: cfg.stripeSecretKey,
-				STRIPE_WEBHOOK_SECRET: cfg.stripeWebhookSecret,
-				NOTCHPAY_HASH_KEY: cfg.notchpayHashKey,
 			},
 		},
 		baseOpts,
 	);
 
+	const envSecret = new k8s.core.v1.Secret(
+		"bns-env",
+		{
+			metadata: { namespace: ns, name: ENV_SECRET },
+			stringData: cfg.appSecrets,
+		},
+		baseOpts,
+	);
+
+	const envConfigMap = new k8s.core.v1.ConfigMap(
+		"bns-config",
+		{
+			metadata: { namespace: ns, name: ENV_CONFIG_MAP },
+			data: cfg.appEnv,
+		},
+		baseOpts,
+	);
+
+	// Pods read env only at start: a hash of every value in the pod template
+	// rolls them whenever the `.env` changes.
+	const envChecksum = pulumi
+		.all([cfg.appSecrets, cfg.mongoPassword, cfg.redisPassword])
+		.apply(([secrets, mongo, redis]) =>
+			createHash("sha256")
+				.update(JSON.stringify([cfg.appEnv, secrets, mongo, redis]))
+				.digest("hex"),
+		);
+	const podAnnotations = { "bns/env-checksum": envChecksum };
+	const appDeps = [namespace, pullSecret, storeSecret, envSecret, envConfigMap];
+
 	// ─── Infrastructure ──────────────────────────────────────────────────────────
 
-	// MongoDB
+	// MongoDB — a single-node replica set, as in the Compose deployment:
+	// Payload only runs multi-document transactions against one. An
+	// authenticated replica set needs a key file; for one member it can be
+	// fresh at every start. The readiness probe initiates the set once.
+	const mongoInitiate =
+		'mongosh --quiet -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval \'try { rs.status() } catch (e) { if (e.codeName !== "NotYetInitialized") throw e; rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "mongodb:27017" }] }) } quit(db.hello().isWritablePrimary ? 0 : 1)\'';
 	new k8s.apps.v1.StatefulSet(
 		"mongodb",
 		{
@@ -105,18 +162,44 @@ export function deployApps(cfg: AppsConfig): void {
 							{
 								name: "mongodb",
 								image: "mongo:7",
-								env: [
-									{ name: "MONGO_INITDB_ROOT_USERNAME", value: "bns" },
-									secretRef("bns-secrets", "MONGO_PASSWORD"),
-									{ name: "MONGO_INITDB_DATABASE", value: "bns" },
+								command: ["bash", "-c"],
+								args: [
+									[
+										"set -e",
+										"keyfile=/data/keyfile/mongo-keyfile",
+										"tr -dc 'A-Za-z0-9+/' < /dev/urandom | head -c 756 > \"$keyfile\"",
+										'chown 999:999 "$keyfile"',
+										'chmod 400 "$keyfile"',
+										'exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$keyfile"',
+									].join("\n"),
 								],
-								volumeMounts: [{ name: "data", mountPath: "/data/db" }],
+								env: [
+									{ name: "MONGO_INITDB_ROOT_USERNAME", value: cfg.mongoUser },
+									fromSecret(
+										STORE_SECRET,
+										"MONGO_PASSWORD",
+										"MONGO_INITDB_ROOT_PASSWORD",
+									),
+									{ name: "MONGO_INITDB_DATABASE", value: cfg.mongoDb },
+								],
+								ports: [{ containerPort: 27017 }],
+								readinessProbe: {
+									exec: { command: ["bash", "-c", mongoInitiate] },
+									initialDelaySeconds: 10,
+									periodSeconds: 10,
+									timeoutSeconds: 10,
+								},
+								volumeMounts: [
+									{ name: "data", mountPath: "/data/db" },
+									{ name: "keyfile", mountPath: "/data/keyfile" },
+								],
 								resources: {
 									requests: { memory: "256Mi", cpu: "100m" },
-									limits: { memory: "512Mi" },
+									limits: { memory: "1Gi" },
 								},
 							},
 						],
+						volumes: [{ name: "keyfile", emptyDir: {} }],
 					},
 				},
 				volumeClaimTemplates: [
@@ -130,7 +213,7 @@ export function deployApps(cfg: AppsConfig): void {
 				],
 			},
 		},
-		baseOpts,
+		{ ...baseOpts, dependsOn: [namespace, storeSecret] },
 	);
 
 	new k8s.core.v1.Service(
@@ -140,6 +223,9 @@ export function deployApps(cfg: AppsConfig): void {
 			spec: {
 				selector: { app: "mongodb" },
 				clusterIP: "None",
+				// The replica set's member is `mongodb:27017`: it must resolve
+				// before the pod is ready, or the set can never be initiated.
+				publishNotReadyAddresses: true,
 				ports: [{ port: 27017 }],
 			},
 		},
@@ -163,7 +249,7 @@ export function deployApps(cfg: AppsConfig): void {
 								name: "redis",
 								image: "redis:7-alpine",
 								command: ["redis-server", "--requirepass", "$(REDIS_PASSWORD)"],
-								env: [secretRef("bns-secrets", "REDIS_PASSWORD")],
+								env: [fromSecret(STORE_SECRET, "REDIS_PASSWORD")],
 								volumeMounts: [{ name: "data", mountPath: "/data" }],
 								resources: {
 									requests: { memory: "64Mi", cpu: "50m" },
@@ -184,7 +270,7 @@ export function deployApps(cfg: AppsConfig): void {
 				],
 			},
 		},
-		baseOpts,
+		{ ...baseOpts, dependsOn: [namespace, storeSecret] },
 	);
 
 	new k8s.core.v1.Service(
@@ -217,8 +303,8 @@ export function deployApps(cfg: AppsConfig): void {
 								name: "meilisearch",
 								image: "getmeili/meilisearch:latest",
 								env: [
-									secretRef("bns-secrets", "MEILI_MASTER_KEY"),
-									{ name: "MEILI_ENV", value: "production" },
+									fromSecret(STORE_SECRET, "MEILI_MASTER_KEY"),
+									{ name: "MEILI_ENV", value: cfg.meiliEnv },
 								],
 								volumeMounts: [{ name: "data", mountPath: "/meili_data" }],
 								resources: {
@@ -240,7 +326,7 @@ export function deployApps(cfg: AppsConfig): void {
 				],
 			},
 		},
-		baseOpts,
+		{ ...baseOpts, dependsOn: [namespace, storeSecret] },
 	);
 
 	new k8s.core.v1.Service(
@@ -257,8 +343,14 @@ export function deployApps(cfg: AppsConfig): void {
 	);
 
 	const imagePullSecrets = [{ name: "ghcr-pull-secret" }];
+	const redisEnv: EnvVar[] = [
+		fromSecret(STORE_SECRET, "REDIS_PASSWORD"),
+		{ name: "REDIS_URL", value: "redis://:$(REDIS_PASSWORD)@redis:6379" },
+	];
 
 	// ─── Application services ────────────────────────────────────────────────────
+	// Each gets the catalog's variables for it, then the values the stack
+	// derives from in-cluster names and the domain (app-env.ts, `derived`).
 
 	// API
 	new k8s.apps.v1.Deployment(
@@ -269,7 +361,7 @@ export function deployApps(cfg: AppsConfig): void {
 				replicas: 2,
 				selector: { matchLabels: { app: "api" } },
 				template: {
-					metadata: { labels: { app: "api" } },
+					metadata: { labels: { app: "api" }, annotations: podAnnotations },
 					spec: {
 						imagePullSecrets,
 						containers: [
@@ -278,48 +370,19 @@ export function deployApps(cfg: AppsConfig): void {
 								image: `${reg}/api:${tag}`,
 								ports: [{ containerPort: 3000 }],
 								env: [
-									secretRef("bns-secrets", "MONGO_PASSWORD"),
+									...passThroughEnv("api"),
+									fromSecret(STORE_SECRET, "MONGO_PASSWORD"),
 									{
 										name: "DATABASE_URI",
-										value:
-											"mongodb://bns:$(MONGO_PASSWORD)@mongodb:27017/bns?authSource=admin",
+										value: `mongodb://${cfg.mongoUser}:$(MONGO_PASSWORD)@mongodb:27017/${cfg.mongoDb}?authSource=admin&replicaSet=rs0`,
 									},
-									secretRef("bns-secrets", "PAYLOAD_SECRET"),
+									...redisEnv,
+									{ name: "MEILI_HOST", value: "http://meilisearch:7700" },
 									{
 										name: "PAYLOAD_PUBLIC_SERVER_URL",
 										value: `https://api.${domain}`,
 									},
-									{
-										name: "PAYLOAD_ALLOWED_ORIGINS",
-										value: `https://${domain},https://www.${domain}`,
-									},
-									secretRef("bns-secrets", "REDIS_PASSWORD"),
-									{
-										name: "REDIS_URL",
-										value: "redis://:$(REDIS_PASSWORD)@redis:6379",
-									},
-									{ name: "MEILI_HOST", value: "http://meilisearch:7700" },
-									secretRef("bns-secrets", "MEILI_MASTER_KEY"),
-									{ name: "GOOGLE_OAUTH_CLIENT_ID", value: cfg.googleClientId },
-									secretRef("bns-secrets", "GOOGLE_CLIENT_SECRET"),
-									{
-										name: "NOVU_APPLICATION_IDENTIFIER",
-										value: cfg.novuAppIdentifier,
-									},
-									{ name: "NOVU_API_URL", value: "https://api.novu.co" },
-									secretRef("bns-secrets", "NOVU_SECRET_KEY"),
-									{
-										name: "STRIPE_PUBLISHABLE_KEY",
-										value: cfg.stripePublishableKey,
-									},
-									secretRef("bns-secrets", "STRIPE_SECRET_KEY"),
-									secretRef("bns-secrets", "STRIPE_WEBHOOK_SECRET"),
-									{ name: "NOTCHPAY_PUBLIC_KEY", value: cfg.notchpayPublicKey },
-									{
-										name: "NOTCHPAY_BASE_URL",
-										value: "https://api.notchpay.co",
-									},
-									secretRef("bns-secrets", "NOTCHPAY_HASH_KEY"),
+									{ name: "PAYLOAD_ALLOWED_ORIGINS", value: webOrigins },
 									{ name: "CHAT_PUBLIC_URL", value: `https://chat.${domain}` },
 									{ name: "PUBLIC_WEB_URL", value: `https://${domain}` },
 								],
@@ -338,7 +401,7 @@ export function deployApps(cfg: AppsConfig): void {
 				},
 			},
 		},
-		{ provider, dependsOn: [namespace, pullSecret] },
+		{ provider, dependsOn: appDeps },
 	);
 
 	new k8s.core.v1.Service(
@@ -362,7 +425,7 @@ export function deployApps(cfg: AppsConfig): void {
 				replicas: 2,
 				selector: { matchLabels: { app: "web" } },
 				template: {
-					metadata: { labels: { app: "web" } },
+					metadata: { labels: { app: "web" }, annotations: podAnnotations },
 					spec: {
 						imagePullSecrets,
 						containers: [
@@ -371,15 +434,13 @@ export function deployApps(cfg: AppsConfig): void {
 								image: `${reg}/web:${tag}`,
 								ports: [{ containerPort: 3001 }],
 								env: [
+									...passThroughEnv("web"),
 									{
 										name: "NEXT_PUBLIC_API_URL",
 										value: `https://api.${domain}`,
 									},
+									{ name: "NEXT_PUBLIC_WEB_URL", value: `https://${domain}` },
 									{ name: "CHAT_PUBLIC_URL", value: `https://chat.${domain}` },
-									{
-										name: "NOVU_APPLICATION_IDENTIFIER",
-										value: cfg.novuAppIdentifier,
-									},
 								],
 								resources: {
 									requests: { memory: "256Mi", cpu: "100m" },
@@ -391,7 +452,7 @@ export function deployApps(cfg: AppsConfig): void {
 				},
 			},
 		},
-		{ provider, dependsOn: [namespace, pullSecret] },
+		{ provider, dependsOn: appDeps },
 	);
 
 	new k8s.core.v1.Service(
@@ -415,7 +476,10 @@ export function deployApps(cfg: AppsConfig): void {
 				replicas: 1,
 				selector: { matchLabels: { app: "chat-service" } },
 				template: {
-					metadata: { labels: { app: "chat-service" } },
+					metadata: {
+						labels: { app: "chat-service" },
+						annotations: podAnnotations,
+					},
 					spec: {
 						imagePullSecrets,
 						containers: [
@@ -424,18 +488,10 @@ export function deployApps(cfg: AppsConfig): void {
 								image: `${reg}/chat-service:${tag}`,
 								ports: [{ containerPort: 4000 }],
 								env: [
-									secretRef("bns-secrets", "REDIS_PASSWORD"),
-									{
-										name: "REDIS_URL",
-										value: "redis://:$(REDIS_PASSWORD)@redis:6379",
-									},
+									...passThroughEnv("chat"),
+									...redisEnv,
 									{ name: "PAYLOAD_API_URL", value: "http://api:3000/api" },
-									{
-										name: "CORS_ORIGIN",
-										value: `https://${domain},https://www.${domain}`,
-									},
-									{ name: "CHAT_SERVICE_EMAIL", value: "chat@buynsellem.com" },
-									secretRef("bns-secrets", "CHAT_SERVICE_PASSWORD"),
+									{ name: "CORS_ORIGIN", value: webOrigins },
 									{ name: "PORT", value: "4000" },
 								],
 								resources: {
@@ -448,7 +504,7 @@ export function deployApps(cfg: AppsConfig): void {
 				},
 			},
 		},
-		{ provider, dependsOn: [namespace, pullSecret] },
+		{ provider, dependsOn: appDeps },
 	);
 
 	new k8s.core.v1.Service(
@@ -472,7 +528,10 @@ export function deployApps(cfg: AppsConfig): void {
 				replicas: 1,
 				selector: { matchLabels: { app: "search-indexer" } },
 				template: {
-					metadata: { labels: { app: "search-indexer" } },
+					metadata: {
+						labels: { app: "search-indexer" },
+						annotations: podAnnotations,
+					},
 					spec: {
 						imagePullSecrets,
 						containers: [
@@ -480,17 +539,9 @@ export function deployApps(cfg: AppsConfig): void {
 								name: "search-indexer",
 								image: `${reg}/search-indexer:${tag}`,
 								env: [
-									secretRef("bns-secrets", "REDIS_PASSWORD"),
-									{
-										name: "REDIS_URL",
-										value: "redis://:$(REDIS_PASSWORD)@redis:6379",
-									},
-									{
-										name: "MEILISEARCH_HOST",
-										value: "http://meilisearch:7700",
-									},
-									secretRef("bns-secrets", "MEILI_MASTER_KEY"),
-									{ name: "MEILISEARCH_API_KEY", value: "$(MEILI_MASTER_KEY)" },
+									...passThroughEnv("indexer"),
+									...redisEnv,
+									{ name: "MEILI_HOST", value: "http://meilisearch:7700" },
 									{ name: "PAYLOAD_API_URL", value: "http://api:3000/api" },
 								],
 								resources: {
@@ -503,6 +554,6 @@ export function deployApps(cfg: AppsConfig): void {
 				},
 			},
 		},
-		{ provider, dependsOn: [namespace, pullSecret] },
+		{ provider, dependsOn: appDeps },
 	);
 }

@@ -7,7 +7,7 @@ import { deployKubernetes } from "./kubernetes";
 import { createProxmoxCluster } from "./proxmox-k3s";
 
 interface Cluster {
-	kubeconfig: pulumi.Output<unknown> | pulumi.Output<string>;
+	kubeconfig: pulumi.Output<unknown>;
 	clusterName: pulumi.Output<string>;
 }
 
@@ -31,6 +31,11 @@ function createCluster(): Cluster {
 
 const cluster = createCluster();
 
-deployKubernetes(cluster.kubeconfig);
+// EKS hands back the kubeconfig as an object, AKS and K3s as YAML text.
+deployKubernetes(
+	cluster.kubeconfig.apply((value: unknown) =>
+		typeof value === "string" ? value : JSON.stringify(value),
+	),
+);
 
 export const clusterName = cluster.clusterName;

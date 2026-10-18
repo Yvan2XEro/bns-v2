@@ -1,4 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
+import { APP_ENV_CONFIG_KEY, APP_SECRETS_CONFIG_KEY } from "./app-env";
 
 const cfg = new pulumi.Config();
 
@@ -32,26 +33,32 @@ export const imageTag = cfg.get("imageTag") ?? "latest";
 export const domain = cfg.require("domain");
 export const acmeEmail = cfg.require("acmeEmail");
 
-// Secrets — set with: pulumi config set --secret <key> <value>
-export const ghcrToken = cfg.requireSecret("ghcrToken");
-export const mongoPassword = cfg.requireSecret("mongoPassword");
-export const redisPassword = cfg.requireSecret("redisPassword");
-export const meiliMasterKey = cfg.requireSecret("meiliMasterKey");
-export const payloadSecret = cfg.requireSecret("payloadSecret");
-export const chatServicePassword = cfg.requireSecret("chatServicePassword");
+// The production `.env`, written by `scripts/env-to-stack.ts`: plain values
+// in `appEnv`, secrets in `appSecrets` (see app-env.ts for every name).
+export const appEnv =
+	cfg.getObject<Record<string, string>>(APP_ENV_CONFIG_KEY) ?? {};
+export const appSecrets: pulumi.Output<Record<string, string>> =
+	cfg.getSecretObject<Record<string, string>>(APP_SECRETS_CONFIG_KEY) ??
+	pulumi.secret<Record<string, string>>({});
 
-// Optional integrations
-export const googleClientId = cfg.get("googleClientId") ?? "";
-export const googleClientSecret =
-	cfg.getSecret("googleClientSecret") ?? pulumi.secret("");
-export const novuSecretKey =
-	cfg.getSecret("novuSecretKey") ?? pulumi.secret("");
-export const novuAppIdentifier = cfg.get("novuAppIdentifier") ?? "";
-export const stripeSecretKey =
-	cfg.getSecret("stripeSecretKey") ?? pulumi.secret("");
-export const stripePublishableKey = cfg.get("stripePublishableKey") ?? "";
-export const stripeWebhookSecret =
-	cfg.getSecret("stripeWebhookSecret") ?? pulumi.secret("");
-export const notchpayPublicKey = cfg.get("notchpayPublicKey") ?? "";
-export const notchpayHashKey =
-	cfg.getSecret("notchpayHashKey") ?? pulumi.secret("");
+/** One required secret out of `appSecrets`, failing the deployment when absent. */
+function requiredSecret(name: string): pulumi.Output<string> {
+	return appSecrets.apply((secrets) => {
+		const value = secrets[name];
+		if (!value)
+			throw new Error(
+				`appSecrets.${name} is missing: run scripts/env-to-stack.ts with the production .env`,
+			);
+		return value;
+	});
+}
+
+export const mongoUser = appEnv.MONGO_USER || "bns";
+export const mongoDb = appEnv.MONGO_DB || "bns";
+export const meiliEnv = appEnv.MEILI_ENV || "production";
+export const mongoPassword = requiredSecret("MONGO_PASSWORD");
+export const redisPassword = requiredSecret("REDIS_PASSWORD");
+export const meiliMasterKey = requiredSecret("MEILI_MASTER_KEY");
+
+// Pulls the images; not an app variable.
+export const ghcrToken = cfg.requireSecret("ghcrToken");

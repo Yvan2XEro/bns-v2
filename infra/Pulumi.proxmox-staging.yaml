@@ -9,13 +9,17 @@
 #   pulumi config set --secret proxmox:apiToken 'pulumi@pve!bns=<uuid>' --stack proxmox-staging
 #   pulumi config set --secret proxmox:sshPrivateKey "$(cat ~/.ssh/id_ed25519)" --stack proxmox-staging
 #   pulumi config set proxmox:sshPublicKey "$(cat ~/.ssh/id_ed25519.pub)" --stack proxmox-staging
-# plus the app secrets listed in Pulumi.aws-staging.yaml.
+# then the app variables from the production .env: scripts/env-to-stack.ts (below).
 #
 # Ingress: K3s' ServiceLB exposes ingress-nginx on ports 80/443 of every
 # node, so point the domain's A records (@, www, api, chat) at the node IPs,
 # or forward 80/443 from the router to one of them. Volumes use K3s'
 # local-path class: each database's data lives on the node its pod first ran on.
 config:
+  # App variables: copied from the production .env, never typed by hand —
+  #   bun scripts/env-to-stack.ts --env <.env> --stack <this stack> --dry-run
+  #   bun scripts/env-to-stack.ts --env <.env> --stack <this stack>
+  # It writes appEnv, appSecrets (encrypted), domain, acmeEmail and ghcrToken.
   bns-infra:cloudProvider: proxmox
   bns-infra:nodeCount: "2"
   bns-infra:instanceType: medium
@@ -23,10 +27,6 @@ config:
   bns-infra:imageTag: dev
   bns-infra:domain: staging.buynsellem.com
   bns-infra:acmeEmail: your@email.com
-  bns-infra:googleClientId: ""
-  bns-infra:novuAppIdentifier: ""
-  bns-infra:stripePublishableKey: ""
-  bns-infra:notchpayPublicKey: ""
   proxmox:endpoint: https://192.168.0.101:8006
   proxmox:insecure: "true"
   proxmox:nodeName: pve
