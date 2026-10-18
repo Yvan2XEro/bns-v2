@@ -3,6 +3,7 @@ import { isSuspended } from "../access/roles";
 import { can, resolveShopRole, type ShopRole } from "../access/shopRoles";
 import { INBOX_SERVICE_CONTEXT } from "../collections/Conversations";
 import { INBOX_NOTIFICATION_PREFERENCES } from "../collections/ShopMembers";
+import { profileOf, type ShopProfile } from "../contracts/listingKinds";
 import { mediaUrl } from "../contracts/media";
 import { isBrandColor } from "../contracts/shopTheme";
 import { queueMembershipChange } from "../hooks/membershipEvents";
@@ -403,6 +404,8 @@ export interface MyShopsEntry {
 	logoUrl: string | null;
 	/** The shop's own colour, for the seller screens; null keeps the platform's. */
 	brandColor: string | null;
+	/** The kind of business: a store's workspace has a catalogue and orders. */
+	profile: ShopProfile;
 	role: ShopRole;
 	capabilities: ShopCapabilities;
 	inboxUnread: number;
@@ -447,6 +450,7 @@ export async function listMyShops(
 			handle: String(shop.handle),
 			logoUrl: mediaUrl(logo, "thumbnail"),
 			brandColor: isBrandColor(shop.brandColor) ? shop.brandColor : null,
+			profile: profileOf(shop.profile),
 			role,
 			capabilities: shopCapabilities(shop, now),
 			inboxUnread: can(role, "inbox.reply")

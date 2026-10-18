@@ -58,6 +58,7 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { isOwnShop } from "@/src/lib/buyBox";
 import { useTranslation } from "@/src/lib/i18n";
+import { profileOf, shopProfileRules } from "@/src/lib/listingKind";
 import { telLink, whatsappLink } from "@/src/lib/shopContact";
 import { shopUrl } from "@/src/lib/shopHandle";
 import {
@@ -431,8 +432,13 @@ export default function ShopScreen() {
 						legal={loadedShop.legal}
 						verified={loadedShop.legalVerified}
 					/>
-					<PickupPoints handle={loadedShop.handle} />
-					<DeliveryCities shopId={loadedShop.id} />
+					{/* An agency or a recruiter delivers nothing. */}
+					{shopProfileRules(loadedShop.profile).retail ? (
+						<>
+							<PickupPoints handle={loadedShop.handle} />
+							<DeliveryCities shopId={loadedShop.id} />
+						</>
+					) : null}
 				</View>
 			);
 		}
@@ -675,6 +681,7 @@ export default function ShopScreen() {
 						category={category}
 						onCategoryChange={setCategory}
 						total={listings.isLoading ? null : listingTotal}
+						profile={profileOf(shop?.profile)}
 						query={activeQuery}
 						sort={sort}
 						onOpenSort={() => setSortOpen(true)}

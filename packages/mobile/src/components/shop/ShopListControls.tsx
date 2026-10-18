@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
+import type { ShopProfile } from "@/src/lib/listingKind";
 import { SHOP_SORT_LABEL_KEYS, type ShopSort } from "@/src/lib/shopStorefront";
 import type { ShopCategoryCount } from "../../../../api/src/contracts/shopCategoryGroups";
 import { useShopBrand } from "./brand";
@@ -25,6 +26,7 @@ export function ShopListControls({
 	sort,
 	onOpenSort,
 	onSearchEverywhere,
+	profile = "store",
 }: {
 	tab: ShopTab;
 	onTabChange: (tab: ShopTab) => void;
@@ -41,6 +43,8 @@ export function ShopListControls({
 	sort: ShopSort;
 	onOpenSort: () => void;
 	onSearchEverywhere: () => void;
+	/** An agency counts properties, a recruiter job offers. */
+	profile?: ShopProfile;
 }) {
 	const c = useShopTheme();
 	const brand = useShopBrand();
@@ -93,7 +97,9 @@ export function ShopListControls({
 								? " "
 								: query
 									? t("shop.searchResultsCount", { count: total, q: query })
-									: t("shop.listingsCount", { count: total })}
+									: profile === "store"
+										? t("shop.listingsCount", { count: total })
+										: t(`shopProfile.count.${profile}`, { count: total })}
 						</Text>
 						<Pressable
 							onPress={onOpenSort}

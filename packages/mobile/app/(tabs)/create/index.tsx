@@ -25,6 +25,10 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { CityPicker } from "@/src/components/CityPicker";
+import {
+	PriceUnitChips,
+	priceUnitToSend,
+} from "@/src/components/listing/PriceUnitChips";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { PendingPhotoTile } from "@/src/components/PendingPhotoTile";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
@@ -73,6 +77,7 @@ import {
 	sanitizePriceInput,
 	serializeAttributeValues,
 } from "@/src/lib/listingForm";
+import { defaultPriceUnit, kindPriceText } from "@/src/lib/listingKind";
 import { isSuspended } from "@/src/lib/moderation";
 import { track } from "@/src/lib/monitoring";
 import { canAddPhoto } from "@/src/lib/photoLimit";
@@ -107,6 +112,8 @@ interface FormData {
 	title: string;
 	description: string;
 	price: string;
+	/** What the price covers; the kind's default once a category is picked. */
+	priceUnit: string;
 	duration: number;
 	location: string;
 	coordinates: { lat: number; lng: number } | null;
@@ -128,6 +135,7 @@ function createEmptyForm(): FormData {
 		title: "",
 		description: "",
 		price: "",
+		priceUnit: "",
 		duration: 30,
 		location: "",
 		coordinates: null,
@@ -389,6 +397,7 @@ export default function CreateScreen() {
 				...f,
 				category: next,
 				price: nextPreset.fields.price.enabled ? f.price : "",
+				priceUnit: defaultPriceUnit(nextPreset.categoryType),
 				attributes: {},
 				// The photo step disappears with the category, so keeping the files
 				// would attach pictures the seller can no longer see or remove.
@@ -1048,6 +1057,12 @@ function DetailsStep({
 							</Text>
 						</View>
 					</View>
+					<PriceUnitChips
+						kind={categoryPreset.categoryType}
+						value={form.priceUnit}
+						onChange={(unit) => update("priceUnit", unit)}
+						colors={{ textColor, mutedColor, primary, border }}
+					/>
 				</View>
 			)}
 
@@ -1660,7 +1675,15 @@ function ReviewStep({
 				category: form.category?.id,
 				seller: user?.id,
 				...(activeShop && publishInShop ? { shop: activeShop.id } : {}),
-				...(showsPrice && form.price ? { price: Number(form.price) } : {}),
+				...(showsPrice && form.price
+					? {
+							price: Number(form.price),
+							priceUnit: priceUnitToSend(
+								categoryPreset.categoryType,
+								form.priceUnit,
+							),
+						}
+					: {}),
 				...(form.tags.length > 0 ? { tags: form.tags } : {}),
 				images: form.images.map((img: UploadedImage) => ({ image: img.id })),
 				// The API validates attribute types strictly (a number sent as a
@@ -1752,7 +1775,17 @@ function ReviewStep({
 						label:
 							categoryPreset.fields.price.label ?? t("create.priceRowLabel"),
 						icon: "cash-outline",
-						value: formatPrice(form.price, t),
+						value: kindPriceText(
+							form.price ? formatPrice(form.price, t) : null,
+							{
+								kind: categoryPreset.categoryType,
+								priceUnit: priceUnitToSend(
+									categoryPreset.categoryType,
+									form.priceUnit,
+								),
+							},
+							(key) => t(`listingKind.${key}`),
+						),
 						step: "details",
 					},
 				]

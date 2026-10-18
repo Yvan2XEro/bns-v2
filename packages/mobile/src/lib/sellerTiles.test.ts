@@ -8,6 +8,7 @@ describe("visibleSellerTiles", () => {
 		expect(visibleSellerTiles("owner", counts).map((t) => t.key)).toEqual([
 			"returns",
 			"catalogue",
+			"listings",
 			"stock",
 			"inbox",
 			"team",
@@ -27,6 +28,7 @@ describe("visibleSellerTiles", () => {
 		expect(visibleSellerTiles("staff", counts).map((t) => t.key)).toEqual([
 			"returns",
 			"catalogue",
+			"listings",
 			"stock",
 			"inbox",
 			"team",
@@ -66,6 +68,7 @@ describe("the order tiles", () => {
 			"returns",
 			"orders",
 			"catalogue",
+			"listings",
 			"stock",
 			"inbox",
 			"billing",
@@ -84,7 +87,7 @@ describe("the order tiles", () => {
 		expect(keys).not.toContain("orders");
 		expect(keys).not.toContain("billing");
 		expect(keys).not.toContain("payments");
-		expect(keys).toHaveLength(8);
+		expect(keys).toHaveLength(9);
 	});
 
 	test("give staff the orders tile but not billing, which needs payments.view", () => {
@@ -93,6 +96,7 @@ describe("the order tiles", () => {
 			"returns",
 			"orders",
 			"catalogue",
+			"listings",
 			"stock",
 			"inbox",
 			"team",
@@ -195,5 +199,28 @@ describe("the delivery tile", () => {
 				deliveryZonesEnabled: true,
 			}).some((tile) => tile.key === "delivery"),
 		).toBe(false);
+	});
+});
+
+describe("a business that is not a store", () => {
+	test("keeps its ads and drops the catalogue, stock and orders", () => {
+		const keys = visibleSellerTiles("owner", counts, {
+			ordersEnabled: true,
+			resaleEnabled: true,
+			deliveryZonesEnabled: true,
+			retail: false,
+		}).map((tile) => tile.key);
+		expect(keys).toContain("listings");
+		for (const retailOnly of [
+			"returns",
+			"orders",
+			"resale",
+			"catalogue",
+			"stock",
+			"billing",
+			"payments",
+			"delivery",
+		])
+			expect(keys).not.toContain(retailOnly);
 	});
 });

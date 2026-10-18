@@ -18,6 +18,7 @@ import { CategoryChips } from "../CategoryChips";
 import { HandleField } from "../HandleField";
 import type { PhoneStatus } from "../PhoneGate";
 import { ShopAvatar } from "../ShopAvatar";
+import { ShopProfilePicker } from "../ShopProfilePicker";
 import { useShopTheme } from "../theme";
 import { Field } from "./Field";
 
@@ -70,6 +71,23 @@ export function ShopDetailsForm({ phone }: { phone: PhoneStatus }) {
 					</Text>
 				</View>
 			</View>
+
+			<Field label={t("shopProfile.pickerLabel")}>
+				<Text style={[styles.hint, { color: c.muted }]}>
+					{t("shopProfile.pickerHint")}
+				</Text>
+				<Controller
+					control={form.control}
+					name="profile"
+					render={({ field }) => (
+						<ShopProfilePicker
+							value={field.value}
+							onChange={field.onChange}
+							disabled={isPending}
+						/>
+					)}
+				/>
+			</Field>
 
 			<Field label={t("shop.nameLabel")}>
 				<Controller

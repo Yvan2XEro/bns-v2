@@ -1538,6 +1538,8 @@ export interface MyShopsEntry {
 	logoUrl: string | null;
 	/** Absent from an API that predates it. */
 	brandColor?: string | null;
+	/** The kind of business; absent from an API that predates it. */
+	profile?: ShopProfile;
 	role: ShopRole;
 	capabilities: ShopCapabilities;
 	inboxUnread: number;

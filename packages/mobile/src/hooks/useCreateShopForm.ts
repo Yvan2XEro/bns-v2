@@ -8,6 +8,7 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { ApiError } from "@/src/lib/api";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
+import { SHOP_PROFILES } from "@/src/lib/listingKind";
 import type { Place } from "@/src/lib/places";
 import { normalizeHandle } from "@/src/lib/shopHandle";
 import { useUserLocation } from "@/src/lib/useUserLocation";
@@ -24,6 +25,7 @@ const createShopSchema = z.object({
 	handle: z.string().min(1),
 	city: z.custom<Place | null>(),
 	categories: z.array(z.object({ id: z.string(), name: z.string() })).max(5),
+	profile: z.enum(SHOP_PROFILES),
 });
 export type CreateShopFormValues = z.infer<typeof createShopSchema>;
 
@@ -51,7 +53,13 @@ export function useCreateShopForm() {
 	const { asPlace } = useUserLocation();
 	const form = useForm<CreateShopFormValues>({
 		resolver: zodResolver(createShopSchema),
-		defaultValues: { name: "", handle: "", city: asPlace, categories: [] },
+		defaultValues: {
+			name: "",
+			handle: "",
+			city: asPlace,
+			categories: [],
+			profile: "store",
+		},
 	});
 	// The remembered place can arrive after the first render (storage read).
 	useEffect(() => {
@@ -80,6 +88,7 @@ export function useCreateShopForm() {
 				country: values.city?.country,
 				countryCode: values.city?.countryCode,
 				categories: values.categories.map((cat) => cat.id),
+				profile: values.profile,
 			},
 			{
 				onSuccess: () => {

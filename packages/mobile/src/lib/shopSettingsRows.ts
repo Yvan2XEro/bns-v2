@@ -1,9 +1,11 @@
 import type { MyShop } from "../types/api";
+import { profileOf } from "./listingKind";
 import { shopUrlLabel } from "./shopHandle";
 import { businessTypeLabelKey } from "./shopLegal";
 
 /** Each one opens `app/shop/settings/[section].tsx`. */
 export const SHOP_SETTINGS_SECTIONS = [
+	"profile",
 	"name",
 	"description",
 	"city",
@@ -93,6 +95,12 @@ export function shopSettingsGroups(
 		{
 			titleKey: "shop.profileTitle",
 			rows: [
+				{
+					id: "profile",
+					section: "profile",
+					labelKey: "shopProfile.settingsTitle",
+					value: { key: `shopProfile.name.${profileOf(shop.profile)}` },
+				},
 				{
 					id: "name",
 					section: "name",

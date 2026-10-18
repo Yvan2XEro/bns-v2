@@ -16,17 +16,21 @@ const TILES: ReadonlyArray<{
 	orders?: true;
 	resale?: true;
 	zones?: true;
+	/** Only a store runs a catalogue, stock and orders (`shops.profile`). */
+	retail?: true;
 }> = [
 	{
 		key: "returns",
 		href: "/seller/returns",
 		permission: "orders.view",
+		retail: true,
 	},
 	{
 		key: "orders",
 		href: "/seller/orders",
 		permission: "orders.view",
 		orders: true,
+		retail: true,
 	},
 	{
 		key: "resale",
@@ -34,21 +38,37 @@ const TILES: ReadonlyArray<{
 		permission: "resale.manage",
 		orders: true,
 		resale: true,
+		retail: true,
 	},
-	{ key: "catalogue", href: "/seller/catalogue", permission: "catalogue.edit" },
-	{ key: "stock", href: "/seller/stock-adjust", permission: "stock.move" },
+	{
+		key: "catalogue",
+		href: "/seller/catalogue",
+		permission: "catalogue.edit",
+		retail: true,
+	},
+	// The shop's ads that are not products: every ad of an agency or a
+	// recruiter, and a store's own job offers.
+	{ key: "listings", href: "/seller/listings", permission: "catalogue.edit" },
+	{
+		key: "stock",
+		href: "/seller/stock-adjust",
+		permission: "stock.move",
+		retail: true,
+	},
 	{ key: "inbox", href: "/seller/inbox", permission: "inbox.reply" },
 	{
 		key: "billing",
 		href: "/seller/billing",
 		permission: "payments.view",
 		orders: true,
+		retail: true,
 	},
 	{
 		key: "payments",
 		href: "/seller/payments",
 		permission: "payments.view",
 		orders: true,
+		retail: true,
 	},
 	{
 		key: "delivery",
@@ -56,6 +76,7 @@ const TILES: ReadonlyArray<{
 		permission: "settings.edit",
 		orders: true,
 		zones: true,
+		retail: true,
 	},
 	{ key: "team", href: "/seller/team", permission: "team.view" },
 	{ key: "activity", href: "/seller/activity", permission: "activity.view" },
@@ -84,6 +105,8 @@ export function visibleSellerTiles(
 		ordersEnabled: boolean;
 		resaleEnabled?: boolean;
 		deliveryZonesEnabled?: boolean;
+		/** A store; false for an agency, a recruiter or a provider. */
+		retail?: boolean;
 	} = {
 		ordersEnabled: false,
 	},
@@ -99,6 +122,7 @@ export function visibleSellerTiles(
 			(!tile.orders || options.ordersEnabled) &&
 			(!tile.resale || options.resaleEnabled === true) &&
 			(!tile.zones || options.deliveryZonesEnabled === true) &&
+			(!tile.retail || options.retail !== false) &&
 			can(role, tile.permission),
 	).map(({ key, href, permission }) => {
 		const badge = badges[key] ?? 0;

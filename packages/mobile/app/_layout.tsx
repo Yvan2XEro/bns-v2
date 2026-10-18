@@ -581,6 +581,10 @@ function RootLayoutNav() {
 						name="seller/activity"
 						options={{ headerShown: false }}
 					/>
+					<Stack.Screen
+						name="seller/listings"
+						options={{ headerShown: false }}
+					/>
 					<Stack.Screen name="seller/guide" options={{ headerShown: false }} />
 					<Stack.Screen
 						name="seller/inbox/index"

@@ -19,6 +19,10 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
+import {
+	PriceUnitChips,
+	priceUnitToSend,
+} from "@/src/components/listing/PriceUnitChips";
 import { FieldIssueText } from "@/src/components/seller/FieldIssueText";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
@@ -54,6 +58,7 @@ import {
 	sanitizePriceInput,
 	serializeAttributeValues,
 } from "@/src/lib/listingForm";
+import { listingKindRules } from "@/src/lib/listingKind";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { canAddPhoto } from "@/src/lib/photoLimit";
 import type { Place } from "@/src/lib/places";
@@ -361,6 +366,9 @@ export default function EditListingScreen() {
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [price, setPrice] = useState("");
+	// An ad saved without a unit was a one-off price, and stays one until the
+	// seller says otherwise.
+	const [priceUnit, setPriceUnit] = useState("total");
 	const [location, setLocation] = useState("");
 	const [coordinates, setCoordinates] = useState<{
 		lat: number;
@@ -399,6 +407,7 @@ export default function EditListingScreen() {
 		setInShop(Boolean(listing.shop));
 		setDescription(listing.description ?? "");
 		setPrice(listing.price != null ? String(listing.price) : "");
+		setPriceUnit(listing.priceUnit ?? "total");
 		setLocation(listing.location ?? "");
 		if (listing.coordinates?.lat && listing.coordinates?.lng) {
 			setCoordinates({
@@ -594,7 +603,13 @@ export default function EditListingScreen() {
 				...(coordinates ? { coordinates } : {}),
 				duration,
 				images: images.map((img) => ({ image: img.id })),
-				...(showsPrice && price ? { price: Number(price) } : {}),
+				...(showsPrice && price
+					? {
+							price: Number(price),
+							priceUnit:
+								priceUnitToSend(categoryPreset.categoryType, priceUnit) ?? null,
+						}
+					: {}),
 				// Typed per the category definition: the API rejects a number
 				// attribute sent as a string and a boolean sent as "true". Omitted
 				// entirely when the category is unknown, so a failed category lookup
@@ -916,6 +931,17 @@ export default function EditListingScreen() {
 									keyboardType="number-pad"
 								/>
 							</View>
+							<PriceUnitChips
+								kind={categoryPreset.categoryType}
+								value={priceUnit}
+								onChange={setPriceUnit}
+								colors={{
+									textColor,
+									mutedColor,
+									primary: primaryColor,
+									border: borderColor,
+								}}
+							/>
 						</View>
 					)}
 
@@ -1069,7 +1095,10 @@ export default function EditListingScreen() {
 								pending: t("listings.statusPending"),
 								published: t("listings.statusPublished"),
 								rejected: t("listings.statusRejected"),
-								sold: t("listings.statusSold"),
+								// A flat is let and a job filled, not sold.
+								sold: t(
+									`listingKind.closedAs.${listingKindRules(listing?.kind).closedAs}`,
+								),
 								expired: t("listings.statusExpired"),
 							};
 							return (

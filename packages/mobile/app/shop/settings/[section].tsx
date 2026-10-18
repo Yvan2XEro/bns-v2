@@ -6,6 +6,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ShopAddressCard } from "@/src/components/shop/manage/ShopAddressCard";
 import { ShopBrandColorCard } from "@/src/components/shop/manage/ShopBrandColorCard";
 import { ShopCloseCard } from "@/src/components/shop/manage/ShopCloseCard";
+import { ShopKindCard } from "@/src/components/shop/manage/ShopKindCard";
 import { ShopLegalCard } from "@/src/components/shop/manage/ShopLegalCard";
 import { ShopProfileCard } from "@/src/components/shop/manage/ShopProfileCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -20,6 +21,7 @@ import {
 import { isShopOwner } from "@/src/lib/variants";
 
 const TITLE_KEYS: Record<ShopSettingsSection, string> = {
+	profile: "shopProfile.settingsTitle",
 	name: "shop.nameLabel",
 	description: "shop.descriptionLabel",
 	city: "shop.cityLabel",
@@ -92,6 +94,9 @@ export default function ShopSettingsSectionScreen() {
 						section={section}
 						onSaved={goBack}
 					/>
+				) : null}
+				{section === "profile" ? (
+					<ShopKindCard shop={shop} readOnly={readOnly} onSaved={goBack} />
 				) : null}
 				{section === "color" ? (
 					<ShopBrandColorCard shop={shop} readOnly={readOnly} />

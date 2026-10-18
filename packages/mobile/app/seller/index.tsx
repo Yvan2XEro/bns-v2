@@ -41,6 +41,7 @@ import { useMyShop } from "@/src/hooks/useShops";
 import { useShopVerification } from "@/src/hooks/useVerification";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
+import { profileOf, shopProfileRules } from "@/src/lib/listingKind";
 import { stepTarget } from "@/src/lib/sellerHome";
 import { sellerPaymentsActionCount } from "@/src/lib/sellerPayments";
 import { showsOrdersTile, visibleSellerTiles } from "@/src/lib/sellerTiles";
@@ -280,6 +281,12 @@ function SellerHubContent({
 			}),
 			onPress: () => router.push("/seller/catalogue"),
 		},
+		listings: {
+			icon: "megaphone-outline",
+			title: t("sellerAds.title"),
+			body: t(`sellerAds.subtitle.${profileOf(shop.profile)}`),
+			onPress: () => router.push("/seller/listings"),
+		},
 		stock: {
 			icon: "layers-outline",
 			title: t("seller.tileStock"),
@@ -340,7 +347,12 @@ function SellerHubContent({
 			toAccept,
 			paymentsHolds,
 		},
-		{ ordersEnabled, resaleEnabled, deliveryZonesEnabled },
+		{
+			ordersEnabled,
+			resaleEnabled,
+			deliveryZonesEnabled,
+			retail: shopProfileRules(shop.profile).retail,
+		},
 	).map((tile) => ({
 		key: tile.key,
 		badge: tile.badge,

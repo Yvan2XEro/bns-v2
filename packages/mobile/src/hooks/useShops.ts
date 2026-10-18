@@ -4,6 +4,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
+import type { ShopProfile } from "@/src/lib/listingKind";
 import { useAppConfig } from "../contexts/AppConfigContext";
 import { ApiError, api } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -232,6 +233,7 @@ export function useCreateShop() {
 			country?: string;
 			countryCode?: string;
 			categories?: string[];
+			profile?: ShopProfile;
 		}) => api.post<{ shop: PublicShop }>("/api/shops", body),
 		onSuccess: invalidate,
 	});
@@ -239,6 +241,8 @@ export function useCreateShop() {
 
 export interface ShopPatch {
 	name?: string;
+	/** Leaving `store` is refused while the catalogue has live products. */
+	profile?: ShopProfile;
 	description?: string | null;
 	logo?: string | null;
 	banner?: string | null;

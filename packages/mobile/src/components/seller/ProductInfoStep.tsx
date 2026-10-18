@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { type Dispatch, type SetStateAction, useMemo } from "react";
 import { Text, TextInput, View } from "react-native";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -8,6 +8,7 @@ import { useTranslation } from "@/src/lib/i18n";
 import {
 	getCategoryAttributes,
 	groupListingAttributes,
+	isProductListingCategory,
 	type ListingAttribute,
 } from "@/src/lib/listingForm";
 import type { ProductFormState } from "@/src/lib/productForm";
@@ -29,6 +30,18 @@ export function ProductInfoStep({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const categories = useCategories();
+	// Only goods go in the catalogue (the API refuses the rest); a product
+	// filed elsewhere before that rule keeps its own category on offer.
+	const currentCategoryId = form.category?.id;
+	const sellable = useMemo(
+		() =>
+			(categories.data?.categories ?? []).filter(
+				(category) =>
+					isProductListingCategory(category) ||
+					category.id === currentCategoryId,
+			),
+		[categories.data, currentCategoryId],
+	);
 	const attributes: ListingAttribute[] = getCategoryAttributes(form.category);
 	const inputStyle = [
 		f.input,
@@ -71,7 +84,7 @@ export function ProductInfoStep({
 					{t("product.categoryLabel")} *
 				</Text>
 				<CategoryField
-					categories={categories.data?.categories ?? []}
+					categories={sellable}
 					value={form.category}
 					onSelect={(category) =>
 						setForm((s) => ({ ...s, category, attributes: {} }))

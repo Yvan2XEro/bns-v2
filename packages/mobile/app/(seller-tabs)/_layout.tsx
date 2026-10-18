@@ -25,6 +25,7 @@ import { useSellerOrders } from "@/src/hooks/useSellerOrders";
 import { shopKeys } from "@/src/hooks/useShops";
 import { ordersToHandle, resolveAppMode } from "@/src/lib/appMode";
 import { useTranslation } from "@/src/lib/i18n";
+import { shopProfileRules } from "@/src/lib/listingKind";
 import { showsOrdersTile } from "@/src/lib/sellerTiles";
 import { can } from "@/src/lib/shopRoles";
 
@@ -63,6 +64,10 @@ export default function SellerTabLayout() {
 	const membership = useHasShopMembership();
 	const resolved = hydrated ? resolveAppMode(mode, membership) : "pending";
 	const brand = useActiveShopBrandTheme();
+	// An agency, a recruiter or a provider has no orders, and its ads take
+	// the catalogue's place.
+	const { shop: activeShop } = useActiveShop();
+	const retail = shopProfileRules(activeShop?.profile).retail;
 
 	// Lost the last membership (or signed out): back to buyer mode for good.
 	const lostMembership =
@@ -123,6 +128,7 @@ export default function SellerTabLayout() {
 				<Tabs.Screen
 					name="sell/orders"
 					options={{
+						href: retail ? undefined : null,
 						title: t("sellerMode.tabs.orders"),
 						tabBarIcon: ({ color, focused }) => (
 							<OrdersTabIcon color={color} focused={focused} />
@@ -132,11 +138,13 @@ export default function SellerTabLayout() {
 				<Tabs.Screen
 					name="sell/catalogue"
 					options={{
-						title: t("sellerMode.tabs.catalogue"),
+						title: retail
+							? t("sellerMode.tabs.catalogue")
+							: t("sellerAds.title"),
 						tabBarIcon: ({ color, focused }) => (
 							<TabIcon
-								name="cube-outline"
-								focusedName="cube"
+								name={retail ? "cube-outline" : "megaphone-outline"}
+								focusedName={retail ? "cube" : "megaphone"}
 								color={color}
 								focused={focused}
 							/>
