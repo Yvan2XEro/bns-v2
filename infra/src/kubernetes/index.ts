@@ -27,5 +27,6 @@ export function deployKubernetes(kubeconfig: pulumi.Output<string>): void {
 		provider,
 		domain: config.domain,
 		acmeEmail: config.acmeEmail,
+		tlsIssuer: config.tlsIssuer,
 	});
 }

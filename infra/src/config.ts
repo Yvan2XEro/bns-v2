@@ -31,7 +31,21 @@ export const imageRegistry =
 	cfg.get("imageRegistry") ?? "ghcr.io/yvan2xero/bns-v2";
 export const imageTag = cfg.get("imageTag") ?? "latest";
 export const domain = cfg.require("domain");
-export const acmeEmail = cfg.require("acmeEmail");
+// How the ingress gets its certificate. `letsencrypt` needs a public domain
+// reachable on port 80; `local-ca` signs with a CA the cluster creates, for a
+// private domain (a .lan served by Pi-hole) — trust that CA on your devices.
+export const TLS_ISSUERS = ["letsencrypt", "local-ca"] as const;
+export type TlsIssuer = (typeof TLS_ISSUERS)[number];
+const issuer = cfg.get("tlsIssuer") ?? "letsencrypt";
+if (!(TLS_ISSUERS as readonly string[]).includes(issuer))
+	throw new Error(
+		`Unsupported tlsIssuer "${issuer}". Supported: ${TLS_ISSUERS.join(", ")}`,
+	);
+export const tlsIssuer = issuer as TlsIssuer;
+export const acmeEmail =
+	tlsIssuer === "letsencrypt"
+		? cfg.require("acmeEmail")
+		: (cfg.get("acmeEmail") ?? "");
 
 // The production `.env`, written by `scripts/env-to-stack.ts`: plain values
 // in `appEnv`, secrets in `appSecrets` (see app-env.ts for every name).

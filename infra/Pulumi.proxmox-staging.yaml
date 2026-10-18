@@ -36,6 +36,10 @@ config:
   proxmox:bridge: vmbr0
   proxmox:gateway: 192.168.0.1
   proxmox:subnetPrefix: "24"
+  # A private domain (.lan on Pi-hole): no Let's Encrypt, the cluster signs
+  # with its own CA instead, and the VMs must resolve through the Pi-hole.
+  # bns-infra:tlsIssuer: local-ca
+  # proxmox:dnsServers: [<ip du Pi-hole>]
   proxmox:dnsServers:
     - 1.1.1.1
     - 8.8.8.8

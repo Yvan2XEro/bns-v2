@@ -135,7 +135,10 @@ await diff();
 
 // The stack needs these; from the file or already set on the stack.
 const current = await stack.getAllConfig();
-for (const key of ["acmeEmail", "ghcrToken"]) {
+const localCa = Object.entries(current).some(
+	([name, entry]) => name.endsWith(":tlsIssuer") && entry.value === "local-ca",
+);
+for (const key of localCa ? ["ghcrToken"] : ["acmeEmail", "ghcrToken"]) {
 	const set = Object.keys(current).some((name) => name.endsWith(`:${key}`));
 	if (!stackKeys[key] && !set) {
 		const envName = key === "acmeEmail" ? "ACME_EMAIL" : "GHCR_TOKEN";
