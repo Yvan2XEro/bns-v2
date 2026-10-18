@@ -101,6 +101,7 @@ export const APP_ENV = {
 	PUBLIC_WEB_URL: derived("https://<domain>"),
 	NEXT_PUBLIC_WEB_URL: derived("https://<domain>"),
 	NEXT_PUBLIC_API_URL: derived("https://api.<domain>"),
+	API_INTERNAL_URL: derived("http://api:3000, for the web app's server side"),
 	PORT: derived("each service's own port"),
 	NODE_ENV: derived("set by the images"),
 

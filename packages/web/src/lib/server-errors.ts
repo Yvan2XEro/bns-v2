@@ -3,8 +3,9 @@ import {
 	type MonitoringConfig,
 	SENTRY_DATA_COLLECTION,
 } from "../../../api/src/contracts/monitoring";
+import { SERVER_API_URL } from "./api-origin";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const API_URL = SERVER_API_URL;
 
 let sentry: Promise<typeof SentryNode | null> | undefined;
 

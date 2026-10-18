@@ -455,11 +455,14 @@ export function deployApps(cfg: AppsConfig): void {
 										value: `https://api.${domain}`,
 									},
 									{ name: "NEXT_PUBLIC_WEB_URL", value: `https://${domain}` },
+									// Server-side rendering calls the API in the cluster, not
+									// through the public DNS, the ingress and TLS.
+									{ name: "API_INTERNAL_URL", value: "http://api:3000" },
 									{ name: "CHAT_PUBLIC_URL", value: `https://chat.${domain}` },
 								],
 								resources: {
 									requests: { memory: "256Mi", cpu: "100m" },
-									limits: { memory: "512Mi" },
+									limits: { memory: "1Gi" },
 								},
 							},
 						],

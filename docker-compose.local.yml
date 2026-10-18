@@ -239,6 +239,8 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api.buynsellem.com}
+      # Server-side rendering reaches the API on the internal network.
+      API_INTERNAL_URL: http://api:3000
       NEXT_PUBLIC_WEB_URL: ${NEXT_PUBLIC_WEB_URL:-http://buynsellem.com}
       CHAT_PUBLIC_URL: ${CHAT_PUBLIC_URL:-http://chat.buynsellem.com}
       NOVU_APPLICATION_IDENTIFIER: ${NOVU_APPLICATION_IDENTIFIER:-}

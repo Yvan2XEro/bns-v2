@@ -2,9 +2,10 @@
 
 import { cookies } from "next/headers";
 import { DEFAULT_LOCALE, isLocale, type Locale } from "~/i18n/locales";
+import { SERVER_API_URL } from "./api-origin";
 import { contentLocaleHeaders } from "./content-locale";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const API_URL = SERVER_API_URL;
 
 const localeOf = (chosen: string | undefined): Locale =>
 	chosen && isLocale(chosen) ? chosen : DEFAULT_LOCALE;

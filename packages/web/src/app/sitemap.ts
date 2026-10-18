@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
+import { SERVER_API_URL } from "~/lib/api-origin";
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_URL = SERVER_API_URL;
 
 export const revalidate = 3600;
 
