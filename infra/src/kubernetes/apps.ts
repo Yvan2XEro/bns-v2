@@ -386,10 +386,18 @@ export function deployApps(cfg: AppsConfig): void {
 									{ name: "CHAT_PUBLIC_URL", value: `https://chat.${domain}` },
 									{ name: "PUBLIC_WEB_URL", value: `https://${domain}` },
 								],
-								readinessProbe: {
-									httpGet: { path: "/api/health", port: 3000 },
-									initialDelaySeconds: 15,
+								// The API has no /api/health: /api/public/config is the route
+								// every client calls first, served once Payload is up.
+								// A first boot (indexes, migrations) gets five minutes.
+								startupProbe: {
+									httpGet: { path: "/api/public/config", port: 3000 },
 									periodSeconds: 10,
+									failureThreshold: 30,
+								},
+								readinessProbe: {
+									httpGet: { path: "/api/public/config", port: 3000 },
+									periodSeconds: 10,
+									timeoutSeconds: 5,
 								},
 								resources: {
 									requests: { memory: "256Mi", cpu: "100m" },
