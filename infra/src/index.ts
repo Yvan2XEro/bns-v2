@@ -1,31 +1,36 @@
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
+import { getStack } from "@pulumi/pulumi";
 import { createEksCluster } from "./aws";
 import { createAksCluster } from "./azure";
 import * as config from "./config";
 import { deployKubernetes } from "./kubernetes";
+import { createProxmoxCluster } from "./proxmox-k3s";
 
-let kubeconfig: pulumi.Output<any> | pulumi.Output<string>;
-let clusterName: pulumi.Output<string>;
-
-if (config.cloudProvider === "aws") {
-	const eks = createEksCluster(
-		`bns-${pulumi.getStack()}`,
-		config.nodeCount,
-		config.instanceType,
-	);
-	kubeconfig = eks.kubeconfig;
-	clusterName = eks.clusterName;
-} else {
-	const aks = createAksCluster(
-		`bns-${pulumi.getStack()}`,
-		config.region,
-		config.nodeCount,
-		config.vmSize,
-	);
-	kubeconfig = aks.kubeconfig;
-	clusterName = aks.clusterName;
+interface Cluster {
+	kubeconfig: pulumi.Output<unknown> | pulumi.Output<string>;
+	clusterName: pulumi.Output<string>;
 }
 
-deployKubernetes(kubeconfig);
+const name = `bns-${getStack()}`;
 
-export { clusterName };
+function createCluster(): Cluster {
+	switch (config.cloudProvider) {
+		case "aws":
+			return createEksCluster(name, config.nodeCount, config.instanceType);
+		case "azure":
+			return createAksCluster(
+				name,
+				config.region,
+				config.nodeCount,
+				config.vmSize,
+			);
+		case "proxmox":
+			return createProxmoxCluster(name, config.nodeCount, config.instanceType);
+	}
+}
+
+const cluster = createCluster();
+
+deployKubernetes(cluster.kubeconfig);
+
+export const clusterName = cluster.clusterName;

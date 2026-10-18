@@ -3,4 +3,4 @@ runtime:
   name: nodejs
   options:
     typescript: true
-description: BNS cloud infrastructure — EKS (AWS) or AKS (Azure)
+description: BNS infrastructure — EKS (AWS), AKS (Azure) or K3s on Proxmox

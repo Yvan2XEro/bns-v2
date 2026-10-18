@@ -2,14 +2,25 @@ import * as pulumi from "@pulumi/pulumi";
 
 const cfg = new pulumi.Config();
 
-export type CloudProvider = "aws" | "azure";
+export const CLOUD_PROVIDERS = ["aws", "azure", "proxmox"] as const;
+export type CloudProvider = (typeof CLOUD_PROVIDERS)[number];
 
-export const cloudProvider = cfg.require("cloudProvider") as CloudProvider;
-export const region = cfg.require("region");
+const provider = cfg.require("cloudProvider");
+if (!(CLOUD_PROVIDERS as readonly string[]).includes(provider))
+	throw new Error(
+		`Unsupported cloudProvider "${provider}". Supported: ${CLOUD_PROVIDERS.join(", ")}`,
+	);
+export const cloudProvider = provider as CloudProvider;
+// Azure only: AWS reads `aws:region`, Proxmox has none.
+export const region =
+	cloudProvider === "azure" ? cfg.require("region") : (cfg.get("region") ?? "");
 export const nodeCount = cfg.getNumber("nodeCount") ?? 2;
 
-// AWS-specific
-export const instanceType = cfg.get("instanceType") ?? "t3.medium";
+// AWS: an EC2 instance type. Proxmox: a profile from `PROXMOX_SIZES`
+// (small, medium, large).
+export const instanceType =
+	cfg.get("instanceType") ??
+	(cloudProvider === "proxmox" ? "medium" : "t3.medium");
 
 // Azure-specific
 export const vmSize = cfg.get("vmSize") ?? "Standard_B2s";

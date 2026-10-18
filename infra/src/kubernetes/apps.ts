@@ -23,14 +23,11 @@ export interface AppsConfig {
 	provider: k8s.Provider;
 }
 
-function secretRef(
-	name: string,
-	key: string,
-): k8s.types.input.core.v1.EnvVarArgs {
+function secretRef(name: string, key: string): k8s.types.input.core.v1.EnvVar {
 	return { name: key, valueFrom: { secretKeyRef: { name, key } } };
 }
 
-function _stsVolume(claimName: string): k8s.types.input.core.v1.VolumeArgs {
+function _stsVolume(claimName: string): k8s.types.input.core.v1.Volume {
 	return { name: "data", persistentVolumeClaim: { claimName } };
 }
 
