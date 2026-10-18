@@ -1,7 +1,6 @@
-# Template for the azure-prod stack. Copy it once, then let Pulumi write to the copy:
-#   cp stacks/azure-prod.example.yaml Pulumi.azure-prod.yaml && pulumi stack init azure-prod
-# Pulumi.azure-prod.yaml is git-ignored: it receives the encryption salt, the
-# encrypted secrets and the app variables. Never put real values here.
+# Template for the azure-prod stack. Never put real values here. Create the stack with:
+#   bun run stack:init --stack azure-prod [--ssh-key ~/.ssh/bns-k3s] [--env ../.env.azure-prod]
+# which writes .stacks/Pulumi.azure-prod.yaml (git-ignored) from this file.
 #
 config:
   # App variables: copied from the production .env, never typed by hand —

@@ -7,6 +7,7 @@
 		"build": "tsc",
 		"typecheck": "tsc --noEmit",
 		"test": "bun test src",
+		"stack:init": "bun scripts/stack-init.ts",
 		"env:check": "bun scripts/env-to-stack.ts --dry-run",
 		"env:apply": "bun scripts/env-to-stack.ts",
 		"preview": "pulumi preview",

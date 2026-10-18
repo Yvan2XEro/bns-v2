@@ -1,7 +1,6 @@
-# Template for the aws-prod stack. Copy it once, then let Pulumi write to the copy:
-#   cp stacks/aws-prod.example.yaml Pulumi.aws-prod.yaml && pulumi stack init aws-prod
-# Pulumi.aws-prod.yaml is git-ignored: it receives the encryption salt, the
-# encrypted secrets and the app variables. Never put real values here.
+# Template for the aws-prod stack. Never put real values here. Create the stack with:
+#   bun run stack:init --stack aws-prod [--ssh-key ~/.ssh/bns-k3s] [--env ../.env.aws-prod]
+# which writes .stacks/Pulumi.aws-prod.yaml (git-ignored) from this file.
 #
 config:
   # App variables: copied from the production .env, never typed by hand —

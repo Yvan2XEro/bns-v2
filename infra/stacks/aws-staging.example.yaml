@@ -1,7 +1,6 @@
-# Template for the aws-staging stack. Copy it once, then let Pulumi write to the copy:
-#   cp stacks/aws-staging.example.yaml Pulumi.aws-staging.yaml && pulumi stack init aws-staging
-# Pulumi.aws-staging.yaml is git-ignored: it receives the encryption salt, the
-# encrypted secrets and the app variables. Never put real values here.
+# Template for the aws-staging stack. Never put real values here. Create the stack with:
+#   bun run stack:init --stack aws-staging [--ssh-key ~/.ssh/bns-k3s] [--env ../.env.aws-staging]
+# which writes .stacks/Pulumi.aws-staging.yaml (git-ignored) from this file.
 #
 config:
   # App variables: copied from the production .env, never typed by hand —

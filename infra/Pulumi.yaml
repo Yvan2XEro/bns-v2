@@ -4,3 +4,6 @@ runtime:
   options:
     typescript: true
 description: BNS infrastructure — EKS (AWS), AKS (Azure) or K3s on Proxmox
+# Per-stack config (encryption salt, encrypted secrets, app values) lives in
+# .stacks/, git-ignored. `bun run stack:init` writes it from stacks/*.example.yaml.
+stackConfigDir: .stacks

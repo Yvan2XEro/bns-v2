@@ -45,7 +45,7 @@ Proxmox ──clones template 9000──► server VM (K3s server)  192.168.0.16
 | Variable catalog | `infra/src/app-env.ts`: whether each variable is secret, which services receive it, and whether the stack derives it or only Compose uses it |
 | `.env` → stack | `infra/scripts/env-to-stack.ts` (`bun run env:check` / `env:apply`) |
 | Proxmox template | `infra/scripts/create-proxmox-template.sh` |
-| Stack config templates | `infra/stacks/<stack>.example.yaml` → copied to `infra/Pulumi.<stack>.yaml` (git-ignored) |
+| Stack config | templates in `infra/stacks/<stack>.example.yaml`; the real files in `infra/.stacks/` (git-ignored), written by `bun run stack:init` |
 | Load test | `infra/loadtest/traffic.js` (`bun run loadtest`) |
 
 A stack is one environment: its VMs, its config and its secrets.
@@ -149,33 +149,46 @@ existing tokens. To add a single privilege:
 pulumi login --local                          # or Pulumi Cloud
 export PULUMI_CONFIG_PASSPHRASE='…'            # keep it: secrets cannot be read without it
 S=proxmox-staging
-# The stack's config file is local only (git ignores infra/Pulumi.*.yaml):
-# start it from the template, once.
-cp stacks/proxmox-staging.example.yaml Pulumi.$S.yaml
-pulumi stack init $S                            # or: pulumi stack select $S
+
+PROXMOX_API_TOKEN='pulumi@pve!bns=<value>' \
+  bun run stack:init --stack $S --ssh-key ~/.ssh/bns-k3s --env ../.env.$S
 ```
 
-> `Pulumi.<stack>.yaml` holds the stack's encryption salt, its encrypted secrets
-> and plain app values. It never goes into git, so **back it up** with the
-> state. With `pulumi login --local`, the state is in `~/.pulumi`. Losing the
-> file or the passphrase means setting every secret again. Pulumi Cloud keeps
-> both for you.
+`stack:init` does the following:
+- writes `infra/.stacks/Pulumi.<stack>.yaml` from
+  `infra/stacks/<stack>.example.yaml`, only if it does not exist yet;
+- creates or selects the stack;
+- stores the SSH key pair and the API token, encrypted. The token is read from
+  `PROXMOX_API_TOKEN`, never from the command line;
+- copies the `.env` in (§ 5);
+- lists anything still missing.
 
-The non-secret Proxmox settings come from the template, now in `infra/Pulumi.proxmox-staging.yaml`:
-endpoint, `nodeName`, `templateVmId`, `firstVmId`, `datastoreId`, `bridge`,
-`gateway`, `sshUser`, `controlPlaneIp`, `workerIps`, `k3sVersion`. Adjust them
-before the first deployment. **The IPs and VM IDs must be free.**
+Run it again whenever you need to: it never overwrites the stack file.
+Options:
+- `--from <template>` starts a stack from another template;
+- each part can be left out and added later.
+
+A file left at the old place (`infra/Pulumi.<stack>.yaml`) is moved into
+`.stacks/` unchanged.
+
+> `infra/.stacks/` is git-ignored and stays on this machine. It holds each
+> stack's encryption salt, encrypted secrets and plain app values. With
+> `pulumi login --local`, keep a copy of `.stacks/` together with the state in
+> `~/.pulumi` and the passphrase: without them, every secret has to be set
+> again. Pulumi Cloud keeps all three for you.
+
+The non-secret Proxmox settings come from the template: endpoint, `nodeName`,
+`templateVmId`, `firstVmId`, `datastoreId`, `bridge`, `gateway`, `sshUser`,
+`controlPlaneIp`, `workerIps`, `k3sVersion`. Adjust them in
+`infra/.stacks/Pulumi.$S.yaml` before the first deployment. **The IPs and VM
+IDs must be free.**
 ```bash
 for ip in 160 161 162; do ping -c1 -W1 192.168.0.$ip >/dev/null && echo "192.168.0.$ip IN USE"; done
 qm list | awk '$1>=250 && $1<=252'           # on the node
 ```
 
-Secrets and settings. A value that starts with `-` needs `--` before it.
+Other settings:
 ```bash
-pulumi config set --stack $S --secret proxmox:apiToken -- 'pulumi@pve!bns=<value>'
-pulumi config set --stack $S --secret proxmox:sshPrivateKey < ~/.ssh/bns-k3s
-pulumi config set --stack $S proxmox:sshPublicKey -- "$(cat ~/.ssh/bns-k3s.pub)"
-
 # Private domain (.lan): local CA, and the VMs resolve through the Pi-hole
 pulumi config set --stack $S tlsIssuer local-ca
 pulumi config set --stack $S --path 'proxmox:dnsServers[0]' 192.168.0.98
@@ -191,7 +204,7 @@ pulumi config set --stack $S --path autoscaling.api.max 6
 Check the stack:
 ```bash
 pulumi config --stack $S
-grep sshPrivateKey Pulumi.$S.yaml      # must show "secure: …"
+grep sshPrivateKey .stacks/Pulumi.$S.yaml      # must show "secure: …"
 ```
 
 > **Sizing rules.** A Proxmox disk can grow but never shrink. Going from
@@ -417,8 +430,9 @@ or grow the VMs.
 
 ## 11. Migrating production from Dokploy
 
-1. **Stack.** Copy `stacks/proxmox-staging.example.yaml` to
-   `Pulumi.proxmox-prod.yaml`, then run `pulumi stack init proxmox-prod`. Adjust
+1. **Stack.** Run
+   `bun run stack:init --stack proxmox-prod --from proxmox-staging --ssh-key ~/.ssh/bns-k3s`,
+   with `PROXMOX_API_TOKEN` set. Then, in `.stacks/Pulumi.proxmox-prod.yaml`, adjust
    the `proxmox:*` settings, changing `firstVmId` (300), the IPs (`.170+`) and the sizes. Leave
    `tlsIssuer` at its default, `letsencrypt`. Set the token and the SSH keys
    (§ 4).

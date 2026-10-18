@@ -1,7 +1,6 @@
-# Template for the proxmox-staging stack. Copy it once, then let Pulumi write to the copy:
-#   cp stacks/proxmox-staging.example.yaml Pulumi.proxmox-staging.yaml && pulumi stack init proxmox-staging
-# Pulumi.proxmox-staging.yaml is git-ignored: it receives the encryption salt, the
-# encrypted secrets and the app variables. Never put real values here.
+# Template for the proxmox-staging stack. Never put real values here. Create the stack with:
+#   bun run stack:init --stack proxmox-staging [--ssh-key ~/.ssh/bns-k3s] [--env ../.env.proxmox-staging]
+# which writes .stacks/Pulumi.proxmox-staging.yaml (git-ignored) from this file.
 #
 # Full procedure: docs/runbook-proxmox-k3s.md
 #

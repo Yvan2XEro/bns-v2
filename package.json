@@ -9,6 +9,7 @@
 		"check": "biome check --write .",
 		"check-types": "turbo run check-types",
 		"prepare": "husky",
+		"infra:stack:init": "ENV_BASE_DIR=\"$PWD\" bun run --cwd infra stack:init",
 		"infra:env:check": "ENV_BASE_DIR=\"$PWD\" bun run --cwd infra env:check",
 		"infra:env:apply": "ENV_BASE_DIR=\"$PWD\" bun run --cwd infra env:apply",
 		"infra:preview": "bun run --cwd infra preview",
