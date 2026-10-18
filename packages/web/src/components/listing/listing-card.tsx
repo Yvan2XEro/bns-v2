@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import { listingConditionValue } from "~/lib/listing-condition";
+import { kindPriceText } from "~/lib/listing-kind";
 import {
 	listingPriceMax,
 	listingShopBadge,
@@ -26,6 +27,7 @@ interface ListingCardProps {
 export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Listing");
+	const tKind = useTranslations("ListingKind");
 	const locale = useLocale();
 	const firstImage =
 		listing.images && listing.images.length > 0
@@ -126,7 +128,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 									{t("fromPrice")}{" "}
 								</span>
 							)}
-							{formattedPrice ?? t("noPrice")}
+							{kindPriceText(formattedPrice, listing, tKind)}
 						</p>
 
 						{/* Title */}

@@ -37,11 +37,19 @@ import { DEFAULT_LOCALE, isLocale } from "~/i18n/locales";
 import { withContentLocale } from "~/lib/content-locale";
 import { buildListingAttributeGroups } from "~/lib/listing-attributes";
 import {
+	adAction,
+	isDraftAction,
+	kindPriceText,
+	listingKindRules,
+	safetyKind,
+} from "~/lib/listing-kind";
+import {
 	listingProduct,
 	listingProductId,
 	listingShop,
 	productSummaryOf,
 } from "~/lib/listing-shop";
+import { listingStructuredData } from "~/lib/listing-structured-data";
 import { formatOrderMoneyRange, renderOrderMoney } from "~/lib/order-money";
 import { hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
@@ -192,6 +200,17 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 	const productId = listingProductId(listing);
 	const product = listingProduct(listing);
 	const summary = productSummaryOf(listing);
+	const tKind = await getTranslations("ListingKind");
+	const kindRules = listingKindRules(listing.kind);
+	// Order for a shop product, else what the kind calls for: a visit, an
+	// application, a quote.
+	const action = adAction(listing, Boolean(productId));
+	const tipsKind = productId ? null : safetyKind(listing.kind);
+	const kindTips = tipsKind
+		? (["tip1", "tip2", "tip3"] as const).map((tip) =>
+				tKind(`safety.${tipsKind}.${tip}`),
+			)
+		: null;
 	const delivery = product?.delivery ?? {};
 	const warrantyMonths = product?.warrantyMonths ?? 0;
 	const priceRange =
@@ -239,6 +258,9 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		: null;
 	const isActive =
 		listing.status === "published" || listing.status === "pending";
+	const money = priceRange ?? formattedPrice;
+	// "150 000 / month" (in the market's currency), or the kind's own words for a missing price.
+	const priceText = kindPriceText(money, listing, tKind);
 
 	const imageUrls: string[] =
 		listing.images
@@ -262,37 +284,35 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		: [];
 
 	const canonical = `${WEB_URL}/listing/${listing.id}`;
-	const productJsonLd = {
-		"@context": "https://schema.org",
-		"@type": "Product",
-		name: listing.title,
+	const productJsonLd = listingStructuredData({
+		kind: listing.kind,
+		priceUnit: listing.priceUnit,
+		title: listing.title,
 		description: listing.description,
-		image: imageUrls,
 		url: canonical,
-		...(hasListingPrice(listing.price) && {
-			offers: {
-				"@type": "Offer",
-				price: listing.price,
-				...(market && { priceCurrency: market.currency.code }),
-				// Search engines must not list an expired or sold-out item as buyable.
-				availability:
-					isActive && !isExpired && summary?.available !== false
-						? "https://schema.org/InStock"
-						: "https://schema.org/OutOfStock",
-				url: canonical,
-				...(shop
-					? {
-							seller: {
-								"@type": "Organization",
-								name: shop.name,
-								url: `${WEB_URL}/s/${shop.handle}`,
-							},
-						}
-					: seller && { seller: { "@type": "Person", name: seller.name } }),
-			},
-		}),
-		...(category && { category: category.name }),
-	};
+		images: imageUrls,
+		price: hasListingPrice(listing.price) ? listing.price : null,
+		currency: market?.currency.code ?? null,
+		location: listing.location,
+		createdAt: listing.createdAt,
+		expiresAt: listing.expiresAt,
+		// Search engines must not list an expired or sold-out item as buyable.
+		available: isActive && !isExpired && summary?.available !== false,
+		attributes:
+			listing.attributes && typeof listing.attributes === "object"
+				? (listing.attributes as Record<string, unknown>)
+				: null,
+		categoryName: category?.name ?? null,
+		seller: shop
+			? {
+					type: "Organization",
+					name: shop.name,
+					url: `${WEB_URL}/s/${shop.handle}`,
+				}
+			: seller?.name
+				? { type: "Person", name: seller.name }
+				: null,
+	});
 
 	const breadcrumbJsonLd = {
 		"@context": "https://schema.org",
@@ -411,7 +431,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									<p
 										className={`mt-1 font-bold text-2xl text-brand ${productId ? "lg:hidden" : ""}`}
 									>
-										{priceRange ?? formattedPrice ?? t("noPrice")}
+										{priceText}
 									</p>
 								</div>
 								<div className="flex gap-2">
@@ -454,6 +474,11 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 												: t("expiresIn", { days: daysUntilExpiry })}
 										</span>
 									)}
+								{listing.status === "sold" && (
+									<span className="flex items-center gap-1 font-semibold text-ink">
+										{tKind(`closedAs.${kindRules.closedAs}`)}
+									</span>
+								)}
 								{listing.status === "expired" && (
 									<span className="flex items-center gap-1 text-red-500">
 										<AlertTriangle className="h-4 w-4" />
@@ -566,7 +591,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										codAllowed={delivery.codAllowed === true}
 										pickupAllowed={delivery.pickupAllowed === true}
 										shopBadge={shopBadge}
-										priceFallback={priceRange ?? formattedPrice ?? t("noPrice")}
+										priceFallback={priceText}
 										handlingHours={delivery.handlingHours ?? null}
 										ask={
 											!isOwner && (
@@ -682,6 +707,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										<MessageSellerButton
 											listingId={String(listing.id)}
 											signedIn={Boolean(authUser)}
+											intent={isDraftAction(action) ? action : undefined}
 										/>
 									)}
 									{!isOwner && seller && isActive && !isExpired && (
@@ -715,6 +741,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 											<li>{t("safetyShopTip2")}</li>
 											<li>{t("safetyShopTip3")}</li>
 										</>
+									) : kindTips ? (
+										// A rental's deposit scam, a job's "pay to apply": the
+										// risks differ from buying a thing.
+										kindTips.map((tip) => <li key={tip}>{tip}</li>)
 									) : (
 										<>
 											<li>{t("safetyTip1")}</li>
@@ -750,8 +780,8 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 					!isExpired &&
 					(productId || seller) && (
 						<ListingActionBar
-							price={priceRange ?? formattedPrice ?? null}
-							action={productId ? "order" : "contact"}
+							price={money ? priceText : null}
+							action={action}
 							targetId={productId ? "buy-box" : "contact-seller"}
 						/>
 					)}

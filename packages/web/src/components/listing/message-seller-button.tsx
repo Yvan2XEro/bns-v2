@@ -6,12 +6,18 @@ import { useTranslations } from "next-intl";
 import { Button } from "~/components/ui/button";
 import { useStartConversation } from "~/hooks/use-shop-inbox";
 import { resolveErrorMessage } from "~/lib/apiError";
+import type { DraftAction } from "~/lib/listing-kind";
 
 interface MessageSellerButtonProps {
 	listingId: string;
 	signedIn: boolean;
 	/** The buy box's outlined "ask the shop" variant, under the order buttons. */
 	secondary?: boolean;
+	/**
+	 * A visit, an application or a quote: worded for it, and the conversation
+	 * opens on a drafted message the buyer edits and sends themselves.
+	 */
+	intent?: DraftAction;
 }
 
 function goToSignIn() {
@@ -29,8 +35,10 @@ export function MessageSellerButton({
 	listingId,
 	signedIn,
 	secondary = false,
+	intent,
 }: MessageSellerButtonProps) {
 	const t = useTranslations("Listing");
+	const tKind = useTranslations("ListingKind");
 	const tErrors = useTranslations();
 	const router = useRouter();
 	const start = useStartConversation();
@@ -42,7 +50,11 @@ export function MessageSellerButton({
 		}
 		start.mutate(listingId, {
 			onSuccess: ({ conversationId }) => {
-				router.push(`/messages?conversation=${conversationId}`);
+				router.push(
+					intent
+						? `/messages?${new URLSearchParams({ conversation: conversationId, listing: listingId, draft: intent })}`
+						: `/messages?conversation=${conversationId}`,
+				);
 			},
 			onError: (error) => {
 				if (error.status === 401) goToSignIn();
@@ -67,7 +79,11 @@ export function MessageSellerButton({
 				) : (
 					<MessageCircle className="mr-2 h-4 w-4" />
 				)}
-				{secondary ? t("askShop") : t("messageSeller")}
+				{secondary
+					? t("askShop")
+					: intent
+						? tKind(`action.${intent}`)
+						: t("messageSeller")}
 			</Button>
 			{start.isError && start.error.status !== 401 && (
 				<p className="text-center text-red-500 text-xs">

@@ -1,8 +1,24 @@
 "use client";
 
-import { MessageCircle, ShoppingBag } from "lucide-react";
+import {
+	Briefcase,
+	CalendarCheck,
+	FileText,
+	type LucideIcon,
+	MessageCircle,
+	ShoppingBag,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import type { ListingAction } from "~/lib/listing-kind";
+
+const ICONS: Record<ListingAction, LucideIcon> = {
+	order: ShoppingBag,
+	contact: MessageCircle,
+	visit: CalendarCheck,
+	apply: Briefcase,
+	quote: FileText,
+};
 
 /**
  * On a phone the buy box and the seller card sit below the photos and the
@@ -15,10 +31,11 @@ export function ListingActionBar({
 	targetId,
 }: {
 	price: string | null;
-	action: "order" | "contact";
+	action: ListingAction;
 	targetId: string;
 }) {
 	const t = useTranslations("Listing");
+	const tKind = useTranslations("ListingKind");
 	const [targetVisible, setTargetVisible] = useState(false);
 
 	useEffect(() => {
@@ -40,7 +57,7 @@ export function ListingActionBar({
 			?.focus({ preventScroll: true });
 	}
 
-	const Icon = action === "order" ? ShoppingBag : MessageCircle;
+	const Icon = ICONS[action];
 
 	return (
 		<>
@@ -65,7 +82,11 @@ export function ListingActionBar({
 						className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-brand-fill px-5 font-bold text-white hover:bg-brand-strong"
 					>
 						<Icon aria-hidden className="h-[18px] w-[18px]" />
-						{action === "order" ? t("barOrder") : t("barContact")}
+						{action === "order"
+							? t("barOrder")
+							: action === "contact"
+								? t("barContact")
+								: tKind(`action.${action}`)}
 					</button>
 				</div>
 			</div>

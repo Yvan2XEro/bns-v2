@@ -114,6 +114,8 @@ interface MessagesClientProps {
 	initialMessages: Message[];
 	blockedUserIds?: string[];
 	contextListing?: Listing | null;
+	/** Pre-filled in the composer, never sent on the buyer's behalf. */
+	initialDraft?: string;
 }
 
 export function MessagesClient({
@@ -124,6 +126,7 @@ export function MessagesClient({
 	initialMessages,
 	blockedUserIds = [],
 	contextListing,
+	initialDraft = "",
 }: MessagesClientProps) {
 	const { token } = useAuth();
 	const t = useTranslations("Messages");
@@ -135,7 +138,7 @@ export function MessagesClient({
 	const [selectedConversation, setSelectedConversation] =
 		useState<ConversationWithDetails | null>(preSelectedConversation);
 	const [messages, setMessages] = useState<Message[]>(initialMessages);
-	const [newMessage, setNewMessage] = useState("");
+	const [newMessage, setNewMessage] = useState(initialDraft);
 	// tempIds of own messages the chat service refused; kept on screen to retry.
 	const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
 	const [connectionState, setConnectionState] =

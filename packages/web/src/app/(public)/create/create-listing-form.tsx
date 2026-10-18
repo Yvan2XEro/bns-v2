@@ -7,6 +7,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CategoryDialogField } from "~/components/category-picker";
 import { FieldIssueSummary } from "~/components/listing/field-issue-summary";
 import { ImagePicker } from "~/components/listing/image-picker";
+import {
+	PriceUnitSelect,
+	priceUnitToSend,
+} from "~/components/listing/price-unit-select";
 import { TagPicker } from "~/components/listing/tag-picker";
 import { LocationField } from "~/components/location/location-field";
 import { PublishInShopToggle } from "~/components/shop/publish-in-shop-toggle";
@@ -62,6 +66,11 @@ import {
 	responseIssues,
 	webListingIssues,
 } from "~/lib/listing-issues";
+import {
+	defaultPriceUnit,
+	kindPriceText,
+	type PriceUnit,
+} from "~/lib/listing-kind";
 import { mediaUploadForm } from "~/lib/media-upload";
 import { track } from "~/lib/monitoring";
 import { hasListingPrice } from "~/lib/price";
@@ -90,6 +99,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const tListing = asFallbackTranslator(useTranslations("Listing"));
 	const tCommon = useTranslations("Common");
 	const tShop = useTranslations("Shop");
+	const tKind = useTranslations("ListingKind");
 	const tIssues = useTranslations("FormIssues");
 	const photoLimit = usePhotoLimit();
 	const router = useRouter();
@@ -134,6 +144,8 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 	const [place, setPlace] = useState<Place | null>(null);
 	const [duration, setDuration] = useState("30");
+	// A rent starts per month, a salary per month, a service as a one-off.
+	const [priceUnit, setPriceUnit] = useState<PriceUnit>("total");
 	const [formData, setFormData] = useState({
 		title: "",
 		description: "",
@@ -372,6 +384,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		setAttributeValues({});
 		setShowErrors(false);
 		const nextPreset = resolveFormPreset(category);
+		setPriceUnit(defaultPriceUnit(nextPreset.categoryType));
 		setFormData((prev) => ({
 			...prev,
 			// Drop values for fields this category does not show, so a hidden
@@ -510,6 +523,8 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			};
 			if (priceField.enabled && formData.price) {
 				listingData.price = Number(formData.price);
+				const unit = priceUnitToSend(categoryPreset.categoryType, priceUnit);
+				if (unit) listingData.priceUnit = unit;
 			}
 
 			const coordinates = placeCoords(place);
@@ -797,6 +812,13 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 										/>
 									</div>
 								)}
+								{priceField.enabled && (
+									<PriceUnitSelect
+										kind={categoryPreset.categoryType}
+										value={priceUnit}
+										onChange={setPriceUnit}
+									/>
+								)}
 								<div className="space-y-2">
 									<Label htmlFor="location">{tListing("localisation")}</Label>
 									<LocationField
@@ -911,9 +933,20 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 									<h3 className="font-semibold text-lg">{formData.title}</h3>
 									{priceField.enabled && (
 										<span className="font-bold text-lg text-primary">
-											{hasListingPrice(Number(formData.price)) && formData.price
-												? `${formatOrderMoney(Number(formData.price))}`
-												: tListing("noPrice")}
+											{kindPriceText(
+												hasListingPrice(Number(formData.price)) &&
+													formData.price
+													? formatOrderMoney(Number(formData.price))
+													: null,
+												{
+													kind: categoryPreset.categoryType,
+													priceUnit: priceUnitToSend(
+														categoryPreset.categoryType,
+														priceUnit,
+													),
+												},
+												tKind,
+											)}
 										</span>
 									)}
 								</div>

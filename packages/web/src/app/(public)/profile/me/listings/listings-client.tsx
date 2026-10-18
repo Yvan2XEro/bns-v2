@@ -27,6 +27,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import { deleteListing, markListingAsSold, renewListing } from "~/lib/actions";
+import { kindPriceText, listingKindRules } from "~/lib/listing-kind";
 import { hasListingPrice } from "~/lib/price";
 import type { Listing, Media } from "~/types";
 
@@ -39,6 +40,10 @@ function getListingImageUrl(listing: Listing): string | null {
 export function MyListingsClient({ listings }: { listings: Listing[] }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Listing");
+	// "Let", "Position filled": a flat or a job is not "sold".
+	const tKind = useTranslations("ListingKind");
+	const closedAs = (listing: Listing) =>
+		tKind(`closedAs.${listingKindRules(listing.kind).closedAs}`);
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 
@@ -139,7 +144,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 							{listing.status === "sold" && (
 								<div className="absolute inset-0 flex items-center justify-center bg-black/50">
 									<span className="rounded-full bg-surface px-3 py-1 font-bold text-ink text-xs uppercase">
-										{t("statusSold")}
+										{closedAs(listing)}
 									</span>
 								</div>
 							)}
@@ -193,7 +198,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 						<div className="p-3.5">
 							<Link href={`/listing/${listing.id}`}>
 								<p className="font-bold text-ink text-lg">
-									{formattedPrice ?? t("noPrice")}
+									{kindPriceText(formattedPrice, listing, tKind)}
 								</p>
 								<h3 className="mt-0.5 truncate text-ink-soft text-sm">
 									{listing.title}
@@ -308,7 +313,9 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 												className="text-sm"
 											>
 												<CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
-												{t("markAsSold")}
+												{tKind(
+													`markClosed.${listingKindRules(listing.kind).closedAs}`,
+												)}
 											</DropdownMenuItem>
 										)}
 										{listing.status === "expired" && (

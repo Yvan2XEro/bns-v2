@@ -6076,5 +6076,69 @@
 			"close": "Fermer le panneau",
 			"help": "Afficher les raccourcis"
 		}
+	},
+	"ListingKind": {
+		"action": {
+			"contact": "Contacter le vendeur",
+			"visit": "Demander une visite",
+			"apply": "Postuler",
+			"quote": "Demander un devis",
+			"order": "Commander"
+		},
+		"unit": {
+			"month": "/ mois",
+			"week": "/ semaine",
+			"day": "/ jour",
+			"night": "/ nuit",
+			"hour": "/ heure"
+		},
+		"unitOption": {
+			"total": "Prix unique",
+			"month": "Par mois",
+			"week": "Par semaine",
+			"day": "Par jour",
+			"night": "Par nuit",
+			"hour": "Par heure"
+		},
+		"unitLabel": "Le prix couvre",
+		"missingPrice": {
+			"onRequest": "Prix sur demande",
+			"onQuote": "Sur devis",
+			"salaryNotStated": "Salaire non communiqué"
+		},
+		"closedAs": {
+			"sold": "Vendu",
+			"let": "Loué",
+			"filled": "Poste pourvu",
+			"done": "Terminée"
+		},
+		"markClosed": {
+			"sold": "Marquer comme vendu",
+			"let": "Marquer comme loué",
+			"filled": "Marquer comme pourvu",
+			"done": "Marquer comme terminée"
+		},
+		"draft": {
+			"visit": "Bonjour, je suis intéressé(e) par « {title} ». Est-ce toujours disponible, et quand pourrais-je visiter ?",
+			"apply": "Bonjour, je souhaite postuler à « {title} ». Quelques mots sur moi : ",
+			"quote": "Bonjour, je souhaiterais un devis pour « {title} ». Voici mon besoin : "
+		},
+		"safety": {
+			"rental": {
+				"tip1": "Visitez le logement avant de payer quoi que ce soit",
+				"tip2": "N'envoyez jamais de caution ni de frais d'agence à l'avance",
+				"tip3": "Signez un bail écrit et gardez un reçu de chaque paiement"
+			},
+			"job": {
+				"tip1": "Un vrai employeur ne vous demande jamais de payer pour postuler ou pour une formation",
+				"tip2": "Gardez vos pièces d'identité pour l'étape d'embauche",
+				"tip3": "Rencontrez l'employeur dans ses locaux ou dans un lieu public"
+			},
+			"service": {
+				"tip1": "Mettez-vous d'accord sur le prix et le travail avant de commencer",
+				"tip2": "Demandez des références ou des exemples de travaux",
+				"tip3": "Payez par étapes, jamais tout d'avance"
+			}
+		}
 	}
 }

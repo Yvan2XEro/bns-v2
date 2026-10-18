@@ -1,4 +1,6 @@
+import { getTranslations } from "next-intl/server";
 import { getBlockedUsers } from "~/lib/actions";
+import { isDraftAction } from "~/lib/listing-kind";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { ConversationWithDetails, Listing, Message, User } from "~/types";
 import { MessagesClient } from "./messages-client";
@@ -136,6 +138,14 @@ export default async function MessagesPage({
 	// Fetch the listing the user came from (if any) to show as context card
 	const contextListing = listingId ? await getListing(listingId) : null;
 
+	// A visit, an application or a quote opens on a drafted first message,
+	// only ever placed in the composer: the buyer edits and sends it.
+	const tKind = await getTranslations("ListingKind");
+	const initialDraft =
+		contextListing && isDraftAction(params.draft)
+			? tKind(`draft.${params.draft}`, { title: contextListing.title })
+			: "";
+
 	const chatUrl = process.env.CHAT_PUBLIC_URL || "http://localhost:4000";
 	const blockedUserIds = await getBlockedUsers();
 
@@ -148,6 +158,7 @@ export default async function MessagesPage({
 			initialMessages={initialMessages}
 			blockedUserIds={blockedUserIds}
 			contextListing={contextListing}
+			initialDraft={initialDraft}
 		/>
 	);
 }

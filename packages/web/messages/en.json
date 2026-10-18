@@ -6076,5 +6076,69 @@
 			"close": "Close the panel",
 			"help": "Show the shortcuts"
 		}
+	},
+	"ListingKind": {
+		"action": {
+			"contact": "Contact the seller",
+			"visit": "Request a visit",
+			"apply": "Apply",
+			"quote": "Request a quote",
+			"order": "Order"
+		},
+		"unit": {
+			"month": "/ month",
+			"week": "/ week",
+			"day": "/ day",
+			"night": "/ night",
+			"hour": "/ hour"
+		},
+		"unitOption": {
+			"total": "One-off price",
+			"month": "Per month",
+			"week": "Per week",
+			"day": "Per day",
+			"night": "Per night",
+			"hour": "Per hour"
+		},
+		"unitLabel": "The price covers",
+		"missingPrice": {
+			"onRequest": "Price on request",
+			"onQuote": "On quote",
+			"salaryNotStated": "Salary not stated"
+		},
+		"closedAs": {
+			"sold": "Sold",
+			"let": "Let",
+			"filled": "Position filled",
+			"done": "Closed"
+		},
+		"markClosed": {
+			"sold": "Mark as sold",
+			"let": "Mark as let",
+			"filled": "Mark as filled",
+			"done": "Mark as closed"
+		},
+		"draft": {
+			"visit": "Hello, I am interested in “{title}”. Is it still available, and when could I visit?",
+			"apply": "Hello, I would like to apply for “{title}”. A few words about me: ",
+			"quote": "Hello, I would like a quote for “{title}”. Here is what I need: "
+		},
+		"safety": {
+			"rental": {
+				"tip1": "Visit the place before paying anything",
+				"tip2": "Never send a deposit or an agency fee in advance",
+				"tip3": "Sign a written lease and keep a receipt for every payment"
+			},
+			"job": {
+				"tip1": "A genuine employer never asks you to pay to apply or for training",
+				"tip2": "Keep your identity documents for the hiring stage",
+				"tip3": "Meet the employer at their premises or in a public place"
+			},
+			"service": {
+				"tip1": "Agree on the price and the scope before work starts",
+				"tip2": "Ask for references or examples of past work",
+				"tip3": "Pay in stages, never everything upfront"
+			}
+		}
 	}
 }

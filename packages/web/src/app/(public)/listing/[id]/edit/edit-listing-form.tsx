@@ -8,6 +8,10 @@ import { useEffect, useMemo, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { FieldIssueSummary } from "~/components/listing/field-issue-summary";
 import { ImagePicker } from "~/components/listing/image-picker";
+import {
+	PriceUnitSelect,
+	priceUnitToSend,
+} from "~/components/listing/price-unit-select";
 import { TagPicker } from "~/components/listing/tag-picker";
 import { LocationField } from "~/components/location/location-field";
 import { PublishInShopToggle } from "~/components/shop/publish-in-shop-toggle";
@@ -45,6 +49,11 @@ import {
 	responseIssues,
 	webListingIssues,
 } from "~/lib/listing-issues";
+import {
+	defaultPriceUnit,
+	listingKindRules,
+	type PriceUnit,
+} from "~/lib/listing-kind";
 import { listingShopId } from "~/lib/listing-shop";
 import { mediaUploadForm } from "~/lib/media-upload";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
@@ -68,6 +77,7 @@ export function EditListingForm({
 	const t = asFallbackTranslator(useTranslations("Listing"));
 	const tCommon = useTranslations("Common");
 	const tShop = useTranslations("Shop");
+	const tKind = useTranslations("ListingKind");
 	const tIssues = useTranslations("FormIssues");
 	const photoLimit = usePhotoLimit();
 	const router = useRouter();
@@ -171,6 +181,11 @@ export function EditListingForm({
 		price: listing.price != null ? String(listing.price) : "",
 		location: listing.location,
 	});
+	// An ad saved without a unit was a one-off price, and stays one until the
+	// seller says otherwise.
+	const [priceUnit, setPriceUnit] = useState<PriceUnit>(
+		listing.priceUnit ?? "total",
+	);
 
 	// An ad that was published before its category asked for a picture must stay
 	// editable, so the requirement only bites when there is a picture to lose.
@@ -252,6 +267,7 @@ export function EditListingForm({
 		setAttributeValues({});
 		setShowErrors(false);
 		const nextPreset = resolveFormPreset(category);
+		setPriceUnit(defaultPriceUnit(nextPreset.categoryType));
 		setFormData((prev) => ({
 			...prev,
 			// Drop values for fields this category does not show.
@@ -338,6 +354,8 @@ export function EditListingForm({
 			};
 			if (priceField.enabled && formData.price) {
 				updateData.price = Number(formData.price);
+				updateData.priceUnit =
+					priceUnitToSend(categoryPreset.categoryType, priceUnit) ?? null;
 			}
 
 			if (coordinates) {
@@ -480,6 +498,13 @@ export function EditListingForm({
 									required={priceField.required}
 								/>
 							</div>
+						)}
+						{priceField.enabled && (
+							<PriceUnitSelect
+								kind={categoryPreset.categoryType}
+								value={priceUnit}
+								onChange={setPriceUnit}
+							/>
 						)}
 						<div className="space-y-2">
 							<Label htmlFor="location">{t("localisation")}</Label>
@@ -635,7 +660,8 @@ export function EditListingForm({
 							{listing.status === "pending" && t("statusPending")}
 							{listing.status === "published" && t("statusPublished")}
 							{listing.status === "rejected" && t("statusRejected")}
-							{listing.status === "sold" && t("statusSold")}
+							{listing.status === "sold" &&
+								tKind(`closedAs.${listingKindRules(listing.kind).closedAs}`)}
 							{listing.status === "expired" && t("statusExpired")}
 							{listing.status === "deleted" && t("statusDeleted")}
 						</Badge>
