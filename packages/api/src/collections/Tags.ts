@@ -29,6 +29,10 @@ export const Tags: CollectionConfig = {
 					name: "name",
 					type: "text",
 					required: true,
+					// Shown to buyers and sellers in their language: switch the
+					// admin's locale to write the English. Missing English falls
+					// back to the French.
+					localized: true,
 					admin: { width: "50%" },
 				},
 				{

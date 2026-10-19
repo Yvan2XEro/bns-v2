@@ -1,6 +1,7 @@
 import type { Payload, PayloadRequest } from "payload";
 import type { Tag } from "../payload-types";
 import { relationId } from "./relationId";
+import { type ContentLocale, DEFAULT_CONTENT_LOCALE } from "./requestLocale";
 
 /** Same cap as the form preset's ancestor walk. */
 const MAX_DEPTH = 32;
@@ -34,11 +35,15 @@ export async function categoryChainIds(
 	return chain;
 }
 
-/** Every tag that applies to the category, sorted by name. */
+/**
+ * Every tag that applies to the category, sorted by name. `locale` picks the
+ * language the names come back in; without it, the request's (or French).
+ */
 export async function tagsForCategory(
 	payload: Payload,
 	categoryId: string,
 	req?: PayloadRequest,
+	locale?: ContentLocale,
 ): Promise<Tag[]> {
 	const chain = await categoryChainIds(payload, categoryId, req);
 	if (chain.length === 0) return [];
@@ -51,6 +56,7 @@ export async function tagsForCategory(
 		sort: "name",
 		overrideAccess: true,
 		...(req ? { req } : {}),
+		...(locale ? { locale, fallbackLocale: DEFAULT_CONTENT_LOCALE } : {}),
 	});
 	return result.docs;
 }

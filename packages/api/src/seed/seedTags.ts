@@ -1,7 +1,8 @@
 import type { Payload } from "payload";
 
 interface TagData {
-	name: string;
+	/** Both languages; French is the default locale English falls back to. */
+	name: { fr: string; en: string };
 	slug: string;
 	emoji: string;
 	/**
@@ -11,10 +12,10 @@ interface TagData {
 	categories: string[];
 }
 
-const TAG_DEFINITIONS: TagData[] = [
+export const TAG_DEFINITIONS: TagData[] = [
 	// ── Transaction ────────────────────────────────────────────
 	{
-		name: "Négociable",
+		name: { fr: "Négociable", en: "Negotiable" },
 		slug: "negotiable",
 		categories: [
 			"vehicles",
@@ -29,7 +30,7 @@ const TAG_DEFINITIONS: TagData[] = [
 		emoji: "🤝",
 	},
 	{
-		name: "Échange possible",
+		name: { fr: "Échange possible", en: "Swap possible" },
 		slug: "swap",
 		categories: [
 			"vehicles",
@@ -43,7 +44,7 @@ const TAG_DEFINITIONS: TagData[] = [
 		emoji: "🔄",
 	},
 	{
-		name: "Livraison disponible",
+		name: { fr: "Livraison disponible", en: "Delivery available" },
 		slug: "delivery",
 		categories: [
 			"electronics",
@@ -56,7 +57,7 @@ const TAG_DEFINITIONS: TagData[] = [
 		emoji: "🚚",
 	},
 	{
-		name: "Vente urgente",
+		name: { fr: "Vente urgente", en: "Urgent sale" },
 		slug: "urgent",
 		categories: [
 			"vehicles",
@@ -71,7 +72,7 @@ const TAG_DEFINITIONS: TagData[] = [
 		emoji: "⚡",
 	},
 	{
-		name: "Vendu en lot",
+		name: { fr: "Vendu en lot", en: "Sold as a bundle" },
 		slug: "bundle",
 		categories: [
 			"electronics",
@@ -85,13 +86,13 @@ const TAG_DEFINITIONS: TagData[] = [
 	},
 	// ── Confiance / Qualité ────────────────────────────────────
 	{
-		name: "Garantie incluse",
+		name: { fr: "Garantie incluse", en: "Warranty included" },
 		slug: "warranty",
 		categories: ["vehicles", "electronics", "appliances", "furniture"],
 		emoji: "✅",
 	},
 	{
-		name: "Facture disponible",
+		name: { fr: "Facture disponible", en: "Receipt available" },
 		slug: "receipt",
 		categories: [
 			"vehicles",
@@ -103,45 +104,45 @@ const TAG_DEFINITIONS: TagData[] = [
 		emoji: "🧾",
 	},
 	{
-		name: "Premier propriétaire",
+		name: { fr: "Premier propriétaire", en: "First owner" },
 		slug: "first-owner",
 		categories: ["vehicles", "electronics"],
 		emoji: "🔑",
 	},
 	{
-		name: "Neuf avec étiquette",
+		name: { fr: "Neuf avec étiquette", en: "New with tags" },
 		slug: "new-with-tags",
 		categories: ["fashion", "kids-baby"],
 		emoji: "🏷️",
 	},
 	// ── Logistique / Visite ────────────────────────────────────
 	{
-		name: "Démonstration possible",
+		name: { fr: "Démonstration possible", en: "Demo possible" },
 		slug: "demo",
 		categories: ["electronics", "appliances"],
 		emoji: "👁️",
 	},
 	{
-		name: "Visite possible",
+		name: { fr: "Visite possible", en: "Viewing possible" },
 		slug: "visit",
 		categories: ["real-estate", "vehicles"],
 		emoji: "🏠",
 	},
 	// ── Emploi ─────────────────────────────────────────────────
 	{
-		name: "Temps plein",
+		name: { fr: "Temps plein", en: "Full-time" },
 		slug: "full-time",
 		categories: ["job-offers"],
 		emoji: "⏰",
 	},
 	{
-		name: "Temps partiel",
+		name: { fr: "Temps partiel", en: "Part-time" },
 		slug: "part-time",
 		categories: ["job-offers"],
 		emoji: "🕐",
 	},
 	{
-		name: "Télétravail",
+		name: { fr: "Télétravail", en: "Remote work" },
 		slug: "remote",
 		categories: ["job-offers"],
 		emoji: "🌐",
@@ -193,9 +194,17 @@ export async function seedTags(payload: Payload): Promise<number> {
 			continue;
 		}
 
-		await payload.create({
+		const doc = await payload.create({
 			collection: "tags",
-			data: { ...tag, categories: scope },
+			locale: "fr",
+			data: { ...tag, name: tag.name.fr, categories: scope },
+			overrideAccess: true,
+		});
+		await payload.update({
+			collection: "tags",
+			id: doc.id,
+			locale: "en",
+			data: { name: tag.name.en },
 			overrideAccess: true,
 		});
 		created++;
