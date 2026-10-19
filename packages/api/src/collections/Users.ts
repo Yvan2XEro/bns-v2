@@ -4,6 +4,10 @@ import { anyone } from "@/access/anyone";
 import { isAdmin, suspensionSummary } from "../access/roles";
 import { selfOrStaffField, staffOnlyField } from "../access/staff";
 import type { AuthProvider } from "../auth/oauth/types";
+import {
+	DEFAULT_NOTIFICATION_LOCALE,
+	NOTIFICATION_LOCALES,
+} from "../contracts/notificationLocale";
 import { deleteUserRelatedData } from "../services/accountDeletion";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
@@ -366,6 +370,16 @@ export const Users: CollectionConfig = {
 		{
 			name: "bio",
 			type: "textarea",
+		},
+		{
+			// Notifications leave while the app is closed, so the language they
+			// are written in is kept on the account; each client sets it from
+			// its own interface language (contracts/notificationLocale.ts).
+			name: "language",
+			type: "select",
+			defaultValue: DEFAULT_NOTIFICATION_LOCALE,
+			options: NOTIFICATION_LOCALES.map((value) => ({ label: value, value })),
+			access: { read: selfOrStaffField },
 		},
 		{
 			type: "row",

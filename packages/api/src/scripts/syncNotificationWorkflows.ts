@@ -1,4 +1,9 @@
 import type * as components from "@novu/api/models/components";
+import {
+	localized,
+	localizedField,
+	NOTIFICATION_LOCALES,
+} from "../contracts/notificationLocale";
 import { fingerprintOf } from "../lib/deployTasks";
 import {
 	getNotificationProvider,
@@ -55,6 +60,10 @@ function preferences(
 	};
 }
 
+/**
+ * Every workflow also takes `locale`, which the API adds to each event from
+ * the recipient's account: the templates pick their wording from it.
+ */
 function objectSchema(
 	properties: Record<string, JsonSchema>,
 	required: string[],
@@ -62,7 +71,14 @@ function objectSchema(
 	return {
 		type: "object",
 		additionalProperties: false,
-		properties,
+		properties: {
+			...properties,
+			locale: {
+				type: "string",
+				enum: [...NOTIFICATION_LOCALES],
+				description: "The recipient's language",
+			},
+		},
 		required,
 	};
 }
@@ -218,18 +234,30 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Annonce publiee",
-					body: 'Votre annonce "{{payload.listingTitle}}" est maintenant en ligne.',
+					subject: localized({
+						fr: "Annonce publiée",
+						en: "Listing published",
+					}),
+					body: localized({
+						fr: "Votre annonce « {{payload.listingTitle}} » est maintenant en ligne.",
+						en: 'Your listing "{{payload.listingTitle}}" is now live.',
+					}),
 					redirect: redirect("/listing/{{payload.listingId}}"),
 					primaryAction: action(
-						"Voir l'annonce",
+						localized({ fr: "Voir l'annonce", en: "View listing" }),
 						"/listing/{{payload.listingId}}",
 					),
 					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Annonce publiee",
-					body: 'Votre annonce "{{payload.listingTitle}}" est maintenant en ligne.',
+					subject: localized({
+						fr: "Annonce publiée",
+						en: "Listing published",
+					}),
+					body: localized({
+						fr: "Votre annonce « {{payload.listingTitle}} » est maintenant en ligne.",
+						en: 'Your listing "{{payload.listingTitle}}" is now live.',
+					}),
 				}),
 			],
 		},
@@ -255,18 +283,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Annonce refusee",
-					body: 'Votre annonce "{{payload.listingTitle}}" a ete refusee. Raison : {{payload.reason}}',
+					subject: localized({ fr: "Annonce refusée", en: "Listing rejected" }),
+					body: localized({
+						fr: "Votre annonce « {{payload.listingTitle}} » a été refusée. Motif : {{payload.reason}}",
+						en: 'Your listing "{{payload.listingTitle}}" was rejected. Reason: {{payload.reason}}',
+					}),
 					redirect: redirect("/listing/{{payload.listingId}}/edit"),
 					primaryAction: action(
-						"Modifier l'annonce",
+						localized({ fr: "Modifier l'annonce", en: "Edit listing" }),
 						"/listing/{{payload.listingId}}/edit",
 					),
 					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Annonce refusee",
-					body: 'Votre annonce "{{payload.listingTitle}}" a ete refusee. Raison : {{payload.reason}}',
+					subject: localized({ fr: "Annonce refusée", en: "Listing rejected" }),
+					body: localized({
+						fr: "Votre annonce « {{payload.listingTitle}} » a été refusée. Motif : {{payload.reason}}",
+						en: 'Your listing "{{payload.listingTitle}}" was rejected. Reason: {{payload.reason}}',
+					}),
 				}),
 			],
 		},
@@ -293,14 +327,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Mise a jour de votre annonce",
-					body: 'Le statut de "{{payload.listingTitle}}" est passe a {{payload.newStatus}}.',
+					subject: localized({
+						fr: "Mise à jour de votre annonce",
+						en: "Your listing was updated",
+					}),
+					body: localized({
+						fr: "Le statut de « {{payload.listingTitle}} » est passé à {{payload.newStatus}}.",
+						en: 'The status of "{{payload.listingTitle}}" changed to {{payload.newStatus}}.',
+					}),
 					redirect: redirect("/listing/{{payload.listingId}}"),
 					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Mise a jour de votre annonce",
-					body: 'Le statut de "{{payload.listingTitle}}" est passe a {{payload.newStatus}}.',
+					subject: localized({
+						fr: "Mise à jour de votre annonce",
+						en: "Your listing was updated",
+					}),
+					body: localized({
+						fr: "Le statut de « {{payload.listingTitle}} » est passé à {{payload.newStatus}}.",
+						en: 'The status of "{{payload.listingTitle}}" changed to {{payload.newStatus}}.',
+					}),
 				}),
 			],
 		},
@@ -325,15 +371,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Annonce expiree",
-					body: 'Votre annonce "{{payload.listingTitle}}" a expire. Republiez-la pour continuer a vendre.',
+					subject: localized({ fr: "Annonce expirée", en: "Listing expired" }),
+					body: localized({
+						fr: "Votre annonce « {{payload.listingTitle}} » a expiré. Republiez-la pour continuer à vendre.",
+						en: 'Your listing "{{payload.listingTitle}}" has expired. Republish it to keep selling.',
+					}),
 					redirect: redirect("/listing/{{payload.listingId}}"),
-					primaryAction: action("Renouveler", "/listing/{{payload.listingId}}"),
+					primaryAction: action(
+						localized({ fr: "Renouveler", en: "Renew" }),
+						"/listing/{{payload.listingId}}",
+					),
 					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Annonce expiree",
-					body: 'Votre annonce "{{payload.listingTitle}}" a expire. Republiez-la pour continuer a vendre.',
+					subject: localized({ fr: "Annonce expirée", en: "Listing expired" }),
+					body: localized({
+						fr: "Votre annonce « {{payload.listingTitle}} » a expiré. Republiez-la pour continuer à vendre.",
+						en: 'Your listing "{{payload.listingTitle}}" has expired. Republish it to keep selling.',
+					}),
 				}),
 			],
 		},
@@ -358,18 +413,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Boost expire",
-					body: 'Le boost de "{{payload.listingTitle}}" a expire.',
+					subject: localized({ fr: "Boost terminé", en: "Boost ended" }),
+					body: localized({
+						fr: "Le boost de « {{payload.listingTitle}} » est terminé.",
+						en: 'The boost on "{{payload.listingTitle}}" has ended.',
+					}),
 					redirect: redirect("/listing/{{payload.listingId}}"),
 					primaryAction: action(
-						"Voir l'annonce",
+						localized({ fr: "Voir l'annonce", en: "View listing" }),
 						"/listing/{{payload.listingId}}",
 					),
 					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Boost expire",
-					body: 'Le boost de "{{payload.listingTitle}}" a expire.',
+					subject: localized({ fr: "Boost terminé", en: "Boost ended" }),
+					body: localized({
+						fr: "Le boost de « {{payload.listingTitle}} » est terminé.",
+						en: 'The boost on "{{payload.listingTitle}}" has ended.',
+					}),
 				}),
 			],
 		},
@@ -396,17 +457,23 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Message de {{payload.senderName}}",
+					subject: localized({
+						fr: "Message de {{payload.senderName}}",
+						en: "Message from {{payload.senderName}}",
+					}),
 					body: "{{payload.messagePreview}}",
 					redirect: redirect("/messages/{{payload.conversationId}}"),
 					primaryAction: action(
-						"Repondre",
+						localized({ fr: "Répondre", en: "Reply" }),
 						"/messages/{{payload.conversationId}}",
 					),
 					data: { conversationId: "{{payload.conversationId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Message de {{payload.senderName}}",
+					subject: localized({
+						fr: "Message de {{payload.senderName}}",
+						en: "Message from {{payload.senderName}}",
+					}),
 					body: "{{payload.messagePreview}}",
 				}),
 			],
@@ -433,12 +500,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Nouvel avis de {{payload.reviewerName}}",
-					body: "{{payload.reviewerName}} vous a laisse {{payload.rating}} etoile(s) {{payload.comment}}",
+					subject: localized({
+						fr: "Nouvel avis de {{payload.reviewerName}}",
+						en: "New review from {{payload.reviewerName}}",
+					}),
+					body: localized({
+						fr: "{{payload.reviewerName}} vous a laissé {{payload.rating}} étoile(s) {{payload.comment}}",
+						en: "{{payload.reviewerName}} gave you {{payload.rating}} star(s) {{payload.comment}}",
+					}),
 				}),
 				pushStep("Push", "push", {
-					subject: "Nouvel avis de {{payload.reviewerName}}",
-					body: "{{payload.reviewerName}} vous a laisse {{payload.rating}} etoile(s) {{payload.comment}}",
+					subject: localized({
+						fr: "Nouvel avis de {{payload.reviewerName}}",
+						en: "New review from {{payload.reviewerName}}",
+					}),
+					body: localized({
+						fr: "{{payload.reviewerName}} vous a laissé {{payload.rating}} étoile(s) {{payload.comment}}",
+						en: "{{payload.reviewerName}} gave you {{payload.rating}} star(s) {{payload.comment}}",
+					}),
 				}),
 			],
 		},
@@ -464,16 +543,29 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject:
-						'{{payload.matchCount}} nouvelle(s) annonce(s) pour "{{payload.searchName}}"',
-					body: 'De nouvelles annonces correspondent a votre alerte "{{payload.searchName}}".',
+					subject: localized({
+						fr: "{{payload.matchCount}} nouvelle(s) annonce(s) pour « {{payload.searchName}} »",
+						en: '{{payload.matchCount}} new listing(s) for "{{payload.searchName}}"',
+					}),
+					body: localized({
+						fr: "De nouvelles annonces correspondent à votre alerte « {{payload.searchName}} ».",
+						en: 'New listings match your alert "{{payload.searchName}}".',
+					}),
 					redirect: redirect("{{payload.searchUrl}}"),
-					primaryAction: action("Voir les annonces", "{{payload.searchUrl}}"),
+					primaryAction: action(
+						localized({ fr: "Voir les annonces", en: "View listings" }),
+						"{{payload.searchUrl}}",
+					),
 				}),
 				pushStep("Push", "push", {
-					subject:
-						'{{payload.matchCount}} nouvelle(s) annonce(s) pour "{{payload.searchName}}"',
-					body: 'De nouvelles annonces correspondent a votre alerte "{{payload.searchName}}".',
+					subject: localized({
+						fr: "{{payload.matchCount}} nouvelle(s) annonce(s) pour « {{payload.searchName}} »",
+						en: '{{payload.matchCount}} new listing(s) for "{{payload.searchName}}"',
+					}),
+					body: localized({
+						fr: "De nouvelles annonces correspondent à votre alerte « {{payload.searchName}} ».",
+						en: 'New listings match your alert "{{payload.searchName}}".',
+					}),
 				}),
 			],
 		},
@@ -504,8 +596,11 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ push: true }),
 			steps: [
 				pushStep("Push", "push", {
-					subject: "Compte verifie",
-					body: "Felicitations {{payload.name}} ! Votre compte est maintenant verifie.",
+					subject: localized({ fr: "Compte vérifié", en: "Account verified" }),
+					body: localized({
+						fr: "Félicitations {{payload.name}} ! Votre compte est maintenant vérifié.",
+						en: "Congratulations {{payload.name}}! Your account is now verified.",
+					}),
 				}),
 			],
 		},
@@ -567,19 +662,40 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Votre boutique est en ligne",
-					body: '"{{payload.shopName}}" est ouverte. Partagez {{payload.shopUrl}} sur WhatsApp et Facebook.',
+					subject: localized({
+						fr: "Votre boutique est en ligne",
+						en: "Your shop is live",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » est ouverte. Partagez {{payload.shopUrl}} sur WhatsApp et Facebook.",
+						en: '"{{payload.shopName}}" is open. Share {{payload.shopUrl}} on WhatsApp and Facebook.',
+					}),
 					redirect: redirect("/seller"),
-					primaryAction: action("Ouvrir ma boutique", "/seller"),
+					primaryAction: action(
+						localized({ fr: "Ouvrir ma boutique", en: "Open my shop" }),
+						"/seller",
+					),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Votre boutique est en ligne",
-					body: '"{{payload.shopName}}" est ouverte. Ajoutez votre premier produit.',
+					subject: localized({
+						fr: "Votre boutique est en ligne",
+						en: "Your shop is live",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » est ouverte. Ajoutez votre premier produit.",
+						en: '"{{payload.shopName}}" is open. Add your first product.',
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject: "Votre boutique {{payload.shopName}} est en ligne",
-					body: "Bienvenue ! Votre page publique : {{payload.shopUrl}}. Ajoutez vos produits et partagez le lien.",
+					subject: localized({
+						fr: "Votre boutique {{payload.shopName}} est en ligne",
+						en: "Your shop {{payload.shopName}} is live",
+					}),
+					body: localized({
+						fr: "Bienvenue ! Votre page publique : {{payload.shopUrl}}. Ajoutez vos produits et partagez le lien.",
+						en: "Welcome! Your public page: {{payload.shopUrl}}. Add your products and share the link.",
+					}),
 				}),
 			],
 		},
@@ -606,18 +722,36 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Boutique suspendue",
-					body: '"{{payload.shopName}}" est suspendue ({{payload.reason}}). Vos produits ne sont plus visibles.',
+					subject: localized({
+						fr: "Boutique suspendue",
+						en: "Shop suspended",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » est suspendue ({{payload.reason}}). Vos produits ne sont plus visibles.",
+						en: '"{{payload.shopName}}" is suspended ({{payload.reason}}). Your products are no longer visible.',
+					}),
 					redirect: redirect("/seller"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Boutique suspendue",
-					body: '"{{payload.shopName}}" est suspendue par la moderation.',
+					subject: localized({
+						fr: "Boutique suspendue",
+						en: "Shop suspended",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » est suspendue par la modération.",
+						en: '"{{payload.shopName}}" was suspended by moderation.',
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject: "Votre boutique {{payload.shopName}} est suspendue",
-					body: "Motif : {{payload.reason}}. Fin prevue : {{payload.until}}. Contactez le support pour toute question.",
+					subject: localized({
+						fr: "Votre boutique {{payload.shopName}} est suspendue",
+						en: "Your shop {{payload.shopName}} is suspended",
+					}),
+					body: localized({
+						fr: "Motif : {{payload.reason}}. Fin prévue : {{payload.until}}. Contactez le support pour toute question.",
+						en: "Reason: {{payload.reason}}. Planned end: {{payload.until}}. Contact support with any question.",
+					}),
 				}),
 			],
 		},
@@ -642,14 +776,20 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Boutique retablie",
-					body: '"{{payload.shopName}}" est de nouveau en ligne.',
+					subject: localized({ fr: "Boutique rétablie", en: "Shop restored" }),
+					body: localized({
+						fr: "« {{payload.shopName}} » est de nouveau en ligne.",
+						en: '"{{payload.shopName}}" is live again.',
+					}),
 					redirect: redirect("/seller"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Boutique retablie",
-					body: '"{{payload.shopName}}" est de nouveau en ligne.',
+					subject: localized({ fr: "Boutique rétablie", en: "Shop restored" }),
+					body: localized({
+						fr: "« {{payload.shopName}} » est de nouveau en ligne.",
+						en: '"{{payload.shopName}}" is live again.',
+					}),
 				}),
 			],
 		},
@@ -680,18 +820,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Stock faible",
-					body: '"{{payload.productTitle}}" {{payload.variantLabel}} : plus que {{payload.available}} en stock.',
+					subject: localized({ fr: "Stock faible", en: "Low stock" }),
+					body: localized({
+						fr: "« {{payload.productTitle}} » {{payload.variantLabel}} : plus que {{payload.available}} en stock.",
+						en: '"{{payload.productTitle}}" {{payload.variantLabel}}: only {{payload.available}} left in stock.',
+					}),
 					redirect: redirect("/seller/catalogue/{{payload.productId}}"),
 					primaryAction: action(
-						"Reapprovisionner",
+						localized({ fr: "Réapprovisionner", en: "Restock" }),
 						"/seller/catalogue/{{payload.productId}}",
 					),
 					data: { productId: "{{payload.productId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Stock faible",
-					body: '"{{payload.productTitle}}" : plus que {{payload.available}} en stock.',
+					subject: localized({ fr: "Stock faible", en: "Low stock" }),
+					body: localized({
+						fr: "« {{payload.productTitle}} » : plus que {{payload.available}} en stock.",
+						en: '"{{payload.productTitle}}": only {{payload.available}} left in stock.',
+					}),
 				}),
 			],
 		},
@@ -718,22 +864,40 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject:
-						"Informations complementaires requises / Additional information required",
-					body: '"{{payload.shopName}}" : {{payload.message}}',
+					subject: localized({
+						fr: "Informations complémentaires requises",
+						en: "Additional information required",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » : {{payload.message}}",
+						en: '"{{payload.shopName}}": {{payload.message}}',
+					}),
 					redirect: redirect("/seller/verification"),
-					primaryAction: action("Repondre / Respond", "/seller/verification"),
+					primaryAction: action(
+						localized({ fr: "Répondre", en: "Respond" }),
+						"/seller/verification",
+					),
 					data: { shopName: "{{payload.shopName}}" },
 				}),
 				pushStep("Push", "push", {
-					subject:
-						"Informations complementaires requises / Additional information required",
-					body: '"{{payload.shopName}}" : {{payload.message}}',
+					subject: localized({
+						fr: "Informations complémentaires requises",
+						en: "Additional information required",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » : {{payload.message}}",
+						en: '"{{payload.shopName}}": {{payload.message}}',
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject:
-						"Verification de {{payload.shopName}} : informations requises",
-					body: "Un modérateur a besoin d'informations supplémentaires pour continuer la vérification de {{payload.shopName}}. / A reviewer needs more information to continue verifying {{payload.shopName}}.<br/><br/>{{payload.message}}",
+					subject: localized({
+						fr: "Vérification de {{payload.shopName}} : informations requises",
+						en: "{{payload.shopName}} verification: information required",
+					}),
+					body: localized({
+						fr: "Un modérateur a besoin d'informations supplémentaires pour continuer la vérification de {{payload.shopName}}.<br/><br/>{{payload.message}}",
+						en: "A reviewer needs more information to continue verifying {{payload.shopName}}.<br/><br/>{{payload.message}}",
+					}),
 				}),
 			],
 		},
@@ -761,19 +925,40 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Verification approuvee / Verification approved",
-					body: '"{{payload.shopName}}" a atteint le niveau {{payload.level}}. Debloque : {{payload.unlocks}}.',
+					subject: localized({
+						fr: "Vérification approuvée",
+						en: "Verification approved",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » a atteint le niveau {{payload.level}}. Débloqué : {{payload.unlocks}}.",
+						en: '"{{payload.shopName}}" reached level {{payload.level}}. Unlocked: {{payload.unlocks}}.',
+					}),
 					redirect: redirect("/seller/verification"),
-					primaryAction: action("Voir / View", "/seller/verification"),
+					primaryAction: action(
+						localized({ fr: "Voir", en: "View" }),
+						"/seller/verification",
+					),
 					data: { shopName: "{{payload.shopName}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Verification approuvee / Verification approved",
-					body: '"{{payload.shopName}}" a atteint le niveau {{payload.level}}.',
+					subject: localized({
+						fr: "Vérification approuvée",
+						en: "Verification approved",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » a atteint le niveau {{payload.level}}.",
+						en: '"{{payload.shopName}}" reached level {{payload.level}}.',
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject: "{{payload.shopName}} : verification approuvee",
-					body: "Felicitations, {{payload.shopName}} a atteint le niveau {{payload.level}} et debloque : {{payload.unlocks}}. / Congratulations, {{payload.shopName}} has reached level {{payload.level}} and unlocked: {{payload.unlocks}}.",
+					subject: localized({
+						fr: "{{payload.shopName}} : vérification approuvée",
+						en: "{{payload.shopName}}: verification approved",
+					}),
+					body: localized({
+						fr: "Félicitations, {{payload.shopName}} a atteint le niveau {{payload.level}} et débloque : {{payload.unlocks}}.",
+						en: "Congratulations, {{payload.shopName}} has reached level {{payload.level}} and unlocked: {{payload.unlocks}}.",
+					}),
 				}),
 			],
 		},
@@ -802,22 +987,40 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Verification refusee / Verification rejected",
-					body: '"{{payload.shopName}}" : {{payload.sellerMessage}}',
+					subject: localized({
+						fr: "Vérification refusée",
+						en: "Verification rejected",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » : {{payload.sellerMessage}}",
+						en: '"{{payload.shopName}}": {{payload.sellerMessage}}',
+					}),
 					redirect: redirect("/seller/verification"),
 					primaryAction: action(
-						"Voir les details / View details",
+						localized({ fr: "Voir les détails", en: "View details" }),
 						"/seller/verification",
 					),
 					data: { shopName: "{{payload.shopName}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Verification refusee / Verification rejected",
-					body: '"{{payload.shopName}}" : {{payload.sellerMessage}}',
+					subject: localized({
+						fr: "Vérification refusée",
+						en: "Verification rejected",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » : {{payload.sellerMessage}}",
+						en: '"{{payload.shopName}}": {{payload.sellerMessage}}',
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject: "{{payload.shopName}} : verification refusee",
-					body: "Motif : {{payload.sellerMessage}}. Nouvelle demande possible a partir du {{payload.cooldownUntil}}. / Reason: {{payload.sellerMessage}}. A new request is allowed starting {{payload.cooldownUntil}}.",
+					subject: localized({
+						fr: "{{payload.shopName}} : vérification refusée",
+						en: "{{payload.shopName}}: verification rejected",
+					}),
+					body: localized({
+						fr: "Motif : {{payload.sellerMessage}}. Nouvelle demande possible à partir du {{payload.cooldownUntil}}.",
+						en: "Reason: {{payload.sellerMessage}}. A new request is allowed starting {{payload.cooldownUntil}}.",
+					}),
 				}),
 			],
 		},
@@ -842,18 +1045,36 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Verification revoquee / Verification revoked",
-					body: '"{{payload.shopName}}" a perdu sa verification ({{payload.reasonCode}}).',
+					subject: localized({
+						fr: "Vérification révoquée",
+						en: "Verification revoked",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » a perdu sa vérification ({{payload.reasonCode}}).",
+						en: '"{{payload.shopName}}" lost its verification ({{payload.reasonCode}}).',
+					}),
 					redirect: redirect("/seller/verification"),
 					data: { shopName: "{{payload.shopName}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Verification revoquee / Verification revoked",
-					body: '"{{payload.shopName}}" a perdu sa verification ({{payload.reasonCode}}).',
+					subject: localized({
+						fr: "Vérification révoquée",
+						en: "Verification revoked",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » a perdu sa vérification ({{payload.reasonCode}}).",
+						en: '"{{payload.shopName}}" lost its verification ({{payload.reasonCode}}).',
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject: "{{payload.shopName}} : verification revoquee",
-					body: "Votre verification a ete revoquee. Motif : {{payload.reasonCode}}. / Your verification has been revoked. Reason: {{payload.reasonCode}}.",
+					subject: localized({
+						fr: "{{payload.shopName}} : vérification révoquée",
+						en: "{{payload.shopName}}: verification revoked",
+					}),
+					body: localized({
+						fr: "Votre vérification a été révoquée. Motif : {{payload.reasonCode}}.",
+						en: "Your verification has been revoked. Reason: {{payload.reasonCode}}.",
+					}),
 				}),
 			],
 		},
@@ -879,19 +1100,40 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Verification bientot expiree / Verification expiring soon",
-					body: '"{{payload.shopName}}" : {{payload.daysUntil}} jour(s) avant expiration.',
+					subject: localized({
+						fr: "Vérification bientôt expirée",
+						en: "Verification expiring soon",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » : {{payload.daysUntil}} jour(s) avant expiration.",
+						en: '"{{payload.shopName}}": {{payload.daysUntil}} day(s) before it expires.',
+					}),
 					redirect: redirect("/seller/verification"),
-					primaryAction: action("Renouveler / Renew", "/seller/verification"),
+					primaryAction: action(
+						localized({ fr: "Renouveler", en: "Renew" }),
+						"/seller/verification",
+					),
 					data: { shopName: "{{payload.shopName}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Verification bientot expiree / Verification expiring soon",
-					body: '"{{payload.shopName}}" : {{payload.daysUntil}} jour(s) avant expiration.',
+					subject: localized({
+						fr: "Vérification bientôt expirée",
+						en: "Verification expiring soon",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » : {{payload.daysUntil}} jour(s) avant expiration.",
+						en: '"{{payload.shopName}}": {{payload.daysUntil}} day(s) before it expires.',
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject: "{{payload.shopName}} : verification bientot expiree",
-					body: "La verification de {{payload.shopName}} expire dans {{payload.daysUntil}} jour(s). / {{payload.shopName}}'s verification expires in {{payload.daysUntil}} day(s).",
+					subject: localized({
+						fr: "{{payload.shopName}} : vérification bientôt expirée",
+						en: "{{payload.shopName}}: verification expiring soon",
+					}),
+					body: localized({
+						fr: "La vérification de {{payload.shopName}} expire dans {{payload.daysUntil}} jour(s).",
+						en: "{{payload.shopName}}'s verification expires in {{payload.daysUntil}} day(s).",
+					}),
 				}),
 			],
 		},
@@ -919,20 +1161,40 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ email: true, inApp: true, push: true }),
 			steps: [
 				emailStep("Email", "email", {
-					subject:
-						"{{payload.inviterName}} vous invite a rejoindre {{payload.shopName}} / {{payload.inviterName}} invites you to join {{payload.shopName}}",
-					body: '<p>{{payload.inviterName}} vous invite a rejoindre l\'equipe de {{payload.shopName}} sur BuyNSellem comme {{payload.role}}.</p><p><a href="{{payload.inviteUrl}}">Rejoindre {{payload.shopName}}</a></p><p>Ce lien expire dans 7 jours.</p><hr/><p>{{payload.inviterName}} invites you to join {{payload.shopName}}\'s team on BuyNSellem as {{payload.role}}.</p><p><a href="{{payload.inviteUrl}}">Join {{payload.shopName}}</a></p><p>This link expires in 7 days.</p>',
+					subject: localized({
+						fr: "{{payload.inviterName}} vous invite à rejoindre {{payload.shopName}}",
+						en: "{{payload.inviterName}} invites you to join {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: '<p>{{payload.inviterName}} vous invite à rejoindre l\'équipe de {{payload.shopName}} sur BuyNSellem comme {{payload.role}}.</p><p><a href="{{payload.inviteUrl}}">Rejoindre {{payload.shopName}}</a></p><p>Ce lien expire dans 7 jours.</p>',
+						en: '<p>{{payload.inviterName}} invites you to join {{payload.shopName}}\'s team on BuyNSellem as {{payload.role}}.</p><p><a href="{{payload.inviteUrl}}">Join {{payload.shopName}}</a></p><p>This link expires in 7 days.</p>',
+					}),
 				}),
 				inAppStep("In-App", "in-app", {
-					subject: "Invitation a rejoindre {{payload.shopName}}",
-					body: "{{payload.inviterName}} vous invite comme {{payload.role}}.",
+					subject: localized({
+						fr: "Invitation à rejoindre {{payload.shopName}}",
+						en: "Invitation to join {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: "{{payload.inviterName}} vous invite comme {{payload.role}}.",
+						en: "{{payload.inviterName}} invites you as {{payload.role}}.",
+					}),
 					redirect: redirect("{{payload.inviteUrl}}"),
-					primaryAction: action("Voir l'invitation", "{{payload.inviteUrl}}"),
+					primaryAction: action(
+						localized({ fr: "Voir l'invitation", en: "View invitation" }),
+						"{{payload.inviteUrl}}",
+					),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Invitation a rejoindre {{payload.shopName}}",
-					body: "{{payload.inviterName}} vous invite comme {{payload.role}}.",
+					subject: localized({
+						fr: "Invitation à rejoindre {{payload.shopName}}",
+						en: "Invitation to join {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: "{{payload.inviterName}} vous invite comme {{payload.role}}.",
+						en: "{{payload.inviterName}} invites you as {{payload.role}}.",
+					}),
 				}),
 			],
 		},
@@ -959,14 +1221,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "{{payload.memberName}} a rejoint {{payload.shopName}}",
-					body: "{{payload.memberName}} a accepte l'invitation comme {{payload.role}}.",
+					subject: localized({
+						fr: "{{payload.memberName}} a rejoint {{payload.shopName}}",
+						en: "{{payload.memberName}} joined {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: "{{payload.memberName}} a accepté l'invitation comme {{payload.role}}.",
+						en: "{{payload.memberName}} accepted the invitation as {{payload.role}}.",
+					}),
 					redirect: redirect("/seller/team"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "{{payload.memberName}} a rejoint {{payload.shopName}}",
-					body: "{{payload.memberName}} a accepte l'invitation comme {{payload.role}}.",
+					subject: localized({
+						fr: "{{payload.memberName}} a rejoint {{payload.shopName}}",
+						en: "{{payload.memberName}} joined {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: "{{payload.memberName}} a accepté l'invitation comme {{payload.role}}.",
+						en: "{{payload.memberName}} accepted the invitation as {{payload.role}}.",
+					}),
 				}),
 			],
 		},
@@ -992,8 +1266,14 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Invitation refusee",
-					body: "{{payload.maskedTarget}} a refuse de rejoindre {{payload.shopName}}.",
+					subject: localized({
+						fr: "Invitation refusée",
+						en: "Invitation declined",
+					}),
+					body: localized({
+						fr: "{{payload.maskedTarget}} a refusé de rejoindre {{payload.shopName}}.",
+						en: "{{payload.maskedTarget}} declined to join {{payload.shopName}}.",
+					}),
 					redirect: redirect("/seller/team"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
@@ -1020,13 +1300,25 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Retire de {{payload.shopName}}",
-					body: "Vous n'etes plus membre de l'equipe de {{payload.shopName}}.",
+					subject: localized({
+						fr: "Retiré de {{payload.shopName}}",
+						en: "Removed from {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: "Vous n'êtes plus membre de l'équipe de {{payload.shopName}}.",
+						en: "You are no longer a member of {{payload.shopName}}'s team.",
+					}),
 					redirect: redirect("/account"),
 				}),
 				pushStep("Push", "push", {
-					subject: "Retire de {{payload.shopName}}",
-					body: "Vous n'etes plus membre de l'equipe de {{payload.shopName}}.",
+					subject: localized({
+						fr: "Retiré de {{payload.shopName}}",
+						en: "Removed from {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: "Vous n'êtes plus membre de l'équipe de {{payload.shopName}}.",
+						en: "You are no longer a member of {{payload.shopName}}'s team.",
+					}),
 				}),
 			],
 		},
@@ -1052,14 +1344,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Nouveau role chez {{payload.shopName}}",
-					body: "Vous etes maintenant {{payload.role}} chez {{payload.shopName}}.",
+					subject: localized({
+						fr: "Nouveau rôle chez {{payload.shopName}}",
+						en: "New role at {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: "Vous êtes maintenant {{payload.role}} chez {{payload.shopName}}.",
+						en: "You are now {{payload.role}} at {{payload.shopName}}.",
+					}),
 					redirect: redirect("/seller/team"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Nouveau role chez {{payload.shopName}}",
-					body: "Vous etes maintenant {{payload.role}} chez {{payload.shopName}}.",
+					subject: localized({
+						fr: "Nouveau rôle chez {{payload.shopName}}",
+						en: "New role at {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: "Vous êtes maintenant {{payload.role}} chez {{payload.shopName}}.",
+						en: "You are now {{payload.role}} at {{payload.shopName}}.",
+					}),
 				}),
 			],
 		},
@@ -1088,18 +1392,30 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ email: true, inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Equipe suspendue",
-					body: '"{{payload.shopName}}" est suspendue : l\'equipe ne peut plus y acceder.',
+					subject: localized({ fr: "Équipe suspendue", en: "Team suspended" }),
+					body: localized({
+						fr: "« {{payload.shopName}} » est suspendue : l'équipe ne peut plus y accéder.",
+						en: '"{{payload.shopName}}" is suspended: the team can no longer access it.',
+					}),
 					redirect: redirect("/seller/team"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Equipe suspendue",
-					body: '"{{payload.shopName}}" est suspendue : l\'equipe ne peut plus y acceder.',
+					subject: localized({ fr: "Équipe suspendue", en: "Team suspended" }),
+					body: localized({
+						fr: "« {{payload.shopName}} » est suspendue : l'équipe ne peut plus y accéder.",
+						en: '"{{payload.shopName}}" is suspended: the team can no longer access it.',
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject: "{{payload.shopName}} : equipe suspendue",
-					body: '"{{payload.shopName}}" est suspendue. L\'equipe ne peut plus y acceder tant que la suspension dure.',
+					subject: localized({
+						fr: "{{payload.shopName}} : équipe suspendue",
+						en: "{{payload.shopName}}: team suspended",
+					}),
+					body: localized({
+						fr: "« {{payload.shopName}} » est suspendue. L'équipe ne peut plus y accéder tant que la suspension dure.",
+						en: '"{{payload.shopName}}" is suspended. The team cannot access it while the suspension lasts.',
+					}),
 				}),
 			],
 		},
@@ -1127,11 +1443,14 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Nouveau message de {{payload.buyerName}}",
+					subject: localized({
+						fr: "Nouveau message de {{payload.buyerName}}",
+						en: "New message from {{payload.buyerName}}",
+					}),
 					body: "{{payload.messagePreview}}",
 					redirect: redirect("/seller/messages/{{payload.conversationId}}"),
 					primaryAction: action(
-						"Repondre",
+						localized({ fr: "Répondre", en: "Reply" }),
 						"/seller/messages/{{payload.conversationId}}",
 					),
 					data: { conversationId: "{{payload.conversationId}}" },
@@ -1177,13 +1496,22 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Commande {{payload.orderNumber}}",
-					body: "Commande {{payload.orderNumber}} enregistree chez {{payload.shopName}} : {{payload.total}} FCFA. / Order {{payload.orderNumber}} recorded with {{payload.shopName}}: {{payload.total}} XAF.",
+					subject: localized({
+						fr: "Commande {{payload.orderNumber}}",
+						en: "Order {{payload.orderNumber}}",
+					}),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} enregistrée chez {{payload.shopName}} : {{payload.total}} FCFA.",
+						en: "Order {{payload.orderNumber}} recorded with {{payload.shopName}}: {{payload.total}} XAF.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Commande {{payload.orderNumber}}",
+					subject: localized({
+						fr: "Commande {{payload.orderNumber}}",
+						en: "Order {{payload.orderNumber}}",
+					}),
 					body: "{{payload.shopName}} - {{payload.total}} FCFA",
 				}),
 			],
@@ -1211,15 +1539,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Appel requis",
-					body: "Commande {{payload.orderNumber}} : confirmez par appel avant de l'accepter. / Order {{payload.orderNumber}}: confirm by phone call before accepting it.",
+					subject: localized({ fr: "Appel requis", en: "Call required" }),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} : confirmez par appel avant de l'accepter.",
+						en: "Order {{payload.orderNumber}}: confirm by phone call before accepting it.",
+					}),
 					redirect: redirect("/seller/orders/{{payload.orderId}}"),
-					primaryAction: action("Ouvrir", "/seller/orders/{{payload.orderId}}"),
+					primaryAction: action(
+						localized({ fr: "Ouvrir", en: "Open" }),
+						"/seller/orders/{{payload.orderId}}",
+					),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Appel requis",
-					body: "Commande {{payload.orderNumber}} : confirmez par appel.",
+					subject: localized({ fr: "Appel requis", en: "Call required" }),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} : confirmez par appel.",
+						en: "Order {{payload.orderNumber}}: confirm by phone call.",
+					}),
 				}),
 			],
 		},
@@ -1246,18 +1583,30 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Delai d'acceptation",
-					body: "Commande {{payload.orderNumber}} : il vous reste peu de temps pour l'accepter. / Order {{payload.orderNumber}}: you have little time left to accept it.",
+					subject: localized({
+						fr: "Délai d'acceptation",
+						en: "Acceptance deadline",
+					}),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} : il vous reste peu de temps pour l'accepter.",
+						en: "Order {{payload.orderNumber}}: you have little time left to accept it.",
+					}),
 					redirect: redirect("/seller/orders/{{payload.orderId}}"),
 					primaryAction: action(
-						"Accepter",
+						localized({ fr: "Accepter", en: "Accept" }),
 						"/seller/orders/{{payload.orderId}}",
 					),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Delai d'acceptation",
-					body: "Commande {{payload.orderNumber}} : acceptez-la avant {{payload.acceptBy}}.",
+					subject: localized({
+						fr: "Délai d'acceptation",
+						en: "Acceptance deadline",
+					}),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} : acceptez-la avant {{payload.acceptBy}}.",
+						en: "Order {{payload.orderNumber}}: accept it by {{payload.acceptBy}}.",
+					}),
 				}),
 			],
 		},
@@ -1284,14 +1633,20 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Commande acceptee",
-					body: "{{payload.shopName}} a accepte votre commande {{payload.orderNumber}}. / {{payload.shopName}} accepted your order {{payload.orderNumber}}.",
+					subject: localized({ fr: "Commande acceptée", en: "Order accepted" }),
+					body: localized({
+						fr: "{{payload.shopName}} a accepté votre commande {{payload.orderNumber}}.",
+						en: "{{payload.shopName}} accepted your order {{payload.orderNumber}}.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Commande acceptee",
-					body: "{{payload.shopName}} a accepte votre commande {{payload.orderNumber}}.",
+					subject: localized({ fr: "Commande acceptée", en: "Order accepted" }),
+					body: localized({
+						fr: "{{payload.shopName}} a accepté votre commande {{payload.orderNumber}}.",
+						en: "{{payload.shopName}} accepted your order {{payload.orderNumber}}.",
+					}),
 				}),
 			],
 		},
@@ -1320,14 +1675,20 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Commande expediee",
-					body: "Votre commande {{payload.orderNumber}} est en route. / Your order {{payload.orderNumber}} is on its way.",
+					subject: localized({ fr: "Commande expédiée", en: "Order shipped" }),
+					body: localized({
+						fr: "Votre commande {{payload.orderNumber}} est en route.",
+						en: "Your order {{payload.orderNumber}} is on its way.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Commande expediee",
-					body: "Votre commande {{payload.orderNumber}} est en route.",
+					subject: localized({ fr: "Commande expédiée", en: "Order shipped" }),
+					body: localized({
+						fr: "Votre commande {{payload.orderNumber}} est en route.",
+						en: "Your order {{payload.orderNumber}} is on its way.",
+					}),
 				}),
 			],
 		},
@@ -1355,15 +1716,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Commande livree",
-					body: "Votre commande {{payload.orderNumber}} a ete livree. / Your order {{payload.orderNumber}} has been delivered.",
+					subject: localized({ fr: "Commande livrée", en: "Order delivered" }),
+					body: localized({
+						fr: "Votre commande {{payload.orderNumber}} a été livrée.",
+						en: "Your order {{payload.orderNumber}} has been delivered.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
-					primaryAction: action("Noter", "{{payload.reviewUrl}}"),
+					primaryAction: action(
+						localized({ fr: "Noter", en: "Rate" }),
+						"{{payload.reviewUrl}}",
+					),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Commande livree",
-					body: "Votre commande {{payload.orderNumber}} a ete livree.",
+					subject: localized({ fr: "Commande livrée", en: "Order delivered" }),
+					body: localized({
+						fr: "Votre commande {{payload.orderNumber}} a été livrée.",
+						en: "Your order {{payload.orderNumber}} has been delivered.",
+					}),
 				}),
 			],
 		},
@@ -1390,14 +1760,20 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Commande annulee",
-					body: "Votre commande {{payload.orderNumber}} a ete annulee. / Your order {{payload.orderNumber}} has been cancelled.",
+					subject: localized({ fr: "Commande annulée", en: "Order cancelled" }),
+					body: localized({
+						fr: "Votre commande {{payload.orderNumber}} a été annulée.",
+						en: "Your order {{payload.orderNumber}} has been cancelled.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Commande annulee",
-					body: "Votre commande {{payload.orderNumber}} a ete annulee.",
+					subject: localized({ fr: "Commande annulée", en: "Order cancelled" }),
+					body: localized({
+						fr: "Votre commande {{payload.orderNumber}} a été annulée.",
+						en: "Your order {{payload.orderNumber}} has been cancelled.",
+					}),
 				}),
 			],
 		},
@@ -1424,14 +1800,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Livraison echouee",
-					body: "La livraison de la commande {{payload.orderNumber}} a echoue. / Delivery of order {{payload.orderNumber}} failed.",
+					subject: localized({
+						fr: "Livraison échouée",
+						en: "Delivery failed",
+					}),
+					body: localized({
+						fr: "La livraison de la commande {{payload.orderNumber}} a échoué.",
+						en: "Delivery of order {{payload.orderNumber}} failed.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Livraison echouee",
-					body: "La livraison de la commande {{payload.orderNumber}} a echoue.",
+					subject: localized({
+						fr: "Livraison échouée",
+						en: "Delivery failed",
+					}),
+					body: localized({
+						fr: "La livraison de la commande {{payload.orderNumber}} a échoué.",
+						en: "Delivery of order {{payload.orderNumber}} failed.",
+					}),
 				}),
 			],
 		},
@@ -1458,14 +1846,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Livraison declaree",
-					body: "La commande {{payload.orderNumber}} a ete signalee comme livree sans code verifie. / Order {{payload.orderNumber}} was reported delivered without a verified code.",
+					subject: localized({
+						fr: "Livraison déclarée",
+						en: "Delivery declared",
+					}),
+					body: localized({
+						fr: "La commande {{payload.orderNumber}} a été signalée comme livrée sans code vérifié.",
+						en: "Order {{payload.orderNumber}} was reported delivered without a verified code.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Livraison declaree",
-					body: "La commande {{payload.orderNumber}} a ete signalee comme livree sans code verifie.",
+					subject: localized({
+						fr: "Livraison déclarée",
+						en: "Delivery declared",
+					}),
+					body: localized({
+						fr: "La commande {{payload.orderNumber}} a été signalée comme livrée sans code vérifié.",
+						en: "Order {{payload.orderNumber}} was reported delivered without a verified code.",
+					}),
 				}),
 			],
 		},
@@ -1492,14 +1892,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Retractation demandee",
-					body: "Une demande de retractation a ete ouverte pour la commande {{payload.orderId}}. / A withdrawal request was opened for order {{payload.orderId}}.",
+					subject: localized({
+						fr: "Rétractation demandée",
+						en: "Withdrawal requested",
+					}),
+					body: localized({
+						fr: "Une demande de rétractation a été ouverte pour la commande {{payload.orderId}}.",
+						en: "A withdrawal request was opened for order {{payload.orderId}}.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Retractation demandee",
-					body: "Une demande de retractation a ete ouverte, dossier {{payload.caseNumber}}.",
+					subject: localized({
+						fr: "Rétractation demandée",
+						en: "Withdrawal requested",
+					}),
+					body: localized({
+						fr: "Une demande de rétractation a été ouverte, dossier {{payload.caseNumber}}.",
+						en: "A withdrawal request was opened, case {{payload.caseNumber}}.",
+					}),
 				}),
 			],
 		},
@@ -1525,15 +1937,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Donnez votre avis",
-					body: "Donnez votre avis sur {{payload.shopName}}. / Share your review of {{payload.shopName}}.",
+					subject: localized({ fr: "Donnez votre avis", en: "Leave a review" }),
+					body: localized({
+						fr: "Donnez votre avis sur {{payload.shopName}}.",
+						en: "Share your review of {{payload.shopName}}.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
-					primaryAction: action("Noter", "/purchases/{{payload.orderId}}"),
+					primaryAction: action(
+						localized({ fr: "Noter", en: "Rate" }),
+						"/purchases/{{payload.orderId}}",
+					),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Donnez votre avis",
-					body: "Donnez votre avis sur {{payload.shopName}}.",
+					subject: localized({ fr: "Donnez votre avis", en: "Leave a review" }),
+					body: localized({
+						fr: "Donnez votre avis sur {{payload.shopName}}.",
+						en: "Share your review of {{payload.shopName}}.",
+					}),
 				}),
 			],
 		},
@@ -1572,15 +1993,30 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Livraison en attente",
-					body: "Commande {{payload.orderNumber}} : expediee le {{payload.shippedAt}} et toujours en transit. Confirmez la remise ou signalez un echec. / Order {{payload.orderNumber}}: shipped on {{payload.shippedAt}} and still in transit. Confirm the handover or report a failure.",
+					subject: localized({
+						fr: "Livraison en attente",
+						en: "Delivery pending",
+					}),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} : expédiée le {{payload.shippedAt}} et toujours en transit. Confirmez la remise ou signalez un échec.",
+						en: "Order {{payload.orderNumber}}: shipped on {{payload.shippedAt}} and still in transit. Confirm the handover or report a failure.",
+					}),
 					redirect: redirect("/seller/orders/{{payload.orderId}}"),
-					primaryAction: action("Ouvrir", "/seller/orders/{{payload.orderId}}"),
+					primaryAction: action(
+						localized({ fr: "Ouvrir", en: "Open" }),
+						"/seller/orders/{{payload.orderId}}",
+					),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Livraison en attente",
-					body: "Commande {{payload.orderNumber}} : toujours en transit, a cloturer avant {{payload.staleAt}}.",
+					subject: localized({
+						fr: "Livraison en attente",
+						en: "Delivery pending",
+					}),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} : toujours en transit, à clôturer avant {{payload.staleAt}}.",
+						en: "Order {{payload.orderNumber}}: still in transit, to close by {{payload.staleAt}}.",
+					}),
 				}),
 			],
 		},
@@ -1608,23 +2044,40 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Facture de commission",
-					body: "Facture {{payload.invoiceNumber}} emise : {{payload.totalDue}} FCFA. / Commission invoice {{payload.invoiceNumber}} issued: {{payload.totalDue}} XAF.",
+					subject: localized({
+						fr: "Facture de commission",
+						en: "Commission invoice",
+					}),
+					body: localized({
+						fr: "Facture {{payload.invoiceNumber}} émise : {{payload.totalDue}} FCFA.",
+						en: "Commission invoice {{payload.invoiceNumber}} issued: {{payload.totalDue}} XAF.",
+					}),
 					redirect: redirect("/seller/billing/{{payload.invoiceId}}"),
 					primaryAction: action(
-						"Payer",
+						localized({ fr: "Payer", en: "Pay" }),
 						"/seller/billing/{{payload.invoiceId}}",
 					),
 					data: { invoiceId: "{{payload.invoiceId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Facture de commission",
-					body: "Facture {{payload.invoiceNumber}} : {{payload.totalDue}} FCFA a regler avant {{payload.dueAt}}.",
+					subject: localized({
+						fr: "Facture de commission",
+						en: "Commission invoice",
+					}),
+					body: localized({
+						fr: "Facture {{payload.invoiceNumber}} : {{payload.totalDue}} FCFA à régler avant {{payload.dueAt}}.",
+						en: "Invoice {{payload.invoiceNumber}}: {{payload.totalDue}} XAF due by {{payload.dueAt}}.",
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject:
-						"Facture de commission {{payload.invoiceNumber}} / Commission invoice {{payload.invoiceNumber}}",
-					body: "Facture {{payload.invoiceNumber}} : {{payload.totalDue}} FCFA, a regler avant {{payload.dueAt}}. / Invoice {{payload.invoiceNumber}}: {{payload.totalDue}} XAF, due {{payload.dueAt}}.",
+					subject: localized({
+						fr: "Facture de commission {{payload.invoiceNumber}}",
+						en: "Commission invoice {{payload.invoiceNumber}}",
+					}),
+					body: localized({
+						fr: "Facture {{payload.invoiceNumber}} : {{payload.totalDue}} FCFA, à régler avant {{payload.dueAt}}.",
+						en: "Invoice {{payload.invoiceNumber}}: {{payload.totalDue}} XAF, due {{payload.dueAt}}.",
+					}),
 				}),
 			],
 		},
@@ -1651,22 +2104,40 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Facture en retard",
-					body: "Facture {{payload.invoiceNumber}} : statut {{payload.stage}}. / Invoice {{payload.invoiceNumber}}: status {{payload.stage}}.",
+					subject: localized({
+						fr: "Facture en retard",
+						en: "Invoice overdue",
+					}),
+					body: localized({
+						fr: "Facture {{payload.invoiceNumber}} : statut {{payload.stage}}.",
+						en: "Invoice {{payload.invoiceNumber}}: status {{payload.stage}}.",
+					}),
 					redirect: redirect("/seller/billing/{{payload.invoiceId}}"),
 					primaryAction: action(
-						"Payer",
+						localized({ fr: "Payer", en: "Pay" }),
 						"/seller/billing/{{payload.invoiceId}}",
 					),
 					data: { invoiceId: "{{payload.invoiceId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Facture en retard",
-					body: "Facture {{payload.invoiceNumber}} : statut {{payload.stage}}.",
+					subject: localized({
+						fr: "Facture en retard",
+						en: "Invoice overdue",
+					}),
+					body: localized({
+						fr: "Facture {{payload.invoiceNumber}} : statut {{payload.stage}}.",
+						en: "Invoice {{payload.invoiceNumber}}: status {{payload.stage}}.",
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject: "Facture {{payload.invoiceNumber}} : {{payload.stage}}",
-					body: "Facture {{payload.invoiceNumber}}, statut {{payload.stage}}. / Invoice {{payload.invoiceNumber}}, status {{payload.stage}}.",
+					subject: localized({
+						fr: "Facture {{payload.invoiceNumber}} : {{payload.stage}}",
+						en: "Invoice {{payload.invoiceNumber}}: {{payload.stage}}",
+					}),
+					body: localized({
+						fr: "Facture {{payload.invoiceNumber}}, statut {{payload.stage}}.",
+						en: "Invoice {{payload.invoiceNumber}}, status {{payload.stage}}.",
+					}),
 				}),
 			],
 		},
@@ -1692,14 +2163,20 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Facture reglee",
-					body: "Facture {{payload.invoiceNumber}} reglee. / Invoice {{payload.invoiceNumber}} settled.",
+					subject: localized({ fr: "Facture réglée", en: "Invoice settled" }),
+					body: localized({
+						fr: "Facture {{payload.invoiceNumber}} réglée.",
+						en: "Invoice {{payload.invoiceNumber}} settled.",
+					}),
 					redirect: redirect("/seller/billing/{{payload.invoiceId}}"),
 					data: { invoiceId: "{{payload.invoiceId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Facture reglee",
-					body: "Facture {{payload.invoiceNumber}} reglee.",
+					subject: localized({ fr: "Facture réglée", en: "Invoice settled" }),
+					body: localized({
+						fr: "Facture {{payload.invoiceNumber}} réglée.",
+						en: "Invoice {{payload.invoiceNumber}} settled.",
+					}),
 				}),
 			],
 		},
@@ -1726,18 +2203,30 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Conversation assignee",
-					body: "{{payload.assignedByName}} vous a assigne une conversation sur {{payload.shopName}}.",
+					subject: localized({
+						fr: "Conversation assignée",
+						en: "Conversation assigned",
+					}),
+					body: localized({
+						fr: "{{payload.assignedByName}} vous a assigné une conversation sur {{payload.shopName}}.",
+						en: "{{payload.assignedByName}} assigned you a conversation at {{payload.shopName}}.",
+					}),
 					redirect: redirect("/seller/messages/{{payload.conversationId}}"),
 					primaryAction: action(
-						"Ouvrir",
+						localized({ fr: "Ouvrir", en: "Open" }),
 						"/seller/messages/{{payload.conversationId}}",
 					),
 					data: { conversationId: "{{payload.conversationId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Conversation assignee",
-					body: "{{payload.assignedByName}} vous a assigne une conversation sur {{payload.shopName}}.",
+					subject: localized({
+						fr: "Conversation assignée",
+						en: "Conversation assigned",
+					}),
+					body: localized({
+						fr: "{{payload.assignedByName}} vous a assigné une conversation sur {{payload.shopName}}.",
+						en: "{{payload.assignedByName}} assigned you a conversation at {{payload.shopName}}.",
+					}),
 				}),
 			],
 		},
@@ -1759,19 +2248,30 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Paiement reçu",
-					body: "Paiement de {{payload.amount}} {{payload.currency}} reçu pour la commande {{payload.orderNumber}}. La boutique doit maintenant l'accepter. / Payment of {{payload.amount}} {{payload.currency}} received for order {{payload.orderNumber}}. The shop now has to accept it.",
+					subject: localized({ fr: "Paiement reçu", en: "Payment received" }),
+					body: localized({
+						fr: "Paiement de {{payload.amount}} {{payload.currency}} reçu pour la commande {{payload.orderNumber}}. La boutique doit maintenant l'accepter.",
+						en: "Payment of {{payload.amount}} {{payload.currency}} received for order {{payload.orderNumber}}. The shop now has to accept it.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Paiement reçu",
-					body: "Commande {{payload.orderNumber}} payée : {{payload.amount}} {{payload.currency}}. / Order {{payload.orderNumber}} paid: {{payload.amount}} {{payload.currency}}.",
+					subject: localized({ fr: "Paiement reçu", en: "Payment received" }),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} payée : {{payload.amount}} {{payload.currency}}.",
+						en: "Order {{payload.orderNumber}} paid: {{payload.amount}} {{payload.currency}}.",
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject:
-						"Paiement reçu, commande {{payload.orderNumber}} / Payment received, order {{payload.orderNumber}}",
-					body: "Paiement de {{payload.amount}} {{payload.currency}} reçu pour la commande {{payload.orderNumber}}. La boutique doit maintenant l'accepter. / Payment of {{payload.amount}} {{payload.currency}} received for order {{payload.orderNumber}}. The shop now has to accept it.",
+					subject: localized({
+						fr: "Paiement reçu, commande {{payload.orderNumber}}",
+						en: "Payment received, order {{payload.orderNumber}}",
+					}),
+					body: localized({
+						fr: "Paiement de {{payload.amount}} {{payload.currency}} reçu pour la commande {{payload.orderNumber}}. La boutique doit maintenant l'accepter.",
+						en: "Payment of {{payload.amount}} {{payload.currency}} received for order {{payload.orderNumber}}. The shop now has to accept it.",
+					}),
 				}),
 			],
 		},
@@ -1800,14 +2300,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Paiement non abouti",
-					body: "Le paiement de la commande {{payload.orderNumber}} n'a pas abouti ; la commande est annulée. / Payment for order {{payload.orderNumber}} did not go through; the order is cancelled.",
+					subject: localized({
+						fr: "Paiement non abouti",
+						en: "Payment failed",
+					}),
+					body: localized({
+						fr: "Le paiement de la commande {{payload.orderNumber}} n'a pas abouti ; la commande est annulée.",
+						en: "Payment for order {{payload.orderNumber}} did not go through; the order is cancelled.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Paiement non abouti",
-					body: "Commande {{payload.orderNumber}} annulée : paiement non abouti. / Order {{payload.orderNumber}} cancelled: payment did not go through.",
+					subject: localized({
+						fr: "Paiement non abouti",
+						en: "Payment failed",
+					}),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} annulée : paiement non abouti.",
+						en: "Order {{payload.orderNumber}} cancelled: payment did not go through.",
+					}),
 				}),
 			],
 		},
@@ -1833,18 +2345,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Commande payée",
-					body: "Commande {{payload.orderNumber}} payée ({{payload.amount}} {{payload.currency}}). Acceptez-la avant le {{payload.acceptBy}}. / Order {{payload.orderNumber}} paid ({{payload.amount}} {{payload.currency}}). Accept it by {{payload.acceptBy}}.",
+					subject: localized({ fr: "Commande payée", en: "Order paid" }),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} payée ({{payload.amount}} {{payload.currency}}). Acceptez-la avant le {{payload.acceptBy}}.",
+						en: "Order {{payload.orderNumber}} paid ({{payload.amount}} {{payload.currency}}). Accept it by {{payload.acceptBy}}.",
+					}),
 					redirect: redirect("/seller/orders/{{payload.orderId}}"),
 					primaryAction: action(
-						"Accepter / Accept",
+						localized({ fr: "Accepter", en: "Accept" }),
 						"/seller/orders/{{payload.orderId}}",
 					),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Commande payée",
-					body: "Commande {{payload.orderNumber}} payée, à accepter avant le {{payload.acceptBy}}. / Order {{payload.orderNumber}} paid, accept by {{payload.acceptBy}}.",
+					subject: localized({ fr: "Commande payée", en: "Order paid" }),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} payée, à accepter avant le {{payload.acceptBy}}.",
+						en: "Order {{payload.orderNumber}} paid, accept by {{payload.acceptBy}}.",
+					}),
 				}),
 			],
 		},
@@ -1872,19 +2390,27 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Action requise",
-					body: "Le compte de paiement de {{payload.shopName}} demande une action ({{payload.requirementsCount}} élément(s) requis). Complétez-le pour continuer à recevoir des paiements protégés. / The payment account for {{payload.shopName}} needs attention ({{payload.requirementsCount}} item(s) required). Complete it to keep receiving protected payments.",
+					subject: localized({ fr: "Action requise", en: "Action needed" }),
+					body: localized({
+						fr: "Le compte de paiement de {{payload.shopName}} demande une action ({{payload.requirementsCount}} élément(s) requis). Complétez-le pour continuer à recevoir des paiements protégés.",
+						en: "The payment account for {{payload.shopName}} needs attention ({{payload.requirementsCount}} item(s) required). Complete it to keep receiving protected payments.",
+					}),
 					redirect: redirect("/seller/payments/setup"),
 					primaryAction: action(
-						"Compléter / Complete",
+						localized({ fr: "Compléter", en: "Complete" }),
 						"/seller/payments/setup",
 					),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				emailStep("Email", "email", {
-					subject:
-						"Action requise sur votre compte de paiement / Action needed on your payment account",
-					body: "Le compte de paiement de {{payload.shopName}} demande une action ({{payload.requirementsCount}} élément(s) requis). Complétez-le dans l'application pour continuer à recevoir des paiements protégés. / The payment account for {{payload.shopName}} needs attention ({{payload.requirementsCount}} item(s) required). Complete it in the app to keep receiving protected payments.",
+					subject: localized({
+						fr: "Action requise sur votre compte de paiement",
+						en: "Action needed on your payment account",
+					}),
+					body: localized({
+						fr: "Le compte de paiement de {{payload.shopName}} demande une action ({{payload.requirementsCount}} élément(s) requis). Complétez-le dans l'application pour continuer à recevoir des paiements protégés.",
+						en: "The payment account for {{payload.shopName}} needs attention ({{payload.requirementsCount}} item(s) required). Complete it in the app to keep receiving protected payments.",
+					}),
 				}),
 			],
 		},
@@ -1906,14 +2432,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Compte de versement actif",
-					body: "Votre compte de versement {{payload.accountNumberMasked}} est actif. / Your payout account {{payload.accountNumberMasked}} is active.",
+					subject: localized({
+						fr: "Compte de versement actif",
+						en: "Payout account active",
+					}),
+					body: localized({
+						fr: "Votre compte de versement {{payload.accountNumberMasked}} est actif.",
+						en: "Your payout account {{payload.accountNumberMasked}} is active.",
+					}),
 					redirect: redirect("/seller/payments/setup"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				emailStep("Email", "email", {
-					subject: "Compte de versement actif / Payout account active",
-					body: "Votre compte de versement {{payload.accountNumberMasked}} est actif : vos versements y seront envoyés. / Your payout account {{payload.accountNumberMasked}} is active: your payouts will be sent there.",
+					subject: localized({
+						fr: "Compte de versement actif",
+						en: "Payout account active",
+					}),
+					body: localized({
+						fr: "Votre compte de versement {{payload.accountNumberMasked}} est actif : vos versements y seront envoyés.",
+						en: "Your payout account {{payload.accountNumberMasked}} is active: your payouts will be sent there.",
+					}),
 				}),
 			],
 		},
@@ -1939,15 +2477,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Compte de versement non activé",
-					body: "Votre compte de versement {{payload.accountNumberMasked}} n'a pas pu être activé automatiquement : le nom ne correspond pas à votre identité vérifiée. Consultez le détail dans l'application. / Your payout account {{payload.accountNumberMasked}} could not be activated automatically: the name does not match your verified identity. See the details in the app.",
+					subject: localized({
+						fr: "Compte de versement non activé",
+						en: "Payout account not activated",
+					}),
+					body: localized({
+						fr: "Votre compte de versement {{payload.accountNumberMasked}} n'a pas pu être activé automatiquement : le nom ne correspond pas à votre identité vérifiée. Consultez le détail dans l'application.",
+						en: "Your payout account {{payload.accountNumberMasked}} could not be activated automatically: the name does not match your verified identity. See the details in the app.",
+					}),
 					redirect: redirect("/seller/payments/setup"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				emailStep("Email", "email", {
-					subject:
-						"Compte de versement non activé / Payout account not activated",
-					body: "Votre compte de versement {{payload.accountNumberMasked}} n'a pas pu être activé automatiquement : le nom ne correspond pas à votre identité vérifiée. Consultez le détail dans l'application. / Your payout account {{payload.accountNumberMasked}} could not be activated automatically: the name does not match your verified identity. See the details in the app.",
+					subject: localized({
+						fr: "Compte de versement non activé",
+						en: "Payout account not activated",
+					}),
+					body: localized({
+						fr: "Votre compte de versement {{payload.accountNumberMasked}} n'a pas pu être activé automatiquement : le nom ne correspond pas à votre identité vérifiée. Consultez le détail dans l'application.",
+						en: "Your payout account {{payload.accountNumberMasked}} could not be activated automatically: the name does not match your verified identity. See the details in the app.",
+					}),
 				}),
 			],
 		},
@@ -1976,12 +2525,24 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ push: true, email: true }),
 			steps: [
 				pushStep("Push", "push", {
-					subject: "Compte de versement modifié",
-					body: "Versements suspendus jusqu'au {{payload.holdUntil}}. Ce n'était pas vous ? Ouvrez cette notification. / Payouts held until {{payload.holdUntil}}. Not you? Open this notification.",
+					subject: localized({
+						fr: "Compte de versement modifié",
+						en: "Payout account changed",
+					}),
+					body: localized({
+						fr: "Versements suspendus jusqu'au {{payload.holdUntil}}. Ce n'était pas vous ? Ouvrez cette notification.",
+						en: "Payouts held until {{payload.holdUntil}}. Not you? Open this notification.",
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject: "Compte de versement modifié / Payout account changed",
-					body: "Le compte de versement de votre boutique a été remplacé par {{payload.accountNumberMasked}}. Les versements sont suspendus jusqu'au {{payload.holdUntil}}. Ce n'était pas vous ? {{payload.notMeUrl}} / Your shop's payout account was replaced by {{payload.accountNumberMasked}}. Payouts are held until {{payload.holdUntil}}. Not you? {{payload.notMeUrl}}",
+					subject: localized({
+						fr: "Compte de versement modifié",
+						en: "Payout account changed",
+					}),
+					body: localized({
+						fr: "Le compte de versement de votre boutique a été remplacé par {{payload.accountNumberMasked}}. Les versements sont suspendus jusqu'au {{payload.holdUntil}}. Ce n'était pas vous ? {{payload.notMeUrl}}",
+						en: "Your shop's payout account was replaced by {{payload.accountNumberMasked}}. Payouts are held until {{payload.holdUntil}}. Not you? {{payload.notMeUrl}}",
+					}),
 				}),
 			],
 		},
@@ -2009,14 +2570,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Versements suspendus",
-					body: "Les versements de {{payload.shopName}} sont suspendus (motif : {{payload.reasonCategory}}). / Payouts for {{payload.shopName}} are on hold (reason: {{payload.reasonCategory}}).",
+					subject: localized({
+						fr: "Versements suspendus",
+						en: "Payouts on hold",
+					}),
+					body: localized({
+						fr: "Les versements de {{payload.shopName}} sont suspendus (motif : {{payload.reasonCategory}}).",
+						en: "Payouts for {{payload.shopName}} are on hold (reason: {{payload.reasonCategory}}).",
+					}),
 					redirect: redirect("/seller/payments"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				emailStep("Email", "email", {
-					subject: "Versements suspendus / Payouts on hold",
-					body: "Les versements de {{payload.shopName}} sont suspendus (motif : {{payload.reasonCategory}}). Le détail est dans l'application. / Payouts for {{payload.shopName}} are on hold (reason: {{payload.reasonCategory}}). The details are in the app.",
+					subject: localized({
+						fr: "Versements suspendus",
+						en: "Payouts on hold",
+					}),
+					body: localized({
+						fr: "Les versements de {{payload.shopName}} sont suspendus (motif : {{payload.reasonCategory}}). Le détail est dans l'application.",
+						en: "Payouts for {{payload.shopName}} are on hold (reason: {{payload.reasonCategory}}). The details are in the app.",
+					}),
 				}),
 			],
 		},
@@ -2041,14 +2614,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Versements rétablis",
-					body: "La suspension des versements de {{payload.shopName}} est levée. / The payout hold on {{payload.shopName}} is lifted.",
+					subject: localized({
+						fr: "Versements rétablis",
+						en: "Payouts resumed",
+					}),
+					body: localized({
+						fr: "La suspension des versements de {{payload.shopName}} est levée.",
+						en: "The payout hold on {{payload.shopName}} is lifted.",
+					}),
 					redirect: redirect("/seller/payments"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				emailStep("Email", "email", {
-					subject: "Versements rétablis / Payouts resumed",
-					body: "La suspension des versements de {{payload.shopName}} est levée. / The payout hold on {{payload.shopName}} is lifted.",
+					subject: localized({
+						fr: "Versements rétablis",
+						en: "Payouts resumed",
+					}),
+					body: localized({
+						fr: "La suspension des versements de {{payload.shopName}} est levée.",
+						en: "The payout hold on {{payload.shopName}} is lifted.",
+					}),
 				}),
 			],
 		},
@@ -2067,14 +2652,20 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Versement envoyé",
-					body: "Versement de {{payload.amount}} {{payload.currency}} envoyé sur votre compte de versement. / Payout of {{payload.amount}} {{payload.currency}} sent to your payout account.",
+					subject: localized({ fr: "Versement envoyé", en: "Payout sent" }),
+					body: localized({
+						fr: "Versement de {{payload.amount}} {{payload.currency}} envoyé sur votre compte de versement.",
+						en: "Payout of {{payload.amount}} {{payload.currency}} sent to your payout account.",
+					}),
 					redirect: redirect("/seller/payments"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Versement envoyé",
-					body: "{{payload.amount}} {{payload.currency}} envoyés sur votre compte. / {{payload.amount}} {{payload.currency}} sent to your account.",
+					subject: localized({ fr: "Versement envoyé", en: "Payout sent" }),
+					body: localized({
+						fr: "{{payload.amount}} {{payload.currency}} envoyés sur votre compte.",
+						en: "{{payload.amount}} {{payload.currency}} sent to your account.",
+					}),
 				}),
 			],
 		},
@@ -2094,14 +2685,20 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Versement échoué",
-					body: "Le versement de {{payload.amount}} {{payload.currency}} a échoué ; il sera retenté au prochain cycle. Vérifiez votre compte de versement. / The payout of {{payload.amount}} {{payload.currency}} failed; it will be retried at the next run. Check your payout account.",
+					subject: localized({ fr: "Versement échoué", en: "Payout failed" }),
+					body: localized({
+						fr: "Le versement de {{payload.amount}} {{payload.currency}} a échoué ; il sera retenté au prochain cycle. Vérifiez votre compte de versement.",
+						en: "The payout of {{payload.amount}} {{payload.currency}} failed; it will be retried at the next run. Check your payout account.",
+					}),
 					redirect: redirect("/seller/payments"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Versement échoué",
-					body: "Versement de {{payload.amount}} {{payload.currency}} échoué, nouvel essai au prochain cycle. / Payout of {{payload.amount}} {{payload.currency}} failed, retried at the next run.",
+					subject: localized({ fr: "Versement échoué", en: "Payout failed" }),
+					body: localized({
+						fr: "Versement de {{payload.amount}} {{payload.currency}} échoué, nouvel essai au prochain cycle.",
+						en: "Payout of {{payload.amount}} {{payload.currency}} failed, retried at the next run.",
+					}),
 				}),
 			],
 		},
@@ -2128,19 +2725,36 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Remboursement lancé",
-					body: "Remboursement de {{payload.amount}} {{payload.currency}} lancé pour la commande {{payload.orderNumber}}. / Refund of {{payload.amount}} {{payload.currency}} started for order {{payload.orderNumber}}.",
+					subject: localized({
+						fr: "Remboursement lancé",
+						en: "Refund started",
+					}),
+					body: localized({
+						fr: "Remboursement de {{payload.amount}} {{payload.currency}} lancé pour la commande {{payload.orderNumber}}.",
+						en: "Refund of {{payload.amount}} {{payload.currency}} started for order {{payload.orderNumber}}.",
+					}),
 					redirect: redirect("{{payload.orderPath}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Remboursement lancé",
-					body: "Commande {{payload.orderNumber}} : remboursement de {{payload.amount}} {{payload.currency}} lancé. / Order {{payload.orderNumber}}: refund of {{payload.amount}} {{payload.currency}} started.",
+					subject: localized({
+						fr: "Remboursement lancé",
+						en: "Refund started",
+					}),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} : remboursement de {{payload.amount}} {{payload.currency}} lancé.",
+						en: "Order {{payload.orderNumber}}: refund of {{payload.amount}} {{payload.currency}} started.",
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject:
-						"Remboursement lancé, commande {{payload.orderNumber}} / Refund started, order {{payload.orderNumber}}",
-					body: "Remboursement de {{payload.amount}} {{payload.currency}} lancé pour la commande {{payload.orderNumber}}. / Refund of {{payload.amount}} {{payload.currency}} started for order {{payload.orderNumber}}.",
+					subject: localized({
+						fr: "Remboursement lancé, commande {{payload.orderNumber}}",
+						en: "Refund started, order {{payload.orderNumber}}",
+					}),
+					body: localized({
+						fr: "Remboursement de {{payload.amount}} {{payload.currency}} lancé pour la commande {{payload.orderNumber}}.",
+						en: "Refund of {{payload.amount}} {{payload.currency}} started for order {{payload.orderNumber}}.",
+					}),
 				}),
 			],
 		},
@@ -2159,19 +2773,36 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Remboursement effectué",
-					body: "Remboursement de {{payload.amount}} {{payload.currency}} effectué pour la commande {{payload.orderNumber}}. / Refund of {{payload.amount}} {{payload.currency}} completed for order {{payload.orderNumber}}.",
+					subject: localized({
+						fr: "Remboursement effectué",
+						en: "Refund completed",
+					}),
+					body: localized({
+						fr: "Remboursement de {{payload.amount}} {{payload.currency}} effectué pour la commande {{payload.orderNumber}}.",
+						en: "Refund of {{payload.amount}} {{payload.currency}} completed for order {{payload.orderNumber}}.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Remboursement effectué",
-					body: "Commande {{payload.orderNumber}} : {{payload.amount}} {{payload.currency}} remboursés. / Order {{payload.orderNumber}}: {{payload.amount}} {{payload.currency}} refunded.",
+					subject: localized({
+						fr: "Remboursement effectué",
+						en: "Refund completed",
+					}),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} : {{payload.amount}} {{payload.currency}} remboursés.",
+						en: "Order {{payload.orderNumber}}: {{payload.amount}} {{payload.currency}} refunded.",
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject:
-						"Remboursement effectué, commande {{payload.orderNumber}} / Refund completed, order {{payload.orderNumber}}",
-					body: "Remboursement de {{payload.amount}} {{payload.currency}} effectué pour la commande {{payload.orderNumber}}. / Refund of {{payload.amount}} {{payload.currency}} completed for order {{payload.orderNumber}}.",
+					subject: localized({
+						fr: "Remboursement effectué, commande {{payload.orderNumber}}",
+						en: "Refund completed, order {{payload.orderNumber}}",
+					}),
+					body: localized({
+						fr: "Remboursement de {{payload.amount}} {{payload.currency}} effectué pour la commande {{payload.orderNumber}}.",
+						en: "Refund of {{payload.amount}} {{payload.currency}} completed for order {{payload.orderNumber}}.",
+					}),
 				}),
 			],
 		},
@@ -2191,19 +2822,36 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Remboursement en échec",
-					body: "Le remboursement de {{payload.amount}} {{payload.currency}} pour la commande {{payload.orderNumber}} a échoué. Notre équipe s'en occupe. / The refund of {{payload.amount}} {{payload.currency}} for order {{payload.orderNumber}} failed. Our team is handling it.",
+					subject: localized({
+						fr: "Remboursement en échec",
+						en: "Refund failed",
+					}),
+					body: localized({
+						fr: "Le remboursement de {{payload.amount}} {{payload.currency}} pour la commande {{payload.orderNumber}} a échoué. Notre équipe s'en occupe.",
+						en: "The refund of {{payload.amount}} {{payload.currency}} for order {{payload.orderNumber}} failed. Our team is handling it.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Remboursement en échec",
-					body: "Commande {{payload.orderNumber}} : le remboursement a échoué, notre équipe s'en occupe. / Order {{payload.orderNumber}}: the refund failed, our team is handling it.",
+					subject: localized({
+						fr: "Remboursement en échec",
+						en: "Refund failed",
+					}),
+					body: localized({
+						fr: "Commande {{payload.orderNumber}} : le remboursement a échoué, notre équipe s'en occupe.",
+						en: "Order {{payload.orderNumber}}: the refund failed, our team is handling it.",
+					}),
 				}),
 				emailStep("Email", "email", {
-					subject:
-						"Remboursement en échec, commande {{payload.orderNumber}} / Refund failed, order {{payload.orderNumber}}",
-					body: "Le remboursement de {{payload.amount}} {{payload.currency}} pour la commande {{payload.orderNumber}} a échoué. Notre équipe s'en occupe et revient vers vous. / The refund of {{payload.amount}} {{payload.currency}} for order {{payload.orderNumber}} failed. Our team is handling it and will get back to you.",
+					subject: localized({
+						fr: "Remboursement en échec, commande {{payload.orderNumber}}",
+						en: "Refund failed, order {{payload.orderNumber}}",
+					}),
+					body: localized({
+						fr: "Le remboursement de {{payload.amount}} {{payload.currency}} pour la commande {{payload.orderNumber}} a échoué. Notre équipe s'en occupe et revient vers vous.",
+						en: "The refund of {{payload.amount}} {{payload.currency}} for order {{payload.orderNumber}} failed. Our team is handling it and will get back to you.",
+					}),
 				}),
 			],
 		},
@@ -2232,14 +2880,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, email: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Paiement protégé suspendu",
-					body: "Une somme de {{payload.amount}} {{payload.currency}} due par {{payload.shopName}} n'a pas pu être récupérée ; le paiement protégé est suspendu. / An amount of {{payload.amount}} {{payload.currency}} owed by {{payload.shopName}} could not be recovered; protected payment is suspended.",
+					subject: localized({
+						fr: "Paiement protégé suspendu",
+						en: "Protected payment suspended",
+					}),
+					body: localized({
+						fr: "Une somme de {{payload.amount}} {{payload.currency}} due par {{payload.shopName}} n'a pas pu être récupérée ; le paiement protégé est suspendu.",
+						en: "An amount of {{payload.amount}} {{payload.currency}} owed by {{payload.shopName}} could not be recovered; protected payment is suspended.",
+					}),
 					redirect: redirect("/seller/payments"),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				emailStep("Email", "email", {
-					subject: "Paiement protégé suspendu / Protected payment suspended",
-					body: "Une somme de {{payload.amount}} {{payload.currency}} due par {{payload.shopName}} n'a pas pu être récupérée ; le paiement protégé est suspendu. Contactez-nous pour le rétablir. / An amount of {{payload.amount}} {{payload.currency}} owed by {{payload.shopName}} could not be recovered; protected payment is suspended. Contact us to restore it.",
+					subject: localized({
+						fr: "Paiement protégé suspendu",
+						en: "Protected payment suspended",
+					}),
+					body: localized({
+						fr: "Une somme de {{payload.amount}} {{payload.currency}} due par {{payload.shopName}} n'a pas pu être récupérée ; le paiement protégé est suspendu. Contactez-nous pour le rétablir.",
+						en: "An amount of {{payload.amount}} {{payload.currency}} owed by {{payload.shopName}} could not be recovered; protected payment is suspended. Contact us to restore it.",
+					}),
 				}),
 			],
 		},
@@ -2264,9 +2924,14 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ email: true }),
 			steps: [
 				emailStep("Email", "email", {
-					subject:
-						"[Paiements] {{payload.openMismatches}} écart(s) ouvert(s) / [Payments] {{payload.openMismatches}} open mismatch(es)",
-					body: "Le rapprochement {{payload.runId}} laisse {{payload.openMismatches}} écart(s) ouvert(s) à traiter. / Reconciliation run {{payload.runId}} left {{payload.openMismatches}} open mismatch(es) to resolve.",
+					subject: localized({
+						fr: "[Paiements] {{payload.openMismatches}} écart(s) ouvert(s)",
+						en: "[Payments] {{payload.openMismatches}} open mismatch(es)",
+					}),
+					body: localized({
+						fr: "Le rapprochement {{payload.runId}} laisse {{payload.openMismatches}} écart(s) ouvert(s) à traiter.",
+						en: "Reconciliation run {{payload.runId}} left {{payload.openMismatches}} open mismatch(es) to resolve.",
+					}),
 				}),
 			],
 		},
@@ -2293,9 +2958,14 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ email: true }),
 			steps: [
 				emailStep("Email", "email", {
-					subject:
-						"[Paiements] Compte connecté perdu : {{payload.shopName}} / [Payments] Connected account lost: {{payload.shopName}}",
-					body: "Le compte connecté de {{payload.shopName}} ({{payload.shopId}}) est passé à {{payload.status}}. Les encaissements sont bloqués par une suspension. / The connected account of {{payload.shopName}} ({{payload.shopId}}) became {{payload.status}}. Charges are blocked by a hold.",
+					subject: localized({
+						fr: "[Paiements] Compte connecté perdu : {{payload.shopName}}",
+						en: "[Payments] Connected account lost: {{payload.shopName}}",
+					}),
+					body: localized({
+						fr: "Le compte connecté de {{payload.shopName}} ({{payload.shopId}}) est passé à {{payload.status}}. Les encaissements sont bloqués par une suspension.",
+						en: "The connected account of {{payload.shopName}} ({{payload.shopId}}) became {{payload.status}}. Charges are blocked by a hold.",
+					}),
 				}),
 			],
 		},
@@ -2336,9 +3006,14 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ email: true }),
 			steps: [
 				emailStep("Email", "email", {
-					subject:
-						"[Paiements] Remboursement en échec {{payload.refundId}} / [Payments] Refund failed {{payload.refundId}}",
-					body: "Le remboursement {{payload.refundId}} ({{payload.amount}} {{payload.currency}}, commande {{payload.orderId}}) a échoué deux fois : {{payload.failureReason}}. Écart {{payload.mismatchId}} à traiter. / Refund {{payload.refundId}} ({{payload.amount}} {{payload.currency}}, order {{payload.orderId}}) failed twice: {{payload.failureReason}}. Mismatch {{payload.mismatchId}} awaits you.",
+					subject: localized({
+						fr: "[Paiements] Remboursement en échec {{payload.refundId}}",
+						en: "[Payments] Refund failed {{payload.refundId}}",
+					}),
+					body: localized({
+						fr: "Le remboursement {{payload.refundId}} ({{payload.amount}} {{payload.currency}}, commande {{payload.orderId}}) a échoué deux fois : {{payload.failureReason}}. Écart {{payload.mismatchId}} à traiter.",
+						en: "Refund {{payload.refundId}} ({{payload.amount}} {{payload.currency}}, order {{payload.orderId}}) failed twice: {{payload.failureReason}}. Mismatch {{payload.mismatchId}} awaits you.",
+					}),
 				}),
 			],
 		},
@@ -2375,16 +3050,28 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Echec de livraison / Delivery attempt failed",
-					body: "La livraison a echoue ({{payload.reason}}). Il reste {{payload.attemptsLeft}} tentative(s). / Delivery failed ({{payload.reason}}). {{payload.attemptsLeft}} attempt(s) remain.",
+					subject: localized({
+						fr: "Échec de livraison",
+						en: "Delivery attempt failed",
+					}),
+					body: localized({
+						fr: "La livraison a échoué ({{payload.reason}}). Il reste {{payload.attemptsLeft}} tentative(s).",
+						en: "Delivery failed ({{payload.reason}}). {{payload.attemptsLeft}} attempt(s) remain.",
+					}),
 					redirect: redirect(
 						"{% if payload.audience == 'shop' %}/seller/orders/{{payload.orderId}}{% else %}/purchases/{{payload.orderId}}{% endif %}",
 					),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Echec de livraison / Delivery failed",
-					body: "La livraison a echoue. Choisissez un nouveau creneau. / Delivery failed. Choose another time slot.",
+					subject: localized({
+						fr: "Échec de livraison",
+						en: "Delivery failed",
+					}),
+					body: localized({
+						fr: "La livraison a échoué. Choisissez un nouveau créneau.",
+						en: "Delivery failed. Choose another time slot.",
+					}),
 				}),
 			],
 		},
@@ -2413,16 +3100,28 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Nouvelle tentative / Redelivery scheduled",
-					body: "Une nouvelle tentative est programmee pour {{payload.date}} ({{payload.window}}). / A new delivery attempt is scheduled for {{payload.date}} ({{payload.window}}).",
+					subject: localized({
+						fr: "Nouvelle tentative",
+						en: "Redelivery scheduled",
+					}),
+					body: localized({
+						fr: "Une nouvelle tentative est programmée pour {{payload.date}} ({{payload.window}}).",
+						en: "A new delivery attempt is scheduled for {{payload.date}} ({{payload.window}}).",
+					}),
 					redirect: redirect(
 						"{% if payload.audience == 'rider' %}/rider/shipment/{{payload.shipmentId}}{% else %}/seller/orders/{{payload.orderId}}{% endif %}",
 					),
 					data: { shipmentId: "{{payload.shipmentId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Nouvelle tentative / Redelivery scheduled",
-					body: "Nouvel horaire de livraison confirme. / New delivery slot confirmed.",
+					subject: localized({
+						fr: "Nouvelle tentative",
+						en: "Redelivery scheduled",
+					}),
+					body: localized({
+						fr: "Nouvel horaire de livraison confirmé.",
+						en: "New delivery slot confirmed.",
+					}),
 				}),
 			],
 		},
@@ -2450,14 +3149,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Colis en retour / Shipment return initiated",
-					body: "La livraison de la commande {{payload.orderNumber}} a échoué ({{payload.reason}}). Le colis est en cours de retour à la boutique. / Delivery for order {{payload.orderNumber}} failed ({{payload.reason}}). The parcel is being returned to the shop.",
+					subject: localized({
+						fr: "Colis en retour",
+						en: "Shipment return initiated",
+					}),
+					body: localized({
+						fr: "La livraison de la commande {{payload.orderNumber}} a échoué ({{payload.reason}}). Le colis est en cours de retour à la boutique.",
+						en: "Delivery for order {{payload.orderNumber}} failed ({{payload.reason}}). The parcel is being returned to the shop.",
+					}),
 					redirect: redirect("/seller/orders"),
 					data: { shipmentId: "{{payload.shipmentId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Colis en retour / Shipment return initiated",
-					body: "La commande {{payload.orderNumber}} est en cours de retour à la boutique. / Order {{payload.orderNumber}} is being returned to the shop.",
+					subject: localized({
+						fr: "Colis en retour",
+						en: "Shipment return initiated",
+					}),
+					body: localized({
+						fr: "La commande {{payload.orderNumber}} est en cours de retour à la boutique.",
+						en: "Order {{payload.orderNumber}} is being returned to the shop.",
+					}),
 				}),
 			],
 		},
@@ -2502,13 +3213,21 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ email: true, push: true }),
 			steps: [
 				emailStep("Email", "email", {
-					subject:
-						"Votre semaine sur BuyNSellem / Your week on BuyNSellem ({{payload.from}} - {{payload.to}})",
-					body: "Ventes livrées : {{payload.gmvDelivered}} FCFA, {{payload.ordersDelivered}} commande(s) livrée(s) sur {{payload.ordersPlaced}}. Voir le détail : /seller/insights / Delivered sales: {{payload.gmvDelivered}} XAF, {{payload.ordersDelivered}} of {{payload.ordersPlaced}} order(s) delivered. Details: /seller/insights",
+					subject: localized({
+						fr: "Votre semaine sur BuyNSellem ({{payload.from}} - {{payload.to}})",
+						en: "Your week on BuyNSellem ({{payload.from}} - {{payload.to}})",
+					}),
+					body: localized({
+						fr: "Ventes livrées : {{payload.gmvDelivered}} FCFA, {{payload.ordersDelivered}} commande(s) livrée(s) sur {{payload.ordersPlaced}}. Voir le détail : /seller/insights",
+						en: "Delivered sales: {{payload.gmvDelivered}} XAF, {{payload.ordersDelivered}} of {{payload.ordersPlaced}} order(s) delivered. Details: /seller/insights",
+					}),
 				}),
 				pushStep("Push", "push", {
-					subject: "Votre semaine / Your week",
-					body: "{{payload.gmvDelivered}} FCFA livrés, {{payload.ordersPlaced}} commande(s). / {{payload.gmvDelivered}} XAF delivered, {{payload.ordersPlaced}} order(s).",
+					subject: localized({ fr: "Votre semaine", en: "Your week" }),
+					body: localized({
+						fr: "{{payload.gmvDelivered}} FCFA livrés, {{payload.ordersPlaced}} commande(s).",
+						en: "{{payload.gmvDelivered}} XAF delivered, {{payload.ordersPlaced}} order(s).",
+					}),
 				}),
 			],
 		},
@@ -2534,14 +3253,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Retirez votre commande / Collect your order",
-					body: "Votre commande vous attend. Retirez-la avant le {{payload.pickupDeadline}}. / Your order is waiting. Collect it before {{payload.pickupDeadline}}.",
+					subject: localized({
+						fr: "Retirez votre commande",
+						en: "Collect your order",
+					}),
+					body: localized({
+						fr: "Votre commande vous attend. Retirez-la avant le {{payload.pickupDeadline}}.",
+						en: "Your order is waiting. Collect it before {{payload.pickupDeadline}}.",
+					}),
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Retirez votre commande / Collect your order",
-					body: "Votre commande doit être retirée avant le {{payload.pickupDeadline}}. / Your order must be collected before {{payload.pickupDeadline}}.",
+					subject: localized({
+						fr: "Retirez votre commande",
+						en: "Collect your order",
+					}),
+					body: localized({
+						fr: "Votre commande doit être retirée avant le {{payload.pickupDeadline}}.",
+						en: "Your order must be collected before {{payload.pickupDeadline}}.",
+					}),
 				}),
 			],
 		},
@@ -2567,14 +3298,26 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Livraison en retard / Shipment late",
-					body: "La commande {{payload.orderNumber}} dépasse la date de livraison promise. / Order {{payload.orderNumber}} is past its promised delivery date.",
+					subject: localized({
+						fr: "Livraison en retard",
+						en: "Shipment late",
+					}),
+					body: localized({
+						fr: "La commande {{payload.orderNumber}} dépasse la date de livraison promise.",
+						en: "Order {{payload.orderNumber}} is past its promised delivery date.",
+					}),
 					redirect: redirect("/seller/orders"),
 					data: { shipmentId: "{{payload.shipmentId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Livraison en retard / Shipment late",
-					body: "La commande {{payload.orderNumber}} est en retard. / Order {{payload.orderNumber}} is late.",
+					subject: localized({
+						fr: "Livraison en retard",
+						en: "Shipment late",
+					}),
+					body: localized({
+						fr: "La commande {{payload.orderNumber}} est en retard.",
+						en: "Order {{payload.orderNumber}} is late.",
+					}),
 				}),
 			],
 		},
@@ -2605,28 +3348,51 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject:
-						"Finalisez vos options de livraison / Complete delivery setup",
-					body: "Vérifiez les horaires de retrait et les options de livraison de votre boutique. / Review your shop's pickup hours and delivery options.",
+					subject: localized({
+						fr: "Finalisez vos options de livraison",
+						en: "Complete delivery setup",
+					}),
+					body: localized({
+						fr: "Vérifiez les horaires de retrait et les options de livraison de votre boutique.",
+						en: "Review your shop's pickup hours and delivery options.",
+					}),
 					redirect: redirect("/seller/delivery"),
-					primaryAction: action("Configurer / Configure", "/seller/delivery"),
+					primaryAction: action(
+						localized({ fr: "Configurer", en: "Configure" }),
+						"/seller/delivery",
+					),
 					data: { shopId: "{{payload.shopId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject:
-						"Finalisez vos options de livraison / Complete delivery setup",
-					body: "Vérifiez les paramètres de livraison de votre boutique. / Review your shop's delivery settings.",
+					subject: localized({
+						fr: "Finalisez vos options de livraison",
+						en: "Complete delivery setup",
+					}),
+					body: localized({
+						fr: "Vérifiez les paramètres de livraison de votre boutique.",
+						en: "Review your shop's delivery settings.",
+					}),
 				}),
 			],
 		},
 	},
 ];
 
+/** `name_fr`, `name_en`…: one field per language (`localizedFields`). */
+function perLocale(name: string, description: string) {
+	return Object.fromEntries(
+		NOTIFICATION_LOCALES.map((locale) => [
+			`${name}_${locale}`,
+			stringProperty(`${description}, in ${locale}`),
+		]),
+	);
+}
+
 const casePayloadProperties = {
 	caseId: stringProperty("Return or dispute identifier"),
 	caseNumber: stringProperty("Human-readable case number"),
-	caseTitle: stringProperty("Short bilingual notification title"),
-	message: stringProperty("Bilingual notification body"),
+	...perLocale("caseTitle", "Short notification title"),
+	...perLocale("message", "Notification body"),
 	audience: stringProperty('"buyer" or "shop"'),
 };
 
@@ -2645,8 +3411,14 @@ const resaleLinkWorkflowDefinitions = [
 			message: stringProperty("Reseller's request message"),
 		},
 		required: ["linkId", "shopId", "otherShopName", "message"],
-		subject: "Nouvelle demande de revente / New resale request",
-		body: "{{payload.otherShopName}} souhaite revendre vos produits. / {{payload.otherShopName}} wants to resell your products. {{payload.message}}",
+		subject: localized({
+			fr: "Nouvelle demande de revente",
+			en: "New resale request",
+		}),
+		body: localized({
+			fr: "{{payload.otherShopName}} souhaite revendre vos produits. {{payload.message}}",
+			en: "{{payload.otherShopName}} wants to resell your products. {{payload.message}}",
+		}),
 	},
 	{
 		workflowId: "resale-link-decided",
@@ -2656,8 +3428,14 @@ const resaleLinkWorkflowDefinitions = [
 			action: stringProperty('"approved" or "declined"'),
 		},
 		required: ["linkId", "shopId", "otherShopName", "action"],
-		subject: "Demande de revente mise à jour / Resale request updated",
-		body: "Votre demande auprès de {{payload.otherShopName}} est {{payload.action}}. / Your request to {{payload.otherShopName}} was {{payload.action}}.",
+		subject: localized({
+			fr: "Demande de revente mise à jour",
+			en: "Resale request updated",
+		}),
+		body: localized({
+			fr: "Votre demande auprès de {{payload.otherShopName}} est {{payload.action}}.",
+			en: "Your request to {{payload.otherShopName}} was {{payload.action}}.",
+		}),
 	},
 	{
 		workflowId: "resale-link-suspended",
@@ -2670,8 +3448,14 @@ const resaleLinkWorkflowDefinitions = [
 			),
 		},
 		required: ["linkId", "shopId", "otherShopName", "action", "reason"],
-		subject: "Accès de revente modifié / Resale access updated",
-		body: "Votre accès aux produits de {{payload.otherShopName}} est {{payload.action}}. Motif : {{payload.reason}}. / Your access to {{payload.otherShopName}} products is {{payload.action}}. Reason: {{payload.reason}}.",
+		subject: localized({
+			fr: "Accès de revente modifié",
+			en: "Resale access updated",
+		}),
+		body: localized({
+			fr: "Votre accès aux produits de {{payload.otherShopName}} est {{payload.action}}. Motif : {{payload.reason}}.",
+			en: "Your access to {{payload.otherShopName}} products is {{payload.action}}. Reason: {{payload.reason}}.",
+		}),
 	},
 ] as const;
 
@@ -2694,7 +3478,10 @@ for (const workflow of resaleLinkWorkflowDefinitions) {
 					subject: workflow.subject,
 					body: workflow.body,
 					redirect: redirect(redirectUrl),
-					primaryAction: action("Ouvrir / Open", redirectUrl),
+					primaryAction: action(
+						localized({ fr: "Ouvrir", en: "Open" }),
+						redirectUrl,
+					),
 					data: { linkId: "{{payload.linkId}}" },
 				}),
 				pushStep("Push", "push", {
@@ -2748,8 +3535,9 @@ for (const [workflowId, name, ...channels] of caseWorkflowDefinitions) {
 		push: channelSet.has("push"),
 		email: channelSet.has("email"),
 	};
-	const title = "{{payload.caseTitle}}";
-	const body = "{{payload.message}}";
+	// The service writes every language; the recipient's is picked here.
+	const title = localizedField("caseTitle");
+	const body = localizedField("message");
 	const redirectUrl = usesDisputeId
 		? "/disputes/{{payload.disputeId}}"
 		: usesStrikeId
@@ -2762,7 +3550,10 @@ for (const [workflowId, name, ...channels] of caseWorkflowDefinitions) {
 				subject: title,
 				body,
 				redirect: redirect(redirectUrl),
-				primaryAction: action("Ouvrir / Open", redirectUrl),
+				primaryAction: action(
+					localized({ fr: "Ouvrir", en: "Open" }),
+					redirectUrl,
+				),
 				data: { caseId: `{{payload.${idField}}}` },
 			}),
 		);

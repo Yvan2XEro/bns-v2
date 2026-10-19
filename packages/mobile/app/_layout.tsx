@@ -45,6 +45,7 @@ import {
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
 import { MonitoringBridge } from "@/src/components/MonitoringBridge";
+import { NotificationLanguageSync } from "@/src/components/NotificationLanguageSync";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { QueryPersistence } from "@/src/components/QueryPersistence";
 import { SellerBrandProvider } from "@/src/components/shop/sellerBrand";
@@ -227,6 +228,7 @@ export default function RootLayout() {
 												<RootLayoutNav />
 												<OfflineBanner />
 												<MonitoringBridge />
+												<NotificationLanguageSync />
 												<QueryPersistence />
 											</AlertProvider>
 										</ChatProvider>

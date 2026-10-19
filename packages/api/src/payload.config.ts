@@ -82,6 +82,7 @@ import { VerificationDocumentViews } from "./collections/VerificationDocumentVie
 import { VerificationRequests } from "./collections/VerificationRequests";
 import { WebhookEvents } from "./collections/WebhookEvents";
 import { AppSettings } from "./globals/AppSettings";
+import { registerNotificationLocales } from "./hooks/notificationEvents";
 import {
 	abandonCartsTask,
 	advanceDisputesTask,
@@ -239,6 +240,11 @@ const deliveryTasks = [
 ];
 
 export default buildConfig({
+	// Notifications are written in each recipient's language, read off their
+	// account when an event is sent (hooks/notificationEvents.ts).
+	onInit: async (payload) => {
+		registerNotificationLocales(payload);
+	},
 	admin: {
 		user: Users.slug,
 		meta: {

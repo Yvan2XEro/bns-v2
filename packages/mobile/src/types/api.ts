@@ -12,6 +12,7 @@ import type {
 	PriceUnit,
 	ShopProfile,
 } from "../../../api/src/contracts/listingKinds";
+import type { NotificationLocale } from "../../../api/src/contracts/notificationLocale";
 import type { ShopTrust } from "../../../api/src/contracts/shopTrust";
 import type { VerificationRequirement } from "../../../api/src/contracts/verificationRequirements";
 import type {
@@ -74,6 +75,8 @@ export interface UserDoc {
 	id: string;
 	email: string;
 	name: string;
+	/** Notifications are written in it; set from the app's language. */
+	language?: NotificationLocale | null;
 	role: UserRole;
 	avatar?: Media | null;
 	/** Computed average rating, 0–5 */

@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { buildExpoPushData } from "../../src/hooks/notificationEvents";
 import { WORKFLOWS } from "../../src/scripts/syncNotificationWorkflows";
 
+/** How every translated template text begins (`localized()`). */
+const LOCALE_SWITCH = "{% if payload.locale == ";
+
 const ids = WORKFLOWS.map((w) => w.workflowId);
 
 describe("the P3 workflows", () => {
@@ -676,7 +679,10 @@ function schemaProperties(id: string): string[] {
 	const schema = workflow(id).payloadSchema as {
 		properties?: Record<string, unknown>;
 	};
-	return Object.keys(schema.properties ?? {}).sort();
+	// `locale` is on every workflow, added by the API to each event.
+	return Object.keys(schema.properties ?? {})
+		.filter((key) => key !== "locale")
+		.sort();
 }
 
 describe("the P5 payment workflows", () => {
@@ -708,7 +714,7 @@ describe("the P5 payment workflows", () => {
 				...JSON.stringify(workflow(id).steps).matchAll(/payload\.(\w+)/g),
 			].map((m) => m[1]);
 			expect(used.length).toBeGreaterThan(0);
-			const declared = schemaProperties(id);
+			const declared = [...schemaProperties(id), "locale"];
 			expect([id, used.filter((field) => !declared.includes(field))]).toEqual([
 				id,
 				[],
@@ -735,15 +741,15 @@ describe("the P5 payment workflows", () => {
 		expect(JSON.stringify(email)).toContain("{{payload.notMeUrl}}");
 	});
 
-	it("writes every body bilingually, French then English", () => {
+	it("writes every body in the recipient's language, never both at once", () => {
 		for (const id of Object.keys(P5_WORKFLOWS)) {
 			for (const step of workflow(id).steps) {
 				const body = (step.controlValues as { body?: string } | undefined)
 					?.body;
-				expect([id, step.type, body?.split(" / ").length]).toEqual([
+				expect([id, step.type, body?.startsWith(LOCALE_SWITCH)]).toEqual([
 					id,
 					step.type,
-					2,
+					true,
 				]);
 			}
 		}
@@ -790,8 +796,10 @@ describe("the P6 case workflows", () => {
 				required: [
 					"caseId",
 					"caseNumber",
-					"caseTitle",
-					"message",
+					"caseTitle_fr",
+					"caseTitle_en",
+					"message_fr",
+					"message_en",
 					"audience",
 					idField,
 				],
@@ -867,5 +875,54 @@ describe("buildExpoPushData for the P5 payment workflows", () => {
 				{ url: "/seller/payments/setup" },
 			]);
 		}
+	});
+});
+
+describe("notifications in the recipient's language", () => {
+	/** Every text a recipient reads: subjects, bodies and action labels. */
+	const texts = WORKFLOWS.flatMap((definition) =>
+		definition.steps.flatMap((step) => {
+			const values = step.controlValues as
+				| {
+						subject?: string;
+						body?: string;
+						primaryAction?: { label?: string };
+				  }
+				| undefined;
+			return [values?.subject, values?.body, values?.primaryAction?.label]
+				.filter((text): text is string => typeof text === "string")
+				.map((text) => ({ id: definition.workflowId, text }));
+		}),
+	);
+
+	it("lets every workflow carry the recipient's language", () => {
+		for (const definition of WORKFLOWS) {
+			const schema = definition.payloadSchema as {
+				properties: Record<string, unknown>;
+			};
+			expect([definition.workflowId, "locale" in schema.properties]).toEqual([
+				definition.workflowId,
+				true,
+			]);
+		}
+	});
+
+	it("writes no text with both languages side by side", () => {
+		const mixed = texts.filter(
+			({ text }) => !text.startsWith(LOCALE_SWITCH) && / \/ /.test(text),
+		);
+		expect(mixed).toEqual([]);
+	});
+
+	it("only leaves untranslated what carries no wording of its own or goes to staff", () => {
+		const untranslated = texts
+			.filter(({ text }) => !text.startsWith(LOCALE_SWITCH))
+			.map(({ id }) => id);
+		expect([...new Set(untranslated)].sort()).toEqual([
+			"contact-form",
+			"new-message",
+			"order-placed",
+			"shop-inbox-message",
+		]);
 	});
 });

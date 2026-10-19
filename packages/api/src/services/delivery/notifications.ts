@@ -1,4 +1,5 @@
 import type { Payload, PayloadRequest } from "payload";
+import { inLocale } from "../../contracts/notificationLocale";
 import { triggerNotificationEvent } from "../../hooks/notificationEvents";
 import { relationId } from "../../lib/relationId";
 import { commitContextOf, onCommit } from "../../lib/transactions";
@@ -83,7 +84,14 @@ export async function notifyShipmentAttemptFailed(
 	await sms(
 		payload,
 		order,
-		`Livraison ${order.orderNumber} manquée. Choisissez un nouveau créneau: buynsellem.com/purchases/${orderId}`,
+		// The order's own language, like every order SMS (services/orders/sms.ts).
+		inLocale(
+			{
+				fr: `Livraison ${order.orderNumber} manquée. Choisissez un nouveau créneau: buynsellem.com/purchases/${orderId}`,
+				en: `Delivery ${order.orderNumber} missed. Choose a new slot: buynsellem.com/purchases/${orderId}`,
+			},
+			order.contract?.locale,
+		),
 	);
 }
 

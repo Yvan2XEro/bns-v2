@@ -358,6 +358,7 @@ export interface User {
   rating?: number | null;
   totalReviews?: number | null;
   bio?: string | null;
+  language?: ('fr' | 'en') | null;
   phone?: string | null;
   phoneVerified?: boolean | null;
   pendingPhone?: string | null;
@@ -4424,6 +4425,7 @@ export interface UsersSelect<T extends boolean = true> {
   rating?: T;
   totalReviews?: T;
   bio?: T;
+  language?: T;
   phone?: T;
   phoneVerified?: T;
   pendingPhone?: T;

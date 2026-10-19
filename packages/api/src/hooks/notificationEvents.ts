@@ -1,5 +1,11 @@
 import type { Overrides } from "@novu/api/models/components";
 import { ChatOrPushProviderEnum } from "@novu/api/models/components";
+import type { Payload } from "payload";
+import {
+	DEFAULT_NOTIFICATION_LOCALE,
+	type NotificationLocale,
+	notificationLocaleOf,
+} from "../contracts/notificationLocale";
 import { pushChannelFor } from "../contracts/pushChannels";
 import { getNotificationProvider } from "../services/notificationProvider";
 
@@ -256,6 +262,37 @@ function mergeOverrides(
 	};
 }
 
+/** Set once Payload starts (payload.config.ts `onInit`); absent in unit tests. */
+let localePayload: Payload | null = null;
+
+export function registerNotificationLocales(payload: Payload): void {
+	localePayload = payload;
+}
+
+/**
+ * The language the recipient's notifications are written in: their
+ * account's `language`. A recipient without an account (an invitee, the
+ * "admin" inbox) or an account that cannot be read gets the default.
+ */
+async function recipientLocale(
+	subscriberId: string,
+): Promise<NotificationLocale> {
+	if (!localePayload || !/^[a-f0-9]{24}$/i.test(subscriberId))
+		return DEFAULT_NOTIFICATION_LOCALE;
+	try {
+		const user = await localePayload.findByID({
+			collection: "users",
+			id: subscriberId,
+			depth: 0,
+			overrideAccess: true,
+			select: { language: true },
+		});
+		return notificationLocaleOf(user.language);
+	} catch {
+		return DEFAULT_NOTIFICATION_LOCALE;
+	}
+}
+
 export async function triggerNotificationEvent({
 	event,
 	subscriberId,
@@ -265,10 +302,16 @@ export async function triggerNotificationEvent({
 }: TriggerPayload): Promise<void> {
 	try {
 		const notificationProvider = getNotificationProvider();
+		// Every template picks its wording from `payload.locale`
+		// (`bilingual()` in scripts/syncNotificationWorkflows.ts).
+		const locale =
+			typeof payload.locale === "string"
+				? notificationLocaleOf(payload.locale)
+				: await recipientLocale(subscriberId);
 		await notificationProvider.trigger({
 			workflowId: event,
 			to: email ? { subscriberId, email } : subscriberId,
-			payload,
+			payload: { ...payload, locale },
 			overrides: mergeOverrides(event, payload, overrides),
 		});
 	} catch (error) {

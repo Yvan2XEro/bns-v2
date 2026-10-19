@@ -36,9 +36,9 @@ async function bodyFor(orders: Record<string, unknown>[], markets: object[]) {
 	const payload = fakePayload({ orders, markets });
 	await notifyReturnInspected({ payload } as unknown as PayloadRequest, kase);
 	const call = triggerNotificationEvent.mock.calls[0] as unknown as [
-		{ payload: { message: string } },
+		{ payload: { message_fr: string; message_en: string } },
 	];
-	return call[0].payload.message;
+	return `${call[0].payload.message_fr} / ${call[0].payload.message_en}`;
 }
 
 describe("notifyReturnInspected money", () => {

@@ -1,5 +1,9 @@
 import type { PayloadRequest } from "payload";
 import { isSuspended } from "../access/roles";
+import {
+	type Localized,
+	localizedFields,
+} from "../contracts/notificationLocale";
 import { triggerNotificationEvent } from "../hooks/notificationEvents";
 import { moneyOfOrder } from "../lib/markets";
 import { amountText } from "../lib/orderFormat";
@@ -15,8 +19,9 @@ async function notify(
 	recipients: readonly string[],
 	caseId: string,
 	caseNumber: string,
-	title: string,
-	body: string,
+	/** In every language; the template picks the recipient's. */
+	title: Localized,
+	body: Localized,
 	audience: Audience,
 	identifier: "returnId" | "disputeId" | "strikeId",
 ): Promise<void> {
@@ -24,8 +29,8 @@ async function notify(
 	const payload: CasePayload = {
 		caseId,
 		caseNumber,
-		caseTitle: title,
-		message: body,
+		...localizedFields("caseTitle", title),
+		...localizedFields("message", body),
 		audience,
 		[identifier]: caseId,
 	};
@@ -75,10 +80,6 @@ async function shopRecipients(
 	return [...new Set(recipients)];
 }
 
-function caseTitle(message: string): string {
-	return message;
-}
-
 export async function notifyReturnRequested(
 	req: PayloadRequest,
 	kase: ReturnCase,
@@ -88,8 +89,11 @@ export async function notifyReturnRequested(
 		await shopRecipients(req, kase.shop),
 		String(kase.id),
 		kase.number,
-		caseTitle("Nouvelle demande de retour / New return request"),
-		`La demande ${kase.number} attend votre réponse. / Return ${kase.number} is awaiting your response.`,
+		{ fr: "Nouvelle demande de retour", en: "New return request" },
+		{
+			fr: `La demande ${kase.number} attend votre réponse.`,
+			en: `Return ${kase.number} is awaiting your response.`,
+		},
 		"shop",
 		"returnId",
 	);
@@ -110,8 +114,11 @@ export async function notifyReturnInstructions(
 		[buyerId],
 		String(kase.id),
 		kase.number,
-		caseTitle("Instructions de retour / Return instructions"),
-		`Mode : ${method}. Échéance : ${deadline}. / Method: ${method}. Deadline: ${deadline}.`,
+		{ fr: "Instructions de retour", en: "Return instructions" },
+		{
+			fr: `Mode : ${method}. Échéance : ${deadline}.`,
+			en: `Method: ${method}. Deadline: ${deadline}.`,
+		},
 		"buyer",
 		"returnId",
 	);
@@ -128,8 +135,11 @@ export async function notifyReturnReceived(
 		[buyerId],
 		String(kase.id),
 		kase.number,
-		caseTitle("Retour reçu / Return received"),
-		`La boutique a reçu votre retour ${kase.number}. / The shop received your return ${kase.number}.`,
+		{ fr: "Retour reçu", en: "Return received" },
+		{
+			fr: `La boutique a reçu votre retour ${kase.number}.`,
+			en: `The shop received your return ${kase.number}.`,
+		},
 		"buyer",
 		"returnId",
 	);
@@ -151,8 +161,11 @@ export async function notifyReturnInspected(
 		[buyerId],
 		String(kase.id),
 		kase.number,
-		caseTitle("Retour inspecté / Return inspected"),
-		`Déduction proposée : ${amountText(deduction, money, "fr")}. / Proposed deduction: ${amountText(deduction, money, "en")}.`,
+		{ fr: "Retour inspecté", en: "Return inspected" },
+		{
+			fr: `Déduction proposée : ${amountText(deduction, money, "fr")}.`,
+			en: `Proposed deduction: ${amountText(deduction, money, "en")}.`,
+		},
 		"buyer",
 		"returnId",
 	);
@@ -169,8 +182,11 @@ export async function notifyRefundProofSubmitted(
 		[buyerId],
 		String(kase.id),
 		kase.number,
-		caseTitle("Preuve de remboursement reçue / Refund proof received"),
-		`Confirmez ou contestez le remboursement du dossier ${kase.number}. / Confirm or contest the refund for case ${kase.number}.`,
+		{ fr: "Preuve de remboursement reçue", en: "Refund proof received" },
+		{
+			fr: `Confirmez ou contestez le remboursement du dossier ${kase.number}.`,
+			en: `Confirm or contest the refund for case ${kase.number}.`,
+		},
 		"buyer",
 		"returnId",
 	);
@@ -184,7 +200,10 @@ export async function notifyRefundOverdue(
 		Promise.resolve(relationId(kase.buyer)),
 		shopRecipients(req, kase.shop),
 	]);
-	const body = `Le remboursement du dossier ${kase.number} est en retard. / The refund for case ${kase.number} is overdue.`;
+	const body = {
+		fr: `Le remboursement du dossier ${kase.number} est en retard.`,
+		en: `The refund for case ${kase.number} is overdue.`,
+	};
 	await Promise.all([
 		buyerId
 			? notify(
@@ -192,7 +211,7 @@ export async function notifyRefundOverdue(
 					[buyerId],
 					String(kase.id),
 					kase.number,
-					caseTitle("Remboursement en retard / Refund overdue"),
+					{ fr: "Remboursement en retard", en: "Refund overdue" },
 					body,
 					"buyer",
 					"returnId",
@@ -203,7 +222,7 @@ export async function notifyRefundOverdue(
 			shopIds,
 			String(kase.id),
 			kase.number,
-			caseTitle("Remboursement en retard / Refund overdue"),
+			{ fr: "Remboursement en retard", en: "Refund overdue" },
 			body,
 			"shop",
 			"returnId",
@@ -234,8 +253,11 @@ export async function notifyDisputeOpened(
 		await disputeRecipients(req, dispute, audience),
 		String(dispute.id),
 		dispute.number,
-		caseTitle("Nouveau litige / New dispute"),
-		`Le dossier ${dispute.number} nécessite votre réponse. / Case ${dispute.number} requires your response.`,
+		{ fr: "Nouveau litige", en: "New dispute" },
+		{
+			fr: `Le dossier ${dispute.number} nécessite votre réponse.`,
+			en: `Case ${dispute.number} requires your response.`,
+		},
 		audience,
 		"disputeId",
 	);
@@ -263,8 +285,11 @@ export async function notifyDisputeMessage(
 		await disputeRecipients(req, dispute, audience),
 		String(dispute.id),
 		dispute.number,
-		caseTitle("Mise à jour du litige / Dispute update"),
-		`Un nouveau message est disponible dans le dossier ${dispute.number}. / A new message is available in case ${dispute.number}.`,
+		{ fr: "Mise à jour du litige", en: "Dispute update" },
+		{
+			fr: `Un nouveau message est disponible dans le dossier ${dispute.number}.`,
+			en: `A new message is available in case ${dispute.number}.`,
+		},
 		audience,
 		"disputeId",
 	);
@@ -281,8 +306,11 @@ export async function notifyDisputeDeadlineReminder(
 		await disputeRecipients(req, dispute, audience),
 		String(dispute.id),
 		dispute.number,
-		caseTitle("Échéance de litige proche / Dispute deadline approaching"),
-		`Une réponse est attendue avant ${dispute.deadlines?.respondBy ?? ""}. / A response is due by ${dispute.deadlines?.respondBy ?? ""}.`,
+		{ fr: "Échéance de litige proche", en: "Dispute deadline approaching" },
+		{
+			fr: `Une réponse est attendue avant ${dispute.deadlines?.respondBy ?? ""}.`,
+			en: `A response is due by ${dispute.deadlines?.respondBy ?? ""}.`,
+		},
 		audience,
 		"disputeId",
 	);
@@ -299,8 +327,11 @@ export async function notifyDisputeInfoRequested(
 		await disputeRecipients(req, dispute, audience),
 		String(dispute.id),
 		dispute.number,
-		caseTitle("Informations requises / Information requested"),
-		`Un complément est requis pour le dossier ${dispute.number}. / More information is required for case ${dispute.number}.`,
+		{ fr: "Informations requises", en: "Information requested" },
+		{
+			fr: `Un complément est requis pour le dossier ${dispute.number}.`,
+			en: `More information is required for case ${dispute.number}.`,
+		},
 		audience,
 		"disputeId",
 	);
@@ -318,8 +349,11 @@ export async function notifyDisputeEscalated(
 					recipients,
 					String(dispute.id),
 					dispute.number,
-					caseTitle("Litige en examen / Dispute under review"),
-					`Le dossier ${dispute.number} est transmis à la modération. / Case ${dispute.number} has been escalated to moderation.`,
+					{ fr: "Litige en examen", en: "Dispute under review" },
+					{
+						fr: `Le dossier ${dispute.number} est transmis à la modération.`,
+						en: `Case ${dispute.number} has been escalated to moderation.`,
+					},
 					audience,
 					"disputeId",
 				),
@@ -340,8 +374,11 @@ export async function notifyDisputeResolved(
 					recipients,
 					String(dispute.id),
 					dispute.number,
-					caseTitle("Décision rendue / Decision issued"),
-					`La décision du dossier ${dispute.number} est disponible. / The decision for case ${dispute.number} is available.`,
+					{ fr: "Décision rendue", en: "Decision issued" },
+					{
+						fr: `La décision du dossier ${dispute.number} est disponible.`,
+						en: `The decision for case ${dispute.number} is available.`,
+					},
 					audience,
 					"disputeId",
 				),
@@ -368,8 +405,11 @@ export async function notifyDisputeReviewOverdue(
 		admins.docs.map((user) => String(user.id)),
 		String(dispute.id),
 		dispute.number,
-		caseTitle("Litige en retard / Overdue dispute review"),
-		`Le dossier ${dispute.number} dépasse son délai de traitement. / Case ${dispute.number} is past its review deadline.`,
+		{ fr: "Litige en retard", en: "Overdue dispute review" },
+		{
+			fr: `Le dossier ${dispute.number} dépasse son délai de traitement.`,
+			en: `Case ${dispute.number} is past its review deadline.`,
+		},
 		"shop",
 		"disputeId",
 	);
@@ -384,8 +424,11 @@ export async function notifyShopStrikeAdded(
 		await shopRecipients(req, strike.shop),
 		String(strike.id),
 		strike.sourceId,
-		caseTitle("Statut de la boutique mis à jour / Shop standing updated"),
-		`Une mesure de poids ${strike.weight} est active jusqu'au ${strike.expiresAt}. / A weight-${strike.weight} strike is active until ${strike.expiresAt}.`,
+		{ fr: "Statut de la boutique mis à jour", en: "Shop standing updated" },
+		{
+			fr: `Une mesure de poids ${strike.weight} est active jusqu'au ${strike.expiresAt}.`,
+			en: `A weight-${strike.weight} strike is active until ${strike.expiresAt}.`,
+		},
 		"shop",
 		"strikeId",
 	);

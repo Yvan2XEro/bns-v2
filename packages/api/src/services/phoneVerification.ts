@@ -3,6 +3,7 @@ import type { Payload } from "payload";
 import { ERROR_CODES, type ErrorCode } from "@/lib/errors";
 import { ServiceError } from "@/lib/serviceError";
 import type { User } from "@/payload-types";
+import { inLocale } from "../contracts/notificationLocale";
 import { sendSms } from "./smsProvider";
 
 const OTP_LENGTH = 6;
@@ -160,7 +161,15 @@ export async function startPhoneVerification(
 
 	await sendSms(payload, {
 		from: OTP_MESSAGE_SENDER,
-		message: `Your Buy'N'Sellem verification code is ${code}. It expires in 10 minutes.`,
+		// In the account's language; é is in the GSM-7 alphabet, so the
+		// French costs no extra SMS part.
+		message: inLocale(
+			{
+				fr: `Votre code de vérification Buy'N'Sellem est ${code}. Il expire dans 10 minutes.`,
+				en: `Your Buy'N'Sellem verification code is ${code}. It expires in 10 minutes.`,
+			},
+			user.language,
+		),
 		to: phone,
 	});
 

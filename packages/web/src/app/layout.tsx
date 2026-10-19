@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Outfit } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { NotificationLanguageSync } from "~/components/notification-language-sync";
 import "./globals.css";
 import { Monitoring } from "~/components/monitoring";
 import { QueryProvider } from "~/components/query-provider";
@@ -122,6 +123,7 @@ export default async function RootLayout({
 							<AuthProvider>
 								<ChatProvider>{children}</ChatProvider>
 								<Monitoring />
+								<NotificationLanguageSync />
 							</AuthProvider>
 						</AppConfigProvider>
 					</QueryProvider>
