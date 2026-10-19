@@ -96,7 +96,24 @@ reach a reachable seller.
   seller without a verified phone. Drafts and the service's own writes
   (products, moderation) are unaffected.
 
-## 6. Known limits
+## 6. Status — 19 October 2026
+
+Shipped on `dev` (web, mobile and API).
+
+**Email verification:** sign-in waits for it on every client.
+
+**The phone is asked for before the action**, not after a refusal:
+- web: the ad form, the edit form, the number button and the boost dialog;
+- mobile: publishing, re-submitting, the call button.
+
+The app offers no boost purchase, under the store rules.
+
+**Deploy:**
+- Set `EMAIL_PROVIDER` with `RESEND_API_KEY`, or with the `SMTP_*` variables;
+  otherwise the emails only reach the API log.
+- The `users_verified` migration runs at boot.
+
+## 7. Known limits
 
 - **The verification link never expires.** Payload stores a random 40-character
   token and checks no age. A resend replaces it, so only the latest link works.

@@ -499,6 +499,10 @@ function RootLayoutNav() {
 						options={{ presentation: "modal", headerShown: false }}
 					/>
 					<Stack.Screen
+						name="verify-phone"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
 						name="auth/check-email"
 						options={{ presentation: "modal", headerShown: false }}
 					/>

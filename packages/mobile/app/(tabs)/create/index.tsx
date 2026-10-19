@@ -43,6 +43,7 @@ import {
 	CATEGORIES_QUERY_KEY,
 	CATEGORIES_STALE_TIME_MS,
 } from "@/src/hooks/useListings";
+import { usePhoneGate } from "@/src/hooks/usePhoneGate";
 import { usePhotoUploads } from "@/src/hooks/usePhotoUploads";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useMyShop } from "@/src/hooks/useShops";
@@ -1728,7 +1729,10 @@ function ReviewStep({
 	// buttons go through this. Only fields the preset actually shows can block:
 	// a hidden price is never "missing", and the wizard is rewound to the step
 	// that owns the problem rather than failing with a server error.
+	// Publishing needs a verified phone; a draft does not.
+	const { requirePhone } = usePhoneGate();
 	const submit = (status: "draft" | "pending") => {
+		if (status === "pending" && !requirePhone("publishListing")) return;
 		if (readyToSubmit()) publish(status);
 	};
 

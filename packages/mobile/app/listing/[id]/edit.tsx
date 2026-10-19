@@ -32,6 +32,7 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import { CATEGORIES_STALE_TIME_MS } from "@/src/hooks/useListings";
+import { usePhoneGate } from "@/src/hooks/usePhoneGate";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
@@ -654,7 +655,15 @@ export default function EditListingScreen() {
 
 	const updateAttr = (slug: string, value: any) =>
 		setAttributes((prev) => ({ ...prev, [slug]: value }));
+	const { requirePhone } = usePhoneGate();
 	const handleSavePress = () => {
+		// Sending the ad (back) to review needs a verified phone.
+		if (
+			nextStatus === "pending" &&
+			listing?.status !== "pending" &&
+			!requirePhone("publishListing")
+		)
+			return;
 		// Only a field the preset actually shows may block the save: a hidden
 		// price is never "required", which `listingDraftIssues` already knows.
 		if (draftIssues.length > 0) {

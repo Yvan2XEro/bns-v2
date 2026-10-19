@@ -12,7 +12,9 @@ import {
 } from "react-native";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useRevealContactPhone } from "@/src/hooks/useContactPhone";
-import { resolveErrorMessage } from "@/src/lib/apiError";
+import { usePhoneGate } from "@/src/hooks/usePhoneGate";
+import { ApiError } from "@/src/lib/api";
+import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { phoneDialUrl, sellerHasNoPhone } from "@/src/lib/callSeller";
@@ -44,6 +46,8 @@ export function CallSellerButton({
 	const { t } = useTranslation();
 	const { showError, showAlert } = useAlert();
 	const reveal = useRevealContactPhone(listingId);
+	// A seller's number is shown only to an account with a verified phone.
+	const { requirePhone } = usePhoneGate();
 	const [unavailable, setUnavailable] = useState(false);
 
 	if (unavailable) return null;
@@ -78,9 +82,18 @@ export function CallSellerButton({
 			return;
 		}
 		if (reveal.data?.phone) return contact(reveal.data.phone);
+		if (!requirePhone("revealPhone")) return;
 		reveal.mutate(undefined, {
 			onSuccess: ({ phone }) => contact(phone),
 			onError: (error) => {
+				// The phone was unverified since the account was last read.
+				if (
+					error instanceof ApiError &&
+					error.code === ERROR_CODES.phoneRequired
+				) {
+					requirePhone("revealPhone");
+					return;
+				}
 				if (sellerHasNoPhone(error)) setUnavailable(true);
 				showError(t("listing.callSeller"), resolveErrorMessage(error, t));
 			},
