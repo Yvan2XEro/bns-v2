@@ -109,24 +109,40 @@ describe("listing moderation", () => {
 		);
 	});
 
-	it("refuses a rejection with no reason", async () => {
+	it("refuses a rejection with no known reason, or “other” without words", async () => {
 		await expect(
 			rejectListing(payload, MOD, "l-pending", "   "),
 		).rejects.toMatchObject({ code: "moderation.reasonRequired" });
+		await expect(
+			rejectListing(payload, MOD, "l-pending", "other", " "),
+		).rejects.toMatchObject({ code: "moderation.reasonRequired" });
 	});
 
-	it("logs a pending rejection as a reject", async () => {
-		await rejectListing(payload, MOD, "l-pending", "Counterfeit goods");
+	it("logs a pending rejection as a reject, and keeps the code apart from the words", async () => {
+		await rejectListing(
+			payload,
+			MOD,
+			"l-pending",
+			"prohibited_item",
+			"Counterfeit goods",
+		);
 		expect(logs(payload)[0]).toMatchObject({
 			action: "listing.reject",
 			targetType: "listing",
 			targetId: "l-pending",
-			reason: "Counterfeit goods",
+			reason: "prohibited_item: Counterfeit goods",
+		});
+		expect(
+			payload.store.listings.find((listing) => listing.id === "l-pending"),
+		).toMatchObject({
+			status: "rejected",
+			rejectionCode: "prohibited_item",
+			rejectionReason: "Counterfeit goods",
 		});
 	});
 
 	it("logs pulling a live listing as a takedown, not a reject", async () => {
-		await rejectListing(payload, MOD, "l-live", "Reported as a scam");
+		await rejectListing(payload, MOD, "l-live", "suspected_scam");
 		expect(logs(payload)[0]).toMatchObject({
 			action: "listing.takedown",
 			metadata: { previousStatus: "published" },

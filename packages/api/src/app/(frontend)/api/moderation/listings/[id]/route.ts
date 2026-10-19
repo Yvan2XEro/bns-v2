@@ -30,9 +30,18 @@ export async function POST(
 		}
 
 		if (action === "reject") {
-			const reason = typeof body.reason === "string" ? body.reason : "";
+			// `reasonCode` is one of LISTING_REJECTION_REASONS; `message` is the
+			// moderator's own words to the seller.
+			const message = typeof body.message === "string" ? body.message : null;
 			return Response.json(
-				await rejectListing(ctx.payload, ctx.actor, id, reason, note),
+				await rejectListing(
+					ctx.payload,
+					ctx.actor,
+					id,
+					body.reasonCode,
+					message,
+					note,
+				),
 			);
 		}
 

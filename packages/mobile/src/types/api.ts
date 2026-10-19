@@ -323,6 +323,8 @@ export interface ListingDoc extends ListingHit {
 	seller?: UserDoc | string | null;
 	expiresAt?: string | null;
 	views?: number;
+	/** One of LISTING_REJECTION_REASONS; the seller reads it in their language. */
+	rejectionCode?: string | null;
 	rejectionReason?: string | null;
 	coordinates?: { lat?: number | null; lng?: number | null };
 	updatedAt: string;

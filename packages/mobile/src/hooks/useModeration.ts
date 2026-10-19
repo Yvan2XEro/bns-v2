@@ -4,6 +4,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
+import type { ListingRejectionReason } from "../../../api/src/contracts/listingRejection";
 import type {
 	RiskFlagDecisionInput,
 	RiskFlagDetail,
@@ -188,17 +189,22 @@ export function useListingDecision() {
 		({
 			listingId,
 			action,
-			reason,
+			reasonCode,
+			message,
 			note,
 		}: {
 			listingId: string;
 			action: "approve" | "reject";
-			reason?: string;
+			/** A rejection's reason, worded for the seller in their language. */
+			reasonCode?: ListingRejectionReason;
+			/** The moderator's own words to the seller; required for `other`. */
+			message?: string;
 			note?: string;
 		}) =>
 			api.post(`/api/moderation/listings/${listingId}`, {
 				action,
-				reason,
+				reasonCode,
+				message,
 				note,
 			}),
 		[["listings"], ["listing"]],

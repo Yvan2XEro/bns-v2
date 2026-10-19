@@ -1,3 +1,7 @@
+import {
+	type ListingRejectionReason,
+	rejectionNeedsMessage,
+} from "../../../api/src/contracts/listingRejection";
 /**
  * URL state, REST paths and decision bodies for the console's Reports
  * section, which holds both user reports and listings awaiting review (the
@@ -184,24 +188,42 @@ export function reportDecisionBody(
 export type ListingAction = "approve" | "reject";
 
 /** Mirrors `rejectListing`: a rejection carries the reason shown to the seller. */
+/** What `POST /api/moderation/listings/:id` takes. */
+export interface ListingDecisionBody {
+	action: ListingAction;
+	/** A rejection's reason, worded for the seller in their language. */
+	reasonCode?: ListingRejectionReason;
+	/** The moderator's own words to the seller; required for `other`. */
+	message?: string;
+	note?: string;
+}
+
 export function listingDecisionBody(
 	action: ListingAction,
-	reason: string,
+	reasonCode: ListingRejectionReason | "",
+	message: string,
 	note: string,
-): DecisionCheck<{ action: ListingAction; reason?: string; note?: string }> {
-	const cleanReason = reason.trim();
+): DecisionCheck<ListingDecisionBody> {
+	const cleanMessage = message.trim();
 	const cleanNote = note.trim();
 	if (
-		cleanReason.length > DECISION_TEXT_MAX ||
+		cleanMessage.length > DECISION_TEXT_MAX ||
 		cleanNote.length > DECISION_TEXT_MAX
 	)
 		return { ok: false };
-	if (action === "reject" && !cleanReason) return { ok: false };
+	if (action === "approve")
+		return {
+			ok: true,
+			body: { action, ...(cleanNote ? { note: cleanNote } : {}) },
+		};
+	if (!reasonCode || (rejectionNeedsMessage(reasonCode) && !cleanMessage))
+		return { ok: false };
 	return {
 		ok: true,
 		body: {
 			action,
-			...(action === "reject" ? { reason: cleanReason } : {}),
+			reasonCode,
+			...(cleanMessage ? { message: cleanMessage } : {}),
 			...(cleanNote ? { note: cleanNote } : {}),
 		},
 	};

@@ -1,8 +1,13 @@
 import type * as components from "@novu/api/models/components";
 import {
+	LISTING_REJECTION_LABELS,
+	LISTING_REJECTION_REASONS,
+} from "../contracts/listingRejection";
+import {
 	localized,
 	localizedField,
 	NOTIFICATION_LOCALES,
+	type NotificationLocale,
 } from "../contracts/notificationLocale";
 import { fingerprintOf } from "../lib/deployTasks";
 import {
@@ -213,6 +218,23 @@ function emailStep(
 	};
 }
 
+/** The reason code, worded in `locale` (`{% case %}` over every code). */
+function rejectionReasonText(locale: NotificationLocale): string {
+	const branches = LISTING_REJECTION_REASONS.map(
+		(code) => `{% when '${code}' %}${LISTING_REJECTION_LABELS[code][locale]}`,
+	).join("");
+	return `{% case payload.reasonCode %}${branches}{% else %}{{payload.reasonCode}}{% endcase %}`;
+}
+
+/** The moderator's words, when there are any, after the reason. */
+const REJECTION_MESSAGE =
+	"{% if payload.message != '' %} — {{payload.message}}{% endif %}";
+
+const LISTING_REJECTED_BODY = localized({
+	fr: `Votre annonce « {{payload.listingTitle}} » a été refusée. Motif : ${rejectionReasonText("fr")}${REJECTION_MESSAGE}.`,
+	en: `Your listing "{{payload.listingTitle}}" was rejected. Reason: ${rejectionReasonText("en")}${REJECTION_MESSAGE}.`,
+});
+
 const workflowSpecs: WorkflowSpec[] = [
 	{
 		channels: { inApp: true, push: true },
@@ -276,18 +298,20 @@ const workflowSpecs: WorkflowSpec[] = [
 				{
 					listingId: stringProperty("Listing identifier"),
 					listingTitle: stringProperty("Listing title"),
-					reason: stringProperty("Rejection reason"),
+					reasonCode: stringProperty(
+						"One of LISTING_REJECTION_REASONS (contracts/listingRejection.ts)",
+					),
+					message: stringProperty(
+						"The moderator's own words, in their language; may be empty",
+					),
 				},
-				["listingId", "listingTitle", "reason"],
+				["listingId", "listingTitle", "reasonCode", "message"],
 			),
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
 					subject: localized({ fr: "Annonce refusée", en: "Listing rejected" }),
-					body: localized({
-						fr: "Votre annonce « {{payload.listingTitle}} » a été refusée. Motif : {{payload.reason}}",
-						en: 'Your listing "{{payload.listingTitle}}" was rejected. Reason: {{payload.reason}}',
-					}),
+					body: LISTING_REJECTED_BODY,
 					redirect: redirect("/listing/{{payload.listingId}}/edit"),
 					primaryAction: action(
 						localized({ fr: "Modifier l'annonce", en: "Edit listing" }),
@@ -297,10 +321,7 @@ const workflowSpecs: WorkflowSpec[] = [
 				}),
 				pushStep("Push", "push", {
 					subject: localized({ fr: "Annonce refusée", en: "Listing rejected" }),
-					body: localized({
-						fr: "Votre annonce « {{payload.listingTitle}} » a été refusée. Motif : {{payload.reason}}",
-						en: 'Your listing "{{payload.listingTitle}}" was rejected. Reason: {{payload.reason}}',
-					}),
+					body: LISTING_REJECTED_BODY,
 				}),
 			],
 		},

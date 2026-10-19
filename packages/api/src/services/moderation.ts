@@ -14,6 +14,10 @@ import {
 	PAYOUT_HOLD_REASONS,
 	type PayoutHoldReason,
 } from "../collections/PayoutHolds";
+import {
+	isListingRejectionReason,
+	rejectionNeedsMessage,
+} from "../contracts/listingRejection";
 import { queueMembershipChange } from "../hooks/membershipEvents";
 import { queueSystemMessage } from "../hooks/systemMessageEvents";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
@@ -687,6 +691,7 @@ export async function approveListing(
 				// deliberately drafted must not still be pinned draft afterwards.
 				data: {
 					status: "published",
+					rejectionCode: null,
 					rejectionReason: null,
 					moderationHold: false,
 				},
@@ -803,15 +808,24 @@ export async function rejectListing(
 	payload: Payload,
 	actor: Actor,
 	listingId: string,
-	reason: string,
+	reasonCode: unknown,
+	/** The moderator's words to the seller; required for `other`. */
+	message?: string | null,
 	note?: string | null,
 ): Promise<ListingDecision> {
 	assertModerator(actor);
 
-	const cleanReason = trimmed(reason);
-	if (!cleanReason) {
+	const cleanMessage = trimmed(message);
+	if (
+		!isListingRejectionReason(reasonCode) ||
+		(rejectionNeedsMessage(reasonCode) && !cleanMessage)
+	) {
 		throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
 	}
+	// The log keeps the code and, when written, the moderator's words.
+	const cleanReason = cleanMessage
+		? `${reasonCode}: ${cleanMessage}`
+		: reasonCode;
 
 	const listing = await findListing(payload, listingId);
 	if (listing.status === "rejected") {
@@ -827,7 +841,11 @@ export async function rejectListing(
 				req,
 				overrideAccess: true,
 				context: MODERATION_CONTEXT,
-				data: { status: "rejected", rejectionReason: cleanReason },
+				data: {
+					status: "rejected",
+					rejectionCode: reasonCode,
+					rejectionReason: cleanMessage ?? null,
+				},
 			});
 
 			await writeLog(

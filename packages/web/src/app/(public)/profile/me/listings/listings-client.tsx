@@ -30,6 +30,7 @@ import { deleteListing, markListingAsSold, renewListing } from "~/lib/actions";
 import { kindPriceText, listingKindRules } from "~/lib/listing-kind";
 import { hasListingPrice } from "~/lib/price";
 import type { Listing, Media } from "~/types";
+import { rejectionText } from "../../../../../../../api/src/contracts/listingRejection";
 
 function getListingImageUrl(listing: Listing): string | null {
 	if (!listing.images || listing.images.length === 0) return null;
@@ -42,6 +43,8 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 	const t = useTranslations("Listing");
 	// "Let", "Position filled": a flat or a job is not "sold".
 	const tKind = useTranslations("ListingKind");
+	// The reason in the seller's language, whoever moderated the listing.
+	const tReason = useTranslations("ListingRejection");
 	const closedAs = (listing: Listing) =>
 		tKind(`closedAs.${listingKindRules(listing.kind).closedAs}`);
 	const router = useRouter();
@@ -219,7 +222,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 										{t("statusRejected")}
 									</p>
 									<p className="mt-1 text-red-600 text-xs">
-										{listing.rejectionReason || t("noReasonGiven")}
+										{rejectionText(listing, tReason) ?? t("noReasonGiven")}
 									</p>
 									<Link
 										href={`/listing/${listing.id}/edit`}

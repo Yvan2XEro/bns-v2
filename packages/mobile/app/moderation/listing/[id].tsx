@@ -24,6 +24,11 @@ import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import type { Category, ListingDoc, UserDoc } from "@/src/types/api";
+import {
+	LISTING_REJECTION_REASONS,
+	type ListingRejectionReason,
+	rejectionNeedsMessage,
+} from "../../../../api/src/contracts/listingRejection";
 
 export default function ModerateListingScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,11 +48,11 @@ export default function ModerateListingScreen() {
 
 	const run = (
 		action: "approve" | "reject",
-		reason?: string,
-		note?: string,
+		reasonCode?: ListingRejectionReason,
+		message?: string,
 	) => {
 		decide(
-			{ listingId: String(id), action, reason, note },
+			{ listingId: String(id), action, reasonCode, message },
 			{
 				onSuccess: () => {
 					setRejecting(false);
@@ -221,13 +226,31 @@ export default function ModerateListingScreen() {
 						visible={rejecting}
 						title={t("moderation.rejectSheetTitle")}
 						subtitle={t("moderation.rejectSheetSubtitle")}
-						textLabel={t("moderation.rejectReasonLabel")}
+						choices={LISTING_REJECTION_REASONS.map((code) => ({
+							value: code,
+							label: t(`listingRejection.${code}`),
+						}))}
+						choicesLabel={t("moderation.rejectReasonLabel")}
+						textLabel={t("moderation.rejectMessageLabel")}
 						textPlaceholder={t("moderation.rejectReasonPlaceholder")}
-						textRequired
 						confirmLabel={t("moderation.confirmReject")}
 						destructive
 						pending={isPending}
-						onConfirm={({ text }) => run("reject", text)}
+						onConfirm={({ choice, text }) => {
+							const code = LISTING_REJECTION_REASONS.find(
+								(reason) => reason === choice,
+							);
+							if (!code) return;
+							// "Other reason" says nothing by itself.
+							if (rejectionNeedsMessage(code) && !text) {
+								showError(
+									t("moderation.actionFailed"),
+									t("moderation.rejectMessageRequired"),
+								);
+								return;
+							}
+							run("reject", code, text || undefined);
+						}}
 						onClose={() => setRejecting(false)}
 					/>
 				</>

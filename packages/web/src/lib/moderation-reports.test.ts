@@ -163,15 +163,33 @@ describe("reportDecisionBody", () => {
 });
 
 describe("listingDecisionBody", () => {
-	test("a rejection needs a reason; the note is optional", () => {
-		expect(listingDecisionBody("reject", " ", "")).toEqual({ ok: false });
-		expect(listingDecisionBody("reject", " Blurry photos ", " ")).toEqual({
+	test("a rejection needs a reason; the message and the note are optional", () => {
+		expect(listingDecisionBody("reject", "", "", "")).toEqual({ ok: false });
+		expect(
+			listingDecisionBody("reject", "poor_photos", " Blurry ", " "),
+		).toEqual({
 			ok: true,
-			body: { action: "reject", reason: "Blurry photos" },
+			body: { action: "reject", reasonCode: "poor_photos", message: "Blurry" },
 		});
-		expect(listingDecisionBody("approve", "ignored", "Checked")).toEqual({
+		expect(listingDecisionBody("approve", "", "ignored", "Checked")).toEqual({
 			ok: true,
 			body: { action: "approve", note: "Checked" },
+		});
+	});
+
+	test("“other” says nothing by itself, so it needs the moderator's words", () => {
+		expect(listingDecisionBody("reject", "other", " ", "")).toEqual({
+			ok: false,
+		});
+		expect(
+			listingDecisionBody("reject", "other", "Sold elsewhere", ""),
+		).toEqual({
+			ok: true,
+			body: {
+				action: "reject",
+				reasonCode: "other",
+				message: "Sold elsewhere",
+			},
 		});
 	});
 });

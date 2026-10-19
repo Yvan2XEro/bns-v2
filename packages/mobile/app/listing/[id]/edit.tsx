@@ -63,6 +63,7 @@ import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { canAddPhoto } from "@/src/lib/photoLimit";
 import type { Place } from "@/src/lib/places";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
+import { rejectionText } from "../../../../api/src/contracts/listingRejection";
 
 const DURATIONS = [30, 60, 90];
 
@@ -369,6 +370,10 @@ export default function EditListingScreen() {
 	// An ad saved without a unit was a one-off price, and stays one until the
 	// seller says otherwise.
 	const [priceUnit, setPriceUnit] = useState("total");
+	// The reason in the seller's language, whoever moderated the listing.
+	const rejection = listing
+		? rejectionText(listing, (code) => t(`listingRejection.${code}`))
+		: null;
 	const [location, setLocation] = useState("");
 	const [coordinates, setCoordinates] = useState<{
 		lat: number;
@@ -1182,7 +1187,7 @@ export default function EditListingScreen() {
 											>
 												{t("edit.statusRejectedNotice")}
 											</Text>
-											{listing?.rejectionReason ? (
+											{rejection ? (
 												<Text
 													style={{
 														fontSize: 12,
@@ -1191,7 +1196,7 @@ export default function EditListingScreen() {
 													}}
 												>
 													{t("edit.statusRejectionReason", {
-														reason: listing.rejectionReason,
+														reason: rejection,
 													})}
 												</Text>
 											) : null}

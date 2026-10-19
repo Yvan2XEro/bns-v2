@@ -5,6 +5,14 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { AgeChip } from "~/components/moderation/age-chip";
+import { Label } from "~/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "~/components/ui/select";
 import {
 	useListingDecision,
 	useModerationListing,
@@ -20,6 +28,10 @@ import {
 import { relativeAge } from "~/lib/moderation-verification";
 import { hasListingPrice } from "~/lib/price";
 import type { Category, Listing, Shop } from "~/types";
+import {
+	LISTING_REJECTION_REASONS,
+	type ListingRejectionReason,
+} from "../../../../api/src/contracts/listingRejection";
 import {
 	ConfirmApply,
 	DecisionOption,
@@ -178,11 +190,13 @@ function ListingDecisionForm({
 	const t = useTranslations("ModerationConsole");
 	const decision = useListingDecision();
 	const [action, setAction] = useState<ListingAction>("approve");
-	const [reason, setReason] = useState("");
+	const tReason = useTranslations("ListingRejection");
+	const [reasonCode, setReasonCode] = useState<ListingRejectionReason | "">("");
+	const [message, setMessage] = useState("");
 	const [note, setNote] = useState("");
 	const [confirming, setConfirming] = useState(false);
 	const [touched, setTouched] = useState(false);
-	const checked = listingDecisionBody(action, reason, note);
+	const checked = listingDecisionBody(action, reasonCode, message, note);
 	const name = `listing-action-${listingId}`;
 
 	const choose = (value: string) => {
@@ -216,23 +230,53 @@ function ListingDecisionForm({
 				/>
 			</fieldset>
 			{action === "reject" ? (
-				<DecisionText
-					id={`${name}-reason`}
-					label={t("listings.decision.reason")}
-					value={reason}
-					onChange={(value) => {
-						setReason(value);
-						setConfirming(false);
-					}}
-					required
-					max={DECISION_TEXT_MAX}
-					placeholder={t("listings.decision.reasonPlaceholder")}
-					error={
-						touched && !checked.ok
-							? t("listings.decision.reasonRequired")
-							: null
-					}
-				/>
+				<>
+					<div className="space-y-1.5">
+						<Label htmlFor={`${name}-reason`}>
+							{t("listings.decision.reason")}
+						</Label>
+						<Select
+							value={reasonCode}
+							onValueChange={(value) => {
+								setReasonCode(
+									LISTING_REJECTION_REASONS.find((code) => code === value) ??
+										"",
+								);
+								setConfirming(false);
+							}}
+						>
+							<SelectTrigger id={`${name}-reason`}>
+								<SelectValue
+									placeholder={t("listings.decision.reasonPlaceholder")}
+								/>
+							</SelectTrigger>
+							<SelectContent>
+								{LISTING_REJECTION_REASONS.map((code) => (
+									<SelectItem key={code} value={code}>
+										{tReason(code)}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<DecisionText
+						id={`${name}-message`}
+						label={t("listings.decision.message")}
+						value={message}
+						onChange={(value) => {
+							setMessage(value);
+							setConfirming(false);
+						}}
+						required={reasonCode === "other"}
+						max={DECISION_TEXT_MAX}
+						placeholder={t("listings.decision.messagePlaceholder")}
+						error={
+							touched && !checked.ok
+								? t("listings.decision.reasonRequired")
+								: null
+						}
+					/>
+				</>
 			) : null}
 			<DecisionText
 				id={`${name}-note`}

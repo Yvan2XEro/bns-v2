@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-query";
 import type { ApiError } from "~/lib/apiError";
 import {
-	type ListingAction,
+	type ListingDecisionBody,
 	type PayloadPage,
 	pendingListingsPath,
 	type ReportFilters,
@@ -167,7 +167,7 @@ export function useListingDecision() {
 		ApiError,
 		{
 			id: string;
-			body: { action: ListingAction; reason?: string; note?: string };
+			body: ListingDecisionBody;
 		}
 	>({
 		mutationFn: ({ id, body }) =>

@@ -901,7 +901,25 @@ export interface Listing {
     lng?: number | null;
   };
   /**
-   * Reason for rejection (visible to seller)
+   * Why the listing was refused, shown to the seller in their language.
+   */
+  rejectionCode?:
+    | (
+        | 'prohibited_item'
+        | 'misleading'
+        | 'wrong_category'
+        | 'poor_photos'
+        | 'missing_details'
+        | 'price_issue'
+        | 'duplicate'
+        | 'contact_details'
+        | 'offensive'
+        | 'suspected_scam'
+        | 'other'
+      )
+    | null;
+  /**
+   * The moderator's own words to the seller, beside the reason. Optional, except for “other”.
    */
   rejectionReason?: string | null;
   tags?: (string | Tag)[] | null;
@@ -4519,6 +4537,7 @@ export interface ListingsSelect<T extends boolean = true> {
         lat?: T;
         lng?: T;
       };
+  rejectionCode?: T;
   rejectionReason?: T;
   tags?: T;
   shop?: T;

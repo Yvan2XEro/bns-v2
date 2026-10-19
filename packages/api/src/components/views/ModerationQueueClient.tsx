@@ -4,6 +4,13 @@ import { Banner, Button, Pill, ShimmerEffect } from "@payloadcms/ui";
 import { useCallback, useEffect, useState } from "react";
 import type { MarketConfig } from "../../contracts/marketConfig";
 import { formatMoney } from "../../contracts/money";
+import {
+	EMPTY_REJECTION,
+	type RejectionDraft,
+	RejectionReasonFields,
+	rejectionReady,
+	rejectListingRequest,
+} from "./RejectionReasonFields";
 
 interface ListingDoc {
 	id: string;
@@ -41,7 +48,7 @@ export function ModerationQueueClient() {
 	const [markets, setMarkets] = useState<Record<string, MarketConfig>>({});
 	const [loading, setLoading] = useState(true);
 	const [rejectId, setRejectId] = useState<string | null>(null);
-	const [reason, setReason] = useState("");
+	const [draft, setDraft] = useState<RejectionDraft>(EMPTY_REJECTION);
 	const [acting, setActing] = useState(false);
 
 	const fetchListings = useCallback(() => {
@@ -91,17 +98,12 @@ export function ModerationQueueClient() {
 	};
 
 	const handleReject = async (id: string) => {
-		if (!reason.trim()) return;
+		if (!rejectionReady(draft)) return;
 		setActing(true);
 		try {
-			const res = await fetch(`/api/listings/${id}`, {
-				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ status: "rejected", rejectionReason: reason }),
-			});
-			if (!res.ok) throw new Error("Failed");
+			await rejectListingRequest(id, draft);
 			setRejectId(null);
-			setReason("");
+			setDraft(EMPTY_REJECTION);
 			fetchListings();
 		} catch {
 			/* ignore */
@@ -229,21 +231,9 @@ export function ModerationQueueClient() {
 												gap: "0.5rem",
 											}}
 										>
-											<textarea
-												value={reason}
-												onChange={(e) => setReason(e.target.value)}
-												placeholder="Rejection reason..."
-												rows={2}
-												style={{
-													width: "100%",
-													padding: "0.5rem",
-													border: "1px solid var(--theme-elevation-200)",
-													borderRadius: "var(--style-radius-s)",
-													fontSize: "0.8125rem",
-													resize: "vertical",
-													background: "var(--theme-input-bg)",
-													color: "var(--theme-text)",
-												}}
+											<RejectionReasonFields
+												value={draft}
+												onChange={setDraft}
 											/>
 											<div style={{ display: "flex", gap: "0.5rem" }}>
 												<Button
@@ -259,7 +249,7 @@ export function ModerationQueueClient() {
 													size="small"
 													onClick={() => {
 														setRejectId(null);
-														setReason("");
+														setDraft(EMPTY_REJECTION);
 													}}
 												>
 													Cancel

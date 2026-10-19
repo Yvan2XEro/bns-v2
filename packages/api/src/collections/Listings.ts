@@ -16,6 +16,10 @@ import {
 	PRICE_UNITS,
 } from "../contracts/listingKinds";
 import {
+	isListingRejectionReason,
+	LISTING_REJECTION_REASONS,
+} from "../contracts/listingRejection";
+import {
 	keepApplicableTags,
 	listingTagIssues,
 	relationIds,
@@ -699,7 +703,12 @@ export const Listings: CollectionConfig = {
 							payload: {
 								listingId: doc.id,
 								listingTitle: doc.title,
-								reason: doc.rejectionReason || "No reason provided",
+								// A listing refused before reasons were coded carries
+								// only the moderator's words: it reads as "other".
+								reasonCode: isListingRejectionReason(doc.rejectionCode)
+									? doc.rejectionCode
+									: "other",
+								message: doc.rejectionReason ?? "",
 							},
 						});
 					} else if (
@@ -942,10 +951,26 @@ export const Listings: CollectionConfig = {
 			],
 		},
 		{
+			// Written by the moderation service; each app words it in the
+			// seller's language (contracts/listingRejection.ts).
+			name: "rejectionCode",
+			type: "select",
+			options: LISTING_REJECTION_REASONS.map((value) => ({
+				label: value,
+				value,
+			})),
+			access: { update: staffOnlyField },
+			admin: {
+				description:
+					"Why the listing was refused, shown to the seller in their language.",
+			},
+		},
+		{
 			name: "rejectionReason",
 			type: "textarea",
 			admin: {
-				description: "Reason for rejection (visible to seller)",
+				description:
+					"The moderator's own words to the seller, beside the reason. Optional, except for “other”.",
 			},
 		},
 		{

@@ -5775,11 +5775,13 @@
 				"reject": "Reject",
 				"rejectBody": "The listing is not published; the seller sees the reason and can correct it.",
 				"reason": "Reason shown to the seller",
-				"reasonPlaceholder": "What the seller must change.",
-				"reasonRequired": "Give the seller a reason before rejecting.",
+				"reasonPlaceholder": "Pick a reason",
+				"reasonRequired": "Pick a reason, and explain it when it is “Other reason”.",
 				"note": "Internal note",
 				"confirmApprove": "Publish this listing?",
-				"confirmReject": "Reject this listing?"
+				"confirmReject": "Reject this listing?",
+				"message": "Message to the seller",
+				"messagePlaceholder": "Optional: what exactly to change. Required for “Other reason”."
 			}
 		},
 		"risk": {
@@ -6220,5 +6222,18 @@
 		"retry": "Retry",
 		"previous": "Previous",
 		"next": "Next"
+	},
+	"ListingRejection": {
+		"prohibited_item": "Item not allowed on the platform",
+		"misleading": "Misleading listing",
+		"wrong_category": "Wrong category",
+		"poor_photos": "Photos missing, blurry or unrelated",
+		"missing_details": "Incomplete description",
+		"price_issue": "Price missing or unrealistic",
+		"duplicate": "Duplicate listing",
+		"contact_details": "Contact details in the text or photos",
+		"offensive": "Offensive content",
+		"suspected_scam": "Suspected scam",
+		"other": "Other reason"
 	}
 }

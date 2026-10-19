@@ -5775,11 +5775,13 @@
 				"reject": "Refuser",
 				"rejectBody": "L'annonce n'est pas publiée ; le vendeur voit le motif et peut la corriger.",
 				"reason": "Motif communiqué au vendeur",
-				"reasonPlaceholder": "Ce que le vendeur doit modifier.",
-				"reasonRequired": "Indiquez un motif au vendeur avant de refuser.",
+				"reasonPlaceholder": "Choisissez un motif",
+				"reasonRequired": "Choisissez un motif, et expliquez-le s'il s'agit de « Autre motif ».",
 				"note": "Note interne",
 				"confirmApprove": "Publier cette annonce ?",
-				"confirmReject": "Refuser cette annonce ?"
+				"confirmReject": "Refuser cette annonce ?",
+				"message": "Message au vendeur",
+				"messagePlaceholder": "Facultatif : ce qu'il faut changer précisément. Obligatoire pour « Autre motif »."
 			}
 		},
 		"risk": {
@@ -6220,5 +6222,18 @@
 		"retry": "Réessayer",
 		"previous": "Précédent",
 		"next": "Suivant"
+	},
+	"ListingRejection": {
+		"prohibited_item": "Article interdit sur la plateforme",
+		"misleading": "Annonce trompeuse",
+		"wrong_category": "Mauvaise catégorie",
+		"poor_photos": "Photos absentes, floues ou sans rapport",
+		"missing_details": "Description incomplète",
+		"price_issue": "Prix manquant ou irréaliste",
+		"duplicate": "Annonce en double",
+		"contact_details": "Coordonnées dans le texte ou les photos",
+		"offensive": "Contenu choquant ou injurieux",
+		"suspected_scam": "Suspicion d'arnaque",
+		"other": "Autre motif"
 	}
 }

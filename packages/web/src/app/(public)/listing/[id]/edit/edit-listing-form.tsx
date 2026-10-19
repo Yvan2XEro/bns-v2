@@ -59,6 +59,7 @@ import { mediaUploadForm } from "~/lib/media-upload";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import { cn } from "~/lib/utils";
 import type { Category, Listing, Media } from "~/types";
+import { rejectionText } from "../../../../../../../api/src/contracts/listingRejection";
 import { placeCoords } from "../../../../../../../api/src/contracts/places";
 
 interface ExistingImage {
@@ -78,6 +79,9 @@ export function EditListingForm({
 	const tCommon = useTranslations("Common");
 	const tShop = useTranslations("Shop");
 	const tKind = useTranslations("ListingKind");
+	const tReason = useTranslations("ListingRejection");
+	// The reason in the seller's language, whoever moderated the listing.
+	const rejection = rejectionText(listing, tReason);
 	const tIssues = useTranslations("FormIssues");
 	const photoLimit = usePhotoLimit();
 	const router = useRouter();
@@ -678,9 +682,7 @@ export function EditListingForm({
 					{listing.status === "rejected" && (
 						<div className="space-y-1 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800 text-sm">
 							<p className="font-medium">{t("rejectionNotice")}</p>
-							{(listing as any).rejectionReason && (
-								<p>{`${t("reason")} ${(listing as any).rejectionReason}`}</p>
-							)}
+							{rejection && <p>{`${t("reason")} ${rejection}`}</p>}
 						</div>
 					)}
 

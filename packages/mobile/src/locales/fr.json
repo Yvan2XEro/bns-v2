@@ -1628,7 +1628,7 @@
 		"rejectedTitle": "Annonce rejetée",
 		"rejectedMessage": "Le vendeur a été informé du motif.",
 		"rejectSheetTitle": "Rejeter cette annonce",
-		"rejectSheetSubtitle": "Le motif est montré au vendeur : écrivez-le pour lui.",
+		"rejectSheetSubtitle": "Le vendeur voit le motif choisi, et votre message si vous en écrivez un.",
 		"rejectReasonLabel": "Motif communiqué au vendeur",
 		"rejectReasonPlaceholder": "ex. Les photos ne correspondent pas à la description.",
 		"confirmReject": "Rejeter l'annonce",
@@ -1914,7 +1914,9 @@
 		"paymentsRefundRateTitle": "Taux de remboursement ({{days}} j)",
 		"paymentsRefundRateBody": "{{refunded}} commandes remboursées sur {{orders}}",
 		"paymentsOrigin_platformRelease": "Versé par BuyNSellem",
-		"paymentsOrigin_providerSchedule": "Calendrier propre à NotchPay"
+		"paymentsOrigin_providerSchedule": "Calendrier propre à NotchPay",
+		"rejectMessageLabel": "Message au vendeur",
+		"rejectMessageRequired": "Expliquez le motif au vendeur s'il s'agit de « Autre motif »."
 	},
 	"shop": {
 		"deliveryCities": "Livraison ou retrait disponible à : {{cities}}",
@@ -4709,5 +4711,18 @@
 		"retry": "Réessayer",
 		"previous": "Précédent",
 		"next": "Suivant"
+	},
+	"listingRejection": {
+		"prohibited_item": "Article interdit sur la plateforme",
+		"misleading": "Annonce trompeuse",
+		"wrong_category": "Mauvaise catégorie",
+		"poor_photos": "Photos absentes, floues ou sans rapport",
+		"missing_details": "Description incomplète",
+		"price_issue": "Prix manquant ou irréaliste",
+		"duplicate": "Annonce en double",
+		"contact_details": "Coordonnées dans le texte ou les photos",
+		"offensive": "Contenu choquant ou injurieux",
+		"suspected_scam": "Suspicion d'arnaque",
+		"other": "Autre motif"
 	}
 }
