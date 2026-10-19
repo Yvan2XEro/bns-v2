@@ -12,6 +12,8 @@ import {
 import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { ApiError } from "@/src/lib/api";
+import { ERROR_CODES } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import {
 	getAuthModalParams,
@@ -61,6 +63,17 @@ export default function LoginScreen() {
 			await login(email.trim().toLowerCase(), password);
 			finishAuth();
 		} catch (err: unknown) {
+			// Not verified yet: the screen that waits on the link offers the resend.
+			if (
+				err instanceof ApiError &&
+				err.code === ERROR_CODES.emailNotVerified
+			) {
+				router.replace({
+					pathname: "/auth/check-email",
+					params: { email: email.trim().toLowerCase() },
+				});
+				return;
+			}
 			showError(
 				t("auth.loginFailedTitle"),
 				authErrorMessage(err, t("auth.loginFailedMessage")),

@@ -23,7 +23,7 @@ import {
 import { useFieldIssues } from "~/components/auth/use-field-issues";
 import { Button } from "~/components/ui/button";
 import { useAuth } from "~/hooks/use-auth";
-import { resolveErrorMessage } from "~/lib/apiError";
+import { ApiError, ERROR_CODES, resolveErrorMessage } from "~/lib/apiError";
 import { loginIssues } from "~/lib/auth-form";
 import { safeReturnTo } from "~/lib/return-to";
 
@@ -43,6 +43,8 @@ function LoginForm() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
+	// Refused because the email is not verified yet: offer the resend.
+	const [unverified, setUnverified] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const { login } = useAuth();
 	const router = useRouter();
@@ -67,6 +69,7 @@ function LoginForm() {
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setError("");
+		setUnverified(false);
 		if (!fields.check()) return;
 		setIsLoading(true);
 
@@ -74,6 +77,9 @@ function LoginForm() {
 			await login(email, password);
 			router.push(redirectTo);
 		} catch (err) {
+			setUnverified(
+				err instanceof ApiError && err.code === ERROR_CODES.emailNotVerified,
+			);
 			setError(resolveErrorMessage(err, tErrors, t("loginFailed")));
 		} finally {
 			setIsLoading(false);
@@ -109,6 +115,17 @@ function LoginForm() {
 					<AuthNotice tone="success">{t("resetSuccess")}</AuthNotice>
 				)}
 				{error && <AuthNotice tone="error">{error}</AuthNotice>}
+				{unverified && (
+					<Link
+						href={`/auth/check-email?${new URLSearchParams({
+							email: email.trim(),
+							...(redirectTo === "/" ? {} : { redirect: redirectTo }),
+						})}`}
+						className={AUTH_LINK}
+					>
+						{t("resendVerification")}
+					</Link>
+				)}
 				<AuthField
 					id="email"
 					label={t("email")}

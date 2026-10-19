@@ -32,6 +32,8 @@
 		"@faker-js/faker": "^10.3.0",
 		"@novu/api": "^3.14.1",
 		"@payloadcms/db-mongodb": "3.79.0",
+		"@payloadcms/email-nodemailer": "3.79.0",
+		"@payloadcms/email-resend": "3.79.0",
 		"@payloadcms/next": "3.79.0",
 		"@payloadcms/richtext-lexical": "3.79.0",
 		"@payloadcms/storage-azure": "3.79.0",

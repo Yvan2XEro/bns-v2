@@ -154,6 +154,16 @@ export const APP_ENV = {
 	YANGO_DELIVERY_API_KEY: api(true),
 	YANGO_DELIVERY_WEBHOOK_SECRET: api(true),
 
+	// ── Email (verification, password reset): Resend or SMTP ──
+	EMAIL_PROVIDER: api(),
+	RESEND_API_KEY: api(true),
+	SMTP_HOST: api(),
+	SMTP_PORT: api(),
+	SMTP_USER: api(),
+	SMTP_PASS: api(true),
+	EMAIL_FROM_ADDRESS: api(),
+	EMAIL_FROM_NAME: api(),
+
 	// ── Notifications ──
 	NOVU_SECRET_KEY: api(true),
 	NOVU_APPLICATION_IDENTIFIER: {

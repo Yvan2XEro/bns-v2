@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Access, CollectionConfig } from "payload";
+import { type Access, type CollectionConfig, UnverifiedEmail } from "payload";
 import { anyone } from "@/access/anyone";
 import { isAdmin, suspensionSummary } from "../access/roles";
 import { selfOrStaffField, staffOnlyField } from "../access/staff";
@@ -8,6 +8,12 @@ import {
 	DEFAULT_NOTIFICATION_LOCALE,
 	NOTIFICATION_LOCALES,
 } from "../contracts/notificationLocale";
+import { ERROR_CODES } from "../lib/errors";
+import {
+	type VerificationRecipient,
+	verificationEmailHtml,
+	verificationEmailSubject,
+} from "../lib/verificationEmail";
 import { deleteUserRelatedData } from "../services/accountDeletion";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
@@ -75,6 +81,15 @@ export const Users: CollectionConfig = {
 	// stay logged in. Beyond 4 days of inactivity they must re-authenticate.
 	auth: {
 		tokenExpiration: 345600,
+		// Signing in waits for the link in this email: every session then
+		// belongs to a real inbox (docs/account-trust-2026-10.md). Payload sends
+		// it once, on create; services/emailVerification.ts resends it.
+		verify: {
+			generateEmailSubject: ({ user }) =>
+				verificationEmailSubject(user as VerificationRecipient),
+			generateEmailHTML: ({ token, user }) =>
+				verificationEmailHtml(user as VerificationRecipient, token ?? ""),
+		},
 	},
 	access: {
 		create: anyone,
@@ -91,6 +106,24 @@ export const Users: CollectionConfig = {
 			req.user?.role === "admin" || req.user?.role === "moderator",
 	},
 	hooks: {
+		// Payload words its refusal of an unverified sign-in in the request's
+		// language; the apps need the code to offer the resend.
+		afterError: [
+			({ error }) =>
+				error instanceof UnverifiedEmail
+					? {
+							status: 403,
+							response: {
+								errors: [
+									{
+										message: error.message,
+										data: { code: ERROR_CODES.emailNotVerified },
+									},
+								],
+							},
+						}
+					: undefined,
+		],
 		// Computed before field access runs: `phoneVerifiedAt` is unreadable to
 		// everyone, so a field-level afterRead would already see it stripped.
 		beforeRead: [
@@ -102,6 +135,11 @@ export const Users: CollectionConfig = {
 		],
 		beforeChange: [
 			({ req, data, operation, originalDoc }) => {
+				// Payload sends the verification email on create: the first
+				// resend counts its minute from here (services/emailVerification.ts).
+				if (operation === "create" && data._verified !== true) {
+					data.emailVerificationSentAt = new Date().toISOString();
+				}
 				// DEBUG — remove once root cause is confirmed
 				if (req.context?.oauthFlow) {
 					req.payload.logger.info({
@@ -380,6 +418,13 @@ export const Users: CollectionConfig = {
 			defaultValue: DEFAULT_NOTIFICATION_LOCALE,
 			options: NOTIFICATION_LOCALES.map((value) => ({ label: value, value })),
 			access: { read: selfOrStaffField },
+		},
+		{
+			// When the last verification email left: the resend waits a minute.
+			name: "emailVerificationSentAt",
+			type: "date",
+			access: { read: staffOnlyField, update: () => false },
+			admin: { readOnly: true },
 		},
 		{
 			type: "row",

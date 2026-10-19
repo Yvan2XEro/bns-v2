@@ -359,6 +359,7 @@ export interface User {
   totalReviews?: number | null;
   bio?: string | null;
   language?: ('fr' | 'en') | null;
+  emailVerificationSentAt?: string | null;
   phone?: string | null;
   phoneVerified?: boolean | null;
   pendingPhone?: string | null;
@@ -422,6 +423,8 @@ export interface User {
   resetPasswordExpiration?: string | null;
   salt?: string | null;
   hash?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   sessions?:
@@ -4444,6 +4447,7 @@ export interface UsersSelect<T extends boolean = true> {
   totalReviews?: T;
   bio?: T;
   language?: T;
+  emailVerificationSentAt?: T;
   phone?: T;
   phoneVerified?: T;
   pendingPhone?: T;
@@ -4479,6 +4483,8 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  _verified?: T;
+  _verificationToken?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:

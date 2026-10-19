@@ -11,7 +11,9 @@ import {
 	useState,
 } from "react";
 import { AppState, Platform } from "react-native";
+import i18n from "@/src/lib/i18n";
 import type { LoginResponse, MeResponse, UserDoc } from "@/src/types/api";
+import { notificationLocaleOf } from "../../../api/src/contracts/notificationLocale";
 import {
 	API_BASE_URL,
 	ApiError,
@@ -227,9 +229,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		email: string,
 		password: string,
 	): Promise<void> => {
-		await api.post("/api/users", { name, email, password });
-		// Auto-login after successful registration
-		await login(email, password);
+		// The verification email is written in the app's language; signing in
+		// waits on the link it carries, so there is no sign-in here.
+		await api.post("/api/users", {
+			name,
+			email,
+			password,
+			language: notificationLocaleOf(i18n.language),
+		});
 	};
 
 	const logout = async (): Promise<void> => {

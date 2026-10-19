@@ -141,6 +141,15 @@ services:
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       NOVU_SECRET_KEY: ${NOVU_SECRET_KEY:-}
+      # Email verification and password reset: Resend or SMTP (api/src/lib/email.ts).
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-}
       # The API recognises chat-service by this address: it is the one caller
       # allowed to name a message's sender. Unset here, every websocket message
       # is refused as "not a participant" (fail-closed by design).

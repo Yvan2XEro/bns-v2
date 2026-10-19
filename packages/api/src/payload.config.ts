@@ -137,6 +137,7 @@ import {
 	sweepBuyerFeeInvoicesTask,
 	syncConnectedAccountTask,
 } from "./jobs";
+import { emailAdapter } from "./lib/email";
 import { afterCollectionsReady } from "./lib/migrationsReady";
 import { registerConfiguredAdapters } from "./lib/payments/registerAdapters";
 import { registerResaleAdjuster } from "./lib/resale";
@@ -242,6 +243,8 @@ const deliveryTasks = [
 export default buildConfig({
 	// Notifications are written in each recipient's language, read off their
 	// account when an event is sent (hooks/notificationEvents.ts).
+	// Email verification and password reset: Resend or SMTP (lib/email.ts).
+	email: emailAdapter(),
 	onInit: async (payload) => {
 		registerNotificationLocales(payload);
 	},

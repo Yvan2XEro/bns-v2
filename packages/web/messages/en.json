@@ -415,7 +415,19 @@
 		"emailRequired": "Enter your email address",
 		"emailInvalid": "Enter a valid email address, like name@example.com",
 		"passwordRequired": "Enter your password",
-		"confirmRequired": "Confirm your password"
+		"confirmRequired": "Confirm your password",
+		"checkInboxTitle": "Confirm your email address",
+		"checkInboxDesc": "We sent a link to {email}. Open it to activate your account, then sign in.",
+		"checkInboxDescNoEmail": "Open the link we emailed you to activate your account, then sign in.",
+		"checkInboxSpam": "Nothing yet? Look in your spam folder, or send the email again.",
+		"resendVerification": "Send the confirmation email again",
+		"resendVerificationIn": "Send again in {seconds}s",
+		"verificationResent": "Email sent again. The previous link no longer works.",
+		"verifyingEmail": "Confirming your address…",
+		"emailVerifiedTitle": "Address confirmed",
+		"emailVerifiedDesc": "Your account is active. You can sign in.",
+		"verifyFailedTitle": "This link no longer works",
+		"verifyFailedDesc": "It was already used, or a newer email replaced it. Enter your address to receive a new one."
 	},
 	"AuthShell": {
 		"backToSite": "Buy'N'Sellem — back to the site",

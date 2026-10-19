@@ -134,7 +134,19 @@
 		"errorTitle": "Erreur",
 		"errorGeneric": "Une erreur est survenue",
 		"showPassword": "Afficher le mot de passe",
-		"hidePassword": "Masquer le mot de passe"
+		"hidePassword": "Masquer le mot de passe",
+		"checkInboxTitle": "Confirmez votre adresse e-mail",
+		"checkInboxDesc": "Nous avons envoyé un lien à {{email}}. Ouvrez-le pour activer votre compte, puis connectez-vous.",
+		"checkInboxDescNoEmail": "Ouvrez le lien reçu par e-mail pour activer votre compte, puis connectez-vous.",
+		"checkInboxSpam": "Rien reçu ? Regardez dans les courriers indésirables, ou renvoyez l'e-mail.",
+		"resendVerification": "Renvoyer l'e-mail de confirmation",
+		"resendVerificationIn": "Renvoyer dans {{seconds}} s",
+		"verificationResent": "E-mail renvoyé. Le lien précédent ne fonctionne plus.",
+		"verifyingEmail": "Confirmation de votre adresse…",
+		"emailVerifiedTitle": "Adresse confirmée",
+		"emailVerifiedDesc": "Votre compte est actif. Vous pouvez vous connecter.",
+		"verifyFailedTitle": "Ce lien ne fonctionne plus",
+		"verifyFailedDesc": "Il a déjà servi, ou un e-mail plus récent l'a remplacé. Saisissez votre adresse pour en recevoir un nouveau."
 	},
 	"home": {
 		"searchPlaceholder": "Que cherchez-vous ?",

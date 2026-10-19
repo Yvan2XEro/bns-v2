@@ -499,6 +499,10 @@ function RootLayoutNav() {
 						options={{ presentation: "modal", headerShown: false }}
 					/>
 					<Stack.Screen
+						name="auth/check-email"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
 						name="auth/forgot-password"
 						options={{ presentation: "modal", headerShown: false }}
 					/>

@@ -3,7 +3,7 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Suspense, useEffect, useState } from "react";
 import { AccountBenefitsAside } from "~/components/auth/auth-asides";
 import {
@@ -49,6 +49,7 @@ function RegisterForm() {
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const { register } = useAuth();
+	const locale = useLocale();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const providers = useSocialProviders();
@@ -78,8 +79,15 @@ function RegisterForm() {
 		setIsLoading(true);
 
 		try {
-			await register(email, password, name);
-			router.push(redirectTo);
+			await register(email, password, name, locale);
+			// Signing in waits on the link just sent: say where to look.
+			router.push(
+				`/auth/check-email?${new URLSearchParams({
+					email,
+					sent: "1",
+					...(redirectTo === "/" ? {} : { redirect: redirectTo }),
+				})}`,
+			);
 		} catch (err) {
 			setError(resolveErrorMessage(err, tErrors, t("registrationFailed")));
 		} finally {

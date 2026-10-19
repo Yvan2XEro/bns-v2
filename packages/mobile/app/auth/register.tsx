@@ -63,8 +63,13 @@ export default function RegisterScreen() {
 		}
 		setLoading(true);
 		try {
-			await register(name.trim(), email.trim().toLowerCase(), password);
-			finishAuth();
+			const address = email.trim().toLowerCase();
+			await register(name.trim(), address, password);
+			// Signing in waits on the link just sent: say where to look.
+			router.replace({
+				pathname: "/auth/check-email",
+				params: { email: address, sent: "1" },
+			});
 		} catch (err: unknown) {
 			showError(
 				t("auth.registerFailedTitle"),

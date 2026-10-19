@@ -185,7 +185,11 @@ export async function resolveOAuthUser(
 		return (await payload.update({
 			collection: "users",
 			context: { oauthFlow: true },
-			data: withProviderLink(emailMatchedUser, identity),
+			// The provider has just proved the inbox this account waits on.
+			data: {
+				...withProviderLink(emailMatchedUser, identity),
+				_verified: true,
+			},
 			depth: 0,
 			id: emailMatchedUser.id,
 			overrideAccess: true,
@@ -215,12 +219,16 @@ export async function resolveOAuthUser(
 		password: makeRandomPassword(),
 		providerAccountId: identity.providerAccountId,
 		role: "user",
+		// The provider vouched for the address (or there is none to check):
+		// signing in never waits for a link.
+		_verified: true,
 	};
 
 	return (await payload.create({
 		collection: "users",
 		context: { oauthFlow: true },
 		data: createData,
+		disableVerificationEmail: true,
 		overrideAccess: true,
 	})) as PayloadUser;
 }

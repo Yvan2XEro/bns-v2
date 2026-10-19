@@ -26,6 +26,7 @@ import * as migration_20261016_000000_tags_category_scope from "./20261016_00000
 import * as migration_20261016_000100_condition_attribute from "./20261016_000100_condition_attribute";
 import * as migration_20261016_000300_category_locales from "./20261016_000300_category_locales";
 import * as migration_20261019_000000_tag_locales from "./20261019_000000_tag_locales";
+import * as migration_20261019_000100_users_verified from "./20261019_000100_users_verified";
 
 export const migrations = [
 	{
@@ -167,5 +168,10 @@ export const migrations = [
 		up: migration_20261019_000000_tag_locales.up,
 		down: migration_20261019_000000_tag_locales.down,
 		name: "20261019_000000_tag_locales",
+	},
+	{
+		up: migration_20261019_000100_users_verified.up,
+		down: migration_20261019_000100_users_verified.down,
+		name: "20261019_000100_users_verified",
 	},
 ];

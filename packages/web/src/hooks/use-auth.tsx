@@ -22,7 +22,13 @@ export interface AuthContextType {
 		provider: SocialAuthProvider,
 		redirectTo?: string,
 	) => void;
-	register: (email: string, password: string, name: string) => Promise<void>;
+	/** Creates the account; signing in waits for the link sent to `email`. */
+	register: (
+		email: string,
+		password: string,
+		name: string,
+		language: string,
+	) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
 	refreshToken: () => Promise<void>;
@@ -99,11 +105,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		setUser(data.user);
 	}
 
-	async function register(email: string, password: string, name: string) {
+	async function register(
+		email: string,
+		password: string,
+		name: string,
+		language: string,
+	) {
 		const response = await fetch("/api/users", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ email, password, name }),
+			// The verification email is written in the reader's language.
+			body: JSON.stringify({ email, password, name, language }),
 			credentials: "include",
 		});
 
@@ -111,9 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			const body = await response.json().catch(() => ({}));
 			throw apiErrorFrom(response.status, body);
 		}
-
-		// After registration, log in to get the auth cookie
-		await login(email, password);
+		// No sign-in here: the account waits on the link in its inbox.
 	}
 
 	function loginWithProvider(
