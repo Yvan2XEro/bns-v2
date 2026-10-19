@@ -13,6 +13,7 @@ import {
 } from "~/components/listing/price-unit-select";
 import { TagPicker } from "~/components/listing/tag-picker";
 import { LocationField } from "~/components/location/location-field";
+import { PhoneRequirement } from "~/components/shop/phone-requirement";
 import { PublishInShopToggle } from "~/components/shop/publish-in-shop-toggle";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -38,6 +39,7 @@ import { usePhotoLimit } from "~/hooks/use-app-config";
 import { useCategoryTags } from "~/hooks/use-category-tags";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
+import { usePhoneStatus } from "~/hooks/use-phone-status";
 import { usePlacePreferences } from "~/hooks/use-place-preferences";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
@@ -100,6 +102,8 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const tCommon = useTranslations("Common");
 	const tShop = useTranslations("Shop");
 	const tKind = useTranslations("ListingKind");
+	const phoneStatus = usePhoneStatus();
+	const canPublish = phoneStatus.data?.isPhoneVerified === true;
 	const tIssues = useTranslations("FormIssues");
 	const photoLimit = usePhotoLimit();
 	const router = useRouter();
@@ -1035,29 +1039,33 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 						<ArrowRight className="ml-2 h-4 w-4" />
 					</Button>
 				) : (
-					<div className="flex gap-2">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => handleSubmit("draft")}
-							disabled={isLoading}
-						>
-							{t("saveAsDraft")}
-						</Button>
-						<Button
-							type="button"
-							onClick={() => handleSubmit("published")}
-							disabled={isLoading}
-						>
-							{isLoading ? (
-								<>
-									<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-									{t("submitting")}
-								</>
-							) : (
-								t("submitForReviewBtn")
-							)}
-						</Button>
+					<div className="flex flex-col items-end gap-3">
+						{/* Publishing needs a verified phone; a draft does not. */}
+						{!canPublish && <PhoneRequirement action="publishListing" />}
+						<div className="flex gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => handleSubmit("draft")}
+								disabled={isLoading}
+							>
+								{t("saveAsDraft")}
+							</Button>
+							<Button
+								type="button"
+								onClick={() => handleSubmit("published")}
+								disabled={isLoading || !canPublish}
+							>
+								{isLoading ? (
+									<>
+										<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+										{t("submitting")}
+									</>
+								) : (
+									t("submitForReviewBtn")
+								)}
+							</Button>
+						</div>
 					</div>
 				)}
 			</div>

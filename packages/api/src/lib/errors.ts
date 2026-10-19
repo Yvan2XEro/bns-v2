@@ -40,6 +40,7 @@ export const ERROR_CODES = {
 	invalidCredentials: "auth.invalidCredentials",
 	accountLocked: "auth.accountLocked",
 	emailNotVerified: "auth.emailNotVerified",
+	phoneRequired: "auth.phoneRequired",
 	invalidEmail: "auth.invalidEmail",
 	oauthFailed: "auth.oauthFailed",
 	oauthCancelled: "auth.oauthCancelled",
@@ -322,6 +323,8 @@ const FALLBACKS: Record<ErrorCode, string> = {
 	[ERROR_CODES.invalidCredentials]: "Incorrect email or password.",
 	[ERROR_CODES.accountLocked]:
 		"This account is temporarily locked after too many failed attempts.",
+	[ERROR_CODES.phoneRequired]:
+		"Verify your phone number to do this: buyers and sellers rely on reaching you.",
 	[ERROR_CODES.emailNotVerified]:
 		"Please confirm your email address before signing in.",
 	[ERROR_CODES.invalidEmail]: "This email address is not valid.",

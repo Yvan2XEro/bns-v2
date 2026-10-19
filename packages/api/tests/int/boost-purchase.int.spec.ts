@@ -23,6 +23,7 @@ function provider() {
 function world(listing: Record<string, unknown> = {}) {
 	return fakePayload(
 		{
+			users: [{ id: "u-1", phoneVerifiedAt: "2026-09-01T00:00:00.000Z" }],
 			listings: [
 				{
 					id: "l-1",
@@ -64,6 +65,14 @@ describe("boost pricing", () => {
 });
 
 describe("startBoostPurchase", () => {
+	it("refuses a seller who has not verified a phone", async () => {
+		const payload = world();
+		payload.store.users[0].phoneVerifiedAt = null;
+		await expect(
+			startBoostPurchase(payload, input, { getProvider: () => provider() }),
+		).rejects.toMatchObject({ code: "auth.phoneRequired" });
+	});
+
 	it("creates the boost payment and its intent, then stores the checkout", async () => {
 		const payload = world();
 		const p = provider();

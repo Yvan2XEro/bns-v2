@@ -1,5 +1,6 @@
 import type { Payload } from "payload";
 import { suspensionSummary } from "../access/roles";
+import { hasVerifiedPhone } from "../lib/accountTrust";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import {
 	type CounterStore,
@@ -86,6 +87,12 @@ export async function revealContactPhone(
 	}
 
 	if (sellerId !== input.viewerId) {
+		// A seller's number is personal: only an account that has proved its
+		// own phone may see it (contracts/accountTrust.ts, `revealPhone`). The
+		// seller looking at their own ad is not asked.
+		if (!(await hasVerifiedPhone(payload, input.viewerId))) {
+			throw new ContactRevealError(ERROR_CODES.phoneRequired, 403);
+		}
 		const listingId = String(listing.id);
 		const findRecent = async () => {
 			const recent = await payload.find({

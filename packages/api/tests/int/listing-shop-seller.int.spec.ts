@@ -8,8 +8,18 @@ const beforeChange = (Listings.hooks?.beforeChange as Hook[])[0];
 function seed() {
 	return fakePayload({
 		users: [
-			{ id: "u-owner", role: "user", name: "Aicha" },
-			{ id: "u-staff", role: "user", name: "Bruno" },
+			{
+				id: "u-owner",
+				role: "user",
+				name: "Aicha",
+				phoneVerifiedAt: "2026-09-01T00:00:00.000Z",
+			},
+			{
+				id: "u-staff",
+				role: "user",
+				name: "Bruno",
+				phoneVerifiedAt: "2026-09-01T00:00:00.000Z",
+			},
 		],
 		shops: [
 			{
@@ -111,6 +121,25 @@ describe("a shop listing's seller", () => {
 			},
 		});
 		expect(data.seller).toBe("u-staff");
+	});
+
+	it("refuses to publish for a seller without a verified phone, but keeps a draft", async () => {
+		const payload = seed();
+		payload.store.users.push({ id: "u-new", role: "user", name: "Chantal" });
+		const write = (status: string) =>
+			beforeChange({
+				req: {
+					payload,
+					context: {},
+					user: { id: "u-new", role: "user" },
+				} as never,
+				operation: "create",
+				data: { title: "Velo", status, category: "cat-1", price: 5000 },
+			});
+		await expect(write("pending")).rejects.toMatchObject({
+			data: { code: "auth.phoneRequired" },
+		});
+		await expect(write("draft")).resolves.toMatchObject({ status: "draft" });
 	});
 
 	it("does not rewrite the seller on an update", async () => {

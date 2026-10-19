@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Payload } from "payload";
+import { hasVerifiedPhone } from "../lib/accountTrust";
 import { findBoostPrice } from "../lib/boostPricing";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { getProvider } from "../lib/payments";
@@ -86,6 +87,11 @@ export async function startBoostPurchase(
 	if (!listing) throw new BoostPurchaseError(ERROR_CODES.listingNotFound, 404);
 	if (relationId(listing.seller) !== input.userId) {
 		throw new BoostPurchaseError(ERROR_CODES.boostNotOwner, 403);
+	}
+	// Money moves and the paid ad must reach a reachable seller
+	// (contracts/accountTrust.ts, `boost`).
+	if (!(await hasVerifiedPhone(payload, input.userId))) {
+		throw new BoostPurchaseError(ERROR_CODES.phoneRequired, 403);
 	}
 	if (listing.status !== "published") {
 		throw new BoostPurchaseError(ERROR_CODES.boostListingNotPublished, 409);

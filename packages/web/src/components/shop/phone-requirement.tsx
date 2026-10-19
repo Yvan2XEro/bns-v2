@@ -12,8 +12,19 @@ import { maskPhone } from "~/lib/shop-form";
  * Verification happens in a dialog, in place: the seller never leaves the
  * shop-creation form to prove their number (see PhoneVerificationDialog).
  */
-export function PhoneRequirement() {
+export function PhoneRequirement({
+	action,
+}: {
+	/**
+	 * What the phone unlocks here, worded for it; without one, the shop
+	 * creation's wording.
+	 */
+	action?: "publishListing" | "boost";
+} = {}) {
 	const t = useTranslations("ShopCreate");
+	const tTrust = useTranslations("AccountTrust");
+	const title = action ? tTrust(`${action}.title`) : t("gateTitle");
+	const body = action ? tTrust(`${action}.body`) : t("gateBody");
 	const { data, isPending } = usePhoneStatus();
 	const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -29,8 +40,8 @@ export function PhoneRequirement() {
 						<Smartphone className="h-5 w-5 text-brand" />
 					</div>
 					<div className="space-y-2">
-						<p className="font-semibold text-ink">{t("gateTitle")}</p>
-						<p className="text-ink-soft text-sm">{t("gateBody")}</p>
+						<p className="font-semibold text-ink">{title}</p>
+						<p className="text-ink-soft text-sm">{body}</p>
 						<button
 							type="button"
 							onClick={() => setDialogOpen(true)}

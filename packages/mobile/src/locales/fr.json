@@ -1259,7 +1259,8 @@
 			"invalidEmail": "Cette adresse email n'est pas valide.",
 			"oauthFailed": "La connexion a échoué. Veuillez réessayer.",
 			"oauthCancelled": "Connexion annulée.",
-			"oauthNotConfigured": "Ce mode de connexion est indisponible pour le moment."
+			"oauthNotConfigured": "Ce mode de connexion est indisponible pour le moment.",
+			"phoneRequired": "Vérifiez votre numéro de téléphone pour faire cela : acheteurs et vendeurs comptent sur le fait de pouvoir vous joindre."
 		},
 		"phone": {
 			"invalid": "Ce numéro de téléphone n'est pas valide.",
@@ -4736,5 +4737,19 @@
 		"offensive": "Contenu choquant ou injurieux",
 		"suspected_scam": "Suspicion d'arnaque",
 		"other": "Autre motif"
+	},
+	"accountTrust": {
+		"publishListing": {
+			"title": "Vérifiez votre téléphone pour publier",
+			"body": "Les acheteurs vous appellent ou vous écrivent au sujet de l'annonce. Vous pouvez l'enregistrer en brouillon en attendant."
+		},
+		"boost": {
+			"title": "Vérifiez votre téléphone pour booster",
+			"body": "Un boost est un paiement : l'annonce mise en avant doit mener à un vendeur joignable."
+		},
+		"revealPhone": {
+			"title": "Vérifiez votre téléphone pour voir ce numéro",
+			"body": "Le numéro d'un vendeur est personnel : il n'est montré qu'aux comptes dont le téléphone est vérifié."
+		}
 	}
 }

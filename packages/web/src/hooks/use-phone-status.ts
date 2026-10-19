@@ -67,10 +67,14 @@ async function fetchPhoneStatus(): Promise<PhoneStatus> {
  * read reads as "not verified", which shows the gate instead of a form that
  * the server would refuse.
  */
-export function usePhoneStatus(): UseQueryResult<PhoneStatus, ApiError> {
+export function usePhoneStatus(
+	/** False for a visitor, who has no phone status to read. */
+	enabled = true,
+): UseQueryResult<PhoneStatus, ApiError> {
 	return useQuery<PhoneStatus, ApiError>({
 		queryKey: phoneStatusKey,
 		queryFn: fetchPhoneStatus,
 		retry: false,
+		enabled,
 	});
 }

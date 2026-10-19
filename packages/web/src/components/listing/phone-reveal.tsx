@@ -2,9 +2,12 @@
 
 import { Loader2, Phone } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { WhatsAppIcon } from "~/components/icons/whatsapp-icon";
+import { PhoneVerificationDialog } from "~/components/shop/phone-verification-dialog";
 import { Button } from "~/components/ui/button";
 import { useRevealContactPhone } from "~/hooks/use-contact-phone";
+import { usePhoneStatus } from "~/hooks/use-phone-status";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { whatsappChatUrl } from "../../../../api/src/contracts/whatsapp";
 
@@ -28,12 +31,24 @@ export function PhoneReveal({
 	const tErrors = useTranslations();
 	const reveal = useRevealContactPhone(listingId);
 	const phone = reveal.data?.phone;
+	// A seller's number is shown only to an account with a verified phone:
+	// verify in place, then show it (contracts/accountTrust.ts).
+	const phoneStatus = usePhoneStatus(signedIn);
+	const [verifying, setVerifying] = useState(false);
 
 	function onReveal() {
 		if (!signedIn) {
 			goToSignIn();
 			return;
 		}
+		if (phoneStatus.data?.isPhoneVerified !== true) {
+			setVerifying(true);
+			return;
+		}
+		show();
+	}
+
+	function show() {
 		reveal.mutate(undefined, {
 			onError: (error) => {
 				// The session expired between the page render and the tap.
@@ -88,6 +103,14 @@ export function PhoneReveal({
 				)}
 				{t("showNumber")}
 			</Button>
+			<PhoneVerificationDialog
+				open={verifying}
+				onOpenChange={setVerifying}
+				onVerified={() => {
+					setVerifying(false);
+					show();
+				}}
+			/>
 			{reveal.error && (
 				<p className="text-center text-red-500 text-xs">
 					{resolveErrorMessage(reveal.error, tErrors)}

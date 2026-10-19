@@ -3,6 +3,7 @@
 import { CreditCard, Loader2, Smartphone, Sparkles, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { PhoneRequirement } from "~/components/shop/phone-requirement";
 import { Button } from "~/components/ui/button";
 import {
 	Dialog,
@@ -15,6 +16,7 @@ import {
 import type { BoostPrice } from "~/hooks/use-app-config";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useOrderMoney } from "~/hooks/use-order-money";
+import { usePhoneStatus } from "~/hooks/use-phone-status";
 import { apiErrorFrom, resolveErrorMessage } from "~/lib/apiError";
 import type { BoostDuration } from "~/types";
 
@@ -72,6 +74,8 @@ interface BoostDialogProps {
 
 export function BoostDialog({ listingId, children }: BoostDialogProps) {
 	const t = useTranslations("Boost");
+	const phoneStatus = usePhoneStatus();
+	const canBoost = phoneStatus.data?.isPhoneVerified === true;
 	const formatOrderMoney = useOrderMoney();
 	const tRoot = useTranslations();
 	const { stripePublishableKey, boostPricing } = useAppConfig();
@@ -284,6 +288,8 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 								</div>
 							</div>
 
+							{/* Boosting needs a verified phone (contracts/accountTrust.ts). */}
+							{!canBoost && <PhoneRequirement action="boost" />}
 							{error && (
 								<p className="text-center text-red-500 text-sm">{error}</p>
 							)}
@@ -295,7 +301,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 										: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] text-ink shadow-amber-500/20"
 								}`}
 								onClick={handlePay}
-								disabled={isPending || price === undefined}
+								disabled={isPending || price === undefined || !canBoost}
 							>
 								{isPending ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />

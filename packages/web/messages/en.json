@@ -2002,7 +2002,8 @@
 			"invalidEmail": "This email address is not valid.",
 			"oauthFailed": "Sign-in failed. Please try again.",
 			"oauthCancelled": "Sign-in was cancelled.",
-			"oauthNotConfigured": "This sign-in method is unavailable right now."
+			"oauthNotConfigured": "This sign-in method is unavailable right now.",
+			"phoneRequired": "Verify your phone number to do this: buyers and sellers rely on reaching you."
 		},
 		"phone": {
 			"invalid": "This phone number is not valid.",
@@ -6247,5 +6248,19 @@
 		"offensive": "Offensive content",
 		"suspected_scam": "Suspected scam",
 		"other": "Other reason"
+	},
+	"AccountTrust": {
+		"publishListing": {
+			"title": "Verify your phone to publish",
+			"body": "Buyers call or message you about the ad. You can save it as a draft meanwhile."
+		},
+		"boost": {
+			"title": "Verify your phone to boost",
+			"body": "A boost is a payment: the promoted ad must lead to a seller who can be reached."
+		},
+		"revealPhone": {
+			"title": "Verify your phone to see this number",
+			"body": "A seller's number is personal: it is shown only to accounts with a verified phone."
+		}
 	}
 }

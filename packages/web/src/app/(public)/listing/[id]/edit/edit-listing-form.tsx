@@ -14,6 +14,7 @@ import {
 } from "~/components/listing/price-unit-select";
 import { TagPicker } from "~/components/listing/tag-picker";
 import { LocationField } from "~/components/location/location-field";
+import { PhoneRequirement } from "~/components/shop/phone-requirement";
 import { PublishInShopToggle } from "~/components/shop/publish-in-shop-toggle";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -31,6 +32,7 @@ import { usePhotoLimit } from "~/hooks/use-app-config";
 import { useCategoryTags } from "~/hooks/use-category-tags";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useCurrencyCode } from "~/hooks/use-order-money";
+import { usePhoneStatus } from "~/hooks/use-phone-status";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
 	type CategoryAttributeSpec,
@@ -79,6 +81,7 @@ export function EditListingForm({
 	const tCommon = useTranslations("Common");
 	const tShop = useTranslations("Shop");
 	const tKind = useTranslations("ListingKind");
+	const phoneStatus = usePhoneStatus();
 	const tReason = useTranslations("ListingRejection");
 	// The reason in the seller's language, whoever moderated the listing.
 	const rejection = rejectionText(listing, tReason);
@@ -111,6 +114,10 @@ export function EditListingForm({
 	const [nextStatus, setNextStatus] = useState<UserStatus>(() =>
 		getDefaultStatus(listing.status),
 	);
+	const needsPhone =
+		nextStatus === "pending" &&
+		listing.status !== "pending" &&
+		phoneStatus.data?.isPhoneVerified !== true;
 
 	const currentCategoryId =
 		listing.category && typeof listing.category === "object"
@@ -400,6 +407,8 @@ export function EditListingForm({
 
 	return (
 		<div className="space-y-6">
+			{/* Sending the ad (back) to review needs a verified phone. */}
+			{needsPhone && <PhoneRequirement action="publishListing" />}
 			<div className="flex items-center justify-between">
 				<h1 className="font-bold text-2xl">{t("editListingTitle")}</h1>
 				<Button
@@ -791,7 +800,7 @@ export function EditListingForm({
 				>
 					{tCommon("cancel")}
 				</Button>
-				<Button onClick={handleSave} disabled={isSaving}>
+				<Button onClick={handleSave} disabled={isSaving || needsPhone}>
 					{isSaving ? (
 						<>
 							<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

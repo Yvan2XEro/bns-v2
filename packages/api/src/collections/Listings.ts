@@ -5,11 +5,12 @@ import {
 	ValidationError,
 	type Where,
 } from "payload";
-
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
+import { isModerator } from "../access/roles";
 import { resolveShopRole, shopField } from "../access/shopRoles";
 import { staffOnlyField } from "../access/staff";
+import { isPublishingStatus } from "../contracts/accountTrust";
 import {
 	LISTING_KINDS,
 	normalizePriceUnit,
@@ -35,6 +36,7 @@ import {
 	type SuspensionCheckable,
 } from "../hooks/suspensionGuard";
 import { validateListingAttributes } from "../hooks/validation";
+import { hasVerifiedPhone } from "../lib/accountTrust";
 import { tagsForCategory } from "../lib/categoryTags";
 import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES } from "../lib/errors";
@@ -444,6 +446,24 @@ export const Listings: CollectionConfig = {
 						);
 						if (issue) throw photoLimitError(Number(issue.params?.max));
 					}
+				}
+
+				// Publishing needs a verified phone: a buyer calls or messages the
+				// seller about the ad (contracts/accountTrust.ts). Drafts, staff and
+				// the services' own writes (products, resale, moderation) pass.
+				const publishing =
+					isPublishingStatus(data.status) &&
+					(operation === "create" || data.status !== originalDoc?.status);
+				if (
+					publishing &&
+					req.user &&
+					!productService &&
+					!moderationWrite &&
+					!resaleService &&
+					!isModerator(req.user as { role?: string }) &&
+					!(await hasVerifiedPhone(req.payload, String(req.user.id), req))
+				) {
+					throw new CodedAPIError(ERROR_CODES.phoneRequired, 403);
 				}
 
 				// The kind follows the category and only the check below sets it.

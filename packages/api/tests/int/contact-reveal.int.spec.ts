@@ -15,7 +15,11 @@ const later = (ms: number) => new Date(NOW.getTime() + ms);
 function world(seller: Record<string, unknown> = {}) {
 	return fakePayload(
 		{
-			users: [{ id: "seller", phone: "+237600000001", ...seller }],
+			users: [
+				{ id: "seller", phone: "+237600000001", ...seller },
+				{ id: "buyer", phoneVerifiedAt: "2026-09-01T00:00:00.000Z" },
+				{ id: "unverified" },
+			],
 			listings: [
 				{ id: "l-live", seller: "seller", status: "published" },
 				{ id: "l-draft", seller: "seller", status: "draft" },
@@ -41,6 +45,12 @@ beforeEach(() => vi.useFakeTimers({ toFake: ["Date"] }));
 afterEach(() => vi.useRealTimers());
 
 describe("revealContactPhone", () => {
+	it("refuses a viewer who has not verified a phone", async () => {
+		await expect(
+			reveal(world(), new MemoryCounterStore(), NOW, "l-live", "unverified"),
+		).rejects.toMatchObject({ code: "auth.phoneRequired" });
+	});
+
 	it("returns the phone and records one reveal per viewer and listing per day", async () => {
 		const payload = world();
 		const store = new MemoryCounterStore(() => NOW.getTime());
