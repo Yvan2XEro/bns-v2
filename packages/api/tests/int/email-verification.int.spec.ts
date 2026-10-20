@@ -2,11 +2,11 @@
 import { type Payload, UnverifiedEmail } from "payload";
 import { describe, expect, it, vi } from "vitest";
 import { Users } from "../../src/collections/Users";
-import { emailAdapter, emailProvider } from "../../src/lib/email";
 import {
 	verificationEmailHtml,
 	verificationEmailSubject,
-} from "../../src/lib/verificationEmail";
+} from "../../src/lib/authEmails";
+import { emailAdapter, emailProvider } from "../../src/lib/email";
 import {
 	RESEND_COOLDOWN_MS,
 	resendVerificationEmail,
@@ -132,5 +132,37 @@ describe("which service sends the email", () => {
 		expect(() => emailAdapter({ EMAIL_PROVIDER: "resend" })).toThrow(
 			/RESEND_API_KEY/,
 		);
+	});
+});
+
+describe("links in the authentication emails", () => {
+	it("lead to the website, never to the API's admin panel", async () => {
+		vi.stubEnv("PUBLIC_WEB_URL", "https://buynsellem.lan/");
+		const auth = Users.auth as {
+			forgotPassword: {
+				generateEmailHTML: (args: unknown) => Promise<string> | string;
+			};
+			verify: {
+				generateEmailHTML: (args: unknown) => Promise<string> | string;
+			};
+		};
+		const user = { name: "Awa", language: "en" };
+		const reset = await auth.forgotPassword.generateEmailHTML({
+			token: "r3set",
+			user,
+		});
+		const verify = await auth.verify.generateEmailHTML({
+			token: "v3rify",
+			user,
+		});
+		expect(reset).toContain(
+			"https://buynsellem.lan/auth/reset-password?token=r3set",
+		);
+		expect(reset).toContain("Choose a new password");
+		expect(verify).toContain(
+			"https://buynsellem.lan/auth/verify-email?token=v3rify",
+		);
+		for (const html of [reset, verify]) expect(html).not.toContain("/admin");
+		vi.unstubAllEnvs();
 	});
 });

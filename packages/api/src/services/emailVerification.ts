@@ -3,7 +3,7 @@ import type { Payload } from "payload";
 import {
 	verificationEmailHtml,
 	verificationEmailSubject,
-} from "../lib/verificationEmail";
+} from "../lib/authEmails";
 
 /** Between two verification emails to the same account. */
 export const RESEND_COOLDOWN_MS = 60 * 1000;

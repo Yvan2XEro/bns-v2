@@ -8,12 +8,14 @@ import {
 	DEFAULT_NOTIFICATION_LOCALE,
 	NOTIFICATION_LOCALES,
 } from "../contracts/notificationLocale";
-import { ERROR_CODES } from "../lib/errors";
 import {
-	type VerificationRecipient,
+	type AuthEmailRecipient,
+	resetPasswordEmailHtml,
+	resetPasswordEmailSubject,
 	verificationEmailHtml,
 	verificationEmailSubject,
-} from "../lib/verificationEmail";
+} from "../lib/authEmails";
+import { ERROR_CODES } from "../lib/errors";
 import { deleteUserRelatedData } from "../services/accountDeletion";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
@@ -84,11 +86,22 @@ export const Users: CollectionConfig = {
 		// Signing in waits for the link in this email: every session then
 		// belongs to a real inbox (docs/account-trust-2026-10.md). Payload sends
 		// it once, on create; services/emailVerification.ts resends it.
+		// Payload links its reset email to the admin panel; people reset from
+		// the website (lib/authEmails.ts), which posts the token back.
+		forgotPassword: {
+			generateEmailSubject: (args) =>
+				resetPasswordEmailSubject((args?.user ?? {}) as AuthEmailRecipient),
+			generateEmailHTML: (args) =>
+				resetPasswordEmailHtml(
+					(args?.user ?? {}) as AuthEmailRecipient,
+					args?.token ?? "",
+				),
+		},
 		verify: {
 			generateEmailSubject: ({ user }) =>
-				verificationEmailSubject(user as VerificationRecipient),
+				verificationEmailSubject(user as AuthEmailRecipient),
 			generateEmailHTML: ({ token, user }) =>
-				verificationEmailHtml(user as VerificationRecipient, token ?? ""),
+				verificationEmailHtml(user as AuthEmailRecipient, token ?? ""),
 		},
 	},
 	access: {
