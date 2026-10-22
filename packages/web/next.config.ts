@@ -30,6 +30,16 @@ const nextConfig: NextConfig = {
 	},
 	async rewrites() {
 		return [
+			// The app association files must sit under /.well-known, which an
+			// app-router folder cannot be named.
+			{
+				source: "/.well-known/apple-app-site-association",
+				destination: "/well-known/apple-app-site-association",
+			},
+			{
+				source: "/.well-known/assetlinks.json",
+				destination: "/well-known/assetlinks.json",
+			},
 			{
 				source: "/api/:path*",
 				destination: `${API_URL}/api/:path*`,

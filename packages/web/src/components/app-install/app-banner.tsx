@@ -9,8 +9,11 @@ import {
 	isIosSafari,
 	type MobilePlatform,
 	mobilePlatformOf,
-	storeUrlFor,
+	openInAppLink,
 } from "~/lib/app-stores";
+
+/** How long iOS gets to switch to the app before the App Store is offered. */
+const IOS_FALLBACK_MS = 1500;
 
 const DISMISSED_KEY = "bns.appBannerDismissedAt";
 
@@ -29,9 +32,9 @@ function isStandalone(): boolean {
 }
 
 /**
- * On a phone's browser, a slim bar at the top of the page inviting to the
- * native app — the Play Store on Android, the App Store on iOS browsers other
- * than Safari (Safari shows Apple's own Smart App Banner from the
+ * On a phone's browser, a slim bar at the top of the page offering to open
+ * this same page in the native app — which opens it when installed, and the
+ * store otherwise (Safari shows Apple's own Smart App Banner from the
  * `apple-itunes-app` tag instead, never both). Closed, it stays away 30 days.
  * Never on a computer, where the site itself installs.
  */
@@ -48,6 +51,27 @@ export function AppBanner() {
 	}, []);
 
 	if (!platform) return null;
+
+	const open = (event: React.MouseEvent<HTMLAnchorElement>) => {
+		const { href, fallback } = openInAppLink(
+			platform,
+			window.location.pathname,
+			window.location.search,
+		);
+		event.preventDefault();
+		window.location.href = href;
+		if (!fallback) return;
+		// iOS gives no answer when no app takes the link: still on this page a
+		// moment later means it is not installed.
+		const timer = window.setTimeout(() => {
+			if (document.visibilityState === "visible")
+				window.location.href = fallback;
+		}, IOS_FALLBACK_MS);
+		const cancel = () => {
+			if (document.visibilityState === "hidden") window.clearTimeout(timer);
+		};
+		document.addEventListener("visibilitychange", cancel, { once: true });
+	};
 
 	const dismiss = () => {
 		try {
@@ -80,9 +104,8 @@ export function AppBanner() {
 				<p className="truncate text-ink-muted text-xs">{t("subtitle")}</p>
 			</div>
 			<a
-				href={storeUrlFor(platform)}
-				target="_blank"
-				rel="noopener noreferrer"
+				href={openInAppLink(platform, "/", "").href}
+				onClick={open}
 				className="shrink-0 rounded-full bg-brand-fill px-4 py-1.5 font-bold text-white text-xs hover:bg-brand-strong"
 			>
 				{t("open")}

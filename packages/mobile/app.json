@@ -17,7 +17,8 @@
 			"usesAppleSignIn": true,
 			"infoPlist": {
 				"CFBundleAllowMixedLocalizations": true
-			}
+			},
+			"associatedDomains": ["applinks:buynsellem.com"]
 		},
 		"android": {
 			"icon": "./assets/images/android-icon.png",
@@ -27,7 +28,71 @@
 				"monochromeImage": "./assets/images/android-icon-monochrome.png"
 			},
 			"predictiveBackGestureEnabled": false,
-			"package": "com.buynsellem.mobile"
+			"package": "com.buynsellem.mobile",
+			"intentFilters": [
+				{
+					"action": "VIEW",
+					"autoVerify": true,
+					"data": [
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/listing/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/s/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/profile/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/invite/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/purchases"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/returns/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/disputes/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/messages"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/search"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/favorites"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/cart"
+						}
+					],
+					"category": ["BROWSABLE", "DEFAULT"]
+				}
+			]
 		},
 		"web": {
 			"output": "static",

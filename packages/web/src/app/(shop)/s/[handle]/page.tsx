@@ -9,6 +9,7 @@ import { PickupPoints } from "~/components/shop/pickup-points";
 import { ShopAbout } from "~/components/shop/shop-about";
 import { ShopHero } from "~/components/shop/shop-hero";
 import { ShopStickyContact } from "~/components/shop/shop-sticky-contact";
+import { IOS_APP_ID } from "~/lib/app-stores";
 import { serverFetch } from "~/lib/server-api";
 import { lookupShop } from "~/lib/server-shop";
 import { type CategoryNode, groupedCounts } from "~/lib/shop-category-groups";
@@ -143,6 +144,8 @@ export async function generateMetadata({
 		title: shop.name,
 		description,
 		alternates: { canonical },
+		// Safari's own app banner opens the app on this shop.
+		itunes: { appId: IOS_APP_ID, appArgument: canonical },
 		openGraph: {
 			title: shop.name,
 			description,

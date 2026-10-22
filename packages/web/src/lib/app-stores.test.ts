@@ -4,6 +4,7 @@ import {
 	bannerSnoozed,
 	isIosSafari,
 	mobilePlatformOf,
+	openInAppLink,
 	storeUrlFor,
 } from "./app-stores";
 
@@ -50,5 +51,30 @@ describe("bannerSnoozed", () => {
 		expect(bannerSnoozed(null, now)).toBe(false);
 		expect(bannerSnoozed(now - 1000, now)).toBe(true);
 		expect(bannerSnoozed(now - APP_BANNER_SNOOZE_MS - 1, now)).toBe(false);
+	});
+});
+
+describe("openInAppLink", () => {
+	test("opens a shared shop in the Android app, the Play Store when absent", () => {
+		const { href, fallback } = openInAppLink("android", "/s/akwatech", "");
+		expect(href).toStartWith("intent://s/akwatech#Intent;scheme=buynsellem;");
+		expect(href).toContain("package=com.buynsellem.mobile");
+		expect(href).toContain(
+			`S.browser_fallback_url=${encodeURIComponent("https://play.google.com/store/apps/details?id=com.buynsellem.mobile")}`,
+		);
+		expect(fallback).toBeNull();
+	});
+
+	test("opens a conversation on its own screen in the iOS app, the App Store after", () => {
+		expect(openInAppLink("ios", "/messages", "?conversation=c1")).toEqual({
+			href: "buynsellem://messages/c1",
+			fallback: expect.stringContaining("apps.apple.com"),
+		});
+	});
+
+	test("opens the app home from a page it has no screen for", () => {
+		expect(openInAppLink("ios", "/auth/reset-password", "?token=t").href).toBe(
+			"buynsellem://",
+		);
 	});
 });

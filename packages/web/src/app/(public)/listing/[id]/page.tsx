@@ -34,6 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { DEFAULT_LOCALE, isLocale } from "~/i18n/locales";
+import { IOS_APP_ID } from "~/lib/app-stores";
 import { withContentLocale } from "~/lib/content-locale";
 import { buildListingAttributeGroups } from "~/lib/listing-attributes";
 import {
@@ -101,6 +102,8 @@ export async function generateMetadata({
 		title,
 		description,
 		alternates: { canonical },
+		// Safari's own app banner opens the app on this listing.
+		itunes: { appId: IOS_APP_ID, appArgument: canonical },
 		openGraph: {
 			title,
 			description,

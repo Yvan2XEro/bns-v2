@@ -164,6 +164,14 @@ export const APP_ENV = {
 	EMAIL_FROM_ADDRESS: api(),
 	EMAIL_FROM_NAME: api(),
 
+	// ── App links: shared links open the native app (web/src/app/well-known) ──
+	APPLE_TEAM_ID: { kind: "app", secret: false, services: ["web"] },
+	ANDROID_SHA256_CERT_FINGERPRINTS: {
+		kind: "app",
+		secret: false,
+		services: ["web"],
+	},
+
 	// ── Notifications ──
 	NOVU_SECRET_KEY: api(true),
 	NOVU_APPLICATION_IDENTIFIER: {
