@@ -11,6 +11,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -30,11 +31,12 @@ export function OrderSheet({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const sheet = useSheetPresentation();
 	return (
 		<Modal
 			visible={visible}
 			transparent
-			animationType="slide"
+			animationType={sheet.animationType}
 			onRequestClose={onClose}
 		>
 			<Pressable
@@ -45,9 +47,10 @@ export function OrderSheet({
 			/>
 			<KeyboardAvoidingView
 				behavior={Platform.OS === "ios" ? "padding" : undefined}
-				style={styles.wrap}
+				style={sheet.wrap}
+				pointerEvents="box-none"
 			>
-				<View style={[styles.sheet, { backgroundColor: c.card }]}>
+				<View style={[styles.sheet, { backgroundColor: c.card }, sheet.panel]}>
 					<View style={styles.header}>
 						<View style={styles.headerText}>
 							<Text style={[styles.title, { color: c.text }]}>{title}</Text>
@@ -80,7 +83,6 @@ export function OrderSheet({
 
 const styles = StyleSheet.create({
 	backdrop: { backgroundColor: "#0008" },
-	wrap: { flex: 1, justifyContent: "flex-end" },
 	sheet: {
 		maxHeight: "88%",
 		borderTopLeftRadius: 20,

@@ -102,6 +102,25 @@ Ordered by how much a person on a tablet goes back and forth:
 5. **The rest.** Purchases, returns, disputes, catalogue and moderation in
    split view; sheets become dialogs.
 
+**Where it stands (October 2026).** All five lots are in `dev`. Choices made
+along the way:
+- An item reached from several lists keeps a plain route: the listing (search,
+  home, shops, favourites), the return case (the buyer's and the seller's
+  returns) and the dispute (the buyer's list, the problem flow, moderation).
+  Each list still shows it beside itself; only a deep link opens it full
+  screen.
+- An editor is never put in a pane. The product editor guards unsaved
+  changes on leaving the screen; in a pane, picking another product would
+  drop them silently. The catalogue opens it full screen.
+- The moderation hub mixes listings, reports and risk flags in one queue, so
+  it stays a hub; its disputes queue is a split.
+- Sheets read the window, not the pane they open from
+  (`useSheetPresentation`): a bottom sheet on a phone, a centred dialog of
+  `dialogMaxWidth` from medium up. Full-screen pickers (tags) stay full
+  screen.
+- Long forms pair their short fields with `<FormRow>` in expanded; the ad
+  form, a step-by-step wizard of one card per field, keeps one column.
+
 **Testing.** Every lot is checked on:
 - an Android tablet emulator (Pixel Tablet, in portrait and landscape);
 - an iPad simulator (11", full screen and Split View);

@@ -21,6 +21,7 @@ import {
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 
@@ -81,6 +82,7 @@ export default function SettingsScreen() {
 	const [isDark, setIsDark] = useState(colorScheme === "dark");
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
+	const sheet = useSheetPresentation();
 	const [langPickerOpen, setLangPickerOpen] = useState(false);
 	const [updateChecked, setUpdateChecked] = useState(false);
 	const [checkError, setCheckError] = useState(false);
@@ -378,7 +380,7 @@ export default function SettingsScreen() {
 			<Modal
 				visible={langPickerOpen}
 				transparent
-				animationType="slide"
+				animationType={sheet.animationType}
 				onRequestClose={() => setLangPickerOpen(false)}
 			>
 				<Pressable
@@ -386,57 +388,63 @@ export default function SettingsScreen() {
 					onPress={() => setLangPickerOpen(false)}
 				/>
 				<View
-					style={[
-						styles.modalSheet,
-						{ backgroundColor: cardBg },
-						// The language rows are the confirm control here; without this
-						// the last one sits under the system navigation.
-						{ paddingBottom: insets.bottom + 16 },
-					]}
+					style={[StyleSheet.absoluteFill, sheet.wrap]}
+					pointerEvents="box-none"
 				>
 					<View
-						style={[styles.modalHandle, { backgroundColor: borderColor }]}
-					/>
-					<Text style={[styles.modalTitle, { color: textColor }]}>
-						{t("settings.language")}
-					</Text>
-					{LANGUAGES.map((lang, i) => (
-						<Pressable
-							key={lang.code}
-							onPress={() => changeLanguage(lang.code)}
-							style={[
-								styles.langOption,
-								{
-									borderBottomColor:
-										i < LANGUAGES.length - 1 ? borderColor : "transparent",
-								},
-							]}
-						>
-							<Text style={styles.langFlag}>{lang.flag}</Text>
-							<Text style={[styles.langLabel, { color: textColor, flex: 1 }]}>
-								{lang.label}
-							</Text>
-							<View
+						style={[
+							styles.modalSheet,
+							{ backgroundColor: cardBg },
+							// The language rows are the confirm control here; without this
+							// the last one sits under the system navigation.
+							{ paddingBottom: insets.bottom + 16 },
+							sheet.panel,
+						]}
+					>
+						<View
+							style={[styles.modalHandle, { backgroundColor: borderColor }]}
+						/>
+						<Text style={[styles.modalTitle, { color: textColor }]}>
+							{t("settings.language")}
+						</Text>
+						{LANGUAGES.map((lang, i) => (
+							<Pressable
+								key={lang.code}
+								onPress={() => changeLanguage(lang.code)}
 								style={[
-									styles.radioOuter,
+									styles.langOption,
 									{
-										borderColor:
-											currentLang === lang.code ? primaryColor : mutedColor,
+										borderBottomColor:
+											i < LANGUAGES.length - 1 ? borderColor : "transparent",
 									},
 								]}
 							>
-								{currentLang === lang.code && (
-									<View
-										style={[
-											styles.radioInner,
-											{ backgroundColor: primaryColor },
-										]}
-									/>
-								)}
-							</View>
-						</Pressable>
-					))}
-					<View style={{ height: 24 }} />
+								<Text style={styles.langFlag}>{lang.flag}</Text>
+								<Text style={[styles.langLabel, { color: textColor, flex: 1 }]}>
+									{lang.label}
+								</Text>
+								<View
+									style={[
+										styles.radioOuter,
+										{
+											borderColor:
+												currentLang === lang.code ? primaryColor : mutedColor,
+										},
+									]}
+								>
+									{currentLang === lang.code && (
+										<View
+											style={[
+												styles.radioInner,
+												{ backgroundColor: primaryColor },
+											]}
+										/>
+									)}
+								</View>
+							</Pressable>
+						))}
+						<View style={{ height: 24 }} />
+					</View>
 				</View>
 			</Modal>
 		</SafeAreaView>
@@ -572,7 +580,11 @@ const styles = StyleSheet.create({
 	},
 	/* Modal */
 	modalOverlay: {
-		flex: 1,
+		position: "absolute",
+		top: 0,
+		right: 0,
+		bottom: 0,
+		left: 0,
 		backgroundColor: "rgba(0,0,0,0.4)",
 	},
 	modalSheet: {

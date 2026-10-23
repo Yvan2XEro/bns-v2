@@ -23,9 +23,9 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 import { Fonts } from "@/constants/theme";
+import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
-import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
 
 const DISMISS_DISTANCE = 120;
@@ -57,7 +57,7 @@ export function BottomSheet({
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
 	const { height } = useWindowDimensions();
-	const { isTablet } = useResponsive();
+	const sheet = useSheetPresentation();
 	const reducedMotion = useReducedMotion();
 	const offset = useSharedValue(height);
 	const keyboard = useReanimatedKeyboardAnimation();
@@ -138,16 +138,13 @@ export function BottomSheet({
 						accessibilityLabel={t("common.close")}
 					/>
 				</Animated.View>
-				<View
-					style={[styles.wrap, isTablet && styles.wrapTablet]}
-					pointerEvents="box-none"
-				>
+				<View style={sheet.wrap} pointerEvents="box-none">
 					<Animated.View
 						accessibilityViewIsModal
 						style={[
 							styles.sheet,
 							{ backgroundColor: c.bg },
-							isTablet && styles.sheetTablet,
+							sheet.panel,
 							sheetStyle,
 						]}
 					>
@@ -183,18 +180,10 @@ export function BottomSheet({
 const styles = StyleSheet.create({
 	root: { flex: 1 },
 	backdrop: { backgroundColor: "rgba(15, 23, 42, 0.55)" },
-	wrap: { flex: 1, justifyContent: "flex-end" },
-	wrapTablet: { justifyContent: "center", alignItems: "center" },
 	sheet: {
 		borderTopLeftRadius: 24,
 		borderTopRightRadius: 24,
 		overflow: "hidden",
-	},
-	sheetTablet: {
-		width: "100%",
-		maxWidth: 560,
-		maxHeight: 720,
-		borderRadius: 24,
 	},
 	header: { paddingTop: 8, paddingHorizontal: 20, paddingBottom: 4 },
 	grabber: {

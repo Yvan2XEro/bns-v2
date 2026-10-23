@@ -9,6 +9,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import { assignableMembers } from "@/src/lib/activeShop";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ShopRole, TeamView } from "@/src/types/api";
@@ -44,12 +45,13 @@ export function AssigneeSheet({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const members = assignableMembers(team, callerRole, callerId);
+	const sheet = useSheetPresentation();
 
 	return (
 		<Modal
 			visible={visible}
 			transparent
-			animationType="slide"
+			animationType={sheet.animationType}
 			onRequestClose={onClose}
 		>
 			<Pressable
@@ -64,85 +66,91 @@ export function AssigneeSheet({
 				onPress={onClose}
 			/>
 			<View
-				style={[
-					styles.sheet,
-					{ backgroundColor: c.card, borderColor: c.border },
-				]}
+				style={[StyleSheet.absoluteFill, sheet.wrap]}
+				pointerEvents="box-none"
 			>
-				<View style={styles.grabber}>
-					<View style={[styles.grabberBar, { backgroundColor: c.border }]} />
-				</View>
-				<Text style={[styles.title, { color: c.text }]}>
-					{t("inbox.assigneeSheetTitle")}
-				</Text>
-
-				<ScrollView style={styles.list}>
-					{members.map((member) => {
-						const selected = member.userId === currentAssigneeId;
-						const label =
-							member.userId === callerId
-								? t("inbox.assignToMe")
-								: (member.name ?? t("inbox.unknownMember"));
-						return (
-							<Pressable
-								key={member.id}
-								onPress={() => onSelect(member.userId)}
-								disabled={pending}
-								style={[
-									styles.row,
-									{
-										borderColor: c.border,
-										backgroundColor: selected ? c.primarySoft : "transparent",
-									},
-								]}
-								accessibilityRole="button"
-								accessibilityLabel={label}
-								accessibilityState={{ selected, disabled: pending }}
-							>
-								<Text style={[styles.rowLabel, { color: c.text }]}>
-									{label}
-								</Text>
-								{selected ? (
-									<Ionicons
-										name="checkmark-circle"
-										size={18}
-										color={c.primary}
-									/>
-								) : null}
-							</Pressable>
-						);
-					})}
-
-					{currentAssigneeId ? (
-						<Pressable
-							onPress={() => onSelect(null)}
-							disabled={pending}
-							style={[styles.row, { borderColor: c.border }]}
-							accessibilityRole="button"
-							accessibilityLabel={t("inbox.unassign")}
-							accessibilityState={{ disabled: pending }}
-						>
-							<Text style={[styles.rowLabel, { color: c.danger }]}>
-								{t("inbox.unassign")}
-							</Text>
-						</Pressable>
-					) : null}
-				</ScrollView>
-
-				{pending ? (
-					<ActivityIndicator style={styles.spinner} color={c.primary} />
-				) : null}
-
-				<Pressable
-					onPress={onClose}
-					style={styles.closeBtn}
-					accessibilityRole="button"
-					accessibilityLabel={t("common.close")}
+				<View
+					style={[
+						styles.sheet,
+						{ backgroundColor: c.card, borderColor: c.border },
+						sheet.panel,
+					]}
 				>
-					<Text style={{ color: c.muted, fontFamily: Fonts.bodySemibold }}>
-						{t("common.close")}
+					<View style={styles.grabber}>
+						<View style={[styles.grabberBar, { backgroundColor: c.border }]} />
+					</View>
+					<Text style={[styles.title, { color: c.text }]}>
+						{t("inbox.assigneeSheetTitle")}
 					</Text>
-				</Pressable>
+
+					<ScrollView style={styles.list}>
+						{members.map((member) => {
+							const selected = member.userId === currentAssigneeId;
+							const label =
+								member.userId === callerId
+									? t("inbox.assignToMe")
+									: (member.name ?? t("inbox.unknownMember"));
+							return (
+								<Pressable
+									key={member.id}
+									onPress={() => onSelect(member.userId)}
+									disabled={pending}
+									style={[
+										styles.row,
+										{
+											borderColor: c.border,
+											backgroundColor: selected ? c.primarySoft : "transparent",
+										},
+									]}
+									accessibilityRole="button"
+									accessibilityLabel={label}
+									accessibilityState={{ selected, disabled: pending }}
+								>
+									<Text style={[styles.rowLabel, { color: c.text }]}>
+										{label}
+									</Text>
+									{selected ? (
+										<Ionicons
+											name="checkmark-circle"
+											size={18}
+											color={c.primary}
+										/>
+									) : null}
+								</Pressable>
+							);
+						})}
+
+						{currentAssigneeId ? (
+							<Pressable
+								onPress={() => onSelect(null)}
+								disabled={pending}
+								style={[styles.row, { borderColor: c.border }]}
+								accessibilityRole="button"
+								accessibilityLabel={t("inbox.unassign")}
+								accessibilityState={{ disabled: pending }}
+							>
+								<Text style={[styles.rowLabel, { color: c.danger }]}>
+									{t("inbox.unassign")}
+								</Text>
+							</Pressable>
+						) : null}
+					</ScrollView>
+
+					{pending ? (
+						<ActivityIndicator style={styles.spinner} color={c.primary} />
+					) : null}
+
+					<Pressable
+						onPress={onClose}
+						style={styles.closeBtn}
+						accessibilityRole="button"
+						accessibilityLabel={t("common.close")}
+					>
+						<Text style={{ color: c.muted, fontFamily: Fonts.bodySemibold }}>
+							{t("common.close")}
+						</Text>
+					</Pressable>
+				</View>
 			</View>
 		</Modal>
 	);
@@ -151,10 +159,6 @@ export function AssigneeSheet({
 const styles = StyleSheet.create({
 	backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
 	sheet: {
-		position: "absolute",
-		left: 0,
-		right: 0,
-		bottom: 0,
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,
 		borderWidth: StyleSheet.hairlineWidth,

@@ -157,6 +157,14 @@ below, as if the wrapper were not there.
 - The item's route wraps its screen in `<SplitDetailRoute>`, so a deep link on
   a tablet lands beside the list.
 - A list row shows the open item with `useSelectedRowStyle()`.
+- An item reached from several lists (a listing, a return case, a dispute)
+  keeps a plain route without `<SplitDetailRoute>`: there is no single list
+  to hand it to.
+- An editor (a form with unsaved changes) is never shown in a pane.
+
+**Sheets.** Every sheet takes its placement from `useSheetPresentation()`:
+a bottom sheet on a phone, a centred dialog from medium up. It reads the
+window, since a sheet covers it whole even when opened from a pane.
 
 **Back buttons.** Every header uses `<HeaderBackButton>`, which hides itself
 in a detail pane. No header calls `router.back()` itself.

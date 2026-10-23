@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { formatOrderDate } from "@/src/lib/orderMoney";
@@ -44,8 +44,18 @@ export function PurchaseStatusPill({ status }: { status: OrderStatusName }) {
 	);
 }
 
-export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
+export function PurchaseRow({
+	entry,
+	onPress,
+	selected,
+}: {
+	entry: OrderListEntry;
+	onPress: () => void;
+	/** Open in the detail pane beside the list. */
+	selected?: boolean;
+}) {
 	const c = useShopTheme();
+	const selectedStyle = useSelectedRowStyle()(selected);
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
 	const number = t("purchases.orderNumber", { number: entry.orderNumber });
@@ -54,12 +64,14 @@ export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 
 	return (
 		<Pressable
-			onPress={() => router.push(`/purchases/${entry.id}`)}
+			onPress={onPress}
 			accessibilityRole="button"
 			accessibilityLabel={`${entry.firstItemTitle}, ${number}`}
+			accessibilityState={{ selected: Boolean(selected) }}
 			style={({ pressed }) => [
 				styles.card,
 				{ backgroundColor: c.card, borderColor: c.border },
+				selectedStyle,
 				pressed && styles.pressed,
 			]}
 		>

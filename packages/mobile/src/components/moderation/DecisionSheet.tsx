@@ -15,6 +15,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import {
 	buildDecisionSchema,
 	type DecisionFormValues,
@@ -83,6 +84,7 @@ export function DecisionSheet({
 	onClose,
 }: DecisionSheetProps) {
 	const c = useModerationTheme();
+	const sheet = useSheetPresentation();
 	const { t } = useTranslation();
 
 	const needsChoice = Boolean(choices?.length);
@@ -133,7 +135,7 @@ export function DecisionSheet({
 		<Modal
 			visible={visible}
 			transparent
-			animationType="slide"
+			animationType={sheet.animationType}
 			onRequestClose={onClose}
 		>
 			<Pressable
@@ -142,12 +144,14 @@ export function DecisionSheet({
 			/>
 			<KeyboardAvoidingView
 				behavior={Platform.OS === "ios" ? "padding" : undefined}
-				style={styles.sheetWrap}
+				style={sheet.wrap}
+				pointerEvents="box-none"
 			>
 				<View
 					style={[
 						styles.sheet,
 						{ backgroundColor: c.card, borderColor: c.border },
+						sheet.panel,
 					]}
 				>
 					<View style={styles.grabber}>
@@ -383,7 +387,6 @@ const styles = StyleSheet.create({
 		right: 0,
 		bottom: 0,
 	},
-	sheetWrap: { flex: 1, justifyContent: "flex-end" },
 	sheet: {
 		// flexShrink lets the sheet size to its content and stop growing at the
 		// screen edge; React Native defaults it to 0, which would let a long

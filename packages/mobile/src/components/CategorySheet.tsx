@@ -12,7 +12,7 @@ import {
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useResponsive } from "@/src/hooks/useResponsive";
+import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import { normalizeText } from "@/src/lib/categorySuggest";
 import { useTranslation } from "@/src/lib/i18n";
 import { getListingCategoryIcon } from "@/src/lib/listingForm";
@@ -139,7 +139,7 @@ export function CategorySheet({
 }: CategorySheetProps) {
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
-	const { centeredContent } = useResponsive();
+	const sheet = useSheetPresentation();
 	const { textColor, mutedColor, primary, border, isDark, inputBg } = colors;
 
 	const [search, setSearch] = useState("");
@@ -257,12 +257,12 @@ export function CategorySheet({
 		<Modal
 			visible={visible}
 			transparent
-			animationType="slide"
+			animationType={sheet.animationType}
 			onRequestClose={close}
 			statusBarTranslucent
 			navigationBarTranslucent
 		>
-			<View style={styles.backdrop}>
+			<View style={[styles.backdrop, sheet.wrap]}>
 				{/* Tapping outside dismisses, as a sheet is expected to. */}
 				<Pressable
 					style={styles.backdropFill}
@@ -271,12 +271,16 @@ export function CategorySheet({
 					accessibilityLabel={t("common.close")}
 				/>
 
-				<KeyboardAvoidingView behavior="padding" style={styles.sheetWrap}>
+				<KeyboardAvoidingView
+					behavior="padding"
+					style={styles.sheetWrap}
+					pointerEvents="box-none"
+				>
 					<View
 						style={[
 							styles.sheet,
 							{ backgroundColor: sheetBg, paddingBottom: insets.bottom },
-							centeredContent,
+							sheet.panel,
 						]}
 					>
 						<View style={[styles.handle, { backgroundColor: border }]} />
@@ -544,18 +548,15 @@ export function CategoryField({
 }
 
 const styles = StyleSheet.create({
-	backdrop: {
-		flex: 1,
-		justifyContent: "flex-end",
-		backgroundColor: "rgba(15, 23, 42, 0.45)",
-	},
-	backdropFill: { flex: 1 },
-	sheetWrap: { maxHeight: "88%" },
+	backdrop: { backgroundColor: "rgba(15, 23, 42, 0.45)" },
+	backdropFill: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
+	sheetWrap: { maxHeight: "88%", width: "100%", alignItems: "center" },
 	sheet: {
 		// Without this the sheet lays its children out at their natural height and
 		// `maxHeight` merely clips the result, so a long category list pushed the
 		// search box off the top instead of scrolling under it.
 		flexShrink: 1,
+		width: "100%",
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,
 		paddingHorizontal: 16,

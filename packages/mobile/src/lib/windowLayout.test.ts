@@ -26,6 +26,15 @@ describe("windowLayout", () => {
 		expect(phone.columnMaxWidth("reading")).toBe(390);
 		expect(phone.columnMaxWidth("wide")).toBe(390);
 		expect(phone.dialogMaxWidth).toBe(390);
+		expect(phone.sheet).toBe("bottom");
+	});
+
+	test("turns sheets into centred dialogs from medium up", () => {
+		expect(windowLayout(599, 900).sheet).toBe("bottom");
+		expect(windowLayout(800, 1280)).toMatchObject({
+			sheet: "dialog",
+			dialogMaxWidth: 520,
+		});
 	});
 
 	test("caps the reading column on a tablet, wider in landscape", () => {

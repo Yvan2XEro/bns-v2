@@ -9,6 +9,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import { type ShopPalette, useShopTheme } from "../shop/theme";
 
 export type ButtonTone = "primary" | "outline" | "danger";
@@ -119,11 +120,12 @@ export function Sheet({
 	children: ReactNode;
 }) {
 	const c = useShopTheme();
+	const sheet = useSheetPresentation();
 	return (
 		<Modal
 			visible={visible}
 			transparent
-			animationType="slide"
+			animationType={sheet.animationType}
 			onRequestClose={onClose}
 		>
 			<Pressable
@@ -140,22 +142,32 @@ export function Sheet({
 				accessibilityLabel={closeLabel}
 			/>
 			<View
-				style={[
-					styles.sheet,
-					{ backgroundColor: c.card, borderColor: c.border },
-				]}
+				style={[StyleSheet.absoluteFill, sheet.wrap]}
+				pointerEvents="box-none"
 			>
-				<ScrollView
-					contentContainerStyle={styles.sheetContent}
-					keyboardShouldPersistTaps="handled"
+				<View
+					style={[
+						styles.sheet,
+						{ backgroundColor: c.card, borderColor: c.border },
+						sheet.panel,
+					]}
 				>
-					<Text style={[styles.sheetTitle, { color: c.text }]}>{title}</Text>
-					{body ? (
-						<Text style={[styles.body, { color: c.body }]}>{body}</Text>
-					) : null}
-					{children}
-					<PurchaseButton label={closeLabel} tone="outline" onPress={onClose} />
-				</ScrollView>
+					<ScrollView
+						contentContainerStyle={styles.sheetContent}
+						keyboardShouldPersistTaps="handled"
+					>
+						<Text style={[styles.sheetTitle, { color: c.text }]}>{title}</Text>
+						{body ? (
+							<Text style={[styles.body, { color: c.body }]}>{body}</Text>
+						) : null}
+						{children}
+						<PurchaseButton
+							label={closeLabel}
+							tone="outline"
+							onPress={onClose}
+						/>
+					</ScrollView>
+				</View>
 			</View>
 		</Modal>
 	);
@@ -184,10 +196,6 @@ const styles = StyleSheet.create({
 	body: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
 	backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
 	sheet: {
-		position: "absolute",
-		left: 0,
-		right: 0,
-		bottom: 0,
 		maxHeight: "85%",
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,

@@ -71,6 +71,11 @@ export interface WindowLayout {
 	/** Max width of a column of `width`: the available width on a phone. */
 	columnMaxWidth: (width: ColumnWidth) => number;
 	dialogMaxWidth: number;
+	/**
+	 * How a sheet shows: rising from the bottom edge on a phone, a centred
+	 * dialog of `dialogMaxWidth` on anything wider.
+	 */
+	sheet: "bottom" | "dialog";
 }
 
 export function windowLayout(width: number, height: number): WindowLayout {
@@ -98,6 +103,7 @@ export function windowLayout(width: number, height: number): WindowLayout {
 			);
 		},
 		dialogMaxWidth: isTablet ? DIALOG_MAX_WIDTH : width,
+		sheet: isTablet ? "dialog" : "bottom",
 	};
 }
 
