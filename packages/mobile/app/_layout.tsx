@@ -56,6 +56,7 @@ import {
 	OnboardingProvider,
 	useOnboarding,
 } from "@/src/contexts/OnboardingContext";
+import { usePhonePortraitLock } from "@/src/hooks/usePhonePortraitLock";
 import { api } from "@/src/lib/api";
 import "@/src/lib/appFocus";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
@@ -155,6 +156,7 @@ export const unstable_settings = { anchor: "(tabs)" };
 // ─── Root layout ──────────────────────────────────────────────────────────────
 
 export default function RootLayout() {
+	usePhonePortraitLock();
 	// Load saved language + theme preferences before first render
 	useEffect(() => {
 		Promise.all([

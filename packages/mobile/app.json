@@ -4,7 +4,7 @@
 		"slug": "buynsellem",
 		"owner": "yvan2ero",
 		"version": "1.1.2",
-		"orientation": "portrait",
+		"orientation": "default",
 		"icon": "./assets/images/icon.png",
 		"scheme": "buynsellem",
 		"userInterfaceStyle": "automatic",
@@ -153,6 +153,12 @@
 				"react-native-document-scanner-plugin",
 				{
 					"cameraPermission": "Allow BuyNSellem to access your camera so you can take photos for your listings and scan your verification documents."
+				}
+			],
+			[
+				"expo-screen-orientation",
+				{
+					"initialOrientation": "DEFAULT"
 				}
 			]
 		],

@@ -3,8 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Redirect, Tabs } from "expo-router";
 import { useEffect } from "react";
 import { type ColorValue, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { HapticTab } from "@/components/haptic-tab";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
@@ -23,6 +21,7 @@ import {
 } from "@/src/hooks/useAppMode";
 import { useSellerOrders } from "@/src/hooks/useSellerOrders";
 import { shopKeys } from "@/src/hooks/useShops";
+import { useTabNavigatorOptions } from "@/src/hooks/useTabNavigatorOptions";
 import { ordersToHandle, resolveAppMode } from "@/src/lib/appMode";
 import { useTranslation } from "@/src/lib/i18n";
 import { shopProfileRules } from "@/src/lib/listingKind";
@@ -59,7 +58,6 @@ function TabIcon({
 export default function SellerTabLayout() {
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
-	const insets = useSafeAreaInsets();
 	const { mode, hydrated } = useStoredAppMode();
 	const membership = useHasShopMembership();
 	const resolved = hydrated ? resolveAppMode(mode, membership) : "pending";
@@ -77,40 +75,19 @@ export default function SellerTabLayout() {
 		if (lostMembership) setAppMode("buyer");
 	}, [lostMembership]);
 
-	if (resolved === "pending") return <LoadingScreen />;
-	if (resolved === "buyer") return <Redirect href="/(tabs)/home" />;
-
 	const activeColor = brand
 		? sellerBrandPalette(brand, isDark ? "dark" : "light").primary
 		: isDark
 			? "#3b82f6"
 			: "#1e40af";
-	const bgColor = isDark ? "#0b1120" : "#ffffff";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const tabOptions = useTabNavigatorOptions(activeColor);
+
+	if (resolved === "pending") return <LoadingScreen />;
+	if (resolved === "buyer") return <Redirect href="/(tabs)/home" />;
 
 	return (
 		<SellerAreaContext.Provider value={true}>
-			<Tabs
-				screenOptions={{
-					tabBarActiveTintColor: activeColor,
-					tabBarInactiveTintColor: "#94a3b8",
-					headerShown: false,
-					tabBarButton: HapticTab,
-					tabBarStyle: {
-						backgroundColor: bgColor,
-						borderTopColor: borderColor,
-						borderTopWidth: 1,
-						paddingTop: 10,
-						paddingBottom: Math.max(insets.bottom, 6),
-						height: 68 + insets.bottom,
-					},
-					tabBarLabelStyle: {
-						fontSize: 10,
-						fontFamily: Fonts.bodySemibold,
-						marginBottom: 4,
-					},
-				}}
-			>
+			<Tabs screenOptions={tabOptions}>
 				<Tabs.Screen
 					name="sell/dashboard"
 					options={{

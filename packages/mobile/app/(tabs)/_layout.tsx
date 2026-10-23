@@ -10,12 +10,12 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { HapticTab } from "@/components/haptic-tab";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
+import { useTabNavigatorOptions } from "@/src/hooks/useTabNavigatorOptions";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -114,8 +114,10 @@ function AnimatedTabIcon({
 }
 
 function SellButton() {
+	// Raised above the bottom bar; in line with the others on the rail.
+	const { isExpanded } = useResponsive();
 	return (
-		<View style={styles.sellWrap}>
+		<View style={[styles.sellWrap, isExpanded && styles.sellWrapRail]}>
 			<View style={styles.sellBtn}>
 				<Ionicons name="add" size={28} color="#0f172a" />
 			</View>
@@ -130,7 +132,6 @@ export default function TabLayout() {
 	const { user } = useAuth();
 	const { chatClient } = useChatClient();
 	const queryClient = useQueryClient();
-	const insets = useSafeAreaInsets();
 
 	const { data: unreadData } = useQuery({
 		queryKey: ["unread-messages"],
@@ -153,33 +154,10 @@ export default function TabLayout() {
 
 	const unreadCount = unreadData?.count ?? 0;
 
-	const activeColor = isDark ? "#3b82f6" : "#1e40af";
-	const inactiveColor = "#94a3b8";
-	const bgColor = isDark ? "#0b1120" : "#ffffff";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const tabOptions = useTabNavigatorOptions(isDark ? "#3b82f6" : "#1e40af");
 
 	return (
-		<Tabs
-			screenOptions={{
-				tabBarActiveTintColor: activeColor,
-				tabBarInactiveTintColor: inactiveColor,
-				headerShown: false,
-				tabBarButton: HapticTab,
-				tabBarStyle: {
-					backgroundColor: bgColor,
-					borderTopColor: borderColor,
-					borderTopWidth: 1,
-					paddingTop: 10,
-					paddingBottom: Math.max(insets.bottom, 6),
-					height: 68 + insets.bottom,
-				},
-				tabBarLabelStyle: {
-					fontSize: 10,
-					fontFamily: Fonts.bodySemibold,
-					marginBottom: 4,
-				},
-			}}
-		>
+		<Tabs screenOptions={tabOptions}>
 			<Tabs.Screen
 				name="home/index"
 				options={{
@@ -258,6 +236,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: -16,
 	},
+	sellWrapRail: { marginTop: 0 },
 	sellBtn: {
 		width: 52,
 		height: 52,
