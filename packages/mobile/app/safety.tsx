@@ -60,7 +60,7 @@ export default function SafetyScreen() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<HeaderBackButton color={textColor} fallback="/(tabs)/account" />
+				<HeaderBackButton color={textColor} fallback="/(tabs)/account" inline />
 				<Text style={[styles.title, { color: textColor }]}>
 					{t("safety.title")}
 				</Text>

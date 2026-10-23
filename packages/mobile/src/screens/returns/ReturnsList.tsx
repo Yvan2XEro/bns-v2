@@ -41,7 +41,11 @@ export function ReturnsList({ selectedId, onOpen }: SplitListProps) {
 			style={[styles.safe, { backgroundColor: colors.bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<HeaderBackButton color={colors.text} fallback="/(tabs)/account" />
+				<HeaderBackButton
+					color={colors.text}
+					fallback="/(tabs)/account"
+					inline
+				/>
 				<Text style={[styles.title, { color: colors.text }]}>
 					{t("returns.title")}
 				</Text>

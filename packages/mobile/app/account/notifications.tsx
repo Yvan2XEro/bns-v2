@@ -468,6 +468,7 @@ function NotificationsContent({
 				<HeaderBackButton
 					color={isDark ? "#e2e8f0" : "#0f172a"}
 					fallback="/(tabs)/account"
+					inline
 					style={styles.backBtn}
 				/>
 				<Text style={[styles.title, { color: textColor }]}>

@@ -20,6 +20,7 @@ export function HeaderBackButton({
 	onPress,
 	icon = "arrow-back",
 	hidden = false,
+	inline = false,
 	style,
 }: {
 	color: string;
@@ -28,6 +29,11 @@ export function HeaderBackButton({
 	icon?: "arrow-back" | "chevron-back" | "close";
 	/** Also hidden where the caller knows there is no way back (a tab's root). */
 	hidden?: boolean;
+	/**
+	 * Sized to its icon, for headers laid out around a bare icon; the hit
+	 * slop keeps it as easy to reach.
+	 */
+	inline?: boolean;
 	style?: StyleProp<ViewStyle>;
 }) {
 	const { t } = useTranslation();
@@ -39,8 +45,8 @@ export function HeaderBackButton({
 	return (
 		<Pressable
 			onPress={goBack}
-			style={[styles.button, style]}
-			hitSlop={8}
+			style={[inline ? styles.inline : styles.button, style]}
+			hitSlop={inline ? 12 : 8}
 			accessibilityRole="button"
 			accessibilityLabel={
 				icon === "close" ? t("common.close") : t("common.back")
@@ -52,6 +58,7 @@ export function HeaderBackButton({
 }
 
 const styles = StyleSheet.create({
+	inline: { alignItems: "center", justifyContent: "center" },
 	button: {
 		width: 44,
 		height: 44,

@@ -64,7 +64,11 @@ export function ReturnCase({ id }: { id: string }) {
 			style={[styles.safe, { backgroundColor: colors.bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<HeaderBackButton color={colors.text} fallback="/account/returns" />
+				<HeaderBackButton
+					color={colors.text}
+					fallback="/account/returns"
+					inline
+				/>
 				<Text style={[styles.headerTitle, { color: colors.text }]}>
 					{query.data?.number ?? t("returns.title")}
 				</Text>
