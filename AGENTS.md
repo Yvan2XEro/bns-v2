@@ -161,13 +161,21 @@ below, as if the wrapper were not there.
   keeps a plain route without `<SplitDetailRoute>`: there is no single list
   to hand it to.
 - An editor (a form with unsaved changes) is never shown in a pane.
+- A menu works the same way: the account tab's entries open beside it, listed
+  once in `ACCOUNT_PANES`. A list shown in a pane is never split again.
 
 **Sheets.** Every sheet takes its placement from `useSheetPresentation()`:
 a bottom sheet on a phone, a centred dialog from medium up. It reads the
 window, since a sheet covers it whole even when opened from a pane.
 
 **Back buttons.** Every header uses `<HeaderBackButton>`, which hides itself
-in a detail pane. No header calls `router.back()` itself.
+in a detail pane. No header calls `router.back()` itself. A screen that
+leaves itself (after a save, a "done" button) calls `useCloseScreen()`: it
+empties its pane in a split and goes back otherwise.
+
+**Motion.** Panes move with `paneMotion` (`SplitLayout` applies it): they fade
+in with their split, and a newly selected item slides in over the last one.
+On a tablet, tab changes shift rather than cut.
 
 **Tab bars.** Every tab navigator takes its options from
 `useTabNavigatorOptions()`: a bottom bar on phones, a navigation rail in

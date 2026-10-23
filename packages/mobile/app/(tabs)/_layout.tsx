@@ -20,6 +20,14 @@ import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
+/**
+ * The tabs open on home. A link that starts the app (a shared listing) mounts
+ * them under its screen; opening on `index`, whose only job is to redirect
+ * `/` to home, would fire that redirect underneath and replace the linked
+ * screen with home.
+ */
+export const unstable_settings = { initialRouteName: "home/index" };
+
 function MessagesBadge({ count }: { count: number }) {
 	if (count === 0) return null;
 	return (

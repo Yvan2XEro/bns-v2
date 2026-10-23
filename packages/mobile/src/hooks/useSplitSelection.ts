@@ -1,6 +1,7 @@
 import { type Href, router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect } from "react";
 import { useWindowDimensions } from "react-native";
+import { useIsDetailPane } from "@/src/contexts/DetailPaneContext";
 import {
 	openAction,
 	SPLIT_PARAM,
@@ -12,10 +13,14 @@ export { SPLIT_PARAM };
 
 /**
  * Whether the window has room for a list and its detail side by side —
- * decided on the window, never on a pane.
+ * decided on the window, never on a pane. A list already shown in a pane
+ * (purchases, opened from the account menu) is never split again: it opens
+ * its items as their own screens.
  */
 export function useIsSplit(): boolean {
-	return sizeClassOf(useWindowDimensions().width) === "expanded";
+	const { width } = useWindowDimensions();
+	const inPane = useIsDetailPane();
+	return sizeClassOf(width) === "expanded" && !inPane;
 }
 
 /**
@@ -32,7 +37,9 @@ export function useSplitSelection(
 ) {
 	const isSplit = useIsSplit();
 	const params = useLocalSearchParams<{ [SPLIT_PARAM]?: string }>();
-	const selectedId = params[SPLIT_PARAM] || null;
+	// In a pane, the route's selection belongs to the split around it.
+	const inPane = useIsDetailPane();
+	const selectedId = inPane ? null : params[SPLIT_PARAM] || null;
 
 	const open = useCallback(
 		(id: string) => {
@@ -50,5 +57,10 @@ export function useSplitSelection(
 		router.push(detailHref(id));
 	}, [isSplit, selectedId, detailHref]);
 
-	return { isSplit, selectedId: isSplit ? selectedId : null, open };
+	const close = useCallback(
+		() => router.setParams({ [SPLIT_PARAM]: undefined }),
+		[],
+	);
+
+	return { isSplit, selectedId: isSplit ? selectedId : null, open, close };
 }

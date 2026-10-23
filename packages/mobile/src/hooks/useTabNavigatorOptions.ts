@@ -26,7 +26,7 @@ export function useTabNavigatorOptions(
 ): BottomTabNavigationOptions {
 	const isDark = useColorScheme() === "dark";
 	const insets = useSafeAreaInsets();
-	const { isExpanded } = useResponsive();
+	const { isTablet, isExpanded } = useResponsive();
 
 	return useMemo<BottomTabNavigationOptions>(() => {
 		const background = isDark ? "#0b1120" : "#ffffff";
@@ -36,6 +36,9 @@ export function useTabNavigatorOptions(
 			tabBarInactiveTintColor: INACTIVE_TINT,
 			headerShown: false,
 			tabBarButton: HapticTab,
+			// On a tablet a tab change redraws whole panes: shift them in rather
+			// than cut. Phones keep their instant switch.
+			animation: isTablet ? "shift" : "none",
 			tabBarLabelStyle: {
 				fontSize: 10,
 				fontFamily: Fonts.bodySemibold,
@@ -69,5 +72,5 @@ export function useTabNavigatorOptions(
 				height: 68 + insets.bottom,
 			},
 		};
-	}, [activeTint, isDark, insets, isExpanded]);
+	}, [activeTint, isDark, insets, isTablet, isExpanded]);
 }

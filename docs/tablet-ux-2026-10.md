@@ -118,6 +118,11 @@ along the way:
   (`useSheetPresentation`): a bottom sheet on a phone, a centred dialog of
   `dialogMaxWidth` from medium up. Full-screen pickers (tags) stay full
   screen.
+- The account tab is a split too: the menu stays on the left and the chosen
+  entry (profile, purchases, addresses, settings, help…) opens on the right.
+  Seller mode, moderation and the courier space still take the whole screen.
+- Every change of pane is animated (`paneMotion`), and tab changes shift on
+  tablets.
 - Long forms pair their short fields with `<FormRow>` in expanded; the ad
   form, a step-by-step wizard of one card per field, keeps one column.
 

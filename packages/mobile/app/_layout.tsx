@@ -31,8 +31,11 @@ import {
 	AppConfigProvider,
 	useAppConfig,
 } from "@/src/contexts/AppConfigContext";
+import {
+	LANG_STORAGE_KEY,
+	THEME_STORAGE_KEY,
+} from "@/src/screens/account/SettingsScreen";
 import i18n from "../src/lib/i18n";
-import { LANG_STORAGE_KEY, THEME_STORAGE_KEY } from "./settings";
 import "react-native-reanimated";
 import { NovuProvider } from "@novu/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

@@ -39,7 +39,7 @@ export function SplitScreen({
 	/** Search params that belong to the selected item only (a draft). */
 	itemParams?: readonly string[];
 }) {
-	const { isSplit, selectedId, open } = useSplitSelection(
+	const { isSplit, selectedId, open, close } = useSplitSelection(
 		detailHref,
 		itemParams,
 	);
@@ -48,6 +48,8 @@ export function SplitScreen({
 	return (
 		<SplitLayout
 			list={list}
+			detailKey={selectedId ?? ""}
+			onCloseDetail={close}
 			detail={
 				selectedId ? renderDetail(selectedId) : <SplitEmptyDetail {...empty} />
 			}

@@ -6,7 +6,7 @@ import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
-import AccountScreen from "../(tabs)/account/index";
+import { AccountScreen } from "@/src/screens/account/AccountScreen";
 
 /**
  * The account tab, pushed from seller mode. Signing out pops back to the
