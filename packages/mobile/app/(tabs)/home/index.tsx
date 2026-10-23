@@ -787,11 +787,15 @@ export default function HomeScreen() {
 										<CategoryIcon
 											key={cat.id}
 											category={cat}
-											onPress={() => {
-												setQuery(cat.name ?? "");
-												setDebouncedQuery(cat.name ?? "");
-												onSearchFocus();
-											}}
+											// The one search of the app, filtered on the category
+											// itself rather than its name typed as text; on a tablet
+											// its results open listings beside them.
+											onPress={() =>
+												router.push({
+													pathname: "/(tabs)/search",
+													params: { category: String(cat.id) },
+												})
+											}
 										/>
 									))}
 								</ScrollView>

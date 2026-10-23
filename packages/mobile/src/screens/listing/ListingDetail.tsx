@@ -415,7 +415,11 @@ export function ListingDetail({ id }: { id: string }) {
 		: [];
 
 	const gallery = (
-		<View style={styles.gallery}>
+		// Sized, or a horizontal pager grows to all its photos side by side and
+		// pushes the details off screen.
+		<View
+			style={[styles.gallery, { width: galleryWidth, height: galleryHeight }]}
+		>
 			<ScrollView
 				horizontal
 				pagingEnabled
@@ -547,6 +551,7 @@ export function ListingDetail({ id }: { id: string }) {
 				{twoColumns && gallery}
 				<ScrollView
 					ref={scrollRef}
+					style={styles.details}
 					showsVerticalScrollIndicator={false}
 					contentContainerStyle={{ paddingBottom: actionBarInset }}
 				>
@@ -1052,6 +1057,7 @@ const styles = StyleSheet.create({
 	root: { flex: 1 },
 	body: { flex: 1 },
 	bodyColumns: { flexDirection: "row" },
+	details: { flex: 1 },
 	// Beside the gallery, not tucked under it.
 	contentBeside: {
 		marginTop: 0,
