@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet } from "react-native";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
 import { ZoneForm } from "@/src/components/delivery/ZoneForm";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { useShopTheme } from "@/src/components/shop/theme";
 import {
@@ -64,28 +65,30 @@ function ZoneEditor({
 		);
 
 	return (
-		<ScrollView
-			contentContainerStyle={styles.content}
-			keyboardShouldPersistTaps="handled"
-		>
-			<ZoneForm
-				key={zone?.updatedAt ?? "new"}
-				initial={initial}
-				pending={save.isPending}
-				error={save.error}
-				onSubmit={(values) =>
-					save.mutate(toZoneInput(values), { onSuccess: () => router.back() })
-				}
-			/>
-			{zoneId ? (
-				<SheetButton
-					label={t("deliverySettings.delete")}
-					tone="danger"
-					pending={remove.isPending}
-					onPress={confirmDelete}
+		<ScreenColumn width="reading">
+			<ScrollView
+				contentContainerStyle={styles.content}
+				keyboardShouldPersistTaps="handled"
+			>
+				<ZoneForm
+					key={zone?.updatedAt ?? "new"}
+					initial={initial}
+					pending={save.isPending}
+					error={save.error}
+					onSubmit={(values) =>
+						save.mutate(toZoneInput(values), { onSuccess: () => router.back() })
+					}
 				/>
-			) : null}
-		</ScrollView>
+				{zoneId ? (
+					<SheetButton
+						label={t("deliverySettings.delete")}
+						tone="danger"
+						pending={remove.isPending}
+						onPress={confirmDelete}
+					/>
+				) : null}
+			</ScrollView>
+		</ScreenColumn>
 	);
 }
 

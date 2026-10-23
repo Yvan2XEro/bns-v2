@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
 import { useModerationDisputes } from "@/src/hooks/useModerationDisputes";
@@ -35,67 +36,69 @@ export default function ModerationDisputesQueueScreen() {
 					onCta={() => void query.refetch()}
 				/>
 			) : (
-				<FlashList
-					data={query.data ?? []}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={styles.list}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-					ListEmptyComponent={
-						<EmptyState
-							illustration="empty"
-							title={t("moderationDisputes.empty")}
-						/>
-					}
-					renderItem={({ item }) => (
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t("moderationDisputes.openCase", {
-								number: item.number,
-							})}
-							onPress={() =>
-								router.push({
-									pathname: "/moderation/disputes/[id]",
-									params: { id: item.id },
-								})
-							}
-							style={[
-								styles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<View style={styles.row}>
-								<Text style={[styles.number, { color: c.text }]}>
-									{item.number}
+				<ScreenColumn width="wide">
+					<FlashList
+						data={query.data ?? []}
+						keyExtractor={(item) => item.id}
+						contentContainerStyle={styles.list}
+						ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+						ListEmptyComponent={
+							<EmptyState
+								illustration="empty"
+								title={t("moderationDisputes.empty")}
+							/>
+						}
+						renderItem={({ item }) => (
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={t("moderationDisputes.openCase", {
+									number: item.number,
+								})}
+								onPress={() =>
+									router.push({
+										pathname: "/moderation/disputes/[id]",
+										params: { id: item.id },
+									})
+								}
+								style={[
+									styles.card,
+									{ backgroundColor: c.card, borderColor: c.border },
+								]}
+							>
+								<View style={styles.row}>
+									<Text style={[styles.number, { color: c.text }]}>
+										{item.number}
+									</Text>
+									{item.overdue ? (
+										<Text style={[styles.overdue, { color: c.danger }]}>
+											{t("moderationDisputes.overdue")}
+										</Text>
+									) : null}
+								</View>
+								<Text style={[styles.body, { color: c.muted }]}>
+									{t("disputes.order", { number: item.orderNumber })} ·{" "}
+									{t(DISPUTE_STATUS_LABELS[item.status])}
 								</Text>
-								{item.overdue ? (
-									<Text style={[styles.overdue, { color: c.danger }]}>
-										{t("moderationDisputes.overdue")}
+								<Text style={[styles.body, { color: c.muted }]}>
+									{t(DISPUTE_REASON_LABELS[item.reason])} ·{" "}
+									{formatPrice(item.amountAtStake, i18n.language)}
+								</Text>
+								{item.deadline ? (
+									<Text
+										style={[
+											styles.body,
+											{ color: item.overdue ? c.danger : c.muted },
+										]}
+									>
+										{t("moderationDisputes.deadline", {
+											date: new Date(item.deadline).toLocaleString(),
+										})}
 									</Text>
 								) : null}
-							</View>
-							<Text style={[styles.body, { color: c.muted }]}>
-								{t("disputes.order", { number: item.orderNumber })} ·{" "}
-								{t(DISPUTE_STATUS_LABELS[item.status])}
-							</Text>
-							<Text style={[styles.body, { color: c.muted }]}>
-								{t(DISPUTE_REASON_LABELS[item.reason])} ·{" "}
-								{formatPrice(item.amountAtStake, i18n.language)}
-							</Text>
-							{item.deadline ? (
-								<Text
-									style={[
-										styles.body,
-										{ color: item.overdue ? c.danger : c.muted },
-									]}
-								>
-									{t("moderationDisputes.deadline", {
-										date: new Date(item.deadline).toLocaleString(),
-									})}
-								</Text>
-							) : null}
-						</Pressable>
-					)}
-				/>
+							</Pressable>
+						)}
+					/>
+				</ScreenColumn>
 			)}
 		</ModerationScreen>
 	);

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
 import {
@@ -149,216 +150,221 @@ export default function ModerationDisputeDetailScreen() {
 			title={t("moderationDisputes.detailTitle")}
 			subtitle={dispute.number}
 		>
-			<ScrollView
-				contentContainerStyle={styles.content}
-				keyboardShouldPersistTaps="handled"
-			>
-				{action.isError || preview.isError ? (
-					<Text
-						accessibilityRole="alert"
-						style={[styles.error, { color: c.danger }]}
-					>
-						{t("moderationDisputes.actionError")}
-					</Text>
-				) : null}
-				{action.isSuccess ? (
-					<Text style={[styles.notice, { color: c.success }]}>
-						{t("moderationDisputes.actionSaved")}
-					</Text>
-				) : null}
-				<Card title={t("moderationDisputes.caseSummary")} c={c}>
-					<Body
-						text={`${t("disputes.order", { number: dispute.orderNumber })} · ${t(DISPUTE_REASON_LABELS[dispute.reason])}`}
-						color={c.text}
-					/>
-					<Body
-						text={`${t(DISPUTE_STATUS_LABELS[dispute.status])} · ${formatPrice(dispute.amountAtStake, locale)}`}
-						color={c.muted}
-					/>
-					<Body
-						text={`${t("moderationDisputes.buyerDisputes")}: ${sheet.partyHistory.buyerDisputes12m}`}
-						color={c.muted}
-					/>
-					<Body
-						text={`${t("moderationDisputes.buyerRefusals")}: ${sheet.partyHistory.buyerRefusalScore}`}
-						color={c.muted}
-					/>
-					<Body
-						text={`${t("moderationDisputes.shopLossRate")}: ${sheet.partyHistory.shopDisputeLossRate === null ? "—" : `${Math.round(sheet.partyHistory.shopDisputeLossRate * 100)}%`}`}
-						color={c.muted}
-					/>
-					<Pressable
-						accessibilityRole="button"
-						style={[styles.outlineButton, { borderColor: c.border }]}
-						onPress={() =>
-							router.push({
-								pathname: "/disputes/[id]",
-								params: { id: dispute.id },
-							})
-						}
-					>
-						<Text style={[styles.buttonLabel, { color: c.primary }]}>
-							{t("moderationDisputes.openThread")}
+			<ScreenColumn width="reading">
+				<ScrollView
+					contentContainerStyle={styles.content}
+					keyboardShouldPersistTaps="handled"
+				>
+					{action.isError || preview.isError ? (
+						<Text
+							accessibilityRole="alert"
+							style={[styles.error, { color: c.danger }]}
+						>
+							{t("moderationDisputes.actionError")}
 						</Text>
-					</Pressable>
-					<Pressable
-						accessibilityRole="button"
-						disabled={action.isPending}
-						style={[styles.outlineButton, { borderColor: c.border }]}
-						onPress={assign}
-					>
-						<Text style={[styles.buttonLabel, { color: c.primary }]}>
-							{t("moderationDisputes.assignToMe")}
+					) : null}
+					{action.isSuccess ? (
+						<Text style={[styles.notice, { color: c.success }]}>
+							{t("moderationDisputes.actionSaved")}
 						</Text>
-					</Pressable>
-				</Card>
-				<Card title={t("moderationDisputes.proofChecklist")} c={c}>
-					{sheet.proofChecklist.map((row) => (
+					) : null}
+					<Card title={t("moderationDisputes.caseSummary")} c={c}>
 						<Body
-							key={row.requirement}
-							text={`${t(`moderationDisputes.proof.${row.requirement}`)}: ${row.established ? t("moderationDisputes.proven") : t("moderationDisputes.notProven")}${row.source ? ` · ${row.source}` : ""}`}
-							color={row.established ? c.success : c.muted}
+							text={`${t("disputes.order", { number: dispute.orderNumber })} · ${t(DISPUTE_REASON_LABELS[dispute.reason])}`}
+							color={c.text}
 						/>
-					))}
-				</Card>
-				{dispute.status === "under_review" ? (
-					<Card title={t("moderationDisputes.resolveTitle")} c={c}>
-						<Choice
-							title={t("moderationDisputes.outcome")}
-							values={outcomes}
-							selected={form.outcome}
-							label={(value) => t(DISPUTE_STATUS_LABELS[value])}
-							onSelect={(outcome) => patch({ outcome })}
-							c={c}
+						<Body
+							text={`${t(DISPUTE_STATUS_LABELS[dispute.status])} · ${formatPrice(dispute.amountAtStake, locale)}`}
+							color={c.muted}
 						/>
-						<Field
-							label={t("moderationDisputes.refundAmount")}
-							value={form.refund}
-							keyboardType="number-pad"
-							onChangeText={(refund) => {
-								patch({ refund });
-								preview.reset();
-							}}
+						<Body
+							text={`${t("moderationDisputes.buyerDisputes")}: ${sheet.partyHistory.buyerDisputes12m}`}
+							color={c.muted}
 						/>
-						<Choice
-							title={t("moderationDisputes.liableParty")}
-							values={liabilities}
-							selected={form.liableParty}
-							label={(value) => t(`moderationDisputes.liability.${value}`)}
-							onSelect={(liableParty) => patch({ liableParty })}
-							c={c}
+						<Body
+							text={`${t("moderationDisputes.buyerRefusals")}: ${sheet.partyHistory.buyerRefusalScore}`}
+							color={c.muted}
 						/>
-						<Choice
-							title={t("moderationDisputes.reasonCodeLabel")}
-							values={reasonCodes}
-							selected={form.reasonCode}
-							label={(value) => t(`moderationDisputes.reasonCode.${value}`)}
-							onSelect={(reasonCode) => patch({ reasonCode })}
-							c={c}
-						/>
-						<Toggle
-							label={t("moderationDisputes.returnRequired")}
-							enabled={form.returnRequired}
-							onPress={() => patch({ returnRequired: !form.returnRequired })}
-							c={c}
-						/>
-						{form.returnRequired ? (
-							<Choice
-								title={t("moderationDisputes.returnShippingPayer")}
-								values={["seller", "buyer"] as const}
-								selected={form.returnShippingPaidBy}
-								label={(value) => t(`moderationDisputes.liability.${value}`)}
-								onSelect={(returnShippingPaidBy) =>
-									patch({ returnShippingPaidBy })
-								}
-								c={c}
-							/>
-						) : null}
-						<Field
-							label={t("moderationDisputes.statementFr")}
-							value={form.statementFr}
-							onChangeText={(statementFr) => patch({ statementFr })}
-						/>
-						<Field
-							label={t("moderationDisputes.statementEn")}
-							value={form.statementEn}
-							onChangeText={(statementEn) => patch({ statementEn })}
-						/>
-						<Field
-							label={t("moderationDisputes.internalNote")}
-							value={form.note}
-							onChangeText={(note) => patch({ note })}
+						<Body
+							text={`${t("moderationDisputes.shopLossRate")}: ${sheet.partyHistory.shopDisputeLossRate === null ? "—" : `${Math.round(sheet.partyHistory.shopDisputeLossRate * 100)}%`}`}
+							color={c.muted}
 						/>
 						<Pressable
 							accessibilityRole="button"
-							disabled={
-								preview.isPending ||
-								!Number.isSafeInteger(refundAmount) ||
-								refundAmount < 0
+							style={[styles.outlineButton, { borderColor: c.border }]}
+							onPress={() =>
+								router.push({
+									pathname: "/disputes/[id]",
+									params: { id: dispute.id },
+								})
 							}
-							onPress={previewDecision}
-							style={[styles.primaryButton, { backgroundColor: c.primary }]}
 						>
-							{preview.isPending ? (
-								<ActivityIndicator color="#fff" />
-							) : (
-								<Text style={styles.primaryLabel}>
-									{t("moderationDisputes.preview")}
-								</Text>
-							)}
+							<Text style={[styles.buttonLabel, { color: c.primary }]}>
+								{t("moderationDisputes.openThread")}
+							</Text>
 						</Pressable>
-						{preview.data ? (
-							<View
-								style={[
-									styles.preview,
-									{ backgroundColor: c.bg, borderColor: c.border },
-								]}
-							>
-								<Body
-									text={t("moderationDisputes.previewRefund", {
-										amount: formatPrice(preview.data.refundAmount, locale),
-									})}
-									color={c.text}
-								/>
-								<Body
-									text={t("moderationDisputes.previewBreakdown", {
-										goods: formatPrice(preview.data.breakdown.goods, locale),
-										delivery: formatPrice(
-											preview.data.breakdown.outboundDelivery,
-											locale,
-										),
-										protection: formatPrice(
-											preview.data.breakdown.buyerProtectionFee,
-											locale,
-										),
-									})}
-									color={c.muted}
-								/>
-								<Pressable
-									accessibilityRole="button"
-									disabled={
-										!previewCurrent ||
-										action.isPending ||
-										!form.note.trim() ||
-										!form.statementFr.trim() ||
-										!form.statementEn.trim()
-									}
-									onPress={resolve}
-									style={[styles.primaryButton, { backgroundColor: c.danger }]}
-								>
-									{action.isPending ? (
-										<ActivityIndicator color="#fff" />
-									) : (
-										<Text style={styles.primaryLabel}>
-											{t("moderationDisputes.confirmResolve")}
-										</Text>
-									)}
-								</Pressable>
-							</View>
-						) : null}
+						<Pressable
+							accessibilityRole="button"
+							disabled={action.isPending}
+							style={[styles.outlineButton, { borderColor: c.border }]}
+							onPress={assign}
+						>
+							<Text style={[styles.buttonLabel, { color: c.primary }]}>
+								{t("moderationDisputes.assignToMe")}
+							</Text>
+						</Pressable>
 					</Card>
-				) : null}
-			</ScrollView>
+					<Card title={t("moderationDisputes.proofChecklist")} c={c}>
+						{sheet.proofChecklist.map((row) => (
+							<Body
+								key={row.requirement}
+								text={`${t(`moderationDisputes.proof.${row.requirement}`)}: ${row.established ? t("moderationDisputes.proven") : t("moderationDisputes.notProven")}${row.source ? ` · ${row.source}` : ""}`}
+								color={row.established ? c.success : c.muted}
+							/>
+						))}
+					</Card>
+					{dispute.status === "under_review" ? (
+						<Card title={t("moderationDisputes.resolveTitle")} c={c}>
+							<Choice
+								title={t("moderationDisputes.outcome")}
+								values={outcomes}
+								selected={form.outcome}
+								label={(value) => t(DISPUTE_STATUS_LABELS[value])}
+								onSelect={(outcome) => patch({ outcome })}
+								c={c}
+							/>
+							<Field
+								label={t("moderationDisputes.refundAmount")}
+								value={form.refund}
+								keyboardType="number-pad"
+								onChangeText={(refund) => {
+									patch({ refund });
+									preview.reset();
+								}}
+							/>
+							<Choice
+								title={t("moderationDisputes.liableParty")}
+								values={liabilities}
+								selected={form.liableParty}
+								label={(value) => t(`moderationDisputes.liability.${value}`)}
+								onSelect={(liableParty) => patch({ liableParty })}
+								c={c}
+							/>
+							<Choice
+								title={t("moderationDisputes.reasonCodeLabel")}
+								values={reasonCodes}
+								selected={form.reasonCode}
+								label={(value) => t(`moderationDisputes.reasonCode.${value}`)}
+								onSelect={(reasonCode) => patch({ reasonCode })}
+								c={c}
+							/>
+							<Toggle
+								label={t("moderationDisputes.returnRequired")}
+								enabled={form.returnRequired}
+								onPress={() => patch({ returnRequired: !form.returnRequired })}
+								c={c}
+							/>
+							{form.returnRequired ? (
+								<Choice
+									title={t("moderationDisputes.returnShippingPayer")}
+									values={["seller", "buyer"] as const}
+									selected={form.returnShippingPaidBy}
+									label={(value) => t(`moderationDisputes.liability.${value}`)}
+									onSelect={(returnShippingPaidBy) =>
+										patch({ returnShippingPaidBy })
+									}
+									c={c}
+								/>
+							) : null}
+							<Field
+								label={t("moderationDisputes.statementFr")}
+								value={form.statementFr}
+								onChangeText={(statementFr) => patch({ statementFr })}
+							/>
+							<Field
+								label={t("moderationDisputes.statementEn")}
+								value={form.statementEn}
+								onChangeText={(statementEn) => patch({ statementEn })}
+							/>
+							<Field
+								label={t("moderationDisputes.internalNote")}
+								value={form.note}
+								onChangeText={(note) => patch({ note })}
+							/>
+							<Pressable
+								accessibilityRole="button"
+								disabled={
+									preview.isPending ||
+									!Number.isSafeInteger(refundAmount) ||
+									refundAmount < 0
+								}
+								onPress={previewDecision}
+								style={[styles.primaryButton, { backgroundColor: c.primary }]}
+							>
+								{preview.isPending ? (
+									<ActivityIndicator color="#fff" />
+								) : (
+									<Text style={styles.primaryLabel}>
+										{t("moderationDisputes.preview")}
+									</Text>
+								)}
+							</Pressable>
+							{preview.data ? (
+								<View
+									style={[
+										styles.preview,
+										{ backgroundColor: c.bg, borderColor: c.border },
+									]}
+								>
+									<Body
+										text={t("moderationDisputes.previewRefund", {
+											amount: formatPrice(preview.data.refundAmount, locale),
+										})}
+										color={c.text}
+									/>
+									<Body
+										text={t("moderationDisputes.previewBreakdown", {
+											goods: formatPrice(preview.data.breakdown.goods, locale),
+											delivery: formatPrice(
+												preview.data.breakdown.outboundDelivery,
+												locale,
+											),
+											protection: formatPrice(
+												preview.data.breakdown.buyerProtectionFee,
+												locale,
+											),
+										})}
+										color={c.muted}
+									/>
+									<Pressable
+										accessibilityRole="button"
+										disabled={
+											!previewCurrent ||
+											action.isPending ||
+											!form.note.trim() ||
+											!form.statementFr.trim() ||
+											!form.statementEn.trim()
+										}
+										onPress={resolve}
+										style={[
+											styles.primaryButton,
+											{ backgroundColor: c.danger },
+										]}
+									>
+										{action.isPending ? (
+											<ActivityIndicator color="#fff" />
+										) : (
+											<Text style={styles.primaryLabel}>
+												{t("moderationDisputes.confirmResolve")}
+											</Text>
+										)}
+									</Pressable>
+								</View>
+							) : null}
+						</Card>
+					) : null}
+				</ScrollView>
+			</ScreenColumn>
 		</ModerationScreen>
 	);
 }

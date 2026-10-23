@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -132,416 +133,422 @@ export default function ResalePurchaseOrderDetailScreen() {
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
 			<SellerHeader title={order.number} subtitle={translatedSide} />
-			<ScrollView contentContainerStyle={styles.content}>
-				<Card title={t(`sellerResale.status_${order.status}`)} c={c}>
-					<Text style={[styles.body, { color: c.body }]}>
-						{order.status === "sent"
-							? t("sellerResale.counterparty", {
-									side:
-										side === "supplier"
-											? t("sellerResale.reseller")
-											: t("sellerResale.supplier"),
-								})
-							: ""}
-					</Text>
-					<Text style={[styles.amount, { color: c.text }]}>
-						{t("sellerResale.collectAmount")}:{" "}
-						{formatPrice(order.collectAmount, locale)}
-					</Text>
-					{order.supplierAmount !== null ? (
+			<ScreenColumn width="reading">
+				<ScrollView contentContainerStyle={styles.content}>
+					<Card title={t(`sellerResale.status_${order.status}`)} c={c}>
 						<Text style={[styles.body, { color: c.body }]}>
-							{formatPrice(order.supplierAmount, locale)}
+							{order.status === "sent"
+								? t("sellerResale.counterparty", {
+										side:
+											side === "supplier"
+												? t("sellerResale.reseller")
+												: t("sellerResale.supplier"),
+									})
+								: ""}
 						</Text>
-					) : null}
-				</Card>
-				{side === "supplier" && order.reseller ? (
-					<Card title={t("sellerResale.resellerCard")} c={c}>
-						<Text style={[styles.body, { color: c.text }]}>
-							{order.reseller.name}
+						<Text style={[styles.amount, { color: c.text }]}>
+							{t("sellerResale.collectAmount")}:{" "}
+							{formatPrice(order.collectAmount, locale)}
 						</Text>
-						{order.reseller.orderNumber ? (
+						{order.supplierAmount !== null ? (
 							<Text style={[styles.body, { color: c.body }]}>
-								{t("sellerResale.customerOrder", {
-									number: order.reseller.orderNumber,
-								})}
+								{formatPrice(order.supplierAmount, locale)}
 							</Text>
 						) : null}
-						{order.reseller.phone ? (
-							<Text style={[styles.body, { color: c.body }]}>
-								{t("sellerResale.resellerContact", {
-									phone: order.reseller.phone,
-								})}
-							</Text>
-						) : null}
-						{order.reseller.reachable ? (
-							<Text style={[styles.body, { color: c.body }]}>
-								{t("sellerResale.reachableFromTo", order.reseller.reachable)}
-							</Text>
-						) : null}
-						<Pressable
-							accessibilityRole="button"
-							disabled={writeToReseller.isPending}
-							onPress={() => {
-								const resellerShopId = order.reseller?.shopId;
-								if (resellerShopId) writeToReseller.mutate(resellerShopId);
-							}}
-							style={[styles.writeButton, { borderColor: c.border }]}
-						>
-							<Ionicons name="chatbubble-outline" size={18} color={c.text} />
-							<Text style={[styles.writeText, { color: c.text }]}>
-								{t("sellerResale.writeToReseller")}
-							</Text>
-						</Pressable>
 					</Card>
-				) : null}
-				<Card title={t("sellerResale.items")} c={c}>
-					{order.items.map((item) => (
-						<Text key={item.id} style={[styles.body, { color: c.text }]}>
-							{item.quantity} × {item.title}
-							{item.variantLabel ? ` · ${item.variantLabel}` : ""}
-						</Text>
-					))}
-				</Card>
-				<Card title={t("sellerResale.delivery")} c={c}>
-					<Text style={[styles.body, { color: c.text }]}>
-						{order.delivery.recipientName}
-					</Text>
-					<Text style={[styles.body, { color: c.body }]}>
-						{order.delivery.phoneMasked ? "••••••••" : order.delivery.phone}
-					</Text>
-					<Text style={[styles.body, { color: c.body }]}>
-						{[
-							order.delivery.city,
-							order.delivery.district,
-							order.delivery.landmark,
-						]
-							.filter(Boolean)
-							.join(" · ")}
-					</Text>
-					{order.delivery.instructions ? (
-						<Text style={[styles.body, { color: c.body }]}>
-							{order.delivery.instructions}
-						</Text>
+					{side === "supplier" && order.reseller ? (
+						<Card title={t("sellerResale.resellerCard")} c={c}>
+							<Text style={[styles.body, { color: c.text }]}>
+								{order.reseller.name}
+							</Text>
+							{order.reseller.orderNumber ? (
+								<Text style={[styles.body, { color: c.body }]}>
+									{t("sellerResale.customerOrder", {
+										number: order.reseller.orderNumber,
+									})}
+								</Text>
+							) : null}
+							{order.reseller.phone ? (
+								<Text style={[styles.body, { color: c.body }]}>
+									{t("sellerResale.resellerContact", {
+										phone: order.reseller.phone,
+									})}
+								</Text>
+							) : null}
+							{order.reseller.reachable ? (
+								<Text style={[styles.body, { color: c.body }]}>
+									{t("sellerResale.reachableFromTo", order.reseller.reachable)}
+								</Text>
+							) : null}
+							<Pressable
+								accessibilityRole="button"
+								disabled={writeToReseller.isPending}
+								onPress={() => {
+									const resellerShopId = order.reseller?.shopId;
+									if (resellerShopId) writeToReseller.mutate(resellerShopId);
+								}}
+								style={[styles.writeButton, { borderColor: c.border }]}
+							>
+								<Ionicons name="chatbubble-outline" size={18} color={c.text} />
+								<Text style={[styles.writeText, { color: c.text }]}>
+									{t("sellerResale.writeToReseller")}
+								</Text>
+							</Pressable>
+						</Card>
 					) : null}
-				</Card>
-				{side === "supplier" && order.status === "sent" ? (
-					<ActionButton
-						label={t("sellerResale.accept")}
-						disabled={pending}
-						onPress={() => run({ purchaseOrderId: order.id, action: "accept" })}
-						c={c}
-					/>
-				) : null}
-				{side === "supplier" && order.status === "accepted" ? (
-					<Card title={t("sellerResale.ship")} c={c}>
-						<View style={styles.carriers}>
-							{(["own_courier", "yango", "other"] as const).map((carrier) => (
+					<Card title={t("sellerResale.items")} c={c}>
+						{order.items.map((item) => (
+							<Text key={item.id} style={[styles.body, { color: c.text }]}>
+								{item.quantity} × {item.title}
+								{item.variantLabel ? ` · ${item.variantLabel}` : ""}
+							</Text>
+						))}
+					</Card>
+					<Card title={t("sellerResale.delivery")} c={c}>
+						<Text style={[styles.body, { color: c.text }]}>
+							{order.delivery.recipientName}
+						</Text>
+						<Text style={[styles.body, { color: c.body }]}>
+							{order.delivery.phoneMasked ? "••••••••" : order.delivery.phone}
+						</Text>
+						<Text style={[styles.body, { color: c.body }]}>
+							{[
+								order.delivery.city,
+								order.delivery.district,
+								order.delivery.landmark,
+							]
+								.filter(Boolean)
+								.join(" · ")}
+						</Text>
+						{order.delivery.instructions ? (
+							<Text style={[styles.body, { color: c.body }]}>
+								{order.delivery.instructions}
+							</Text>
+						) : null}
+					</Card>
+					{side === "supplier" && order.status === "sent" ? (
+						<ActionButton
+							label={t("sellerResale.accept")}
+							disabled={pending}
+							onPress={() =>
+								run({ purchaseOrderId: order.id, action: "accept" })
+							}
+							c={c}
+						/>
+					) : null}
+					{side === "supplier" && order.status === "accepted" ? (
+						<Card title={t("sellerResale.ship")} c={c}>
+							<View style={styles.carriers}>
+								{(["own_courier", "yango", "other"] as const).map((carrier) => (
+									<Pressable
+										key={carrier}
+										onPress={() => patch({ carrier })}
+										accessibilityRole="radio"
+										accessibilityState={{ selected: form.carrier === carrier }}
+										style={[
+											styles.carrier,
+											{
+												borderColor:
+													form.carrier === carrier ? c.primary : c.border,
+											},
+										]}
+									>
+										<Text style={{ color: c.text, fontFamily: Fonts.body }}>
+											{t(
+												`sellerResale.carrier${carrier === "own_courier" ? "Own" : carrier === "yango" ? "Yango" : "Other"}`,
+											)}
+										</Text>
+									</Pressable>
+								))}
+							</View>
+							<TextInput
+								value={form.trackingNumber}
+								onChangeText={(trackingNumber) => patch({ trackingNumber })}
+								placeholder={t("sellerResale.trackingNumber")}
+								accessibilityLabel={t("sellerResale.trackingNumber")}
+								style={[styles.input, { color: c.text, borderColor: c.border }]}
+							/>
+							<TextInput
+								value={form.trackingUrl}
+								onChangeText={(trackingUrl) => patch({ trackingUrl })}
+								placeholder={t("sellerResale.trackingUrl")}
+								accessibilityLabel={t("sellerResale.trackingUrl")}
+								autoCapitalize="none"
+								style={[styles.input, { color: c.text, borderColor: c.border }]}
+							/>
+							<ActionButton
+								label={t("sellerResale.ship")}
+								disabled={pending}
+								onPress={() =>
+									run({
+										purchaseOrderId: order.id,
+										action: "ship",
+										body: {
+											carrier: form.carrier,
+											trackingNumber: form.trackingNumber.trim() || undefined,
+											trackingUrl: form.trackingUrl.trim() || undefined,
+										},
+									})
+								}
+								c={c}
+							/>
+						</Card>
+					) : null}
+					{side === "supplier" && order.status === "shipped" ? (
+						<Card title={t("sellerResale.handover")} c={c}>
+							<TextInput
+								value={form.handoverCode}
+								onChangeText={(handoverCode) => patch({ handoverCode })}
+								keyboardType="number-pad"
+								maxLength={8}
+								placeholder="••••••"
+								accessibilityLabel={t("sellerResale.handoverCode")}
+								style={[styles.input, { color: c.text, borderColor: c.border }]}
+							/>
+							<ActionButton
+								label={t("sellerResale.handover")}
+								disabled={pending || form.handoverCode.trim().length < 4}
+								onPress={() =>
+									run({
+										purchaseOrderId: order.id,
+										action: "handover",
+										body: { code: form.handoverCode.trim() },
+									})
+								}
+								c={c}
+							/>
+						</Card>
+					) : null}
+					{canDeclareDelivered ? (
+						<Card title={t("sellerResale.declareDelivered")} c={c}>
+							<TextInput
+								value={form.deliveryNote}
+								onChangeText={(deliveryNote) => patch({ deliveryNote })}
+								placeholder={t("sellerResale.declareDeliveredNote")}
+								accessibilityLabel={t("sellerResale.declareDeliveredNote")}
+								maxLength={500}
+								style={[styles.input, { color: c.text, borderColor: c.border }]}
+							/>
+							<ActionButton
+								label={t("sellerResale.declareDelivered")}
+								disabled={pending}
+								onPress={() =>
+									run({
+										purchaseOrderId: order.id,
+										action: "declare-delivered",
+										body: { note: form.deliveryNote.trim() || undefined },
+									})
+								}
+								c={c}
+							/>
+						</Card>
+					) : null}
+					{canReportDeliveryFailure ? (
+						<Card title={t("sellerResale.deliveryFailureTitle")} c={c}>
+							{(
+								[
+									"refused",
+									"unreachable",
+									"absent",
+									"address_not_found",
+									"timeout",
+									"other",
+								] as const
+							).map((reason) => (
 								<Pressable
-									key={carrier}
-									onPress={() => patch({ carrier })}
+									key={reason}
+									onPress={() => patch({ deliveryFailureReason: reason })}
 									accessibilityRole="radio"
-									accessibilityState={{ selected: form.carrier === carrier }}
+									accessibilityState={{
+										selected: form.deliveryFailureReason === reason,
+									}}
 									style={[
 										styles.carrier,
 										{
 											borderColor:
-												form.carrier === carrier ? c.primary : c.border,
+												form.deliveryFailureReason === reason
+													? c.primary
+													: c.border,
 										},
 									]}
 								>
 									<Text style={{ color: c.text, fontFamily: Fonts.body }}>
-										{t(
-											`sellerResale.carrier${carrier === "own_courier" ? "Own" : carrier === "yango" ? "Yango" : "Other"}`,
-										)}
+										{t(`sellerResale.deliveryFailure.${reason}`)}
 									</Text>
 								</Pressable>
 							))}
-						</View>
-						<TextInput
-							value={form.trackingNumber}
-							onChangeText={(trackingNumber) => patch({ trackingNumber })}
-							placeholder={t("sellerResale.trackingNumber")}
-							accessibilityLabel={t("sellerResale.trackingNumber")}
-							style={[styles.input, { color: c.text, borderColor: c.border }]}
-						/>
-						<TextInput
-							value={form.trackingUrl}
-							onChangeText={(trackingUrl) => patch({ trackingUrl })}
-							placeholder={t("sellerResale.trackingUrl")}
-							accessibilityLabel={t("sellerResale.trackingUrl")}
-							autoCapitalize="none"
-							style={[styles.input, { color: c.text, borderColor: c.border }]}
-						/>
-						<ActionButton
-							label={t("sellerResale.ship")}
-							disabled={pending}
-							onPress={() =>
-								run({
-									purchaseOrderId: order.id,
-									action: "ship",
-									body: {
-										carrier: form.carrier,
-										trackingNumber: form.trackingNumber.trim() || undefined,
-										trackingUrl: form.trackingUrl.trim() || undefined,
-									},
-								})
-							}
-							c={c}
-						/>
-					</Card>
-				) : null}
-				{side === "supplier" && order.status === "shipped" ? (
-					<Card title={t("sellerResale.handover")} c={c}>
-						<TextInput
-							value={form.handoverCode}
-							onChangeText={(handoverCode) => patch({ handoverCode })}
-							keyboardType="number-pad"
-							maxLength={8}
-							placeholder="••••••"
-							accessibilityLabel={t("sellerResale.handoverCode")}
-							style={[styles.input, { color: c.text, borderColor: c.border }]}
-						/>
-						<ActionButton
-							label={t("sellerResale.handover")}
-							disabled={pending || form.handoverCode.trim().length < 4}
-							onPress={() =>
-								run({
-									purchaseOrderId: order.id,
-									action: "handover",
-									body: { code: form.handoverCode.trim() },
-								})
-							}
-							c={c}
-						/>
-					</Card>
-				) : null}
-				{canDeclareDelivered ? (
-					<Card title={t("sellerResale.declareDelivered")} c={c}>
-						<TextInput
-							value={form.deliveryNote}
-							onChangeText={(deliveryNote) => patch({ deliveryNote })}
-							placeholder={t("sellerResale.declareDeliveredNote")}
-							accessibilityLabel={t("sellerResale.declareDeliveredNote")}
-							maxLength={500}
-							style={[styles.input, { color: c.text, borderColor: c.border }]}
-						/>
-						<ActionButton
-							label={t("sellerResale.declareDelivered")}
-							disabled={pending}
-							onPress={() =>
-								run({
-									purchaseOrderId: order.id,
-									action: "declare-delivered",
-									body: { note: form.deliveryNote.trim() || undefined },
-								})
-							}
-							c={c}
-						/>
-					</Card>
-				) : null}
-				{canReportDeliveryFailure ? (
-					<Card title={t("sellerResale.deliveryFailureTitle")} c={c}>
-						{(
-							[
-								"refused",
-								"unreachable",
-								"absent",
-								"address_not_found",
-								"timeout",
-								"other",
-							] as const
-						).map((reason) => (
-							<Pressable
-								key={reason}
-								onPress={() => patch({ deliveryFailureReason: reason })}
-								accessibilityRole="radio"
-								accessibilityState={{
-									selected: form.deliveryFailureReason === reason,
-								}}
-								style={[
-									styles.carrier,
-									{
-										borderColor:
-											form.deliveryFailureReason === reason
-												? c.primary
-												: c.border,
-									},
-								]}
-							>
-								<Text style={{ color: c.text, fontFamily: Fonts.body }}>
-									{t(`sellerResale.deliveryFailure.${reason}`)}
-								</Text>
-							</Pressable>
-						))}
-						<TextInput
-							value={form.failedDeliveryCost}
-							onChangeText={(value) =>
-								patch({
-									failedDeliveryCost: value.replace(/\D/g, "").slice(0, 10),
-								})
-							}
-							keyboardType="number-pad"
-							placeholder={t("sellerResale.failedDeliveryCost", {
-								max: formatPrice(order.deliveryFee, locale),
-							})}
-							accessibilityLabel={t("sellerResale.failedDeliveryCost", {
-								max: formatPrice(order.deliveryFee, locale),
-							})}
-							style={[styles.input, { color: c.text, borderColor: c.border }]}
-						/>
-						<TextInput
-							value={form.deliveryFailureNote}
-							onChangeText={(deliveryFailureNote) =>
-								patch({ deliveryFailureNote })
-							}
-							placeholder={t("sellerResale.deliveryFailureNote")}
-							accessibilityLabel={t("sellerResale.deliveryFailureNote")}
-							multiline
-							maxLength={500}
-							style={[
-								styles.input,
-								styles.note,
-								{ color: c.text, borderColor: c.border },
-							]}
-						/>
-						<ActionButton
-							label={t("sellerResale.reportDeliveryFailure")}
-							disabled={
-								pending ||
-								Number(form.failedDeliveryCost) > order.deliveryFee ||
-								(form.deliveryFailureReason === "other" &&
-									!form.deliveryFailureNote.trim())
-							}
-							secondary
-							onPress={() =>
-								run({
-									purchaseOrderId: order.id,
-									action: "delivery-failed",
-									body: {
-										reason: form.deliveryFailureReason,
-										failedDeliveryCost: Number(form.failedDeliveryCost),
-										note: form.deliveryFailureNote.trim() || undefined,
-									},
-								})
-							}
-							c={c}
-						/>
-					</Card>
-				) : null}
-				{received ? (
-					<Card title={t("sellerResale.returnReceived")} c={c}>
-						<ActionButton
-							label={t("sellerResale.resellable")}
-							disabled={pending}
-							onPress={() =>
-								run({
-									purchaseOrderId: order.id,
-									action: "return-received",
-									body: { condition: "resellable" },
-								})
-							}
-							c={c}
-						/>
-						<ActionButton
-							label={t("sellerResale.damaged")}
-							disabled={pending}
-							secondary
-							onPress={() =>
-								run({
-									purchaseOrderId: order.id,
-									action: "return-received",
-									body: { condition: "damaged" },
-								})
-							}
-							c={c}
-						/>
-					</Card>
-				) : null}
-				{canCancel ? (
-					<Card title={t("sellerResale.cancelReason")} c={c}>
-						{(
-							[
-								"seller_out_of_stock",
-								"seller_cannot_deliver",
-								"seller_other",
-							] as const
-						).map((reason) => (
-							<Pressable
-								key={reason}
-								onPress={() => patch({ cancelReason: reason })}
-								accessibilityRole="radio"
-								accessibilityState={{ selected: form.cancelReason === reason }}
-								style={[
-									styles.carrier,
-									{
-										borderColor:
-											form.cancelReason === reason ? c.primary : c.border,
-									},
-								]}
-							>
-								<Text style={{ color: c.text, fontFamily: Fonts.body }}>
-									{t(`sellerResale.reason_${reason}`)}
-								</Text>
-							</Pressable>
-						))}
-						{form.cancelReason === "seller_other" ? (
 							<TextInput
-								value={form.cancelNote}
-								onChangeText={(cancelNote) => patch({ cancelNote })}
-								placeholder={t("sellerResale.cancelNote")}
-								accessibilityLabel={t("sellerResale.cancelNote")}
+								value={form.failedDeliveryCost}
+								onChangeText={(value) =>
+									patch({
+										failedDeliveryCost: value.replace(/\D/g, "").slice(0, 10),
+									})
+								}
+								keyboardType="number-pad"
+								placeholder={t("sellerResale.failedDeliveryCost", {
+									max: formatPrice(order.deliveryFee, locale),
+								})}
+								accessibilityLabel={t("sellerResale.failedDeliveryCost", {
+									max: formatPrice(order.deliveryFee, locale),
+								})}
+								style={[styles.input, { color: c.text, borderColor: c.border }]}
+							/>
+							<TextInput
+								value={form.deliveryFailureNote}
+								onChangeText={(deliveryFailureNote) =>
+									patch({ deliveryFailureNote })
+								}
+								placeholder={t("sellerResale.deliveryFailureNote")}
+								accessibilityLabel={t("sellerResale.deliveryFailureNote")}
 								multiline
+								maxLength={500}
 								style={[
 									styles.input,
 									styles.note,
 									{ color: c.text, borderColor: c.border },
 								]}
 							/>
-						) : null}
-						<ActionButton
-							label={t("sellerResale.cancel")}
-							disabled={
-								pending ||
-								(form.cancelReason === "seller_other" &&
-									!form.cancelNote.trim())
-							}
-							secondary
-							onPress={() =>
-								Alert.alert(
-									t("sellerResale.confirmCancelTitle"),
-									t("sellerResale.confirmCancelBody"),
-									[
-										{ text: t("sellerResale.dismiss"), style: "cancel" },
-										{
-											text: t("sellerResale.cancel"),
-											style: "destructive",
-											onPress: () =>
-												run({
-													purchaseOrderId: order.id,
-													action: "cancel",
-													body: {
-														reason: form.cancelReason,
-														note: form.cancelNote.trim() || undefined,
-													},
-												}),
+							<ActionButton
+								label={t("sellerResale.reportDeliveryFailure")}
+								disabled={
+									pending ||
+									Number(form.failedDeliveryCost) > order.deliveryFee ||
+									(form.deliveryFailureReason === "other" &&
+										!form.deliveryFailureNote.trim())
+								}
+								secondary
+								onPress={() =>
+									run({
+										purchaseOrderId: order.id,
+										action: "delivery-failed",
+										body: {
+											reason: form.deliveryFailureReason,
+											failedDeliveryCost: Number(form.failedDeliveryCost),
+											note: form.deliveryFailureNote.trim() || undefined,
 										},
-									],
-								)
-							}
-							c={c}
-						/>
-					</Card>
-				) : null}
-				{action.isError ? (
-					<Text
-						accessibilityRole="alert"
-						style={[styles.error, { color: c.danger }]}
-					>
-						{t("sellerResale.actionFailed")}
-					</Text>
-				) : null}
-				{pending ? <ActivityIndicator color={c.primary} /> : null}
-			</ScrollView>
+									})
+								}
+								c={c}
+							/>
+						</Card>
+					) : null}
+					{received ? (
+						<Card title={t("sellerResale.returnReceived")} c={c}>
+							<ActionButton
+								label={t("sellerResale.resellable")}
+								disabled={pending}
+								onPress={() =>
+									run({
+										purchaseOrderId: order.id,
+										action: "return-received",
+										body: { condition: "resellable" },
+									})
+								}
+								c={c}
+							/>
+							<ActionButton
+								label={t("sellerResale.damaged")}
+								disabled={pending}
+								secondary
+								onPress={() =>
+									run({
+										purchaseOrderId: order.id,
+										action: "return-received",
+										body: { condition: "damaged" },
+									})
+								}
+								c={c}
+							/>
+						</Card>
+					) : null}
+					{canCancel ? (
+						<Card title={t("sellerResale.cancelReason")} c={c}>
+							{(
+								[
+									"seller_out_of_stock",
+									"seller_cannot_deliver",
+									"seller_other",
+								] as const
+							).map((reason) => (
+								<Pressable
+									key={reason}
+									onPress={() => patch({ cancelReason: reason })}
+									accessibilityRole="radio"
+									accessibilityState={{
+										selected: form.cancelReason === reason,
+									}}
+									style={[
+										styles.carrier,
+										{
+											borderColor:
+												form.cancelReason === reason ? c.primary : c.border,
+										},
+									]}
+								>
+									<Text style={{ color: c.text, fontFamily: Fonts.body }}>
+										{t(`sellerResale.reason_${reason}`)}
+									</Text>
+								</Pressable>
+							))}
+							{form.cancelReason === "seller_other" ? (
+								<TextInput
+									value={form.cancelNote}
+									onChangeText={(cancelNote) => patch({ cancelNote })}
+									placeholder={t("sellerResale.cancelNote")}
+									accessibilityLabel={t("sellerResale.cancelNote")}
+									multiline
+									style={[
+										styles.input,
+										styles.note,
+										{ color: c.text, borderColor: c.border },
+									]}
+								/>
+							) : null}
+							<ActionButton
+								label={t("sellerResale.cancel")}
+								disabled={
+									pending ||
+									(form.cancelReason === "seller_other" &&
+										!form.cancelNote.trim())
+								}
+								secondary
+								onPress={() =>
+									Alert.alert(
+										t("sellerResale.confirmCancelTitle"),
+										t("sellerResale.confirmCancelBody"),
+										[
+											{ text: t("sellerResale.dismiss"), style: "cancel" },
+											{
+												text: t("sellerResale.cancel"),
+												style: "destructive",
+												onPress: () =>
+													run({
+														purchaseOrderId: order.id,
+														action: "cancel",
+														body: {
+															reason: form.cancelReason,
+															note: form.cancelNote.trim() || undefined,
+														},
+													}),
+											},
+										],
+									)
+								}
+								c={c}
+							/>
+						</Card>
+					) : null}
+					{action.isError ? (
+						<Text
+							accessibilityRole="alert"
+							style={[styles.error, { color: c.danger }]}
+						>
+							{t("sellerResale.actionFailed")}
+						</Text>
+					) : null}
+					{pending ? <ActivityIndicator color={c.primary} /> : null}
+				</ScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

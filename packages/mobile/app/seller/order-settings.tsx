@@ -12,6 +12,7 @@ import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { CapsNotice } from "@/src/components/billing/CapsNotice";
 import { OrderSettingsForm } from "@/src/components/billing/OrderSettingsForm";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useOrderSettings } from "@/src/hooks/useOrderSettings";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -63,30 +64,32 @@ function OrderSettingsContent({
 			style={{ flex: 1 }}
 			behavior={Platform.OS === "ios" ? "padding" : undefined}
 		>
-			<ScrollView
-				contentContainerStyle={styles.content}
-				keyboardShouldPersistTaps="handled"
-			>
-				{caps ? <CapsNotice caps={caps} /> : null}
-				{view.cityDefaultFee === null ? (
-					<View
-						style={[
-							s.card,
-							{ backgroundColor: c.warningSoft, borderColor: c.warningSoft },
-						]}
-					>
-						<Text style={[s.body, { color: c.warningText }]}>
-							{t("billing.launchCityNotice")}
+			<ScreenColumn width="reading">
+				<ScrollView
+					contentContainerStyle={styles.content}
+					keyboardShouldPersistTaps="handled"
+				>
+					{caps ? <CapsNotice caps={caps} /> : null}
+					{view.cityDefaultFee === null ? (
+						<View
+							style={[
+								s.card,
+								{ backgroundColor: c.warningSoft, borderColor: c.warningSoft },
+							]}
+						>
+							<Text style={[s.body, { color: c.warningText }]}>
+								{t("billing.launchCityNotice")}
+							</Text>
+						</View>
+					) : null}
+					{!canEdit ? (
+						<Text style={[s.body, { color: c.muted }]}>
+							{t("billing.settingsReadOnly")}
 						</Text>
-					</View>
-				) : null}
-				{!canEdit ? (
-					<Text style={[s.body, { color: c.muted }]}>
-						{t("billing.settingsReadOnly")}
-					</Text>
-				) : null}
-				<OrderSettingsForm shopId={shopId} view={view} canEdit={canEdit} />
-			</ScrollView>
+					) : null}
+					<OrderSettingsForm shopId={shopId} view={view} canEdit={canEdit} />
+				</ScrollView>
+			</ScreenColumn>
 		</KeyboardAvoidingView>
 	);
 }

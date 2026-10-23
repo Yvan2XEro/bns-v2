@@ -26,6 +26,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { EmptyState } from "@/src/components/EmptyState";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
@@ -464,13 +465,11 @@ function NotificationsContent({
 		>
 			{/* Header */}
 			<View style={[styles.header, { backgroundColor: accentBg }]}>
-				<Pressable onPress={() => router.back()} style={styles.backBtn}>
-					<Ionicons
-						name="arrow-back"
-						size={22}
-						color={isDark ? "#e2e8f0" : "#0f172a"}
-					/>
-				</Pressable>
+				<HeaderBackButton
+					color={isDark ? "#e2e8f0" : "#0f172a"}
+					fallback="/(tabs)/account"
+					style={styles.backBtn}
+				/>
 				<Text style={[styles.title, { color: textColor }]}>
 					{t("notifications.title")}
 				</Text>

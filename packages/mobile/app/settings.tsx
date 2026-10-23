@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
-import { router } from "expo-router";
 import * as Updates from "expo-updates";
 import { useState } from "react";
 import {
@@ -21,6 +20,7 @@ import {
 } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 
@@ -147,9 +147,11 @@ export default function SettingsScreen() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()} style={styles.backBtn}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton
+					color={textColor}
+					fallback="/(tabs)/account"
+					style={styles.backBtn}
+				/>
 				<Text style={[styles.headerTitle, { color: textColor }]}>
 					{t("settings.title")}
 				</Text>

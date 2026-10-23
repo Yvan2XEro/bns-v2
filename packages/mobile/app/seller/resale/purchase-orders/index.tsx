@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -156,42 +157,44 @@ export default function ResalePurchaseOrdersScreen() {
 					}
 				/>
 			) : (
-				<FlashList
-					data={rows}
-					keyExtractor={(row) => row.id}
-					contentContainerStyle={styles.list}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-					renderItem={({ item }) => (
-						<PurchaseOrderRow
-							row={item}
-							side={state.side}
-							locale={locale}
-							onPress={() =>
-								router.push({
-									pathname: "/seller/resale/purchase-orders/[id]",
-									params: { id: item.id, side: state.side },
-								})
-							}
-						/>
-					)}
-					refreshControl={
-						<RefreshControl
-							refreshing={orders.isRefetching && !orders.isFetchingNextPage}
-							onRefresh={() => orders.refetch()}
-							tintColor={c.primary}
-						/>
-					}
-					onEndReached={() => {
-						if (orders.hasNextPage && !orders.isFetchingNextPage)
-							orders.fetchNextPage();
-					}}
-					onEndReachedThreshold={0.5}
-					ListFooterComponent={
-						orders.isFetchingNextPage ? (
-							<ActivityIndicator style={styles.spinner} color={c.primary} />
-						) : null
-					}
-				/>
+				<ScreenColumn width="wide">
+					<FlashList
+						data={rows}
+						keyExtractor={(row) => row.id}
+						contentContainerStyle={styles.list}
+						ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+						renderItem={({ item }) => (
+							<PurchaseOrderRow
+								row={item}
+								side={state.side}
+								locale={locale}
+								onPress={() =>
+									router.push({
+										pathname: "/seller/resale/purchase-orders/[id]",
+										params: { id: item.id, side: state.side },
+									})
+								}
+							/>
+						)}
+						refreshControl={
+							<RefreshControl
+								refreshing={orders.isRefetching && !orders.isFetchingNextPage}
+								onRefresh={() => orders.refetch()}
+								tintColor={c.primary}
+							/>
+						}
+						onEndReached={() => {
+							if (orders.hasNextPage && !orders.isFetchingNextPage)
+								orders.fetchNextPage();
+						}}
+						onEndReachedThreshold={0.5}
+						ListFooterComponent={
+							orders.isFetchingNextPage ? (
+								<ActivityIndicator style={styles.spinner} color={c.primary} />
+							) : null
+						}
+					/>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -120,129 +121,133 @@ export default function MemberDetailScreen() {
 					onCta={() => router.back()}
 				/>
 			) : (
-				<ScrollView contentContainerStyle={styles.content}>
-					<View style={styles.profile}>
-						<ShopAvatar
-							name={member.name ?? t("team.noName")}
-							logo={member.avatarUrl}
-							size={56}
-							radius={28}
-						/>
-						<Text style={[styles.name, { color: c.text }]}>
-							{member.name ?? t("team.noName")}
-						</Text>
-						<Text style={[styles.meta, { color: c.muted }]}>
-							{t(ROLE_KEY[member.role])}
-							{joined ? ` · ${t("team.joined", { date: joined })}` : ""}
-						</Text>
-						{member.suspended ? (
-							<View style={[styles.chip, { backgroundColor: c.dangerSoft }]}>
-								<Text style={[styles.chipText, { color: c.dangerText }]}>
-									{t("team.suspended")}
-								</Text>
-							</View>
-						) : null}
-					</View>
-
-					{memberActions(role, member).canChangeRole ? (
-						<View
-							style={[
-								styles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<Text style={[styles.cardTitle, { color: c.text }]}>
-								{t("team.changeRole")}
+				<ScreenColumn width="reading">
+					<ScrollView contentContainerStyle={styles.content}>
+						<View style={styles.profile}>
+							<ShopAvatar
+								name={member.name ?? t("team.noName")}
+								logo={member.avatarUrl}
+								size={56}
+								radius={28}
+							/>
+							<Text style={[styles.name, { color: c.text }]}>
+								{member.name ?? t("team.noName")}
 							</Text>
-							<View style={styles.roleRow}>
-								{(["manager", "staff"] as const).map((option) => {
-									const active = member.role === option;
-									return (
-										<Pressable
-											key={option}
-											onPress={() => !active && onToggleRole(member)}
-											disabled={active || changeRole.isPending}
-											accessibilityRole="button"
-											accessibilityState={{ selected: active }}
-											accessibilityLabel={t(ROLE_KEY[option])}
-											style={[
-												styles.roleChip,
-												{
-													borderColor: active ? c.primary : c.border,
-													backgroundColor: active ? c.primarySoft : c.card,
-												},
-											]}
-										>
-											<Text
+							<Text style={[styles.meta, { color: c.muted }]}>
+								{t(ROLE_KEY[member.role])}
+								{joined ? ` · ${t("team.joined", { date: joined })}` : ""}
+							</Text>
+							{member.suspended ? (
+								<View style={[styles.chip, { backgroundColor: c.dangerSoft }]}>
+									<Text style={[styles.chipText, { color: c.dangerText }]}>
+										{t("team.suspended")}
+									</Text>
+								</View>
+							) : null}
+						</View>
+
+						{memberActions(role, member).canChangeRole ? (
+							<View
+								style={[
+									styles.card,
+									{ backgroundColor: c.card, borderColor: c.border },
+								]}
+							>
+								<Text style={[styles.cardTitle, { color: c.text }]}>
+									{t("team.changeRole")}
+								</Text>
+								<View style={styles.roleRow}>
+									{(["manager", "staff"] as const).map((option) => {
+										const active = member.role === option;
+										return (
+											<Pressable
+												key={option}
+												onPress={() => !active && onToggleRole(member)}
+												disabled={active || changeRole.isPending}
+												accessibilityRole="button"
+												accessibilityState={{ selected: active }}
+												accessibilityLabel={t(ROLE_KEY[option])}
 												style={[
-													styles.roleChipText,
-													{ color: active ? c.primary : c.body },
+													styles.roleChip,
+													{
+														borderColor: active ? c.primary : c.border,
+														backgroundColor: active ? c.primarySoft : c.card,
+													},
 												]}
 											>
-												{t(ROLE_KEY[option])}
-											</Text>
-										</Pressable>
-									);
-								})}
-							</View>
-						</View>
-					) : null}
-
-					{memberActions(role, member).canRemove ? (
-						<Pressable
-							onPress={() => onRemove(member)}
-							disabled={removeMember.isPending}
-							accessibilityRole="button"
-							accessibilityLabel={t("team.remove")}
-							style={[styles.removeBtn, { borderColor: c.danger }]}
-						>
-							<Text style={[styles.removeText, { color: c.danger }]}>
-								{t("team.remove")}
-							</Text>
-						</Pressable>
-					) : null}
-
-					{canViewActivity ? (
-						<View style={styles.activitySection}>
-							<Text style={[styles.cardTitle, { color: c.text }]}>
-								{t("team.recentActivity")}
-							</Text>
-							{entries.length === 0 ? (
-								<Text style={[styles.meta, { color: c.muted }]}>
-									{t("team.activityEmpty")}
-								</Text>
-							) : (
-								<View style={{ gap: 8 }}>
-									{entries.map((entry) => (
-										<View
-											key={entry.id}
-											style={[
-												styles.activityRow,
-												{ backgroundColor: c.card, borderColor: c.border },
-											]}
-										>
-											<Text style={[styles.activityAction, { color: c.text }]}>
-												{formatAction(entry.action)}
-											</Text>
-											<Text style={[styles.meta, { color: c.muted }]}>
-												{formatDate(
-													entry.createdAt,
-													{
-														day: "numeric",
-														month: "short",
-														hour: "2-digit",
-														minute: "2-digit",
-													},
-													locale,
-												)}
-											</Text>
-										</View>
-									))}
+												<Text
+													style={[
+														styles.roleChipText,
+														{ color: active ? c.primary : c.body },
+													]}
+												>
+													{t(ROLE_KEY[option])}
+												</Text>
+											</Pressable>
+										);
+									})}
 								</View>
-							)}
-						</View>
-					) : null}
-				</ScrollView>
+							</View>
+						) : null}
+
+						{memberActions(role, member).canRemove ? (
+							<Pressable
+								onPress={() => onRemove(member)}
+								disabled={removeMember.isPending}
+								accessibilityRole="button"
+								accessibilityLabel={t("team.remove")}
+								style={[styles.removeBtn, { borderColor: c.danger }]}
+							>
+								<Text style={[styles.removeText, { color: c.danger }]}>
+									{t("team.remove")}
+								</Text>
+							</Pressable>
+						) : null}
+
+						{canViewActivity ? (
+							<View style={styles.activitySection}>
+								<Text style={[styles.cardTitle, { color: c.text }]}>
+									{t("team.recentActivity")}
+								</Text>
+								{entries.length === 0 ? (
+									<Text style={[styles.meta, { color: c.muted }]}>
+										{t("team.activityEmpty")}
+									</Text>
+								) : (
+									<View style={{ gap: 8 }}>
+										{entries.map((entry) => (
+											<View
+												key={entry.id}
+												style={[
+													styles.activityRow,
+													{ backgroundColor: c.card, borderColor: c.border },
+												]}
+											>
+												<Text
+													style={[styles.activityAction, { color: c.text }]}
+												>
+													{formatAction(entry.action)}
+												</Text>
+												<Text style={[styles.meta, { color: c.muted }]}>
+													{formatDate(
+														entry.createdAt,
+														{
+															day: "numeric",
+															month: "short",
+															hour: "2-digit",
+															minute: "2-digit",
+														},
+														locale,
+													)}
+												</Text>
+											</View>
+										))}
+									</View>
+								)}
+							</View>
+						) : null}
+					</ScrollView>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

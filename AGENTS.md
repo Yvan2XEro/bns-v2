@@ -146,6 +146,10 @@ screen is built the same way.
 or uses `column()` for a scroll view's `contentContainerStyle`. On a phone
 both are a no-op.
 
+**Forms.** Short fields that belong together (a name and a phone, a minimum
+and a maximum) go in `<FormRow>`: side by side in expanded, one per row
+below, as if the wrapper were not there.
+
 **Lists that open items.**
 - They go through `<SplitScreen>`: on a phone the item is pushed; on a tablet
   in landscape it opens beside the list.

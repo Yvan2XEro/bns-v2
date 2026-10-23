@@ -10,6 +10,7 @@ import {
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { PaymentsShell } from "@/src/components/payments/PaymentsShell";
 import { PayoutStatusBadge } from "@/src/components/payments/PayoutStatusBadge";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -81,90 +82,92 @@ function PayoutDetailContent({
 	}
 
 	return (
-		<ScrollView
-			contentContainerStyle={styles.content}
-			refreshControl={
-				<RefreshControl
-					refreshing={payout.isRefetching}
-					onRefresh={() => payout.refetch()}
-				/>
-			}
-		>
-			<View
-				style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
+		<ScreenColumn width="reading">
+			<ScrollView
+				contentContainerStyle={styles.content}
+				refreshControl={
+					<RefreshControl
+						refreshing={payout.isRefetching}
+						onRefresh={() => payout.refetch()}
+					/>
+				}
 			>
-				<View style={styles.head}>
-					<Text style={[s.cardTitle, { color: c.text, fontSize: 18 }]}>
-						{formatPrice(detail.amount, locale)}
-					</Text>
-					<PayoutStatusBadge status={detail.status} />
-				</View>
-				<Line
-					label={t("payments.seller_colDate")}
-					value={formatOrderDate(detail.date, locale)}
-					c={c}
-				/>
-				<Line
-					label={t("payments.seller_colAmount")}
-					value={formatPrice(detail.amount, locale)}
-					c={c}
-				/>
-				{detail.fee > 0 ? (
+				<View
+					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
+				>
+					<View style={styles.head}>
+						<Text style={[s.cardTitle, { color: c.text, fontSize: 18 }]}>
+							{formatPrice(detail.amount, locale)}
+						</Text>
+						<PayoutStatusBadge status={detail.status} />
+					</View>
 					<Line
-						label={t("payments.seller_colFee")}
-						value={formatPrice(detail.fee, locale)}
+						label={t("payments.seller_colDate")}
+						value={formatOrderDate(detail.date, locale)}
 						c={c}
 					/>
-				) : null}
-				<Line
-					label={t("payments.seller_colDestination")}
-					value={detail.destinationMasked}
-					c={c}
-				/>
-			</View>
+					<Line
+						label={t("payments.seller_colAmount")}
+						value={formatPrice(detail.amount, locale)}
+						c={c}
+					/>
+					{detail.fee > 0 ? (
+						<Line
+							label={t("payments.seller_colFee")}
+							value={formatPrice(detail.fee, locale)}
+							c={c}
+						/>
+					) : null}
+					<Line
+						label={t("payments.seller_colDestination")}
+						value={detail.destinationMasked}
+						c={c}
+					/>
+				</View>
 
-			<View
-				style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
-			>
-				<Text style={[s.cardTitle, { color: c.text }]}>
-					{t("payments.payout_orders")}
-				</Text>
-				{detail.orders.length === 0 ? (
-					<Text style={[s.meta, { color: c.muted }]}>
-						{t("payments.seller_noPayouts")}
+				<View
+					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
+				>
+					<Text style={[s.cardTitle, { color: c.text }]}>
+						{t("payments.payout_orders")}
 					</Text>
-				) : (
-					detail.orders.map((order) => (
-						<View key={order.orderId} style={styles.row}>
+					{detail.orders.length === 0 ? (
+						<Text style={[s.meta, { color: c.muted }]}>
+							{t("payments.seller_noPayouts")}
+						</Text>
+					) : (
+						detail.orders.map((order) => (
+							<View key={order.orderId} style={styles.row}>
+								<Text style={[s.meta, { color: c.body, flex: 1 }]}>
+									{order.orderNumber}
+								</Text>
+								<Text style={[s.meta, { color: c.text }]}>
+									{formatPrice(order.amount, locale)}
+								</Text>
+							</View>
+						))
+					)}
+				</View>
+
+				<View
+					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
+				>
+					<Text style={[s.cardTitle, { color: c.text }]}>
+						{t("payments.payout_history")}
+					</Text>
+					{detail.statusHistory.map((entry, index) => (
+						<View key={`${entry.status}-${index}`} style={styles.row}>
 							<Text style={[s.meta, { color: c.body, flex: 1 }]}>
-								{order.orderNumber}
+								{t(PAYOUT_STATUSES[entry.status as PayoutStatus])}
 							</Text>
-							<Text style={[s.meta, { color: c.text }]}>
-								{formatPrice(order.amount, locale)}
+							<Text style={[s.meta, { color: c.muted }]}>
+								{formatOrderDate(entry.at, locale)}
 							</Text>
 						</View>
-					))
-				)}
-			</View>
-
-			<View
-				style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
-			>
-				<Text style={[s.cardTitle, { color: c.text }]}>
-					{t("payments.payout_history")}
-				</Text>
-				{detail.statusHistory.map((entry, index) => (
-					<View key={`${entry.status}-${index}`} style={styles.row}>
-						<Text style={[s.meta, { color: c.body, flex: 1 }]}>
-							{t(PAYOUT_STATUSES[entry.status as PayoutStatus])}
-						</Text>
-						<Text style={[s.meta, { color: c.muted }]}>
-							{formatOrderDate(entry.at, locale)}
-						</Text>
-					</View>
-				))}
-			</View>
-		</ScrollView>
+					))}
+				</View>
+			</ScrollView>
+		</ScreenColumn>
 	);
 }
 

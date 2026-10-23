@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -130,105 +131,114 @@ export default function ShopAdsScreen() {
 							);
 						})}
 					</ScrollView>
-					<FlashList
-						data={rows}
-						keyExtractor={(ad) => ad.id}
-						contentContainerStyle={styles.list}
-						onEndReached={() => {
-							if (ads.hasNextPage && !ads.isFetchingNextPage)
-								void ads.fetchNextPage();
-						}}
-						ListEmptyComponent={
-							<EmptyState
-								illustration="sell"
-								title={t(`sellerAds.empty.${profile}`)}
-								subtitle={t("sellerAds.emptyHint")}
-								ctaLabel={t("sellerAds.add")}
-								onCta={() => router.push("/(tabs)/create")}
-							/>
-						}
-						renderItem={({ item: ad }) => {
-							const thumb = resolveListingImageUrl(ad.images?.[0], "thumbnail");
-							const closedAs = listingKindRules(ad.kind).closedAs;
-							return (
-								<Pressable
-									onPress={() => router.push(`/listing/${ad.id}`)}
-									style={[
-										styles.row,
-										{ backgroundColor: c.card, borderColor: c.border },
-									]}
-								>
-									{thumb ? (
-										<Image source={{ uri: thumb }} style={styles.thumb} />
-									) : (
-										<View style={[styles.thumb, { backgroundColor: c.border }]}>
-											<Ionicons
-												name="image-outline"
-												size={20}
-												color={c.muted}
-											/>
+					<ScreenColumn width="wide">
+						<FlashList
+							data={rows}
+							keyExtractor={(ad) => ad.id}
+							contentContainerStyle={styles.list}
+							onEndReached={() => {
+								if (ads.hasNextPage && !ads.isFetchingNextPage)
+									void ads.fetchNextPage();
+							}}
+							ListEmptyComponent={
+								<EmptyState
+									illustration="sell"
+									title={t(`sellerAds.empty.${profile}`)}
+									subtitle={t("sellerAds.emptyHint")}
+									ctaLabel={t("sellerAds.add")}
+									onCta={() => router.push("/(tabs)/create")}
+								/>
+							}
+							renderItem={({ item: ad }) => {
+								const thumb = resolveListingImageUrl(
+									ad.images?.[0],
+									"thumbnail",
+								);
+								const closedAs = listingKindRules(ad.kind).closedAs;
+								return (
+									<Pressable
+										onPress={() => router.push(`/listing/${ad.id}`)}
+										style={[
+											styles.row,
+											{ backgroundColor: c.card, borderColor: c.border },
+										]}
+									>
+										{thumb ? (
+											<Image source={{ uri: thumb }} style={styles.thumb} />
+										) : (
+											<View
+												style={[styles.thumb, { backgroundColor: c.border }]}
+											>
+												<Ionicons
+													name="image-outline"
+													size={20}
+													color={c.muted}
+												/>
+											</View>
+										)}
+										<View style={styles.texts}>
+											<Text
+												style={[styles.title, { color: c.text }]}
+												numberOfLines={1}
+											>
+												{ad.title}
+											</Text>
+											<Text style={[styles.price, { color: c.text }]}>
+												{kindPriceText(
+													ad.price
+														? formatPrice(ad.price, i18n.language)
+														: null,
+													ad,
+													(key) => t(`listingKind.${key}`),
+												)}
+											</Text>
+											<Text
+												style={[styles.meta, { color: c.muted }]}
+												numberOfLines={1}
+											>
+												{ad.status === "sold"
+													? t(`listingKind.closedAs.${closedAs}`)
+													: t(`sellerAds.status.${ad.status}`)}
+												{ad.location ? ` · ${ad.location}` : ""}
+											</Text>
 										</View>
-									)}
-									<View style={styles.texts}>
-										<Text
-											style={[styles.title, { color: c.text }]}
-											numberOfLines={1}
-										>
-											{ad.title}
-										</Text>
-										<Text style={[styles.price, { color: c.text }]}>
-											{kindPriceText(
-												ad.price ? formatPrice(ad.price, i18n.language) : null,
-												ad,
-												(key) => t(`listingKind.${key}`),
-											)}
-										</Text>
-										<Text
-											style={[styles.meta, { color: c.muted }]}
-											numberOfLines={1}
-										>
-											{ad.status === "sold"
-												? t(`listingKind.closedAs.${closedAs}`)
-												: t(`sellerAds.status.${ad.status}`)}
-											{ad.location ? ` · ${ad.location}` : ""}
-										</Text>
-									</View>
-									{owner && ad.status === "published" ? (
-										<Pressable
-											onPress={() => confirmClose(ad)}
-											accessibilityRole="button"
-											accessibilityLabel={t(
-												`listingKind.markClosed.${closedAs}`,
-											)}
-											hitSlop={8}
-											style={styles.action}
-										>
-											<Ionicons
-												name="checkmark-circle-outline"
-												size={22}
-												color={c.primary}
-											/>
-										</Pressable>
-									) : null}
-									{owner ? (
-										<Pressable
-											onPress={() => router.push(`/listing/${ad.id}/edit`)}
-											accessibilityRole="button"
-											accessibilityLabel={t("sellerAds.edit")}
-											hitSlop={8}
-											style={styles.action}
-										>
-											<Ionicons
-												name="pencil-outline"
-												size={20}
-												color={c.primary}
-											/>
-										</Pressable>
-									) : null}
-								</Pressable>
-							);
-						}}
-					/>
+										{owner && ad.status === "published" ? (
+											<Pressable
+												onPress={() => confirmClose(ad)}
+												accessibilityRole="button"
+												accessibilityLabel={t(
+													`listingKind.markClosed.${closedAs}`,
+												)}
+												hitSlop={8}
+												style={styles.action}
+											>
+												<Ionicons
+													name="checkmark-circle-outline"
+													size={22}
+													color={c.primary}
+												/>
+											</Pressable>
+										) : null}
+										{owner ? (
+											<Pressable
+												onPress={() => router.push(`/listing/${ad.id}/edit`)}
+												accessibilityRole="button"
+												accessibilityLabel={t("sellerAds.edit")}
+												hitSlop={8}
+												style={styles.action}
+											>
+												<Ionicons
+													name="pencil-outline"
+													size={20}
+													color={c.primary}
+												/>
+											</Pressable>
+										) : null}
+									</Pressable>
+								);
+							}}
+						/>
+					</ScreenColumn>
 					<Pressable
 						onPress={() => router.push("/(tabs)/create")}
 						accessibilityRole="button"

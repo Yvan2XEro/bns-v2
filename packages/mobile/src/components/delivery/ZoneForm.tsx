@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { Text, View } from "react-native";
+import { FormRow } from "@/src/components/layout/FormRow";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -138,48 +139,52 @@ export function ZoneForm({
 					{t(errorOf("courier") ?? "")}
 				</Text>
 			) : null}
-			{(["fee", "freeAbove", "minimum"] as const).map((name) => (
-				<Controller
-					key={name}
-					control={control}
-					name={name}
-					render={({ field }) => (
-						<TextField
-							label={t(
-								name === "fee"
-									? "deliverySettings.fieldFee"
-									: name === "freeAbove"
-										? "deliverySettings.fieldFreeAbove"
-										: "deliverySettings.fieldMinimum",
-							)}
-							value={field.value}
-							onChange={field.onChange}
-							keyboardType="number-pad"
-							error={errorOf(name)}
-						/>
-					)}
-				/>
-			))}
-			{(["etaMinHours", "etaMaxHours"] as const).map((name) => (
-				<Controller
-					key={name}
-					control={control}
-					name={name}
-					render={({ field }) => (
-						<TextField
-							label={t(
-								name === "etaMinHours"
-									? "deliverySettings.fieldEtaMin"
-									: "deliverySettings.fieldEtaMax",
-							)}
-							value={field.value}
-							onChange={field.onChange}
-							keyboardType="number-pad"
-							error={errorOf(name)}
-						/>
-					)}
-				/>
-			))}
+			<FormRow>
+				{(["fee", "freeAbove", "minimum"] as const).map((name) => (
+					<Controller
+						key={name}
+						control={control}
+						name={name}
+						render={({ field }) => (
+							<TextField
+								label={t(
+									name === "fee"
+										? "deliverySettings.fieldFee"
+										: name === "freeAbove"
+											? "deliverySettings.fieldFreeAbove"
+											: "deliverySettings.fieldMinimum",
+								)}
+								value={field.value}
+								onChange={field.onChange}
+								keyboardType="number-pad"
+								error={errorOf(name)}
+							/>
+						)}
+					/>
+				))}
+			</FormRow>
+			<FormRow>
+				{(["etaMinHours", "etaMaxHours"] as const).map((name) => (
+					<Controller
+						key={name}
+						control={control}
+						name={name}
+						render={({ field }) => (
+							<TextField
+								label={t(
+									name === "etaMinHours"
+										? "deliverySettings.fieldEtaMin"
+										: "deliverySettings.fieldEtaMax",
+								)}
+								value={field.value}
+								onChange={field.onChange}
+								keyboardType="number-pad"
+								error={errorOf(name)}
+							/>
+						)}
+					/>
+				))}
+			</FormRow>
 			<Controller
 				control={control}
 				name="cutoffTime"

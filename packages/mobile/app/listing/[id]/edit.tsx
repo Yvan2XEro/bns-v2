@@ -19,6 +19,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import {
 	PriceUnitChips,
 	priceUnitToSend,
@@ -698,9 +699,11 @@ export default function EditListingScreen() {
 		>
 			{/* Header */}
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()} style={styles.backBtn}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton
+					color={textColor}
+					fallback="/(tabs)/account"
+					style={styles.backBtn}
+				/>
 				<Text style={[styles.headerTitle, { color: textColor }]}>
 					{t("edit.title")}
 				</Text>

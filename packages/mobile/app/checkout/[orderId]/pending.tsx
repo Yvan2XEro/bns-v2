@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -194,164 +195,167 @@ export default function CheckoutPendingScreen() {
 	return (
 		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
 			<SellerHeader title={t("payments.pending_title")} onBack={goToOrder} />
-			<ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-				{phase === "checking" ? (
-					<View style={{ alignItems: "center", gap: 12, paddingTop: 24 }}>
-						<ActivityIndicator color={c.primary} />
-						<Text style={[formStyles.label, { color: c.text }]}>
-							{t("payments.pending_checking")}
-						</Text>
-					</View>
-				) : null}
+			<ScreenColumn width="reading">
+				<ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+					{phase === "checking" ? (
+						<View style={{ alignItems: "center", gap: 12, paddingTop: 24 }}>
+							<ActivityIndicator color={c.primary} />
+							<Text style={[formStyles.label, { color: c.text }]}>
+								{t("payments.pending_checking")}
+							</Text>
+						</View>
+					) : null}
 
-				{phase === "pending" && intent ? (
-					<View
-						style={[
-							formStyles.card,
-							{ backgroundColor: c.card, borderColor: c.border },
-						]}
-					>
-						<Text style={[formStyles.sectionTitle, { color: c.text }]}>
-							{t("payments.pending_title")}
-						</Text>
-						<Text style={[formStyles.label, { color: c.primary }]}>
-							{t("payments.pending_expiresIn", {
-								time: formatCountdown(secondsUntil(intent.expiresAt, now)),
-							})}
-						</Text>
-						{purchase.data ? (
-							// The exact amount the operator's prompt will show, to check
-							// before typing the PIN.
+					{phase === "pending" && intent ? (
+						<View
+							style={[
+								formStyles.card,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
 							<Text style={[formStyles.sectionTitle, { color: c.text }]}>
-								{t("payments.pending_amount", {
-									amount: formatPrice(
-										purchase.data.amounts.total,
-										i18n.language,
-									),
+								{t("payments.pending_title")}
+							</Text>
+							<Text style={[formStyles.label, { color: c.primary }]}>
+								{t("payments.pending_expiresIn", {
+									time: formatCountdown(secondsUntil(intent.expiresAt, now)),
 								})}
 							</Text>
-						) : null}
-						<Text style={[formStyles.label, { color: c.body }]}>
-							{t("payments.pending_providerInstructions")}
-						</Text>
-						<Text style={[formStyles.hint, { color: c.body }]}>
-							{instructions || t(PAYMENT_CHANNEL_INSTRUCTIONS[intent.channel])}
-						</Text>
-						<CheckoutButton
-							label={t("payments.pending_dialMenu", {
-								code: MOBILE_MONEY_USSD[intent.channel],
-							})}
-							variant="outline"
-							icon="keypad-outline"
-							onPress={() =>
-								void Linking.openURL(ussdDialUrl(intent.channel)).catch(
-									() => undefined,
-								)
-							}
-						/>
-						{canResendNow ? (
-							<Pressable
-								onPress={() => void resend()}
-								accessibilityRole="button"
-							>
-								<Text style={[formStyles.hint, { color: c.primary }]}>
-									{t("payments.pending_noPrompt")}
+							{purchase.data ? (
+								// The exact amount the operator's prompt will show, to check
+								// before typing the PIN.
+								<Text style={[formStyles.sectionTitle, { color: c.text }]}>
+									{t("payments.pending_amount", {
+										amount: formatPrice(
+											purchase.data.amounts.total,
+											i18n.language,
+										),
+									})}
 								</Text>
-							</Pressable>
-						) : channel && phone ? (
-							<Text style={[formStyles.hint, { color: c.muted }]}>
-								{t("payments.pending_noPromptWait", {
-									time: formatCountdown(resendSeconds),
-								})}
+							) : null}
+							<Text style={[formStyles.label, { color: c.body }]}>
+								{t("payments.pending_providerInstructions")}
 							</Text>
-						) : null}
-					</View>
-				) : null}
-
-				{phase === "failed" && intent ? (
-					<View
-						style={[
-							formStyles.card,
-							{ backgroundColor: c.card, borderColor: c.border },
-						]}
-					>
-						<Text style={[formStyles.sectionTitle, { color: c.dangerText }]}>
-							{t("payments.failed_title")}
-						</Text>
-						{intent.failureCode ? (
 							<Text style={[formStyles.hint, { color: c.body }]}>
-								{t(PAYMENT_FAILURE_MESSAGES[intent.failureCode])}
+								{instructions ||
+									t(PAYMENT_CHANNEL_INSTRUCTIONS[intent.channel])}
 							</Text>
-						) : null}
-						<Text style={[formStyles.hint, { color: c.muted }]}>
-							{t("payments.failed_attemptsLeft", {
-								attempts: intent.attemptsLeft,
-							})}
-						</Text>
-						{failedCardActions.includes("retry") && channel && phone ? (
 							<CheckoutButton
-								label={t("payments.failed_retry")}
-								onPress={() => void resend()}
-								loading={createIntent.isPending}
-							/>
-						) : null}
-						{failedCardActions.includes("changeOperator") ? (
-							<Pressable onPress={changeOperator} accessibilityRole="button">
-								<Text style={[formStyles.hint, { color: c.primary }]}>
-									{t("payments.failed_changeNumber")}
-								</Text>
-							</Pressable>
-						) : null}
-						{failedCardActions.includes("payOnDelivery") ? (
-							<CheckoutButton
-								label={t("payments.pay_payOnDelivery")}
-								onPress={() => void payOnDelivery()}
-								loading={cancel.isPending}
+								label={t("payments.pending_dialMenu", {
+									code: MOBILE_MONEY_USSD[intent.channel],
+								})}
 								variant="outline"
+								icon="keypad-outline"
+								onPress={() =>
+									void Linking.openURL(ussdDialUrl(intent.channel)).catch(
+										() => undefined,
+									)
+								}
 							/>
-						) : null}
-					</View>
-				) : null}
+							{canResendNow ? (
+								<Pressable
+									onPress={() => void resend()}
+									accessibilityRole="button"
+								>
+									<Text style={[formStyles.hint, { color: c.primary }]}>
+										{t("payments.pending_noPrompt")}
+									</Text>
+								</Pressable>
+							) : channel && phone ? (
+								<Text style={[formStyles.hint, { color: c.muted }]}>
+									{t("payments.pending_noPromptWait", {
+										time: formatCountdown(resendSeconds),
+									})}
+								</Text>
+							) : null}
+						</View>
+					) : null}
 
-				{phase === "expired" || phase === "cancelled" ? (
-					<View
-						style={[
-							formStyles.card,
-							{ backgroundColor: c.card, borderColor: c.border },
-						]}
-					>
-						<Text style={[formStyles.sectionTitle, { color: c.text }]}>
-							{t("payments.expired_title")}
-						</Text>
-						<Text style={[formStyles.hint, { color: c.body }]}>
-							{t("payments.expired_body")}
-						</Text>
-					</View>
-				) : null}
+					{phase === "failed" && intent ? (
+						<View
+							style={[
+								formStyles.card,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							<Text style={[formStyles.sectionTitle, { color: c.dangerText }]}>
+								{t("payments.failed_title")}
+							</Text>
+							{intent.failureCode ? (
+								<Text style={[formStyles.hint, { color: c.body }]}>
+									{t(PAYMENT_FAILURE_MESSAGES[intent.failureCode])}
+								</Text>
+							) : null}
+							<Text style={[formStyles.hint, { color: c.muted }]}>
+								{t("payments.failed_attemptsLeft", {
+									attempts: intent.attemptsLeft,
+								})}
+							</Text>
+							{failedCardActions.includes("retry") && channel && phone ? (
+								<CheckoutButton
+									label={t("payments.failed_retry")}
+									onPress={() => void resend()}
+									loading={createIntent.isPending}
+								/>
+							) : null}
+							{failedCardActions.includes("changeOperator") ? (
+								<Pressable onPress={changeOperator} accessibilityRole="button">
+									<Text style={[formStyles.hint, { color: c.primary }]}>
+										{t("payments.failed_changeNumber")}
+									</Text>
+								</Pressable>
+							) : null}
+							{failedCardActions.includes("payOnDelivery") ? (
+								<CheckoutButton
+									label={t("payments.pay_payOnDelivery")}
+									onPress={() => void payOnDelivery()}
+									loading={cancel.isPending}
+									variant="outline"
+								/>
+							) : null}
+						</View>
+					) : null}
 
-				{phase === "succeeded" ? (
-					<View
-						style={[
-							formStyles.card,
-							{ backgroundColor: c.successSoft, borderColor: c.border },
-						]}
-					>
-						<Text style={[formStyles.label, { color: c.successText }]}>
-							{t("payments.success_banner")}
-						</Text>
-						<CheckoutButton
-							label={t("checkout.viewOrder")}
-							onPress={goToOrder}
-						/>
-					</View>
-				) : null}
+					{phase === "expired" || phase === "cancelled" ? (
+						<View
+							style={[
+								formStyles.card,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							<Text style={[formStyles.sectionTitle, { color: c.text }]}>
+								{t("payments.expired_title")}
+							</Text>
+							<Text style={[formStyles.hint, { color: c.body }]}>
+								{t("payments.expired_body")}
+							</Text>
+						</View>
+					) : null}
 
-				{createIntent.error ? (
-					<Text style={formStyles.error}>
-						{resolveErrorMessage(createIntent.error, t)}
-					</Text>
-				) : null}
-			</ScrollView>
+					{phase === "succeeded" ? (
+						<View
+							style={[
+								formStyles.card,
+								{ backgroundColor: c.successSoft, borderColor: c.border },
+							]}
+						>
+							<Text style={[formStyles.label, { color: c.successText }]}>
+								{t("payments.success_banner")}
+							</Text>
+							<CheckoutButton
+								label={t("checkout.viewOrder")}
+								onPress={goToOrder}
+							/>
+						</View>
+					) : null}
+
+					{createIntent.error ? (
+						<Text style={formStyles.error}>
+							{resolveErrorMessage(createIntent.error, t)}
+						</Text>
+					) : null}
+				</ScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

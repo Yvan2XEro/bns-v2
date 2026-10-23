@@ -15,6 +15,7 @@ import { CurrentPeriodCard } from "@/src/components/billing/CurrentPeriodCard";
 import { InvoiceRow } from "@/src/components/billing/InvoiceRow";
 import { RestrictionBanner } from "@/src/components/billing/RestrictionBanner";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useBilling } from "@/src/hooks/useBilling";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -84,30 +85,35 @@ function BillingContent({ shopId }: { shopId: string }) {
 	);
 
 	return (
-		<FlashList<CommissionInvoiceView>
-			data={view.invoices}
-			keyExtractor={(invoice) => invoice.id}
-			ListHeaderComponent={header}
-			ListEmptyComponent={
-				<Text
-					style={[
-						s.body,
-						styles.empty,
-						{ color: c.muted, borderColor: c.border },
-					]}
-				>
-					{t("billing.noInvoices")}
-				</Text>
-			}
-			ItemSeparatorComponent={() => <View style={styles.separator} />}
-			renderItem={({ item }) => (
-				<InvoiceRow shopId={shopId} invoice={item} onSettled={refresh} />
-			)}
-			contentContainerStyle={styles.list}
-			refreshControl={
-				<RefreshControl refreshing={billing.isRefetching} onRefresh={refresh} />
-			}
-		/>
+		<ScreenColumn width="wide">
+			<FlashList<CommissionInvoiceView>
+				data={view.invoices}
+				keyExtractor={(invoice) => invoice.id}
+				ListHeaderComponent={header}
+				ListEmptyComponent={
+					<Text
+						style={[
+							s.body,
+							styles.empty,
+							{ color: c.muted, borderColor: c.border },
+						]}
+					>
+						{t("billing.noInvoices")}
+					</Text>
+				}
+				ItemSeparatorComponent={() => <View style={styles.separator} />}
+				renderItem={({ item }) => (
+					<InvoiceRow shopId={shopId} invoice={item} onSettled={refresh} />
+				)}
+				contentContainerStyle={styles.list}
+				refreshControl={
+					<RefreshControl
+						refreshing={billing.isRefetching}
+						onRefresh={refresh}
+					/>
+				}
+			/>
+		</ScreenColumn>
 	);
 }
 

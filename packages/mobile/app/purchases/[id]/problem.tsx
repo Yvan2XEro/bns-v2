@@ -19,6 +19,7 @@ import { z } from "zod";
 import { Fonts } from "@/constants/theme";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { PurchaseStatusPill } from "@/src/components/purchases/PurchaseRow";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -272,328 +273,334 @@ export default function ReportOrderProblemScreen() {
 				subtitle={t("purchases.orderNumber", { number: data.orderNumber })}
 				onBack={() => router.back()}
 			/>
-			<ScrollView
-				contentContainerStyle={styles.content}
-				keyboardShouldPersistTaps="handled"
-			>
-				<View
-					style={[
-						styles.orderCard,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
+			<ScreenColumn width="reading">
+				<ScrollView
+					contentContainerStyle={styles.content}
+					keyboardShouldPersistTaps="handled"
 				>
-					<View style={[styles.orderIcon, { backgroundColor: c.primarySoft }]}>
-						<Ionicons name="bag-handle-outline" size={20} color={c.primary} />
-					</View>
-					<View style={{ flex: 1, minWidth: 0 }}>
-						<Text
-							style={[styles.orderTitle, { color: c.text }]}
-							numberOfLines={1}
-						>
-							{data.items[0]?.title ?? data.orderNumber}
-						</Text>
-						<Text
-							style={[styles.orderMeta, { color: c.muted }]}
-							numberOfLines={1}
-						>
-							{data.shop.name} · {formatPrice(data.amounts.total, lang)}
-						</Text>
-					</View>
-					<PurchaseStatusPill status={data.status} />
-				</View>
-
-				{locked && failed.length > 0 ? (
 					<View
-						accessibilityRole="alert"
 						style={[
-							styles.card,
-							{ backgroundColor: c.dangerSoft, borderColor: c.border },
+							styles.orderCard,
+							{ backgroundColor: c.card, borderColor: c.border },
 						]}
 					>
-						<Text style={[styles.title, { color: c.dangerText }]}>
-							{t("disputes.uploadFailedTitle")}
-						</Text>
-						<Text style={[styles.body, { color: c.text }]}>
-							{t("disputes.uploadFailedBody", { count: failed.length })}
-						</Text>
-						{failed.map((entry, index) => (
-							<Text key={entry.key} style={[styles.body, { color: c.text }]}>
-								{`• ${entry.fileName ?? t("disputes.evidenceFileN", { n: index + 1 })}${
-									entry.errorCode
-										? ` — ${resolveErrorMessage({ code: entry.errorCode }, t)}`
-										: ""
-								}`}
-							</Text>
-						))}
-						<Pressable
-							accessibilityRole="link"
-							onPress={() =>
-								caseId &&
-								router.replace({
-									pathname: "/disputes/[id]",
-									params: { id: caseId },
-								})
-							}
+						<View
+							style={[styles.orderIcon, { backgroundColor: c.primarySoft }]}
 						>
-							<Text style={[styles.link, { color: c.primary }]}>
-								{t("disputes.openCase")}
-							</Text>
-						</Pressable>
-					</View>
-				) : null}
-
-				<View
-					style={[
-						styles.card,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<Text style={[styles.title, { color: c.text }]}>
-						{t("disputes.reportReason")}
-					</Text>
-					<Controller
-						control={form.control}
-						name="reason"
-						render={({ field: { onChange, value } }) => (
-							<View style={styles.grid}>
-								{BUYER_DISPUTE_REASONS.map((option) => (
-									<Choice
-										key={option}
-										selected={value === option}
-										disabled={locked}
-										label={t(DISPUTE_REASON_LABELS[option])}
-										onPress={() => onChange(option)}
-									/>
-								))}
-							</View>
-						)}
-					/>
-
-					<Text style={[styles.title, { color: c.text }]}>
-						{t("disputes.reportDetails")}
-					</Text>
-					<Controller
-						control={form.control}
-						name="description"
-						render={({ field: { onBlur, onChange, value } }) => (
-							<TextInput
-								accessibilityLabel={t("disputes.reportDetails")}
-								multiline
-								editable={!locked}
-								maxLength={DISPUTE_DESCRIPTION_MAX}
-								value={value}
-								onBlur={onBlur}
-								onChangeText={onChange}
-								style={[
-									styles.input,
-									styles.multiline,
-									{
-										color: c.text,
-										borderColor: c.border,
-										backgroundColor: c.input,
-									},
-								]}
-							/>
-						)}
-					/>
-					{form.formState.errors.description ? (
-						<Text style={styles.error}>{t("disputes.descriptionError")}</Text>
-					) : null}
-
-					<View style={styles.rowBetween}>
-						<Text style={[styles.title, { color: c.text }]}>
-							{t("disputes.evidenceSection")}
-						</Text>
-						<Text style={[styles.counter, { color: c.muted }]}>
-							{t("disputes.evidenceCount", {
-								count: evidence.length,
-								max: DISPUTE_OPEN_EVIDENCE_MAX,
-							})}
-						</Text>
-					</View>
-					<View style={styles.thumbs}>
-						{evidence.map((entry) => (
-							<EvidenceTile
-								key={entry.key}
-								entry={entry}
-								removable={
-									entry.status !== "done" && entry.status !== "uploading"
-								}
-								onRemove={() => removeEvidence(entry.key)}
-							/>
-						))}
-						{evidence.length < DISPUTE_OPEN_EVIDENCE_MAX ? (
-							<Pressable
-								accessibilityRole="button"
-								accessibilityLabel={t("disputes.addEvidenceMedia")}
-								onPress={() => void pickEvidence().catch(() => undefined)}
-								style={[
-									styles.thumb,
-									styles.addTile,
-									{ borderColor: c.border },
-								]}
+							<Ionicons name="bag-handle-outline" size={20} color={c.primary} />
+						</View>
+						<View style={{ flex: 1, minWidth: 0 }}>
+							<Text
+								style={[styles.orderTitle, { color: c.text }]}
+								numberOfLines={1}
 							>
-								<Ionicons name="add" size={22} color={c.muted} />
-								<Text style={[styles.addText, { color: c.muted }]}>
-									{t("disputes.addEvidenceMedia")}
+								{data.items[0]?.title ?? data.orderNumber}
+							</Text>
+							<Text
+								style={[styles.orderMeta, { color: c.muted }]}
+								numberOfLines={1}
+							>
+								{data.shop.name} · {formatPrice(data.amounts.total, lang)}
+							</Text>
+						</View>
+						<PurchaseStatusPill status={data.status} />
+					</View>
+
+					{locked && failed.length > 0 ? (
+						<View
+							accessibilityRole="alert"
+							style={[
+								styles.card,
+								{ backgroundColor: c.dangerSoft, borderColor: c.border },
+							]}
+						>
+							<Text style={[styles.title, { color: c.dangerText }]}>
+								{t("disputes.uploadFailedTitle")}
+							</Text>
+							<Text style={[styles.body, { color: c.text }]}>
+								{t("disputes.uploadFailedBody", { count: failed.length })}
+							</Text>
+							{failed.map((entry, index) => (
+								<Text key={entry.key} style={[styles.body, { color: c.text }]}>
+									{`• ${entry.fileName ?? t("disputes.evidenceFileN", { n: index + 1 })}${
+										entry.errorCode
+											? ` — ${resolveErrorMessage({ code: entry.errorCode }, t)}`
+											: ""
+									}`}
+								</Text>
+							))}
+							<Pressable
+								accessibilityRole="link"
+								onPress={() =>
+									caseId &&
+									router.replace({
+										pathname: "/disputes/[id]",
+										params: { id: caseId },
+									})
+								}
+							>
+								<Text style={[styles.link, { color: c.primary }]}>
+									{t("disputes.openCase")}
 								</Text>
 							</Pressable>
+						</View>
+					) : null}
+
+					<View
+						style={[
+							styles.card,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Text style={[styles.title, { color: c.text }]}>
+							{t("disputes.reportReason")}
+						</Text>
+						<Controller
+							control={form.control}
+							name="reason"
+							render={({ field: { onChange, value } }) => (
+								<View style={styles.grid}>
+									{BUYER_DISPUTE_REASONS.map((option) => (
+										<Choice
+											key={option}
+											selected={value === option}
+											disabled={locked}
+											label={t(DISPUTE_REASON_LABELS[option])}
+											onPress={() => onChange(option)}
+										/>
+									))}
+								</View>
+							)}
+						/>
+
+						<Text style={[styles.title, { color: c.text }]}>
+							{t("disputes.reportDetails")}
+						</Text>
+						<Controller
+							control={form.control}
+							name="description"
+							render={({ field: { onBlur, onChange, value } }) => (
+								<TextInput
+									accessibilityLabel={t("disputes.reportDetails")}
+									multiline
+									editable={!locked}
+									maxLength={DISPUTE_DESCRIPTION_MAX}
+									value={value}
+									onBlur={onBlur}
+									onChangeText={onChange}
+									style={[
+										styles.input,
+										styles.multiline,
+										{
+											color: c.text,
+											borderColor: c.border,
+											backgroundColor: c.input,
+										},
+									]}
+								/>
+							)}
+						/>
+						{form.formState.errors.description ? (
+							<Text style={styles.error}>{t("disputes.descriptionError")}</Text>
+						) : null}
+
+						<View style={styles.rowBetween}>
+							<Text style={[styles.title, { color: c.text }]}>
+								{t("disputes.evidenceSection")}
+							</Text>
+							<Text style={[styles.counter, { color: c.muted }]}>
+								{t("disputes.evidenceCount", {
+									count: evidence.length,
+									max: DISPUTE_OPEN_EVIDENCE_MAX,
+								})}
+							</Text>
+						</View>
+						<View style={styles.thumbs}>
+							{evidence.map((entry) => (
+								<EvidenceTile
+									key={entry.key}
+									entry={entry}
+									removable={
+										entry.status !== "done" && entry.status !== "uploading"
+									}
+									onRemove={() => removeEvidence(entry.key)}
+								/>
+							))}
+							{evidence.length < DISPUTE_OPEN_EVIDENCE_MAX ? (
+								<Pressable
+									accessibilityRole="button"
+									accessibilityLabel={t("disputes.addEvidenceMedia")}
+									onPress={() => void pickEvidence().catch(() => undefined)}
+									style={[
+										styles.thumb,
+										styles.addTile,
+										{ borderColor: c.border },
+									]}
+								>
+									<Ionicons name="add" size={22} color={c.muted} />
+									<Text style={[styles.addText, { color: c.muted }]}>
+										{t("disputes.addEvidenceMedia")}
+									</Text>
+								</Pressable>
+							) : null}
+						</View>
+						{needed > 0 ? (
+							<Text style={[styles.note, { color: c.muted }]}>
+								{t("disputes.evidenceNeeded", { count: needed })}
+							</Text>
+						) : null}
+						{evidenceError ? (
+							<Text style={styles.error}>{evidenceError}</Text>
 						) : null}
 					</View>
-					{needed > 0 ? (
-						<Text style={[styles.note, { color: c.muted }]}>
-							{t("disputes.evidenceNeeded", { count: needed })}
-						</Text>
-					) : null}
-					{evidenceError ? (
-						<Text style={styles.error}>{evidenceError}</Text>
-					) : null}
-				</View>
 
-				<View
-					style={[
-						styles.card,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<Text style={[styles.title, { color: c.text }]}>
-						{t("disputes.reportOutcome")}
-					</Text>
-					<Controller
-						control={form.control}
-						name="requestedOutcome"
-						render={({ field: { onChange, value } }) => (
-							<View style={styles.choices}>
-								{BUYER_DISPUTE_OUTCOMES.map((option) => (
-									<Choice
-										key={option}
-										selected={value === option}
-										disabled={locked}
-										label={t(DISPUTE_OUTCOME_LABELS[option])}
-										onPress={() => onChange(option)}
-									/>
-								))}
-							</View>
-						)}
-					/>
-					{outcome === "partial_refund" ? (
-						<>
-							<Text style={[styles.label, { color: c.text }]}>
-								{t("disputes.requestedAmountOptional")}
-							</Text>
-							<Controller
-								control={form.control}
-								name="requestedAmount"
-								render={({ field: { onBlur, onChange, value } }) => (
-									<TextInput
-										accessibilityLabel={t("disputes.requestedAmountOptional")}
-										keyboardType="number-pad"
-										editable={!locked}
-										maxLength={12}
-										value={value}
-										onBlur={onBlur}
-										onChangeText={onChange}
-										style={[
-											styles.input,
-											{
-												color: c.text,
-												borderColor: c.border,
-												backgroundColor: c.input,
-											},
-										]}
-									/>
-								)}
-							/>
-						</>
-					) : null}
-					{form.formState.errors.requestedAmount ? (
-						<Text style={styles.error}>
-							{t(
-								`disputes.amountError.${form.formState.errors.requestedAmount.message}`,
+					<View
+						style={[
+							styles.card,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Text style={[styles.title, { color: c.text }]}>
+							{t("disputes.reportOutcome")}
+						</Text>
+						<Controller
+							control={form.control}
+							name="requestedOutcome"
+							render={({ field: { onChange, value } }) => (
+								<View style={styles.choices}>
+									{BUYER_DISPUTE_OUTCOMES.map((option) => (
+										<Choice
+											key={option}
+											selected={value === option}
+											disabled={locked}
+											label={t(DISPUTE_OUTCOME_LABELS[option])}
+											onPress={() => onChange(option)}
+										/>
+									))}
+								</View>
 							)}
+						/>
+						{outcome === "partial_refund" ? (
+							<>
+								<Text style={[styles.label, { color: c.text }]}>
+									{t("disputes.requestedAmountOptional")}
+								</Text>
+								<Controller
+									control={form.control}
+									name="requestedAmount"
+									render={({ field: { onBlur, onChange, value } }) => (
+										<TextInput
+											accessibilityLabel={t("disputes.requestedAmountOptional")}
+											keyboardType="number-pad"
+											editable={!locked}
+											maxLength={12}
+											value={value}
+											onBlur={onBlur}
+											onChangeText={onChange}
+											style={[
+												styles.input,
+												{
+													color: c.text,
+													borderColor: c.border,
+													backgroundColor: c.input,
+												},
+											]}
+										/>
+									)}
+								/>
+							</>
+						) : null}
+						{form.formState.errors.requestedAmount ? (
+							<Text style={styles.error}>
+								{t(
+									`disputes.amountError.${form.formState.errors.requestedAmount.message}`,
+								)}
+							</Text>
+						) : null}
+
+						{data.items.length > 1 ? (
+							<>
+								<Text style={[styles.title, { color: c.text }]}>
+									{t("disputes.reportItems")}
+								</Text>
+								<Controller
+									control={form.control}
+									name="items"
+									render={({ field: { onChange, value } }) => (
+										<View style={styles.choices}>
+											{data.items.map((item) => {
+												const selected = value.some(
+													(row) => row.orderItemId === item.id,
+												);
+												return (
+													<Choice
+														key={item.id}
+														selected={selected}
+														disabled={locked}
+														label={`${item.title} × ${item.quantity}`}
+														role="checkbox"
+														onPress={() =>
+															onChange(
+																selected
+																	? value.filter(
+																			(row) => row.orderItemId !== item.id,
+																		)
+																	: [
+																			...value,
+																			{
+																				orderItemId: item.id,
+																				quantity: item.quantity,
+																			},
+																		],
+															)
+														}
+													/>
+												);
+											})}
+										</View>
+									)}
+								/>
+							</>
+						) : null}
+						{form.formState.errors.items ? (
+							<Text style={styles.error}>{t("disputes.itemsRequired")}</Text>
+						) : null}
+					</View>
+
+					<View
+						style={[
+							styles.card,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Text style={[styles.title, { color: c.text }]}>
+							{t("disputes.nextTitle")}
+						</Text>
+						{(
+							[
+								["time-outline", "disputes.nextShop"],
+								["scale-outline", "disputes.nextMediation"],
+								["cube-outline", "disputes.nextKeepItem"],
+							] as const
+						).map(([icon, key]) => (
+							<View key={key} style={styles.nextRow}>
+								<Ionicons name={icon} size={18} color={c.text} />
+								<Text style={[styles.nextText, { color: c.text }]}>
+									{t(key)}
+								</Text>
+							</View>
+						))}
+						<Text style={[styles.note, { color: c.muted }]}>
+							{t("disputes.reviewTerms")}
+						</Text>
+					</View>
+					{submitError ? (
+						<Text accessibilityRole="alert" style={styles.error}>
+							{submitError}
 						</Text>
 					) : null}
-
-					{data.items.length > 1 ? (
-						<>
-							<Text style={[styles.title, { color: c.text }]}>
-								{t("disputes.reportItems")}
-							</Text>
-							<Controller
-								control={form.control}
-								name="items"
-								render={({ field: { onChange, value } }) => (
-									<View style={styles.choices}>
-										{data.items.map((item) => {
-											const selected = value.some(
-												(row) => row.orderItemId === item.id,
-											);
-											return (
-												<Choice
-													key={item.id}
-													selected={selected}
-													disabled={locked}
-													label={`${item.title} × ${item.quantity}`}
-													role="checkbox"
-													onPress={() =>
-														onChange(
-															selected
-																? value.filter(
-																		(row) => row.orderItemId !== item.id,
-																	)
-																: [
-																		...value,
-																		{
-																			orderItemId: item.id,
-																			quantity: item.quantity,
-																		},
-																	],
-														)
-													}
-												/>
-											);
-										})}
-									</View>
-								)}
-							/>
-						</>
-					) : null}
-					{form.formState.errors.items ? (
-						<Text style={styles.error}>{t("disputes.itemsRequired")}</Text>
-					) : null}
-				</View>
-
-				<View
-					style={[
-						styles.card,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<Text style={[styles.title, { color: c.text }]}>
-						{t("disputes.nextTitle")}
-					</Text>
-					{(
-						[
-							["time-outline", "disputes.nextShop"],
-							["scale-outline", "disputes.nextMediation"],
-							["cube-outline", "disputes.nextKeepItem"],
-						] as const
-					).map(([icon, key]) => (
-						<View key={key} style={styles.nextRow}>
-							<Ionicons name={icon} size={18} color={c.text} />
-							<Text style={[styles.nextText, { color: c.text }]}>{t(key)}</Text>
-						</View>
-					))}
-					<Text style={[styles.note, { color: c.muted }]}>
-						{t("disputes.reviewTerms")}
-					</Text>
-				</View>
-				{submitError ? (
-					<Text accessibilityRole="alert" style={styles.error}>
-						{submitError}
-					</Text>
-				) : null}
-			</ScrollView>
+				</ScrollView>
+			</ScreenColumn>
 			<View
 				style={[styles.bar, { backgroundColor: c.card, borderColor: c.border }]}
 			>

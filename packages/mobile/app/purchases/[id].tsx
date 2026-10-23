@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { TrackingBlock } from "@/src/components/delivery/TrackingBlock";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import {
 	ActionBar,
 	type PurchaseSheet,
@@ -103,67 +104,72 @@ export default function PurchaseScreen() {
 					onCta={() => void purchase.refetch()}
 				/>
 			) : (
-				<ScrollView
-					contentContainerStyle={styles.content}
-					refreshControl={
-						<RefreshControl
-							refreshing={purchase.isRefetching}
-							onRefresh={() => void purchase.refetch()}
-							tintColor={c.primary}
-						/>
-					}
-				>
-					<View style={styles.heading}>
-						<PurchaseStatusPill status={order.status} />
-						<View style={[styles.pill, { backgroundColor: c.neutralSoft }]}>
-							<Text style={[styles.pillText, { color: c.neutralText }]}>
-								{order.paymentMethod === "cod"
-									? t("purchases.payPillCod")
-									: t("purchases.payPillMobileMoney")}
-							</Text>
+				<ScreenColumn width="reading">
+					<ScrollView
+						contentContainerStyle={styles.content}
+						refreshControl={
+							<RefreshControl
+								refreshing={purchase.isRefetching}
+								onRefresh={() => void purchase.refetch()}
+								tintColor={c.primary}
+							/>
+						}
+					>
+						<View style={styles.heading}>
+							<PurchaseStatusPill status={order.status} />
+							<View style={[styles.pill, { backgroundColor: c.neutralSoft }]}>
+								<Text style={[styles.pillText, { color: c.neutralText }]}>
+									{order.paymentMethod === "cod"
+										? t("purchases.payPillCod")
+										: t("purchases.payPillMobileMoney")}
+								</Text>
+							</View>
 						</View>
-					</View>
 
-					<OrderProgress status={order.status} timestamps={order.timestamps} />
-
-					<ActionBar order={order} actions={actions} onSheet={setSheet} />
-					{shipments.map((view) => (
-						<TrackingBlock
-							key={view.id}
-							view={view}
-							lang={lang}
-							now={now}
-							onReschedule={() =>
-								router.push({
-									pathname: "/purchases/[id]/reschedule",
-									params: { id: order.id },
-								})
-							}
-							onContest={contestHere ? reportProblem : undefined}
+						<OrderProgress
+							status={order.status}
+							timestamps={order.timestamps}
 						/>
-					))}
-					{has("confirm_code") || has("resend_code") ? (
-						<ConfirmCodeCard
-							orderId={order.id}
-							canConfirm={has("confirm_code")}
-							canResend={has("resend_code")}
-						/>
-					) : null}
 
-					{order.status === "shipped" ? (
-						<HandoverCard order={order} actions={actions} />
-					) : null}
+						<ActionBar order={order} actions={actions} onSheet={setSheet} />
+						{shipments.map((view) => (
+							<TrackingBlock
+								key={view.id}
+								view={view}
+								lang={lang}
+								now={now}
+								onReschedule={() =>
+									router.push({
+										pathname: "/purchases/[id]/reschedule",
+										params: { id: order.id },
+									})
+								}
+								onContest={contestHere ? reportProblem : undefined}
+							/>
+						))}
+						{has("confirm_code") || has("resend_code") ? (
+							<ConfirmCodeCard
+								orderId={order.id}
+								canConfirm={has("confirm_code")}
+								canResend={has("resend_code")}
+							/>
+						) : null}
 
-					<WithdrawalWindowNote order={order} now={now} />
+						{order.status === "shipped" ? (
+							<HandoverCard order={order} actions={actions} />
+						) : null}
 
-					{has("review_shop") ? (
-						<ReviewPanel orderId={order.id} shopName={order.shop.name} />
-					) : null}
+						<WithdrawalWindowNote order={order} now={now} />
 
-					<PaymentSection order={order} />
-					<PurchaseSummary order={order} />
-					<Timeline entries={order.timeline} />
-				</ScrollView>
+						{has("review_shop") ? (
+							<ReviewPanel orderId={order.id} shopName={order.shop.name} />
+						) : null}
+
+						<PaymentSection order={order} />
+						<PurchaseSummary order={order} />
+						<Timeline entries={order.timeline} />
+					</ScrollView>
+				</ScreenColumn>
 			)}
 
 			{order && !purchase.isError ? (

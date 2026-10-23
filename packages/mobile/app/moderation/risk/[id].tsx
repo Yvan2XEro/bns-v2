@@ -10,6 +10,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import {
 	type DecisionChoice,
 	type DecisionDuration,
@@ -108,78 +109,30 @@ export default function RiskFlagScreen() {
 						: "moderation.riskLow",
 			)} · ${flag.score}`}
 		>
-			<ScrollView contentContainerStyle={styles.content}>
-				{decision.isError ? (
-					<Text style={[styles.error, { color: c.danger }]}>
-						{t("moderation.actionFailed")}
-					</Text>
-				) : null}
-				<View
-					style={[
-						styles.card,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<Text style={[styles.sectionTitle, { color: c.text }]}>
-						{t("moderation.riskSubject")}
-					</Text>
-					<Text style={[styles.primaryText, { color: c.text }]}>
-						{subjectName ?? flag.subjectLabel ?? flag.subjectType}
-					</Text>
-					<Text style={[styles.secondaryText, { color: c.muted }]}>
-						{flag.subjectType}
-					</Text>
-				</View>
-
-				<View
-					style={[
-						styles.card,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<Text style={[styles.sectionTitle, { color: c.text }]}>
-						{t("moderation.riskSignal")}
-					</Text>
-					<Text style={[styles.primaryText, { color: c.text }]}>
-						{flag.signal.replaceAll(".", " · ").replaceAll("_", " ")}
-					</Text>
-					<Text style={[styles.secondaryText, { color: c.muted }]}>
-						{t("moderation.riskOccurrences", { count: flag.occurrences ?? 1 })}
-						{" · "}
-						{t("moderation.riskLastSeen", {
-							date: new Date(flag.lastSeenAt).toLocaleString(),
-						})}
-					</Text>
-				</View>
-
-				<View
-					style={[
-						styles.card,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<Text style={[styles.sectionTitle, { color: c.text }]}>
-						{t("moderation.riskEvidence")}
-					</Text>
-					{evidenceRows.length === 0 ? (
+			<ScreenColumn width="reading">
+				<ScrollView contentContainerStyle={styles.content}>
+					{decision.isError ? (
+						<Text style={[styles.error, { color: c.danger }]}>
+							{t("moderation.actionFailed")}
+						</Text>
+					) : null}
+					<View
+						style={[
+							styles.card,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Text style={[styles.sectionTitle, { color: c.text }]}>
+							{t("moderation.riskSubject")}
+						</Text>
+						<Text style={[styles.primaryText, { color: c.text }]}>
+							{subjectName ?? flag.subjectLabel ?? flag.subjectType}
+						</Text>
 						<Text style={[styles.secondaryText, { color: c.muted }]}>
-							{t("moderation.riskNoEvidence")}
+							{flag.subjectType}
 						</Text>
-					) : (
-						evidenceRows.map((row) => (
-							<View key={row.label} style={styles.evidenceRow}>
-								<Text style={[styles.secondaryText, { color: c.muted }]}>
-									{row.label}
-								</Text>
-								<Text style={[styles.primaryText, { color: c.text }]}>
-									{row.value === null ? "-" : String(row.value)}
-								</Text>
-							</View>
-						))
-					)}
-				</View>
+					</View>
 
-				{relatedFlags.length > 0 ? (
 					<View
 						style={[
 							styles.card,
@@ -187,27 +140,22 @@ export default function RiskFlagScreen() {
 						]}
 					>
 						<Text style={[styles.sectionTitle, { color: c.text }]}>
-							{t("moderation.riskRelated")}
+							{t("moderation.riskSignal")}
 						</Text>
-						{relatedFlags.map((related) => (
-							<Pressable
-								key={related.id}
-								accessibilityRole="button"
-								onPress={() => router.push(`/moderation/risk/${related.id}`)}
-								style={styles.relatedRow}
-							>
-								<Text style={[styles.primaryText, { color: c.text }]}>
-									{related.subjectLabel ?? related.subjectType}
-									{" · "}
-									{related.signal.replaceAll(".", " · ").replaceAll("_", " ")}
-								</Text>
-								<Ionicons name="chevron-forward" size={18} color={c.muted} />
-							</Pressable>
-						))}
+						<Text style={[styles.primaryText, { color: c.text }]}>
+							{flag.signal.replaceAll(".", " · ").replaceAll("_", " ")}
+						</Text>
+						<Text style={[styles.secondaryText, { color: c.muted }]}>
+							{t("moderation.riskOccurrences", {
+								count: flag.occurrences ?? 1,
+							})}
+							{" · "}
+							{t("moderation.riskLastSeen", {
+								date: new Date(flag.lastSeenAt).toLocaleString(),
+							})}
+						</Text>
 					</View>
-				) : null}
 
-				{moderationHistory.length > 0 ? (
 					<View
 						style={[
 							styles.card,
@@ -215,91 +163,151 @@ export default function RiskFlagScreen() {
 						]}
 					>
 						<Text style={[styles.sectionTitle, { color: c.text }]}>
-							{t("moderation.riskHistory")}
+							{t("moderation.riskEvidence")}
 						</Text>
-						{moderationHistory.map((entry) => (
-							<Text
-								key={entry.id}
-								style={[styles.secondaryText, { color: c.muted }]}
-							>
-								{entry.action} ·{" "}
-								{new Date(entry.createdAt).toLocaleDateString()}
+						{evidenceRows.length === 0 ? (
+							<Text style={[styles.secondaryText, { color: c.muted }]}>
+								{t("moderation.riskNoEvidence")}
 							</Text>
-						))}
-					</View>
-				) : null}
-
-				{flag.status === "open" || flag.status === "reviewed" ? (
-					<View style={styles.actions}>
-						{flag.status === "open" ? (
-							<Pressable
-								accessibilityRole="button"
-								disabled={decision.isPending}
-								onPress={() =>
-									flag.status === "open" && flagId
-										? decision.mutate({
-												id: flagId,
-												outcome: "reviewed",
-												resolution: "none",
-											})
-										: undefined
-								}
-								style={[styles.actionButton, { backgroundColor: c.primary }]}
-							>
-								<Text style={styles.actionLabel}>
-									{t("moderation.riskMarkReviewed")}
-								</Text>
-							</Pressable>
-						) : null}
-						<Pressable
-							accessibilityRole="button"
-							disabled={decision.isPending}
-							onPress={() => setDismissVisible(true)}
-							style={[styles.actionButton, { backgroundColor: c.danger }]}
-						>
-							<Text style={styles.actionLabel}>
-								{t("moderation.riskDismiss")}
-							</Text>
-						</Pressable>
-						{targetId && subject.type === "user" ? (
-							<Pressable
-								accessibilityRole="button"
-								disabled={decision.isPending}
-								onPress={() => setSanctionType("suspend_user")}
-								style={[styles.actionButton, { backgroundColor: c.danger }]}
-							>
-								<Text style={styles.actionLabel}>
-									{t("moderation.riskSuspendUser")}
-								</Text>
-							</Pressable>
-						) : null}
-						{targetId && subject.type === "shop" ? (
-							<>
-								<Pressable
-									accessibilityRole="button"
-									disabled={decision.isPending}
-									onPress={() => setSanctionType("suspend_shop")}
-									style={[styles.actionButton, { backgroundColor: c.danger }]}
-								>
-									<Text style={styles.actionLabel}>
-										{t("moderation.riskSuspendShop")}
+						) : (
+							evidenceRows.map((row) => (
+								<View key={row.label} style={styles.evidenceRow}>
+									<Text style={[styles.secondaryText, { color: c.muted }]}>
+										{row.label}
 									</Text>
+									<Text style={[styles.primaryText, { color: c.text }]}>
+										{row.value === null ? "-" : String(row.value)}
+									</Text>
+								</View>
+							))
+						)}
+					</View>
+
+					{relatedFlags.length > 0 ? (
+						<View
+							style={[
+								styles.card,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							<Text style={[styles.sectionTitle, { color: c.text }]}>
+								{t("moderation.riskRelated")}
+							</Text>
+							{relatedFlags.map((related) => (
+								<Pressable
+									key={related.id}
+									accessibilityRole="button"
+									onPress={() => router.push(`/moderation/risk/${related.id}`)}
+									style={styles.relatedRow}
+								>
+									<Text style={[styles.primaryText, { color: c.text }]}>
+										{related.subjectLabel ?? related.subjectType}
+										{" · "}
+										{related.signal.replaceAll(".", " · ").replaceAll("_", " ")}
+									</Text>
+									<Ionicons name="chevron-forward" size={18} color={c.muted} />
 								</Pressable>
+							))}
+						</View>
+					) : null}
+
+					{moderationHistory.length > 0 ? (
+						<View
+							style={[
+								styles.card,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							<Text style={[styles.sectionTitle, { color: c.text }]}>
+								{t("moderation.riskHistory")}
+							</Text>
+							{moderationHistory.map((entry) => (
+								<Text
+									key={entry.id}
+									style={[styles.secondaryText, { color: c.muted }]}
+								>
+									{entry.action} ·{" "}
+									{new Date(entry.createdAt).toLocaleDateString()}
+								</Text>
+							))}
+						</View>
+					) : null}
+
+					{flag.status === "open" || flag.status === "reviewed" ? (
+						<View style={styles.actions}>
+							{flag.status === "open" ? (
 								<Pressable
 									accessibilityRole="button"
 									disabled={decision.isPending}
-									onPress={() => setSanctionType("hold_payouts")}
+									onPress={() =>
+										flag.status === "open" && flagId
+											? decision.mutate({
+													id: flagId,
+													outcome: "reviewed",
+													resolution: "none",
+												})
+											: undefined
+									}
 									style={[styles.actionButton, { backgroundColor: c.primary }]}
 								>
 									<Text style={styles.actionLabel}>
-										{t("moderation.riskHoldPayouts")}
+										{t("moderation.riskMarkReviewed")}
 									</Text>
 								</Pressable>
-							</>
-						) : null}
-					</View>
-				) : null}
-			</ScrollView>
+							) : null}
+							<Pressable
+								accessibilityRole="button"
+								disabled={decision.isPending}
+								onPress={() => setDismissVisible(true)}
+								style={[styles.actionButton, { backgroundColor: c.danger }]}
+							>
+								<Text style={styles.actionLabel}>
+									{t("moderation.riskDismiss")}
+								</Text>
+							</Pressable>
+							{targetId && subject.type === "user" ? (
+								<Pressable
+									accessibilityRole="button"
+									disabled={decision.isPending}
+									onPress={() => setSanctionType("suspend_user")}
+									style={[styles.actionButton, { backgroundColor: c.danger }]}
+								>
+									<Text style={styles.actionLabel}>
+										{t("moderation.riskSuspendUser")}
+									</Text>
+								</Pressable>
+							) : null}
+							{targetId && subject.type === "shop" ? (
+								<>
+									<Pressable
+										accessibilityRole="button"
+										disabled={decision.isPending}
+										onPress={() => setSanctionType("suspend_shop")}
+										style={[styles.actionButton, { backgroundColor: c.danger }]}
+									>
+										<Text style={styles.actionLabel}>
+											{t("moderation.riskSuspendShop")}
+										</Text>
+									</Pressable>
+									<Pressable
+										accessibilityRole="button"
+										disabled={decision.isPending}
+										onPress={() => setSanctionType("hold_payouts")}
+										style={[
+											styles.actionButton,
+											{ backgroundColor: c.primary },
+										]}
+									>
+										<Text style={styles.actionLabel}>
+											{t("moderation.riskHoldPayouts")}
+										</Text>
+									</Pressable>
+								</>
+							) : null}
+						</View>
+					) : null}
+				</ScrollView>
+			</ScreenColumn>
 			<DecisionSheet
 				visible={dismissVisible}
 				title={t("moderation.riskDismissTitle")}

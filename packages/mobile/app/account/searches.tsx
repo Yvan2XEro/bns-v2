@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { SkeletonRow } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -73,9 +74,7 @@ export default function SavedSearchesScreen() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton color={textColor} fallback="/(tabs)/account" />
 				<Text style={[styles.title, { color: textColor }]}>
 					{t("savedSearches.title")}
 				</Text>

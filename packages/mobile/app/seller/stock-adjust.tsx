@@ -13,6 +13,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { MovementTypePicker } from "@/src/components/seller/MovementTypePicker";
 import { VariantSummaryCard } from "@/src/components/seller/VariantSummaryCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -60,174 +61,181 @@ export default function StockAdjustSheet() {
 			) : variant.isLoading || !v ? (
 				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
 			) : (
-				<KeyboardAwareScrollView
-					contentContainerStyle={{ padding: 16, gap: 14 }}
-					keyboardShouldPersistTaps="handled"
-				>
-					<VariantSummaryCard
-						title={[
-							v.product.title,
-							variantLabel(v.optionValues ?? {}, v.product.options),
-						]
-							.filter(Boolean)
-							.join(" · ")}
-						current={current}
-						lowStockThreshold={v.lowStockThreshold}
-						tracked={v.trackInventory}
-					/>
-
-					<MovementTypePicker value={type} onChange={changeType} />
-
-					<View style={styles.amountRow}>
-						<Text style={[styles.label, styles.flex, { color: c.body }]}>
-							{t(`stock.valueLabel_${type}`)}
-						</Text>
-						<Controller
-							control={form.control}
-							name="amount"
-							render={({ field }) => {
-								const value = Number.parseInt(field.value || "0", 10) || 0;
-								return (
-									<View style={styles.stepper}>
-										<Pressable
-											onPress={() =>
-												field.onChange(String(Math.max(0, value - 1)))
-											}
-											accessibilityRole="button"
-											accessibilityLabel={t("stock.decrease")}
-											style={[
-												styles.stepButton,
-												{ backgroundColor: c.card, borderColor: c.border },
-											]}
-										>
-											<Ionicons name="remove" size={22} color={c.text} />
-										</Pressable>
-										<TextInput
-											value={field.value}
-											onChangeText={field.onChange}
-											onBlur={field.onBlur}
-											keyboardType="number-pad"
-											placeholder="0"
-											placeholderTextColor={c.muted}
-											accessibilityLabel={t(`stock.valueLabel_${type}`)}
-											style={[styles.amountInput, { color: c.text }]}
-										/>
-										<Pressable
-											onPress={() => field.onChange(String(value + 1))}
-											accessibilityRole="button"
-											accessibilityLabel={t("stock.increase")}
-											style={[
-												styles.stepButton,
-												{ backgroundColor: c.primary, borderColor: c.primary },
-											]}
-										>
-											<Ionicons name="add" size={22} color="#fff" />
-										</Pressable>
-									</View>
-								);
-							}}
+				<ScreenColumn width="reading">
+					<KeyboardAwareScrollView
+						contentContainerStyle={{ padding: 16, gap: 14 }}
+						keyboardShouldPersistTaps="handled"
+					>
+						<VariantSummaryCard
+							title={[
+								v.product.title,
+								variantLabel(v.optionValues ?? {}, v.product.options),
+							]
+								.filter(Boolean)
+								.join(" · ")}
+							current={current}
+							lowStockThreshold={v.lowStockThreshold}
+							tracked={v.trackInventory}
 						/>
-					</View>
-					{amountError ? (
-						<Text style={[styles.meta, { color: c.danger }]}>
-							{t(amountError)}
-						</Text>
-					) : null}
 
-					<View style={styles.boxes}>
-						{type === "receipt" ? (
+						<MovementTypePicker value={type} onChange={changeType} />
+
+						<View style={styles.amountRow}>
+							<Text style={[styles.label, styles.flex, { color: c.body }]}>
+								{t(`stock.valueLabel_${type}`)}
+							</Text>
+							<Controller
+								control={form.control}
+								name="amount"
+								render={({ field }) => {
+									const value = Number.parseInt(field.value || "0", 10) || 0;
+									return (
+										<View style={styles.stepper}>
+											<Pressable
+												onPress={() =>
+													field.onChange(String(Math.max(0, value - 1)))
+												}
+												accessibilityRole="button"
+												accessibilityLabel={t("stock.decrease")}
+												style={[
+													styles.stepButton,
+													{ backgroundColor: c.card, borderColor: c.border },
+												]}
+											>
+												<Ionicons name="remove" size={22} color={c.text} />
+											</Pressable>
+											<TextInput
+												value={field.value}
+												onChangeText={field.onChange}
+												onBlur={field.onBlur}
+												keyboardType="number-pad"
+												placeholder="0"
+												placeholderTextColor={c.muted}
+												accessibilityLabel={t(`stock.valueLabel_${type}`)}
+												style={[styles.amountInput, { color: c.text }]}
+											/>
+											<Pressable
+												onPress={() => field.onChange(String(value + 1))}
+												accessibilityRole="button"
+												accessibilityLabel={t("stock.increase")}
+												style={[
+													styles.stepButton,
+													{
+														backgroundColor: c.primary,
+														borderColor: c.primary,
+													},
+												]}
+											>
+												<Ionicons name="add" size={22} color="#fff" />
+											</Pressable>
+										</View>
+									);
+								}}
+							/>
+						</View>
+						{amountError ? (
+							<Text style={[styles.meta, { color: c.danger }]}>
+								{t(amountError)}
+							</Text>
+						) : null}
+
+						<View style={styles.boxes}>
+							{type === "receipt" ? (
+								<View
+									style={[
+										styles.box,
+										{
+											backgroundColor: c.card,
+											borderColor: unitCostError ? c.danger : c.border,
+										},
+									]}
+								>
+									<Text style={[styles.boxLabel, { color: c.muted }]}>
+										{t("stock.unitCost")}
+									</Text>
+									<Controller
+										control={form.control}
+										name="unitCost"
+										render={({ field }) => (
+											<TextInput
+												value={field.value}
+												onChangeText={field.onChange}
+												onBlur={field.onBlur}
+												keyboardType="number-pad"
+												placeholder="XAF"
+												placeholderTextColor={c.muted}
+												accessibilityLabel={t("stock.unitCost")}
+												style={[styles.boxInput, { color: c.text }]}
+											/>
+										)}
+									/>
+								</View>
+							) : null}
 							<View
 								style={[
 									styles.box,
-									{
-										backgroundColor: c.card,
-										borderColor: unitCostError ? c.danger : c.border,
-									},
+									{ backgroundColor: c.card, borderColor: c.border },
 								]}
 							>
 								<Text style={[styles.boxLabel, { color: c.muted }]}>
-									{t("stock.unitCost")}
+									{t("stock.note")}
 								</Text>
 								<Controller
 									control={form.control}
-									name="unitCost"
+									name="note"
 									render={({ field }) => (
 										<TextInput
 											value={field.value}
 											onChangeText={field.onChange}
 											onBlur={field.onBlur}
-											keyboardType="number-pad"
-											placeholder="XAF"
+											maxLength={STOCK_NOTE_MAX}
+											placeholder={t("stock.notePlaceholder")}
 											placeholderTextColor={c.muted}
-											accessibilityLabel={t("stock.unitCost")}
+											accessibilityLabel={t("stock.note")}
 											style={[styles.boxInput, { color: c.text }]}
 										/>
 									)}
 								/>
 							</View>
+						</View>
+						{unitCostError ? (
+							<Text style={[styles.meta, { color: c.danger }]}>
+								{t(unitCostError)}
+							</Text>
 						) : null}
-						<View
+
+						<View style={[styles.after, { backgroundColor: c.primarySoft }]}>
+							<Text style={[styles.afterLabel, { color: c.body }]}>
+								{t("stock.after")}
+							</Text>
+							<Text style={[styles.afterValue, { color: c.primary }]}>
+								{current} → {result ? result.stockAfter : "—"}
+							</Text>
+						</View>
+
+						<Pressable
+							onPress={submit}
+							disabled={!result || Boolean(unitCostError) || isPending}
+							accessibilityRole="button"
+							accessibilityLabel={t(`stock.submit_${type}`)}
 							style={[
-								styles.box,
-								{ backgroundColor: c.card, borderColor: c.border },
+								styles.submit,
+								{
+									backgroundColor: c.primary,
+									opacity: result && !unitCostError ? 1 : 0.5,
+								},
 							]}
 						>
-							<Text style={[styles.boxLabel, { color: c.muted }]}>
-								{t("stock.note")}
-							</Text>
-							<Controller
-								control={form.control}
-								name="note"
-								render={({ field }) => (
-									<TextInput
-										value={field.value}
-										onChangeText={field.onChange}
-										onBlur={field.onBlur}
-										maxLength={STOCK_NOTE_MAX}
-										placeholder={t("stock.notePlaceholder")}
-										placeholderTextColor={c.muted}
-										accessibilityLabel={t("stock.note")}
-										style={[styles.boxInput, { color: c.text }]}
-									/>
-								)}
-							/>
-						</View>
-					</View>
-					{unitCostError ? (
-						<Text style={[styles.meta, { color: c.danger }]}>
-							{t(unitCostError)}
-						</Text>
-					) : null}
-
-					<View style={[styles.after, { backgroundColor: c.primarySoft }]}>
-						<Text style={[styles.afterLabel, { color: c.body }]}>
-							{t("stock.after")}
-						</Text>
-						<Text style={[styles.afterValue, { color: c.primary }]}>
-							{current} → {result ? result.stockAfter : "—"}
-						</Text>
-					</View>
-
-					<Pressable
-						onPress={submit}
-						disabled={!result || Boolean(unitCostError) || isPending}
-						accessibilityRole="button"
-						accessibilityLabel={t(`stock.submit_${type}`)}
-						style={[
-							styles.submit,
-							{
-								backgroundColor: c.primary,
-								opacity: result && !unitCostError ? 1 : 0.5,
-							},
-						]}
-					>
-						{isPending ? (
-							<ActivityIndicator color="#fff" />
-						) : (
-							<Text style={styles.submitText}>{t(`stock.submit_${type}`)}</Text>
-						)}
-					</Pressable>
-				</KeyboardAwareScrollView>
+							{isPending ? (
+								<ActivityIndicator color="#fff" />
+							) : (
+								<Text style={styles.submitText}>
+									{t(`stock.submit_${type}`)}
+								</Text>
+							)}
+						</Pressable>
+					</KeyboardAwareScrollView>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { CatalogueRowItem } from "@/src/components/seller/CatalogueRowItem";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -178,57 +179,59 @@ export default function CatalogueScreen() {
 					) : null}
 				</View>
 			) : (
-				<FlashList
-					data={rows}
-					keyExtractor={(row) => row.id}
-					contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-					refreshControl={
-						<RefreshControl
-							refreshing={catalogue.isRefetching}
-							onRefresh={() => catalogue.refetch()}
-							tintColor={c.primary}
-						/>
-					}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-					ListEmptyComponent={
-						<Text
-							style={[
-								styles.meta,
-								{ color: c.muted, textAlign: "center", marginTop: 24 },
-							]}
-						>
-							{t("catalogue.filterEmpty")}
-						</Text>
-					}
-					ListFooterComponent={
-						offline ? (
-							<Text
-								style={[styles.meta, { color: c.muted, textAlign: "center" }]}
-							>
-								{t("catalogue.offlineFooter")}
-							</Text>
-						) : null
-					}
-					renderItem={({ item }) => {
-						const rowStep = stepState[item.id];
-						const pending = rowStep?.pending ?? 0;
-						const displayRow: CatalogueRow =
-							pending === 0
-								? item
-								: { ...item, stockOnHand: item.stockOnHand + pending };
-						return (
-							<CatalogueRowItem
-								row={displayRow}
-								onPress={() =>
-									router.push(`/seller/product/${item.id}` as never)
-								}
-								onStep={(delta) => step(item, delta)}
-								stepping={rowStep?.committing ?? false}
-								disabled={readOnly || offline}
+				<ScreenColumn width="wide">
+					<FlashList
+						data={rows}
+						keyExtractor={(row) => row.id}
+						contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+						refreshControl={
+							<RefreshControl
+								refreshing={catalogue.isRefetching}
+								onRefresh={() => catalogue.refetch()}
+								tintColor={c.primary}
 							/>
-						);
-					}}
-				/>
+						}
+						ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+						ListEmptyComponent={
+							<Text
+								style={[
+									styles.meta,
+									{ color: c.muted, textAlign: "center", marginTop: 24 },
+								]}
+							>
+								{t("catalogue.filterEmpty")}
+							</Text>
+						}
+						ListFooterComponent={
+							offline ? (
+								<Text
+									style={[styles.meta, { color: c.muted, textAlign: "center" }]}
+								>
+									{t("catalogue.offlineFooter")}
+								</Text>
+							) : null
+						}
+						renderItem={({ item }) => {
+							const rowStep = stepState[item.id];
+							const pending = rowStep?.pending ?? 0;
+							const displayRow: CatalogueRow =
+								pending === 0
+									? item
+									: { ...item, stockOnHand: item.stockOnHand + pending };
+							return (
+								<CatalogueRowItem
+									row={displayRow}
+									onPress={() =>
+										router.push(`/seller/product/${item.id}` as never)
+									}
+									onStep={(delta) => step(item, delta)}
+									stepping={rowStep?.committing ?? false}
+									disabled={readOnly || offline}
+								/>
+							);
+						}}
+					/>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

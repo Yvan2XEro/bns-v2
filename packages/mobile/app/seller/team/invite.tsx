@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { RoleCard } from "@/src/components/shop/team/RoleMatrix";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -52,183 +53,187 @@ export default function InviteMemberScreen() {
 		>
 			<SellerHeader title={t("team.inviteTitle")} icon="close" onBack={close} />
 
-			<ScrollView
-				contentContainerStyle={styles.content}
-				keyboardShouldPersistTaps="handled"
-			>
-				{delivered === false ? (
-					<View style={[styles.notice, { backgroundColor: c.warningSoft }]}>
-						<Text style={[styles.noticeText, { color: c.warningText }]}>
-							{t("team.deliveredFalse")}
-						</Text>
-						<Pressable
-							onPress={close}
-							accessibilityRole="button"
-							accessibilityLabel={t("common.close")}
-							style={[styles.submit, { backgroundColor: c.primary }]}
-						>
-							<Text style={styles.submitText}>{t("common.close")}</Text>
-						</Pressable>
-					</View>
-				) : (
-					<>
-						<View style={[styles.segment, { backgroundColor: c.neutralSoft }]}>
-							{(["phone", "email"] as const).map((option) => {
-								const active = channel === option;
-								return (
-									<Pressable
-										key={option}
-										onPress={() =>
-											form.setValue("channel", option, {
-												shouldValidate: true,
-											})
-										}
-										accessibilityRole="button"
-										accessibilityState={{ selected: active }}
-										accessibilityLabel={t(
-											option === "phone"
-												? "team.channelPhone"
-												: "team.channelEmail",
-										)}
-										style={[
-											styles.segmentItem,
-											active && { backgroundColor: c.card },
-										]}
-									>
-										<Text
-											style={[
-												styles.segmentText,
-												{ color: active ? c.text : c.muted },
-											]}
-										>
-											{t(
+			<ScreenColumn width="reading">
+				<ScrollView
+					contentContainerStyle={styles.content}
+					keyboardShouldPersistTaps="handled"
+				>
+					{delivered === false ? (
+						<View style={[styles.notice, { backgroundColor: c.warningSoft }]}>
+							<Text style={[styles.noticeText, { color: c.warningText }]}>
+								{t("team.deliveredFalse")}
+							</Text>
+							<Pressable
+								onPress={close}
+								accessibilityRole="button"
+								accessibilityLabel={t("common.close")}
+								style={[styles.submit, { backgroundColor: c.primary }]}
+							>
+								<Text style={styles.submitText}>{t("common.close")}</Text>
+							</Pressable>
+						</View>
+					) : (
+						<>
+							<View
+								style={[styles.segment, { backgroundColor: c.neutralSoft }]}
+							>
+								{(["phone", "email"] as const).map((option) => {
+									const active = channel === option;
+									return (
+										<Pressable
+											key={option}
+											onPress={() =>
+												form.setValue("channel", option, {
+													shouldValidate: true,
+												})
+											}
+											accessibilityRole="button"
+											accessibilityState={{ selected: active }}
+											accessibilityLabel={t(
 												option === "phone"
 													? "team.channelPhone"
 													: "team.channelEmail",
 											)}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
-
-						{channel === "phone" ? (
-							<View>
-								<Text style={[styles.label, { color: c.body }]}>
-									{t("team.phoneLabel")}
-								</Text>
-								<Controller
-									control={form.control}
-									name="phone"
-									render={({ field }) => (
-										<TextInput
-											value={field.value}
-											onChangeText={field.onChange}
-											onBlur={field.onBlur}
-											keyboardType="phone-pad"
-											placeholder={phoneExample()}
-											placeholderTextColor={c.muted}
-											accessibilityLabel={t("team.phoneLabel")}
 											style={[
-												styles.input,
-												{
-													color: c.text,
-													backgroundColor: c.input,
-													borderColor: c.border,
-												},
+												styles.segmentItem,
+												active && { backgroundColor: c.card },
 											]}
-										/>
-									)}
-								/>
-								{form.formState.errors.phone ? (
-									<Text style={[styles.hint, { color: c.danger }]}>
-										{fieldMessage(form.formState.errors.phone, t, {
-											required: "team.phoneRequired",
-											invalid: "team.phoneInvalid",
-										})}
-									</Text>
-								) : null}
+										>
+											<Text
+												style={[
+													styles.segmentText,
+													{ color: active ? c.text : c.muted },
+												]}
+											>
+												{t(
+													option === "phone"
+														? "team.channelPhone"
+														: "team.channelEmail",
+												)}
+											</Text>
+										</Pressable>
+									);
+								})}
 							</View>
-						) : (
-							<View>
-								<Text style={[styles.label, { color: c.body }]}>
-									{t("team.emailLabel")}
-								</Text>
-								<Controller
-									control={form.control}
-									name="email"
-									render={({ field }) => (
-										<TextInput
-											value={field.value}
-											onChangeText={field.onChange}
-											onBlur={field.onBlur}
-											keyboardType="email-address"
-											autoCapitalize="none"
-											placeholder="name@example.com"
-											placeholderTextColor={c.muted}
-											accessibilityLabel={t("team.emailLabel")}
-											style={[
-												styles.input,
-												{
-													color: c.text,
-													backgroundColor: c.input,
-													borderColor: c.border,
-												},
-											]}
-										/>
-									)}
-								/>
-								{form.formState.errors.email ? (
-									<Text style={[styles.hint, { color: c.danger }]}>
-										{fieldMessage(form.formState.errors.email, t, {
-											required: "team.emailRequired",
-											invalid: "team.emailInvalid",
-										})}
-									</Text>
-								) : null}
-							</View>
-						)}
 
-						<View>
-							<Text style={[styles.label, { color: c.body }]}>
-								{t("team.roleLabel")}
-							</Text>
-							<View style={styles.roleList}>
-								{roles.map((option) => (
-									<RoleCard
-										key={option}
-										role={option}
-										selected={form.watch("role") === option}
-										onPress={() =>
-											form.setValue("role", option, { shouldValidate: true })
-										}
+							{channel === "phone" ? (
+								<View>
+									<Text style={[styles.label, { color: c.body }]}>
+										{t("team.phoneLabel")}
+									</Text>
+									<Controller
+										control={form.control}
+										name="phone"
+										render={({ field }) => (
+											<TextInput
+												value={field.value}
+												onChangeText={field.onChange}
+												onBlur={field.onBlur}
+												keyboardType="phone-pad"
+												placeholder={phoneExample()}
+												placeholderTextColor={c.muted}
+												accessibilityLabel={t("team.phoneLabel")}
+												style={[
+													styles.input,
+													{
+														color: c.text,
+														backgroundColor: c.input,
+														borderColor: c.border,
+													},
+												]}
+											/>
+										)}
 									/>
-								))}
-							</View>
-						</View>
-
-						<Pressable
-							onPress={submit}
-							disabled={!form.formState.isValid || isPending}
-							accessibilityRole="button"
-							accessibilityLabel={t("team.send")}
-							style={[
-								styles.submit,
-								{
-									backgroundColor: c.primary,
-									opacity: !form.formState.isValid || isPending ? 0.5 : 1,
-								},
-							]}
-						>
-							{isPending ? (
-								<ActivityIndicator color="#fff" />
+									{form.formState.errors.phone ? (
+										<Text style={[styles.hint, { color: c.danger }]}>
+											{fieldMessage(form.formState.errors.phone, t, {
+												required: "team.phoneRequired",
+												invalid: "team.phoneInvalid",
+											})}
+										</Text>
+									) : null}
+								</View>
 							) : (
-								<Text style={styles.submitText}>{t("team.send")}</Text>
+								<View>
+									<Text style={[styles.label, { color: c.body }]}>
+										{t("team.emailLabel")}
+									</Text>
+									<Controller
+										control={form.control}
+										name="email"
+										render={({ field }) => (
+											<TextInput
+												value={field.value}
+												onChangeText={field.onChange}
+												onBlur={field.onBlur}
+												keyboardType="email-address"
+												autoCapitalize="none"
+												placeholder="name@example.com"
+												placeholderTextColor={c.muted}
+												accessibilityLabel={t("team.emailLabel")}
+												style={[
+													styles.input,
+													{
+														color: c.text,
+														backgroundColor: c.input,
+														borderColor: c.border,
+													},
+												]}
+											/>
+										)}
+									/>
+									{form.formState.errors.email ? (
+										<Text style={[styles.hint, { color: c.danger }]}>
+											{fieldMessage(form.formState.errors.email, t, {
+												required: "team.emailRequired",
+												invalid: "team.emailInvalid",
+											})}
+										</Text>
+									) : null}
+								</View>
 							)}
-						</Pressable>
-					</>
-				)}
-			</ScrollView>
+
+							<View>
+								<Text style={[styles.label, { color: c.body }]}>
+									{t("team.roleLabel")}
+								</Text>
+								<View style={styles.roleList}>
+									{roles.map((option) => (
+										<RoleCard
+											key={option}
+											role={option}
+											selected={form.watch("role") === option}
+											onPress={() =>
+												form.setValue("role", option, { shouldValidate: true })
+											}
+										/>
+									))}
+								</View>
+							</View>
+
+							<Pressable
+								onPress={submit}
+								disabled={!form.formState.isValid || isPending}
+								accessibilityRole="button"
+								accessibilityLabel={t("team.send")}
+								style={[
+									styles.submit,
+									{
+										backgroundColor: c.primary,
+										opacity: !form.formState.isValid || isPending ? 0.5 : 1,
+									},
+								]}
+							>
+								{isPending ? (
+									<ActivityIndicator color="#fff" />
+								) : (
+									<Text style={styles.submitText}>{t("team.send")}</Text>
+								)}
+							</Pressable>
+						</>
+					)}
+				</ScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

@@ -16,6 +16,7 @@ import { InvoiceSummaryCard } from "@/src/components/billing/InvoiceSummaryCard"
 import { PayInvoiceButton } from "@/src/components/billing/PayInvoiceButton";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useBilling, useInvoiceDocument } from "@/src/hooks/useBilling";
@@ -90,86 +91,91 @@ function InvoiceContent({
 	};
 
 	return (
-		<ScrollView
-			contentContainerStyle={styles.content}
-			refreshControl={
-				<RefreshControl refreshing={billing.isRefetching} onRefresh={refresh} />
-			}
-		>
-			<View
-				style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
+		<ScreenColumn width="reading">
+			<ScrollView
+				contentContainerStyle={styles.content}
+				refreshControl={
+					<RefreshControl
+						refreshing={billing.isRefetching}
+						onRefresh={refresh}
+					/>
+				}
 			>
-				<View style={styles.head}>
-					<Text style={[s.cardTitle, { color: c.text, fontSize: 18 }]}>
-						{number}
-					</Text>
-					<InvoiceStatusBadge status={invoice.status} />
-				</View>
-				<Text style={[s.meta, { color: c.muted }]}>
-					{t("billing.periodRange", {
-						start: formatOrderDate(invoice.periodStart, locale),
-						end: formatOrderDate(invoice.periodEnd, locale),
-					})}
-					{" · "}
-					{t("billing.ordersCount", { count: invoice.ordersCount })}
-				</Text>
-				<Text style={[s.body, { color: c.body }]}>
-					{invoice.paidAt
-						? t("billing.paidAt", {
-								date: formatOrderDate(invoice.paidAt, locale),
-							})
-						: t("billing.dueAt", {
-								date: formatOrderDate(invoice.dueAt, locale),
-							})}
-				</Text>
-				{isPayable(invoice.status) ? (
-					<>
-						<PayInvoiceButton
-							shopId={shopId}
-							invoiceId={invoice.id}
-							onSettled={refresh}
-						/>
-						<Text style={[s.meta, { color: c.muted }]}>
-							{t("billing.payHint")}
-						</Text>
-					</>
-				) : null}
-			</View>
-
-			<InvoiceSummaryCard invoice={invoice} />
-
-			<View
-				style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
-			>
-				<Text style={[s.cardTitle, { color: c.text }]}>
-					{t("billing.document")}
-				</Text>
-				<Text style={[s.meta, { color: c.muted }]}>
-					{t("billing.documentHint")}
-				</Text>
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel={t("billing.openDocument")}
-					accessibilityState={{ busy: document.isFetching }}
-					onPress={openDocument}
-					disabled={document.isFetching}
-					style={[s.button, { backgroundColor: c.primarySoft, marginTop: 6 }]}
+				<View
+					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
 				>
-					{document.isFetching ? (
-						<ActivityIndicator color={c.primary} />
-					) : (
-						<Ionicons
-							name="document-text-outline"
-							size={18}
-							color={c.primary}
-						/>
-					)}
-					<Text style={[s.buttonText, { color: c.primary }]}>
-						{t("billing.openDocument")}
+					<View style={styles.head}>
+						<Text style={[s.cardTitle, { color: c.text, fontSize: 18 }]}>
+							{number}
+						</Text>
+						<InvoiceStatusBadge status={invoice.status} />
+					</View>
+					<Text style={[s.meta, { color: c.muted }]}>
+						{t("billing.periodRange", {
+							start: formatOrderDate(invoice.periodStart, locale),
+							end: formatOrderDate(invoice.periodEnd, locale),
+						})}
+						{" · "}
+						{t("billing.ordersCount", { count: invoice.ordersCount })}
 					</Text>
-				</Pressable>
-			</View>
-		</ScrollView>
+					<Text style={[s.body, { color: c.body }]}>
+						{invoice.paidAt
+							? t("billing.paidAt", {
+									date: formatOrderDate(invoice.paidAt, locale),
+								})
+							: t("billing.dueAt", {
+									date: formatOrderDate(invoice.dueAt, locale),
+								})}
+					</Text>
+					{isPayable(invoice.status) ? (
+						<>
+							<PayInvoiceButton
+								shopId={shopId}
+								invoiceId={invoice.id}
+								onSettled={refresh}
+							/>
+							<Text style={[s.meta, { color: c.muted }]}>
+								{t("billing.payHint")}
+							</Text>
+						</>
+					) : null}
+				</View>
+
+				<InvoiceSummaryCard invoice={invoice} />
+
+				<View
+					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
+				>
+					<Text style={[s.cardTitle, { color: c.text }]}>
+						{t("billing.document")}
+					</Text>
+					<Text style={[s.meta, { color: c.muted }]}>
+						{t("billing.documentHint")}
+					</Text>
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel={t("billing.openDocument")}
+						accessibilityState={{ busy: document.isFetching }}
+						onPress={openDocument}
+						disabled={document.isFetching}
+						style={[s.button, { backgroundColor: c.primarySoft, marginTop: 6 }]}
+					>
+						{document.isFetching ? (
+							<ActivityIndicator color={c.primary} />
+						) : (
+							<Ionicons
+								name="document-text-outline"
+								size={18}
+								color={c.primary}
+							/>
+						)}
+						<Text style={[s.buttonText, { color: c.primary }]}>
+							{t("billing.openDocument")}
+						</Text>
+					</Pressable>
+				</View>
+			</ScrollView>
+		</ScreenColumn>
 	);
 }
 

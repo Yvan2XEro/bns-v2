@@ -9,6 +9,7 @@ import {
 	GROUP_LABEL,
 } from "@/src/components/delivery/CourierRows";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCourierShipments } from "@/src/hooks/useRiderShipments";
@@ -43,37 +44,39 @@ export default function RiderHomeScreen() {
 					onCta={() => query.refetch()}
 				/>
 			) : (
-				<FlashList
-					data={items}
-					keyExtractor={(item) => item.key}
-					getItemType={(item) => item.kind}
-					refreshing={query.isRefetching}
-					onRefresh={() => void query.refetch()}
-					contentContainerStyle={styles.content}
-					ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-					ListEmptyComponent={
-						<Text style={{ color: c.muted }}>
-							{t("shipmentPanel.riderEmpty")}
-						</Text>
-					}
-					renderItem={({ item }) =>
-						item.kind === "header" ? (
-							<Text style={[styles.header, { color: c.text }]}>
-								{t(GROUP_LABEL[item.group])}
+				<ScreenColumn width="wide">
+					<FlashList
+						data={items}
+						keyExtractor={(item) => item.key}
+						getItemType={(item) => item.kind}
+						refreshing={query.isRefetching}
+						onRefresh={() => void query.refetch()}
+						contentContainerStyle={styles.content}
+						ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+						ListEmptyComponent={
+							<Text style={{ color: c.muted }}>
+								{t("shipmentPanel.riderEmpty")}
 							</Text>
-						) : (
-							<CourierRow
-								row={item.row}
-								onPress={() =>
-									router.push({
-										pathname: "/rider/shipment/[id]",
-										params: { id: item.row.id },
-									})
-								}
-							/>
-						)
-					}
-				/>
+						}
+						renderItem={({ item }) =>
+							item.kind === "header" ? (
+								<Text style={[styles.header, { color: c.text }]}>
+									{t(GROUP_LABEL[item.group])}
+								</Text>
+							) : (
+								<CourierRow
+									row={item.row}
+									onPress={() =>
+										router.push({
+											pathname: "/rider/shipment/[id]",
+											params: { id: item.row.id },
+										})
+									}
+								/>
+							)
+						}
+					/>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

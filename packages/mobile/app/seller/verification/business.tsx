@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { SegmentedControl } from "@/src/components/ui/SegmentedControl";
@@ -220,58 +221,60 @@ export default function BusinessVerificationScreen() {
 							onSaved={() => patch({ step: "documents" })}
 						/>
 					) : (
-						<ScrollView contentContainerStyle={styles.scroll}>
-							<DocumentSlots
-								kinds={kinds}
-								documents={documents}
-								uploadingKind={state.uploadingKind}
-								deletingId={state.deletingId}
-								uploadError={state.actionError}
-								onUpload={(kind, files) => void handleUpload(kind, files)}
-								onDelete={handleDelete}
-							/>
+						<ScreenColumn width="reading">
+							<ScrollView contentContainerStyle={styles.scroll}>
+								<DocumentSlots
+									kinds={kinds}
+									documents={documents}
+									uploadingKind={state.uploadingKind}
+									deletingId={state.deletingId}
+									uploadError={state.actionError}
+									onUpload={(kind, files) => void handleUpload(kind, files)}
+									onDelete={handleDelete}
+								/>
 
-							<View style={styles.footer}>
-								{!ready && missing.length > 0 ? (
-									<Text style={[styles.missing, { color: c.muted }]}>
-										{t("verification.documents.missing", {
-											kinds: missing
-												.map((kind) => t(`verification.documentKind.${kind}`))
-												.join(", "),
-										})}
-									</Text>
-								) : null}
-								{submit.isError ? (
-									<Text
-										role="alert"
-										style={[styles.submitError, { color: c.danger }]}
-									>
-										{resolveErrorMessage(submit.error, t)}
-									</Text>
-								) : null}
-								<Pressable
-									onPress={() => submit.mutate()}
-									disabled={!ready || submit.isPending}
-									accessibilityRole="button"
-									accessibilityLabel={t("verification.documents.submit")}
-									style={[
-										styles.submit,
-										{
-											backgroundColor: c.primary,
-											opacity: !ready || submit.isPending ? 0.5 : 1,
-										},
-									]}
-								>
-									{submit.isPending ? (
-										<ActivityIndicator color="#fff" />
-									) : (
-										<Text style={styles.submitText}>
-											{t("verification.documents.submit")}
+								<View style={styles.footer}>
+									{!ready && missing.length > 0 ? (
+										<Text style={[styles.missing, { color: c.muted }]}>
+											{t("verification.documents.missing", {
+												kinds: missing
+													.map((kind) => t(`verification.documentKind.${kind}`))
+													.join(", "),
+											})}
 										</Text>
-									)}
-								</Pressable>
-							</View>
-						</ScrollView>
+									) : null}
+									{submit.isError ? (
+										<Text
+											role="alert"
+											style={[styles.submitError, { color: c.danger }]}
+										>
+											{resolveErrorMessage(submit.error, t)}
+										</Text>
+									) : null}
+									<Pressable
+										onPress={() => submit.mutate()}
+										disabled={!ready || submit.isPending}
+										accessibilityRole="button"
+										accessibilityLabel={t("verification.documents.submit")}
+										style={[
+											styles.submit,
+											{
+												backgroundColor: c.primary,
+												opacity: !ready || submit.isPending ? 0.5 : 1,
+											},
+										]}
+									>
+										{submit.isPending ? (
+											<ActivityIndicator color="#fff" />
+										) : (
+											<Text style={styles.submitText}>
+												{t("verification.documents.submit")}
+											</Text>
+										)}
+									</Pressable>
+								</View>
+							</ScrollView>
+						</ScreenColumn>
 					)}
 				</>
 			) : null}

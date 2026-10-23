@@ -15,6 +15,7 @@ import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
 import { CodeEntry } from "@/src/components/checkout/CodeEntry";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -77,98 +78,106 @@ export default function CheckoutConfirmationScreen() {
 				/>
 			) : (
 				<>
-					<ScrollView contentContainerStyle={styles.scroll}>
-						<View style={styles.hero}>
-							<View style={[styles.halo, { backgroundColor: `${heroSoft}80` }]}>
-								<View style={[styles.haloInner, { backgroundColor: heroSoft }]}>
-									<Ionicons
-										name={outcome === "confirmed" ? "checkmark" : "call"}
-										size={34}
-										color={heroColor}
-									/>
+					<ScreenColumn width="reading">
+						<ScrollView contentContainerStyle={styles.scroll}>
+							<View style={styles.hero}>
+								<View
+									style={[styles.halo, { backgroundColor: `${heroSoft}80` }]}
+								>
+									<View
+										style={[styles.haloInner, { backgroundColor: heroSoft }]}
+									>
+										<Ionicons
+											name={outcome === "confirmed" ? "checkmark" : "call"}
+											size={34}
+											color={heroColor}
+										/>
+									</View>
 								</View>
+								<Text style={[styles.title, { color: c.text }]}>
+									{t("checkout.orderPlaced")}
+								</Text>
+								<Text style={[styles.number, { color: c.body }]}>
+									{t("checkout.orderNumberLine", { number: order.orderNumber })}
+								</Text>
 							</View>
-							<Text style={[styles.title, { color: c.text }]}>
-								{t("checkout.orderPlaced")}
-							</Text>
-							<Text style={[styles.number, { color: c.body }]}>
-								{t("checkout.orderNumberLine", { number: order.orderNumber })}
-							</Text>
-						</View>
-						<View
-							style={[
-								styles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<InfoRow
-								icon={
-									outcome === "confirmed"
-										? "checkmark-circle-outline"
-										: "call-outline"
-								}
-								tone={outcome === "confirmed" ? "success" : "primary"}
-								title={
-									outcome === "confirmed"
-										? t("checkout.confirmed")
-										: outcome === "seller_call"
-											? t("checkout.confirmationNeededCall")
-											: t("checkout.confirmationNeededCode")
-								}
-								body={
-									outcome === "confirmed"
-										? order.confirmation.method === "verified_phone"
-											? t("checkout.autoConfirmedBody")
-											: t("checkout.confirmedBody")
-										: outcome === "seller_call"
-											? t("checkout.sellerCallBody")
-											: t("checkout.codeBody")
-								}
-							/>
-							{outcome === "code" ? (
-								<CodeEntry
-									order={order}
-									onAttempt={() => void purchase.refetch()}
+							<View
+								style={[
+									styles.card,
+									{ backgroundColor: c.card, borderColor: c.border },
+								]}
+							>
+								<InfoRow
+									icon={
+										outcome === "confirmed"
+											? "checkmark-circle-outline"
+											: "call-outline"
+									}
+									tone={outcome === "confirmed" ? "success" : "primary"}
+									title={
+										outcome === "confirmed"
+											? t("checkout.confirmed")
+											: outcome === "seller_call"
+												? t("checkout.confirmationNeededCall")
+												: t("checkout.confirmationNeededCode")
+									}
+									body={
+										outcome === "confirmed"
+											? order.confirmation.method === "verified_phone"
+												? t("checkout.autoConfirmedBody")
+												: t("checkout.confirmedBody")
+											: outcome === "seller_call"
+												? t("checkout.sellerCallBody")
+												: t("checkout.codeBody")
+									}
 								/>
-							) : null}
-							<View style={[styles.divider, { backgroundColor: c.border }]} />
-							<ReceiptRow
-								order={order}
-								total={
-									order.paymentMethod === "cod"
-										? t("checkout.payOnDelivery", { amount: total })
-										: total
-								}
-							/>
-						</View>
-						<Text style={[styles.section, { color: c.text }]}>
-							{t("checkout.nextTitle")}
-						</Text>
-						<NextSteps
-							steps={[
-								{
-									title: t("checkout.nextAccept"),
-									body: t("checkout.nextAcceptBody", { shop: order.shop.name }),
-								},
-								order.delivery.method === "pickup"
-									? {
-											title: t("checkout.nextPickup"),
-											body: t("checkout.nextPickupBody"),
-										}
-									: {
-											title: t("checkout.nextDelivery", { place }),
-											body: t("checkout.nextDeliveryBody"),
-										},
-								{
-									title: t("checkout.nextHandover"),
-									body:
+								{outcome === "code" ? (
+									<CodeEntry
+										order={order}
+										onAttempt={() => void purchase.refetch()}
+									/>
+								) : null}
+								<View style={[styles.divider, { backgroundColor: c.border }]} />
+								<ReceiptRow
+									order={order}
+									total={
 										order.paymentMethod === "cod"
-											? t("checkout.nextHandoverCodBody", { amount: total })
-											: t("checkout.nextHandoverPaidBody"),
-								},
-							]}
-						/>
-					</ScrollView>
+											? t("checkout.payOnDelivery", { amount: total })
+											: total
+									}
+								/>
+							</View>
+							<Text style={[styles.section, { color: c.text }]}>
+								{t("checkout.nextTitle")}
+							</Text>
+							<NextSteps
+								steps={[
+									{
+										title: t("checkout.nextAccept"),
+										body: t("checkout.nextAcceptBody", {
+											shop: order.shop.name,
+										}),
+									},
+									order.delivery.method === "pickup"
+										? {
+												title: t("checkout.nextPickup"),
+												body: t("checkout.nextPickupBody"),
+											}
+										: {
+												title: t("checkout.nextDelivery", { place }),
+												body: t("checkout.nextDeliveryBody"),
+											},
+									{
+										title: t("checkout.nextHandover"),
+										body:
+											order.paymentMethod === "cod"
+												? t("checkout.nextHandoverCodBody", { amount: total })
+												: t("checkout.nextHandoverPaidBody"),
+									},
+								]}
+							/>
+						</ScrollView>
+					</ScreenColumn>
 					<View
 						style={[
 							styles.bar,

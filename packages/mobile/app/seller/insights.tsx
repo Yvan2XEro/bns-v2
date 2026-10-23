@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import {
 	InsightProductRow,
@@ -102,24 +103,26 @@ export default function SellerInsightsScreen() {
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
 			<SellerHeader title={t("sellerInsights.title")} subtitle={shop.name} />
-			<FlashList
-				data={view.topProducts}
-				keyExtractor={(item) => item.productId}
-				contentContainerStyle={styles.list}
-				ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-				ListHeaderComponent={
-					<InsightsHeader view={view} period={period} onPeriod={setPeriod} />
-				}
-				ListEmptyComponent={
-					<Text style={[styles.emptyProducts, { color: c.muted }]}>
-						{t("sellerInsights.noProducts")}
-					</Text>
-				}
-				ListFooterComponent={
-					<InsightsFooter view={view} onAction={handleAction} />
-				}
-				renderItem={({ item }) => <InsightProductRow product={item} />}
-			/>
+			<ScreenColumn width="wide">
+				<FlashList
+					data={view.topProducts}
+					keyExtractor={(item) => item.productId}
+					contentContainerStyle={styles.list}
+					ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+					ListHeaderComponent={
+						<InsightsHeader view={view} period={period} onPeriod={setPeriod} />
+					}
+					ListEmptyComponent={
+						<Text style={[styles.emptyProducts, { color: c.muted }]}>
+							{t("sellerInsights.noProducts")}
+						</Text>
+					}
+					ListFooterComponent={
+						<InsightsFooter view={view} onAction={handleAction} />
+					}
+					renderItem={({ item }) => <InsightProductRow product={item} />}
+				/>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

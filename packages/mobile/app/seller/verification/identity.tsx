@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { ConsentNotice } from "@/src/components/verification/ConsentNotice";
@@ -91,50 +92,55 @@ export default function IdentityConsentScreen() {
 			) : null}
 
 			{!isLoading && !isError && query.data && canProceed ? (
-				<ScrollView
-					contentContainerStyle={styles.content}
-					keyboardShouldPersistTaps="handled"
-				>
-					{!query.data.enabled ? (
-						<View style={[styles.banner, { backgroundColor: c.warningSoft }]}>
-							<Text style={[styles.bannerText, { color: c.warningText }]}>
-								{t("apiErrors.verification.disabled")}
-							</Text>
-						</View>
-					) : null}
-
-					<Controller
-						control={form.control}
-						name="accepted"
-						render={({ field }) => (
-							<ConsentNotice
-								checked={field.value}
-								onToggle={field.onChange}
-								error={checkboxError}
-							/>
-						)}
-					/>
-
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={t("verification.identity.consent.start")}
-						accessibilityState={{ disabled: startDisabled }}
-						disabled={startDisabled}
-						onPress={onStart}
-						style={[
-							styles.submit,
-							{ backgroundColor: c.primary, opacity: startDisabled ? 0.5 : 1 },
-						]}
+				<ScreenColumn width="reading">
+					<ScrollView
+						contentContainerStyle={styles.content}
+						keyboardShouldPersistTaps="handled"
 					>
-						{isStarting ? (
-							<ActivityIndicator color="#ffffff" />
-						) : (
-							<Text style={styles.submitLabel}>
-								{t("verification.identity.consent.start")}
-							</Text>
-						)}
-					</Pressable>
-				</ScrollView>
+						{!query.data.enabled ? (
+							<View style={[styles.banner, { backgroundColor: c.warningSoft }]}>
+								<Text style={[styles.bannerText, { color: c.warningText }]}>
+									{t("apiErrors.verification.disabled")}
+								</Text>
+							</View>
+						) : null}
+
+						<Controller
+							control={form.control}
+							name="accepted"
+							render={({ field }) => (
+								<ConsentNotice
+									checked={field.value}
+									onToggle={field.onChange}
+									error={checkboxError}
+								/>
+							)}
+						/>
+
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={t("verification.identity.consent.start")}
+							accessibilityState={{ disabled: startDisabled }}
+							disabled={startDisabled}
+							onPress={onStart}
+							style={[
+								styles.submit,
+								{
+									backgroundColor: c.primary,
+									opacity: startDisabled ? 0.5 : 1,
+								},
+							]}
+						>
+							{isStarting ? (
+								<ActivityIndicator color="#ffffff" />
+							) : (
+								<Text style={styles.submitLabel}>
+									{t("verification.identity.consent.start")}
+								</Text>
+							)}
+						</Pressable>
+					</ScrollView>
+				</ScreenColumn>
 			) : null}
 		</SafeAreaView>
 	);

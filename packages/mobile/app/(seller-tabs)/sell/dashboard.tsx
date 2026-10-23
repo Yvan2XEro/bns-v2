@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import {
@@ -197,111 +198,117 @@ function SellerDashboard() {
 			style={[styles.safe, { backgroundColor: HUB_HEADER_BG }]}
 		>
 			<SellerHubBar shop={shop} />
-			<ScrollView
-				style={{ backgroundColor: c.bg }}
-				contentContainerStyle={styles.content}
-				refreshControl={
-					<RefreshControl
-						refreshing={mine.isRefetching}
-						onRefresh={() => {
-							void mine.refetch();
-							void home.query.refetch();
-							if (readsOrders) void orders.refetch();
-							if (readsPayments) void payments.refetch();
-						}}
-						tintColor={c.primary}
-					/>
-				}
-			>
-				<View>
-					<Text style={[styles.hello, { color: c.text }]}>
-						{t("sellerMode.greeting", { name: firstName })}
-					</Text>
-					<Text style={[styles.meta, { color: c.muted }]}>{meta}</Text>
-				</View>
-
-				{tasks.length > 0 ? (
-					<View
-						style={[
-							styles.panel,
-							{ backgroundColor: c.card, borderColor: c.border },
-						]}
-					>
-						{tasks.map((task, index) => {
-							const meta = taskMeta[task.key];
-							return (
-								<Pressable
-									key={task.key}
-									onPress={meta.onPress}
-									accessibilityRole="button"
-									style={({ pressed }) => [
-										styles.task,
-										index > 0 && {
-											borderTopWidth: StyleSheet.hairlineWidth,
-											borderTopColor: c.border,
-										},
-										pressed && { opacity: 0.85 },
-									]}
-								>
-									<View
-										style={[styles.taskIcon, { backgroundColor: meta.soft }]}
-									>
-										<Ionicons name={meta.icon} size={18} color={meta.tint} />
-									</View>
-									<Text
-										style={[styles.taskLabel, { color: c.text }]}
-										numberOfLines={2}
-									>
-										{meta.label(task.count)}
-									</Text>
-									<Ionicons name="chevron-forward" size={16} color={c.muted} />
-								</Pressable>
-							);
-						})}
+			<ScreenColumn width="wide">
+				<ScrollView
+					style={{ backgroundColor: c.bg }}
+					contentContainerStyle={styles.content}
+					refreshControl={
+						<RefreshControl
+							refreshing={mine.isRefetching}
+							onRefresh={() => {
+								void mine.refetch();
+								void home.query.refetch();
+								if (readsOrders) void orders.refetch();
+								if (readsPayments) void payments.refetch();
+							}}
+							tintColor={c.primary}
+						/>
+					}
+				>
+					<View>
+						<Text style={[styles.hello, { color: c.text }]}>
+							{t("sellerMode.greeting", { name: firstName })}
+						</Text>
+						<Text style={[styles.meta, { color: c.muted }]}>{meta}</Text>
 					</View>
-				) : null}
 
-				{model && model.mode !== "hidden" ? (
-					<SellerChecklistCard
-						steps={model.steps}
-						mode={model.mode}
-						onStep={(step) => actions.open(stepTarget(step))}
-						onDismiss={home.dismissChecklist}
-					/>
-				) : null}
+					{tasks.length > 0 ? (
+						<View
+							style={[
+								styles.panel,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							{tasks.map((task, index) => {
+								const meta = taskMeta[task.key];
+								return (
+									<Pressable
+										key={task.key}
+										onPress={meta.onPress}
+										accessibilityRole="button"
+										style={({ pressed }) => [
+											styles.task,
+											index > 0 && {
+												borderTopWidth: StyleSheet.hairlineWidth,
+												borderTopColor: c.border,
+											},
+											pressed && { opacity: 0.85 },
+										]}
+									>
+										<View
+											style={[styles.taskIcon, { backgroundColor: meta.soft }]}
+										>
+											<Ionicons name={meta.icon} size={18} color={meta.tint} />
+										</View>
+										<Text
+											style={[styles.taskLabel, { color: c.text }]}
+											numberOfLines={2}
+										>
+											{meta.label(task.count)}
+										</Text>
+										<Ionicons
+											name="chevron-forward"
+											size={16}
+											color={c.muted}
+										/>
+									</Pressable>
+								);
+							})}
+						</View>
+					) : null}
 
-				{model && model.actions.length > 0 ? (
-					<SellerLaunchCard
-						actions={model.actions}
-						onAction={(action) =>
-							actions.open(launchTarget(action, model.facts))
-						}
-						onMoreShare={actions.shareAny}
-					/>
-				) : null}
+					{model && model.mode !== "hidden" ? (
+						<SellerChecklistCard
+							steps={model.steps}
+							mode={model.mode}
+							onStep={(step) => actions.open(stepTarget(step))}
+							onDismiss={home.dismissChecklist}
+						/>
+					) : null}
 
-				{model?.tip ? (
-					<SellerTipCard
-						tip={model.tip}
-						onOpen={
-							tipOpen && tipOpen.kind !== "none"
-								? () => actions.open(tipOpen)
-								: null
-						}
-						onDismiss={() => model.tip && home.dismissTip(model.tip)}
-					/>
-				) : null}
+					{model && model.actions.length > 0 ? (
+						<SellerLaunchCard
+							actions={model.actions}
+							onAction={(action) =>
+								actions.open(launchTarget(action, model.facts))
+							}
+							onMoreShare={actions.shareAny}
+						/>
+					) : null}
 
-				{role && stage !== "setup" ? (
-					<SellerInsightsSummary
-						enabled={insightsEnabled}
-						role={role}
-						shopId={shop.id}
-					/>
-				) : null}
+					{model?.tip ? (
+						<SellerTipCard
+							tip={model.tip}
+							onOpen={
+								tipOpen && tipOpen.kind !== "none"
+									? () => actions.open(tipOpen)
+									: null
+							}
+							onDismiss={() => model.tip && home.dismissTip(model.tip)}
+						/>
+					) : null}
 
-				<SellerGuideLink onPress={() => router.push("/seller/guide")} />
-			</ScrollView>
+					{role && stage !== "setup" ? (
+						<SellerInsightsSummary
+							enabled={insightsEnabled}
+							role={role}
+							shopId={shop.id}
+						/>
+					) : null}
+
+					<SellerGuideLink onPress={() => router.push("/seller/guide")} />
+				</ScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

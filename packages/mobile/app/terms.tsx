@@ -1,8 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -39,9 +38,7 @@ export default function TermsScreen() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton color={textColor} fallback="/(tabs)/account" />
 				<Text style={[styles.title, { color: textColor }]}>
 					{t("terms.title")}
 				</Text>

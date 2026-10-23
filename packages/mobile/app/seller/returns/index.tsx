@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -56,17 +57,19 @@ export default function SellerReturnsScreen() {
 					subtitle={t("sellerReturns.emptyBody")}
 				/>
 			) : (
-				<FlashList
-					data={returns.data?.rows ?? []}
-					keyExtractor={(row) => row.id}
-					contentContainerStyle={styles.list}
-					ItemSeparatorComponent={() => <View style={styles.gap} />}
-					renderItem={({ item }) => (
-						<ReturnRow item={item} locale={i18n.language} />
-					)}
-					refreshing={returns.isRefetching}
-					onRefresh={() => void returns.refetch()}
-				/>
+				<ScreenColumn width="wide">
+					<FlashList
+						data={returns.data?.rows ?? []}
+						keyExtractor={(row) => row.id}
+						contentContainerStyle={styles.list}
+						ItemSeparatorComponent={() => <View style={styles.gap} />}
+						renderItem={({ item }) => (
+							<ReturnRow item={item} locale={i18n.language} />
+						)}
+						refreshing={returns.isRefetching}
+						onRefresh={() => void returns.refetch()}
+					/>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

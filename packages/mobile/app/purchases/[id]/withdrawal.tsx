@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { Card, purchaseText } from "@/src/components/purchases/ui";
 import { WithdrawalForm } from "@/src/components/purchases/WithdrawalForm";
 import { WithdrawalWindowNote } from "@/src/components/purchases/WithdrawalWindowNote";
@@ -73,28 +74,30 @@ export default function WithdrawalScreen() {
 					style={styles.safe}
 					behavior={Platform.OS === "ios" ? "padding" : undefined}
 				>
-					<ScrollView
-						contentContainerStyle={styles.content}
-						keyboardShouldPersistTaps="handled"
-					>
-						<Card>
-							<WithdrawalWindowNote order={order} now={now} />
-							{offered ? null : (
-								<Text style={[purchaseText.body, { color: c.body }]}>
-									{t("purchases.withdrawalUnavailable")}
-								</Text>
-							)}
-						</Card>
-						{offered ? (
-							<WithdrawalForm
-								order={order}
-								onSent={() => {
-									showSuccess(t("purchases.withdrawalSent"));
-									router.back();
-								}}
-							/>
-						) : null}
-					</ScrollView>
+					<ScreenColumn width="reading">
+						<ScrollView
+							contentContainerStyle={styles.content}
+							keyboardShouldPersistTaps="handled"
+						>
+							<Card>
+								<WithdrawalWindowNote order={order} now={now} />
+								{offered ? null : (
+									<Text style={[purchaseText.body, { color: c.body }]}>
+										{t("purchases.withdrawalUnavailable")}
+									</Text>
+								)}
+							</Card>
+							{offered ? (
+								<WithdrawalForm
+									order={order}
+									onSent={() => {
+										showSuccess(t("purchases.withdrawalSent"));
+										router.back();
+									}}
+								/>
+							) : null}
+						</ScrollView>
+					</ScreenColumn>
 				</KeyboardAvoidingView>
 			)}
 		</SafeAreaView>

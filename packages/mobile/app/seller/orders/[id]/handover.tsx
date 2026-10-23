@@ -5,6 +5,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { HandoverFallbacks } from "@/src/components/sellerOrders/HandoverFallbacks";
 import { HandoverKeypad } from "@/src/components/sellerOrders/HandoverKeypad";
@@ -118,57 +119,59 @@ export default function HandoverScreen() {
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
 			{header}
-			<ScrollView contentContainerStyle={styles.content}>
-				{state.kind === "locked" ? (
-					<HandoverFallbacks
-						fallbacks={state.fallbacks}
-						orderId={order.id}
-						shopId={shop.shopId}
-						tel={callHref(order.delivery)}
-						onRefresh={refresh}
-						onDeclared={() => router.back()}
-					/>
-				) : (
-					<>
-						<Text style={[styles.body, { color: c.body }]}>
-							{t("sellerOrders.handoverBody")}
-						</Text>
-						<HandoverKeypad
-							code={code}
-							error={state.wrong}
-							disabled={verify.isPending}
-							onKey={onKey}
+			<ScreenColumn width="reading">
+				<ScrollView contentContainerStyle={styles.content}>
+					{state.kind === "locked" ? (
+						<HandoverFallbacks
+							fallbacks={state.fallbacks}
+							orderId={order.id}
+							shopId={shop.shopId}
+							tel={callHref(order.delivery)}
+							onRefresh={refresh}
+							onDeclared={() => router.back()}
 						/>
-						{state.wrong ? (
-							<Text
-								accessibilityRole="alert"
-								style={[styles.center, { color: c.danger }]}
-							>
-								{t("sellerOrders.handoverWrong")}
+					) : (
+						<>
+							<Text style={[styles.body, { color: c.body }]}>
+								{t("sellerOrders.handoverBody")}
 							</Text>
-						) : null}
-						{otherError ? (
-							<Text
-								accessibilityRole="alert"
-								style={[styles.center, { color: c.danger }]}
-							>
-								{otherError}
+							<HandoverKeypad
+								code={code}
+								error={state.wrong}
+								disabled={verify.isPending}
+								onKey={onKey}
+							/>
+							{state.wrong ? (
+								<Text
+									accessibilityRole="alert"
+									style={[styles.center, { color: c.danger }]}
+								>
+									{t("sellerOrders.handoverWrong")}
+								</Text>
+							) : null}
+							{otherError ? (
+								<Text
+									accessibilityRole="alert"
+									style={[styles.center, { color: c.danger }]}
+								>
+									{otherError}
+								</Text>
+							) : null}
+							<Text style={[styles.center, { color: c.muted }]}>
+								{t("sellerOrders.handoverAttemptsLeft", {
+									count: state.attemptsLeft,
+								})}
 							</Text>
-						) : null}
-						<Text style={[styles.center, { color: c.muted }]}>
-							{t("sellerOrders.handoverAttemptsLeft", {
-								count: state.attemptsLeft,
-							})}
-						</Text>
-						<SheetButton
-							label={t("sellerOrders.handoverSubmit")}
-							pending={verify.isPending}
-							disabled={code.length < HANDOVER_CODE_LENGTH}
-							onPress={submit}
-						/>
-					</>
-				)}
-			</ScrollView>
+							<SheetButton
+								label={t("sellerOrders.handoverSubmit")}
+								pending={verify.isPending}
+								disabled={code.length < HANDOVER_CODE_LENGTH}
+								onPress={submit}
+							/>
+						</>
+					)}
+				</ScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

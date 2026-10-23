@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
@@ -92,9 +93,7 @@ export default function ContactScreen() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton color={textColor} fallback="/(tabs)/account" />
 				<Text style={[styles.headerTitle, { color: textColor }]}>
 					{t("contact.title")}
 				</Text>

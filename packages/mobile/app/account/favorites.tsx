@@ -1,10 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
 	ActivityIndicator,
 	FlatList,
-	Pressable,
 	RefreshControl,
 	StyleSheet,
 	Text,
@@ -15,6 +13,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
@@ -45,9 +44,7 @@ export default function FavoritesScreen() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton color={textColor} fallback="/(tabs)/account" />
 				<Text style={[styles.title, { color: textColor }]}>
 					{t("favorites.title")}
 				</Text>

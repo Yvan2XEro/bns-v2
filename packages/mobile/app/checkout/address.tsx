@@ -16,6 +16,7 @@ import {
 	type AddressChoice,
 	useCheckoutFlow,
 } from "@/src/components/checkout/CheckoutProvider";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -119,160 +120,162 @@ function AddressStep() {
 			: null;
 
 	return (
-		<KeyboardAwareScrollView
-			contentContainerStyle={{ padding: 16, gap: 16 }}
-			keyboardShouldPersistTaps="handled"
-		>
-			{addresses.length > 0 && !editing ? (
-				<View
-					style={{
-						flexDirection: "row",
-						gap: 8,
-						backgroundColor: c.card,
-						borderRadius: 12,
-						padding: 4,
-						borderWidth: 1,
-						borderColor: c.border,
-					}}
-				>
-					{(["list", "new"] as const).map((tab) => {
-						const on = current === tab;
-						return (
-							<Pressable
-								key={tab}
-								onPress={() => setMode(tab)}
-								accessibilityRole="tab"
-								accessibilityState={{ selected: on }}
-								style={{
-									flex: 1,
-									minHeight: 44,
-									alignItems: "center",
-									justifyContent: "center",
-									borderRadius: 9,
-									backgroundColor: on ? c.primarySoft : "transparent",
-								}}
-							>
-								<Text
+		<ScreenColumn width="reading">
+			<KeyboardAwareScrollView
+				contentContainerStyle={{ padding: 16, gap: 16 }}
+				keyboardShouldPersistTaps="handled"
+			>
+				{addresses.length > 0 && !editing ? (
+					<View
+						style={{
+							flexDirection: "row",
+							gap: 8,
+							backgroundColor: c.card,
+							borderRadius: 12,
+							padding: 4,
+							borderWidth: 1,
+							borderColor: c.border,
+						}}
+					>
+						{(["list", "new"] as const).map((tab) => {
+							const on = current === tab;
+							return (
+								<Pressable
+									key={tab}
+									onPress={() => setMode(tab)}
+									accessibilityRole="tab"
+									accessibilityState={{ selected: on }}
 									style={{
-										fontFamily: Fonts.bodySemibold,
-										color: on ? c.primary : c.muted,
+										flex: 1,
+										minHeight: 44,
+										alignItems: "center",
+										justifyContent: "center",
+										borderRadius: 9,
+										backgroundColor: on ? c.primarySoft : "transparent",
 									}}
 								>
-									{tab === "list"
-										? t("addresses.savedTab")
-										: t("addresses.newTab")}
-								</Text>
-							</Pressable>
-						);
-					})}
-				</View>
-			) : null}
+									<Text
+										style={{
+											fontFamily: Fonts.bodySemibold,
+											color: on ? c.primary : c.muted,
+										}}
+									>
+										{tab === "list"
+											? t("addresses.savedTab")
+											: t("addresses.newTab")}
+									</Text>
+								</Pressable>
+							);
+						})}
+					</View>
+				) : null}
 
-			{editing ? (
-				<AddressEditor
-					key={editing.id}
-					initial={savedAddressToInput(editing)}
-					launchCities={launchCities}
-					servedCity={servedCity}
-					method={method}
-					rejectedField={addressFieldOf(save.error) ?? rejected}
-					formError={saveError}
-					extra="book"
-					initialLabel={editing.label ?? ""}
-					initialDefault={editing.isDefault}
-					submitLabel={t("addresses.saveAndUse")}
-					pending={save.isPending}
-					onCancel={() => setMode("list")}
-					onSubmit={(address, meta) =>
-						save.mutate(
-							{
-								id: editing.id,
-								body: savedAddressBody(address, {
-									label: meta.label,
-									isDefault: meta.isDefault,
-								}),
-							},
-							{
-								onSuccess: (updated) => {
-									setMode(null);
-									setPicked(updated.id);
-									proceed(savedAddressToInput(updated), {
-										savedId: updated.id,
-										save: null,
-									});
+				{editing ? (
+					<AddressEditor
+						key={editing.id}
+						initial={savedAddressToInput(editing)}
+						launchCities={launchCities}
+						servedCity={servedCity}
+						method={method}
+						rejectedField={addressFieldOf(save.error) ?? rejected}
+						formError={saveError}
+						extra="book"
+						initialLabel={editing.label ?? ""}
+						initialDefault={editing.isDefault}
+						submitLabel={t("addresses.saveAndUse")}
+						pending={save.isPending}
+						onCancel={() => setMode("list")}
+						onSubmit={(address, meta) =>
+							save.mutate(
+								{
+									id: editing.id,
+									body: savedAddressBody(address, {
+										label: meta.label,
+										isDefault: meta.isDefault,
+									}),
 								},
-							},
-						)
-					}
-				/>
-			) : current === "list" ? (
-				<View style={{ gap: 12 }}>
-					{addresses.map((address) => (
-						<SavedAddressCard
-							key={address.id}
-							address={address}
-							cityLabel={cityLabel(address.city)}
-							selected={address.id === selectedId}
-							disabledReason={
-								usable(address)
-									? null
-									: servedCity !== null && address.city !== servedCity
-										? t("addresses.otherCity")
-										: t("addresses.incomplete")
-							}
-							onSelect={() => setPicked(address.id)}
-							actions={
-								<>
-									<CardAction
-										label={t("addresses.edit")}
-										onPress={() => setMode({ edit: address.id })}
-									/>
-									<CardAction
-										label={t("addresses.delete")}
-										tone="danger"
-										disabled={remove.isPending}
-										onPress={() =>
-											showConfirm(
-												t("addresses.deleteTitle"),
-												t("addresses.deleteConfirm"),
-												() => remove.mutate(address.id),
-											)
-										}
-									/>
-								</>
-							}
-						/>
-					))}
-					<CheckoutButton
-						label={t("addresses.useThisAddress")}
-						disabled={!selected}
-						onPress={() =>
-							selected &&
-							proceed(savedAddressToInput(selected), {
-								savedId: selected.id,
-								save: null,
-							})
+								{
+									onSuccess: (updated) => {
+										setMode(null);
+										setPicked(updated.id);
+										proceed(savedAddressToInput(updated), {
+											savedId: updated.id,
+											save: null,
+										});
+									},
+								},
+							)
 						}
 					/>
-				</View>
-			) : (
-				<AddressEditor
-					initial={state.address}
-					launchCities={launchCities}
-					servedCity={servedCity}
-					method={method}
-					rejectedField={rejected}
-					extra={full ? undefined : "save"}
-					submitLabel={t("checkout.continue")}
-					onSubmit={(address, meta) => {
-						setMode(null);
-						proceed(address, {
-							savedId: null,
-							save: meta.save ? { label: meta.label } : null,
-						});
-					}}
-				/>
-			)}
-		</KeyboardAwareScrollView>
+				) : current === "list" ? (
+					<View style={{ gap: 12 }}>
+						{addresses.map((address) => (
+							<SavedAddressCard
+								key={address.id}
+								address={address}
+								cityLabel={cityLabel(address.city)}
+								selected={address.id === selectedId}
+								disabledReason={
+									usable(address)
+										? null
+										: servedCity !== null && address.city !== servedCity
+											? t("addresses.otherCity")
+											: t("addresses.incomplete")
+								}
+								onSelect={() => setPicked(address.id)}
+								actions={
+									<>
+										<CardAction
+											label={t("addresses.edit")}
+											onPress={() => setMode({ edit: address.id })}
+										/>
+										<CardAction
+											label={t("addresses.delete")}
+											tone="danger"
+											disabled={remove.isPending}
+											onPress={() =>
+												showConfirm(
+													t("addresses.deleteTitle"),
+													t("addresses.deleteConfirm"),
+													() => remove.mutate(address.id),
+												)
+											}
+										/>
+									</>
+								}
+							/>
+						))}
+						<CheckoutButton
+							label={t("addresses.useThisAddress")}
+							disabled={!selected}
+							onPress={() =>
+								selected &&
+								proceed(savedAddressToInput(selected), {
+									savedId: selected.id,
+									save: null,
+								})
+							}
+						/>
+					</View>
+				) : (
+					<AddressEditor
+						initial={state.address}
+						launchCities={launchCities}
+						servedCity={servedCity}
+						method={method}
+						rejectedField={rejected}
+						extra={full ? undefined : "save"}
+						submitLabel={t("checkout.continue")}
+						onSubmit={(address, meta) => {
+							setMode(null);
+							proceed(address, {
+								savedId: null,
+								save: meta.save ? { label: meta.label } : null,
+							});
+						}}
+					/>
+				)}
+			</KeyboardAwareScrollView>
+		</ScreenColumn>
 	);
 }

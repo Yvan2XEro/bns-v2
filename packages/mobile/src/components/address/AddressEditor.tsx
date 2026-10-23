@@ -6,6 +6,7 @@ import { AddressTextField } from "@/src/components/checkout/AddressTextField";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
 import { ChoiceChips } from "@/src/components/checkout/ChoiceChips";
 import { LocationField } from "@/src/components/checkout/LocationField";
+import { FormRow } from "@/src/components/layout/FormRow";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAuth } from "@/src/lib/auth";
@@ -139,24 +140,26 @@ export function AddressEditor({
 	return (
 		<View style={{ gap: 16 }}>
 			{extra === "book" ? labelInput : null}
-			<AddressTextField
-				control={control}
-				name="recipientName"
-				label={t("checkout.recipientName")}
-				autoComplete="name"
-				error={error("recipientName")}
-			/>
-			<AddressTextField
-				control={control}
-				name="phone"
-				label={t("checkout.phone")}
-				hint={t("checkout.phoneHint")}
-				placeholder={phoneExample()}
-				keyboardType="phone-pad"
-				autoComplete="tel"
-				transform={phoneFromTyping}
-				error={error("phone")}
-			/>
+			<FormRow>
+				<AddressTextField
+					control={control}
+					name="recipientName"
+					label={t("checkout.recipientName")}
+					autoComplete="name"
+					error={error("recipientName")}
+				/>
+				<AddressTextField
+					control={control}
+					name="phone"
+					label={t("checkout.phone")}
+					hint={t("checkout.phoneHint")}
+					placeholder={phoneExample()}
+					keyboardType="phone-pad"
+					autoComplete="tel"
+					transform={phoneFromTyping}
+					error={error("phone")}
+				/>
+			</FormRow>
 			<PlaceSuggestField
 				onPick={(place) => {
 					const patch = addressPatchFromPlace(

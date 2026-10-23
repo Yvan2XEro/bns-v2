@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { ActivityRow } from "@/src/components/shop/team/ActivityRow";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -146,34 +147,36 @@ export default function ShopActivityScreen() {
 							subtitle={t("shopActivity.emptyBody")}
 						/>
 					) : (
-						<FlashList
-							data={rows}
-							keyExtractor={(row) => row.id}
-							contentContainerStyle={styles.list}
-							ItemSeparatorComponent={() => <View style={styles.separator} />}
-							renderItem={({ item }) => (
-								<ActivityRow entry={item} role={role} />
-							)}
-							onEndReached={() => {
-								if (activity.hasNextPage) activity.fetchNextPage();
-							}}
-							onEndReachedThreshold={0.5}
-							refreshControl={
-								<RefreshControl
-									refreshing={activity.isRefetching}
-									onRefresh={() => activity.refetch()}
-									tintColor={c.primary}
-								/>
-							}
-							ListFooterComponent={
-								activity.isFetchingNextPage ? (
-									<ActivityIndicator
-										color={c.primary}
-										style={styles.footerSpinner}
+						<ScreenColumn width="wide">
+							<FlashList
+								data={rows}
+								keyExtractor={(row) => row.id}
+								contentContainerStyle={styles.list}
+								ItemSeparatorComponent={() => <View style={styles.separator} />}
+								renderItem={({ item }) => (
+									<ActivityRow entry={item} role={role} />
+								)}
+								onEndReached={() => {
+									if (activity.hasNextPage) activity.fetchNextPage();
+								}}
+								onEndReachedThreshold={0.5}
+								refreshControl={
+									<RefreshControl
+										refreshing={activity.isRefetching}
+										onRefresh={() => activity.refetch()}
+										tintColor={c.primary}
 									/>
-								) : null
-							}
-						/>
+								}
+								ListFooterComponent={
+									activity.isFetchingNextPage ? (
+										<ActivityIndicator
+											color={c.primary}
+											style={styles.footerSpinner}
+										/>
+									) : null
+								}
+							/>
+						</ScreenColumn>
 					)}
 				</>
 			)}

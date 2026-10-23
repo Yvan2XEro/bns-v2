@@ -17,6 +17,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -174,9 +175,7 @@ export default function EditProfileScreen() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton color={textColor} fallback="/(tabs)/account" />
 				<Text style={[styles.headerTitle, { color: textColor }]}>
 					{t("profile.editProfileTitle")}
 				</Text>

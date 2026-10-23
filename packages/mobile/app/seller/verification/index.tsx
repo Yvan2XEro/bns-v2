@@ -15,6 +15,7 @@ import {
 } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { LevelLadder } from "@/src/components/verification/LevelLadder";
@@ -113,55 +114,57 @@ export default function VerificationHubScreen() {
 			) : null}
 
 			{!isLoading && !isError && query.data ? (
-				<ScrollView
-					contentContainerStyle={[
-						styles.content,
-						footer ? styles.contentWithFooter : null,
-					]}
-				>
-					{!query.data.enabled ? (
-						<View
-							accessibilityRole="alert"
-							style={[styles.banner, { backgroundColor: c.warningSoft }]}
-						>
-							<Ionicons
-								name="information-circle"
-								size={18}
-								color={c.warningText}
+				<ScreenColumn width="reading">
+					<ScrollView
+						contentContainerStyle={[
+							styles.content,
+							footer ? styles.contentWithFooter : null,
+						]}
+					>
+						{!query.data.enabled ? (
+							<View
+								accessibilityRole="alert"
+								style={[styles.banner, { backgroundColor: c.warningSoft }]}
+							>
+								<Ionicons
+									name="information-circle"
+									size={18}
+									color={c.warningText}
+								/>
+								<Text style={[styles.bannerText, { color: c.warningText }]}>
+									{t("verification.hub.disabledBanner")}
+								</Text>
+							</View>
+						) : null}
+
+						<VerificationStatusCard view={query.data} />
+						<LevelLadder
+							capabilities={query.data.capabilities}
+							requirements={query.data.nextLevel?.requirements}
+						/>
+
+						{showsLevelSection(query.data, 2) ? (
+							<LevelSection
+								view={query.data}
+								level={2}
+								isOwner={role === "owner"}
+								pendingLevel={state.pendingLevel}
+								onStart={onStart}
+								actionInFooter={footer?.level === 2}
 							/>
-							<Text style={[styles.bannerText, { color: c.warningText }]}>
-								{t("verification.hub.disabledBanner")}
-							</Text>
-						</View>
-					) : null}
-
-					<VerificationStatusCard view={query.data} />
-					<LevelLadder
-						capabilities={query.data.capabilities}
-						requirements={query.data.nextLevel?.requirements}
-					/>
-
-					{showsLevelSection(query.data, 2) ? (
-						<LevelSection
-							view={query.data}
-							level={2}
-							isOwner={role === "owner"}
-							pendingLevel={state.pendingLevel}
-							onStart={onStart}
-							actionInFooter={footer?.level === 2}
-						/>
-					) : null}
-					{showsLevelSection(query.data, 3) ? (
-						<LevelSection
-							view={query.data}
-							level={3}
-							isOwner={role === "owner"}
-							pendingLevel={state.pendingLevel}
-							onStart={onStart}
-							actionInFooter={footer?.level === 3}
-						/>
-					) : null}
-				</ScrollView>
+						) : null}
+						{showsLevelSection(query.data, 3) ? (
+							<LevelSection
+								view={query.data}
+								level={3}
+								isOwner={role === "owner"}
+								pendingLevel={state.pendingLevel}
+								onStart={onStart}
+								actionInFooter={footer?.level === 3}
+							/>
+						) : null}
+					</ScrollView>
+				</ScreenColumn>
 			) : null}
 
 			{!isLoading && !isError && footer ? (

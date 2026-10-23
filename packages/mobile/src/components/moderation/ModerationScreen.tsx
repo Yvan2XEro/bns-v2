@@ -1,10 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useIsModerator } from "@/src/hooks/useModeration";
 import { useTranslation } from "@/src/lib/i18n";
 import { useModerationTheme } from "./theme";
@@ -38,17 +38,11 @@ export function ModerationScreen({
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: c.border }]}>
-				<Pressable
-					onPress={() =>
-						router.canGoBack()
-							? router.back()
-							: router.replace("/(tabs)/account")
-					}
+				<HeaderBackButton
+					color={c.text}
+					fallback="/(tabs)/account"
 					style={styles.backBtn}
-					hitSlop={8}
-				>
-					<Ionicons name="arrow-back" size={22} color={c.text} />
-				</Pressable>
+				/>
 				<View style={styles.headerText}>
 					<Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
 						{title}

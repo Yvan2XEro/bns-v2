@@ -18,6 +18,7 @@ import {
 } from "@/src/components/address/SavedAddressCard";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -87,128 +88,130 @@ export default function AddressesScreen() {
 						: t("addresses.title")}
 				</Text>
 			</View>
-			<KeyboardAwareScrollView
-				contentContainerStyle={{ padding: 16, gap: 12 }}
-				keyboardShouldPersistTaps="handled"
-			>
-				{list.isPending ? (
-					<ActivityIndicator style={{ marginTop: 32 }} color={c.primary} />
-				) : null}
-				{list.isError ? (
-					<View style={{ gap: 12 }}>
-						<Text style={{ color: c.dangerText }}>
-							{t("addresses.loadError")}
-						</Text>
-						<CheckoutButton
-							label={t("common.retry")}
-							variant="outline"
-							onPress={() => void list.refetch()}
-						/>
-					</View>
-				) : null}
-
-				{editing ? (
-					<AddressEditor
-						key={editing.id ?? "new"}
-						initial={
-							editingAddress ? savedAddressToInput(editingAddress) : null
-						}
-						launchCities={launchCities}
-						servedCity={null}
-						method="seller_delivery"
-						rejectedField={addressFieldOf(save.error)}
-						formError={saveError}
-						extra="book"
-						initialLabel={editingAddress?.label ?? ""}
-						initialDefault={editingAddress?.isDefault ?? false}
-						submitLabel={t("addresses.save")}
-						pending={save.isPending}
-						onCancel={() => setEditing(null)}
-						onSubmit={(address, meta) =>
-							save.mutate(
-								{
-									id: editingAddress?.id ?? null,
-									body: savedAddressBody(address, {
-										label: meta.label,
-										isDefault: meta.isDefault,
-									}),
-								},
-								{ onSuccess: () => setEditing(null) },
-							)
-						}
-					/>
-				) : list.data ? (
-					<>
-						<Text style={[styles.subtitle, { color: c.muted }]}>
-							{t("addresses.subtitle")}
-						</Text>
-						{addresses.length === 0 ? (
-							<EmptyState
-								icon="location-outline"
-								title={t("addresses.emptyTitle")}
-								subtitle={t("addresses.emptyBody")}
-							/>
-						) : (
-							<Text style={[styles.subtitle, { color: c.muted }]}>
-								{t("addresses.count", {
-									count: addresses.length,
-									limit: list.data.limit,
-								})}
-							</Text>
-						)}
-						{actionError ? (
+			<ScreenColumn width="reading">
+				<KeyboardAwareScrollView
+					contentContainerStyle={{ padding: 16, gap: 12 }}
+					keyboardShouldPersistTaps="handled"
+				>
+					{list.isPending ? (
+						<ActivityIndicator style={{ marginTop: 32 }} color={c.primary} />
+					) : null}
+					{list.isError ? (
+						<View style={{ gap: 12 }}>
 							<Text style={{ color: c.dangerText }}>
-								{resolveErrorMessage(actionError, t)}
+								{t("addresses.loadError")}
 							</Text>
-						) : null}
-						{addresses.map((address) => (
-							<SavedAddressCard
-								key={address.id}
-								address={address}
-								cityLabel={cityLabel(address.city)}
-								actions={
-									<>
-										{!address.isDefault ? (
-											<CardAction
-												label={t("addresses.setDefault")}
-												disabled={makeDefault.isPending}
-												onPress={() => makeDefault.mutate(address.id)}
-											/>
-										) : null}
-										<CardAction
-											label={t("addresses.edit")}
-											onPress={() => startEditing(address.id)}
-										/>
-										<CardAction
-											label={t("addresses.delete")}
-											tone="danger"
-											disabled={remove.isPending}
-											onPress={() =>
-												showConfirm(
-													t("addresses.deleteTitle"),
-													t("addresses.deleteConfirm"),
-													() => remove.mutate(address.id),
-												)
-											}
-										/>
-									</>
-								}
-							/>
-						))}
-						{full ? (
-							<Text style={[styles.subtitle, { color: c.muted }]}>
-								{t("addresses.limitReached")}
-							</Text>
-						) : (
 							<CheckoutButton
-								label={t("addresses.add")}
-								icon="add"
-								onPress={() => startEditing(null)}
+								label={t("common.retry")}
+								variant="outline"
+								onPress={() => void list.refetch()}
 							/>
-						)}
-					</>
-				) : null}
-			</KeyboardAwareScrollView>
+						</View>
+					) : null}
+
+					{editing ? (
+						<AddressEditor
+							key={editing.id ?? "new"}
+							initial={
+								editingAddress ? savedAddressToInput(editingAddress) : null
+							}
+							launchCities={launchCities}
+							servedCity={null}
+							method="seller_delivery"
+							rejectedField={addressFieldOf(save.error)}
+							formError={saveError}
+							extra="book"
+							initialLabel={editingAddress?.label ?? ""}
+							initialDefault={editingAddress?.isDefault ?? false}
+							submitLabel={t("addresses.save")}
+							pending={save.isPending}
+							onCancel={() => setEditing(null)}
+							onSubmit={(address, meta) =>
+								save.mutate(
+									{
+										id: editingAddress?.id ?? null,
+										body: savedAddressBody(address, {
+											label: meta.label,
+											isDefault: meta.isDefault,
+										}),
+									},
+									{ onSuccess: () => setEditing(null) },
+								)
+							}
+						/>
+					) : list.data ? (
+						<>
+							<Text style={[styles.subtitle, { color: c.muted }]}>
+								{t("addresses.subtitle")}
+							</Text>
+							{addresses.length === 0 ? (
+								<EmptyState
+									icon="location-outline"
+									title={t("addresses.emptyTitle")}
+									subtitle={t("addresses.emptyBody")}
+								/>
+							) : (
+								<Text style={[styles.subtitle, { color: c.muted }]}>
+									{t("addresses.count", {
+										count: addresses.length,
+										limit: list.data.limit,
+									})}
+								</Text>
+							)}
+							{actionError ? (
+								<Text style={{ color: c.dangerText }}>
+									{resolveErrorMessage(actionError, t)}
+								</Text>
+							) : null}
+							{addresses.map((address) => (
+								<SavedAddressCard
+									key={address.id}
+									address={address}
+									cityLabel={cityLabel(address.city)}
+									actions={
+										<>
+											{!address.isDefault ? (
+												<CardAction
+													label={t("addresses.setDefault")}
+													disabled={makeDefault.isPending}
+													onPress={() => makeDefault.mutate(address.id)}
+												/>
+											) : null}
+											<CardAction
+												label={t("addresses.edit")}
+												onPress={() => startEditing(address.id)}
+											/>
+											<CardAction
+												label={t("addresses.delete")}
+												tone="danger"
+												disabled={remove.isPending}
+												onPress={() =>
+													showConfirm(
+														t("addresses.deleteTitle"),
+														t("addresses.deleteConfirm"),
+														() => remove.mutate(address.id),
+													)
+												}
+											/>
+										</>
+									}
+								/>
+							))}
+							{full ? (
+								<Text style={[styles.subtitle, { color: c.muted }]}>
+									{t("addresses.limitReached")}
+								</Text>
+							) : (
+								<CheckoutButton
+									label={t("addresses.add")}
+									icon="add"
+									onPress={() => startEditing(null)}
+								/>
+							)}
+						</>
+					) : null}
+				</KeyboardAwareScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

@@ -14,6 +14,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { formStyles as f } from "@/src/components/seller/formStyles";
 import { ProductEditorContent } from "@/src/components/seller/ProductEditorContent";
 import { ProductFooter } from "@/src/components/seller/ProductFooter";
@@ -261,31 +262,33 @@ export default function ProductScreen() {
 				</View>
 			) : null}
 
-			<KeyboardAwareScrollView
-				contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}
-				keyboardShouldPersistTaps="handled"
-			>
-				{creating ? (
-					<ProductWizardContent
-						form={form}
-						setForm={editForm}
-						step={step}
-						issues={visibleIssues}
-						canManageCost={canManageCost}
-						onEditInfo={() => setStep(1)}
-					/>
-				) : (
-					<ProductEditorContent
-						form={form}
-						setForm={editForm}
-						issues={visibleIssues}
-						readOnly={readOnly}
-						canManageCost={canManageCost}
-						listing={detail.data?.listing ?? null}
-						movements={detail.data?.movements ?? []}
-					/>
-				)}
-			</KeyboardAwareScrollView>
+			<ScreenColumn width="reading">
+				<KeyboardAwareScrollView
+					contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}
+					keyboardShouldPersistTaps="handled"
+				>
+					{creating ? (
+						<ProductWizardContent
+							form={form}
+							setForm={editForm}
+							step={step}
+							issues={visibleIssues}
+							canManageCost={canManageCost}
+							onEditInfo={() => setStep(1)}
+						/>
+					) : (
+						<ProductEditorContent
+							form={form}
+							setForm={editForm}
+							issues={visibleIssues}
+							readOnly={readOnly}
+							canManageCost={canManageCost}
+							listing={detail.data?.listing ?? null}
+							movements={detail.data?.movements ?? []}
+						/>
+					)}
+				</KeyboardAwareScrollView>
+			</ScreenColumn>
 
 			<ProductFooter
 				creating={creating}

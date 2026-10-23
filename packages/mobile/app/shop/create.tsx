@@ -2,6 +2,7 @@ import { Redirect, router } from "expo-router";
 import { StyleSheet } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { Header } from "@/src/components/shop/create/Header";
 import { LoadingShell } from "@/src/components/shop/create/LoadingShell";
 import { ShopDetailsForm } from "@/src/components/shop/create/ShopDetailsForm";
@@ -50,9 +51,11 @@ export default function CreateShopScreen() {
 		return (
 			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
 				<Header onClose={closeRoute} title={title} />
-				<KeyboardAwareScrollView keyboardShouldPersistTaps="handled">
-					<PhoneGate onVerified={gate.onVerified} />
-				</KeyboardAwareScrollView>
+				<ScreenColumn width="reading">
+					<KeyboardAwareScrollView keyboardShouldPersistTaps="handled">
+						<PhoneGate onVerified={gate.onVerified} />
+					</KeyboardAwareScrollView>
+				</ScreenColumn>
 			</SafeAreaView>
 		);
 	}

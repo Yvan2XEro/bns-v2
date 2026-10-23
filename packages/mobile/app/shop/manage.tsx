@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { ShopBrandingCard } from "@/src/components/shop/manage/ShopBrandingCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -48,56 +49,62 @@ export default function ShopSettingsScreen() {
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
 			<SellerHeader title={t("shop.settingsTitle")} subtitle={shop.name} />
-			<ScrollView contentContainerStyle={styles.content}>
-				<ShopBrandingCard shop={shop} readOnly={readOnly} />
+			<ScreenColumn width="wide">
+				<ScrollView contentContainerStyle={styles.content}>
+					<ShopBrandingCard shop={shop} readOnly={readOnly} />
 
-				{groups.map((group) => (
-					<View key={group.titleKey} style={styles.group}>
-						<Text style={[styles.groupTitle, { color: c.muted }]}>
-							{t(group.titleKey)}
-						</Text>
-						<View
-							style={[
-								styles.panel,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							{group.rows.map((row, index) => (
-								<SettingsRowButton
-									key={row.id}
-									row={row}
-									first={index === 0}
-									onPress={() =>
-										router.push({
-											pathname: "/shop/settings/[section]",
-											params: { section: row.section },
-										})
-									}
-								/>
-							))}
-							{group.titleKey === "shop.settingsRows.pageTitle" ? (
-								<Pressable
-									onPress={() => router.push("/shop/move-listings")}
-									disabled={readOnly}
-									accessibilityRole="button"
-									accessibilityLabel={t("seller.stepMove")}
-									accessibilityState={{ disabled: readOnly }}
-									style={[
-										styles.row,
-										styles.rowDivider,
-										{ borderTopColor: c.border, opacity: readOnly ? 0.5 : 1 },
-									]}
-								>
-									<Text style={[styles.rowLabel, { color: c.text }]}>
-										{t("seller.stepMove")}
-									</Text>
-									<Ionicons name="chevron-forward" size={16} color={c.muted} />
-								</Pressable>
-							) : null}
+					{groups.map((group) => (
+						<View key={group.titleKey} style={styles.group}>
+							<Text style={[styles.groupTitle, { color: c.muted }]}>
+								{t(group.titleKey)}
+							</Text>
+							<View
+								style={[
+									styles.panel,
+									{ backgroundColor: c.card, borderColor: c.border },
+								]}
+							>
+								{group.rows.map((row, index) => (
+									<SettingsRowButton
+										key={row.id}
+										row={row}
+										first={index === 0}
+										onPress={() =>
+											router.push({
+												pathname: "/shop/settings/[section]",
+												params: { section: row.section },
+											})
+										}
+									/>
+								))}
+								{group.titleKey === "shop.settingsRows.pageTitle" ? (
+									<Pressable
+										onPress={() => router.push("/shop/move-listings")}
+										disabled={readOnly}
+										accessibilityRole="button"
+										accessibilityLabel={t("seller.stepMove")}
+										accessibilityState={{ disabled: readOnly }}
+										style={[
+											styles.row,
+											styles.rowDivider,
+											{ borderTopColor: c.border, opacity: readOnly ? 0.5 : 1 },
+										]}
+									>
+										<Text style={[styles.rowLabel, { color: c.text }]}>
+											{t("seller.stepMove")}
+										</Text>
+										<Ionicons
+											name="chevron-forward"
+											size={16}
+											color={c.muted}
+										/>
+									</Pressable>
+								) : null}
+							</View>
 						</View>
-					</View>
-				))}
-			</ScrollView>
+					))}
+				</ScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

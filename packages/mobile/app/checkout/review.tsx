@@ -22,6 +22,7 @@ import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPick
 import { PreContractPanel } from "@/src/components/checkout/PreContractPanel";
 import { SellerCard } from "@/src/components/checkout/SellerCard";
 import { SplitReview } from "@/src/components/checkout/SplitReview";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -206,74 +207,76 @@ function Review() {
 	const shown = placeError ?? quote.error;
 
 	return (
-		<ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-			{methodPicker}
-			{state.previousQuote ? (
-				<View
-					style={[styles.notice, { backgroundColor: c.warningSoft }]}
-					accessibilityRole="alert"
-				>
-					<Ionicons name="alert-circle" size={20} color={c.warningText} />
-					<View style={{ flex: 1, gap: 2 }}>
-						<Text style={[styles.noticeTitle, { color: c.warningText }]}>
-							{t("checkout.quoteChanged")}
-						</Text>
-						<Text style={[formStyles.hint, { color: c.warningText }]}>
-							{t("checkout.quoteChangedBody")}
-						</Text>
+		<ScreenColumn width="reading">
+			<ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+				{methodPicker}
+				{state.previousQuote ? (
+					<View
+						style={[styles.notice, { backgroundColor: c.warningSoft }]}
+						accessibilityRole="alert"
+					>
+						<Ionicons name="alert-circle" size={20} color={c.warningText} />
+						<View style={{ flex: 1, gap: 2 }}>
+							<Text style={[styles.noticeTitle, { color: c.warningText }]}>
+								{t("checkout.quoteChanged")}
+							</Text>
+							<Text style={[formStyles.hint, { color: c.warningText }]}>
+								{t("checkout.quoteChangedBody")}
+							</Text>
+						</View>
 					</View>
-				</View>
-			) : null}
-			{cart.data && !isSplitCart(cart.data) && cart.data.shop ? (
-				<SellerCard
-					shop={cart.data.shop}
-					seller={state.quote.seller}
-					phone={state.quote.preContract.seller.phone}
+				) : null}
+				{cart.data && !isSplitCart(cart.data) && cart.data.shop ? (
+					<SellerCard
+						shop={cart.data.shop}
+						seller={state.quote.seller}
+						phone={state.quote.preContract.seller.phone}
+					/>
+				) : null}
+				<OrderSummaryCard
+					quote={state.quote}
+					changed={quoteDifferences(state.previousQuote, state.quote)}
+					locale={locale}
 				/>
-			) : null}
-			<OrderSummaryCard
-				quote={state.quote}
-				changed={quoteDifferences(state.previousQuote, state.quote)}
-				locale={locale}
-			/>
-			<PreContractPanel
-				contract={state.quote.preContract}
-				language={state.contractLocale ?? locale}
-				appLanguage={locale}
-				onLanguage={(next) =>
-					dispatch({ type: "contractLocale", locale: next })
-				}
-			/>
-			<Pressable
-				onPress={() =>
-					dispatch({ type: "accepted", accepted: !state.accepted })
-				}
-				accessibilityRole="checkbox"
-				accessibilityLabel={t("checkout.acceptTerms")}
-				accessibilityState={{ checked: state.accepted }}
-				style={styles.accept}
-			>
-				<Ionicons
-					name={state.accepted ? "checkbox" : "square-outline"}
-					size={24}
-					color={state.accepted ? c.primary : c.muted}
+				<PreContractPanel
+					contract={state.quote.preContract}
+					language={state.contractLocale ?? locale}
+					appLanguage={locale}
+					onLanguage={(next) =>
+						dispatch({ type: "contractLocale", locale: next })
+					}
 				/>
-				<Text style={[styles.acceptText, { color: c.text }]}>
-					{t("checkout.acceptTerms")}
-				</Text>
-			</Pressable>
-			{shown ? (
-				<Text style={formStyles.error} accessibilityRole="alert">
-					{resolveErrorMessage(shown, t)}
-				</Text>
-			) : null}
-			<CheckoutButton
-				label={t("checkout.placeOrder")}
-				onPress={placeOrder}
-				disabled={!canPlaceOrder(state)}
-				loading={place.isPending}
-			/>
-		</ScrollView>
+				<Pressable
+					onPress={() =>
+						dispatch({ type: "accepted", accepted: !state.accepted })
+					}
+					accessibilityRole="checkbox"
+					accessibilityLabel={t("checkout.acceptTerms")}
+					accessibilityState={{ checked: state.accepted }}
+					style={styles.accept}
+				>
+					<Ionicons
+						name={state.accepted ? "checkbox" : "square-outline"}
+						size={24}
+						color={state.accepted ? c.primary : c.muted}
+					/>
+					<Text style={[styles.acceptText, { color: c.text }]}>
+						{t("checkout.acceptTerms")}
+					</Text>
+				</Pressable>
+				{shown ? (
+					<Text style={formStyles.error} accessibilityRole="alert">
+						{resolveErrorMessage(shown, t)}
+					</Text>
+				) : null}
+				<CheckoutButton
+					label={t("checkout.placeOrder")}
+					onPress={placeOrder}
+					disabled={!canPlaceOrder(state)}
+					loading={place.isPending}
+				/>
+			</ScrollView>
+		</ScreenColumn>
 	);
 }
 

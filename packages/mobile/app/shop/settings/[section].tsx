@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { ShopAddressCard } from "@/src/components/shop/manage/ShopAddressCard";
 import { ShopBrandColorCard } from "@/src/components/shop/manage/ShopBrandColorCard";
 import { ShopCloseCard } from "@/src/components/shop/manage/ShopCloseCard";
@@ -79,38 +80,40 @@ export default function ShopSettingsSectionScreen() {
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
 			<SellerHeader title={title} subtitle={shop.name} />
-			<KeyboardAwareScrollView
-				contentContainerStyle={styles.content}
-				keyboardShouldPersistTaps="handled"
-			>
-				{section === "name" ||
-				section === "description" ||
-				section === "city" ||
-				section === "categories" ||
-				section === "contacts" ? (
-					<ShopProfileCard
-						shop={shop}
-						readOnly={readOnly}
-						section={section}
-						onSaved={goBack}
-					/>
-				) : null}
-				{section === "profile" ? (
-					<ShopKindCard shop={shop} readOnly={readOnly} onSaved={goBack} />
-				) : null}
-				{section === "color" ? (
-					<ShopBrandColorCard shop={shop} readOnly={readOnly} />
-				) : null}
-				{section === "address" ? (
-					<ShopAddressCard
-						shop={shop}
-						role={data?.role ?? null}
-						readOnly={readOnly}
-					/>
-				) : null}
-				{section === "legal" ? <ShopLegalCard shop={shop} /> : null}
-				{section === "close" ? <ShopCloseCard shop={shop} /> : null}
-			</KeyboardAwareScrollView>
+			<ScreenColumn width="reading">
+				<KeyboardAwareScrollView
+					contentContainerStyle={styles.content}
+					keyboardShouldPersistTaps="handled"
+				>
+					{section === "name" ||
+					section === "description" ||
+					section === "city" ||
+					section === "categories" ||
+					section === "contacts" ? (
+						<ShopProfileCard
+							shop={shop}
+							readOnly={readOnly}
+							section={section}
+							onSaved={goBack}
+						/>
+					) : null}
+					{section === "profile" ? (
+						<ShopKindCard shop={shop} readOnly={readOnly} onSaved={goBack} />
+					) : null}
+					{section === "color" ? (
+						<ShopBrandColorCard shop={shop} readOnly={readOnly} />
+					) : null}
+					{section === "address" ? (
+						<ShopAddressCard
+							shop={shop}
+							role={data?.role ?? null}
+							readOnly={readOnly}
+						/>
+					) : null}
+					{section === "legal" ? <ShopLegalCard shop={shop} /> : null}
+					{section === "close" ? <ShopCloseCard shop={shop} /> : null}
+				</KeyboardAwareScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

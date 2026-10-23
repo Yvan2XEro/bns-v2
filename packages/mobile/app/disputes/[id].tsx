@@ -22,6 +22,7 @@ import {
 	EvidenceViewer,
 	useOpenEvidenceFile,
 } from "@/src/components/disputes/Evidence";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { type ShopPalette, useShopTheme } from "@/src/components/shop/theme";
@@ -214,286 +215,299 @@ export default function DisputeThreadScreen() {
 				}
 			/>
 			<KeyboardAvoidingView behavior="padding" style={styles.safe}>
-				<ScrollView
-					contentContainerStyle={styles.content}
-					keyboardShouldPersistTaps="handled"
-				>
-					<View
-						style={[
-							styles.banner,
-							{ backgroundColor: tone.soft, borderColor: tone.border },
-						]}
+				<ScreenColumn width="reading">
+					<ScrollView
+						contentContainerStyle={styles.content}
+						keyboardShouldPersistTaps="handled"
 					>
-						<View style={styles.bannerRow}>
-							<View
-								style={[styles.bannerIcon, { backgroundColor: tone.strong }]}
-							>
-								<Ionicons name={tone.icon} size={20} color="#fff" />
-							</View>
-							<View style={styles.flex}>
-								<Text style={[styles.bannerTitle, { color: tone.text }]}>
-									{t(DISPUTE_STATUS_LABELS[dispute.status])}
-								</Text>
-								{deadline ? (
+						<View
+							style={[
+								styles.banner,
+								{ backgroundColor: tone.soft, borderColor: tone.border },
+							]}
+						>
+							<View style={styles.bannerRow}>
+								<View
+									style={[styles.bannerIcon, { backgroundColor: tone.strong }]}
+								>
+									<Ionicons name={tone.icon} size={20} color="#fff" />
+								</View>
+								<View style={styles.flex}>
+									<Text style={[styles.bannerTitle, { color: tone.text }]}>
+										{t(DISPUTE_STATUS_LABELS[dispute.status])}
+									</Text>
+									{deadline ? (
+										<Text style={[styles.bannerBody, { color: tone.text }]}>
+											{t("disputes.deadline", {
+												date: formatOrderDate(deadline, locale),
+											})}
+										</Text>
+									) : null}
 									<Text style={[styles.bannerBody, { color: tone.text }]}>
-										{t("disputes.deadline", {
-											date: formatOrderDate(deadline, locale),
+										{t("disputes.amount", {
+											amount: dispute.amountAtStake.toLocaleString(locale),
 										})}
 									</Text>
-								) : null}
-								<Text style={[styles.bannerBody, { color: tone.text }]}>
-									{t("disputes.amount", {
-										amount: dispute.amountAtStake.toLocaleString(locale),
+								</View>
+							</View>
+							{canUpload ? (
+								<View style={styles.evidence}>
+									<Pressable
+										accessibilityRole="button"
+										disabled={upload.isPending || dispute.evidence.length >= 10}
+										onPress={() => void addEvidence().catch(() => undefined)}
+										style={[
+											styles.chipButton,
+											{ backgroundColor: c.card, borderColor: c.border },
+										]}
+									>
+										{upload.isPending ? (
+											<ActivityIndicator color={c.primary} />
+										) : (
+											<>
+												<Ionicons name="attach" size={16} color={c.text} />
+												<Text style={[styles.chipText, { color: c.text }]}>
+													{t("disputes.addEvidence")}
+												</Text>
+											</>
+										)}
+									</Pressable>
+									{dispute.viewerRole === dispute.openedByType ? (
+										<Text style={[styles.evidenceText, { color: tone.text }]}>
+											{evidenceStatus.remaining > 0
+												? t("disputes.evidenceNeeded", {
+														count: evidenceStatus.remaining,
+													})
+												: t("disputes.evidenceProgress", {
+														count:
+															evidenceStatus.required -
+															evidenceStatus.remaining,
+														required: evidenceStatus.required,
+													})}
+										</Text>
+									) : null}
+								</View>
+							) : null}
+							{loose.length ? (
+								<View style={styles.evidence}>
+									<Text style={[styles.evidenceText, { color: tone.text }]}>
+										{t("disputes.evidenceTitle")}
+									</Text>
+									<EvidenceStrip
+										disputeId={dispute.id}
+										attachments={loose}
+										onOpen={openEvidence}
+									/>
+								</View>
+							) : null}
+						</View>
+
+						{dispute.resolution ? (
+							<View
+								style={[
+									styles.card,
+									{ backgroundColor: c.card, borderColor: c.border },
+								]}
+							>
+								<Text style={[styles.title, { color: c.text }]}>
+									{t("disputes.resolution")}
+								</Text>
+								<Text style={[styles.body, { color: c.muted }]}>
+									{dispute.resolution.publicStatement[locale]}
+								</Text>
+								<Text style={[styles.amount, { color: c.text }]}>
+									{t("disputes.refund", {
+										amount:
+											dispute.resolution.refundAmount.toLocaleString(locale),
 									})}
 								</Text>
 							</View>
-						</View>
-						{canUpload ? (
-							<View style={styles.evidence}>
-								<Pressable
-									accessibilityRole="button"
-									disabled={upload.isPending || dispute.evidence.length >= 10}
-									onPress={() => void addEvidence().catch(() => undefined)}
-									style={[
-										styles.chipButton,
-										{ backgroundColor: c.card, borderColor: c.border },
-									]}
-								>
-									{upload.isPending ? (
-										<ActivityIndicator color={c.primary} />
-									) : (
-										<>
-											<Ionicons name="attach" size={16} color={c.text} />
-											<Text style={[styles.chipText, { color: c.text }]}>
-												{t("disputes.addEvidence")}
-											</Text>
-										</>
-									)}
-								</Pressable>
-								{dispute.viewerRole === dispute.openedByType ? (
-									<Text style={[styles.evidenceText, { color: tone.text }]}>
-										{evidenceStatus.remaining > 0
-											? t("disputes.evidenceNeeded", {
-													count: evidenceStatus.remaining,
-												})
-											: t("disputes.evidenceProgress", {
-													count:
-														evidenceStatus.required - evidenceStatus.remaining,
-													required: evidenceStatus.required,
-												})}
-									</Text>
-								) : null}
-							</View>
 						) : null}
-						{loose.length ? (
-							<View style={styles.evidence}>
-								<Text style={[styles.evidenceText, { color: tone.text }]}>
-									{t("disputes.evidenceTitle")}
+
+						{dispute.proposal?.status === "open" ? (
+							<View
+								style={[
+									styles.card,
+									{ backgroundColor: c.card, borderColor: c.primary },
+								]}
+							>
+								<Text style={[styles.title, { color: c.text }]}>
+									{t("disputes.proposal")}
 								</Text>
-								<EvidenceStrip
-									disputeId={dispute.id}
-									attachments={loose}
-									onOpen={openEvidence}
-								/>
+								<Text style={[styles.amount, { color: c.text }]}>
+									{formatPrice(dispute.proposal.amount, locale)}
+								</Text>
 							</View>
 						) : null}
-					</View>
 
-					{dispute.resolution ? (
-						<View
-							style={[
-								styles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<Text style={[styles.title, { color: c.text }]}>
-								{t("disputes.resolution")}
-							</Text>
-							<Text style={[styles.body, { color: c.muted }]}>
-								{dispute.resolution.publicStatement[locale]}
-							</Text>
-							<Text style={[styles.amount, { color: c.text }]}>
-								{t("disputes.refund", {
-									amount:
-										dispute.resolution.refundAmount.toLocaleString(locale),
-								})}
-							</Text>
-						</View>
-					) : null}
-
-					{dispute.proposal?.status === "open" ? (
-						<View
-							style={[
-								styles.card,
-								{ backgroundColor: c.card, borderColor: c.primary },
-							]}
-						>
-							<Text style={[styles.title, { color: c.text }]}>
-								{t("disputes.proposal")}
-							</Text>
-							<Text style={[styles.amount, { color: c.text }]}>
-								{formatPrice(dispute.proposal.amount, locale)}
-							</Text>
-						</View>
-					) : null}
-
-					{dispute.messages.length ? (
-						dispute.messages.map((message) => {
-							const author = messageAuthor(
-								message.authorType,
-								dispute.viewerRole,
-							);
-							const text = message.redacted
-								? t("disputes.redacted")
-								: message.body;
-							if (author === "self")
-								return (
-									<View key={message.id} style={styles.mineWrap}>
-										<View
-											style={[
-												styles.bubble,
-												styles.mine,
-												{ backgroundColor: c.primary },
-											]}
-										>
-											<Text style={[styles.body, { color: "#fff" }]}>
-												{text}
-											</Text>
-											<EvidenceStrip
-												disputeId={dispute.id}
-												attachments={toAttachment(message.evidenceIds)}
-												onOpen={openEvidence}
-											/>
-										</View>
-										<Text style={[styles.time, { color: c.muted }]}>
-											{time(message.at)}
-										</Text>
-									</View>
+						{dispute.messages.length ? (
+							dispute.messages.map((message) => {
+								const author = messageAuthor(
+									message.authorType,
+									dispute.viewerRole,
 								);
-							const name =
-								author === "shop"
-									? dispute.shopName
-									: author === "buyer"
-										? t("disputes.authorBuyer")
-										: t("disputes.authorStaff");
-							return (
-								<View key={message.id} style={styles.theirsRow}>
-									{author === "staff" ? (
-										<View
-											style={[styles.avatar, { backgroundColor: c.primary }]}
-										>
-											<Ionicons
-												name="shield-checkmark"
-												size={16}
-												color="#fff"
-											/>
-										</View>
-									) : (
-										<ShopAvatar name={name} size={32} radius={10} />
-									)}
-									<View style={styles.theirs}>
-										<View style={styles.authorRow}>
-											<Text style={[styles.author, { color: c.text }]}>
-												{name}
+								const text = message.redacted
+									? t("disputes.redacted")
+									: message.body;
+								if (author === "self")
+									return (
+										<View key={message.id} style={styles.mineWrap}>
+											<View
+												style={[
+													styles.bubble,
+													styles.mine,
+													{ backgroundColor: c.primary },
+												]}
+											>
+												<Text style={[styles.body, { color: "#fff" }]}>
+													{text}
+												</Text>
+												<EvidenceStrip
+													disputeId={dispute.id}
+													attachments={toAttachment(message.evidenceIds)}
+													onOpen={openEvidence}
+												/>
+											</View>
+											<Text style={[styles.time, { color: c.muted }]}>
+												{time(message.at)}
 											</Text>
-											{author === "staff" ? (
-												<View
-													style={[
-														styles.badge,
-														{ backgroundColor: c.primarySoft },
-													]}
-												>
-													<Text
-														style={[styles.badgeText, { color: c.primary }]}
+										</View>
+									);
+								const name =
+									author === "shop"
+										? dispute.shopName
+										: author === "buyer"
+											? t("disputes.authorBuyer")
+											: t("disputes.authorStaff");
+								return (
+									<View key={message.id} style={styles.theirsRow}>
+										{author === "staff" ? (
+											<View
+												style={[styles.avatar, { backgroundColor: c.primary }]}
+											>
+												<Ionicons
+													name="shield-checkmark"
+													size={16}
+													color="#fff"
+												/>
+											</View>
+										) : (
+											<ShopAvatar name={name} size={32} radius={10} />
+										)}
+										<View style={styles.theirs}>
+											<View style={styles.authorRow}>
+												<Text style={[styles.author, { color: c.text }]}>
+													{name}
+												</Text>
+												{author === "staff" ? (
+													<View
+														style={[
+															styles.badge,
+															{ backgroundColor: c.primarySoft },
+														]}
 													>
-														{t("disputes.staffBadge")}
-													</Text>
-												</View>
-											) : null}
-										</View>
-										<View
-											style={[
-												styles.bubble,
-												styles.theirBubble,
-												author === "staff"
-													? {
-															backgroundColor: c.primarySoft,
-															borderColor: c.primarySoft,
-														}
-													: { backgroundColor: c.card, borderColor: c.border },
-											]}
-										>
-											<Text style={[styles.body, { color: c.text }]}>
-												{text}
+														<Text
+															style={[styles.badgeText, { color: c.primary }]}
+														>
+															{t("disputes.staffBadge")}
+														</Text>
+													</View>
+												) : null}
+											</View>
+											<View
+												style={[
+													styles.bubble,
+													styles.theirBubble,
+													author === "staff"
+														? {
+																backgroundColor: c.primarySoft,
+																borderColor: c.primarySoft,
+															}
+														: {
+																backgroundColor: c.card,
+																borderColor: c.border,
+															},
+												]}
+											>
+												<Text style={[styles.body, { color: c.text }]}>
+													{text}
+												</Text>
+												<EvidenceStrip
+													disputeId={dispute.id}
+													attachments={toAttachment(message.evidenceIds)}
+													onOpen={openEvidence}
+												/>
+											</View>
+											<Text style={[styles.time, { color: c.muted }]}>
+												{time(message.at)}
 											</Text>
-											<EvidenceStrip
-												disputeId={dispute.id}
-												attachments={toAttachment(message.evidenceIds)}
-												onOpen={openEvidence}
-											/>
 										</View>
-										<Text style={[styles.time, { color: c.muted }]}>
-											{time(message.at)}
-										</Text>
 									</View>
-								</View>
-							);
-						})
-					) : (
-						<Text style={[styles.empty, { color: c.muted }]}>
-							{t("disputes.noMessages")}
-						</Text>
-					)}
+								);
+							})
+						) : (
+							<Text style={[styles.empty, { color: c.muted }]}>
+								{t("disputes.noMessages")}
+							</Text>
+						)}
 
-					{visibleButtons.length ? (
-						<View style={styles.actions}>
-							{visibleButtons.map((name) => {
-								const primary = name === "submit" || name.endsWith("accept");
-								const danger =
-									name === "withdraw" || name === "proposal_reject";
-								return (
-									<Pressable
-										key={name}
-										accessibilityRole="button"
-										disabled={
-											action.isPending ||
-											(name === "submit" && !evidenceStatus.canSubmit)
-										}
-										onPress={() => void perform(name)}
-										style={[
-											styles.actionButton,
-											primary
-												? { backgroundColor: c.primary, borderColor: c.primary }
-												: {
-														backgroundColor: c.card,
-														borderColor: danger ? c.danger : c.border,
-													},
-											name === "submit" && !evidenceStatus.canSubmit
-												? styles.disabled
-												: null,
-										]}
-									>
-										<Text
+						{visibleButtons.length ? (
+							<View style={styles.actions}>
+								{visibleButtons.map((name) => {
+									const primary = name === "submit" || name.endsWith("accept");
+									const danger =
+										name === "withdraw" || name === "proposal_reject";
+									return (
+										<Pressable
+											key={name}
+											accessibilityRole="button"
+											disabled={
+												action.isPending ||
+												(name === "submit" && !evidenceStatus.canSubmit)
+											}
+											onPress={() => void perform(name)}
 											style={[
-												styles.actionText,
-												{
-													color: primary ? "#fff" : danger ? c.danger : c.text,
-												},
+												styles.actionButton,
+												primary
+													? {
+															backgroundColor: c.primary,
+															borderColor: c.primary,
+														}
+													: {
+															backgroundColor: c.card,
+															borderColor: danger ? c.danger : c.border,
+														},
+												name === "submit" && !evidenceStatus.canSubmit
+													? styles.disabled
+													: null,
 											]}
 										>
-											{t(DISPUTE_ACTION_LABELS[name])}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
-					) : null}
-					{action.isError || upload.isError ? (
-						<Text accessibilityRole="alert" style={styles.error}>
-							{t("disputes.actionError")}
-						</Text>
-					) : null}
-				</ScrollView>
+											<Text
+												style={[
+													styles.actionText,
+													{
+														color: primary
+															? "#fff"
+															: danger
+																? c.danger
+																: c.text,
+													},
+												]}
+											>
+												{t(DISPUTE_ACTION_LABELS[name])}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
+						) : null}
+						{action.isError || upload.isError ? (
+							<Text accessibilityRole="alert" style={styles.error}>
+								{t("disputes.actionError")}
+							</Text>
+						) : null}
+					</ScrollView>
+				</ScreenColumn>
 
 				{canMessage && staged.length ? (
 					<View

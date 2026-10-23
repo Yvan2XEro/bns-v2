@@ -17,6 +17,7 @@ import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
 import { OperatorMark } from "@/src/components/checkout/OperatorMark";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { Sheet } from "@/src/components/purchases/ui";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -207,145 +208,147 @@ export default function CheckoutPayScreen() {
 					</View>
 				}
 			/>
-			<ScrollView contentContainerStyle={styles.scroll}>
-				<Text style={[styles.section, { color: c.text }]}>
-					{t("payments.pay_operator")}
-				</Text>
-				<View style={styles.operators}>
-					{CHANNELS.map((option) => {
-						const selected = channel === option;
-						return (
-							<Pressable
-								key={option}
-								onPress={() => setChannel(option)}
-								accessibilityRole="radio"
-								accessibilityState={{ checked: selected }}
-								accessibilityLabel={t(PAYMENT_CHANNEL_LABELS[option])}
-								style={[
-									styles.operator,
-									{
-										borderColor: selected ? c.primary : c.border,
-										borderWidth: selected ? 2 : 1,
-										backgroundColor: selected ? c.primarySoft : c.card,
-									},
-								]}
-							>
-								<OperatorMark channel={option} />
-								<View style={styles.flex}>
-									<Text
-										style={[styles.operatorName, { color: c.text }]}
-										numberOfLines={2}
-									>
-										{t(PAYMENT_CHANNEL_LABELS[option])}
-									</Text>
-									<Text style={[styles.operatorSub, { color: c.muted }]}>
-										{t("payments.pay_mobileMoney")}
-									</Text>
-								</View>
-								{selected ? (
-									<Ionicons
-										name="checkmark-circle"
-										size={20}
-										color={c.primary}
-										style={styles.check}
-									/>
-								) : null}
-							</Pressable>
-						);
-					})}
-				</View>
-
-				<View
-					style={[
-						styles.phoneBox,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<Text style={[styles.phoneLabel, { color: c.muted }]}>
-						{t("payments.pay_phone")}
+			<ScreenColumn width="reading">
+				<ScrollView contentContainerStyle={styles.scroll}>
+					<Text style={[styles.section, { color: c.text }]}>
+						{t("payments.pay_operator")}
 					</Text>
-					<View style={styles.phoneRow}>
-						<Ionicons name="call-outline" size={18} color={c.muted} />
-						<TextInput
-							value={phone}
-							onChangeText={onPhoneChange}
-							keyboardType="phone-pad"
-							autoComplete="tel"
-							placeholder={phoneExample()}
-							placeholderTextColor={c.muted}
-							accessibilityLabel={t("payments.pay_phone")}
-							accessibilityHint={t("payments.pay_phoneHint")}
-							style={[styles.phoneInput, { color: c.text }]}
-						/>
+					<View style={styles.operators}>
+						{CHANNELS.map((option) => {
+							const selected = channel === option;
+							return (
+								<Pressable
+									key={option}
+									onPress={() => setChannel(option)}
+									accessibilityRole="radio"
+									accessibilityState={{ checked: selected }}
+									accessibilityLabel={t(PAYMENT_CHANNEL_LABELS[option])}
+									style={[
+										styles.operator,
+										{
+											borderColor: selected ? c.primary : c.border,
+											borderWidth: selected ? 2 : 1,
+											backgroundColor: selected ? c.primarySoft : c.card,
+										},
+									]}
+								>
+									<OperatorMark channel={option} />
+									<View style={styles.flex}>
+										<Text
+											style={[styles.operatorName, { color: c.text }]}
+											numberOfLines={2}
+										>
+											{t(PAYMENT_CHANNEL_LABELS[option])}
+										</Text>
+										<Text style={[styles.operatorSub, { color: c.muted }]}>
+											{t("payments.pay_mobileMoney")}
+										</Text>
+									</View>
+									{selected ? (
+										<Ionicons
+											name="checkmark-circle"
+											size={20}
+											color={c.primary}
+											style={styles.check}
+										/>
+									) : null}
+								</Pressable>
+							);
+						})}
 					</View>
-				</View>
 
-				<View
-					style={[
-						formStyles.card,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<AmountRow
-						label={t("payments.summary_goods")}
-						value={money(data.amounts.subtotal)}
-					/>
-					<AmountRow
-						label={t("payments.summary_delivery")}
-						value={money(data.amounts.deliveryFee)}
-					/>
-					<AmountRow
-						label={t("payments.summary_protectionFee")}
-						value={money(data.amounts.buyerProtectionFee)}
-					/>
-					<View style={[styles.divider, { backgroundColor: c.border }]} />
-					<View style={formStyles.row}>
-						<Text style={[styles.totalLabel, { color: c.text }]}>
-							{t("payments.summary_total")}
-						</Text>
-						<Text style={[styles.total, { color: c.primary }]}>
-							{money(data.amounts.total)}
-						</Text>
-					</View>
-				</View>
-
-				<View
-					style={[
-						formStyles.card,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<Text style={[styles.cardTitle, { color: c.text }]}>
-						{t("payments.money_title")}
-					</Text>
-					<MoneyStep
-						icon="lock-closed-outline"
-						title={t("payments.money_heldTitle")}
-						body={t("payments.disclosure_holder")}
-					/>
-					<MoneyStep
-						icon="storefront-outline"
-						title={t("payments.money_releaseTitle")}
-						body={t("payments.sheet_release")}
-					/>
-					<MoneyStep
-						icon="refresh-outline"
-						title={t("payments.money_refundTitle")}
-						body={t("payments.sheet_cancelRefund")}
-					/>
-					<Pressable
-						onPress={() => setSheetOpen(true)}
-						accessibilityRole="button"
-						hitSlop={8}
+					<View
+						style={[
+							styles.phoneBox,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
 					>
-						<Text style={[styles.link, { color: c.primary }]}>
-							{t("payments.summary_coverLink")}
+						<Text style={[styles.phoneLabel, { color: c.muted }]}>
+							{t("payments.pay_phone")}
 						</Text>
-					</Pressable>
-				</View>
+						<View style={styles.phoneRow}>
+							<Ionicons name="call-outline" size={18} color={c.muted} />
+							<TextInput
+								value={phone}
+								onChangeText={onPhoneChange}
+								keyboardType="phone-pad"
+								autoComplete="tel"
+								placeholder={phoneExample()}
+								placeholderTextColor={c.muted}
+								accessibilityLabel={t("payments.pay_phone")}
+								accessibilityHint={t("payments.pay_phoneHint")}
+								style={[styles.phoneInput, { color: c.text }]}
+							/>
+						</View>
+					</View>
 
-				{formError ? <Text style={formStyles.error}>{formError}</Text> : null}
-			</ScrollView>
+					<View
+						style={[
+							formStyles.card,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<AmountRow
+							label={t("payments.summary_goods")}
+							value={money(data.amounts.subtotal)}
+						/>
+						<AmountRow
+							label={t("payments.summary_delivery")}
+							value={money(data.amounts.deliveryFee)}
+						/>
+						<AmountRow
+							label={t("payments.summary_protectionFee")}
+							value={money(data.amounts.buyerProtectionFee)}
+						/>
+						<View style={[styles.divider, { backgroundColor: c.border }]} />
+						<View style={formStyles.row}>
+							<Text style={[styles.totalLabel, { color: c.text }]}>
+								{t("payments.summary_total")}
+							</Text>
+							<Text style={[styles.total, { color: c.primary }]}>
+								{money(data.amounts.total)}
+							</Text>
+						</View>
+					</View>
+
+					<View
+						style={[
+							formStyles.card,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Text style={[styles.cardTitle, { color: c.text }]}>
+							{t("payments.money_title")}
+						</Text>
+						<MoneyStep
+							icon="lock-closed-outline"
+							title={t("payments.money_heldTitle")}
+							body={t("payments.disclosure_holder")}
+						/>
+						<MoneyStep
+							icon="storefront-outline"
+							title={t("payments.money_releaseTitle")}
+							body={t("payments.sheet_release")}
+						/>
+						<MoneyStep
+							icon="refresh-outline"
+							title={t("payments.money_refundTitle")}
+							body={t("payments.sheet_cancelRefund")}
+						/>
+						<Pressable
+							onPress={() => setSheetOpen(true)}
+							accessibilityRole="button"
+							hitSlop={8}
+						>
+							<Text style={[styles.link, { color: c.primary }]}>
+								{t("payments.summary_coverLink")}
+							</Text>
+						</Pressable>
+					</View>
+
+					{formError ? <Text style={formStyles.error}>{formError}</Text> : null}
+				</ScrollView>
+			</ScreenColumn>
 			<View
 				style={[styles.bar, { backgroundColor: c.card, borderColor: c.border }]}
 			>

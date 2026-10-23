@@ -9,6 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SellerShipmentActions } from "@/src/components/delivery/SellerShipmentActions";
 import { ShipmentSummary } from "@/src/components/delivery/ShipmentSummary";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { isShopView, useShipment } from "@/src/hooks/useShipmentActions";
@@ -49,23 +50,25 @@ export default function SellerShipmentScreen() {
 					onCta={() => query.refetch()}
 				/>
 			) : (
-				<ScrollView
-					contentContainerStyle={styles.content}
-					refreshControl={
-						<RefreshControl
-							refreshing={query.isRefetching}
-							onRefresh={() => void query.refetch()}
-							tintColor={c.primary}
+				<ScreenColumn width="reading">
+					<ScrollView
+						contentContainerStyle={styles.content}
+						refreshControl={
+							<RefreshControl
+								refreshing={query.isRefetching}
+								onRefresh={() => void query.refetch()}
+								tintColor={c.primary}
+							/>
+						}
+					>
+						<ShipmentSummary view={view} />
+						<SellerShipmentActions
+							view={view}
+							canProcess={can(role, "orders.process")}
+							canSeeCosts={can(role, "costs.view")}
 						/>
-					}
-				>
-					<ShipmentSummary view={view} />
-					<SellerShipmentActions
-						view={view}
-						canProcess={can(role, "orders.process")}
-						canSeeCosts={can(role, "costs.view")}
-					/>
-				</ScrollView>
+					</ScrollView>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { AmountsCard } from "@/src/components/payments/AmountsCard";
 import { HoldsList } from "@/src/components/payments/HoldsList";
 import { PaymentsOrderRow } from "@/src/components/payments/PaymentsOrderRow";
@@ -86,20 +87,22 @@ function PaymentsContent({ shopId }: { shopId: string }) {
 	);
 
 	return (
-		<FlashList<SellerPaymentsOrderRow>
-			data={view.orders}
-			keyExtractor={(order) => order.orderId}
-			ListHeaderComponent={header}
-			ItemSeparatorComponent={() => <View style={styles.separator} />}
-			renderItem={({ item }) => <PaymentsOrderRow order={item} />}
-			contentContainerStyle={styles.list}
-			refreshControl={
-				<RefreshControl
-					refreshing={payments.isRefetching}
-					onRefresh={refresh}
-				/>
-			}
-		/>
+		<ScreenColumn width="wide">
+			<FlashList<SellerPaymentsOrderRow>
+				data={view.orders}
+				keyExtractor={(order) => order.orderId}
+				ListHeaderComponent={header}
+				ItemSeparatorComponent={() => <View style={styles.separator} />}
+				renderItem={({ item }) => <PaymentsOrderRow order={item} />}
+				contentContainerStyle={styles.list}
+				refreshControl={
+					<RefreshControl
+						refreshing={payments.isRefetching}
+						onRefresh={refresh}
+					/>
+				}
+			/>
+		</ScreenColumn>
 	);
 }
 

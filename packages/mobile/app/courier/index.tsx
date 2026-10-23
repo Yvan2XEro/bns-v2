@@ -9,6 +9,7 @@ import {
 	GROUP_LABEL,
 } from "@/src/components/delivery/CourierRows";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -138,29 +139,31 @@ export default function CourierDispatchScreen() {
 					onCta={() => query.refetch()}
 				/>
 			) : (
-				<FlashList
-					data={items}
-					keyExtractor={(item) => item.key}
-					getItemType={(item) => item.kind}
-					refreshing={query.isRefetching}
-					onRefresh={() => void query.refetch()}
-					contentContainerStyle={styles.content}
-					ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-					ListEmptyComponent={
-						<Text style={{ color: c.muted }}>
-							{t("shipmentPanel.riderEmpty")}
-						</Text>
-					}
-					renderItem={({ item }) =>
-						item.kind === "header" ? (
-							<Text style={[styles.header, { color: c.text }]}>
-								{t(GROUP_LABEL[item.group])}
+				<ScreenColumn width="wide">
+					<FlashList
+						data={items}
+						keyExtractor={(item) => item.key}
+						getItemType={(item) => item.kind}
+						refreshing={query.isRefetching}
+						onRefresh={() => void query.refetch()}
+						contentContainerStyle={styles.content}
+						ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+						ListEmptyComponent={
+							<Text style={{ color: c.muted }}>
+								{t("shipmentPanel.riderEmpty")}
 							</Text>
-						) : (
-							<DispatcherRow row={item.row} />
-						)
-					}
-				/>
+						}
+						renderItem={({ item }) =>
+							item.kind === "header" ? (
+								<Text style={[styles.header, { color: c.text }]}>
+									{t(GROUP_LABEL[item.group])}
+								</Text>
+							) : (
+								<DispatcherRow row={item.row} />
+							)
+						}
+					/>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { PhoneGate, phoneStatusKey } from "@/src/components/shop/PhoneGate";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
@@ -35,26 +36,32 @@ export default function VerifyPhoneScreen() {
 			>
 				<Ionicons name="close" size={24} color={c.text} />
 			</Pressable>
-			<KeyboardAwareScrollView
-				contentContainerStyle={styles.content}
-				keyboardShouldPersistTaps="handled"
-			>
-				<View style={[styles.iconTile, { backgroundColor: c.primarySoft }]}>
-					<Ionicons name="phone-portrait-outline" size={28} color={c.primary} />
-				</View>
-				<Text style={[styles.title, { color: c.text }]}>
-					{t(`accountTrust.${action}.title`)}
-				</Text>
-				<Text style={[styles.body, { color: c.muted }]}>
-					{t(`accountTrust.${action}.body`)}
-				</Text>
-				<PhoneGate
-					onVerified={() => {
-						void queryClient.invalidateQueries({ queryKey: phoneStatusKey });
-						router.back();
-					}}
-				/>
-			</KeyboardAwareScrollView>
+			<ScreenColumn width="reading">
+				<KeyboardAwareScrollView
+					contentContainerStyle={styles.content}
+					keyboardShouldPersistTaps="handled"
+				>
+					<View style={[styles.iconTile, { backgroundColor: c.primarySoft }]}>
+						<Ionicons
+							name="phone-portrait-outline"
+							size={28}
+							color={c.primary}
+						/>
+					</View>
+					<Text style={[styles.title, { color: c.text }]}>
+						{t(`accountTrust.${action}.title`)}
+					</Text>
+					<Text style={[styles.body, { color: c.muted }]}>
+						{t(`accountTrust.${action}.body`)}
+					</Text>
+					<PhoneGate
+						onVerified={() => {
+							void queryClient.invalidateQueries({ queryKey: phoneStatusKey });
+							router.back();
+						}}
+					/>
+				</KeyboardAwareScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

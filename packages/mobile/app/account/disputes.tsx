@@ -12,6 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useBuyerDisputes } from "@/src/hooks/useDisputes";
 import {
 	DISPUTE_REASON_LABELS,
@@ -39,14 +41,7 @@ export default function AccountDisputesScreen() {
 			style={[styles.safe, { backgroundColor: colors.bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel={t("common.back")}
-					onPress={() => router.back()}
-					hitSlop={12}
-				>
-					<Ionicons name="arrow-back" size={22} color={colors.text} />
-				</Pressable>
+				<HeaderBackButton color={colors.text} fallback="/(tabs)/account" />
 				<Text style={[styles.title, { color: colors.text }]}>
 					{t("disputes.title")}
 				</Text>
@@ -73,14 +68,16 @@ export default function AccountDisputesScreen() {
 				/>
 			) : null}
 			{query.data?.rows.length ? (
-				<FlashList
-					data={query.data.rows}
-					keyExtractor={(row) => row.id}
-					contentContainerStyle={styles.list}
-					renderItem={({ item }) => (
-						<DisputeRow item={item} dark={dark} locale={i18n.language} />
-					)}
-				/>
+				<ScreenColumn width="wide">
+					<FlashList
+						data={query.data.rows}
+						keyExtractor={(row) => row.id}
+						contentContainerStyle={styles.list}
+						renderItem={({ item }) => (
+							<DisputeRow item={item} dark={dark} locale={i18n.language} />
+						)}
+					/>
+				</ScreenColumn>
 			) : null}
 		</SafeAreaView>
 	);

@@ -5,6 +5,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChoiceField, TextField } from "@/src/components/delivery/FormFields";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { Card, PurchaseButton } from "@/src/components/purchases/ui";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -57,66 +58,70 @@ function RescheduleForm({ shipmentId }: { shipmentId: string }) {
 	};
 
 	return (
-		<ScrollView
-			contentContainerStyle={styles.content}
-			keyboardShouldPersistTaps="handled"
-		>
-			<Card>
-				<ChoiceField
-					label={t("tracking.rescheduleDate")}
-					options={days.map((day) => day.iso)}
-					value={date}
-					onChange={setDate}
-					labelOf={dayLabel}
-				/>
-				<ChoiceField
-					label={t("tracking.rescheduleWindow")}
-					options={WINDOWS}
-					value={window}
-					onChange={setWindow}
-					labelOf={(option) => t(WINDOW_LABELS[option])}
-				/>
-				<TextField
-					label={t("tracking.rescheduleLandmark")}
-					value={landmark}
-					onChange={setLandmark}
-					error={
-						landmarkInvalid ? "tracking.rescheduleLandmarkShort" : undefined
-					}
-				/>
-				<PurchaseButton
-					tone="outline"
-					label={
-						gps ? t("tracking.positionCaptured") : t("tracking.usePosition")
-					}
-					onPress={() => void locate()}
-				/>
-				{denied ? (
-					<Text style={{ color: c.muted }}>{t("tracking.positionDenied")}</Text>
-				) : null}
-				{reschedule.error ? (
-					<Text accessibilityRole="alert" style={{ color: c.danger }}>
-						{resolveErrorMessage(reschedule.error, t)}
-					</Text>
-				) : null}
-				<PurchaseButton
-					label={t("tracking.rescheduleSubmit")}
-					pending={reschedule.isPending}
-					disabled={!date || landmarkInvalid}
-					onPress={() =>
-						reschedule.mutate(
-							{
-								date,
-								window,
-								...(landmark.trim() ? { landmark: landmark.trim() } : {}),
-								...(gps ? { gps } : {}),
-							},
-							{ onSuccess: () => router.back() },
-						)
-					}
-				/>
-			</Card>
-		</ScrollView>
+		<ScreenColumn width="reading">
+			<ScrollView
+				contentContainerStyle={styles.content}
+				keyboardShouldPersistTaps="handled"
+			>
+				<Card>
+					<ChoiceField
+						label={t("tracking.rescheduleDate")}
+						options={days.map((day) => day.iso)}
+						value={date}
+						onChange={setDate}
+						labelOf={dayLabel}
+					/>
+					<ChoiceField
+						label={t("tracking.rescheduleWindow")}
+						options={WINDOWS}
+						value={window}
+						onChange={setWindow}
+						labelOf={(option) => t(WINDOW_LABELS[option])}
+					/>
+					<TextField
+						label={t("tracking.rescheduleLandmark")}
+						value={landmark}
+						onChange={setLandmark}
+						error={
+							landmarkInvalid ? "tracking.rescheduleLandmarkShort" : undefined
+						}
+					/>
+					<PurchaseButton
+						tone="outline"
+						label={
+							gps ? t("tracking.positionCaptured") : t("tracking.usePosition")
+						}
+						onPress={() => void locate()}
+					/>
+					{denied ? (
+						<Text style={{ color: c.muted }}>
+							{t("tracking.positionDenied")}
+						</Text>
+					) : null}
+					{reschedule.error ? (
+						<Text accessibilityRole="alert" style={{ color: c.danger }}>
+							{resolveErrorMessage(reschedule.error, t)}
+						</Text>
+					) : null}
+					<PurchaseButton
+						label={t("tracking.rescheduleSubmit")}
+						pending={reschedule.isPending}
+						disabled={!date || landmarkInvalid}
+						onPress={() =>
+							reschedule.mutate(
+								{
+									date,
+									window,
+									...(landmark.trim() ? { landmark: landmark.trim() } : {}),
+									...(gps ? { gps } : {}),
+								},
+								{ onSuccess: () => router.back() },
+							)
+						}
+					/>
+				</Card>
+			</ScrollView>
+		</ScreenColumn>
 	);
 }
 

@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -34,9 +35,11 @@ export default function HelpScreen() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()} style={styles.backBtn}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton
+					color={textColor}
+					fallback="/(tabs)/account"
+					style={styles.backBtn}
+				/>
 				<Text style={[styles.title, { color: textColor }]}>
 					{t("help.title")}
 				</Text>

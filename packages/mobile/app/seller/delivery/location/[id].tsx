@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 import { LocationForm } from "@/src/components/delivery/LocationForm";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { useShopTheme } from "@/src/components/shop/theme";
 import {
@@ -37,32 +38,34 @@ function LocationEditor({
 	if (locations.isPending)
 		return <ActivityIndicator style={styles.spinner} color={c.primary} />;
 	return (
-		<ScrollView
-			contentContainerStyle={styles.content}
-			keyboardShouldPersistTaps="handled"
-		>
-			<LocationForm
-				key={location?.updatedAt ?? "new"}
-				initial={initial}
-				pending={save.isPending}
-				error={save.error}
-				onSubmit={(values) =>
-					save.mutate(toLocationInput(values), {
-						onSuccess: () => router.back(),
-					})
-				}
-			/>
-			{locationId ? (
-				<SheetButton
-					label={t("deliverySettings.deactivate")}
-					tone="danger"
-					pending={deactivate.isPending}
-					onPress={() =>
-						deactivate.mutate(locationId, { onSuccess: () => router.back() })
+		<ScreenColumn width="reading">
+			<ScrollView
+				contentContainerStyle={styles.content}
+				keyboardShouldPersistTaps="handled"
+			>
+				<LocationForm
+					key={location?.updatedAt ?? "new"}
+					initial={initial}
+					pending={save.isPending}
+					error={save.error}
+					onSubmit={(values) =>
+						save.mutate(toLocationInput(values), {
+							onSuccess: () => router.back(),
+						})
 					}
 				/>
-			) : null}
-		</ScrollView>
+				{locationId ? (
+					<SheetButton
+						label={t("deliverySettings.deactivate")}
+						tone="danger"
+						pending={deactivate.isPending}
+						onPress={() =>
+							deactivate.mutate(locationId, { onSuccess: () => router.back() })
+						}
+					/>
+				) : null}
+			</ScrollView>
+		</ScreenColumn>
 	);
 }
 

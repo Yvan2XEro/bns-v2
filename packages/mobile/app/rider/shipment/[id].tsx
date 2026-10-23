@@ -3,6 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -50,64 +51,66 @@ export default function RiderShipmentScreen() {
 					onCta={() => query.refetch()}
 				/>
 			) : (
-				<ScrollView contentContainerStyle={styles.content}>
-					<Text style={{ color: c.text, fontSize: 18 }}>
-						{t(shipmentStatusLabel("seller", view.status))}
-					</Text>
-					<Text style={{ color: c.body }}>
-						{[
-							view.destination.landmark,
-							view.destination.district,
-							view.destination.city,
-						]
-							.filter(Boolean)
-							.join(", ")}
-					</Text>
-					{view.expectedCod != null ? (
-						<Text style={{ color: c.text }}>
-							{t("shipmentPanel.cashToCollect", {
-								amount: formatPrice(view.expectedCod, i18n.language),
-							})}
+				<ScreenColumn width="reading">
+					<ScrollView contentContainerStyle={styles.content}>
+						<Text style={{ color: c.text, fontSize: 18 }}>
+							{t(shipmentStatusLabel("seller", view.status))}
 						</Text>
-					) : null}
-					{view.destination.phone ? (
-						<SheetButton
-							tone="secondary"
-							label={t("shipmentPanel.callBuyer")}
-							onPress={() =>
-								void Linking.openURL(telHref(view.destination.phone ?? ""))
-							}
-						/>
-					) : null}
-					{maps ? (
-						<SheetButton
-							tone="secondary"
-							label={t("shipmentPanel.openInMaps")}
-							onPress={() => void Linking.openURL(maps)}
-						/>
-					) : null}
-					{buttons.includes("pick_up") ? (
-						<SheetButton
-							label={t("shipmentPanel.pickUp")}
-							pending={pickUp.isPending}
-							onPress={async () =>
-								pickUp.mutate((await tryCurrentGps()) ?? undefined)
-							}
-						/>
-					) : null}
-					{view.allowedActions.some(
-						(a) => a === "attempt" || a === "handover",
-					) ? (
-						<Text style={{ color: c.muted }}>
-							{t("shipmentPanel.useLinkForDelivery")}
+						<Text style={{ color: c.body }}>
+							{[
+								view.destination.landmark,
+								view.destination.district,
+								view.destination.city,
+							]
+								.filter(Boolean)
+								.join(", ")}
 						</Text>
-					) : null}
-					{pickUp.error ? (
-						<Text accessibilityRole="alert" style={{ color: c.danger }}>
-							{resolveErrorMessage(pickUp.error, t)}
-						</Text>
-					) : null}
-				</ScrollView>
+						{view.expectedCod != null ? (
+							<Text style={{ color: c.text }}>
+								{t("shipmentPanel.cashToCollect", {
+									amount: formatPrice(view.expectedCod, i18n.language),
+								})}
+							</Text>
+						) : null}
+						{view.destination.phone ? (
+							<SheetButton
+								tone="secondary"
+								label={t("shipmentPanel.callBuyer")}
+								onPress={() =>
+									void Linking.openURL(telHref(view.destination.phone ?? ""))
+								}
+							/>
+						) : null}
+						{maps ? (
+							<SheetButton
+								tone="secondary"
+								label={t("shipmentPanel.openInMaps")}
+								onPress={() => void Linking.openURL(maps)}
+							/>
+						) : null}
+						{buttons.includes("pick_up") ? (
+							<SheetButton
+								label={t("shipmentPanel.pickUp")}
+								pending={pickUp.isPending}
+								onPress={async () =>
+									pickUp.mutate((await tryCurrentGps()) ?? undefined)
+								}
+							/>
+						) : null}
+						{view.allowedActions.some(
+							(a) => a === "attempt" || a === "handover",
+						) ? (
+							<Text style={{ color: c.muted }}>
+								{t("shipmentPanel.useLinkForDelivery")}
+							</Text>
+						) : null}
+						{pickUp.error ? (
+							<Text accessibilityRole="alert" style={{ color: c.danger }}>
+								{resolveErrorMessage(pickUp.error, t)}
+							</Text>
+						) : null}
+					</ScrollView>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

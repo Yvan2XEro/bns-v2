@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import {
@@ -365,109 +366,112 @@ function SellerHubContent({
 			style={[styles.safe, { backgroundColor: HUB_HEADER_BG }]}
 		>
 			<SellerHubBar shop={shop} />
-			<ScrollView
-				style={{ backgroundColor: c.bg }}
-				contentContainerStyle={{ paddingBottom: 40 }}
-				refreshControl={
-					<RefreshControl
-						refreshing={isRefetching}
-						onRefresh={() => {
-							onRefetch();
-							if (readsOrders) void toAcceptList.refetch();
-						}}
-						tintColor={c.primary}
-					/>
-				}
-			>
-				<SellerHubLinkCard shop={shop} webUrl={webUrl} onShare={share} />
-				<View style={styles.switcher}>
-					<ShopSwitcher />
-				</View>
+			<ScreenColumn width="wide">
+				<ScrollView
+					style={{ backgroundColor: c.bg }}
+					contentContainerStyle={{ paddingBottom: 40 }}
+					refreshControl={
+						<RefreshControl
+							refreshing={isRefetching}
+							onRefresh={() => {
+								onRefetch();
+								if (readsOrders) void toAcceptList.refetch();
+							}}
+							tintColor={c.primary}
+						/>
+					}
+				>
+					<SellerHubLinkCard shop={shop} webUrl={webUrl} onShare={share} />
+					<View style={styles.switcher}>
+						<ShopSwitcher />
+					</View>
 
-				<View style={styles.content}>
-					{shop.status === "suspended" && shop.suspension ? (
-						<View
-							style={[
-								styles.banner,
-								{ backgroundColor: c.dangerSoft, borderColor: c.danger },
-							]}
-						>
-							<Ionicons name="ban" size={18} color={c.danger} />
-							<View style={{ flex: 1 }}>
-								<Text style={[styles.bannerTitle, { color: c.danger }]}>
-									{shop.suspension.indefinite || !shop.suspension.until
-										? t("seller.suspendedIndefinitely")
-										: t("seller.suspendedUntil", {
-												date: formatDate(
-													shop.suspension.until,
-													{ day: "numeric", month: "long", year: "numeric" },
-													locale,
-												),
-											})}
-								</Text>
-								{shop.suspension.reason ? (
-									<Text style={[styles.meta, { color: c.text }]}>
-										{t(`report.${shop.suspension.reason}`)}
+					<View style={styles.content}>
+						{shop.status === "suspended" && shop.suspension ? (
+							<View
+								style={[
+									styles.banner,
+									{ backgroundColor: c.dangerSoft, borderColor: c.danger },
+								]}
+							>
+								<Ionicons name="ban" size={18} color={c.danger} />
+								<View style={{ flex: 1 }}>
+									<Text style={[styles.bannerTitle, { color: c.danger }]}>
+										{shop.suspension.indefinite || !shop.suspension.until
+											? t("seller.suspendedIndefinitely")
+											: t("seller.suspendedUntil", {
+													date: formatDate(
+														shop.suspension.until,
+														{ day: "numeric", month: "long", year: "numeric" },
+														locale,
+													),
+												})}
 									</Text>
+									{shop.suspension.reason ? (
+										<Text style={[styles.meta, { color: c.text }]}>
+											{t(`report.${shop.suspension.reason}`)}
+										</Text>
+									) : null}
+									<Text style={[styles.meta, { color: c.muted }]}>
+										{t("seller.suspendedBody")}
+									</Text>
+								</View>
+							</View>
+						) : null}
+
+						{!role && roleReason && roleReason !== "shopSuspended" ? (
+							<View
+								style={[
+									styles.banner,
+									{ backgroundColor: c.neutralSoft, borderColor: c.border },
+								]}
+							>
+								<Ionicons name="lock-closed" size={18} color={c.muted} />
+								<View style={{ flex: 1 }}>
+									<Text style={[styles.bannerTitle, { color: c.text }]}>
+										{roleReason === "dormant"
+											? t("seller.hubLocked.dormant")
+											: t("apiErrors.moderation.accountSuspended")}
+									</Text>
+								</View>
+							</View>
+						) : null}
+
+						{role ? (
+							<>
+								{setup ? (
+									<SellerChecklistCard
+										steps={setup.steps}
+										mode="full"
+										welcome={{
+											badge: shop.badge,
+											createdToday,
+											firstName:
+												shop.owner.name.split(" ")[0] ?? shop.owner.name,
+											shopName: shop.name,
+										}}
+										onStep={(step) => homeActions.open(stepTarget(step))}
+									/>
 								) : null}
-								<Text style={[styles.meta, { color: c.muted }]}>
-									{t("seller.suspendedBody")}
-								</Text>
-							</View>
-						</View>
-					) : null}
 
-					{!role && roleReason && roleReason !== "shopSuspended" ? (
-						<View
-							style={[
-								styles.banner,
-								{ backgroundColor: c.neutralSoft, borderColor: c.border },
-							]}
-						>
-							<Ionicons name="lock-closed" size={18} color={c.muted} />
-							<View style={{ flex: 1 }}>
-								<Text style={[styles.bannerTitle, { color: c.text }]}>
-									{roleReason === "dormant"
-										? t("seller.hubLocked.dormant")
-										: t("apiErrors.moderation.accountSuspended")}
-								</Text>
-							</View>
-						</View>
-					) : null}
-
-					{role ? (
-						<>
-							{setup ? (
-								<SellerChecklistCard
-									steps={setup.steps}
-									mode="full"
-									welcome={{
-										badge: shop.badge,
-										createdToday,
-										firstName: shop.owner.name.split(" ")[0] ?? shop.owner.name,
-										shopName: shop.name,
-									}}
-									onStep={(step) => homeActions.open(stepTarget(step))}
+								<SellerManageCard tiles={manageTiles} />
+								<SellerInsightsSummary
+									enabled={insightsEnabled}
+									role={role}
+									shopId={shop.id}
 								/>
-							) : null}
+							</>
+						) : null}
 
-							<SellerManageCard tiles={manageTiles} />
-							<SellerInsightsSummary
-								enabled={insightsEnabled}
-								role={role}
-								shopId={shop.id}
-							/>
-						</>
-					) : null}
-
-					{tabRoot ? (
-						<>
-							<MyAccountButton />
-							<SwitchModeButton target="buyer" />
-						</>
-					) : null}
-				</View>
-			</ScrollView>
+						{tabRoot ? (
+							<>
+								<MyAccountButton />
+								<SwitchModeButton target="buyer" />
+							</>
+						) : null}
+					</View>
+				</ScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

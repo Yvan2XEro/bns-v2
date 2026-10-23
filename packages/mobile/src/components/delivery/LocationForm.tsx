@@ -4,6 +4,7 @@ import * as Location from "expo-location";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, Text, View } from "react-native";
+import { FormRow } from "@/src/components/layout/FormRow";
 import {
 	FieldError,
 	SheetButton,
@@ -131,32 +132,34 @@ export function LocationForm({
 			{denied ? (
 				<FieldError message={t("deliverySettings.positionDenied")} />
 			) : null}
-			<Controller
-				control={control}
-				name="lat"
-				render={({ field }) => (
-					<TextField
-						label={t("deliverySettings.fieldLat")}
-						value={field.value}
-						onChange={field.onChange}
-						keyboardType="decimal-pad"
-						error={errorOf("lat")}
-					/>
-				)}
-			/>
-			<Controller
-				control={control}
-				name="lng"
-				render={({ field }) => (
-					<TextField
-						label={t("deliverySettings.fieldLng")}
-						value={field.value}
-						onChange={field.onChange}
-						keyboardType="decimal-pad"
-						error={errorOf("lng")}
-					/>
-				)}
-			/>
+			<FormRow>
+				<Controller
+					control={control}
+					name="lat"
+					render={({ field }) => (
+						<TextField
+							label={t("deliverySettings.fieldLat")}
+							value={field.value}
+							onChange={field.onChange}
+							keyboardType="decimal-pad"
+							error={errorOf("lat")}
+						/>
+					)}
+				/>
+				<Controller
+					control={control}
+					name="lng"
+					render={({ field }) => (
+						<TextField
+							label={t("deliverySettings.fieldLng")}
+							value={field.value}
+							onChange={field.onChange}
+							keyboardType="decimal-pad"
+							error={errorOf("lng")}
+						/>
+					)}
+				/>
+			</FormRow>
 			{lat !== "" &&
 			lng !== "" &&
 			Number.isFinite(Number(lat)) &&

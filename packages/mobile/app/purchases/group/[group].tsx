@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCheckoutGroup } from "@/src/hooks/useCheckoutGroup";
@@ -58,45 +59,47 @@ export default function CheckoutGroupScreen() {
 					onCta={() => void refetch()}
 				/>
 			) : (
-				<FlashList<CheckoutGroupOrderView>
-					data={query.data.orders}
-					keyExtractor={(order) => order.id}
-					contentContainerStyle={styles.list}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-					ListHeaderComponent={
-						<View style={styles.header}>
-							{flow.position ? (
-								<Text style={[styles.step, { color: c.text }]}>
-									{t("checkoutGroup.stepperPosition", {
-										n: flow.position.n,
-										total: flow.position.total,
+				<ScreenColumn width="wide">
+					<FlashList<CheckoutGroupOrderView>
+						data={query.data.orders}
+						keyExtractor={(order) => order.id}
+						contentContainerStyle={styles.list}
+						ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+						ListHeaderComponent={
+							<View style={styles.header}>
+								{flow.position ? (
+									<Text style={[styles.step, { color: c.text }]}>
+										{t("checkoutGroup.stepperPosition", {
+											n: flow.position.n,
+											total: flow.position.total,
+										})}
+									</Text>
+								) : null}
+								<Text style={[styles.meta, { color: c.muted }]}>
+									{t("checkoutGroup.summaryPaid", {
+										count: flow.summary.paid,
+									})}
+									{" · "}
+									{t("checkoutGroup.summaryExpired", {
+										count: flow.summary.expired,
+									})}
+									{" · "}
+									{t("checkoutGroup.summaryPending", {
+										count: flow.summary.pending,
 									})}
 								</Text>
-							) : null}
-							<Text style={[styles.meta, { color: c.muted }]}>
-								{t("checkoutGroup.summaryPaid", {
-									count: flow.summary.paid,
-								})}
-								{" · "}
-								{t("checkoutGroup.summaryExpired", {
-									count: flow.summary.expired,
-								})}
-								{" · "}
-								{t("checkoutGroup.summaryPending", {
-									count: flow.summary.pending,
-								})}
-							</Text>
-						</View>
-					}
-					renderItem={({ item: order }) => (
-						<OrderCard
-							order={order}
-							step={stateOf.get(order.id)}
-							isNext={flow.next === order.id}
-							locale={locale}
-						/>
-					)}
-				/>
+							</View>
+						}
+						renderItem={({ item: order }) => (
+							<OrderCard
+								order={order}
+								step={stateOf.get(order.id)}
+								isNext={flow.next === order.id}
+								locale={locale}
+							/>
+						)}
+					/>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

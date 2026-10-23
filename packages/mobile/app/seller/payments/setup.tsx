@@ -12,6 +12,7 @@ import {
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { HoldsList } from "@/src/components/payments/HoldsList";
 import { PaymentsShell } from "@/src/components/payments/PaymentsShell";
 import { PayoutAccountForm } from "@/src/components/payments/PayoutAccountForm";
@@ -202,145 +203,161 @@ function SetupContent({ shopId }: { shopId: string }) {
 		Date.parse(view.changeCooldownUntil) > Date.now();
 
 	return (
-		<ScrollView
-			contentContainerStyle={styles.content}
-			refreshControl={
-				<RefreshControl refreshing={setup.isRefetching} onRefresh={refresh} />
-			}
-		>
-			{notMeId ? <NotMeBanner shopId={shopId} accountId={notMeId} /> : null}
+		<ScreenColumn width="reading">
+			<ScrollView
+				contentContainerStyle={styles.content}
+				refreshControl={
+					<RefreshControl refreshing={setup.isRefetching} onRefresh={refresh} />
+				}
+			>
+				{notMeId ? <NotMeBanner shopId={shopId} accountId={notMeId} /> : null}
 
-			{view.ineligibleReason === "level" ? (
+				{view.ineligibleReason === "level" ? (
+					<View
+						style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
+					>
+						<Text style={[s.cardTitle, { color: c.text }]}>
+							{t("payments.setup_step1Title")}
+						</Text>
+						<Text style={[s.body, { color: c.body }]}>
+							{t("payments.setup_step1Body")}
+						</Text>
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={t("payments.setup_step1Action")}
+							onPress={() => router.push("/seller/verification")}
+							style={[s.button, { backgroundColor: c.primary, marginTop: 10 }]}
+						>
+							<Text style={s.buttonText}>
+								{t("payments.setup_step1Action")}
+							</Text>
+						</Pressable>
+					</View>
+				) : (
+					<>
+						<View
+							style={[
+								s.card,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							<Text style={[s.cardTitle, { color: c.text }]}>
+								{t("payments.setup_step2Title")}
+							</Text>
+							<Text style={[s.body, { color: c.body }]}>
+								{t("payments.setup_step2Body")}
+							</Text>
+							<Text style={[s.meta, { color: c.muted, marginTop: 8 }]}>
+								{view.connectedAccount
+									? t(CONNECTED_ACCOUNT_STATUSES[view.connectedAccount.status])
+									: t("payments.accountStatus_created")}
+							</Text>
+							{view.connectedAccount &&
+							view.connectedAccount.requirementsDue.length > 0 ? (
+								<View style={styles.requirements}>
+									<Text style={[s.meta, { color: c.warningText }]}>
+										{t("payments.setup_requirementsDue")}
+									</Text>
+									{view.connectedAccount.requirementsDue.map((req) => (
+										<Text key={req} style={[s.meta, { color: c.muted }]}>
+											{"• "}
+											{req}
+										</Text>
+									))}
+								</View>
+							) : null}
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={t("payments.setup_step2Action")}
+								accessibilityState={{ busy: startOnboarding.isPending }}
+								onPress={onContinueOnboarding}
+								disabled={startOnboarding.isPending}
+								style={[
+									s.button,
+									{ backgroundColor: c.primary, marginTop: 10 },
+								]}
+							>
+								{startOnboarding.isPending ? (
+									<ActivityIndicator color="#fff" />
+								) : (
+									<Text style={s.buttonText}>
+										{t("payments.setup_step2Action")}
+									</Text>
+								)}
+							</Pressable>
+						</View>
+
+						<View
+							style={[
+								s.card,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							<Text style={[s.cardTitle, { color: c.text }]}>
+								{t("payments.setup_step3Title")}
+							</Text>
+							{view.payoutAccount ? (
+								<View style={styles.requirements}>
+									<Text style={[s.meta, { color: c.muted }]}>
+										{t(PAYOUT_METHODS[view.payoutAccount.method])} ·{" "}
+										{view.payoutAccount.accountNumberMasked}
+									</Text>
+									<Text style={[s.meta, { color: c.muted }]}>
+										{t(PAYOUT_ACCOUNT_STATUSES[view.payoutAccount.status])}
+									</Text>
+								</View>
+							) : view.pendingAccount ? (
+								<Text style={[s.meta, { color: c.muted, marginBottom: 8 }]}>
+									{view.pendingAccount.accountNumberMasked} ·{" "}
+									{t(
+										PAYOUT_ACCOUNT_STATUSES[
+											view.pendingAccount
+												.status as keyof typeof PAYOUT_ACCOUNT_STATUSES
+										] ?? PAYOUT_ACCOUNT_STATUSES.pending_review,
+									)}
+								</Text>
+							) : null}
+
+							{cooldownActive && view.changeCooldownUntil ? (
+								<Text style={[s.meta, { color: c.warningText, marginTop: 8 }]}>
+									{t("payments.setup_cooldownUntil", {
+										date: formatOrderDate(view.changeCooldownUntil, locale),
+									})}
+								</Text>
+							) : (
+								<View style={{ marginTop: 10 }}>
+									{view.payoutAccount ? (
+										<Text
+											style={[
+												s.meta,
+												{ color: c.warningText, marginBottom: 8 },
+											]}
+										>
+											{t("payments.setup_changeNotice", {
+												hours: view.payoutChangeHoldHours,
+											})}
+										</Text>
+									) : null}
+									<PayoutAccountForm
+										onSubmit={onSaveAccount}
+										pending={submitAccount.isPending}
+									/>
+								</View>
+							)}
+						</View>
+					</>
+				)}
+
 				<View
 					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
 				>
 					<Text style={[s.cardTitle, { color: c.text }]}>
-						{t("payments.setup_step1Title")}
+						{t("payments.seller_statusHolds")}
 					</Text>
-					<Text style={[s.body, { color: c.body }]}>
-						{t("payments.setup_step1Body")}
-					</Text>
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={t("payments.setup_step1Action")}
-						onPress={() => router.push("/seller/verification")}
-						style={[s.button, { backgroundColor: c.primary, marginTop: 10 }]}
-					>
-						<Text style={s.buttonText}>{t("payments.setup_step1Action")}</Text>
-					</Pressable>
+					<HoldsList holds={view.holds} />
 				</View>
-			) : (
-				<>
-					<View
-						style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
-					>
-						<Text style={[s.cardTitle, { color: c.text }]}>
-							{t("payments.setup_step2Title")}
-						</Text>
-						<Text style={[s.body, { color: c.body }]}>
-							{t("payments.setup_step2Body")}
-						</Text>
-						<Text style={[s.meta, { color: c.muted, marginTop: 8 }]}>
-							{view.connectedAccount
-								? t(CONNECTED_ACCOUNT_STATUSES[view.connectedAccount.status])
-								: t("payments.accountStatus_created")}
-						</Text>
-						{view.connectedAccount &&
-						view.connectedAccount.requirementsDue.length > 0 ? (
-							<View style={styles.requirements}>
-								<Text style={[s.meta, { color: c.warningText }]}>
-									{t("payments.setup_requirementsDue")}
-								</Text>
-								{view.connectedAccount.requirementsDue.map((req) => (
-									<Text key={req} style={[s.meta, { color: c.muted }]}>
-										{"• "}
-										{req}
-									</Text>
-								))}
-							</View>
-						) : null}
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t("payments.setup_step2Action")}
-							accessibilityState={{ busy: startOnboarding.isPending }}
-							onPress={onContinueOnboarding}
-							disabled={startOnboarding.isPending}
-							style={[s.button, { backgroundColor: c.primary, marginTop: 10 }]}
-						>
-							{startOnboarding.isPending ? (
-								<ActivityIndicator color="#fff" />
-							) : (
-								<Text style={s.buttonText}>
-									{t("payments.setup_step2Action")}
-								</Text>
-							)}
-						</Pressable>
-					</View>
-
-					<View
-						style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
-					>
-						<Text style={[s.cardTitle, { color: c.text }]}>
-							{t("payments.setup_step3Title")}
-						</Text>
-						{view.payoutAccount ? (
-							<View style={styles.requirements}>
-								<Text style={[s.meta, { color: c.muted }]}>
-									{t(PAYOUT_METHODS[view.payoutAccount.method])} ·{" "}
-									{view.payoutAccount.accountNumberMasked}
-								</Text>
-								<Text style={[s.meta, { color: c.muted }]}>
-									{t(PAYOUT_ACCOUNT_STATUSES[view.payoutAccount.status])}
-								</Text>
-							</View>
-						) : view.pendingAccount ? (
-							<Text style={[s.meta, { color: c.muted, marginBottom: 8 }]}>
-								{view.pendingAccount.accountNumberMasked} ·{" "}
-								{t(
-									PAYOUT_ACCOUNT_STATUSES[
-										view.pendingAccount
-											.status as keyof typeof PAYOUT_ACCOUNT_STATUSES
-									] ?? PAYOUT_ACCOUNT_STATUSES.pending_review,
-								)}
-							</Text>
-						) : null}
-
-						{cooldownActive && view.changeCooldownUntil ? (
-							<Text style={[s.meta, { color: c.warningText, marginTop: 8 }]}>
-								{t("payments.setup_cooldownUntil", {
-									date: formatOrderDate(view.changeCooldownUntil, locale),
-								})}
-							</Text>
-						) : (
-							<View style={{ marginTop: 10 }}>
-								{view.payoutAccount ? (
-									<Text
-										style={[s.meta, { color: c.warningText, marginBottom: 8 }]}
-									>
-										{t("payments.setup_changeNotice", {
-											hours: view.payoutChangeHoldHours,
-										})}
-									</Text>
-								) : null}
-								<PayoutAccountForm
-									onSubmit={onSaveAccount}
-									pending={submitAccount.isPending}
-								/>
-							</View>
-						)}
-					</View>
-				</>
-			)}
-
-			<View
-				style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
-			>
-				<Text style={[s.cardTitle, { color: c.text }]}>
-					{t("payments.seller_statusHolds")}
-				</Text>
-				<HoldsList holds={view.holds} />
-			</View>
-		</ScrollView>
+			</ScrollView>
+		</ScreenColumn>
 	);
 }
 

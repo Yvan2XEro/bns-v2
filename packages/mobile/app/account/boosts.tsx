@@ -24,6 +24,7 @@ import Svg, {
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
@@ -326,9 +327,11 @@ export default function BoostHistoryScreen() {
 		>
 			{/* Header */}
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()} style={styles.backBtn}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton
+					color={textColor}
+					fallback="/(tabs)/account"
+					style={styles.backBtn}
+				/>
 				<View>
 					<Text style={[styles.headerTitle, { color: textColor }]}>
 						{t("boostHistory.title")}

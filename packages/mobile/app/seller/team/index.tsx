@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { MemberRow } from "@/src/components/shop/team/MemberRow";
 import { PendingInvitationRow } from "@/src/components/shop/team/PendingInvitationRow";
@@ -120,31 +121,33 @@ export default function TeamScreen() {
 			) : !view ? null : !view.teamMembers ? (
 				<TeamLocked />
 			) : (
-				<FlashList
-					data={view.members}
-					keyExtractor={(member) => member.id}
-					contentContainerStyle={styles.list}
-					ListHeaderComponent={<TeamLimitMeter team={view} />}
-					renderItem={({ item }) => (
-						<MemberRow
-							member={item}
-							onPress={() => router.push(`/seller/team/${item.id}` as never)}
-						/>
-					)}
-					ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-					ListFooterComponent={
-						<PendingSection
-							view={view}
-							role={role}
-							canInvite={canInvite}
-							isFull={isFull}
-							resendingId={resendingId}
-							revokingId={revokingId}
-							onResend={handleResend}
-							onRevoke={handleRevoke}
-						/>
-					}
-				/>
+				<ScreenColumn width="wide">
+					<FlashList
+						data={view.members}
+						keyExtractor={(member) => member.id}
+						contentContainerStyle={styles.list}
+						ListHeaderComponent={<TeamLimitMeter team={view} />}
+						renderItem={({ item }) => (
+							<MemberRow
+								member={item}
+								onPress={() => router.push(`/seller/team/${item.id}` as never)}
+							/>
+						)}
+						ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+						ListFooterComponent={
+							<PendingSection
+								view={view}
+								role={role}
+								canInvite={canInvite}
+								isFull={isFull}
+								resendingId={resendingId}
+								revokingId={revokingId}
+								onResend={handleResend}
+								onRevoke={handleRevoke}
+							/>
+						}
+					/>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

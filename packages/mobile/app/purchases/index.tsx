@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { PurchaseRow } from "@/src/components/purchases/PurchaseRow";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -108,60 +109,62 @@ export default function PurchasesScreen() {
 					onCta={() => router.push("/(tabs)/search")}
 				/>
 			) : (
-				<FlashList
-					data={items}
-					keyExtractor={(item) =>
-						item.kind === "header"
-							? `group:${item.checkoutGroup}`
-							: item.entry.id
-					}
-					getItemType={(item) => item.kind}
-					renderItem={({ item }) =>
-						item.kind === "header" ? (
-							<GroupHeader checkoutGroup={item.checkoutGroup} />
-						) : (
-							<PurchaseRow entry={item.entry} />
-						)
-					}
-					contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-					refreshControl={
-						<RefreshControl
-							refreshing={purchases.isRefetching}
-							onRefresh={() => void purchases.refetch()}
-							tintColor={c.primary}
-						/>
-					}
-					onEndReached={() => {
-						if (purchases.hasNextPage && !purchases.isFetchingNextPage) {
-							void purchases.fetchNextPage();
+				<ScreenColumn width="wide">
+					<FlashList
+						data={items}
+						keyExtractor={(item) =>
+							item.kind === "header"
+								? `group:${item.checkoutGroup}`
+								: item.entry.id
 						}
-					}}
-					ListEmptyComponent={
-						<Text style={[styles.empty, { color: c.muted }]}>
-							{t("purchases.tabEmpty")}
-						</Text>
-					}
-					ListFooterComponent={
-						purchases.hasNextPage ? (
-							<Pressable
-								onPress={() => void purchases.fetchNextPage()}
-								disabled={purchases.isFetchingNextPage}
-								accessibilityRole="button"
-								accessibilityLabel={t("purchases.loadMore")}
-								style={styles.more}
-							>
-								{purchases.isFetchingNextPage ? (
-									<ActivityIndicator color={c.primary} />
-								) : (
-									<Text style={[styles.moreText, { color: c.primary }]}>
-										{t("purchases.loadMore")}
-									</Text>
-								)}
-							</Pressable>
-						) : null
-					}
-				/>
+						getItemType={(item) => item.kind}
+						renderItem={({ item }) =>
+							item.kind === "header" ? (
+								<GroupHeader checkoutGroup={item.checkoutGroup} />
+							) : (
+								<PurchaseRow entry={item.entry} />
+							)
+						}
+						contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+						ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+						refreshControl={
+							<RefreshControl
+								refreshing={purchases.isRefetching}
+								onRefresh={() => void purchases.refetch()}
+								tintColor={c.primary}
+							/>
+						}
+						onEndReached={() => {
+							if (purchases.hasNextPage && !purchases.isFetchingNextPage) {
+								void purchases.fetchNextPage();
+							}
+						}}
+						ListEmptyComponent={
+							<Text style={[styles.empty, { color: c.muted }]}>
+								{t("purchases.tabEmpty")}
+							</Text>
+						}
+						ListFooterComponent={
+							purchases.hasNextPage ? (
+								<Pressable
+									onPress={() => void purchases.fetchNextPage()}
+									disabled={purchases.isFetchingNextPage}
+									accessibilityRole="button"
+									accessibilityLabel={t("purchases.loadMore")}
+									style={styles.more}
+								>
+									{purchases.isFetchingNextPage ? (
+										<ActivityIndicator color={c.primary} />
+									) : (
+										<Text style={[styles.moreText, { color: c.primary }]}>
+											{t("purchases.loadMore")}
+										</Text>
+									)}
+								</Pressable>
+							) : null
+						}
+					/>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

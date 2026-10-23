@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -99,13 +100,15 @@ export default function ResaleOfferedScreen() {
 					title={t("sellerResale.offeredEmpty")}
 				/>
 			) : null}
-			<FlashList
-				data={rows}
-				keyExtractor={(item) => item.productId}
-				contentContainerStyle={styles.list}
-				ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-				renderItem={({ item }) => <OfferedProductCard product={item} />}
-			/>
+			<ScreenColumn width="wide">
+				<FlashList
+					data={rows}
+					keyExtractor={(item) => item.productId}
+					contentContainerStyle={styles.list}
+					ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+					renderItem={({ item }) => <OfferedProductCard product={item} />}
+				/>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

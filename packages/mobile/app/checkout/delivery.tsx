@@ -11,6 +11,7 @@ import {
 } from "@/src/components/checkout/CheckoutProvider";
 import { DeliveryOptionCard } from "@/src/components/checkout/DeliveryOptionCard";
 import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPicker";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -85,74 +86,76 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 	};
 
 	return (
-		<ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-			<Text style={[formStyles.sectionTitle, { color: c.text }]}>
-				{t("checkout.deliveryOptions")}
-			</Text>
-			{protectedPaymentEnabled ? (
-				<PaymentMethodPicker
-					method={state.paymentMethod}
-					fee={null}
-					buyerProtection={buyerProtection}
-					locale={locale}
-					onChoose={(method) =>
-						dispatch({ type: "paymentMethodChosen", method })
-					}
-				/>
-			) : null}
-			{options.isPending ? (
-				<View style={formStyles.row}>
-					<ActivityIndicator color={c.primary} />
-					<Text style={[formStyles.hint, { color: c.muted }]}>
-						{t("checkout.loadingOptions")}
-					</Text>
-				</View>
-			) : null}
-			{options.error ? (
-				<Text style={formStyles.error} accessibilityRole="alert">
-					{resolveErrorMessage(options.error, t)}
+		<ScreenColumn width="reading">
+			<ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+				<Text style={[formStyles.sectionTitle, { color: c.text }]}>
+					{t("checkout.deliveryOptions")}
 				</Text>
-			) : null}
-			{options.isSuccess && list.length === 0 ? (
-				<Text style={[formStyles.hint, { color: c.body }]}>
-					{t("checkout.noDeliveryOptions")}
-				</Text>
-			) : null}
-			<View accessibilityRole="radiogroup" style={{ gap: 12 }}>
-				{list.map((option) => (
-					<DeliveryOptionCard
-						key={option.optionId}
-						option={option}
+				{protectedPaymentEnabled ? (
+					<PaymentMethodPicker
+						method={state.paymentMethod}
+						fee={null}
+						buyerProtection={buyerProtection}
 						locale={locale}
-						checked={option.optionId === pickedId}
-						selectable={state.paymentMethod !== "cod" || option.codAllowed}
-						onSelect={() => setPickedId(option.optionId)}
+						onChoose={(method) =>
+							dispatch({ type: "paymentMethodChosen", method })
+						}
 					/>
+				) : null}
+				{options.isPending ? (
+					<View style={formStyles.row}>
+						<ActivityIndicator color={c.primary} />
+						<Text style={[formStyles.hint, { color: c.muted }]}>
+							{t("checkout.loadingOptions")}
+						</Text>
+					</View>
+				) : null}
+				{options.error ? (
+					<Text style={formStyles.error} accessibilityRole="alert">
+						{resolveErrorMessage(options.error, t)}
+					</Text>
+				) : null}
+				{options.isSuccess && list.length === 0 ? (
+					<Text style={[formStyles.hint, { color: c.body }]}>
+						{t("checkout.noDeliveryOptions")}
+					</Text>
+				) : null}
+				<View accessibilityRole="radiogroup" style={{ gap: 12 }}>
+					{list.map((option) => (
+						<DeliveryOptionCard
+							key={option.optionId}
+							option={option}
+							locale={locale}
+							checked={option.optionId === pickedId}
+							selectable={state.paymentMethod !== "cod" || option.codAllowed}
+							onSelect={() => setPickedId(option.optionId)}
+						/>
+					))}
+				</View>
+				{options.data?.unavailable.map((option, index) => (
+					<Text
+						key={`${option.method}-${index}`}
+						style={[formStyles.hint, { color: c.warningText }]}
+					>
+						{t(`checkout.deliveryUnavailable.${option.reason}`, {
+							amount: formatPrice(option.minOrderSubtotal ?? 0, i18n.language),
+						})}
+					</Text>
 				))}
-			</View>
-			{options.data?.unavailable.map((option, index) => (
-				<Text
-					key={`${option.method}-${index}`}
-					style={[formStyles.hint, { color: c.warningText }]}
-				>
-					{t(`checkout.deliveryUnavailable.${option.reason}`, {
-						amount: formatPrice(option.minOrderSubtotal ?? 0, i18n.language),
-					})}
-				</Text>
-			))}
-			<View style={[formStyles.row, { marginTop: 8 }]}>
-				<CheckoutButton
-					variant="outline"
-					label={t("common.back")}
-					onPress={() => router.back()}
-				/>
-				<CheckoutButton
-					label={t("checkout.continue")}
-					onPress={choose}
-					disabled={!picked}
-					style={{ flex: 1 }}
-				/>
-			</View>
-		</ScrollView>
+				<View style={[formStyles.row, { marginTop: 8 }]}>
+					<CheckoutButton
+						variant="outline"
+						label={t("common.back")}
+						onPress={() => router.back()}
+					/>
+					<CheckoutButton
+						label={t("checkout.continue")}
+						onPress={choose}
+						disabled={!picked}
+						style={{ flex: 1 }}
+					/>
+				</View>
+			</ScrollView>
+		</ScreenColumn>
 	);
 }

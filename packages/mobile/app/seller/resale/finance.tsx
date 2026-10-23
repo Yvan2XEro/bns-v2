@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -131,69 +132,71 @@ export default function ResellerFinanceScreen() {
 				title={t("sellerResale.finance.title")}
 				subtitle={shop.name}
 			/>
-			<FlashList
-				data={rows}
-				keyExtractor={(row) => row.id}
-				contentContainerStyle={styles.list}
-				ListHeaderComponent={
-					<View style={styles.headerContent}>
-						{finance?.accountRequired && (
-							<Pressable
-								onPress={() => router.push("/seller/payments/setup")}
-								accessibilityRole="button"
-								accessibilityLabel={t("sellerResale.finance.accountRequired")}
+			<ScreenColumn width="wide">
+				<FlashList
+					data={rows}
+					keyExtractor={(row) => row.id}
+					contentContainerStyle={styles.list}
+					ListHeaderComponent={
+						<View style={styles.headerContent}>
+							{finance?.accountRequired && (
+								<Pressable
+									onPress={() => router.push("/seller/payments/setup")}
+									accessibilityRole="button"
+									accessibilityLabel={t("sellerResale.finance.accountRequired")}
+									style={[
+										styles.notice,
+										{ backgroundColor: c.card, borderColor: c.border },
+									]}
+								>
+									<Ionicons name="card-outline" size={20} color={c.primary} />
+									<Text style={[styles.noticeText, { color: c.text }]}>
+										{t("sellerResale.finance.accountRequired")}
+									</Text>
+								</Pressable>
+							)}
+							<View style={styles.summary}>
+								<Summary
+									title={t("sellerResale.finance.available")}
+									value={payable}
+									locale={locale}
+								/>
+								<Summary
+									title={t("sellerResale.finance.dueCharges")}
+									value={openCharges}
+									locale={locale}
+								/>
+							</View>
+						</View>
+					}
+					ListEmptyComponent={
+						<Text style={[styles.empty, { color: c.muted }]}>
+							{t("sellerResale.finance.empty")}
+						</Text>
+					}
+					renderItem={({ item }) =>
+						item.type === "heading" ? (
+							<Text style={[styles.section, { color: c.text }]}>
+								{item.label}
+							</Text>
+						) : (
+							<View
 								style={[
-									styles.notice,
+									styles.row,
 									{ backgroundColor: c.card, borderColor: c.border },
 								]}
 							>
-								<Ionicons name="card-outline" size={20} color={c.primary} />
-								<Text style={[styles.noticeText, { color: c.text }]}>
-									{t("sellerResale.finance.accountRequired")}
+								<Text style={[styles.rowLabel, { color: c.body }]}>
+									{item.label}
 								</Text>
-							</Pressable>
-						)}
-						<View style={styles.summary}>
-							<Summary
-								title={t("sellerResale.finance.available")}
-								value={payable}
-								locale={locale}
-							/>
-							<Summary
-								title={t("sellerResale.finance.dueCharges")}
-								value={openCharges}
-								locale={locale}
-							/>
-						</View>
-					</View>
-				}
-				ListEmptyComponent={
-					<Text style={[styles.empty, { color: c.muted }]}>
-						{t("sellerResale.finance.empty")}
-					</Text>
-				}
-				renderItem={({ item }) =>
-					item.type === "heading" ? (
-						<Text style={[styles.section, { color: c.text }]}>
-							{item.label}
-						</Text>
-					) : (
-						<View
-							style={[
-								styles.row,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<Text style={[styles.rowLabel, { color: c.body }]}>
-								{item.label}
-							</Text>
-							<Text style={[styles.amount, { color: c.text }]}>
-								{formatPrice(item.amount, locale)}
-							</Text>
-						</View>
-					)
-				}
-			/>
+								<Text style={[styles.amount, { color: c.text }]}>
+									{formatPrice(item.amount, locale)}
+								</Text>
+							</View>
+						)
+					}
+				/>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -100,101 +101,105 @@ export default function MoveListingsScreen() {
 					subtitle={t("shop.moveEmptyBody")}
 				/>
 			) : (
-				<FlatList
-					data={docs}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={{ padding: 16, paddingBottom: 280 }}
-					ListHeaderComponent={
-						<View style={{ gap: 12 }}>
-							<Text style={[styles.body, { color: c.body }]}>
-								{t("shop.moveIntro", { shop: shop?.name ?? "" })}
-							</Text>
-							<Pressable
-								onPress={() =>
-									setSelected(
-										allSelected ? new Set() : new Set(docs.map((d) => d.id)),
-									)
-								}
-								accessibilityRole="button"
-								accessibilityLabel={t("shop.selectAll")}
-								style={[
-									styles.groupHead,
-									{ backgroundColor: c.neutralSoft, borderColor: c.border },
-								]}
-							>
-								<CheckBox checked={allSelected} />
-								<Text style={[styles.label, { color: c.text, flex: 1 }]}>
-									{t("shop.selectAll")}
+				<ScreenColumn width="wide">
+					<FlatList
+						data={docs}
+						keyExtractor={(item) => item.id}
+						contentContainerStyle={{ padding: 16, paddingBottom: 280 }}
+						ListHeaderComponent={
+							<View style={{ gap: 12 }}>
+								<Text style={[styles.body, { color: c.body }]}>
+									{t("shop.moveIntro", { shop: shop?.name ?? "" })}
 								</Text>
-								<Text style={[styles.meta, { color: c.muted }]}>
-									{t("shop.selectedCount", {
-										count: selected.size,
-										total: docs.length,
-									})}
-								</Text>
-							</Pressable>
-						</View>
-					}
-					renderItem={({
-						item,
-						index,
-					}: {
-						item: ListingDoc;
-						index: number;
-					}) => {
-						const active = selected.has(item.id);
-						const last = index === docs.length - 1;
-						const uri = resolveListingImageUrl(item.images?.[0], "thumbnail");
-						return (
-							<Pressable
-								onPress={() => toggle(item.id)}
-								accessibilityRole="checkbox"
-								accessibilityState={{ checked: active }}
-								accessibilityLabel={item.title}
-								style={[
-									styles.item,
-									last && styles.itemLast,
-									{ backgroundColor: c.card, borderColor: c.border },
-								]}
-							>
-								<CheckBox checked={active} />
-								{uri ? (
-									<Image
-										source={{ uri }}
-										style={styles.thumb}
-										contentFit="cover"
-									/>
-								) : (
-									<View
-										style={[
-											styles.thumb,
-											styles.thumbEmpty,
-											{ backgroundColor: c.primarySoft },
-										]}
-									>
-										<Ionicons
-											name="pricetag-outline"
-											size={20}
-											color={c.primary}
-										/>
-									</View>
-								)}
-								<View style={{ flex: 1 }}>
-									<Text
-										style={[styles.label, { color: c.text }]}
-										numberOfLines={2}
-									>
-										{item.title}
+								<Pressable
+									onPress={() =>
+										setSelected(
+											allSelected ? new Set() : new Set(docs.map((d) => d.id)),
+										)
+									}
+									accessibilityRole="button"
+									accessibilityLabel={t("shop.selectAll")}
+									style={[
+										styles.groupHead,
+										{ backgroundColor: c.neutralSoft, borderColor: c.border },
+									]}
+								>
+									<CheckBox checked={allSelected} />
+									<Text style={[styles.label, { color: c.text, flex: 1 }]}>
+										{t("shop.selectAll")}
 									</Text>
 									<Text style={[styles.meta, { color: c.muted }]}>
-										{item.price ? formatPrice(item.price, i18n.language) : "—"}{" "}
-										· {t(`catalogue.listingStatus_${item.status}`)}
+										{t("shop.selectedCount", {
+											count: selected.size,
+											total: docs.length,
+										})}
 									</Text>
-								</View>
-							</Pressable>
-						);
-					}}
-				/>
+								</Pressable>
+							</View>
+						}
+						renderItem={({
+							item,
+							index,
+						}: {
+							item: ListingDoc;
+							index: number;
+						}) => {
+							const active = selected.has(item.id);
+							const last = index === docs.length - 1;
+							const uri = resolveListingImageUrl(item.images?.[0], "thumbnail");
+							return (
+								<Pressable
+									onPress={() => toggle(item.id)}
+									accessibilityRole="checkbox"
+									accessibilityState={{ checked: active }}
+									accessibilityLabel={item.title}
+									style={[
+										styles.item,
+										last && styles.itemLast,
+										{ backgroundColor: c.card, borderColor: c.border },
+									]}
+								>
+									<CheckBox checked={active} />
+									{uri ? (
+										<Image
+											source={{ uri }}
+											style={styles.thumb}
+											contentFit="cover"
+										/>
+									) : (
+										<View
+											style={[
+												styles.thumb,
+												styles.thumbEmpty,
+												{ backgroundColor: c.primarySoft },
+											]}
+										>
+											<Ionicons
+												name="pricetag-outline"
+												size={20}
+												color={c.primary}
+											/>
+										</View>
+									)}
+									<View style={{ flex: 1 }}>
+										<Text
+											style={[styles.label, { color: c.text }]}
+											numberOfLines={2}
+										>
+											{item.title}
+										</Text>
+										<Text style={[styles.meta, { color: c.muted }]}>
+											{item.price
+												? formatPrice(item.price, i18n.language)
+												: "—"}{" "}
+											· {t(`catalogue.listingStatus_${item.status}`)}
+										</Text>
+									</View>
+								</Pressable>
+							);
+						}}
+					/>
+				</ScreenColumn>
 			)}
 
 			{docs.length > 0 ? (

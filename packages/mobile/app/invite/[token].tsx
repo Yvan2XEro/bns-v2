@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { PhoneGate } from "@/src/components/shop/PhoneGate";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -196,154 +197,156 @@ export default function InviteScreen() {
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
 			<SellerHeader title={t("invite.title")} onBack={goHome} />
-			<ScrollView contentContainerStyle={styles.content}>
-				<View style={styles.summary}>
-					<ShopAvatar
-						name={invitation.shop.name}
-						logo={invitation.shop.logoUrl}
-						size={64}
-						radius={16}
-					/>
-					<Text style={[styles.shopName, { color: c.text }]}>
-						{invitation.shop.name}
-					</Text>
-					<Text style={[styles.handle, { color: c.muted }]}>
-						@{invitation.shop.handle}
-					</Text>
-					<LevelBadge badge={invitation.shop.badge} />
-
-					{invitation.inviterFirstName ? (
-						<Text style={[styles.body, { color: c.body }]}>
-							{t("invite.invitedBy", { name: invitation.inviterFirstName })}
+			<ScreenColumn width="reading">
+				<ScrollView contentContainerStyle={styles.content}>
+					<View style={styles.summary}>
+						<ShopAvatar
+							name={invitation.shop.name}
+							logo={invitation.shop.logoUrl}
+							size={64}
+							radius={16}
+						/>
+						<Text style={[styles.shopName, { color: c.text }]}>
+							{invitation.shop.name}
 						</Text>
-					) : null}
-
-					<View style={[styles.roleCard, { backgroundColor: c.neutralSoft }]}>
-						<Text style={[styles.roleTitle, { color: c.text }]}>
-							{t(`invite.${roleKey}`)}
+						<Text style={[styles.handle, { color: c.muted }]}>
+							@{invitation.shop.handle}
 						</Text>
-						<Text style={[styles.roleBody, { color: c.muted }]}>
-							{t(`invite.${roleDescriptionKey}`)}
-						</Text>
-					</View>
+						<LevelBadge badge={invitation.shop.badge} />
 
-					{expiresOn ? (
-						<Text style={[styles.meta, { color: c.muted }]}>
-							{t("invite.expires", { date: expiresOn })}
-						</Text>
-					) : null}
-				</View>
-
-				{step === "signIn" ? (
-					<View style={styles.actions}>
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t("invite.signIn")}
-							onPress={goSignIn}
-							style={[styles.primaryButton, { backgroundColor: c.primary }]}
-						>
-							<Text style={styles.primaryLabel}>
-								{t("invite.signIn", { shop: invitation.shop.name })}
+						{invitation.inviterFirstName ? (
+							<Text style={[styles.body, { color: c.body }]}>
+								{t("invite.invitedBy", { name: invitation.inviterFirstName })}
 							</Text>
-						</Pressable>
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t("invite.register")}
-							onPress={goRegister}
-							style={styles.linkButton}
-						>
-							<Text style={[styles.linkLabel, { color: c.primary }]}>
-								{t("invite.register")}
+						) : null}
+
+						<View style={[styles.roleCard, { backgroundColor: c.neutralSoft }]}>
+							<Text style={[styles.roleTitle, { color: c.text }]}>
+								{t(`invite.${roleKey}`)}
 							</Text>
-						</Pressable>
-					</View>
-				) : null}
-
-				{step === "verifyPhone" ? (
-					<View style={styles.actions}>
-						<Text style={[styles.body, { color: c.body }]}>
-							{t("invite.verifyPhoneHint", { target: hint.maskedTarget })}
-						</Text>
-						{/* Same inline OTP flow as the security screen (see PhoneGate): it
-						    already prefills the number on file, and staying on this
-						    screen avoids a redirect the invitee would have to find their
-						    way back from. */}
-						<PhoneGate onVerified={() => void refreshUser()} />
-					</View>
-				) : null}
-
-				{step === "mismatch" ? (
-					<View style={styles.actions}>
-						<Text style={[styles.body, { color: c.body }]}>
-							{t("invite.mismatch", { target: hint.maskedTarget })}
-						</Text>
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t("invite.switchAccount")}
-							onPress={() => {
-								void onSwitchAccount();
-							}}
-							style={[styles.primaryButton, { backgroundColor: c.primary }]}
-						>
-							<Text style={styles.primaryLabel}>
-								{t("invite.switchAccount")}
+							<Text style={[styles.roleBody, { color: c.muted }]}>
+								{t(`invite.${roleDescriptionKey}`)}
 							</Text>
-						</Pressable>
-					</View>
-				) : null}
+						</View>
 
-				{step === "ready" ? (
-					<View style={styles.actions}>
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t("invite.join", {
-								shop: invitation.shop.name,
-							})}
-							onPress={onAccept}
-							disabled={acceptMutation.isPending}
-							style={[
-								styles.primaryButton,
-								{
-									backgroundColor: c.primary,
-									opacity: acceptMutation.isPending ? 0.7 : 1,
-								},
-							]}
-						>
-							{acceptMutation.isPending ? (
-								<ActivityIndicator color="#fff" />
-							) : (
+						{expiresOn ? (
+							<Text style={[styles.meta, { color: c.muted }]}>
+								{t("invite.expires", { date: expiresOn })}
+							</Text>
+						) : null}
+					</View>
+
+					{step === "signIn" ? (
+						<View style={styles.actions}>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={t("invite.signIn")}
+								onPress={goSignIn}
+								style={[styles.primaryButton, { backgroundColor: c.primary }]}
+							>
 								<Text style={styles.primaryLabel}>
-									{t("invite.join", { shop: invitation.shop.name })}
+									{t("invite.signIn", { shop: invitation.shop.name })}
 								</Text>
-							)}
-						</Pressable>
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t("invite.decline")}
-							onPress={onDecline}
-							disabled={declineMutation.isPending}
-							style={styles.linkButton}
-						>
-							<Text style={[styles.linkLabel, { color: c.danger }]}>
-								{t("invite.decline")}
-							</Text>
-						</Pressable>
-					</View>
-				) : null}
+							</Pressable>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={t("invite.register")}
+								onPress={goRegister}
+								style={styles.linkButton}
+							>
+								<Text style={[styles.linkLabel, { color: c.primary }]}>
+									{t("invite.register")}
+								</Text>
+							</Pressable>
+						</View>
+					) : null}
 
-				{step === "joined" ? (
-					<View style={styles.actions}>
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t("invite.joinedCta")}
-							onPress={goSeller}
-							style={[styles.primaryButton, { backgroundColor: c.primary }]}
-						>
-							<Text style={styles.primaryLabel}>{t("invite.joined")}</Text>
-						</Pressable>
-					</View>
-				) : null}
-			</ScrollView>
+					{step === "verifyPhone" ? (
+						<View style={styles.actions}>
+							<Text style={[styles.body, { color: c.body }]}>
+								{t("invite.verifyPhoneHint", { target: hint.maskedTarget })}
+							</Text>
+							{/* Same inline OTP flow as the security screen (see PhoneGate): it
+							    already prefills the number on file, and staying on this
+							    screen avoids a redirect the invitee would have to find their
+							    way back from. */}
+							<PhoneGate onVerified={() => void refreshUser()} />
+						</View>
+					) : null}
+
+					{step === "mismatch" ? (
+						<View style={styles.actions}>
+							<Text style={[styles.body, { color: c.body }]}>
+								{t("invite.mismatch", { target: hint.maskedTarget })}
+							</Text>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={t("invite.switchAccount")}
+								onPress={() => {
+									void onSwitchAccount();
+								}}
+								style={[styles.primaryButton, { backgroundColor: c.primary }]}
+							>
+								<Text style={styles.primaryLabel}>
+									{t("invite.switchAccount")}
+								</Text>
+							</Pressable>
+						</View>
+					) : null}
+
+					{step === "ready" ? (
+						<View style={styles.actions}>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={t("invite.join", {
+									shop: invitation.shop.name,
+								})}
+								onPress={onAccept}
+								disabled={acceptMutation.isPending}
+								style={[
+									styles.primaryButton,
+									{
+										backgroundColor: c.primary,
+										opacity: acceptMutation.isPending ? 0.7 : 1,
+									},
+								]}
+							>
+								{acceptMutation.isPending ? (
+									<ActivityIndicator color="#fff" />
+								) : (
+									<Text style={styles.primaryLabel}>
+										{t("invite.join", { shop: invitation.shop.name })}
+									</Text>
+								)}
+							</Pressable>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={t("invite.decline")}
+								onPress={onDecline}
+								disabled={declineMutation.isPending}
+								style={styles.linkButton}
+							>
+								<Text style={[styles.linkLabel, { color: c.danger }]}>
+									{t("invite.decline")}
+								</Text>
+							</Pressable>
+						</View>
+					) : null}
+
+					{step === "joined" ? (
+						<View style={styles.actions}>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={t("invite.joinedCta")}
+								onPress={goSeller}
+								style={[styles.primaryButton, { backgroundColor: c.primary }]}
+							>
+								<Text style={styles.primaryLabel}>{t("invite.joined")}</Text>
+							</Pressable>
+						</View>
+					) : null}
+				</ScrollView>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

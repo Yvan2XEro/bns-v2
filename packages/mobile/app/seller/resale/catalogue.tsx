@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -214,39 +215,41 @@ export default function ResaleCatalogueScreen() {
 					}
 				/>
 			) : null}
-			<FlashList
-				data={rows}
-				keyExtractor={(item) => item.productId}
-				contentContainerStyle={styles.list}
-				ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-				renderItem={({ item }) => (
-					<CatalogueProductCard
-						product={item}
-						locale={locale}
-						isPending={createListing.isPending || requestLink.isPending}
-						t={t}
-						onRequest={() => requestAccess(item)}
-						onCreate={(input) =>
-							createListing.mutate(input, {
-								onSuccess: () =>
-									Alert.alert(
-										t("sellerResale.createdTitle"),
-										t("sellerResale.createdBody"),
-									),
-								onError: (error) =>
-									Alert.alert(t("sellerResale.actionFailed"), error.message),
-							})
-						}
-					/>
-				)}
-				refreshControl={
-					<RefreshControl
-						refreshing={catalogue.isRefetching}
-						onRefresh={() => catalogue.refetch()}
-						tintColor={c.primary}
-					/>
-				}
-			/>
+			<ScreenColumn width="wide">
+				<FlashList
+					data={rows}
+					keyExtractor={(item) => item.productId}
+					contentContainerStyle={styles.list}
+					ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+					renderItem={({ item }) => (
+						<CatalogueProductCard
+							product={item}
+							locale={locale}
+							isPending={createListing.isPending || requestLink.isPending}
+							t={t}
+							onRequest={() => requestAccess(item)}
+							onCreate={(input) =>
+								createListing.mutate(input, {
+									onSuccess: () =>
+										Alert.alert(
+											t("sellerResale.createdTitle"),
+											t("sellerResale.createdBody"),
+										),
+									onError: (error) =>
+										Alert.alert(t("sellerResale.actionFailed"), error.message),
+								})
+							}
+						/>
+					)}
+					refreshControl={
+						<RefreshControl
+							refreshing={catalogue.isRefetching}
+							onRefresh={() => catalogue.refetch()}
+							tintColor={c.primary}
+						/>
+					}
+				/>
+			</ScreenColumn>
 		</SafeAreaView>
 	);
 }

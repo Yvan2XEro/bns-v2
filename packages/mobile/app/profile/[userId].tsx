@@ -22,6 +22,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -184,9 +185,11 @@ export default function PublicProfileScreen() {
 				style={[styles.safe, { backgroundColor: bg }]}
 			>
 				<View style={[styles.header, { borderBottomColor: borderColor }]}>
-					<Pressable onPress={() => router.back()} style={styles.backBtn}>
-						<Ionicons name="arrow-back" size={22} color={textColor} />
-					</Pressable>
+					<HeaderBackButton
+						color={textColor}
+						fallback="/(tabs)/home"
+						style={styles.backBtn}
+					/>
 					<Text style={[styles.headerTitle, { color: textColor }]}>
 						{t("profile.title")}
 					</Text>
@@ -210,9 +213,11 @@ export default function PublicProfileScreen() {
 		>
 			{/* Header */}
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()} style={styles.backBtn}>
-					<Ionicons name="arrow-back" size={22} color={textColor} />
-				</Pressable>
+				<HeaderBackButton
+					color={textColor}
+					fallback="/(tabs)/home"
+					style={styles.backBtn}
+				/>
 				<Text style={[styles.headerTitle, { color: textColor }]}>
 					{t("profile.title")}
 				</Text>

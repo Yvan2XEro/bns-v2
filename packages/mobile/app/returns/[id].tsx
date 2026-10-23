@@ -1,6 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import {
 	ActivityIndicator,
@@ -16,6 +15,8 @@ import { z } from "zod";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerReturnActions } from "@/src/components/returns/SellerReturnActions";
 import { useReturnAction, useReturnCase } from "@/src/hooks/useReturns";
 import {
@@ -66,14 +67,7 @@ export default function ReturnCaseScreen() {
 			style={[styles.safe, { backgroundColor: colors.bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel={t("common.back")}
-					onPress={() => router.back()}
-					hitSlop={12}
-				>
-					<Ionicons name="arrow-back" size={22} color={colors.text} />
-				</Pressable>
+				<HeaderBackButton color={colors.text} fallback="/account/returns" />
 				<Text style={[styles.headerTitle, { color: colors.text }]}>
 					{query.data?.number ?? t("returns.title")}
 				</Text>
@@ -89,63 +83,13 @@ export default function ReturnCaseScreen() {
 					onCta={() => void query.refetch()}
 				/>
 			) : (
-				<ScrollView contentContainerStyle={styles.content}>
-					{mutation.isError ? (
-						<Text accessibilityRole="alert" style={styles.error}>
-							{t("returns.actionError")}
-						</Text>
-					) : null}
-					<View
-						style={[
-							styles.card,
-							{ backgroundColor: colors.card, borderColor: colors.border },
-						]}
-					>
-						<Text style={[styles.title, { color: colors.text }]}>
-							{t("returns.order", { number: query.data.orderNumber })}
-						</Text>
-						<Text style={[styles.body, { color: colors.muted }]}>
-							{t(RETURN_CASE_STATUS_LABELS[query.data.status])} ·{" "}
-							{t(RETURN_BASIS_LABELS[query.data.basis])}
-						</Text>
-						<Text style={[styles.amount, { color: colors.text }]}>
-							{t("returns.refundAmount", {
-								amount: formatPrice(query.data.refund.amount, i18n.language),
-							})}
-						</Text>
-						{query.data.reasonText ? (
-							<Text style={[styles.body, { color: colors.muted }]}>
-								{query.data.reasonText}
+				<ScreenColumn width="reading">
+					<ScrollView contentContainerStyle={styles.content}>
+						{mutation.isError ? (
+							<Text accessibilityRole="alert" style={styles.error}>
+								{t("returns.actionError")}
 							</Text>
 						) : null}
-						{query.data.rejectionReason ? (
-							<Text style={[styles.error]}>{query.data.rejectionReason}</Text>
-						) : null}
-					</View>
-					<View
-						style={[
-							styles.card,
-							{ backgroundColor: colors.card, borderColor: colors.border },
-						]}
-					>
-						<Text style={[styles.title, { color: colors.text }]}>
-							{t("returns.items")}
-						</Text>
-						{query.data.items.map((item) => (
-							<Text
-								key={item.orderItemId}
-								style={[styles.body, { color: colors.muted }]}
-							>
-								{item.title} × {item.quantity}
-							</Text>
-						))}
-						<Text style={[styles.body, { color: colors.muted }]}>
-							{t("returns.returnShippingPaidBy", {
-								party: t(RETURN_PAYER_LABELS[query.data.returnShippingPaidBy]),
-							})}
-						</Text>
-					</View>
-					{query.data.allowedActions.includes("ship") ? (
 						<View
 							style={[
 								styles.card,
@@ -153,45 +97,26 @@ export default function ReturnCaseScreen() {
 							]}
 						>
 							<Text style={[styles.title, { color: colors.text }]}>
-								{t("returns.shipReturn")}
+								{t("returns.order", { number: query.data.orderNumber })}
 							</Text>
-							<Text style={[styles.body, { color: colors.text }]}>
-								{t(`returns.method.${query.data.returnMethod}`)}
+							<Text style={[styles.body, { color: colors.muted }]}>
+								{t(RETURN_CASE_STATUS_LABELS[query.data.status])} ·{" "}
+								{t(RETURN_BASIS_LABELS[query.data.basis])}
 							</Text>
-							<Controller
-								control={shipForm.control}
-								name="tracking"
-								render={({ field: { onBlur, onChange, value } }) => (
-									<TextInput
-										accessibilityLabel={t("returns.trackingLabel")}
-										value={value}
-										onBlur={onBlur}
-										onChangeText={onChange}
-										maxLength={200}
-										placeholder={t("returns.trackingPlaceholder")}
-										style={[
-											styles.input,
-											{ color: colors.text, borderColor: colors.border },
-										]}
-									/>
-								)}
-							/>
-							<ActionButton
-								label={t("returns.action.ship")}
-								pending={mutation.isPending}
-								color={colors.primary}
-								onPress={() =>
-									shipForm.handleSubmit(({ tracking }) =>
-										runAction("ship", {
-											returnMethod: query.data.returnMethod,
-											...(tracking ? { returnTracking: tracking } : {}),
-										}),
-									)()
-								}
-							/>
+							<Text style={[styles.amount, { color: colors.text }]}>
+								{t("returns.refundAmount", {
+									amount: formatPrice(query.data.refund.amount, i18n.language),
+								})}
+							</Text>
+							{query.data.reasonText ? (
+								<Text style={[styles.body, { color: colors.muted }]}>
+									{query.data.reasonText}
+								</Text>
+							) : null}
+							{query.data.rejectionReason ? (
+								<Text style={[styles.error]}>{query.data.rejectionReason}</Text>
+							) : null}
 						</View>
-					) : null}
-					{query.data.refund.sellerProof ? (
 						<View
 							style={[
 								styles.card,
@@ -199,74 +124,147 @@ export default function ReturnCaseScreen() {
 							]}
 						>
 							<Text style={[styles.title, { color: colors.text }]}>
-								{t("returns.refundProof")}
+								{t("returns.items")}
 							</Text>
+							{query.data.items.map((item) => (
+								<Text
+									key={item.orderItemId}
+									style={[styles.body, { color: colors.muted }]}
+								>
+									{item.title} × {item.quantity}
+								</Text>
+							))}
 							<Text style={[styles.body, { color: colors.muted }]}>
-								{t("returns.refundProofDetail", {
-									method: query.data.refund.sellerProof.method,
-									amount: formatPrice(
-										query.data.refund.sellerProof.amount,
-										i18n.language,
+								{t("returns.returnShippingPaidBy", {
+									party: t(
+										RETURN_PAYER_LABELS[query.data.returnShippingPaidBy],
 									),
-									transactionId:
-										query.data.refund.sellerProof.transactionId ?? "—",
 								})}
 							</Text>
 						</View>
-					) : null}
-					<View
-						style={[
-							styles.card,
-							{ backgroundColor: colors.card, borderColor: colors.border },
-						]}
-					>
-						<Text style={[styles.title, { color: colors.text }]}>
-							{t("returns.timeline")}
-						</Text>
-						{query.data.timeline.map((event, index) => (
+						{query.data.allowedActions.includes("ship") ? (
 							<View
-								key={`${event.status}-${event.at}-${index}`}
-								style={styles.event}
+								style={[
+									styles.card,
+									{ backgroundColor: colors.card, borderColor: colors.border },
+								]}
 							>
-								<Text style={[styles.body, { color: colors.text }]}>
-									{t(RETURN_CASE_STATUS_LABELS[event.status])}
+								<Text style={[styles.title, { color: colors.text }]}>
+									{t("returns.shipReturn")}
 								</Text>
-								<Text style={[styles.caption, { color: colors.muted }]}>
-									{new Date(event.at).toLocaleString(i18n.language)}
-									{event.note ? ` · ${event.note}` : ""}
+								<Text style={[styles.body, { color: colors.text }]}>
+									{t(`returns.method.${query.data.returnMethod}`)}
+								</Text>
+								<Controller
+									control={shipForm.control}
+									name="tracking"
+									render={({ field: { onBlur, onChange, value } }) => (
+										<TextInput
+											accessibilityLabel={t("returns.trackingLabel")}
+											value={value}
+											onBlur={onBlur}
+											onChangeText={onChange}
+											maxLength={200}
+											placeholder={t("returns.trackingPlaceholder")}
+											style={[
+												styles.input,
+												{ color: colors.text, borderColor: colors.border },
+											]}
+										/>
+									)}
+								/>
+								<ActionButton
+									label={t("returns.action.ship")}
+									pending={mutation.isPending}
+									color={colors.primary}
+									onPress={() =>
+										shipForm.handleSubmit(({ tracking }) =>
+											runAction("ship", {
+												returnMethod: query.data.returnMethod,
+												...(tracking ? { returnTracking: tracking } : {}),
+											}),
+										)()
+									}
+								/>
+							</View>
+						) : null}
+						{query.data.refund.sellerProof ? (
+							<View
+								style={[
+									styles.card,
+									{ backgroundColor: colors.card, borderColor: colors.border },
+								]}
+							>
+								<Text style={[styles.title, { color: colors.text }]}>
+									{t("returns.refundProof")}
+								</Text>
+								<Text style={[styles.body, { color: colors.muted }]}>
+									{t("returns.refundProofDetail", {
+										method: query.data.refund.sellerProof.method,
+										amount: formatPrice(
+											query.data.refund.sellerProof.amount,
+											i18n.language,
+										),
+										transactionId:
+											query.data.refund.sellerProof.transactionId ?? "—",
+									})}
 								</Text>
 							</View>
-						))}
-					</View>
-					<View style={styles.actions}>
-						{query.data.allowedActions
-							.filter(
-								(item) =>
-									item !== "ship" &&
-									item !== "pickup" &&
-									item !== "upload_evidence" &&
-									item !== "refund_proof" &&
-									item !== "inspect" &&
-									item !== "receive",
-							)
-							.map((item) => (
-								<ActionButton
-									key={item}
-									label={t(RETURN_ACTION_LABELS[item])}
-									pending={mutation.isPending}
-									color={
-										item === "cancel" ||
-										item === "contest_refund" ||
-										item === "contest_deduction"
-											? "#dc2626"
-											: colors.primary
-									}
-									onPress={() => runAction(item)}
-								/>
+						) : null}
+						<View
+							style={[
+								styles.card,
+								{ backgroundColor: colors.card, borderColor: colors.border },
+							]}
+						>
+							<Text style={[styles.title, { color: colors.text }]}>
+								{t("returns.timeline")}
+							</Text>
+							{query.data.timeline.map((event, index) => (
+								<View
+									key={`${event.status}-${event.at}-${index}`}
+									style={styles.event}
+								>
+									<Text style={[styles.body, { color: colors.text }]}>
+										{t(RETURN_CASE_STATUS_LABELS[event.status])}
+									</Text>
+									<Text style={[styles.caption, { color: colors.muted }]}>
+										{new Date(event.at).toLocaleString(i18n.language)}
+										{event.note ? ` · ${event.note}` : ""}
+									</Text>
+								</View>
 							))}
-					</View>
-					<SellerReturnActions view={query.data} />
-				</ScrollView>
+						</View>
+						<View style={styles.actions}>
+							{query.data.allowedActions
+								.filter(
+									(item) =>
+										item !== "ship" &&
+										item !== "pickup" &&
+										item !== "upload_evidence" &&
+										item !== "refund_proof" &&
+										item !== "inspect" &&
+										item !== "receive",
+								)
+								.map((item) => (
+									<ActionButton
+										key={item}
+										label={t(RETURN_ACTION_LABELS[item])}
+										pending={mutation.isPending}
+										color={
+											item === "cancel" ||
+											item === "contest_refund" ||
+											item === "contest_deduction"
+												? "#dc2626"
+												: colors.primary
+										}
+										onPress={() => runAction(item)}
+									/>
+								))}
+						</View>
+						<SellerReturnActions view={query.data} />
+					</ScrollView>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

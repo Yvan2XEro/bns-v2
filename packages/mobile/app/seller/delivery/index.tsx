@@ -10,6 +10,7 @@ import {
 import { Fonts } from "@/constants/theme";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useDeliveryZones } from "@/src/hooks/useDeliverySettings";
@@ -94,45 +95,47 @@ function ZonesList({ shopId }: { shopId: string }) {
 		})),
 	]);
 	return (
-		<FlashList
-			data={rows}
-			keyExtractor={(row) => row.key}
-			getItemType={(row) => row.kind}
-			contentContainerStyle={styles.content}
-			ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-			ListEmptyComponent={
-				<Text style={{ color: c.muted, fontFamily: Fonts.body }}>
-					{t("deliverySettings.zonesEmpty")}
-				</Text>
-			}
-			renderItem={({ item }) =>
-				item.kind === "city" ? (
-					<Text style={[styles.city, { color: c.text }]}>
-						{item.city === "douala" ? "Douala" : "Yaoundé"}
+		<ScreenColumn width="wide">
+			<FlashList
+				data={rows}
+				keyExtractor={(row) => row.key}
+				getItemType={(row) => row.kind}
+				contentContainerStyle={styles.content}
+				ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+				ListEmptyComponent={
+					<Text style={{ color: c.muted, fontFamily: Fonts.body }}>
+						{t("deliverySettings.zonesEmpty")}
 					</Text>
-				) : (
-					<ZoneRow zone={item.zone} />
-				)
-			}
-			ListFooterComponent={
-				<View style={{ gap: 10, marginTop: 16 }}>
-					<SheetButton
-						label={t("deliverySettings.addZone")}
-						onPress={() =>
-							router.push({
-								pathname: "/seller/delivery/zone/[id]",
-								params: { id: "new" },
-							})
-						}
-					/>
-					<SheetButton
-						label={t("deliverySettings.pickupPoints")}
-						tone="secondary"
-						onPress={() => router.push("/seller/delivery/locations")}
-					/>
-				</View>
-			}
-		/>
+				}
+				renderItem={({ item }) =>
+					item.kind === "city" ? (
+						<Text style={[styles.city, { color: c.text }]}>
+							{item.city === "douala" ? "Douala" : "Yaoundé"}
+						</Text>
+					) : (
+						<ZoneRow zone={item.zone} />
+					)
+				}
+				ListFooterComponent={
+					<View style={{ gap: 10, marginTop: 16 }}>
+						<SheetButton
+							label={t("deliverySettings.addZone")}
+							onPress={() =>
+								router.push({
+									pathname: "/seller/delivery/zone/[id]",
+									params: { id: "new" },
+								})
+							}
+						/>
+						<SheetButton
+							label={t("deliverySettings.pickupPoints")}
+							tone="secondary"
+							onPress={() => router.push("/seller/delivery/locations")}
+						/>
+					</View>
+				}
+			/>
+		</ScreenColumn>
 	);
 }
 

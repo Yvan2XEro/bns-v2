@@ -10,6 +10,7 @@ import {
 import { Fonts } from "@/constants/theme";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useDeliveryLocations } from "@/src/hooks/useDeliverySettings";
@@ -33,62 +34,64 @@ function LocationsList({ shopId }: { shopId: string }) {
 			/>
 		);
 	return (
-		<FlashList
-			data={locations.data}
-			keyExtractor={(row) => String(row.id)}
-			contentContainerStyle={styles.content}
-			ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-			ListEmptyComponent={
-				<Text style={{ color: c.muted, fontFamily: Fonts.body }}>
-					{t("deliverySettings.locationsEmpty")}
-				</Text>
-			}
-			renderItem={({ item }) => (
-				<Pressable
-					onPress={() =>
-						router.push({
-							pathname: "/seller/delivery/location/[id]",
-							params: { id: String(item.id) },
-						})
-					}
-					accessibilityRole="button"
-					accessibilityLabel={item.name}
-					style={[
-						styles.row,
-						{ borderColor: c.border, backgroundColor: c.card },
-					]}
-				>
-					<Text style={[styles.title, { color: c.text }]}>{item.name}</Text>
-					<Text style={{ color: c.body, fontFamily: Fonts.body }}>
-						{item.landmark}
+		<ScreenColumn width="wide">
+			<FlashList
+				data={locations.data}
+				keyExtractor={(row) => String(row.id)}
+				contentContainerStyle={styles.content}
+				ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+				ListEmptyComponent={
+					<Text style={{ color: c.muted, fontFamily: Fonts.body }}>
+						{t("deliverySettings.locationsEmpty")}
 					</Text>
-					<Text
-						style={{ color: c.muted, fontFamily: Fonts.body, fontSize: 13 }}
-					>
-						{[
-							item.pickupEnabled ? t("deliverySettings.pickupBadge") : null,
-							item.isDefaultOrigin ? t("deliverySettings.originBadge") : null,
-							item.active === false ? t("deliverySettings.inactive") : null,
-						]
-							.filter(Boolean)
-							.join(" · ")}
-					</Text>
-				</Pressable>
-			)}
-			ListFooterComponent={
-				<View style={{ marginTop: 16 }}>
-					<SheetButton
-						label={t("deliverySettings.addLocation")}
+				}
+				renderItem={({ item }) => (
+					<Pressable
 						onPress={() =>
 							router.push({
 								pathname: "/seller/delivery/location/[id]",
-								params: { id: "new" },
+								params: { id: String(item.id) },
 							})
 						}
-					/>
-				</View>
-			}
-		/>
+						accessibilityRole="button"
+						accessibilityLabel={item.name}
+						style={[
+							styles.row,
+							{ borderColor: c.border, backgroundColor: c.card },
+						]}
+					>
+						<Text style={[styles.title, { color: c.text }]}>{item.name}</Text>
+						<Text style={{ color: c.body, fontFamily: Fonts.body }}>
+							{item.landmark}
+						</Text>
+						<Text
+							style={{ color: c.muted, fontFamily: Fonts.body, fontSize: 13 }}
+						>
+							{[
+								item.pickupEnabled ? t("deliverySettings.pickupBadge") : null,
+								item.isDefaultOrigin ? t("deliverySettings.originBadge") : null,
+								item.active === false ? t("deliverySettings.inactive") : null,
+							]
+								.filter(Boolean)
+								.join(" · ")}
+						</Text>
+					</Pressable>
+				)}
+				ListFooterComponent={
+					<View style={{ marginTop: 16 }}>
+						<SheetButton
+							label={t("deliverySettings.addLocation")}
+							onPress={() =>
+								router.push({
+									pathname: "/seller/delivery/location/[id]",
+									params: { id: "new" },
+								})
+							}
+						/>
+					</View>
+				}
+			/>
+		</ScreenColumn>
 	);
 }
 

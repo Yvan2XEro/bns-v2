@@ -19,6 +19,7 @@ import {
 import { SplitCart } from "@/src/components/cart/SplitCart";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -143,29 +144,31 @@ export default function CartScreen() {
 			onRemoveGroup={(group) => void removeGroup(group)}
 		/>
 	) : (
-		<FlashList<CartLineView>
-			data={cart.data.lines}
-			keyExtractor={(line) => line.id}
-			contentContainerStyle={styles.list}
-			ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-			ListHeaderComponent={
-				cart.data.shop ? (
-					<ShopRow shop={cart.data.shop} cityLabel={cityLabel} />
-				) : null
-			}
-			renderItem={({ item }) => (
-				<CartLineRow
-					line={item}
-					locale={locale}
-					busy={busy}
-					onQuantity={(quantity) =>
-						setQuantity.mutate({ lineId: item.id, quantity }, { onError })
-					}
-					onRemove={() => removeLine(item)}
-				/>
-			)}
-			ListFooterComponent={<CartSummary cart={cart.data} locale={locale} />}
-		/>
+		<ScreenColumn width="wide">
+			<FlashList<CartLineView>
+				data={cart.data.lines}
+				keyExtractor={(line) => line.id}
+				contentContainerStyle={styles.list}
+				ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+				ListHeaderComponent={
+					cart.data.shop ? (
+						<ShopRow shop={cart.data.shop} cityLabel={cityLabel} />
+					) : null
+				}
+				renderItem={({ item }) => (
+					<CartLineRow
+						line={item}
+						locale={locale}
+						busy={busy}
+						onQuantity={(quantity) =>
+							setQuantity.mutate({ lineId: item.id, quantity }, { onError })
+						}
+						onRemove={() => removeLine(item)}
+					/>
+				)}
+				ListFooterComponent={<CartSummary cart={cart.data} locale={locale} />}
+			/>
+		</ScreenColumn>
 	);
 
 	return (
