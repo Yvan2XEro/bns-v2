@@ -4,6 +4,7 @@ import { mongooseAdapter } from "@payloadcms/db-mongodb";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { buildConfig } from "payload";
 import sharp from "sharp";
+import { monitoringWarnings } from "@/lib/monitoring";
 import { Addresses } from "./collections/Addresses";
 import { BlockedUsers } from "./collections/BlockedUsers";
 import { BoostPayments } from "./collections/BoostPayments";
@@ -247,6 +248,7 @@ export default buildConfig({
 	email: emailAdapter(),
 	onInit: async (payload) => {
 		registerNotificationLocales(payload);
+		for (const warning of monitoringWarnings()) payload.logger.warn(warning);
 	},
 	admin: {
 		user: Users.slug,

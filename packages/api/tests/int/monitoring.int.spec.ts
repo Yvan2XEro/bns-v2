@@ -1,12 +1,17 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+	dsnProblem,
 	envelopeDsn,
 	parseDsn,
 	posthogUpstream,
 	sentryEnvelopeUrl,
 } from "../../src/contracts/monitoring";
-import { monitoringConfig, posthogHost } from "../../src/lib/monitoring";
+import {
+	monitoringConfig,
+	monitoringWarnings,
+	posthogHost,
+} from "../../src/lib/monitoring";
 
 const WEB_DSN = "https://abc123@o1.ingest.de.sentry.io/4501";
 const API_DSN = "https://def456@o1.ingest.de.sentry.io/4502";
@@ -142,5 +147,28 @@ describe("POST /api/relay/errors", () => {
 		const response = await post("hello");
 		expect(response.status).toBe(400);
 		expect(fetchMock).not.toHaveBeenCalled();
+	});
+});
+
+describe("rejected DSNs", () => {
+	it("says why, without echoing the key", () => {
+		expect(dsnProblem(WEB_DSN)).toBeNull();
+		expect(dsnProblem("bns-mobile")).toMatch(/project name/);
+		expect(dsnProblem(`"${WEB_DSN}"`)).toBe("wrapped in quotes");
+		expect(dsnProblem(`${WEB_DSN} # web`)).toMatch(/space/);
+		expect(dsnProblem("https://o1.ingest.de.sentry.io/4501")).toMatch(
+			/public key/,
+		);
+		expect(dsnProblem("https://abc@o1.ingest.de.sentry.io/bns")).toMatch(
+			/project id/,
+		);
+		const warnings = monitoringWarnings({
+			SENTRY_DSN: API_DSN,
+			SENTRY_MOBILE_DSN: "bns-mobile",
+		});
+		expect(warnings).toEqual([
+			expect.stringMatching(/^SENTRY_MOBILE_DSN is ignored: not a DSN URL/),
+		]);
+		expect(warnings.join()).not.toContain("abc123");
 	});
 });

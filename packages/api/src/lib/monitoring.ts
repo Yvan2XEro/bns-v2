@@ -1,4 +1,5 @@
 import {
+	dsnProblem,
 	type MonitoringConfig,
 	NO_MONITORING,
 	type ParsedDsn,
@@ -16,6 +17,26 @@ function sampleRate(raw: string | undefined): number {
 function validDsn(raw: string | undefined): string | null {
 	const dsn = raw?.trim();
 	return dsn && parseDsn(dsn) ? dsn : null;
+}
+
+const DSN_VARIABLES = [
+	"SENTRY_DSN",
+	"SENTRY_WEB_DSN",
+	"SENTRY_MOBILE_DSN",
+] as const;
+
+/**
+ * The Sentry variables that are set but ignored, and why. A rejected DSN
+ * silently turns monitoring off, so the API says so once at startup.
+ */
+export function monitoringWarnings(
+	env: NodeJS.ProcessEnv = process.env,
+): string[] {
+	return DSN_VARIABLES.flatMap((name) => {
+		const raw = env[name]?.trim();
+		const problem = raw ? dsnProblem(raw) : null;
+		return problem ? [`${name} is ignored: ${problem}`] : [];
+	});
 }
 
 /**

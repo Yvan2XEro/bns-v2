@@ -69,6 +69,27 @@ export function parseDsn(dsn: string | null | undefined): ParsedDsn | null {
 	return { protocol, host: url.host, projectId, publicKey: url.username };
 }
 
+/**
+ * Why a DSN does not parse, in words an operator can act on — never echoing
+ * the key itself. `null` when it parses.
+ */
+export function dsnProblem(raw: string): string | null {
+	const dsn = raw.trim();
+	if (parseDsn(dsn)) return null;
+	if (/^["']|["']$/.test(dsn)) return "wrapped in quotes";
+	if (/\s/.test(dsn)) return "contains a space or a trailing comment";
+	if (!/^https?:\/\//.test(dsn))
+		return "not a DSN URL (a project name? copy Settings → Client Keys (DSN))";
+	let url: URL;
+	try {
+		url = new URL(dsn);
+	} catch {
+		return "not a valid URL";
+	}
+	if (!url.username) return "no public key before the @";
+	return "does not end with the numeric project id";
+}
+
 /** Sentry's ingestion URL for one project. */
 export function sentryEnvelopeUrl(dsn: ParsedDsn): string {
 	return `${dsn.protocol}://${dsn.host}/api/${dsn.projectId}/envelope/`;
