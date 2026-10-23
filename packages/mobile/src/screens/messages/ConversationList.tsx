@@ -11,7 +11,12 @@ import {
 	Text,
 	View,
 } from "react-native";
-import Swipeable from "react-native-gesture-handler/Swipeable";
+// The Reanimated swipeable, as on the notifications screen: the legacy one
+// mounts its actions after measuring each row, which on Android's new
+// renderer could remove a view in the middle of a layout pass and crash.
+import ReanimatedSwipeable, {
+	type SwipeableMethods,
+} from "react-native-gesture-handler/ReanimatedSwipeable";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -105,7 +110,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 	const [search, setSearch] = useState("");
 	const [filter, setFilter] = useState<FilterTab>("all");
 	const [markingAllRead, setMarkingAllRead] = useState(false);
-	const swipeableRefs = useRef<Map<string, Swipeable | null>>(new Map());
+	const swipeableRefs = useRef<Map<string, SwipeableMethods | null>>(new Map());
 
 	const myShops = useMyShops();
 
@@ -325,7 +330,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 			: listingTitle;
 
 		return (
-			<Swipeable
+			<ReanimatedSwipeable
 				// Braces required: under React 19 a ref callback that returns a
 				// value (here the Map from .set()) is an error.
 				ref={(ref) => {
@@ -437,7 +442,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 						<Ionicons name="chevron-forward" size={16} color={mutedColor} />
 					)}
 				</Pressable>
-			</Swipeable>
+			</ReanimatedSwipeable>
 		);
 	};
 
