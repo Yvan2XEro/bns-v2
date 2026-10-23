@@ -16,6 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { useShopBrandIfAny } from "@/src/components/shop/brand";
 import { parseDate } from "@/src/lib/formatDate";
 import i18n from "@/src/lib/i18n";
@@ -57,6 +58,8 @@ interface ListingCardProps {
 	onToggleFavorite: (id: string) => void;
 	onPress: (id: string) => void;
 	width?: number;
+	/** Open in the detail pane beside the list. */
+	selected?: boolean;
 }
 
 export function ListingCard({
@@ -65,7 +68,9 @@ export function ListingCard({
 	onToggleFavorite,
 	onPress,
 	width: cardWidth,
+	selected,
 }: ListingCardProps) {
+	const selectedStyle = useSelectedRowStyle();
 	// Favorites can hand us a bare listing ID when the relation was not
 	// populated (or for an optimistic entry); render the card skeleton rather
 	// than crashing on `.images` / `.createdAt`.
@@ -159,6 +164,7 @@ export function ListingCard({
 							: borderNormal,
 						borderWidth: listing.isBoosted ? 1.5 : 1,
 					},
+					selectedStyle(selected),
 					cardStyle,
 				]}
 			>

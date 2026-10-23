@@ -25,7 +25,7 @@ export function HeaderBackButton({
 	color: string;
 	fallback: Href;
 	onPress?: () => void;
-	icon?: "arrow-back" | "close";
+	icon?: "arrow-back" | "chevron-back" | "close";
 	/** Also hidden where the caller knows there is no way back (a tab's root). */
 	hidden?: boolean;
 	style?: StyleProp<ViewStyle>;
