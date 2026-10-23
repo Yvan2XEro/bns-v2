@@ -32,10 +32,15 @@ are iOS Universal Links and Android App Links.
 1. **iOS.** Set `APPLE_TEAM_ID` for the web service: Apple Developer, then
    Membership, then Team ID (ten characters).
 2. **Android.** Set `ANDROID_SHA256_CERT_FINGERPRINTS` for the web service:
-   - Play Console, then App integrity, then App signing key certificate, then
-     the SHA-256 value;
-   - add the upload key's SHA-256 too, comma-separated, to test builds that
-     Play did not sign.
+   - the app signing key, which signs every install from Google Play: Play
+     Console, the app, then **Protected with Play**, **Play Store
+     distribution**, **Go to Play app signing**, section **App signing key**,
+     the SHA-256 value (on older consoles: Test and release, then App
+     integrity, then Play app signing);
+   - the upload key, which signs the EAS builds installed outside Play:
+     `eas credentials -p android`, the production profile, "SHA256
+     Fingerprint";
+   - both, comma-separated, in uppercase hex with colons.
 3. **Redeploy the web, then check both files.** Each must answer 200, as
    JSON, with no redirect:
 
