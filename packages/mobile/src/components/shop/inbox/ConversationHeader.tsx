@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -9,6 +8,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useTranslation } from "@/src/lib/i18n";
 import type { InboxConversationView } from "@/src/types/api";
 import { useShopTheme } from "../theme";
@@ -65,17 +65,11 @@ export function ConversationHeader({
 			]}
 		>
 			<View style={styles.topRow}>
-				<Pressable
-					onPress={() =>
-						router.canGoBack() ? router.back() : router.replace("/seller/inbox")
-					}
+				<HeaderBackButton
+					color={c.text}
+					fallback="/seller/inbox"
 					style={styles.backBtn}
-					hitSlop={8}
-					accessibilityRole="button"
-					accessibilityLabel={t("common.back")}
-				>
-					<Ionicons name="arrow-back" size={22} color={c.text} />
-				</Pressable>
+				/>
 				<View style={{ flex: 1 }}>
 					<Text style={[styles.buyer, { color: c.text }]} numberOfLines={1}>
 						{buyerName ?? t("inbox.unknownBuyer")}

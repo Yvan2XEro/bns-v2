@@ -4751,5 +4751,11 @@
 			"title": "Vérifiez votre téléphone pour voir ce numéro",
 			"body": "Le numéro d'un vendeur est personnel : il n'est montré qu'aux comptes dont le téléphone est vérifié."
 		}
+	},
+	"split": {
+		"selectOrder": "Choisissez une commande pour la voir ici",
+		"selectConversation": "Choisissez une conversation pour la lire ici",
+		"selectListing": "Choisissez une annonce pour la voir ici",
+		"selectItem": "Choisissez un élément pour le voir ici"
 	}
 }

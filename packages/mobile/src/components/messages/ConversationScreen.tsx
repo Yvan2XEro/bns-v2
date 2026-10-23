@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { SkeletonMessageBubbles } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
@@ -750,9 +751,11 @@ export function ConversationScreen({
 						{ backgroundColor: cardBg, borderBottomColor: borderColor },
 					]}
 				>
-					<Pressable onPress={() => router.back()} style={styles.backBtn}>
-						<Ionicons name="arrow-back" size={22} color={textColor} />
-					</Pressable>
+					<HeaderBackButton
+						color={textColor}
+						fallback="/(tabs)/messages"
+						style={styles.backBtn}
+					/>
 					<View style={styles.headerInfo}>
 						<View style={styles.avatarWrapper}>
 							<View

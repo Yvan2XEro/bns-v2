@@ -1,71 +1,26 @@
-import { useQuery } from "@tanstack/react-query";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback } from "react";
-import { ConversationScreen } from "@/src/components/messages/ConversationScreen";
-import { useMarkConversationRead } from "@/src/hooks/useShopInbox";
-import { api } from "@/src/lib/api";
-import type { Conversation, Message, PayloadDoc } from "@/src/types/api";
+import { useLocalSearchParams } from "expo-router";
+import { SplitDetailRoute } from "@/src/components/layout/SplitScreen";
+import { SPLIT_PARAM } from "@/src/hooks/useSplitSelection";
+import { BuyerConversation } from "@/src/screens/messages/BuyerConversation";
 
-function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
-	return value && typeof value === "object" && "doc" in value
-		? (value as PayloadDoc<T>).doc
-		: (value as T);
-}
-
-function shopIdOf(conv: Conversation | undefined): string | null {
-	return conv?.shop && typeof conv.shop === "object" ? conv.shop.id : null;
-}
-
-export default function MessagesConversationScreen() {
+export default function MessagesConversationRoute() {
 	const { conversationId, listing, draft } = useLocalSearchParams<{
 		conversationId: string;
 		listing?: string;
 		draft?: string;
 	}>();
-
-	// Shares its cache with `ConversationScreen`'s own query (same key), so
-	// this adds no extra request — just a read of the same data to find a
-	// shop id and the latest message, both needed to mark the thread read.
-	const conv = useQuery({
-		queryKey: ["conversation", conversationId],
-		queryFn: () =>
-			api.get<Conversation | PayloadDoc<Conversation>>(
-				`/api/conversations/${conversationId}?depth=2`,
-			),
-		enabled: !!conversationId,
-	});
-	const latest = useQuery({
-		queryKey: ["messages", conversationId],
-		queryFn: () =>
-			api.get<{ docs: Message[] }>(
-				`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&limit=100&depth=1`,
-			),
-		enabled: !!conversationId,
-	});
-
-	const shopId = conv.data ? shopIdOf(unwrapDoc(conv.data)) : null;
-	const markRead = useMarkConversationRead(shopId ?? "");
-
-	// `/api/conversations/{id}/read` is the route both clients use (a
-	// per-message PATCH is refused by the collection's own access control) —
-	// called on focus so re-opening this thread, not just the socket's live
-	// read-on-view, clears its unread count.
-	useFocusEffect(
-		useCallback(() => {
-			const lastMessageId = latest.data?.docs.at(-1)?.id;
-			if (conversationId && lastMessageId) {
-				markRead.mutate({ conversationId, lastMessageId });
-			}
-		}, [conversationId, latest.data, markRead.mutate]),
-	);
-
-	if (!conversationId) return null;
-
+	// On a tablet in landscape the conversation opens beside the list,
+	// carrying the listing and draft it was started with.
+	const query = new URLSearchParams({ [SPLIT_PARAM]: conversationId });
+	if (listing) query.set("listing", listing);
+	if (draft) query.set("draft", draft);
 	return (
-		<ConversationScreen
-			conversationId={conversationId}
-			listingParam={listing}
-			initialDraft={draft}
-		/>
+		<SplitDetailRoute listHref={`/messages?${query.toString()}`}>
+			<BuyerConversation
+				conversationId={conversationId}
+				listing={listing}
+				draft={draft}
+			/>
+		</SplitDetailRoute>
 	);
 }

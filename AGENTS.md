@@ -124,6 +124,43 @@ same patterns as mobile.
   `<a href>` / `<input>` + `<label>` on web, `accessibilityLabel` and a 44px
   minimum touch target on mobile.
 
+## Mobile screens and layout
+
+The app runs on phones and tablets (`docs/tablet-ux-2026-10.md`). Every
+screen is built the same way.
+
+**Route files.**
+- A file under `app/` reads its route params and renders a screen component
+  from `src/screens/<area>/`, nothing more.
+- A screen component takes its ids as props, so it can be shown as its own
+  screen or inside a pane.
+
+**Layout.**
+- `useResponsive()` is the only source of layout facts: `sizeClass`
+  (`compact`, `medium` or `expanded`), `columns`, `cardWidth` and column
+  widths.
+- Its rules live in `src/lib/windowLayout.ts`, with tests.
+- No screen compares `width` to a number of its own.
+
+**Content.** It sits in `<ScreenColumn width="reading" | "wide" | "full">`,
+or uses `column()` for a scroll view's `contentContainerStyle`. On a phone
+both are a no-op.
+
+**Lists that open items.**
+- They go through `<SplitScreen>`: on a phone the item is pushed; on a tablet
+  in landscape it opens beside the list.
+- The selection lives in the `selected` search param.
+- The item's route wraps its screen in `<SplitDetailRoute>`, so a deep link on
+  a tablet lands beside the list.
+- A list row shows the open item with `useSelectedRowStyle()`.
+
+**Back buttons.** Every header uses `<HeaderBackButton>`, which hides itself
+in a detail pane. No header calls `router.back()` itself.
+
+**Tab bars.** Every tab navigator takes its options from
+`useTabNavigatorOptions()`: a bottom bar on phones, a navigation rail in
+landscape.
+
 ## API package
 
 - Access control lives in Payload `access` functions and the helpers in

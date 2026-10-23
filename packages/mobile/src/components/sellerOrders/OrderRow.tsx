@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
@@ -22,6 +23,7 @@ export function OrderRow({
 	accepting,
 	busy,
 	error,
+	selected,
 }: {
 	order: OrderListEntry;
 	onPress: () => void;
@@ -32,21 +34,29 @@ export function OrderRow({
 	accepting?: boolean;
 	busy?: boolean;
 	error?: string | null;
+	/** Open in the detail pane beside the list. */
+	selected?: boolean;
 }) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
 	const image = resolveImageUrl(order.firstItemImageUrl);
+	const selectedStyle = useSelectedRowStyle()(selected);
 	const acceptBy = rowAcceptBy(order);
 	const status = t(`orderStatus.${statusLabelKey(order.status, "seller")}`);
 
 	return (
 		<View
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+			style={[
+				styles.card,
+				{ backgroundColor: c.card, borderColor: c.border },
+				selectedStyle,
+			]}
 		>
 			<Pressable
 				onPress={onPress}
 				accessibilityRole="button"
+				accessibilityState={{ selected: Boolean(selected) }}
 				accessibilityLabel={`${t("sellerOrders.orderTitle", {
 					number: order.orderNumber,
 				})}, ${status}`}

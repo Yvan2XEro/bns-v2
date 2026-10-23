@@ -4748,5 +4748,11 @@
 			"title": "Verify your phone to see this number",
 			"body": "A seller's number is personal: it is shown only to accounts with a verified phone."
 		}
+	},
+	"split": {
+		"selectOrder": "Pick an order to see it here",
+		"selectConversation": "Pick a conversation to read it here",
+		"selectListing": "Pick a listing to see it here",
+		"selectItem": "Pick an item to see it here"
 	}
 }

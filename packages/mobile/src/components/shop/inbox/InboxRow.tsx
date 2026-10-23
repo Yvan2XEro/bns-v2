@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { useTranslation } from "@/src/lib/i18n";
 import { relativeAge } from "@/src/lib/moderationVerification";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
@@ -22,11 +23,15 @@ function relativeLabel(
 export function InboxRow({
 	item,
 	onPress,
+	selected,
 }: {
 	item: InboxConversationView;
 	onPress: () => void;
+	/** Open in the detail pane beside the list. */
+	selected?: boolean;
 }) {
 	const c = useShopTheme();
+	const selectedStyle = useSelectedRowStyle()(selected);
 	const { t } = useTranslation();
 	const buyerName = item.buyer?.name ?? t("inbox.unknownBuyer");
 	const buyerUri = resolveImageUrl(item.buyer?.avatarUrl ?? null);
@@ -36,8 +41,13 @@ export function InboxRow({
 	return (
 		<Pressable
 			onPress={onPress}
-			style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}
+			style={[
+				styles.row,
+				{ backgroundColor: c.card, borderColor: c.border },
+				selectedStyle,
+			]}
 			accessibilityRole="button"
+			accessibilityState={{ selected: Boolean(selected) }}
 			accessibilityLabel={buyerName}
 		>
 			<View style={styles.avatarWrap}>
