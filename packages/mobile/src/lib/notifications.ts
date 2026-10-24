@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { reportError } from "@/src/lib/monitoring";
 import { PUSH_CHANNELS } from "../../../api/src/contracts/pushChannels";
 import { api } from "./api";
 import i18n from "./i18n";
@@ -76,7 +77,11 @@ export async function registerForPushNotificationsAsync({
 			projectId ? { projectId } : undefined,
 		);
 		return tokenData.data;
-	} catch {
+	} catch (error) {
+		// On Android this is most often a build without its Firebase config
+		// (app.config.ts): say so, rather than never registering in silence.
+		console.warn("[notifications] no push token:", error);
+		reportError(error);
 		return null;
 	}
 }

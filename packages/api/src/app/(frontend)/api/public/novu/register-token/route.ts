@@ -37,7 +37,9 @@ export async function POST(request: Request) {
 	});
 
 	try {
-		await notificationProvider.subscribers.credentials.update(
+		// Appended, not replaced: a phone and a tablet signed in to the same
+		// account each keep receiving.
+		await notificationProvider.subscribers.credentials.append(
 			{
 				providerId: ChatOrPushProviderEnum.Expo,
 				integrationIdentifier:

@@ -234,3 +234,32 @@ When the user taps a push notification while the app is in background or killed,
 | `conversationId` | `/messages/{conversationId}` |
 
 This is handled by `PushNotificationHandler` in `_layout.tsx`.
+
+## Native push: what each side needs
+
+A push reaches a phone only when every link holds:
+
+1. **The app gets a token.** On Android, the build must carry Firebase's
+   `google-services.json`; without it, `getExpoPushTokenAsync` fails and the
+   app registers nothing (it now reports the failure to Sentry). The file
+   stays out of git: create an EAS environment variable `GOOGLE_SERVICES_JSON`
+   of type **file** (Firebase console, Project settings, the Android app
+   `com.buynsellem.mobile`, download `google-services.json`), for the
+   production and preview environments. `app.config.ts` passes it to the
+   build; a local build reads a git-ignored `packages/mobile/google-services.json`.
+   It is a native change: a new build, not an OTA update.
+2. **Expo can send to FCM.** The FCM V1 service account key is uploaded to
+   EAS (`eas credentials -p android`, Google Service Account, FCM V1). iOS
+   uses the APNs key EAS manages.
+3. **The token reaches Novu.** The app posts it to
+   `/api/public/novu/register-token` once the permission is granted (asked in
+   context: a first message, a first order). The API appends it to the
+   subscriber's Expo credentials, so every signed-in device keeps receiving.
+4. **Novu sends through Expo.** An active **Expo Push** integration in Novu
+   (Integrations, Push, Expo, with an Expo access token);
+   `NOVU_EXPO_INTEGRATION_IDENTIFIER` names it when there are several.
+5. **The workflow has a push step,** which every synced workflow does.
+
+To check one device: Novu, Subscribers, the account's id, Channels: an Expo
+credential with a device token must be listed. None means step 1 or 3
+failed; one listed but nothing received means step 2 or 4.
