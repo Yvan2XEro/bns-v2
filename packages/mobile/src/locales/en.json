@@ -820,7 +820,40 @@
 		"phoneNumberRequiredError": "Phone number is required",
 		"phoneCodeRequiredError": "Verification code is required",
 		"phoneVerifiedBadge": "Verified",
-		"phoneNotVerifiedBadge": "Not verified"
+		"phoneNotVerifiedBadge": "Not verified",
+		"permissions": {
+			"title": "Permissions",
+			"intro": "What the app may use on this device. Each one only serves the features below, and you can change it at any time.",
+			"notifications": {
+				"label": "Notifications",
+				"why": "New messages, orders and their delivery, even when the app is closed."
+			},
+			"location": {
+				"label": "Location",
+				"why": "Listings near you and your city filled in, only while you use the app."
+			},
+			"camera": {
+				"label": "Camera",
+				"why": "Photos for your listings and scanning your verification documents."
+			},
+			"photos": {
+				"label": "Photos",
+				"why": "Adding pictures from your gallery to a listing or your profile."
+			},
+			"status": {
+				"granted": "Allowed",
+				"limited": "Selected photos only",
+				"undetermined": "Not asked yet",
+				"denied": "Refused",
+				"blocked": "Refused — change it in settings",
+				"unavailable": "Not available on this device"
+			},
+			"action": {
+				"allow": "Allow",
+				"manage": "Manage",
+				"openSettings": "Open settings"
+			}
+		}
 	},
 	"boost": {
 		"title": "Boost Your Listing",

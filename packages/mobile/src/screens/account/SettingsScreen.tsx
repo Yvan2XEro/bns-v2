@@ -22,6 +22,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
+import { PermissionList } from "@/src/components/settings/PermissionList";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 
@@ -350,6 +351,15 @@ export function SettingsScreen() {
 							</Pressable>
 						)}
 					</View>
+				</Section>
+
+				{/* Device permissions */}
+				<Section
+					title={t("settings.permissions.title")}
+					icon="shield-checkmark-outline"
+					{...sectionColors}
+				>
+					<PermissionList />
 				</Section>
 
 				{/* App version */}

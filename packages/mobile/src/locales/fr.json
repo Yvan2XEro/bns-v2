@@ -823,7 +823,40 @@
 		"phoneNumberRequiredError": "Le numéro de téléphone est requis",
 		"phoneCodeRequiredError": "Le code de vérification est requis",
 		"phoneVerifiedBadge": "Vérifié",
-		"phoneNotVerifiedBadge": "Non vérifié"
+		"phoneNotVerifiedBadge": "Non vérifié",
+		"permissions": {
+			"title": "Autorisations",
+			"intro": "Ce que l'app peut utiliser sur cet appareil. Chacune ne sert qu'aux fonctions ci-dessous, et vous pouvez la changer à tout moment.",
+			"notifications": {
+				"label": "Notifications",
+				"why": "Nouveaux messages, commandes et leur livraison, même quand l'app est fermée."
+			},
+			"location": {
+				"label": "Localisation",
+				"why": "Les annonces près de chez vous et votre ville préremplie, seulement pendant que vous utilisez l'app."
+			},
+			"camera": {
+				"label": "Appareil photo",
+				"why": "Les photos de vos annonces et la numérisation de vos documents de vérification."
+			},
+			"photos": {
+				"label": "Photos",
+				"why": "Ajouter des images de votre galerie à une annonce ou à votre profil."
+			},
+			"status": {
+				"granted": "Autorisé",
+				"limited": "Photos sélectionnées uniquement",
+				"undetermined": "Pas encore demandé",
+				"denied": "Refusé",
+				"blocked": "Refusé — à modifier dans les réglages",
+				"unavailable": "Indisponible sur cet appareil"
+			},
+			"action": {
+				"allow": "Autoriser",
+				"manage": "Gérer",
+				"openSettings": "Ouvrir les réglages"
+			}
+		}
 	},
 	"boost": {
 		"title": "Booster votre annonce",
