@@ -2,6 +2,7 @@
 
 import { type BellRenderer, Inbox } from "@novu/nextjs";
 import type { ReactNode } from "react";
+import type { NovuEndpoints } from "../../../../api/src/contracts/novuEndpoints";
 
 type UnreadCount = Parameters<BellRenderer>[0];
 
@@ -16,19 +17,22 @@ function unreadTotal(unread: UnreadCount): number {
  * the theme's tokens — Novu derives every shade in CSS, so it follows dark mode.
  */
 export default function NovuInbox({
-	applicationIdentifier,
+	novu,
 	subscriberId,
 	subscriberHash,
 	renderBell,
 }: {
-	applicationIdentifier: string;
+	novu: NovuEndpoints;
 	subscriberId: string;
 	subscriberHash: string;
 	renderBell: (count: number) => ReactNode;
 }) {
 	return (
 		<Inbox
-			applicationIdentifier={applicationIdentifier}
+			applicationIdentifier={novu.applicationIdentifier}
+			// Unset: Novu Cloud; set for a self-hosted instance.
+			backendUrl={novu.apiUrl ?? undefined}
+			socketUrl={novu.socketUrl ?? undefined}
 			subscriberId={subscriberId}
 			subscriberHash={subscriberHash}
 			renderBell={(unread) => renderBell(unreadTotal(unread))}

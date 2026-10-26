@@ -1,4 +1,5 @@
 import { Novu } from "@novu/api";
+import { novuApiUrl } from "@/contracts/novuEndpoints";
 
 let notificationProvider: Novu | null = null;
 
@@ -16,7 +17,8 @@ export function getNotificationProvider(): Novu {
 
 	notificationProvider = new Novu({
 		secretKey,
-		serverURL: process.env.NOVU_API_URL || undefined,
+		// Novu Cloud unless NOVU_API_URL names a self-hosted instance.
+		serverURL: novuApiUrl(process.env) ?? undefined,
 	});
 	return notificationProvider;
 }

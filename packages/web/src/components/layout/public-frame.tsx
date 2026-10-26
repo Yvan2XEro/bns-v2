@@ -4,6 +4,7 @@ import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
 import { TabBarSpacer } from "~/components/layout/mobile-nav";
 import { type NavCategory, toNavCategories } from "~/lib/nav";
+import { novuInbox } from "~/lib/novu";
 import { serverFetch } from "~/lib/server-api";
 
 async function getNavCategories(): Promise<NavCategory[] | undefined> {
@@ -29,11 +30,7 @@ export async function PublicFrame({
 	return (
 		<div className="relative flex min-h-screen flex-col">
 			<AppBanner />
-			<Header
-				novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER}
-				categories={categories}
-				shop={shop}
-			/>
+			<Header novu={novuInbox()} categories={categories} shop={shop} />
 			<main className="flex-1">{children}</main>
 			<Footer />
 			<TabBarSpacer />

@@ -23,6 +23,9 @@ export interface BuyerProtectionConfig {
 export interface AppConfig {
 	chatUrl: string | null;
 	novuAppId: string | null;
+	/** A self-hosted Novu's API and WebSocket; null keeps Novu Cloud. */
+	novuApiUrl: string | null;
+	novuSocketUrl: string | null;
 	webUrl: string | null;
 	/** Photon geocoder behind every place picker; `null` until config loads. */
 	photonUrl: string | null;
@@ -59,6 +62,8 @@ export interface AppConfig {
 const DEFAULT: AppConfig = {
 	chatUrl: null,
 	novuAppId: null,
+	novuApiUrl: null,
+	novuSocketUrl: null,
 	webUrl: null,
 	photonUrl: null,
 	enabledAuthProviders: ["google", "apple", "facebook"],

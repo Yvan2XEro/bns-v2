@@ -104,6 +104,8 @@ describe("GET /api/public/config", () => {
 		vi.stubEnv("STRIPE_PUBLISHABLE_KEY", "pk_test");
 		vi.stubEnv("CHAT_PUBLIC_URL", "https://chat.example");
 		vi.stubEnv("NOVU_APPLICATION_IDENTIFIER", "novu-app");
+		vi.stubEnv("NOVU_API_URL", "https://novu-api.example/");
+		vi.stubEnv("NOVU_SOCKET_URL", "https://novu-ws.example");
 		vi.stubEnv("PUBLIC_WEB_URL", "https://web.example");
 		findGlobal.mockResolvedValue({
 			orders: {},
@@ -118,6 +120,8 @@ describe("GET /api/public/config", () => {
 			stripePublishableKey: "pk_test",
 			chatUrl: "https://chat.example",
 			novuAppId: "novu-app",
+			novuApiUrl: "https://novu-api.example",
+			novuSocketUrl: "https://novu-ws.example",
 			webUrl: "https://web.example",
 			photonUrl: "https://photon.overbrand.net",
 			enabledAuthProviders: expect.any(Array),

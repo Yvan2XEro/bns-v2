@@ -8,6 +8,7 @@ import { getPayload, type Payload } from "payload";
 import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 import type { MarketConfig } from "@/contracts/marketConfig";
+import { novuEndpoints } from "@/contracts/novuEndpoints";
 import { normalizePhotoLimit, PHOTO_LIMIT } from "@/contracts/photoLimit";
 import { BOOST_PRICING } from "@/lib/boostPricing";
 import { getDisputeSettings, isDisputesOpen } from "@/lib/caseSettings";
@@ -208,10 +209,14 @@ export async function GET(request?: Request) {
 		}
 	}
 
+	const novu = novuEndpoints(process.env);
 	return Response.json({
 		stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? null,
 		chatUrl: process.env.CHAT_PUBLIC_URL ?? null,
-		novuAppId: process.env.NOVU_APPLICATION_IDENTIFIER ?? null,
+		novuAppId: novu?.applicationIdentifier ?? null,
+		// A self-hosted Novu's API and WebSocket; null keeps Novu Cloud.
+		novuApiUrl: novu?.apiUrl ?? null,
+		novuSocketUrl: novu?.socketUrl ?? null,
 		webUrl: process.env.PUBLIC_WEB_URL ?? null,
 		// Geocoder for the place pickers. Defaulted, not optional: without it
 		// neither client can search a city.

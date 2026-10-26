@@ -179,7 +179,10 @@ export const APP_ENV = {
 		secret: false,
 		services: ["api", "web"],
 	},
-	NOVU_API_URL: api(),
+	// Novu Cloud by default; a self-hosted instance's API and WebSocket. The
+	// web hands them to its inbox; the API to the app (/api/public/config).
+	NOVU_API_URL: { kind: "app", secret: false, services: ["api", "web"] },
+	NOVU_SOCKET_URL: { kind: "app", secret: false, services: ["api", "web"] },
 	NOVU_EXPO_INTEGRATION_IDENTIFIER: api(),
 
 	// ── Monitoring (distributed to the apps by /api/public/config) ──

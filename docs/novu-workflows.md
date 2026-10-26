@@ -263,3 +263,39 @@ A push reaches a phone only when every link holds:
 To check one device: Novu, Subscribers, the account's id, Channels: an Expo
 credential with a device token must be listed. None means step 1 or 3
 failed; one listed but nothing received means step 2 or 4.
+
+## Self-hosted Novu
+
+Every part of BuyNSellem reads where Novu lives from three variables, read
+once by `contracts/novuEndpoints.ts`; nothing else names a Novu host.
+
+| Variable | Read by | Novu Cloud | Self-hosted |
+|---|---|---|---|
+| `NOVU_API_URL` | API (sends, tokens, workflow sync), web inbox, app inbox via `/api/public/config` | `https://api.novu.co` (or unset) | `https://novu-api.buynsellem.com` |
+| `NOVU_SOCKET_URL` | web inbox, app inbox via `/api/public/config` | unset | `https://novu-ws.buynsellem.com` |
+| `NOVU_APPLICATION_IDENTIFIER`, `NOVU_SECRET_KEY` | API, web | from Novu Cloud | from your instance's dashboard |
+
+Novu Cloud's address, or nothing, leaves the SDKs on their defaults, so a
+Cloud setup needs neither URL. Every docker-compose file, the Kubernetes
+configmap and the K3s env catalog (`infra/src/app-env.ts`) pass both URLs to
+the API and the web.
+
+**The instance's three services,** one subdomain each, on one level so
+Cloudflare's universal certificate covers them, all over HTTPS (iOS refuses
+plain HTTP):
+
+| Service | Port | Subdomain |
+|---|---|---|
+| Dashboard | 4000 | `novu.buynsellem.com` |
+| API | 3000 | `novu-api.buynsellem.com` |
+| WebSocket | 3002 | `novu-ws.buynsellem.com` (WebSockets allowed at the proxy) |
+
+The instance itself must know these addresses (in its own environment:
+`API_ROOT_URL`, `FRONT_BASE_URL`, and the dashboard's API and WebSocket
+hostnames, whose names depend on the Novu release).
+
+**Moving from Cloud:** set the three variables above and redeploy the API and
+the web. The API recreates every workflow at boot (no plan limit when
+self-hosted); recreate the Expo Push integration in the new dashboard; each
+app re-registers its device token at sign-in or on its next return to the
+foreground. In-app notifications already received on Cloud do not move.

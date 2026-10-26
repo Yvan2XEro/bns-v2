@@ -2,6 +2,7 @@ import { ArrowLeft, Lock } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Header } from "~/components/layout/header";
+import { novuInbox } from "~/lib/novu";
 
 export default async function CheckoutLayout({
 	children,
@@ -11,7 +12,7 @@ export default async function CheckoutLayout({
 	const t = await getTranslations("Checkout");
 	return (
 		<div className="flex min-h-screen flex-col">
-			<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
+			<Header novu={novuInbox()} />
 			<div className="border-line border-b bg-surface">
 				<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
 					<Link

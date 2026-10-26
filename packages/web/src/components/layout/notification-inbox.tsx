@@ -4,11 +4,12 @@ import { Bell } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useAuth } from "~/hooks/use-auth";
 import { cn } from "~/lib/utils";
+import type { NovuEndpoints } from "../../../../api/src/contracts/novuEndpoints";
 
 const NovuInbox = lazy(() => import("./novu-inbox"));
 
 interface NotificationInboxProps {
-	applicationIdentifier: string;
+	novu: NovuEndpoints;
 	/** Visible under the icon from xl, like the header's other icons. */
 	label: string;
 	/** The header icons' colour classes, so the bell matches them in a shop too. */
@@ -46,7 +47,7 @@ function HeaderBell({
 }
 
 export function NotificationInbox({
-	applicationIdentifier,
+	novu,
 	label,
 	tone,
 }: NotificationInboxProps) {
@@ -70,7 +71,7 @@ export function NotificationInbox({
 	return (
 		<Suspense fallback={bell(0)}>
 			<NovuInbox
-				applicationIdentifier={applicationIdentifier}
+				novu={novu}
 				subscriberId={user.id}
 				subscriberHash={subscriberHash}
 				renderBell={bell}

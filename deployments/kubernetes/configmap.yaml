@@ -20,7 +20,9 @@ data:
   POSTHOG_HOST: "https://eu.i.posthog.com"
   NEXT_PUBLIC_API_URL: "https://api.buynsellem.com"
   NOTCHPAY_BASE_URL: "https://api.notchpay.co"
+  # Novu Cloud; for a self-hosted Novu, its API and WebSocket service.
   NOVU_API_URL: "https://api.novu.co"
+  NOVU_SOCKET_URL: ""
   MEILI_ENV: "production"
   MONGO_DB: "bns"
   MONGO_USER: "bns"

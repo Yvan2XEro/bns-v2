@@ -27,6 +27,7 @@ import {
 } from "~/lib/nav";
 import { shopEntryFor } from "~/lib/shop-entry";
 import { cn } from "~/lib/utils";
+import type { NovuEndpoints } from "../../../../api/src/contracts/novuEndpoints";
 import type { ShopTheme } from "../../../../api/src/contracts/shopTheme";
 import { AccountMenu } from "./account-menu";
 import { CartButton } from "./cart-button";
@@ -44,7 +45,7 @@ export interface HeaderShop {
 }
 
 interface HeaderProps {
-	novuAppId?: string;
+	novu?: NovuEndpoints | null;
 	/** The category tree, when the layout already fetched it. */
 	categories?: NavCategory[];
 	/** On a shop's own pages: the main bar takes the shop's colours and identity. */
@@ -53,7 +54,7 @@ interface HeaderProps {
 
 const SHOP_HEAD = "bns-shop-head";
 
-export function Header({ novuAppId, categories, shop }: HeaderProps) {
+export function Header({ novu, categories, shop }: HeaderProps) {
 	const { user, logout } = useAuth();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -202,9 +203,9 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 									</span>
 								</NavIcon>
 							)}
-							{signedIn && novuAppId && (
+							{signedIn && novu && (
 								<NotificationInbox
-									applicationIdentifier={novuAppId}
+									novu={novu}
 									label={t("alerts")}
 									tone={iconTone}
 								/>

@@ -23,6 +23,9 @@ export interface AppConfig {
 	stripePublishableKey: string | null;
 	chatUrl: string | null;
 	novuAppId: string | null;
+	/** A self-hosted Novu's API and WebSocket; null keeps Novu Cloud. */
+	novuApiUrl: string | null;
+	novuSocketUrl: string | null;
 	/** Photon geocoder behind every place picker, served by the API. */
 	photonUrl: string | null;
 	boostPricing: BoostPrice[];
@@ -62,6 +65,8 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	stripePublishableKey: null,
 	chatUrl: null,
 	novuAppId: null,
+	novuApiUrl: null,
+	novuSocketUrl: null,
 	photonUrl: null,
 	boostPricing: [],
 	shopsEnabled: false,

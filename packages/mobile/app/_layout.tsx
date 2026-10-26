@@ -260,7 +260,7 @@ export default function RootLayout() {
 
 function NovuWrapper({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
-	const { novuAppId } = useAppConfig();
+	const { novuAppId, novuApiUrl, novuSocketUrl } = useAppConfig();
 	const appId = novuAppId ?? "";
 	const [ready, setReady] = useState(false);
 
@@ -295,6 +295,9 @@ function NovuWrapper({ children }: { children: React.ReactNode }) {
 			subscriberId={user.id}
 			applicationIdentifier={appId}
 			subscriberHash={data?.subscriberHash}
+			// Unset: Novu Cloud. Set by the API for a self-hosted instance.
+			backendUrl={novuApiUrl ?? undefined}
+			socketUrl={novuSocketUrl ?? undefined}
 		>
 			<NotificationReadyContext.Provider value={ready}>
 				{children}
