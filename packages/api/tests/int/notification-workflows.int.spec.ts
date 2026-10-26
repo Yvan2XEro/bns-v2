@@ -682,9 +682,10 @@ function schemaProperties(id: string): string[] {
 	const schema = workflow(id).payloadSchema as {
 		properties?: Record<string, unknown>;
 	};
-	// `locale` is on every workflow, added by the API to each event.
+	// `locale` and `link` are on every workflow, added by the API to each
+	// event (`triggerNotificationEvent`).
 	return Object.keys(schema.properties ?? {})
-		.filter((key) => key !== "locale")
+		.filter((key) => key !== "locale" && key !== "link")
 		.sort();
 }
 

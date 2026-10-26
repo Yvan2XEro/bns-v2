@@ -84,6 +84,14 @@ function objectSchema(
 				enum: [...NOTIFICATION_LOCALES],
 				description: "The recipient's language",
 			},
+			// Added by triggerNotificationEvent wherever the notification opens
+			// a screen: declared on every workflow, since none takes unknown
+			// fields, and the redirect of those whose link depends on the
+			// recipient.
+			link: {
+				type: "string",
+				description: "The app path the notification opens",
+			},
 		},
 		required,
 	};
@@ -3080,9 +3088,7 @@ const workflowSpecs: WorkflowSpec[] = [
 						fr: "La livraison a échoué ({{payload.reason}}). Il reste {{payload.attemptsLeft}} tentative(s).",
 						en: "Delivery failed ({{payload.reason}}). {{payload.attemptsLeft}} attempt(s) remain.",
 					}),
-					redirect: redirect(
-						"{% if payload.audience == 'shop' %}/seller/orders/{{payload.orderId}}{% else %}/purchases/{{payload.orderId}}{% endif %}",
-					),
+					redirect: redirect("{{payload.link}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
@@ -3130,9 +3136,7 @@ const workflowSpecs: WorkflowSpec[] = [
 						fr: "Une nouvelle tentative est programmée pour {{payload.date}} ({{payload.window}}).",
 						en: "A new delivery attempt is scheduled for {{payload.date}} ({{payload.window}}).",
 					}),
-					redirect: redirect(
-						"{% if payload.audience == 'rider' %}/rider/shipment/{{payload.shipmentId}}{% else %}/seller/orders/{{payload.orderId}}{% endif %}",
-					),
+					redirect: redirect("{{payload.link}}"),
 					data: { shipmentId: "{{payload.shipmentId}}" },
 				}),
 				pushStep("Push", "push", {
@@ -3606,9 +3610,33 @@ for (const [workflowId, name, ...channels] of caseWorkflowDefinitions) {
 /** The finished workflow definitions, e.g. for a test asserting on their shape. */
 export const WORKFLOWS = workflowSpecs.map((spec) => spec.definition);
 
+/** What an update keeps from the stored workflow. */
+type StoredWorkflow = Pick<
+	components.WorkflowResponseDto,
+	"origin" | "severity"
+>;
+
+/**
+ * The stored workflow when Novu answered but this SDK rejected the answer:
+ * a workflow saved with a problem the SDK has no code for (a self-hosted
+ * Novu newer than it) fails to parse, which would block the very update
+ * that fixes it. The raw answer still names what an update keeps.
+ */
+function storedDespiteParse(error: unknown): StoredWorkflow | null {
+	if (!(error instanceof Error) || error.name !== "ResponseValidationError")
+		return null;
+	const raw: unknown =
+		"rawValue" in error ? (error as { rawValue: unknown }).rawValue : null;
+	const result =
+		raw && typeof raw === "object" && "Result" in raw ? raw.Result : null;
+	if (!result || typeof result !== "object") return null;
+	const { origin, severity } = result as Partial<StoredWorkflow>;
+	return origin && severity ? { origin, severity } : null;
+}
+
 function toUpdateDefinition(
 	spec: WorkflowSpec,
-	existing: components.WorkflowResponseDto,
+	existing: StoredWorkflow,
 ): components.UpdateWorkflowDto {
 	return {
 		name: spec.definition.name,
@@ -3639,6 +3667,8 @@ async function syncWorkflow(
 			if (error && typeof error === "object" && "statusCode" in error) {
 				if (error.statusCode === 404) return null;
 			}
+			const stored = storedDespiteParse(error);
+			if (stored) return stored;
 			throw error;
 		});
 

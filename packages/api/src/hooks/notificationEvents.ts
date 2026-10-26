@@ -308,10 +308,14 @@ export async function triggerNotificationEvent({
 			typeof payload.locale === "string"
 				? notificationLocaleOf(payload.locale)
 				: await recipientLocale(subscriberId);
+		// The screen the notification opens, worked out here once: a workflow
+		// whose link depends on the recipient (`audience`) redirects to
+		// `{{payload.link}}`, since Novu takes no Liquid tags in a URL.
+		const link = buildExpoPushData(event, payload)?.url;
 		await notificationProvider.trigger({
 			workflowId: event,
 			to: email ? { subscriberId, email } : subscriberId,
-			payload: { ...payload, locale },
+			payload: { ...payload, locale, ...(link ? { link } : {}) },
 			overrides: mergeOverrides(event, payload, overrides),
 		});
 	} catch (error) {
