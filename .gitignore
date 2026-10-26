@@ -58,3 +58,6 @@ mongo-keyfile
 # `bun run stack:init` creates it from infra/stacks/<stack>.example.yaml.
 infra/.stacks/
 infra/Pulumi.*.yaml
+
+# Google service account keys (private): never committed
+*.service.json

@@ -241,13 +241,13 @@ A push reaches a phone only when every link holds:
 
 1. **The app gets a token.** On Android, the build must carry Firebase's
    `google-services.json`; without it, `getExpoPushTokenAsync` fails and the
-   app registers nothing (it now reports the failure to Sentry). The file
-   stays out of git: create an EAS environment variable `GOOGLE_SERVICES_JSON`
-   of type **file** (Firebase console, Project settings, the Android app
-   `com.buynsellem.mobile`, download `google-services.json`), for the
-   production and preview environments. `app.config.ts` passes it to the
-   build; a local build reads a git-ignored `packages/mobile/google-services.json`.
-   It is a native change: a new build, not an OTA update.
+   app registers nothing (it reports the failure to Sentry). The file is
+   committed at `packages/mobile/google-services.json` and named by
+   `android.googleServicesFile` in `app.json`: it is public configuration
+   (Firebase project, app ids), shipped inside every APK anyway. It is not
+   the service account key — that one holds a `private_key`, is a secret,
+   and never enters the repository (`*.service.json` is ignored). A new
+   `google-services.json` is a native change: a new build, not an OTA update.
 2. **Expo can send to FCM.** The FCM V1 service account key is uploaded to
    EAS (`eas credentials -p android`, Google Service Account, FCM V1). iOS
    uses the APNs key EAS manages.

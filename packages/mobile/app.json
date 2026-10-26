@@ -29,6 +29,7 @@
 			},
 			"predictiveBackGestureEnabled": false,
 			"package": "com.buynsellem.mobile",
+			"googleServicesFile": "./google-services.json",
 			"intentFilters": [
 				{
 					"action": "VIEW",
