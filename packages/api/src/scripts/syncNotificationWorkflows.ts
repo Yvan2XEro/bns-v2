@@ -3676,19 +3676,37 @@ export async function syncNotificationWorkflows(
 	let created = 0;
 	let updated = 0;
 
+	// One refused workflow (Novu's plan limit, a bad template) must not leave
+	// every workflow after it unsynced: carry on, then name the failures.
+	const failed: string[] = [];
 	for (const spec of workflowSpecs) {
-		const result = await syncWorkflow(spec, dryRun);
+		const id = spec.definition.workflowId;
+		let result: "created" | "updated";
+		try {
+			result = await syncWorkflow(spec, dryRun);
+		} catch (error) {
+			failed.push(
+				`${id}: ${error instanceof Error ? error.message : String(error)}`,
+			);
+			continue;
+		}
 		if (result === "created") created += 1;
 		if (result === "updated") updated += 1;
 
 		log(
-			`[notifications] ${dryRun ? "would sync" : "synced"} workflow "${spec.definition.workflowId}" (${result})`,
+			`[notifications] ${dryRun ? "would sync" : "synced"} workflow "${id}" (${result})`,
 		);
 	}
 
 	log(
-		`[notifications] ${dryRun ? "dry run complete" : "sync complete"}: ${created} created, ${updated} updated.`,
+		`[notifications] ${dryRun ? "dry run complete" : "sync complete"}: ${created} created, ${updated} updated, ${failed.length} failed.`,
 	);
+	if (failed.length > 0) {
+		// Thrown, so the boot task retries on the next boot.
+		throw new Error(
+			`${failed.length} of ${workflowSpecs.length} workflows not synced — no notification is sent for these:\n${failed.join("\n")}`,
+		);
+	}
 	return { created, updated };
 }
 
