@@ -24,12 +24,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 	const [chatClient, setChatClient] = useState<ChatClient | null>(null);
 	const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 	const clientRef = useRef<ChatClient | null>(null);
+	const userId = user?.id ?? null;
+	// The latest token, read when the socket is created; a refresh after that
+	// is handed to the live socket instead of reconnecting it (below).
+	const tokenRef = useRef(token);
+	tokenRef.current = token;
+	const signedIn = Boolean(userId && token);
 
+	// One socket per signed-in user. It is not torn down when the token is
+	// refreshed or the profile reloaded (every return to the foreground does
+	// both): closing a WebSocket in the middle of its handshake raced OkHttp's
+	// reader on Android and crashed the app (Sentry 156244033).
 	useEffect(() => {
 		// `chatUrl` arrives from /api/public/config, so it is null on the first
 		// render. Falling back to a cleartext localhost URL meant every cold start
 		// opened a connection iOS App Transport Security blocks outright.
-		if (!user || !token || !chatUrl) {
+		const currentToken = tokenRef.current;
+		if (!userId || !signedIn || !currentToken || !chatUrl) {
 			clientRef.current?.disconnect();
 			clientRef.current = null;
 			setChatClient(null);
@@ -37,7 +48,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 			return;
 		}
 
-		const client = new ChatClient({ url: chatUrl, token });
+		const client = new ChatClient({ url: chatUrl, token: currentToken });
 		clientRef.current = client;
 
 		client.on("user:online", ({ userId }) => {
@@ -60,7 +71,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 			clientRef.current = null;
 			setChatClient(null);
 		};
-	}, [user?.id, token, user, chatUrl]);
+	}, [userId, signedIn, chatUrl]);
+
+	// A refreshed token rides on the open socket and its next reconnection.
+	useEffect(() => {
+		if (token) clientRef.current?.updateToken(token);
+	}, [token]);
 
 	return (
 		<ChatContext.Provider value={{ chatClient, onlineUsers }}>
