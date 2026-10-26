@@ -35,7 +35,9 @@ export function bootTasks(): DeployTask<Payload>[] {
 	return [
 		{
 			name: "notification-workflows",
-			fingerprint: notificationWorkflowsFingerprint(),
+			// The workflows and the instance they go to: moving to another Novu
+			// (self-hosted, another environment) syncs them there too.
+			fingerprint: notificationWorkflowsFingerprint(process.env),
 			enabled: isNotificationProviderConfigured,
 			run: async (payload) => {
 				await syncNotificationWorkflows({

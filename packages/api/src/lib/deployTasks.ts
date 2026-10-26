@@ -57,12 +57,18 @@ export async function runDeployTasks<Ctx>(
 ): Promise<Record<string, DeployTaskOutcome>> {
 	const outcomes: Record<string, DeployTaskOutcome> = {};
 	for (const task of tasks) {
+		// Said out loud: a task that silently did not run reads like one that
+		// ran and changed nothing.
 		if (task.enabled && !task.enabled()) {
 			outcomes[task.name] = "disabled";
+			log.info(`[deploy] ${task.name} disabled (not configured)`);
 			continue;
 		}
 		if (!(await ledger.claim(task.name, task.fingerprint, LEASE_MS))) {
 			outcomes[task.name] = "skipped";
+			log.info(
+				`[deploy] ${task.name} (${task.fingerprint}) skipped: already done, or running elsewhere`,
+			);
 			continue;
 		}
 		log.info(`[deploy] ${task.name} (${task.fingerprint}) starting`);

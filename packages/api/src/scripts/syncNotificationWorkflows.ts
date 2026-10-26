@@ -9,6 +9,7 @@ import {
 	NOTIFICATION_LOCALES,
 	type NotificationLocale,
 } from "../contracts/notificationLocale";
+import { NOVU_CLOUD_API_URL, novuApiUrl } from "../contracts/novuEndpoints";
 import { fingerprintOf } from "../lib/deployTasks";
 import {
 	getNotificationProvider,
@@ -3658,9 +3659,20 @@ async function syncWorkflow(
 	return "updated";
 }
 
-/** Changes whenever a workflow definition does, so a deploy re-syncs only then. */
-export function notificationWorkflowsFingerprint(): string {
-	return fingerprintOf(workflowSpecs);
+/**
+ * Changes whenever a workflow definition does, or the Novu instance and
+ * application they are synced to, so a deploy re-syncs only then.
+ */
+export function notificationWorkflowsFingerprint(
+	env: Record<string, string | undefined> = {},
+): string {
+	return fingerprintOf({
+		workflows: workflowSpecs,
+		target: [
+			novuApiUrl(env) ?? NOVU_CLOUD_API_URL,
+			env.NOVU_APPLICATION_IDENTIFIER?.trim() ?? "",
+		],
+	});
 }
 
 /**

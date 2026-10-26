@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildExpoPushData } from "../../src/hooks/notificationEvents";
-import { WORKFLOWS } from "../../src/scripts/syncNotificationWorkflows";
+import {
+	notificationWorkflowsFingerprint,
+	WORKFLOWS,
+} from "../../src/scripts/syncNotificationWorkflows";
 
 /** How every translated template text begins (`localized()`). */
 const LOCALE_SWITCH = "{% if payload.locale == ";
@@ -924,5 +927,30 @@ describe("notifications in the recipient's language", () => {
 			"order-placed",
 			"shop-inbox-message",
 		]);
+	});
+});
+
+describe("the workflow sync's fingerprint", () => {
+	it("changes with the Novu instance, so a move re-syncs the workflows", () => {
+		const cloud = notificationWorkflowsFingerprint({
+			NOVU_APPLICATION_IDENTIFIER: "app",
+		});
+		expect(
+			notificationWorkflowsFingerprint({
+				NOVU_APPLICATION_IDENTIFIER: "app",
+				NOVU_API_URL: "https://api.novu.co",
+			}),
+		).toBe(cloud);
+		expect(
+			notificationWorkflowsFingerprint({
+				NOVU_APPLICATION_IDENTIFIER: "app",
+				NOVU_API_URL: "https://novu-api.example.com",
+			}),
+		).not.toBe(cloud);
+		expect(
+			notificationWorkflowsFingerprint({
+				NOVU_APPLICATION_IDENTIFIER: "other",
+			}),
+		).not.toBe(cloud);
 	});
 });
