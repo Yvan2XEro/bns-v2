@@ -3660,6 +3660,25 @@ async function syncWorkflow(
 }
 
 /**
+ * An SDK error with its cause: a network failure reads "Unable to make
+ * request" and keeps the reason (DNS, refused, TLS) in `cause`.
+ */
+/** The SDK's failures to reach Novu at all, as opposed to a refused call. */
+function isNetworkError(error: unknown): boolean {
+	return (
+		error instanceof Error &&
+		(error.name === "ConnectionError" || error.name === "RequestTimeoutError")
+	);
+}
+
+function describeError(error: unknown): string {
+	if (!(error instanceof Error)) return String(error);
+	const cause =
+		error.cause instanceof Error ? error.cause.message : error.cause;
+	return cause ? `${error.message} (${String(cause)})` : error.message;
+}
+
+/**
  * Changes whenever a workflow definition does, or the Novu instance and
  * application they are synced to, so a deploy re-syncs only then.
  */
@@ -3697,9 +3716,14 @@ export async function syncNotificationWorkflows(
 		try {
 			result = await syncWorkflow(spec, dryRun);
 		} catch (error) {
-			failed.push(
-				`${id}: ${error instanceof Error ? error.message : String(error)}`,
-			);
+			// Unreachable instance: every other workflow would wait out the same
+			// failure, so stop at the first one and say where Novu was sought.
+			if (isNetworkError(error)) {
+				throw new Error(
+					`Novu unreachable at ${novuApiUrl(process.env) ?? NOVU_CLOUD_API_URL}: ${describeError(error)}`,
+				);
+			}
+			failed.push(`${id}: ${describeError(error)}`);
 			continue;
 		}
 		if (result === "created") created += 1;
