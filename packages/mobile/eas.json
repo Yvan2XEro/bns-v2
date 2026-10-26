@@ -29,8 +29,16 @@
 				"appleTeamId": "9T6HK8G8B5"
 			},
 			"android": {
-				"releaseStatus": "completed",
-				"track": "internal"
+				"track": "alpha",
+				"releaseStatus": "completed"
+			}
+		},
+		"store": {
+			"extends": "production",
+			"android": {
+				"track": "production",
+				"releaseStatus": "inProgress",
+				"rollout": 0.2
 			}
 		}
 	}
