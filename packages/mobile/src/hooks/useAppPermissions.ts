@@ -12,10 +12,7 @@ import {
 	permissionState,
 } from "@/src/lib/appPermissions";
 import { useAuth } from "@/src/lib/auth";
-import {
-	registerForPushNotificationsAsync,
-	syncPushTokenWithBackend,
-} from "@/src/lib/notifications";
+import { syncPushToken } from "@/src/lib/notifications";
 
 /** How each permission is read and asked, through the module that uses it. */
 const MODULES: Record<
@@ -102,8 +99,7 @@ export function useAppPermissions() {
 			);
 			// Notifications just allowed: this device can now receive them.
 			if (permission === "notifications" && next === "granted" && user) {
-				const token = await registerForPushNotificationsAsync({ ask: false });
-				if (token) await syncPushTokenWithBackend(token);
+				await syncPushToken(user.id);
 			}
 		},
 		[states, user],

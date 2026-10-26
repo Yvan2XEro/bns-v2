@@ -26,7 +26,14 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { Appearance, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+	Appearance,
+	AppState,
+	Pressable,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import {
 	AppConfigProvider,
 	useAppConfig,
@@ -66,10 +73,7 @@ import { AuthProvider, useAuth } from "@/src/lib/auth";
 import { setContentLocale } from "@/src/lib/contentLocale";
 import { notificationUrl, toAppPath } from "@/src/lib/deepLinks";
 import { reportError } from "@/src/lib/monitoring";
-import {
-	registerForPushNotificationsAsync,
-	syncPushTokenWithBackend,
-} from "@/src/lib/notifications";
+import { syncPushToken } from "@/src/lib/notifications";
 
 // Rejects if the splash is already hidden; never let that bubble up as an
 // unhandled rejection on the cold-start path.
@@ -304,18 +308,18 @@ function NovuWrapper({ children }: { children: React.ReactNode }) {
 // allowed. Asking is left to the moment it helps (`askForPushInContext`).
 
 function PushTokenRegistrar() {
-	const { user } = useAuth();
-	const registeredRef = useRef<string | null>(null);
+	const userId = useAuth().user?.id;
 
 	useEffect(() => {
-		if (!user) return;
-		if (registeredRef.current === user.id) return;
-		registeredRef.current = user.id;
-
-		registerForPushNotificationsAsync({ ask: false }).then((token) => {
-			if (token) syncPushTokenWithBackend(token);
+		if (!userId) return;
+		void syncPushToken(userId);
+		// Permission given in the system settings, or a rotated token: picked
+		// up on the way back, not at the next launch.
+		const sub = AppState.addEventListener("change", (state) => {
+			if (state === "active") void syncPushToken(userId);
 		});
-	}, [user]);
+		return () => sub.remove();
+	}, [userId]);
 
 	return null;
 }

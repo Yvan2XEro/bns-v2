@@ -88,12 +88,31 @@ export async function registerForPushNotificationsAsync({
 
 export async function syncPushTokenWithBackend(
 	pushToken: string,
-): Promise<void> {
+): Promise<boolean> {
 	try {
 		await api.post("/api/public/novu/register-token", { token: pushToken });
+		return true;
 	} catch (error) {
 		console.warn("[notifications] Failed to sync push token:", error);
+		reportError(error);
+		return false;
 	}
+}
+
+/** The token last registered, and for whom: registering again is a no-op. */
+let synced: { userId: string; token: string } | null = null;
+
+/**
+ * Registers this device's push token for the signed-in account, without ever
+ * asking for the permission. Cheap to call often — at sign-in and on every
+ * return to the foreground — so a permission given later (in the system
+ * settings, or a token Expo rotated) reaches Novu without a restart.
+ */
+export async function syncPushToken(userId: string): Promise<void> {
+	const token = await registerForPushNotificationsAsync({ ask: false });
+	if (!token) return;
+	if (synced?.userId === userId && synced.token === token) return;
+	if (await syncPushTokenWithBackend(token)) synced = { userId, token };
 }
 
 const ASKED_KEY = "bns.pushAsked";
