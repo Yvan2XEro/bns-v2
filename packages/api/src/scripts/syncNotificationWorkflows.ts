@@ -3667,7 +3667,13 @@ async function syncWorkflow(
 function isNetworkError(error: unknown): boolean {
 	return (
 		error instanceof Error &&
-		(error.name === "ConnectionError" || error.name === "RequestTimeoutError")
+		// UnexpectedClientError is how the SDK reports a fetch that threw:
+		// a host that does not resolve, a TLS failure.
+		[
+			"ConnectionError",
+			"RequestTimeoutError",
+			"UnexpectedClientError",
+		].includes(error.name)
 	);
 }
 

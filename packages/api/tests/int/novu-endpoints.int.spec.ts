@@ -37,6 +37,18 @@ describe("novuEndpoints", () => {
 		});
 	});
 
+	it("takes a WebSocket address for the socket", () => {
+		expect(
+			novuEndpoints({
+				NOVU_APPLICATION_IDENTIFIER: "app",
+				NOVU_SOCKET_URL: "wss://novu-ws.example.com/",
+			})?.socketUrl,
+		).toBe("wss://novu-ws.example.com");
+		expect(
+			novuApiUrl({ NOVU_API_URL: "wss://novu-api.example.com" }),
+		).toBeNull();
+	});
+
 	it("ignores what is not an http(s) URL", () => {
 		expect(novuApiUrl({ NOVU_API_URL: "novu-api.example.com" })).toBeNull();
 		expect(

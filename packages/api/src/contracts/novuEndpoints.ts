@@ -20,13 +20,19 @@ export interface NovuEndpoints {
 	socketUrl: string | null;
 }
 
-/** An http(s) URL without its trailing slash, or null when unusable. */
-function serviceUrl(raw: string | undefined): string | null {
+const HTTP = ["https:", "http:"];
+/** Novu's socket client takes a WebSocket address as well as an http one. */
+const SOCKET = ["https:", "http:", "wss:", "ws:"];
+
+/** A URL in one of `protocols`, without its trailing slash, or null. */
+function serviceUrl(
+	raw: string | undefined,
+	protocols: readonly string[],
+): string | null {
 	const value = raw?.trim().replace(/\/+$/, "");
 	if (!value) return null;
 	try {
-		const url = new URL(value);
-		return url.protocol === "https:" || url.protocol === "http:" ? value : null;
+		return protocols.includes(new URL(value).protocol) ? value : null;
 	} catch {
 		return null;
 	}
@@ -34,7 +40,7 @@ function serviceUrl(raw: string | undefined): string | null {
 
 /** The API's own Novu address, for the server SDK (`serverURL`). */
 export function novuApiUrl(env: Record<string, string | undefined>) {
-	return serviceUrl(env.NOVU_API_URL);
+	return serviceUrl(env.NOVU_API_URL, HTTP);
 }
 
 /** What the inbox clients need; null when notifications are not set up. */
@@ -47,6 +53,6 @@ export function novuEndpoints(
 	return {
 		applicationIdentifier,
 		apiUrl: apiUrl === NOVU_CLOUD_API_URL ? null : apiUrl,
-		socketUrl: serviceUrl(env.NOVU_SOCKET_URL),
+		socketUrl: serviceUrl(env.NOVU_SOCKET_URL, SOCKET),
 	};
 }
