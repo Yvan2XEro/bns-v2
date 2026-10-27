@@ -4,6 +4,7 @@ import {
 	CONDITION_SLUG,
 	CONDITION_VALUES,
 } from "../contracts/conditionAttribute";
+import type { ALLOWED_MEDIA_MIME_TYPES } from "../hooks/mediaLimits";
 import type { CategoryListingFormConfig } from "../lib/listingFormPreset";
 import { localizeCategoryLabels } from "./categoryLocales";
 import { frenchSeedAttribute, seedLabelFr } from "./categoryTranslations";
@@ -3951,12 +3952,14 @@ export const categorySeedAttributes: Record<string, CategoryAttributeSeed[]> =
 		seededDefinitions.map((category) => [category.slug, category.attributes]),
 	);
 
-/** File extensions for the image types a category picture may come in. */
-const IMAGE_EXTENSIONS: Record<string, string> = {
+/** File extensions for the image types Media accepts. */
+const IMAGE_EXTENSIONS: Record<
+	(typeof ALLOWED_MEDIA_MIME_TYPES)[number],
+	string
+> = {
 	"image/jpeg": "jpg",
 	"image/png": "png",
 	"image/webp": "webp",
-	"image/avif": "avif",
 };
 
 /**
@@ -3973,9 +3976,14 @@ export async function fetchFileByURL(url: string, name: string): Promise<File> {
 		.split(";")[0]
 		?.trim()
 		.toLowerCase();
-	const ext = mimetype ? IMAGE_EXTENSIONS[mimetype] : undefined;
+	const ext =
+		mimetype && Object.hasOwn(IMAGE_EXTENSIONS, mimetype)
+			? IMAGE_EXTENSIONS[mimetype as keyof typeof IMAGE_EXTENSIONS]
+			: undefined;
 	if (!mimetype || !ext) {
-		throw new Error(`${url} is not an image (${mimetype || "no type"})`);
+		throw new Error(
+			`${url} is not an image Media accepts (${mimetype || "no type"})`,
+		);
 	}
 	const data = await res.arrayBuffer();
 	return {
