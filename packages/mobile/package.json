@@ -55,6 +55,7 @@
 		"i18next": "^25.8.18",
 		"posthog-react-native": "4.78.4",
 		"react": "19.2.3",
+		"react-call": "2.0.2",
 		"react-dom": "19.2.3",
 		"react-hook-form": "^7.88.0",
 		"react-i18next": "^16.5.8",

@@ -6,7 +6,6 @@ import { useReducer } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
 	ActivityIndicator,
-	Alert,
 	Image,
 	Keyboard,
 	Pressable,
@@ -24,6 +23,7 @@ import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { alerts } from "@/src/contexts/AlertContext";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import {
 	useAcceptResaleTerms,
@@ -109,12 +109,12 @@ export default function ResaleCatalogueScreen() {
 			},
 			{
 				onSuccess: () =>
-					Alert.alert(
+					alerts.showSuccess(
 						t("sellerResale.requestedTitle"),
 						t("sellerResale.requestedBody"),
 					),
 				onError: (error) =>
-					Alert.alert(t("sellerResale.actionFailed"), error.message),
+					alerts.showError(t("sellerResale.actionFailed"), error.message),
 			},
 		);
 	};
@@ -231,12 +231,15 @@ export default function ResaleCatalogueScreen() {
 							onCreate={(input) =>
 								createListing.mutate(input, {
 									onSuccess: () =>
-										Alert.alert(
+										alerts.showSuccess(
 											t("sellerResale.createdTitle"),
 											t("sellerResale.createdBody"),
 										),
 									onError: (error) =>
-										Alert.alert(t("sellerResale.actionFailed"), error.message),
+										alerts.showError(
+											t("sellerResale.actionFailed"),
+											error.message,
+										),
 								})
 							}
 						/>

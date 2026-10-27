@@ -85,7 +85,8 @@ const ICON: Record<AlertType, keyof typeof Ionicons.glyphMap> = {
 
 const SPRING_IN = { damping: 17, stiffness: 190, mass: 0.9 } as const;
 const SPRING_OUT = { damping: 24, stiffness: 300, mass: 0.8 } as const;
-const EXIT_DELAY = 300;
+export const ALERT_EXIT_DELAY = 300;
+const EXIT_DELAY = ALERT_EXIT_DELAY;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 

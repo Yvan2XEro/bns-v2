@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
-import { ActivityIndicator, Alert, ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
 import { ZoneForm } from "@/src/components/delivery/ZoneForm";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { alerts } from "@/src/contexts/AlertContext";
 import {
 	useDeleteZone,
 	useDeliveryZones,
@@ -39,30 +40,24 @@ function ZoneEditor({
 	if (zones.isPending)
 		return <ActivityIndicator style={styles.spinner} color={c.primary} />;
 
-	const confirmDelete = () =>
-		Alert.alert(
+	const confirmDelete = async () => {
+		const confirmed = await alerts.confirm(
 			t("deliverySettings.delete"),
 			t("deliverySettings.deleteConfirm"),
-			[
-				{ text: t("common.cancel"), style: "cancel" },
-				{
-					text: t("deliverySettings.delete"),
-					style: "destructive",
-					onPress: () =>
-						zoneId &&
-						remove.mutate(zoneId, {
-							onSuccess: (result) => {
-								Alert.alert(
-									result.deleted
-										? t("deliverySettings.deleted")
-										: t("deliverySettings.deactivated"),
-								);
-								router.back();
-							},
-						}),
-				},
-			],
+			{ confirmText: t("deliverySettings.delete"), destructive: true },
 		);
+		if (!confirmed || !zoneId) return;
+		remove.mutate(zoneId, {
+			onSuccess: (result) => {
+				alerts.showSuccess(
+					result.deleted
+						? t("deliverySettings.deleted")
+						: t("deliverySettings.deactivated"),
+				);
+				router.back();
+			},
+		});
+	};
 
 	return (
 		<ScreenColumn width="reading">

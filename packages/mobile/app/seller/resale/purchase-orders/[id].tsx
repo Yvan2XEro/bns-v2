@@ -4,7 +4,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useReducer } from "react";
 import {
 	ActivityIndicator,
-	Alert,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -18,6 +17,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { alerts } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import {
@@ -72,7 +72,7 @@ export default function ResalePurchaseOrderDetailScreen() {
 		onSuccess: ({ conversationId }) =>
 			router.push(`/messages/${conversationId}`),
 		onError: (error) =>
-			Alert.alert(
+			alerts.showError(
 				t("sellerResale.actionFailed"),
 				resolveErrorMessage(error, t),
 			),
@@ -512,28 +512,26 @@ export default function ResalePurchaseOrderDetailScreen() {
 										!form.cancelNote.trim())
 								}
 								secondary
-								onPress={() =>
-									Alert.alert(
+								onPress={async () => {
+									const confirmed = await alerts.confirm(
 										t("sellerResale.confirmCancelTitle"),
 										t("sellerResale.confirmCancelBody"),
-										[
-											{ text: t("sellerResale.dismiss"), style: "cancel" },
-											{
-												text: t("sellerResale.cancel"),
-												style: "destructive",
-												onPress: () =>
-													run({
-														purchaseOrderId: order.id,
-														action: "cancel",
-														body: {
-															reason: form.cancelReason,
-															note: form.cancelNote.trim() || undefined,
-														},
-													}),
+										{
+											confirmText: t("sellerResale.cancel"),
+											cancelText: t("sellerResale.dismiss"),
+											destructive: true,
+										},
+									);
+									if (confirmed)
+										run({
+											purchaseOrderId: order.id,
+											action: "cancel",
+											body: {
+												reason: form.cancelReason,
+												note: form.cancelNote.trim() || undefined,
 											},
-										],
-									)
-								}
+										});
+								}}
 								c={c}
 							/>
 						</Card>

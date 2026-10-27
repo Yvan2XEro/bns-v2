@@ -1,146 +1,25 @@
 import i18next from "i18next";
-import {
-	createContext,
-	type ReactNode,
-	useCallback,
-	useContext,
-	useMemo,
-	useState,
-} from "react";
-import CustomAlert, {
-	type AlertButton,
-	type AlertType,
-} from "@/src/components/CustomAlert";
+import { createContext, type ReactNode, useContext } from "react";
+import { AlertSheet } from "@/src/components/AlertSheet";
+import { type Alerts, createAlerts } from "@/src/lib/alerts";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+/**
+ * The app's alerts, usable outside a component too (a hook's callback, a
+ * service): they all go through the one `AlertSheet` the provider mounts.
+ */
+export const alerts: Alerts = createAlerts(
+	(request) => AlertSheet.call(request),
+	() => AlertSheet.end(null),
+	(key) => i18next.t(key),
+);
 
-interface AlertState {
-	visible: boolean;
-	type: AlertType;
-	title: string;
-	message?: string;
-	buttons: AlertButton[];
-}
-
-interface AlertContextType {
-	showAlert: (
-		title: string,
-		message?: string,
-		buttons?: AlertButton[],
-		type?: AlertType,
-	) => void;
-	showSuccess: (title: string, message?: string) => void;
-	showError: (title: string, message?: string) => void;
-	showWarning: (title: string, message?: string) => void;
-	showConfirm: (
-		title: string,
-		message: string,
-		onConfirm: () => void,
-		onCancel?: () => void,
-	) => void;
-	hideAlert: () => void;
-}
-
-// ─── Context ──────────────────────────────────────────────────────────────────
-
-const AlertContext = createContext<AlertContextType | undefined>(undefined);
+const AlertContext = createContext<Alerts | undefined>(undefined);
 
 export function AlertProvider({ children }: { children: ReactNode }) {
-	const [state, setState] = useState<AlertState>({
-		visible: false,
-		type: "info",
-		title: "",
-		message: undefined,
-		buttons: [{ text: i18next.t("common.ok") }],
-	});
-
-	const showAlert = useCallback(
-		(
-			title: string,
-			message?: string,
-			buttons?: AlertButton[],
-			type: AlertType = "info",
-		) => {
-			setState({
-				visible: true,
-				type,
-				title,
-				message,
-				buttons: buttons ?? [{ text: i18next.t("common.ok") }],
-			});
-		},
-		[],
-	);
-
-	const hideAlert = useCallback(
-		() => setState((p) => ({ ...p, visible: false })),
-		[],
-	);
-
-	const showSuccess = useCallback(
-		(t: string, m?: string) => showAlert(t, m, undefined, "success"),
-		[showAlert],
-	);
-	const showError = useCallback(
-		(t: string, m?: string) => showAlert(t, m, undefined, "error"),
-		[showAlert],
-	);
-	const showWarning = useCallback(
-		(t: string, m?: string) => showAlert(t, m, undefined, "warning"),
-		[showAlert],
-	);
-
-	const showConfirm = useCallback(
-		(
-			title: string,
-			message: string,
-			onConfirm: () => void,
-			onCancel?: () => void,
-		) => {
-			showAlert(
-				title,
-				message,
-				[
-					{
-						text: i18next.t("common.cancel"),
-						style: "cancel",
-						onPress: onCancel,
-					},
-					{
-						text: i18next.t("common.confirm"),
-						style: "default",
-						onPress: onConfirm,
-					},
-				],
-				"confirm",
-			);
-		},
-		[showAlert],
-	);
-
-	const value = useMemo(
-		() => ({
-			showAlert,
-			showSuccess,
-			showError,
-			showWarning,
-			showConfirm,
-			hideAlert,
-		}),
-		[showAlert, showSuccess, showError, showWarning, showConfirm, hideAlert],
-	);
-
 	return (
-		<AlertContext.Provider value={value}>
+		<AlertContext.Provider value={alerts}>
 			{children}
-			<CustomAlert
-				visible={state.visible}
-				type={state.type}
-				title={state.title}
-				message={state.message}
-				buttons={state.buttons}
-				onClose={hideAlert}
-			/>
+			<AlertSheet />
 		</AlertContext.Provider>
 	);
 }
