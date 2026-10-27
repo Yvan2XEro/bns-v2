@@ -23,6 +23,18 @@ data:
   # Novu Cloud; for a self-hosted Novu, its API and WebSocket service.
   NOVU_API_URL: "https://api.novu.co"
   NOVU_SOCKET_URL: ""
+  # Overbrand's SSO to the Payload panel: empty keeps each default
+  # (packages/api/src/auth/sso/config.ts); the client id and secret are in
+  # secret.yaml.
+  OIDC_ISSUER: ""
+  OIDC_AUTHORIZATION_ENDPOINT: ""
+  OIDC_TOKEN_ENDPOINT: ""
+  OIDC_USERINFO_ENDPOINT: ""
+  OIDC_JWKS_URI: ""
+  OIDC_REQUIRED_ROLE: ""
+  OIDC_SCOPES: ""
+  OIDC_LABEL: ""
+  OIDC_ICON: ""
   MEILI_ENV: "production"
   MONGO_DB: "bns"
   MONGO_USER: "bns"

@@ -196,6 +196,7 @@ services:
       OIDC_REQUIRED_ROLE: ${OIDC_REQUIRED_ROLE:-}
       OIDC_SCOPES: ${OIDC_SCOPES:-}
       OIDC_LABEL: ${OIDC_LABEL:-}
+      OIDC_ICON: ${OIDC_ICON:-}
       PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://buynsellem.com}
       # Photon geocoder (komoot/photon) served to web and mobile through
       # /api/public/config — clients carry no geocoder setting of their own.

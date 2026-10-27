@@ -149,6 +149,7 @@ export const APP_ENV = {
 	OIDC_REQUIRED_ROLE: api(),
 	OIDC_SCOPES: api(),
 	OIDC_LABEL: api(),
+	OIDC_ICON: api(),
 
 	// ── Payments and delivery ──
 	PAYMENTS_PROVIDER: api(),
