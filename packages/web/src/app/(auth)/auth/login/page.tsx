@@ -18,6 +18,7 @@ import {
 } from "~/components/auth/auth-field";
 import {
 	SocialAuthButtons,
+	ssoRequested,
 	useSocialProviders,
 	useSsoOption,
 } from "~/components/auth/social-auth-buttons";
@@ -51,7 +52,7 @@ function LoginForm() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const providers = useSocialProviders();
-	const sso = useSsoOption(searchParams.get("sso") === "overbrand");
+	const sso = useSsoOption(ssoRequested(searchParams.get("sso")));
 	// Validated, not just defaulted: `router.push` follows a protocol-relative
 	// value like "//evil.com" straight off the site, so an unchecked `redirect`
 	// param is an open redirect — and a phishing link pointing at our own login

@@ -125,11 +125,20 @@ export interface SsoOption {
 	icon: string;
 }
 
+/** The `?sso=` values that show Overbrand's single sign-on on the sign-in. */
+const SSO_PARAM_VALUES = new Set(["overbrand", "ob"]);
+
+/** Whether the sign-in page was opened asking for the SSO button. */
+export function ssoRequested(value: string | null): boolean {
+	return value !== null && SSO_PARAM_VALUES.has(value.trim().toLowerCase());
+}
+
 /**
  * Overbrand's single sign-on, for system administrators: asked for only when
- * the sign-in page is opened with `?sso=overbrand`, so the public never sees
- * it; null when not asked for, or while the SSO is off. Hiding it is only
- * tidiness: the role at Overbrand and the administrator account decide.
+ * the sign-in page is opened with `?sso=overbrand` (or `?sso=ob`), so the
+ * public never sees it; null when not asked for, or while the SSO is off.
+ * Hiding it is only tidiness: the role at Overbrand and the administrator
+ * account decide.
  */
 export function useSsoOption(requested: boolean): SsoOption | null {
 	const [option, setOption] = useState<SsoOption | null>(null);

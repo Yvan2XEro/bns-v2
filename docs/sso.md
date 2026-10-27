@@ -5,7 +5,7 @@ Connect), to the Payload panel or to the website. It never creates an
 account, and the public never sees it:
 
 - **Panel:** a button among the other providers on `/admin/login`.
-- **Website:** shown only on `/auth/login?sso=overbrand`; the page asks the
+- **Website:** shown only on `/auth/login?sso=overbrand` (or `?sso=ob`); the page asks the
   API (`/api/public/auth/sso/button`) only then. Hiding it is tidiness, not
   protection: the rules below decide, on every sign-in.
 
