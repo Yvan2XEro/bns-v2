@@ -1,6 +1,5 @@
 // @vitest-environment node
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { auditLegacyReviews } from "../../src/services/reviewAudit";
 import {
 	assertReviewAllowed,
 	translateReviewWriteConflict,
@@ -294,25 +293,5 @@ describe("translateReviewWriteConflicts hook", () => {
 			req: { payload, data: { reviewedUser: "seller" } },
 		});
 		expect(result).toBeUndefined();
-	});
-});
-
-describe("auditLegacyReviews", () => {
-	it("lists self-reviews and duplicate groups without deleting anything", async () => {
-		const payload = world({
-			reviews: [
-				{ id: "r-1", reviewer: "a", reviewedUser: "b" },
-				{ id: "r-2", reviewer: "a", reviewedUser: "b" },
-				{ id: "r-3", reviewer: "c", reviewedUser: "c" },
-				{ id: "r-4", reviewer: "a", reviewedUser: "d" },
-			],
-		});
-		const audit = await auditLegacyReviews(payload);
-
-		expect(audit.selfReviewIds).toEqual(["r-3"]);
-		expect(audit.duplicateGroups).toEqual([
-			{ reviewer: "a", reviewedUser: "b", reviewIds: ["r-1", "r-2"] },
-		]);
-		expect(payload.store.reviews).toHaveLength(4);
 	});
 });

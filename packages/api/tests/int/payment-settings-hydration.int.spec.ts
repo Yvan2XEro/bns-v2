@@ -5,7 +5,7 @@ import {
 	getPaymentSettings,
 	resolveSettlement,
 } from "../../src/lib/paymentSettings";
-import { migrateP10Markets } from "../../src/migrations/p10Markets";
+import { seedMarkets } from "../../src/seed/seedMarkets";
 import { withRawMongo } from "./helpers/fakeMongo";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -19,7 +19,7 @@ async function migrated(payments: Record<string, unknown> = {}) {
 			{ globals: { "app-settings": { payments } } },
 		),
 	);
-	await migrateP10Markets(api);
+	await seedMarkets(api);
 	const { docs } = await api.find({ collection: "markets", limit: 0 });
 	return { api, id: docs[0].id as string };
 }

@@ -81,8 +81,8 @@ import {
 import { MemoryCounterStore } from "../../src/lib/rateLimit";
 import { requireUser } from "../../src/lib/shopRoute";
 import { withTransaction } from "../../src/lib/transactions";
-import { migrateP10Markets } from "../../src/migrations/p10Markets";
 import type { Order, PaymentIntent } from "../../src/payload-types";
+import { seedMarkets } from "../../src/seed/seedMarkets";
 import { addCartItem } from "../../src/services/cart";
 import {
 	type CheckoutPlaceInput,
@@ -1668,7 +1668,7 @@ describe("the rehearsal needed no code", () => {
 describe("the flag-off CM parity sweep, at close", () => {
 	async function cm() {
 		const api = withRawMongo(fakePayload({ "market-cities": [] }));
-		await migrateP10Markets(api);
+		await seedMarkets(api);
 		return { api, market: await getMarket(api, "CM") };
 	}
 	const AMOUNTS = [

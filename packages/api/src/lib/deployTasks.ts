@@ -2,16 +2,15 @@ import { createHash } from "node:crypto";
 import { hostname } from "node:os";
 
 /**
- * One-off work a deploy used to need someone to run by hand — syncing the
- * Novu workflows, catching the category tree up with the seed, backfilling a
- * new aggregate. Each task runs once per `fingerprint`: change what it does
- * (new workflows, new seed attributes) and the fingerprint changes with it, so
- * the next boot runs it again; leave it alone and every later boot skips it.
+ * Work a deploy used to need someone to run by hand — the database indexes,
+ * the market, the Novu workflows, catching the category tree up with the
+ * seed. Each task runs once per `fingerprint`: change what it does (new
+ * indexes, new workflows) and the fingerprint changes with it, so the next
+ * boot runs it again; leave it alone and every later boot skips it. A new
+ * database has no record, so it gets every task.
  *
- * Schema and data migrations are not tasks: they stay Payload migrations,
- * applied before the server takes traffic. Tasks run after, in the
- * background, and must be idempotent — a crash between "done" and "recorded"
- * runs them twice.
+ * Tasks run after the server starts, in the background, and must be
+ * idempotent — a crash between "done" and "recorded" runs them twice.
  */
 export interface DeployTask<Ctx> {
 	name: string;

@@ -1,9 +1,5 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-	up as migrateRiskFlagIndex,
-	OPEN_RISK_FLAG_INDEX,
-} from "../../src/migrations/20261004_000100_p9_risk_flags";
 import { recordRiskSignal } from "../../src/services/risk";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -89,40 +85,6 @@ describe("risk signal recording", () => {
 		expect(escalatedShopFlag?.severity).toBe("high");
 		expect(escalatedShopFlag?.related).toContain(ownerFlag?.id);
 		expect(ownerFlag?.related).toContain(shopFlag?.id);
-	});
-
-	it("creates the partial unique index for one open flag per subject and signal", async () => {
-		const created: Array<{ keys: unknown; options: unknown }> = [];
-		const payload = {
-			logger: { info: vi.fn(), error: vi.fn() },
-			db: {
-				collections: {
-					"risk-flags": {
-						collection: {
-							createIndex: vi.fn(async (keys: unknown, options: unknown) => {
-								created.push({ keys, options });
-								return OPEN_RISK_FLAG_INDEX;
-							}),
-							dropIndex: vi.fn(),
-						},
-					},
-				},
-			},
-		};
-		await migrateRiskFlagIndex({ payload } as unknown as Parameters<
-			typeof migrateRiskFlagIndex
-		>[0]);
-
-		expect(created).toEqual([
-			{
-				keys: { subjectType: 1, subjectKey: 1, signal: 1 },
-				options: {
-					unique: true,
-					name: OPEN_RISK_FLAG_INDEX,
-					partialFilterExpression: { status: "open" },
-				},
-			},
-		]);
 	});
 
 	it("keeps risk data off until the feature flag is enabled", async () => {

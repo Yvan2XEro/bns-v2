@@ -5,7 +5,7 @@ import {
 	CONDITION_VALUES,
 } from "../contracts/conditionAttribute";
 import type { CategoryListingFormConfig } from "../lib/listingFormPreset";
-import { localizeCategoryLabels } from "../migrations/categoryLocales";
+import { localizeCategoryLabels } from "./categoryLocales";
 import { frenchSeedAttribute, seedLabelFr } from "./categoryTranslations";
 
 /**
@@ -3972,6 +3972,13 @@ async function fetchFileByURL(url: string): Promise<File> {
 	};
 }
 
+/**
+ * Creates the category tree from `seededDefinitions`, and only what is
+ * missing: a category whose slug exists is kept as it is, with its id, so
+ * running the seed again links nothing anew and breaks nothing — the
+ * listings and tags pointing at a category keep pointing at it. Each parent
+ * comes before its children, which are created under the parent's id.
+ */
 export const seedCategories = async (payload: unknown) => {
 	const createdCategories: Array<{ id: string; slug: string }> = [];
 	const slugToId: Record<string, string> = {};
@@ -3982,10 +3989,29 @@ export const seedCategories = async (payload: unknown) => {
 			data: Record<string, unknown>;
 			file?: File;
 		}) => Promise<{ id: string; slug: string }>;
+		find: (options: {
+			collection: string;
+			where: Record<string, unknown>;
+			limit: number;
+			depth: number;
+			overrideAccess: boolean;
+		}) => Promise<{ docs: Array<{ id: string | number }> }>;
 		logger?: { info: (msg: string) => void; error: (msg: string) => void };
 	};
 
 	for (const catDef of seededDefinitions) {
+		const existing = await typedPayload.find({
+			collection: "categories",
+			where: { slug: { equals: catDef.slug } },
+			limit: 1,
+			depth: 0,
+			overrideAccess: true,
+		});
+		if (existing.docs[0]) {
+			slugToId[catDef.slug] = String(existing.docs[0].id);
+			continue;
+		}
+
 		const parentId = catDef.parent ? slugToId[catDef.parent] : undefined;
 
 		// Download and create media for the category image

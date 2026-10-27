@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { formatPrice, setMarket } from "../../../mobile/src/lib/market";
 import { renderOrderMoney } from "../../../web/src/lib/order-money";
 import { formatMoney, formatMoneyFallback } from "../../src/contracts/money";
-import { CM_FORMATTING } from "../../src/migrations/p10Markets";
+import { CM_FORMATTING } from "../../src/seed/seedMarkets";
 import {
 	cmRow,
 	decimalRow,

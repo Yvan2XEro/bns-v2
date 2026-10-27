@@ -139,11 +139,9 @@ import {
 	syncConnectedAccountTask,
 } from "./jobs";
 import { emailAdapter } from "./lib/email";
-import { afterCollectionsReady } from "./lib/migrationsReady";
 import { registerConfiguredAdapters } from "./lib/payments/registerAdapters";
 import { registerResaleAdjuster } from "./lib/resale";
 import { reportServerError } from "./lib/serverErrors";
-import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
 import { registerShipmentOrderEvents } from "./services/delivery/shipments";
 import {
@@ -404,9 +402,6 @@ export default buildConfig({
 	},
 	db: mongooseAdapter({
 		url: process.env.DATABASE_URI || "",
-		migrationDir: path.resolve(dirname, "migrations"),
-		// Applied at startup when NODE_ENV=production, before the API serves traffic.
-		prodMigrations: afterCollectionsReady(migrations),
 	}),
 	sharp,
 	plugins: await buildStoragePlugins(),

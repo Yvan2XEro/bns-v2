@@ -1,7 +1,9 @@
 import type { MongooseAdapter } from "@payloadcms/db-mongodb";
 import type { Payload } from "payload";
+import { ensureIndexes, INDEXES, mongoCollectionOf } from "../db/indexes";
 import {
 	type DeployTask,
+	fingerprintOf,
 	type LedgerCollection,
 	mongoDeployLedger,
 	runDeployTasks,
@@ -10,21 +12,12 @@ import {
 	notificationWorkflowsFingerprint,
 	syncNotificationWorkflows,
 } from "../scripts/syncNotificationWorkflows";
+import { seedMarkets } from "../seed/seedMarkets";
 import {
 	catchUpCategories,
 	categoryCatchUpFingerprint,
 } from "./categoryCatchUp";
-import { syncListingKinds } from "./listingKinds";
 import { isNotificationProviderConfigured } from "./notificationProvider";
-import {
-	ensureReviewUniqueIndex,
-	reviewsCollection,
-} from "./reviewUniqueIndex";
-import { aggregateShopDailyStatsForDay } from "./shopDailyAggregation";
-import {
-	automaticBackfillStart,
-	listShopStatsBackfillDates,
-} from "./shopDailyStatsBackfill";
 
 /**
  * What used to be the manual half of a release checklist, now run by the API
@@ -33,6 +26,23 @@ import {
  */
 export function bootTasks(): DeployTask<Payload>[] {
 	return [
+		{
+			// The partial unique indexes and the TTL the collection configs
+			// cannot declare (db/indexes.ts); a new database gets them first.
+			name: "database-indexes",
+			fingerprint: fingerprintOf(INDEXES),
+			run: async (payload) => {
+				const { created } = await ensureIndexes(mongoCollectionOf(payload));
+				payload.logger.info(`[indexes] ${created} in place`);
+			},
+		},
+		{
+			// The Cameroon market and its launch cities: no price shows and no
+			// order is placed without them (seed/seedMarkets.ts).
+			name: "markets",
+			fingerprint: "v1",
+			run: seedMarkets,
+		},
 		{
 			name: "notification-workflows",
 			// The workflows and the instance they go to: moving to another Novu
@@ -54,62 +64,7 @@ export function bootTasks(): DeployTask<Payload>[] {
 				});
 			},
 		},
-		{
-			// Listings written before `kind` was stored. Categories changed later
-			// resync from their own hook (collections/Categories.ts).
-			name: "listing-kinds",
-			fingerprint: "v1",
-			run: async (payload) => {
-				await syncListingKinds(payload, {
-					log: (line) => payload.logger.info(`[listing-kinds] ${line}`),
-				});
-			},
-		},
-		{
-			// The migration skips the index while legacy duplicates exist. Thrown
-			// rather than recorded, so every start retries until staff have
-			// resolved them; the log lists the review ids.
-			name: "review-unique-index",
-			fingerprint: "v1",
-			run: async (payload) => {
-				const { created, duplicates } = await ensureReviewUniqueIndex(
-					reviewsCollection(payload),
-				);
-				if (!created)
-					throw new Error(
-						`${duplicates.length} duplicate review group(s) to resolve: ${JSON.stringify(duplicates)}`,
-					);
-			},
-		},
-		{
-			// The nightly job fills each day from then on; this fills the days
-			// before the aggregate existed. Bump the fingerprint to refill.
-			name: "shop-daily-stats-backfill",
-			fingerprint: "v1",
-			run: backfillShopDailyStats,
-		},
 	];
-}
-
-async function backfillShopDailyStats(payload: Payload): Promise<void> {
-	const first = await payload.find({
-		collection: "shops",
-		sort: "createdAt",
-		limit: 1,
-		depth: 0,
-		overrideAccess: true,
-	});
-	const createdAt = first.docs[0]?.createdAt;
-	const from = automaticBackfillStart(createdAt ? new Date(createdAt) : null);
-	if (!from) return;
-	for (const date of listShopStatsBackfillDates(from)) {
-		const result = await aggregateShopDailyStatsForDay(payload, date);
-		payload.logger.info({
-			msg: "[shop-daily-stats] backfill day complete",
-			date,
-			...result,
-		});
-	}
 }
 
 export async function runBootTasks(payload: Payload): Promise<void> {

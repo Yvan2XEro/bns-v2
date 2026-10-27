@@ -26,17 +26,15 @@ const LEGACY_CM = "pre-multi-currency CM-only rows and documents";
 // biome-ignore format: one entry per line
 const ALLOW: Array<[string, string, (string | string[])?]> = [
 	["api/src/lib/marketTime.ts", "LEGACY_TIMEZONE: the single blessed home of the zone"],
-	["api/src/migrations/", "migration seeds (p10Markets)"],
 	["api/src/payload-types.ts", "generated; the douala|yaounde enums belong to the per-market user gate"],
 	["api/src/lib/launchCities.ts", SHIM],
 	["api/src/globals/AppSettings.ts", SHIM, 'key: "'],
 	["api/src/lib/orderSettings.ts", SHIM, 'key: "'],
-	["api/src/lib/paymentSettings.ts", "DEFAULT_MARKETS: the P5 seed constant the migration references", '"XAF"'],
+	["api/src/lib/paymentSettings.ts", "DEFAULT_MARKETS: the constant the market seed starts from", '"XAF"'],
 	["api/src/lib/boostPricing.ts", "boost amounts: parked per-market-amounts user gate"],
 	["api/src/lib/addressRules.ts", "DELIVERY_PHONE_PATTERN: seed source, row == constant pinned by checkout-form-parity", "+2376"],
 	["api/src/lib/orderFormat.ts", "formatXaf: CM formatter for SMS/chat/receipts, pinned by order-format-parity; remove with the compat release", "FCFA"],
 	["api/src/lib/commissionInvoiceDocument.ts", `pre-snapshot documents are XAF (${LEGACY_CM})`, '!== "XAF"'],
-	["api/src/services/paymentBackfill.ts", `one-shot backfill of ${LEGACY_CM}`, '"XAF"'],
 	["api/src/lib/payments/fakeMarketplace.ts", "test double default currency", '"XAF"'],
 	["api/src/seed/", "seed data: category price labels"],
 	["api/src/lib/payments/notchpayMarketplace.ts", "provider wire key: the per-currency balance object is read at XAF until a second payout market", "value.XAF"],
@@ -116,7 +114,8 @@ describe("the international rule: a retired market literal fails the build", () 
 	it("spells the legacy zone in one api module only", () => {
 		const homes = filesWith("Africa/Douala").filter(
 			(f) =>
-				!f.startsWith("api/src/migrations/") && !f.endsWith("payload-types.ts"),
+				// The market seed writes the CM market's zone into its row.
+				f !== "api/src/seed/seedMarkets.ts" && !f.endsWith("payload-types.ts"),
 		);
 		expect(homes).toEqual(["api/src/lib/marketTime.ts"]);
 	});

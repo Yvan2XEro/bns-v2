@@ -23,17 +23,12 @@ export async function POST(): Promise<Response> {
 	try {
 		payload.logger.info("Seeding categories from admin dashboard...");
 
-		// Clear existing categories and their media
-		await payload.delete({
-			collection: "categories",
-			where: {},
-			overrideAccess: true,
-		});
-
+		// Adds what is missing, keeps what exists: deleting the tree first would
+		// leave every listing and tag pointing at categories that are gone.
 		const categories = await seedCategories(payload);
 
 		payload.logger.info(
-			`Categories seeded successfully! Created ${categories.length} categories.`,
+			`Categories seeded: ${categories.length} created, the others already there.`,
 		);
 
 		return Response.json({

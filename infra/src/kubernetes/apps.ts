@@ -392,7 +392,7 @@ export function deployApps(cfg: AppsConfig): void {
 								],
 								// The API has no /api/health: /api/public/config is the route
 								// every client calls first, served once Payload is up.
-								// A first boot (indexes, migrations) gets five minutes.
+								// A first boot (indexes, the market, workflows) gets five minutes.
 								startupProbe: {
 									httpGet: { path: "/api/public/config", port: 3000 },
 									periodSeconds: 10,

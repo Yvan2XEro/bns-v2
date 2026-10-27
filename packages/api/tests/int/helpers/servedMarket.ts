@@ -1,6 +1,6 @@
 import type { MarketConfig } from "../../../src/contracts/marketConfig";
 import { marketOf } from "../../../src/lib/markets";
-import { CM_FORMATTING } from "../../../src/migrations/p10Markets";
+import { CM_FORMATTING } from "../../../src/seed/seedMarkets";
 import { DELIVERY_PHONE_PATTERN } from "../../../src/services/checkout";
 
 type Row = Record<string, unknown>;

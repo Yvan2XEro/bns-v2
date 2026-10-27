@@ -2,7 +2,7 @@ import type { Payload } from "payload";
 import { isConditionLikeAttribute } from "../contracts/conditionAttribute";
 import { fingerprintOf } from "../lib/deployTasks";
 import type { CategoryListingFormConfig } from "../lib/listingFormPreset";
-import { localizeCategoryLabels } from "../migrations/categoryLocales";
+import { localizeCategoryLabels } from "../seed/categoryLocales";
 import {
 	frenchSeedAttribute,
 	seedFrenchOfEnglish,

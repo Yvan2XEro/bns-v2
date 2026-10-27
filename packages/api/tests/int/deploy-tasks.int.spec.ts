@@ -7,7 +7,6 @@ import {
 	mongoDeployLedger,
 	runDeployTasks,
 } from "../../src/lib/deployTasks";
-import { afterCollectionsReady } from "../../src/lib/migrationsReady";
 import { categoryCatchUpFingerprint } from "../../src/services/categoryCatchUp";
 import { automaticBackfillStart } from "../../src/services/shopDailyStatsBackfill";
 
@@ -182,38 +181,5 @@ describe("automaticBackfillStart", () => {
 		expect(
 			automaticBackfillStart(new Date("2026-10-14T08:00:00.000Z"), now),
 		).toBeNull();
-	});
-});
-
-describe("afterCollectionsReady", () => {
-	it("lets every model finish creating its collection before a migration runs", async () => {
-		const order: string[] = [];
-		const model = (name: string) => ({
-			init: async () => {
-				await new Promise((resolve) => setTimeout(resolve, 5));
-				order.push(`init:${name}`);
-			},
-		});
-		const payload = {
-			db: {
-				collections: { a: model("a"), "payload-migrations": model("m") },
-				versions: { a: model("va") },
-				globals: model("g"),
-			},
-		};
-		const [wrapped] = afterCollectionsReady([
-			{
-				name: "x",
-				up: async (_args: unknown) => {
-					order.push("up");
-				},
-				down: async () => undefined,
-			},
-		]);
-
-		await wrapped?.up({ payload });
-
-		expect(order.at(-1)).toBe("up");
-		expect(order).toHaveLength(5);
 	});
 });

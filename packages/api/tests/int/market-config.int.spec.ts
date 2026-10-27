@@ -17,7 +17,7 @@ vi.mock("../../src/hooks/searchEvents", () => ({
 
 import type { MarketConfig } from "../../src/contracts/marketConfig";
 import { launchCitySeedRows } from "../../src/lib/launchCities";
-import { migrateP10Markets } from "../../src/migrations/p10Markets";
+import { seedMarkets } from "../../src/seed/seedMarkets";
 import { withRawMongo } from "./helpers/fakeMongo";
 import {
 	cmMarketRow,
@@ -88,11 +88,7 @@ const kigali = {
 };
 
 async function world(
-	options: {
-		extraMarkets?: object[];
-		cities?: object[];
-		migrate?: boolean;
-	} = {},
+	options: { extraMarkets?: object[]; cities?: object[]; seed?: boolean } = {},
 ) {
 	const payload = withRawMongo(
 		fakePayload(
@@ -228,8 +224,8 @@ async function world(
 			},
 		),
 	);
-	// The migration empties orders.launchCities; the placement path still reads them.
-	if (options.migrate !== false) await migrateP10Markets(payload);
+	// The market and its cities, as a new database gets them at boot.
+	if (options.seed !== false) await seedMarkets(payload);
 	getPayloadMock.mockResolvedValue(payload);
 	return payload;
 }
@@ -380,7 +376,7 @@ describe("a spoofed ?country= changes what is shown, never what is charged", () 
 		const payload: FakePayload = await world({
 			extraMarkets: [rwanda(), cmMarketRow()],
 			cities: [kigali, ...launchCitySeedRows("market-cm")],
-			migrate: false,
+			seed: false,
 		});
 		payload.auth.mockResolvedValue({ user: { id: "u-buyer", role: "user" } });
 		const draft = {

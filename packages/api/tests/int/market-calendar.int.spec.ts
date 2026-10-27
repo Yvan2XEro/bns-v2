@@ -29,14 +29,14 @@ import { reconcileLedgerTask } from "../../src/jobs/reconcileLedger";
 import { releaseEligibleFundsTask } from "../../src/jobs/releaseEligibleFunds";
 import { localDateAndHour } from "../../src/lib/localTime";
 import { invalidateMarketCache } from "../../src/lib/marketCache";
-import { migrateP10Markets } from "../../src/migrations/p10Markets";
 import configPromise from "../../src/payload.config";
+import { seedMarkets } from "../../src/seed/seedMarkets";
 import { withRawMongo } from "./helpers/fakeMongo";
 import { fakePayload } from "./helpers/fakePayload";
 
 async function world(extra?: { timezone: string }) {
 	const api = withRawMongo(fakePayload({ "market-cities": [] }));
-	await migrateP10Markets(api);
+	await seedMarkets(api);
 	if (extra) {
 		const cm = api.store.markets[0];
 		api.store.markets.push({

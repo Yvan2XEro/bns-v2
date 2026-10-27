@@ -3,10 +3,7 @@ import { ObjectId } from "mongodb";
 import type { Payload } from "payload";
 import { describe, expect, it } from "vitest";
 import { Categories } from "../../src/collections/Categories";
-import {
-	flattenCategoryLabels,
-	localizeCategoryLabels,
-} from "../../src/migrations/categoryLocales";
+import { localizeCategoryLabels } from "../../src/seed/categoryLocales";
 import {
 	CATEGORY_LABELS_FR,
 	type CategoryLabelKind,
@@ -190,7 +187,7 @@ const attribute = (doc: Doc, slug: string) =>
 const option = (attr: Doc, value: string) =>
 	(attr.options as Doc[]).find((row) => row.value === value) as Doc;
 
-describe("category label localisation migration", () => {
+describe("category label localisation", () => {
 	it("gives the seed's labels both languages, keyed by the stored ObjectId", async () => {
 		const { docs, ids } = fixture();
 		const { payload, writes } = rawCategories(docs);
@@ -367,72 +364,6 @@ describe("labels a Payload write filed under the wrong language", () => {
 				"cars › brand.name (English in the French): Brand",
 			]),
 		);
-	});
-});
-
-describe("rolling the localisation back", () => {
-	it("turns every label back into the string the previous build showed", async () => {
-		const { docs, ids } = fixture();
-		const original = clone(docs);
-		const { payload, writes } = rawCategories(docs);
-
-		await localizeCategoryLabels(payload);
-		const up = writes.length;
-		const report = await flattenCategoryLabels(payload);
-
-		for (const filter of writes.slice(up)) {
-			expect(filter._id).toBeInstanceOf(ObjectId);
-		}
-		expect(report.categoriesUpdated).toBe(docs.length);
-		const vehicles = byId(docs, ids.vehiclesId);
-		expect(vehicles.name).toBe("Vehicles");
-		expect(vehicles.description).toBe(
-			"Cars, motorcycles, trucks, and other vehicles",
-		);
-		const cars = byId(docs, ids.carsId);
-		expect(cars.name).toBe("Cars");
-		expect((cars.parent as ObjectId).equals(ids.vehiclesId)).toBe(true);
-		const condition = attribute(cars, "condition");
-		expect(condition.name).toBe("État");
-		expect(option(condition, "new").label).toBe("Neuf");
-		const fuel = attribute(cars, "fuel-type");
-		expect(fuel.name).toBe("Fuel Type");
-		expect(fuel.group).toBe("Engine & Performance");
-		expect(option(fuel, "Petrol").label).toBe("Petrol");
-		expect(option(fuel, "Black").label).toBe("Noir mat");
-		expect(attribute(cars, "power").unit).toBe("hp");
-		// An admin's own wording comes back as written.
-		expect(byId(docs, ids.adminId)).toEqual(byId(original, ids.adminId));
-		const edited = byId(docs, ids.editedId);
-		expect(edited.name).toBe("Motorcycles");
-		expect(attribute(edited, "brand").name).toBe("Brand");
-		const seeded = byId(docs, ids.seededId);
-		expect(seeded.name).toBe("Job Offers");
-		expect((seeded.listingForm as Doc).priceLabel).toBe("Monthly salary (XAF)");
-	});
-
-	it("is idempotent, and up → down → up lands where up did", async () => {
-		const { docs, ids } = fixture();
-		const { payload, writes } = rawCategories(docs);
-
-		await localizeCategoryLabels(payload);
-		const localised = clone(docs);
-		await flattenCategoryLabels(payload);
-		const flat = clone(docs);
-		const before = writes.length;
-		expect((await flattenCategoryLabels(payload)).categoriesUpdated).toBe(0);
-		expect(writes.length).toBe(before);
-		expect(docs).toEqual(flat);
-
-		await localizeCategoryLabels(payload);
-		const others = (rows: Doc[]) =>
-			rows.filter((doc) => !(doc._id as ObjectId).equals(ids.editedId));
-		expect(others(docs)).toEqual(others(localised));
-		// One string cannot hold two admin wordings: the English is what returns.
-		expect(byId(docs, ids.editedId).name).toEqual({
-			fr: "Motos",
-			en: "Motorcycles",
-		});
 	});
 });
 

@@ -14,7 +14,7 @@ import {
 	DEFAULT_MARKETS,
 	PAYMENT_DEFAULTS,
 } from "../../src/lib/paymentSettings";
-import { migrateP10Markets } from "../../src/migrations/p10Markets";
+import { seedMarkets } from "../../src/seed/seedMarkets";
 import { DELIVERY_PHONE_PATTERN } from "../../src/services/checkout";
 import { monthKeyFor } from "../../src/services/sequences";
 import { withRawMongo } from "./helpers/fakeMongo";
@@ -27,7 +27,7 @@ import { fakePayload } from "./helpers/fakePayload";
  */
 async function cm() {
 	const api = withRawMongo(fakePayload({ "market-cities": [] }));
-	await migrateP10Markets(api);
+	await seedMarkets(api);
 	return { api, market: await getMarket(api, "CM") };
 }
 

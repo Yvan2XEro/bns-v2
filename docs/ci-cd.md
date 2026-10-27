@@ -204,46 +204,19 @@ Pushing is the whole release: nothing is run by hand on the host afterwards.
 | Step | Where | When |
 |------|-------|------|
 | MongoDB becomes a single-node replica set (key file generated into the `mongo_keyfile` volume, `rs.initiate` by the healthcheck) | `mongodb` service | First start after the upgrade; an existing standalone database is converted in place, data untouched — about ten seconds of database restart |
-| Payload migrations (`packages/api/src/migrations`) | API boot, `src/instrumentation.ts`, before it serves traffic | Every start; applied ones are skipped. A failing migration stops the container (visible in `docker compose logs api`) rather than serving a half-migrated database |
 | Job crons (expiry, payments, commission, nightly sweeps) | API boot | Every start |
-| Novu workflow sync, category catch-up, shop-stats backfill | API boot, in the background (`src/services/bootTasks.ts`) | Once per change of what they would write, recorded in the `deploy_tasks` collection; a failure is logged and retried at the next start |
+| Database indexes (`src/db/indexes.ts`: the partial unique indexes and the TTL the collection configs cannot declare), the Cameroon market and its cities (`src/seed/seedMarkets.ts`), Novu workflow sync, category catch-up | API boot, in the background (`src/services/bootTasks.ts`), in that order | Once per change of what they would write, recorded in the `deploy_tasks` collection — so a new database gets them all; a failure is logged and retried at the next start |
 | Meilisearch documents rebuilt in place | `search-indexer` start | When `DOCUMENT_VERSION` in `packages/search-indexer/src/reindex.ts` differs from the one stored in the `indexer-meta` index |
 
-New one-off work goes into `bootTasks()` (or a migration, for schema and data
-changes) — never into a "run this after deploying" note. Bump
+New one-off work goes into `bootTasks()`, and a new partial or TTL index into
+`src/db/indexes.ts` — never into a "run this after deploying" note. There are
+no migrations: a schema change that existing data would need converted is
+written so the old shape still reads, or converted by an idempotent boot task. Bump
 `DOCUMENT_VERSION` whenever a listing or shop search document changes shape.
 
 Features shipped behind `AppSettings` switches (shops, verification, protected
 payment, delivery, resale…) still start off: turning one on is a product
 decision made in the admin panel, not a deploy step.
-
-### Releases with a one-time deploy constraint
-
-**Localised category labels (migration `20261016_000300_category_locales`).**
-This migration turns every category label (name, description, price label,
-attribute names, groups, units, option labels) from a plain string into a
-`{ fr, en }` pair. The previous build cannot read or save that shape: it
-renders the pair as an object and every category update fails validation.
-Old and new pods must therefore never serve at the same time.
-
-- **Snapshot the database before deploying** (`mongodump`, or a volume/cloud
-  snapshot), so the pre-release labels can be restored as they were.
-- **Kubernetes:** deploy this release with the `Recreate` strategy, or scale
-  the `api` Deployment to 1 replica first and back to 2 once the new pod is
-  ready. The default `RollingUpdate` (2 replicas, maxSurge 1) keeps old pods
-  serving while the new pod migrates, and any category an old pod writes in
-  that window goes back to a plain string. Leave the default strategy as it is
-  for later releases.
-- **Docker Compose:** nothing to do — the single `api` container is recreated.
-- **Rollback:** run the migration's `down` **before** rolling the image back:
-  `payload migrate:down` from the new image reverts the last batch (the other
-  two `20261016_*` migrations in it have no-op `down`s, and all three are
-  safe to run again on the next upgrade). It turns every label back into
-  the string the previous build showed — the English, or the French where
-  there is no English and for the labels the seed wrote in French (« État »
-  and its options). An admin's French wording that also has an English
-  version is lost in that direction; restore the snapshot instead if it
-  matters.
 
 ### Required GitHub Actions secrets
 

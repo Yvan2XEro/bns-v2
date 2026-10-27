@@ -1,14 +1,40 @@
 import type { Payload } from "payload";
 import {
 	type CategoryLabelKind,
-	SEEDED_IN_FRENCH,
 	seedEnglishOfFrench,
 	seedFrenchOfEnglish,
 	seedLabelTranslation,
-} from "../seed/categoryTranslations";
-import { idText, raw } from "./tagsCategoryScope";
+} from "./categoryTranslations";
 
 type Rec = Record<string, unknown>;
+
+interface RawCollection {
+	find(filter: Rec, options?: Rec): AsyncIterable<Rec>;
+	updateOne(filter: Rec, update: Rec): Promise<unknown>;
+}
+
+interface RawAdapter {
+	collections: Record<string, { collection: RawCollection }>;
+}
+
+export const raw = (payload: Payload, slug: string): RawCollection =>
+	(payload.db as unknown as RawAdapter).collections[slug].collection;
+
+export const idText = (value: unknown): string | null => {
+	if (value === null || value === undefined || value === "") return null;
+	if (
+		typeof value === "object" &&
+		typeof (value as { toHexString?: unknown }).toHexString === "function"
+	) {
+		return (value as { toHexString(): string }).toHexString();
+	}
+	if (typeof value === "object" && "id" in (value as Rec)) {
+		return idText((value as Rec).id);
+	}
+	return String(value);
+};
+
+/** Every category as stored, read past the collection config. */
 
 export interface CategoryLocalesReport {
 	categoriesUpdated: number;
@@ -192,84 +218,4 @@ export async function localizeCategoryLabels(
 	}
 
 	return report;
-}
-
-/**
- * A localised label as the build before localisation stored it: the English
- * (the seed wrote English, and that is what the app showed), the French when
- * there is no English, and the French for the few labels the seed wrote in
- * French (the condition attribute) while their English is still the seed's.
- */
-function flatLabel(kind: CategoryLabelKind, value: unknown): unknown {
-	if (!isRecord(value)) return value;
-	const { fr, en } = value;
-	if (
-		filled(fr) &&
-		Object.hasOwn(SEEDED_IN_FRENCH[kind], fr) &&
-		(!filled(en) || en === SEEDED_IN_FRENCH[kind][fr])
-	) {
-		return fr;
-	}
-	if (filled(en)) return en;
-	if (filled(fr)) return fr;
-	return null;
-}
-
-/**
- * The way back: every localised label becomes a plain string again, so the
- * previous build can read, render and save categories. Strings are left as
- * they are, so a second run writes nothing.
- */
-export async function flattenCategoryLabels(
-	payload: Payload,
-): Promise<{ categoriesUpdated: number }> {
-	let categoriesUpdated = 0;
-	const categories = raw(payload, "categories");
-
-	for await (const doc of categories.find({})) {
-		const set: Rec = {};
-		for (const [field, kind] of [
-			["name", "name"],
-			["description", "description"],
-		] as const) {
-			if (isRecord(doc[field])) set[field] = flatLabel(kind, doc[field]);
-		}
-		if (isRecord(doc.listingForm) && isRecord(doc.listingForm.priceLabel)) {
-			set["listingForm.priceLabel"] = flatLabel(
-				"priceLabel",
-				doc.listingForm.priceLabel,
-			);
-		}
-		if (Array.isArray(doc.attributes)) {
-			let changed = false;
-			const attributes = doc.attributes.map((row: unknown) => {
-				if (!isRecord(row)) return row;
-				const next: Rec = { ...row };
-				for (const [field, kind] of [
-					["name", "attribute"],
-					["group", "group"],
-					["unit", "unit"],
-				] as const) {
-					if (!isRecord(row[field])) continue;
-					next[field] = flatLabel(kind, row[field]);
-					changed = true;
-				}
-				if (Array.isArray(row.options)) {
-					next.options = row.options.map((option: unknown) => {
-						if (!isRecord(option) || !isRecord(option.label)) return option;
-						changed = true;
-						return { ...option, label: flatLabel("option", option.label) };
-					});
-				}
-				return next;
-			});
-			if (changed) set.attributes = attributes;
-		}
-
-		if (Object.keys(set).length === 0) continue;
-		await categories.updateOne({ _id: doc._id }, { $set: set });
-		categoriesUpdated += 1;
-	}
-
-	return { categoriesUpdated };
 }

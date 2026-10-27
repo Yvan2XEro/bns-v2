@@ -2,15 +2,10 @@
  * Runs once when the production server starts, before it takes traffic, so a
  * deploy needs nobody on the host afterwards:
  *
- * 1. Payload initialises: pending migrations (`prodMigrations`) are applied
- *    and the job crons start. Without this both waited for the first request
- *    that happened to call `getPayload({ cron: true })`.
- * 2. The boot tasks (Novu workflows, category catch-up, backfills) run in the
- *    background — see `services/bootTasks.ts`.
- *
- * A migration that fails exits the process: a release never serves from a
- * half-migrated database, and the container restarts into the same error
- * until it is fixed, loudly, in `docker compose logs api`.
+ * 1. Payload initialises and the job crons start. Without this they waited for
+ *    the first request that happened to call `getPayload({ cron: true })`.
+ * 2. The boot tasks (database indexes, the market, Novu workflows, category
+ *    catch-up) run in the background — see `services/bootTasks.ts`.
  */
 export async function register(): Promise<void> {
 	if (process.env.NEXT_RUNTIME !== "nodejs") return;

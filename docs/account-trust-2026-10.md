@@ -76,7 +76,7 @@ reach a reachable seller.
   - a sign-in refused for an unverified email offers the resend.
 - **Accounts from Google, Apple or Facebook** are created verified, and no
   email is sent.
-- **Existing accounts** are marked verified by a migration (grandfathered).
+- **Existing accounts** were marked verified when this shipped (grandfathered).
   Without it, every current session would end: Payload's session check
   requires `_verified`.
 - **Sending email.** SMTP through `@payloadcms/email-nodemailer`, set by the
@@ -111,7 +111,6 @@ The app offers no boost purchase, under the store rules.
 **Deploy:**
 - Set `EMAIL_PROVIDER` with `RESEND_API_KEY`, or with the `SMTP_*` variables;
   otherwise the emails only reach the API log.
-- The `users_verified` migration runs at boot.
 
 ## 7. Known limits
 

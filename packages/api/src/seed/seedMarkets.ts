@@ -13,12 +13,10 @@ const rec = (value: unknown): Rec =>
 interface RawCollection {
 	insertOne(doc: Rec): Promise<unknown>;
 	updateOne(filter: Rec, update: Rec): Promise<unknown>;
-	updateMany(filter: Rec, update: Rec): Promise<unknown>;
 }
 
 interface RawAdapter {
 	collections: Record<string, { collection: RawCollection }>;
-	globals: { updateOne(filter: Rec, update: Rec): Promise<unknown> };
 }
 
 const raw = (payload: Payload, slug: string): RawCollection =>
@@ -124,7 +122,7 @@ async function ensureMarket(payload: Payload): Promise<string> {
 			defaultDeliveryFeeFallback: LAUNCH_CITIES.douala.defaultDeliveryFee,
 		},
 		regulatoryReview: {
-			reviewedBy: "p10 migration",
+			reviewedBy: "market seed",
 			reviewedAt: now,
 			...(evidence ? { evidence: new ObjectId(evidence) } : {}),
 			note: "Carried over from the P5 gate record.",
@@ -144,7 +142,7 @@ async function ensureMarket(payload: Payload): Promise<string> {
 		);
 	} else {
 		payload.logger.warn({
-			msg: "[migration] P10: no P5 gate evidence is filed, so the CM market is live without a review record; file one before editing it",
+			msg: "[markets] no payment gate evidence is filed, so the CM market is live without a review record; file one before editing it",
 		});
 	}
 	return String(_id);
@@ -179,91 +177,15 @@ async function ensureCities(payload: Payload, marketId: string) {
 			updatedAt: now,
 		});
 	}
-	await (payload.db as unknown as RawAdapter).globals.updateOne(
-		{ globalType: "app-settings" },
-		{ $set: { "orders.launchCities": [] } },
-	);
 }
 
-async function backfill(payload: Payload, marketId: string) {
-	const { docs } = await payload.find({
-		collection: "markets",
-		where: { id: { equals: marketId } },
-		limit: 1,
-		depth: 0,
-		overrideAccess: true,
-	});
-	const market = docs[0];
-	const formatSnapshot = (
-		Array.isArray(market?.formatting) ? market.formatting : []
-	).map((f) => ({
-		id: rowId(),
-		locale: f.locale,
-		symbol: f.symbol,
-		position: f.position,
-		groupSeparator: f.groupSeparator,
-		decimalSeparator: f.decimalSeparator,
-		minorUnit: 0,
-	}));
-	const id = new ObjectId(marketId);
-	// Existing documents already store "XAF"; only a missing value is filled.
-	await raw(payload, "orders").updateMany(
-		{ market: null },
-		{ $set: { market: id } },
-	);
-	await raw(payload, "orders").updateMany(
-		{ "amounts.currency": null },
-		{ $set: { "amounts.currency": "XAF" } },
-	);
-	await raw(payload, "carts").updateMany(
-		{ market: null },
-		{ $set: { market: id } },
-	);
-	for (const slug of ["commission-invoices", "buyer-fee-invoices"]) {
-		await raw(payload, slug).updateMany(
-			{ currency: null },
-			{ $set: { currency: "XAF" } },
-		);
-		await raw(payload, slug).updateMany(
-			{ "formatSnapshot.0": { $exists: false } },
-			{ $set: { formatSnapshot } },
-		);
-	}
-}
-
-/** `{key}:CM` continues CM's numbering; raised, never lowered, so a re-run is a no-op. */
-async function copySequences(payload: Payload) {
-	const { docs } = await payload.find({
-		collection: "sequences",
-		limit: 0,
-		pagination: false,
-		depth: 0,
-		overrideAccess: true,
-	});
-	const byKey = new Map(docs.map((d) => [d.key, d]));
-	for (const doc of docs) {
-		if (doc.key.endsWith(`:${CM}`)) continue;
-		const sibling = byKey.get(`${doc.key}:${CM}`);
-		if (!sibling) {
-			await payload.create({
-				collection: "sequences",
-				data: { key: `${doc.key}:${CM}`, value: doc.value },
-				overrideAccess: true,
-			});
-		} else if (sibling.value < doc.value) {
-			await payload.update({
-				collection: "sequences",
-				id: sibling.id,
-				data: { value: doc.value },
-				overrideAccess: true,
-			});
-		}
-	}
-}
-
-export async function migrateP10Markets(payload: Payload): Promise<void> {
+/**
+ * The reference data every database needs before a price can be shown or an
+ * order placed: the Cameroon market (currency, formatting, phone rules,
+ * features carried from the settings) and its launch cities. Idempotent:
+ * what exists is left as it is, a missing city is added.
+ */
+export async function seedMarkets(payload: Payload): Promise<void> {
 	const marketId = await ensureMarket(payload);
 	await ensureCities(payload, marketId);
-	await backfill(payload, marketId);
-	await copySequences(payload);
 }

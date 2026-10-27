@@ -7,7 +7,7 @@ import {
 } from "../../src/contracts/money";
 import { roundHalfUp } from "../../src/lib/orderMath";
 import { roundMinor } from "../../src/lib/paymentMath";
-import { CM_FORMATTING } from "../../src/migrations/p10Markets";
+import { CM_FORMATTING } from "../../src/seed/seedMarkets";
 
 // The two CM format rows Task 7 seeds.
 const CM_FR: MoneyFormat = {
