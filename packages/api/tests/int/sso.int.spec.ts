@@ -9,6 +9,7 @@ import {
 	decodePending,
 	encodePending,
 	newPendingLogin,
+	ssoCallbackUrl,
 } from "../../src/auth/sso/flow";
 import { resolveSsoUser } from "../../src/auth/sso/users";
 
@@ -94,10 +95,8 @@ describe("the sign-in redirect", () => {
 	it("carries PKCE (S256), the state and the nonce", () => {
 		const config = ssoConfig(CLIENT);
 		if (!config) throw new Error("config");
-		const pending = newPendingLogin();
-		const url = new URL(
-			authorizationUrl(config, pending, "https://api.example.com/cb"),
-		);
+		const pending = newPendingLogin("https://api.example.com/cb", null);
+		const url = new URL(authorizationUrl(config, pending));
 		expect(url.origin + url.pathname).toBe(
 			"https://auth.overbrand.net/oidc/auth",
 		);
@@ -115,7 +114,10 @@ describe("the sign-in redirect", () => {
 	});
 
 	it("round-trips the login in flight, and rejects anything else", () => {
-		const pending = newPendingLogin();
+		const pending = newPendingLogin(
+			"https://web.example.com/api/public/auth/sso/callback",
+			"https://web.example.com/account",
+		);
 		expect(decodePending(encodePending(pending))).toEqual(pending);
 		expect(decodePending("not-json")).toBeNull();
 		expect(decodePending(undefined)).toBeNull();
@@ -197,5 +199,19 @@ describe("resolveSsoUser", () => {
 				email: null,
 			}),
 		).rejects.toThrow("not_an_admin");
+	});
+});
+
+describe("ssoCallbackUrl", () => {
+	it("returns to the website when started there, else to the API", () => {
+		expect(
+			ssoCallbackUrl(
+				"https://api.example.com",
+				"https://web.example.com/account",
+			),
+		).toBe("https://web.example.com/api/public/auth/sso/callback");
+		expect(ssoCallbackUrl("https://api.example.com")).toBe(
+			"https://api.example.com/api/public/auth/sso/callback",
+		);
 	});
 });

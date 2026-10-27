@@ -119,15 +119,46 @@ export function useSocialProviders(): SocialAuthProvider[] | null {
 	return providers;
 }
 
+/** The SSO button's wording and icon, from the API. */
+export interface SsoOption {
+	label: string;
+	icon: string;
+}
+
+/**
+ * Overbrand's single sign-on, for system administrators: asked for only when
+ * the sign-in page is opened with `?sso=overbrand`, so the public never sees
+ * it; null when not asked for, or while the SSO is off. Hiding it is only
+ * tidiness: the role at Overbrand and the administrator account decide.
+ */
+export function useSsoOption(requested: boolean): SsoOption | null {
+	const [option, setOption] = useState<SsoOption | null>(null);
+	useEffect(() => {
+		if (!requested) return;
+		fetch("/api/public/auth/sso/button")
+			.then((r) => (r.ok ? r.json() : null))
+			.then((data: (SsoOption & { enabled: boolean }) | null) => {
+				if (data?.enabled) setOption({ label: data.label, icon: data.icon });
+			})
+			.catch(() => undefined);
+	}, [requested]);
+	return option;
+}
+
+const BUTTON_CLASS =
+	"flex h-12 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-2xl px-4 font-medium text-sm shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-all duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98]";
+
 export function SocialAuthButtons({
 	providers,
 	redirectTo = "/",
+	sso = null,
 }: {
 	providers: SocialAuthProvider[] | null;
 	redirectTo?: string;
+	sso?: SsoOption | null;
 }) {
 	const t = useTranslations("Auth");
-	const { loginWithProvider } = useAuth();
+	const { loginWithProvider, loginWithSso } = useAuth();
 
 	if (providers === null)
 		return (
@@ -147,10 +178,7 @@ export function SocialAuthButtons({
 						<button
 							type="button"
 							onClick={() => loginWithProvider(value, redirectTo)}
-							className={cn(
-								"flex h-12 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-2xl px-4 font-medium text-sm shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-all duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98]",
-								className,
-							)}
+							className={cn(BUTTON_CLASS, className)}
 						>
 							<Icon />
 							{t("continueWith", { provider: label })}
@@ -158,6 +186,22 @@ export function SocialAuthButtons({
 					</li>
 				);
 			})}
+			{sso ? (
+				<li>
+					<button
+						type="button"
+						onClick={() => loginWithSso(redirectTo)}
+						className={cn(
+							BUTTON_CLASS,
+							"border border-line bg-surface text-ink hover:bg-subtle focus-visible:ring-brand",
+						)}
+					>
+						{/* biome-ignore lint/performance/noImgElement: a small mark served by the API, behind a redirect next/image cannot follow */}
+						<img src={sso.icon} alt="" width={20} height={20} />
+						{t("continueWith", { provider: sso.label })}
+					</button>
+				</li>
+			) : null}
 		</ul>
 	);
 }

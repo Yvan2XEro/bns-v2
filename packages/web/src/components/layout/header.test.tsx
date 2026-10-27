@@ -41,6 +41,7 @@ function auth(user: Partial<User> | null): AuthContextType {
 		isLoading: false,
 		login: noop,
 		loginWithProvider: () => {},
+		loginWithSso: () => {},
 		register: noop,
 		logout: noop,
 		refreshUser: noop,

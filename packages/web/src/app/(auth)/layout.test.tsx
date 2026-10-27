@@ -29,6 +29,7 @@ const auth: AuthContextType = {
 	isLoading: false,
 	login: noop,
 	loginWithProvider: () => {},
+	loginWithSso: () => {},
 	register: noop,
 	logout: noop,
 	refreshUser: noop,

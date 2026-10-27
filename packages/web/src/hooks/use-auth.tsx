@@ -22,6 +22,8 @@ export interface AuthContextType {
 		provider: SocialAuthProvider,
 		redirectTo?: string,
 	) => void;
+	/** Overbrand's single sign-on, for system administrators. */
+	loginWithSso: (redirectTo?: string) => void;
 	/** Creates the account; signing in waits for the link sent to `email`. */
 	register: (
 		email: string,
@@ -139,6 +141,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		);
 	}
 
+	function loginWithSso(redirectTo = "/") {
+		const returnTo = new URL(redirectTo, window.location.origin).toString();
+		window.location.assign(
+			`/api/public/auth/sso/start?returnTo=${encodeURIComponent(returnTo)}`,
+		);
+	}
+
 	async function logout() {
 		try {
 			await fetch("/api/users/logout", {
@@ -207,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				isLoading,
 				login,
 				loginWithProvider,
+				loginWithSso,
 				register,
 				logout,
 				refreshUser,

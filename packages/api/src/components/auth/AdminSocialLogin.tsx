@@ -101,41 +101,25 @@ async function getEnabledProviders(): Promise<
 	}
 }
 
-/** Overbrand's single sign-on, for system administrators (auth/sso). */
-function SsoButton({ label, icon }: { label: string; icon: string }) {
-	return (
-		<a
-			href="/api/public/auth/sso/start"
-			style={{
-				alignItems: "center",
-				background: "#ffffff",
-				border: "1px solid #dbe4f0",
-				borderRadius: 12,
-				color: "#0f172a",
-				display: "flex",
-				fontSize: 14,
-				fontWeight: 600,
-				gap: 10,
-				justifyContent: "center",
-				marginBottom: 12,
-				minHeight: 44,
-				textDecoration: "none",
-			}}
-		>
-			{/* biome-ignore lint/performance/noImgElement: a static mark in Payload's login, outside next/image's reach */}
-			<img src={icon} alt="" width={20} height={20} />
-			Sign in with {label}
-		</a>
-	);
-}
-
 export default async function AdminSocialLogin() {
 	const providers = await getEnabledProviders();
 	const sso = ssoConfig(process.env);
 
-	if (providers.length === 0) {
-		return sso ? <SsoButton label={sso.label} icon={sso.icon} /> : null;
-	}
+	if (providers.length === 0 && !sso) return null;
+
+	const buttonStyle = {
+		alignItems: "center",
+		border: "1px solid #dbe4f0",
+		borderRadius: 12,
+		color: "#0f172a",
+		display: "flex",
+		fontSize: 14,
+		fontWeight: 600,
+		gap: 10,
+		justifyContent: "center",
+		minHeight: 44,
+		textDecoration: "none",
+	} as const;
 
 	return (
 		<div
@@ -148,7 +132,6 @@ export default async function AdminSocialLogin() {
 				padding: 16,
 			}}
 		>
-			{sso ? <SsoButton label={sso.label} icon={sso.icon} /> : null}
 			<div style={{ display: "grid", gap: 4 }}>
 				<strong style={{ color: "#0f172a", fontSize: 16 }}>
 					Continue with a provider
@@ -166,25 +149,21 @@ export default async function AdminSocialLogin() {
 						<a
 							href={`/api/public/auth/oauth/${provider.value}/start?audience=admin&redirectTo=/admin`}
 							key={provider.value}
-							style={{
-								alignItems: "center",
-								border: "1px solid #dbe4f0",
-								borderRadius: 12,
-								color: "#0f172a",
-								display: "flex",
-								fontSize: 14,
-								fontWeight: 600,
-								gap: 10,
-								justifyContent: "center",
-								minHeight: 44,
-								textDecoration: "none",
-							}}
+							style={buttonStyle}
 						>
 							<Icon />
 							Continue with {provider.label}
 						</a>
 					);
 				})}
+				{/* Overbrand's single sign-on, for system administrators (auth/sso). */}
+				{sso ? (
+					<a href="/api/public/auth/sso/start" style={buttonStyle}>
+						{/* biome-ignore lint/performance/noImgElement: a static mark in Payload's login, outside next/image's reach */}
+						<img src={sso.icon} alt="" width={18} height={18} />
+						Continue with {sso.label}
+					</a>
+				) : null}
 			</div>
 		</div>
 	);

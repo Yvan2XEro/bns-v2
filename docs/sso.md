@@ -1,8 +1,13 @@
 # Single sign-on to the Payload panel
 
-System administrators sign in to `/admin` with their Overbrand account
-(Logto, OpenID Connect). It is never offered in the website or the app, and
-it never creates an account.
+System administrators sign in with their Overbrand account (Logto, OpenID
+Connect), to the Payload panel or to the website. It never creates an
+account, and the public never sees it:
+
+- **Panel:** a button among the other providers on `/admin/login`.
+- **Website:** shown only on `/auth/login?sso=overbrand`; the page asks the
+  API (`/api/public/auth/sso/button`) only then. Hiding it is tidiness, not
+  protection: the rules below decide, on every sign-in.
 
 ## Who gets in
 
@@ -23,7 +28,10 @@ unknown email is refused. Refusals are logged (`[sso] refused` and why).
 ## Logto
 
 - Application of type **Traditional Web**.
-- Redirect URI: `https://api.buynsellem.com/api/public/auth/sso/callback`.
+- Redirect URIs, both, character for character:
+  - `https://api.buynsellem.com/api/public/auth/sso/callback` (panel);
+  - `https://buynsellem.com/api/public/auth/sso/callback` (website, whose
+    /api relay carries the session cookie onto the website's domain).
 - Post sign-out redirect URI: `https://api.buynsellem.com/admin/login`.
 - Scopes `openid profile email roles`; the role `bunSellemAdmin` given only
   to system administrators. Multi-factor authentication is recommended.
@@ -52,5 +60,6 @@ redirect URI registered at Logto.
 `flow.ts` (authorization code with PKCE S256, state and nonce in a short
 httpOnly cookie, ID token verified against the provider's JWKS for issuer,
 audience and nonce), `users.ts` (the account). Routes:
-`/api/public/auth/sso/start` and `/callback`. Tests:
+`/api/public/auth/sso/start` (`?returnTo=` an allowed website address, else
+the panel), `/callback`, `/button` and `/icon` (for the website). Tests:
 `tests/int/sso.int.spec.ts`.

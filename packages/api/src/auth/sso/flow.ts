@@ -10,17 +10,26 @@ export interface PendingLogin {
 	state: string;
 	nonce: string;
 	codeVerifier: string;
+	/** The callback given to the provider: the token exchange repeats it. */
+	redirectUri: string;
+	/** Where the website sent the person from; null: the Payload panel. */
+	returnTo: string | null;
 }
 
 function randomToken(): string {
 	return randomBytes(32).toString("base64url");
 }
 
-export function newPendingLogin(): PendingLogin {
+export function newPendingLogin(
+	redirectUri: string,
+	returnTo: string | null,
+): PendingLogin {
 	return {
 		state: randomToken(),
 		nonce: randomToken(),
 		codeVerifier: randomToken(),
+		redirectUri,
+		returnTo,
 	};
 }
 
@@ -34,7 +43,9 @@ export function decodePending(raw: string | undefined): PendingLogin | null {
 		const value = JSON.parse(Buffer.from(raw, "base64url").toString("utf8"));
 		return typeof value?.state === "string" &&
 			typeof value.nonce === "string" &&
-			typeof value.codeVerifier === "string"
+			typeof value.codeVerifier === "string" &&
+			typeof value.redirectUri === "string" &&
+			(value.returnTo === null || typeof value.returnTo === "string")
 			? value
 			: null;
 	} catch {
@@ -54,11 +65,10 @@ export const pendingCookieOptions = {
 export function authorizationUrl(
 	config: SsoConfig,
 	pending: PendingLogin,
-	redirectUri: string,
 ): string {
 	const url = new URL(config.authorizationEndpoint);
 	url.searchParams.set("client_id", config.clientId);
-	url.searchParams.set("redirect_uri", redirectUri);
+	url.searchParams.set("redirect_uri", pending.redirectUri);
 	url.searchParams.set("response_type", "code");
 	url.searchParams.set("scope", config.scopes);
 	url.searchParams.set("state", pending.state);
@@ -90,7 +100,6 @@ export async function verifiedClaims(
 	config: SsoConfig,
 	pending: PendingLogin,
 	code: string,
-	redirectUri: string,
 ): Promise<JWTPayload> {
 	const response = await fetch(config.tokenEndpoint, {
 		method: "POST",
@@ -103,7 +112,7 @@ export async function verifiedClaims(
 		body: new URLSearchParams({
 			grant_type: "authorization_code",
 			code,
-			redirect_uri: redirectUri,
+			redirect_uri: pending.redirectUri,
 			code_verifier: pending.codeVerifier,
 		}),
 	});
@@ -140,11 +149,19 @@ export async function verifiedClaims(
 export const SSO_CALLBACK_PATH = "/api/public/auth/sso/callback";
 
 /**
- * Where the identity provider sends the browser back: the API's public
- * address when configured (stable, as the provider compares it to the one
- * registered), else the address the request came in on.
+ * Where the identity provider sends the browser back — each one registered
+ * at the provider, which compares it character for character:
+ * - from the website (`returnTo`), the website's own address, which relays
+ *   /api to the API, so the session cookie lands on the website;
+ * - from the panel, the API's public address when configured, else the
+ *   address the request came in on.
  */
-export function ssoCallbackUrl(requestOrigin: string): string {
-	const base = process.env.PAYLOAD_PUBLIC_SERVER_URL?.trim() || requestOrigin;
+export function ssoCallbackUrl(
+	requestOrigin: string,
+	returnTo: string | null = null,
+): string {
+	const base = returnTo
+		? new URL(returnTo).origin
+		: process.env.PAYLOAD_PUBLIC_SERVER_URL?.trim() || requestOrigin;
 	return new URL(SSO_CALLBACK_PATH, base).toString();
 }
