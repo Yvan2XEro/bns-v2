@@ -84,6 +84,13 @@ export interface MovementInput {
 	quantity: number;
 	unitCost: number | null;
 	note: string | null;
+	/**
+	 * A correction is a counted stock sent as a difference; this is the
+	 * on-hand figure that difference was computed from. Set, the movement is
+	 * refused (`stock.countStale`) if the stock moved in between, instead of
+	 * landing on a number nobody counted.
+	 */
+	expectedStockOnHand: number | null;
 }
 
 export interface StockCountResult {
@@ -168,7 +175,25 @@ export function parseMovementInput(
 		if (!Number.isInteger(unitCost) || unitCost < 0) throw invalid();
 	}
 
-	return { type, quantity, unitCost, note: trimmedNote(input.note) };
+	let expectedStockOnHand: number | null = null;
+	if (
+		input.expectedStockOnHand !== undefined &&
+		input.expectedStockOnHand !== null
+	) {
+		// Only a correction is absolute; the other types add or take units.
+		if (type !== "adjustment") throw invalid();
+		expectedStockOnHand = Number(input.expectedStockOnHand);
+		if (!Number.isInteger(expectedStockOnHand) || expectedStockOnHand < 0)
+			throw invalid();
+	}
+
+	return {
+		type,
+		quantity,
+		unitCost,
+		note: trimmedNote(input.note),
+		expectedStockOnHand,
+	};
 }
 
 export async function findVariant(
@@ -893,6 +918,8 @@ export async function listMovements(
 	shopId: string,
 	query: {
 		variant?: string | null;
+		/** Every variant of one product, e.g. the product editor's history. */
+		product?: string | null;
 		type?: string | null;
 		from?: string | null;
 		page?: number;
@@ -903,6 +930,7 @@ export async function listMovements(
 
 	const and: Where[] = [{ shop: { equals: shopId } }];
 	if (query.variant) and.push({ variant: { equals: query.variant } });
+	if (query.product) and.push({ product: { equals: query.product } });
 	if (query.type) {
 		const types = query.type
 			.split(",")

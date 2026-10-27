@@ -18,6 +18,8 @@ import { ProductInformationSection } from "~/components/seller/product-informati
 import { ProductListingPreview } from "~/components/seller/product-listing-preview";
 import { ProductPhotosSection } from "~/components/seller/product-photos-section";
 import { ProductPublicationCard } from "~/components/seller/product-publication-card";
+import { ProductStockTab } from "~/components/seller/product-stock-tab";
+import { ProductTabs } from "~/components/seller/product-tabs";
 import { ProductVariantsSection } from "~/components/seller/product-variants-section";
 import { RecentMovements } from "~/components/seller/recent-movements";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
@@ -45,6 +47,13 @@ import {
 	stateFromDetail,
 	toProductInput,
 } from "~/lib/product-form";
+import {
+	errorPaths,
+	issuesPerTab,
+	type ProductTab,
+	productTabHref,
+	tabForIssues,
+} from "~/lib/product-tabs";
 import { canSeeCost } from "~/lib/shop-roles";
 import type {
 	Category,
@@ -61,7 +70,11 @@ export interface ProductEditorProps {
 	detail?: { productId: string; response: ProductDetailResponse };
 	/** The shop's default, which a new product's return policy starts from. */
 	defaultReturnPolicy?: string | null;
+	/** Editing: the tab the URL names. A new product shows one page. */
+	tab?: ProductTab;
 }
+
+const FORM_ID = "product-editor-form";
 
 export function ProductEditor({
 	shopId,
@@ -69,6 +82,7 @@ export function ProductEditor({
 	role,
 	detail,
 	defaultReturnPolicy,
+	tab,
 }: ProductEditorProps) {
 	const t = useTranslations("ProductEditor");
 	const tRoot = useTranslations();
@@ -144,12 +158,46 @@ export function ProductEditor({
 	const errors = formState.errors;
 	const issueAt = (path: string): FieldIssue | null =>
 		issueInErrors(errors, path);
-	const revealFirstIssue = () =>
+	const tabbed = Boolean(detail && tab);
+	const shows = (section: ProductTab) => !tabbed || tab === section;
+	// Scrolls to the first issue on screen; a tab change waits for the tab.
+	const revealOnTab = useRef(false);
+	const scrollToIssue = () =>
 		window.requestAnimationFrame(() =>
-			document
-				.querySelector("[data-field-issue]")
+			Array.from(document.querySelectorAll<HTMLElement>("[data-field-issue]"))
+				.find((element) => element.getClientRects().length > 0)
 				?.scrollIntoView({ block: "center", behavior: "smooth" }),
 		);
+	/** Shows the issues: on this tab if it holds one, else on the first that does. */
+	const revealFirstIssue = (paths: string[]) => {
+		const target = tab && detail ? tabForIssues(tab, paths) : tab;
+		if (detail && tab && target && target !== tab) {
+			revealOnTab.current = true;
+			router.push(productTabHref(detail.productId, target), { scroll: false });
+			return;
+		}
+		scrollToIssue();
+	};
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs when the tab changes
+	useEffect(() => {
+		if (!revealOnTab.current) return;
+		revealOnTab.current = false;
+		scrollToIssue();
+	}, [tab]);
+
+	// The stock is the ledger's, not the form's: when a movement lands (from
+	// the stock tab or the adjust sheet) the refetched product brings the new
+	// figure, shown without counting as an edit to save.
+	const liveVariants = detail?.response.variants;
+	useEffect(() => {
+		if (!liveVariants) return;
+		getValues("variants").forEach((row, index) => {
+			const live = liveVariants.find((variant) => variant.id === row.id);
+			if (live && live.stockOnHand !== row.stockOnHand) {
+				setValue(`variants.${index}.stockOnHand`, live.stockOnHand);
+			}
+		});
+	}, [liveVariants, getValues, setValue]);
 
 	const onValid = async (values: ProductFormState) => {
 		clearErrors("root");
@@ -182,13 +230,14 @@ export function ProductEditor({
 			if (onFields.length === 0 || onFields.length < issues.length) {
 				setError("root", { message: resolveErrorMessage(error, tRoot) });
 			}
-			if (onFields.length > 0) revealFirstIssue();
+			if (onFields.length > 0)
+				revealFirstIssue(onFields.map((issue) => issue.path));
 		}
 	};
 
-	const submit = handleSubmit(onValid, () => {
+	const submit = handleSubmit(onValid, (invalid) => {
 		setError("root", { message: t("fixIssues") });
-		revealFirstIssue();
+		revealFirstIssue(errorPaths(invalid));
 	});
 
 	const submitAs = (status: ProductStatus) => {
@@ -248,7 +297,7 @@ export function ProductEditor({
 	const pending = formState.isSubmitting || saveProduct.isPending;
 
 	return (
-		<form onSubmit={submit} className="space-y-5" noValidate>
+		<div className="space-y-5">
 			{detail && (
 				<WorkspaceBreadcrumb
 					section="catalogue"
@@ -268,6 +317,7 @@ export function ProductEditor({
 				}
 				autosavedAt={autosavedAt}
 				onCancel={detail ? undefined : cancel}
+				formId={FORM_ID}
 			/>
 			{restored && (
 				<p className="rounded-lg bg-[var(--shop-accent-soft,var(--c-brand-soft))] px-3 py-2 text-[var(--shop-accent-text,var(--c-brand-strong))] text-sm">
@@ -289,50 +339,84 @@ export function ProductEditor({
 				</p>
 			)}
 
-			<div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
-				<div className="min-w-0 space-y-5">
-					<ProductInformationSection
-						control={control}
-						register={register}
-						setValue={setValue}
-						categories={sellableCategories}
-						categoryContext={categoryContext}
-						issueAt={issueAt}
-					/>
-					<ProductPhotosSection control={control} issueAt={issueAt} />
-					<ProductVariantsSection
-						control={control}
-						register={register}
-						setValue={setValue}
-						getValues={getValues}
-						showCost={showCost}
-						issueAt={issueAt}
-					/>
-					<ProductDeliverySection register={register} issueAt={issueAt} />
-				</div>
+			{detail && tab && (
+				<ProductTabs
+					productId={detail.productId}
+					current={tab}
+					issues={issuesPerTab(errorPaths(errors))}
+				/>
+			)}
 
-				<div className="space-y-5">
-					{detail ? (
-						<Controller
-							control={control}
-							name="status"
-							render={({ field }) => (
-								<ProductPublicationCard
-									status={field.value}
-									onStatusChange={field.onChange}
-									listing={detail.response.listing}
-								/>
-							)}
-						/>
-					) : (
-						<>
-							<ProductChecklistCard control={control} />
-							<ProductListingPreview control={control} />
-						</>
-					)}
-					{detail && <RecentMovements movements={detail.response.movements} />}
+			{/* Every form tab stays mounted (hidden when another shows), so an
+			    edit survives a tab change and an issue can be found on any. */}
+			<form id={FORM_ID} onSubmit={submit} noValidate hidden={tab === "stock"}>
+				<div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+					<div className="min-w-0 space-y-5">
+						<div hidden={!shows("details")}>
+							<ProductInformationSection
+								control={control}
+								register={register}
+								setValue={setValue}
+								categories={sellableCategories}
+								categoryContext={categoryContext}
+								issueAt={issueAt}
+							/>
+						</div>
+						<div hidden={!shows("details")}>
+							<ProductPhotosSection control={control} issueAt={issueAt} />
+						</div>
+						<div hidden={!shows("variants")}>
+							<ProductVariantsSection
+								control={control}
+								register={register}
+								setValue={setValue}
+								getValues={getValues}
+								showCost={showCost}
+								issueAt={issueAt}
+							/>
+						</div>
+						<div hidden={!shows("details")}>
+							<ProductDeliverySection register={register} issueAt={issueAt} />
+						</div>
+					</div>
+
+					<div className="space-y-5">
+						{detail ? (
+							<Controller
+								control={control}
+								name="status"
+								render={({ field }) => (
+									<ProductPublicationCard
+										status={field.value}
+										onStatusChange={field.onChange}
+										listing={detail.response.listing}
+									/>
+								)}
+							/>
+						) : (
+							<>
+								<ProductChecklistCard control={control} />
+								<ProductListingPreview control={control} />
+							</>
+						)}
+						{detail && (
+							<RecentMovements
+								movements={detail.response.movements}
+								historyHref={productTabHref(detail.productId, "stock")}
+							/>
+						)}
+					</div>
 				</div>
-			</div>
-		</form>
+			</form>
+
+			{detail && tab === "stock" && (
+				<ProductStockTab
+					shopId={shopId}
+					productId={detail.productId}
+					variants={detail.response.variants}
+					showCost={showCost}
+				/>
+			)}
+		</div>
 	);
 }

@@ -6,7 +6,14 @@ import { availableDelta, signedDelta } from "~/lib/stock";
 import { cn } from "~/lib/utils";
 import type { MovementRow } from "~/types";
 
-export function RecentMovements({ movements }: { movements: MovementRow[] }) {
+export function RecentMovements({
+	movements,
+	historyHref,
+}: {
+	movements: MovementRow[];
+	/** The product's own history (its stock tab). */
+	historyHref: string;
+}) {
 	const t = useTranslations("ProductEditor");
 	const tType = useTranslations("StockMovement");
 	const locale = useLocale();
@@ -16,7 +23,7 @@ export function RecentMovements({ movements }: { movements: MovementRow[] }) {
 			<div className="flex items-center justify-between">
 				<h2 className="font-bold text-ink">{t("latestMovements")}</h2>
 				<Link
-					href="/seller/stock"
+					href={historyHref}
 					className="text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:underline"
 				>
 					{t("fullHistory")}

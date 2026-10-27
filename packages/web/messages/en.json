@@ -1487,6 +1487,13 @@
 		"bulkUndo": "Undo"
 	},
 	"ProductEditor": {
+		"tabsLabel": "Product sections",
+		"tabs": {
+			"details": "Product",
+			"variants": "Variants and prices",
+			"stock": "Stock"
+		},
+		"tabIssues": "{count, plural, one {# issue to fix} other {# issues to fix}}",
 		"breadcrumb": "Catalogue",
 		"newProduct": "New product",
 		"untitled": "Untitled product",
@@ -1574,6 +1581,30 @@
 		"fullHistory": "Full history",
 		"noMovements": "No stock movement yet."
 	},
+	"ProductStock": {
+		"title": "Stock by variant",
+		"subtitle": "Each movement is recorded at once, without waiting for “Save”.",
+		"receive": "Receive a delivery",
+		"colVariant": "Variant",
+		"colAvailable": "Available",
+		"colReserved": "Reserved",
+		"colOnHand": "On hand",
+		"colReceived": "Received",
+		"colUnitCost": "Unit cost",
+		"colActions": "Actions",
+		"alertAt": "alert at ≤ {threshold}",
+		"notTracked": "Stock not tracked",
+		"adjust": "Adjust",
+		"receivedFor": "Quantity received for {variant}",
+		"unitCostFor": "Unit cost for {variant}",
+		"lineInvalid": "A positive whole number",
+		"saveReceipt": "Record the delivery",
+		"saveReceiptUnits": "Record the delivery (+{units})",
+		"receiptSaved": "Delivery recorded: +{units, plural, one {# unit} other {# units}}.",
+		"historyTitle": "Product history",
+		"variantFilter": "Variant",
+		"allVariants": "All variants"
+	},
 	"Stock": {
 		"title": "Stock",
 		"startInventory": "Start a stock count",
@@ -1633,7 +1664,7 @@
 			},
 			"return": {
 				"title": "Customer return",
-				"hint": "Put back in stock",
+				"hint": "Outside a BNS order",
 				"amountLabel": "Quantity returned"
 			}
 		},
@@ -1644,6 +1675,11 @@
 		"amountInvalid": "Enter a whole number of units.",
 		"noChange": "This would not change the stock.",
 		"negative": "Stock cannot go below zero.",
+		"belowReserved": "{reserved, plural, one {# unit is} other {# units are}} reserved for orders: the stock cannot go below that.",
+		"reservedForOrders": "{count} reserved for orders · {available} available to sell",
+		"returnNote": "Returns of BNS orders go back into stock automatically. Only record a return made outside BNS here.",
+		"correctionGap": "Difference from the current stock: {delta}",
+		"staleStock": "The stock changed in the meantime (a sale or another movement): it is now {count}. Check your entry and save again.",
 		"cancel": "Cancel",
 		"save": "Save",
 		"saveWithDelta": "Save {delta}"

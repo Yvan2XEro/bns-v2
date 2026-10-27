@@ -7,6 +7,9 @@ import type { MovementPage, StockSummary } from "~/types";
 export interface MovementsParams {
 	/** One type, or several comma-separated (e.g. "reservation,release"). */
 	type?: string;
+	/** One product's movements (its editor's stock tab). */
+	product?: string;
+	variant?: string;
 	page: number;
 	limit: number;
 }
@@ -44,6 +47,8 @@ export function useMovements(shopId: string, params: MovementsParams) {
 		queryFn: () =>
 			shopApi.listMovements(shopId, {
 				type: params.type,
+				product: params.product,
+				variant: params.variant,
 				page: params.page,
 				limit: params.limit,
 			}),

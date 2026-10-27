@@ -12,6 +12,7 @@ const bodySchema = z.object({
 	quantity: z.number(),
 	unitCost: z.number().nullable().optional(),
 	note: z.string().nullable().optional(),
+	expectedStockOnHand: z.number().nullable().optional(),
 });
 
 export async function POST(

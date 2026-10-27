@@ -3,16 +3,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useRef, useState } from "react";
+import { type Resolver, useForm, useWatch } from "react-hook-form";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useCurrencyCode } from "~/hooks/use-order-money";
 import { useRecordMovement } from "~/hooks/use-record-movement";
-import { resolveErrorMessage } from "~/lib/apiError";
+import { ApiError, ERROR_CODES, resolveErrorMessage } from "~/lib/apiError";
 import { parseAmount } from "~/lib/product-form";
+import { shopApi } from "~/lib/shop-api";
 import {
+	amountAfterTypeChange,
 	emptyMovementForm,
 	type MovementFormState,
 	movementDelta,
@@ -46,30 +48,63 @@ export function StockAdjustForm({
 	const t = useTranslations("Stock");
 	const tRoot = useTranslations();
 	const recordMovement = useRecordMovement(shopId);
-	const resolver = useMemo(
-		() => zodResolver(movementFormSchema(variant.stockOnHand)),
-		[variant.stockOnHand],
-	);
-	const { control, formState, handleSubmit, register, setError, setValue } =
-		useForm<MovementFormState>({
-			resolver,
-			defaultValues: { ...emptyMovementForm, ...defaults },
-			mode: "onChange",
-		});
+	// The counters the form is checked against; refreshed when the ledger
+	// says they moved while the seller was typing.
+	const [levels, setLevels] = useState({
+		stockOnHand: variant.stockOnHand,
+		stockReserved: variant.stockReserved,
+	});
+	const { stockOnHand, stockReserved } = levels;
+	// Read at validation time, so the refreshed counters apply at once.
+	const levelsRef = useRef(levels);
+	levelsRef.current = levels;
+	const resolver: Resolver<MovementFormState> = (values, context, options) =>
+		zodResolver(movementFormSchema(levelsRef.current))(
+			values,
+			context,
+			options,
+		);
+	const initialType = defaults?.type ?? emptyMovementForm.type;
+	const {
+		control,
+		formState,
+		getValues,
+		handleSubmit,
+		register,
+		setError,
+		setValue,
+		trigger,
+	} = useForm<MovementFormState>({
+		resolver,
+		defaultValues: {
+			...emptyMovementForm,
+			...defaults,
+			amount:
+				defaults?.amount ??
+				(initialType === "adjustment" ? String(variant.stockOnHand) : ""),
+		},
+		mode: "onChange",
+	});
 
 	const type = useWatch({ control, name: "type" });
 	const amount = useWatch({ control, name: "amount" });
 	const parsed = parseAmount(amount);
 	const delta =
-		parsed === null ? null : movementDelta(type, parsed, variant.stockOnHand);
-	const after = delta === null ? null : variant.stockOnHand + delta;
+		parsed === null ? null : movementDelta(type, parsed, stockOnHand);
+	const after = delta === null ? null : stockOnHand + delta;
 	const amountError = formState.errors.amount?.message;
+
+	const changeType = (next: MovementFormState["type"]) => {
+		const { type: from, amount: current } = getValues();
+		setValue("amount", amountAfterTypeChange(from, next, current, stockOnHand));
+		setValue("type", next, { shouldValidate: true, shouldDirty: true });
+	};
 
 	const onValid = async (values: MovementFormState) => {
 		const quantity = movementDelta(
 			values.type,
 			parseAmount(values.amount) ?? 0,
-			variant.stockOnHand,
+			stockOnHand,
 		);
 		const cost = parseAmount(values.unitCost);
 		try {
@@ -82,10 +117,34 @@ export function StockAdjustForm({
 						? { unitCost: cost }
 						: {}),
 					...(values.note.trim() ? { note: values.note.trim() } : {}),
+					// A correction is absolute: it lands only on the stock it
+					// was computed from.
+					...(values.type === "adjustment"
+						? { expectedStockOnHand: stockOnHand }
+						: {}),
 				},
 			});
 			onSaved(saved);
 		} catch (error) {
+			if (
+				error instanceof ApiError &&
+				error.code === ERROR_CODES.stockCountStale
+			) {
+				// A sale or another member moved the stock: show the new figure
+				// and let the seller decide again, from it.
+				const fresh = await shopApi.variant(variant.id).catch(() => null);
+				if (fresh) {
+					setLevels({
+						stockOnHand: fresh.stockOnHand,
+						stockReserved: fresh.stockReserved,
+					});
+					setError("root", {
+						message: t("staleStock", { count: fresh.stockOnHand }),
+					});
+					void trigger("amount");
+					return;
+				}
+			}
 			// The ledger refused the write — a race, or units already reserved.
 			// Its answer is the truth, so it is shown instead of being retried.
 			setError("root", { message: resolveErrorMessage(error, tRoot) });
@@ -99,12 +158,20 @@ export function StockAdjustForm({
 				<p className="text-ink-muted text-sm">
 					{variant.label} ·{" "}
 					{variant.lowStockThreshold == null
-						? t("currentStock", { count: variant.stockOnHand })
+						? t("currentStock", { count: stockOnHand })
 						: t("currentStockWithAlert", {
-								count: variant.stockOnHand,
+								count: stockOnHand,
 								threshold: variant.lowStockThreshold,
 							})}
 				</p>
+				{stockReserved > 0 && (
+					<p className="text-ink-muted text-sm">
+						{t("reservedForOrders", {
+							count: stockReserved,
+							available: Math.max(0, stockOnHand - stockReserved),
+						})}
+					</p>
+				)}
 				{onChangeVariant && (
 					<button
 						type="button"
@@ -122,18 +189,30 @@ export function StockAdjustForm({
 				</p>
 			)}
 
-			<MovementTypePicker
-				value={type}
-				onChange={(next) =>
-					setValue("type", next, { shouldValidate: true, shouldDirty: true })
-				}
-			/>
+			<MovementTypePicker value={type} onChange={changeType} />
+			{type === "return" && (
+				<p className="rounded-lg bg-canvas px-3 py-2 text-ink-muted text-xs">
+					{t("returnNote")}
+				</p>
+			)}
 
 			<div className="space-y-1.5">
 				<Label htmlFor="stock-amount">{t(`types.${type}.amountLabel`)}</Label>
 				<Input id="stock-amount" inputMode="numeric" {...register("amount")} />
-				{amountError && (
-					<p className="text-bad-ink text-xs">{t(amountError)}</p>
+				{amountError ? (
+					<p className="text-bad-ink text-xs">
+						{t(amountError, { reserved: stockReserved })}
+					</p>
+				) : (
+					type === "adjustment" &&
+					delta !== null &&
+					delta !== 0 && (
+						<p className="text-ink-muted text-xs">
+							{t("correctionGap", {
+								delta: delta > 0 ? `+${delta}` : `${delta}`,
+							})}
+						</p>
+					)
 				)}
 			</div>
 
@@ -167,7 +246,7 @@ export function StockAdjustForm({
 						after !== null && after < 0 ? "text-bad-ink" : "text-ink",
 					)}
 				>
-					{variant.stockOnHand} → {after ?? "—"}
+					{stockOnHand} → {after ?? "—"}
 				</span>
 			</div>
 

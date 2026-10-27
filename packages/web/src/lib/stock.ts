@@ -36,14 +36,25 @@ export function movementDelta(
 const AMOUNT_INVALID = "amountInvalid";
 const NO_CHANGE = "noChange";
 const NEGATIVE = "negative";
+const BELOW_RESERVED = "belowReserved";
+
+/** The two counters a movement is checked against. */
+export interface StockLevels {
+	stockOnHand: number;
+	/** Units orders hold: the shelf may not go below them. */
+	stockReserved: number;
+}
 
 /**
  * The rules depend on the stock the picked variant has right now, so the schema
- * is built per variant. Only the client-side floor is checked here: the ledger
- * owns the real refusals (reserved units, a concurrent write) and its answer is
- * shown as it comes.
+ * is built per variant. It applies the ledger's own floor — what orders hold —
+ * so the seller learns it while typing; the ledger still owns the last word (a
+ * concurrent write) and its answer is shown as it comes.
  */
-export function movementFormSchema(stockOnHand: number) {
+export function movementFormSchema({
+	stockOnHand,
+	stockReserved,
+}: StockLevels) {
 	return z
 		.object({
 			type: z.enum(["receipt", "adjustment", "loss", "return"]),
@@ -75,6 +86,12 @@ export function movementFormSchema(stockOnHand: number) {
 					path: ["amount"],
 					message: NEGATIVE,
 				});
+			} else if (delta < 0 && stockOnHand + delta < stockReserved) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ["amount"],
+					message: BELOW_RESERVED,
+				});
 			}
 			if (
 				values.type === "receipt" &&
@@ -91,6 +108,22 @@ export function movementFormSchema(stockOnHand: number) {
 }
 
 export type MovementFormState = z.infer<ReturnType<typeof movementFormSchema>>;
+
+/**
+ * What the amount field holds after the type changes: a correction is the
+ * counted stock, so it starts from the stock on hand; leaving a correction
+ * empties it, since "10 counted" is not "10 received".
+ */
+export function amountAfterTypeChange(
+	from: ClientMovementType,
+	to: ClientMovementType,
+	amount: string,
+	stockOnHand: number,
+): string {
+	if (to === "adjustment")
+		return from === "adjustment" ? amount : String(stockOnHand);
+	return from === "adjustment" ? "" : amount;
+}
 
 export const emptyMovementForm: MovementFormState = {
 	type: "receipt",
@@ -135,3 +168,81 @@ export const MOVEMENT_TONES: Record<MovementType, MovementTone> = {
 	reservation: "warning",
 	release: "neutral",
 };
+
+/**
+ * The history's type filters: "all", the types a member records, and the
+ * reservations orders write — a reservation and its release read as one
+ * story, so they filter together.
+ */
+export const MOVEMENT_FILTERS = {
+	all: undefined,
+	receipt: "receipt",
+	reservation: "reservation,release",
+	adjustment: "adjustment",
+	loss: "loss",
+	return: "return",
+} as const;
+export type MovementFilter = keyof typeof MOVEMENT_FILTERS;
+
+export interface HistoryFilters {
+	type: MovementFilter;
+	/** One variant of the product, or null for all of them. */
+	variant: string | null;
+	page: number;
+}
+
+/** The product history's filters, read from its search params. */
+export function historyFiltersOf(
+	params: Pick<URLSearchParams, "get">,
+	variantIds: string[],
+): HistoryFilters {
+	const type = params.get("type") ?? "all";
+	const variant = params.get("variant");
+	const page = Number.parseInt(params.get("page") ?? "1", 10);
+	return {
+		type: type in MOVEMENT_FILTERS ? (type as MovementFilter) : "all",
+		variant: variant && variantIds.includes(variant) ? variant : null,
+		page: Number.isFinite(page) && page > 1 ? page : 1,
+	};
+}
+
+/** The search params for `filters`, defaults left out. */
+export function historySearch(filters: HistoryFilters): string {
+	const params = new URLSearchParams();
+	if (filters.type !== "all") params.set("type", filters.type);
+	if (filters.variant) params.set("variant", filters.variant);
+	if (filters.page > 1) params.set("page", String(filters.page));
+	const search = params.toString();
+	return search ? `?${search}` : "";
+}
+
+export interface ReceiptLine {
+	variantId: string;
+	quantity: number;
+	unitCost: number | null;
+}
+
+/**
+ * One arrival across several variants: a line per variant with a quantity.
+ * A blank quantity is a variant that did not arrive; anything else must be a
+ * positive whole number, and a cost, when typed, a plain amount.
+ */
+export function receiptLines(
+	quantities: Record<string, string>,
+	costs: Record<string, string>,
+): { lines: ReceiptLine[]; invalid: string[] } {
+	const lines: ReceiptLine[] = [];
+	const invalid: string[] = [];
+	for (const [variantId, raw] of Object.entries(quantities)) {
+		if (raw.trim() === "") continue;
+		const quantity = parseAmount(raw);
+		const rawCost = costs[variantId]?.trim() ?? "";
+		const unitCost = rawCost === "" ? null : parseAmount(rawCost);
+		if (!quantity || (rawCost !== "" && unitCost === null)) {
+			invalid.push(variantId);
+			continue;
+		}
+		lines.push({ variantId, quantity, unitCost });
+	}
+	return { lines, invalid };
+}

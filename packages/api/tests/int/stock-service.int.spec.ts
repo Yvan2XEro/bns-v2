@@ -466,3 +466,68 @@ describe("applyMovement", () => {
 		expect(payload.store["stock-movements"]).toHaveLength(0);
 	});
 });
+
+describe("a correction carries the stock it was counted against", () => {
+	it("lands when the stock is still the one shown", async () => {
+		const payload = seed(2);
+		const result = await recordMovement(payload, U1, "v-1", {
+			type: "adjustment",
+			quantity: 3,
+			expectedStockOnHand: 2,
+		});
+		expect(result.variant.stockOnHand).toBe(5);
+	});
+
+	it("is refused, and writes nothing, when the stock moved in between", async () => {
+		const payload = seed(2);
+		// A sale or another member took a unit after the sheet opened on 2.
+		await recordMovement(payload, U1, "v-1", { type: "loss", quantity: -1 });
+		await expect(
+			recordMovement(payload, U1, "v-1", {
+				type: "adjustment",
+				quantity: 3,
+				expectedStockOnHand: 2,
+			}),
+		).rejects.toMatchObject({ code: "stock.countStale", status: 409 });
+		expect(variant(payload)?.stockOnHand).toBe(1);
+		expect(payload.store["stock-movements"]).toHaveLength(1);
+	});
+
+	it("is only accepted on a correction", async () => {
+		await expect(
+			recordMovement(seed(), U1, "v-1", {
+				type: "receipt",
+				quantity: 3,
+				expectedStockOnHand: 2,
+			}),
+		).rejects.toMatchObject({ code: "generic.validation" });
+	});
+});
+
+describe("one product's history", () => {
+	it("lists the movements of that product's variants only", async () => {
+		const payload = seed();
+		payload.store.products.push({
+			id: "p-3",
+			shop: "s-1",
+			title: "Other",
+			status: "draft",
+			listing: null,
+		});
+		payload.store["product-variants"].push({
+			id: "v-3",
+			product: "p-3",
+			shop: "s-1",
+			optionValues: {},
+			price: 1000,
+			trackInventory: true,
+			stockOnHand: 4,
+			stockReserved: 0,
+			archivedAt: null,
+		});
+		await recordMovement(payload, U1, "v-1", { type: "receipt", quantity: 1 });
+		await recordMovement(payload, U1, "v-3", { type: "receipt", quantity: 1 });
+		const page = await listMovements(payload, U1, "s-1", { product: "p-1" });
+		expect(page.docs.map((row) => row.product.id)).toEqual(["p-1"]);
+	});
+});

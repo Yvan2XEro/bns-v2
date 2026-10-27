@@ -1487,6 +1487,13 @@
 		"bulkUndo": "Annuler"
 	},
 	"ProductEditor": {
+		"tabsLabel": "Sections du produit",
+		"tabs": {
+			"details": "Produit",
+			"variants": "Variantes et prix",
+			"stock": "Stock"
+		},
+		"tabIssues": "{count, plural, one {# point à corriger} other {# points à corriger}}",
 		"breadcrumb": "Catalogue",
 		"newProduct": "Nouveau produit",
 		"untitled": "Produit sans titre",
@@ -1574,6 +1581,30 @@
 		"fullHistory": "Tout l'historique",
 		"noMovements": "Aucun mouvement de stock pour l'instant."
 	},
+	"ProductStock": {
+		"title": "Stock par variante",
+		"subtitle": "Chaque mouvement est enregistré tout de suite, sans passer par « Enregistrer ».",
+		"receive": "Réceptionner un arrivage",
+		"colVariant": "Variante",
+		"colAvailable": "Disponibles",
+		"colReserved": "Réservées",
+		"colOnHand": "En stock",
+		"colReceived": "Reçues",
+		"colUnitCost": "Coût unitaire",
+		"colActions": "Actions",
+		"alertAt": "alerte si ≤ {threshold}",
+		"notTracked": "Stock non suivi",
+		"adjust": "Ajuster",
+		"receivedFor": "Quantité reçue pour {variant}",
+		"unitCostFor": "Coût unitaire pour {variant}",
+		"lineInvalid": "Un nombre entier positif",
+		"saveReceipt": "Enregistrer la réception",
+		"saveReceiptUnits": "Enregistrer la réception (+{units})",
+		"receiptSaved": "Réception enregistrée : +{units, plural, one {# unité} other {# unités}}.",
+		"historyTitle": "Historique du produit",
+		"variantFilter": "Variante",
+		"allVariants": "Toutes les variantes"
+	},
 	"Stock": {
 		"title": "Stock",
 		"startInventory": "Lancer un inventaire",
@@ -1633,7 +1664,7 @@
 			},
 			"return": {
 				"title": "Retour client",
-				"hint": "Remettre en stock",
+				"hint": "Hors commande BNS",
 				"amountLabel": "Quantité retournée"
 			}
 		},
@@ -1644,6 +1675,11 @@
 		"amountInvalid": "Saisissez un nombre entier d'unités.",
 		"noChange": "Cela ne changerait pas le stock.",
 		"negative": "Le stock ne peut pas passer sous zéro.",
+		"belowReserved": "{reserved, plural, one {# unité est réservée} other {# unités sont réservées}} pour des commandes : le stock ne peut pas descendre en dessous.",
+		"reservedForOrders": "{count, plural, one {# réservée} other {# réservées}} pour des commandes · {available} disponibles à la vente",
+		"returnNote": "Les retours de commandes BNS sont remis en stock automatiquement. N'enregistrez ici qu'un retour fait en dehors de BNS.",
+		"correctionGap": "Écart avec le stock actuel : {delta}",
+		"staleStock": "Le stock a changé entre-temps (une vente ou un autre mouvement) : il est maintenant de {count}. Vérifiez votre saisie puis enregistrez à nouveau.",
 		"cancel": "Annuler",
 		"save": "Enregistrer",
 		"saveWithDelta": "Enregistrer {delta}"

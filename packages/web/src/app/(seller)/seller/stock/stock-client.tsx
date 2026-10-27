@@ -14,22 +14,15 @@ import { StockSummaryCards } from "~/components/seller/stock-summary-cards";
 import { useCatalogueStockT } from "~/hooks/use-catalogue-stock-t";
 import { useMovements, useStockSummary } from "~/hooks/use-stock";
 import { useStockCountOverview } from "~/hooks/use-stock-count-session";
-import type { MovementFormState } from "~/lib/stock";
+import {
+	MOVEMENT_FILTERS,
+	type MovementFilter,
+	type MovementFormState,
+} from "~/lib/stock";
 import { cn } from "~/lib/utils";
 
-/**
- * "all", the types a member can record, and the reservations orders write —
- * a reservation and its release read as one story, so they filter together.
- */
-const TYPE_FILTERS = {
-	all: undefined,
-	receipt: "receipt",
-	reservation: "reservation,release",
-	adjustment: "adjustment",
-	loss: "loss",
-	return: "return",
-} as const;
-type TypeFilter = keyof typeof TYPE_FILTERS;
+const TYPE_FILTERS = MOVEMENT_FILTERS;
+type TypeFilter = MovementFilter;
 const PAGE_SIZE = 30;
 /** Tailwind's `xl`: from here the adjust form sits beside the history. */
 const PANEL_QUERY = "(min-width: 1280px)";

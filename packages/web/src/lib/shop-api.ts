@@ -213,6 +213,8 @@ export interface MovementInput {
 	quantity: number;
 	unitCost?: number;
 	note?: string;
+	/** A correction's base: refused with stock.countStale if it moved. */
+	expectedStockOnHand?: number;
 }
 
 export const shopApi = {
@@ -338,6 +340,7 @@ export const shopApi = {
 		shopId: string,
 		params: {
 			variant?: string;
+			product?: string;
 			type?: string;
 			from?: string;
 			page?: number;

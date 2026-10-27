@@ -264,7 +264,7 @@ describe("stock", () => {
 		);
 		await GET(
 			new Request(
-				"http://x?variant=v-1&type=receipt,loss&from=2026-09-01&page=3",
+				"http://x?variant=v-1&product=p-1&type=receipt,loss&from=2026-09-01&page=3",
 			),
 			params("s-1"),
 		);
@@ -274,6 +274,7 @@ describe("stock", () => {
 			"s-1",
 			{
 				variant: "v-1",
+				product: "p-1",
 				type: "receipt,loss",
 				from: "2026-09-01",
 				page: 3,

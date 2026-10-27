@@ -21,6 +21,7 @@ export async function GET(
 		return Response.json(
 			await listMovements(ctx.payload, ctx.user, parsedParams.data.id, {
 				variant: search.get("variant"),
+				product: search.get("product"),
 				type: search.get("type"),
 				from: search.get("from"),
 				page: Number.isFinite(page) ? page : 1,

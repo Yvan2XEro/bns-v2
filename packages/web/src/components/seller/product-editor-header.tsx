@@ -38,6 +38,7 @@ export function ProductEditorHeader({
 	previewHref,
 	autosavedAt,
 	onCancel,
+	formId,
 }: {
 	heading: string;
 	isEdit: boolean;
@@ -52,6 +53,8 @@ export function ProductEditorHeader({
 	/** Creating: when the form was last kept on this device. */
 	autosavedAt?: string | null;
 	onCancel?: () => void;
+	/** The form the save button submits, when the header sits outside it. */
+	formId?: string;
 }) {
 	const t = useTranslations("ProductEditor");
 	const te = useCatalogueStockT("editor");
@@ -120,6 +123,7 @@ export function ProductEditorHeader({
 						)}
 						<Button
 							type="submit"
+							form={formId}
 							disabled={pending}
 							className="bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 						>

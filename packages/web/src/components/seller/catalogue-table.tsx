@@ -17,6 +17,7 @@ import { useCatalogueStockT } from "~/hooks/use-catalogue-stock-t";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { skuSummary } from "~/lib/catalogue";
 import { formatOrderMoneyRange } from "~/lib/order-money";
+import { productTabHref } from "~/lib/product-tabs";
 import type { CatalogueRow, ProductStatus } from "~/types";
 
 const isResale = (row: CatalogueRow) => row.provenance === "resale";
@@ -109,6 +110,15 @@ function RowMenu({
 						}}
 					>
 						{tc("adjustStock")}
+					</DropdownMenuItem>
+				)}
+				{!isResale(row) && !row.singleVariantId && row.variantCount > 1 && (
+					// Several variants: their stock tab shows them all, each with
+					// its own "Adjust".
+					<DropdownMenuItem asChild>
+						<Link href={productTabHref(row.id, "stock")}>
+							{tc("adjustStock")}
+						</Link>
 					</DropdownMenuItem>
 				)}
 				{published && (

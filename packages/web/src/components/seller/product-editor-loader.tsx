@@ -1,9 +1,11 @@
 "use client";
 
+import { useSelectedLayoutSegment } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { ProductEditor } from "~/components/seller/product-editor";
 import { useProductDetail } from "~/hooks/use-product-detail";
+import { productTabOf } from "~/lib/product-tabs";
 import type { Category } from "~/types";
 
 export function ProductEditorLoader({
@@ -17,6 +19,7 @@ export function ProductEditorLoader({
 }) {
 	const t = useTranslations("ProductEditor");
 	const { data, isError, refetch } = useProductDetail(shopId, productId);
+	const tab = productTabOf(useSelectedLayoutSegment());
 
 	if (isError) {
 		return <LoadError title={t("loadError")} onRetry={() => void refetch()} />;
@@ -29,6 +32,7 @@ export function ProductEditorLoader({
 			categories={categories}
 			role={data.role}
 			detail={{ productId, response: data }}
+			tab={tab}
 		/>
 	);
 }
