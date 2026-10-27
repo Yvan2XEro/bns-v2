@@ -4,6 +4,7 @@ import { Glob } from "bun";
 import { isScreenFile, matchRoute, routeNameOf } from "./appRoutes";
 import {
 	CASE_DEEP_LINKS,
+	canFollowPushTap,
 	DELIVERY_DEEP_LINKS,
 	GROUP_DEEP_LINKS,
 	notificationUrl,
@@ -137,5 +138,22 @@ describe("a tap on a push notification", () => {
 		expect(pushTapTarget(tap(null), DEFAULT)).toBeNull();
 		expect(pushTapTarget(null, DEFAULT)).toBeNull();
 		expect(pushTapTarget(tap({ url: "/x" }, "reply"), DEFAULT)).toBeNull();
+	});
+});
+
+describe("when a notification tap is followed", () => {
+	const ready = { navigationReady: true, pathname: "/home", signedIn: true };
+
+	test("once the launch redirect to home has happened, signed in", () => {
+		expect(canFollowPushTap(ready)).toBe(true);
+	});
+
+	test("not on the launch route, whose redirect would replace the screen", () => {
+		expect(canFollowPushTap({ ...ready, pathname: "/" })).toBe(false);
+	});
+
+	test("not before the navigator, nor signed out", () => {
+		expect(canFollowPushTap({ ...ready, navigationReady: false })).toBe(false);
+		expect(canFollowPushTap({ ...ready, signedIn: false })).toBe(false);
 	});
 });

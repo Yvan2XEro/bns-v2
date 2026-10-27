@@ -77,7 +77,11 @@ import { api } from "@/src/lib/api";
 import "@/src/lib/appFocus";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
 import { setContentLocale } from "@/src/lib/contentLocale";
-import { pushTapTarget, toAppPath } from "@/src/lib/deepLinks";
+import {
+	canFollowPushTap,
+	pushTapTarget,
+	toAppPath,
+} from "@/src/lib/deepLinks";
 import { reportError } from "@/src/lib/monitoring";
 import { syncPushToken } from "@/src/lib/notifications";
 
@@ -336,9 +340,10 @@ function PushTokenRegistrar() {
 // Follows a tap on a push notification to the screen it names, whether the
 // tap launched the app (cold start) or brought it back from the background.
 // Rendered next to the Stack, so it only runs once the router exists — past
-// the loading screen and the onboarding — and it waits for the root
-// navigator to be ready: a push before that is dropped, and the app stays on
-// its first screen (home). The destination opens on top of home, so "back"
+// the loading screen and the onboarding. Launched by the tap, the app opens
+// on `/`, which redirects to home with a `replace`; a screen opened before
+// that redirect is the one replaced, so the tap waits for it
+// (`canFollowPushTap`). The destination then opens on top of home, so "back"
 // lands there. Signed-out, the tap waits for the sign-in.
 
 function navigateFromNotificationUrl(url: string) {
@@ -354,6 +359,7 @@ function navigateFromNotificationUrl(url: string) {
 function PushTapNavigator() {
 	const { user } = useAuth();
 	const navigationReady = Boolean(useRootNavigationState()?.key);
+	const pathname = usePathname();
 	const response = Notifications.useLastNotificationResponse();
 	const followed = useRef<string | null>(null);
 
@@ -362,14 +368,18 @@ function PushTapNavigator() {
 			response,
 			Notifications.DEFAULT_ACTION_IDENTIFIER,
 		);
-		if (!target || !navigationReady || !user) return;
+		if (
+			!target ||
+			!canFollowPushTap({ navigationReady, pathname, signedIn: Boolean(user) })
+		)
+			return;
 		if (followed.current === target.id) return;
 		followed.current = target.id;
 		// Followed once: the app reloading or this screen remounting must not
 		// replay an old tap.
 		Notifications.clearLastNotificationResponse();
 		navigateFromNotificationUrl(target.url);
-	}, [response, navigationReady, user]);
+	}, [response, navigationReady, pathname, user]);
 
 	return null;
 }

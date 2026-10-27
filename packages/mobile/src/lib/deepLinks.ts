@@ -146,3 +146,18 @@ export function pushTapTarget(
 	const url = notificationUrl(data as Record<string, unknown>);
 	return url ? { id: tap.notification.request.identifier, url } : null;
 }
+
+/**
+ * Whether a notification tap can be followed now. Launched by the tap, the
+ * app opens on `/`, whose only job is to redirect to home with a `replace`:
+ * a screen opened before that redirect is the one it replaces, and the user
+ * lands on home. So the tap waits for the navigator, for the redirect to
+ * have happened (the path has left `/`) and for a signed-in user.
+ */
+export function canFollowPushTap(state: {
+	navigationReady: boolean;
+	pathname: string;
+	signedIn: boolean;
+}): boolean {
+	return state.navigationReady && state.signedIn && state.pathname !== "/";
+}
