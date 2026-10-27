@@ -1,9 +1,10 @@
 // @vitest-environment node
 import type { Payload } from "payload";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	categoryListingForms,
 	categorySeedAttributes,
+	fetchFileByURL,
 	seedCategories,
 	seededDefinitions,
 } from "../../src/seed/seedCategories";
@@ -81,7 +82,49 @@ function withRawCategories(payload: ReturnType<typeof fakePayload>) {
 	return payload;
 }
 
+/** Stands in for the image host: a small JPEG, or the given status. */
+function imageHost(status = 200, type = "image/jpeg") {
+	return vi.fn(
+		async () =>
+			new Response(new Uint8Array([0xff, 0xd8, 0xff]), {
+				status,
+				headers: { "content-type": type },
+			}),
+	);
+}
+
+describe("fetchFileByURL", () => {
+	afterEach(() => vi.unstubAllGlobals());
+
+	it("types the picture from the server, not from the URL", async () => {
+		vi.stubGlobal("fetch", imageHost());
+		const file = await fetchFileByURL(
+			"https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800",
+			"vehicles",
+		);
+		expect(file).toMatchObject({
+			name: "category-vehicles.jpg",
+			mimetype: "image/jpeg",
+			size: 3,
+		});
+	});
+
+	it("refuses what is not an image, and a failed download", async () => {
+		vi.stubGlobal("fetch", imageHost(200, "text/html"));
+		await expect(fetchFileByURL("https://x.test/a", "a")).rejects.toThrow(
+			"not an image",
+		);
+		vi.stubGlobal("fetch", imageHost(404));
+		await expect(fetchFileByURL("https://x.test/a", "a")).rejects.toThrow(
+			"status: 404",
+		);
+	});
+});
+
 describe("seeding categories then tags", () => {
+	beforeEach(() => vi.stubGlobal("fetch", imageHost()));
+	afterEach(() => vi.unstubAllGlobals());
+
 	async function seeded() {
 		const payload = withRawCategories(
 			fakePayload({ categories: [], tags: [] }),
@@ -118,6 +161,43 @@ describe("seeding categories then tags", () => {
 				.sort();
 			expect([definition.slug, linked]).toEqual([definition.slug, expected]);
 		}
+	});
+
+	it("gives every category with a picture its Media row", async () => {
+		const { categories, payload } = await seeded();
+		const media = new Set(
+			((payload.store.media ?? []) as Row[]).map((row) => String(row.id)),
+		);
+		const missing = seededDefinitions
+			.filter((definition) => definition.imageUrl)
+			.filter((definition) => {
+				const row = categories.find((r) => r.slug === definition.slug);
+				return !row?.image || !media.has(String(row.image));
+			})
+			.map((definition) => definition.slug);
+		expect(missing).toEqual([]);
+	});
+
+	it("adds the picture on a second run to a category left without one", async () => {
+		vi.stubGlobal("fetch", imageHost(503));
+		const payload = withRawCategories(
+			fakePayload({ categories: [], tags: [] }),
+		);
+		await seedCategories(payload);
+		expect(
+			(payload.store.categories as Row[]).filter((row) => row.image),
+		).toEqual([]);
+
+		vi.stubGlobal("fetch", imageHost());
+		await seedCategories(payload);
+		const withoutImage = (payload.store.categories as Row[])
+			.filter((row) => !row.image)
+			.map((row) => row.slug);
+		const expected = seededDefinitions
+			.filter((definition) => !definition.imageUrl)
+			.map((definition) => definition.slug);
+		expect(withoutImage).toEqual(expected);
+		expect(payload.store.categories).toHaveLength(seededDefinitions.length);
 	});
 
 	it("adds nothing when run again", async () => {

@@ -2708,7 +2708,7 @@ const categoryDefinitions: CategoryData[] = [
 			"femme, femmes, robe, jupe, chemisier, pagne, kaba, tailleur, sac a main, talon, escarpin, women, womens, dress, skirt, handbag, blouse",
 		icon: "shirt",
 		imageUrl:
-			"https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&h=600&fit=crop",
+			"https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&h=600&fit=crop",
 		parent: "fashion",
 		attributes: [
 			{
@@ -3323,7 +3323,7 @@ const categoryDefinitions: CategoryData[] = [
 		searchAliases: "loisir, loisirs, sport, sports, detente, hobby, leisure",
 		icon: "dumbbell",
 		imageUrl:
-			"https://images.unsplash.com/photo-1461896836934-bd45ba3bdb78?w=800&h=600&fit=crop",
+			"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&h=600&fit=crop",
 		// Mostly second-hand goods. travel-vacation overrides this below.
 		listingForm: { type: "product" },
 		attributes: [
@@ -3951,23 +3951,37 @@ export const categorySeedAttributes: Record<string, CategoryAttributeSeed[]> =
 		seededDefinitions.map((category) => [category.slug, category.attributes]),
 	);
 
-async function fetchFileByURL(url: string): Promise<File> {
-	const res = await fetch(url, {
-		method: "GET",
-	});
+/** File extensions for the image types a category picture may come in. */
+const IMAGE_EXTENSIONS: Record<string, string> = {
+	"image/jpeg": "jpg",
+	"image/png": "png",
+	"image/webp": "webp",
+	"image/avif": "avif",
+};
 
+/**
+ * Downloads a category picture. Its type is the server's `Content-Type`, not
+ * a guess from the URL: Unsplash's URLs carry no extension, and the name's
+ * tail used to become a type like "image/photo-1492…" that Media refuses.
+ */
+export async function fetchFileByURL(url: string, name: string): Promise<File> {
+	const res = await fetch(url, { method: "GET" });
 	if (!res.ok) {
 		throw new Error(`Failed to fetch file from ${url}, status: ${res.status}`);
 	}
-
+	const mimetype = (res.headers.get("content-type") ?? "")
+		.split(";")[0]
+		?.trim()
+		.toLowerCase();
+	const ext = mimetype ? IMAGE_EXTENSIONS[mimetype] : undefined;
+	if (!mimetype || !ext) {
+		throw new Error(`${url} is not an image (${mimetype || "no type"})`);
+	}
 	const data = await res.arrayBuffer();
-	const filename = url.split("/").pop()?.split("?")[0] || `image-${Date.now()}`;
-	const ext = filename.split(".").pop() || "jpg";
-
 	return {
-		name: `category-${filename}`,
+		name: `category-${name}.${ext}`,
 		data: Buffer.from(data),
-		mimetype: `image/${ext === "jpg" ? "jpeg" : ext}`,
+		mimetype,
 		size: data.byteLength,
 	};
 }
@@ -3995,8 +4009,35 @@ export const seedCategories = async (payload: unknown) => {
 			limit: number;
 			depth: number;
 			overrideAccess: boolean;
-		}) => Promise<{ docs: Array<{ id: string | number }> }>;
+		}) => Promise<{ docs: Array<{ id: string | number; image?: unknown }> }>;
+		update: (options: {
+			collection: string;
+			id: string | number;
+			data: Record<string, unknown>;
+			overrideAccess: boolean;
+		}) => Promise<unknown>;
 		logger?: { info: (msg: string) => void; error: (msg: string) => void };
+	};
+
+	/** The category's picture as a Media row, or undefined if it failed. */
+	const categoryImage = async (
+		catDef: (typeof seededDefinitions)[number],
+	): Promise<string | undefined> => {
+		if (!catDef.imageUrl) return undefined;
+		try {
+			const file = await fetchFileByURL(catDef.imageUrl, catDef.slug);
+			const media = await typedPayload.create({
+				collection: "media",
+				data: { alt: `${catDef.name} category image` },
+				file,
+			});
+			return media.id;
+		} catch (err) {
+			typedPayload.logger?.error?.(
+				`Category image for ${catDef.slug} not added: ${err}`,
+			);
+			return undefined;
+		}
 	};
 
 	for (const catDef of seededDefinitions) {
@@ -4007,32 +4048,26 @@ export const seedCategories = async (payload: unknown) => {
 			depth: 0,
 			overrideAccess: true,
 		});
-		if (existing.docs[0]) {
-			slugToId[catDef.slug] = String(existing.docs[0].id);
+		const found = existing.docs[0];
+		if (found) {
+			slugToId[catDef.slug] = String(found.id);
+			// Kept as it is, but given its picture if it never got one.
+			if (!found.image) {
+				const image = await categoryImage(catDef);
+				if (image) {
+					await typedPayload.update({
+						collection: "categories",
+						id: found.id,
+						data: { image },
+						overrideAccess: true,
+					});
+				}
+			}
 			continue;
 		}
 
 		const parentId = catDef.parent ? slugToId[catDef.parent] : undefined;
-
-		// Download and create media for the category image
-		let imageId: string | undefined;
-		if (catDef.imageUrl) {
-			try {
-				const fileBuffer = await fetchFileByURL(catDef.imageUrl);
-				const mediaDoc = await typedPayload.create({
-					collection: "media",
-					data: {
-						alt: `${catDef.name} category image`,
-					},
-					file: fileBuffer,
-				});
-				imageId = mediaDoc.id;
-			} catch (err) {
-				typedPayload.logger?.error?.(
-					`Failed to download image for ${catDef.name}: ${err}`,
-				);
-			}
-		}
+		const imageId = await categoryImage(catDef);
 
 		const result = await typedPayload.create({
 			collection: "categories",
