@@ -259,7 +259,8 @@ export function StockAdjustForm({
 				</p>
 			)}
 
-			<div className="flex gap-2">
+			{/* Kept in reach at the bottom of the sheet while the form scrolls. */}
+			<div className="-mx-5 -mb-5 sticky bottom-0 flex gap-2 border-line border-t bg-background px-5 py-3">
 				<Button
 					type="button"
 					variant="outline"

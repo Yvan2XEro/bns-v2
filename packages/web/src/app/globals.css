@@ -574,3 +574,46 @@ h6 {
 	--shop-header-fg: var(--shop-dark-header-fg);
 	--shop-header-muted: var(--shop-dark-header-muted);
 }
+
+/* Sheet (components/ui/sheet.tsx): slides in from the right edge. Radix
+   waits for the closing animation before unmounting. */
+@keyframes sheetIn {
+	from {
+		transform: translateX(100%);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+@keyframes sheetOut {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(100%);
+	}
+}
+@keyframes sheetFadeIn {
+	from {
+		opacity: 0;
+	}
+}
+@keyframes sheetFadeOut {
+	to {
+		opacity: 0;
+	}
+}
+@media (prefers-reduced-motion: no-preference) {
+	.sheet-panel[data-state="open"] {
+		animation: sheetIn 220ms cubic-bezier(0.32, 0.72, 0, 1);
+	}
+	.sheet-panel[data-state="closed"] {
+		animation: sheetOut 180ms ease-in;
+	}
+	.sheet-overlay[data-state="open"] {
+		animation: sheetFadeIn 220ms ease-out;
+	}
+	.sheet-overlay[data-state="closed"] {
+		animation: sheetFadeOut 180ms ease-in;
+	}
+}

@@ -4,21 +4,12 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { createCallable } from "react-call";
 import { CLOSE_ANIMATION_MS } from "~/components/callable/callable";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from "~/components/ui/dialog";
+import { Sheet, SheetContent } from "~/components/ui/sheet";
 import { useVariant } from "~/hooks/use-variants";
 import type { MovementFormState } from "~/lib/stock";
 import type { VariantDoc } from "~/types";
 import { StockAdjustForm } from "./stock-adjust-form";
 import { type PickedVariant, toPicked, VariantPicker } from "./variant-picker";
-
-/** The adjust form as a sheet on the right edge of the screen; full width on a phone. */
-const SHEET =
-	"top-0 right-0 left-auto h-full max-w-md translate-x-0 translate-y-0 space-y-5 overflow-y-auto rounded-none sm:rounded-none";
 
 /**
  * Pick a variant (unless one is given), then record one movement for it;
@@ -94,17 +85,13 @@ export const StockAdjust = createCallable<
 	const close = () => call.end(null);
 
 	return (
-		<Dialog
+		<Sheet
 			open={!call.ended}
 			onOpenChange={(open) => {
 				if (!open) close();
 			}}
 		>
-			<DialogContent className={SHEET}>
-				<div className="space-y-1">
-					<DialogTitle>{t("adjustTitle")}</DialogTitle>
-					<DialogDescription>{t("adjustSubtitle")}</DialogDescription>
-				</div>
+			<SheetContent title={t("adjustTitle")} description={t("adjustSubtitle")}>
 				<StockAdjustBody
 					shopId={call.root.shopId}
 					initialVariantId={variantId ?? null}
@@ -114,7 +101,7 @@ export const StockAdjust = createCallable<
 					}}
 					onSaved={(saved) => call.end(saved)}
 				/>
-			</DialogContent>
-		</Dialog>
+			</SheetContent>
+		</Sheet>
 	);
 }, CLOSE_ANIMATION_MS);
