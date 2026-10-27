@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Confirm } from "~/components/callable/confirm";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
+import { NumberInput } from "~/components/ui/number-input";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import {
 	useAcceptResaleTerms,
@@ -381,11 +382,8 @@ function Editor({
 													] as const
 												).map((field) => (
 													<td key={field} className="px-3.5 py-2.5">
-														<input
-															type="number"
-															inputMode="numeric"
-															min={1}
-															step={1}
+														<NumberInput
+															plain
 															disabled={!variant.enabled || blocked}
 															aria-label={`${t(
 																field === "supplierPrice"
@@ -397,12 +395,13 @@ function Editor({
 															aria-invalid={invalid}
 															value={
 																Number.isFinite(variant[field])
-																	? variant[field]
+																	? String(variant[field])
 																	: ""
 															}
-															onChange={(event) =>
+															onValueChange={(digits) =>
 																patchVariant(variant.id, {
-																	[field]: event.target.valueAsNumber,
+																	[field]:
+																		digits === "" ? Number.NaN : Number(digits),
 																})
 															}
 															className={cn(

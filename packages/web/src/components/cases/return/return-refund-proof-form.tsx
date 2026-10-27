@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Controller, useForm } from "react-hook-form";
+import { FormNumberInput } from "~/components/ui/number-input";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { useReturnAction } from "~/hooks/use-returns";
 import { resolveErrorMessage } from "~/lib/apiError";
@@ -75,9 +76,10 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 			</label>
 			<label className="block text-sm">
 				{t("refundAmountLabel", { currency: currencyCode })}
-				<input
-					{...form.register("amount")}
-					inputMode="numeric"
+				<FormNumberInput
+					plain
+					control={form.control}
+					name="amount"
 					className="mt-1 block min-h-11 w-full rounded-lg border px-2"
 					aria-invalid={Boolean(form.formState.errors.amount)}
 				/>

@@ -71,10 +71,10 @@ export function MovementsTable({ rows }: { rows: MovementRow[] }) {
 									availableDelta(row) > 0 ? "text-ok-ink" : "text-bad-ink",
 								)}
 							>
-								{signedDelta(availableDelta(row))}
+								{signedDelta(availableDelta(row), locale)}
 							</td>
 							<td className="px-4 py-3 text-right text-ink">
-								{row.stockAfter}
+								{row.stockAfter.toLocaleString(locale)}
 							</td>
 							<td className="px-4 py-3 text-ink-muted">
 								{[row.note, row.actor?.name].filter(Boolean).join(" · ") || "—"}

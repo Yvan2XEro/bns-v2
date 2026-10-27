@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { Input } from "~/components/ui/input";
+import { FormNumberInput } from "~/components/ui/number-input";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useAvailableCouriers } from "~/hooks/use-delivery-settings";
 import { useOrderMoney } from "~/hooks/use-order-money";
@@ -161,17 +162,17 @@ export function ZoneFields({ form }: { form: UseFormReturn<ZoneFormValues> }) {
 					label={t("columnFee")}
 					error={err(errors.fee?.message)}
 				>
-					<Input id="zone-fee" inputMode="numeric" {...register("fee")} />
+					<FormNumberInput id="zone-fee" control={form.control} name="fee" />
 				</Field>
 				<Field
 					id="zone-free"
 					label={t("columnFreeAbove")}
 					error={err(errors.freeAboveSubtotal?.message)}
 				>
-					<Input
+					<FormNumberInput
 						id="zone-free"
-						inputMode="numeric"
-						{...register("freeAboveSubtotal")}
+						control={form.control}
+						name="freeAboveSubtotal"
 					/>
 				</Field>
 				<Field
@@ -179,10 +180,10 @@ export function ZoneFields({ form }: { form: UseFormReturn<ZoneFormValues> }) {
 					label={t("columnMinimum")}
 					error={err(errors.minOrderSubtotal?.message)}
 				>
-					<Input
+					<FormNumberInput
 						id="zone-min"
-						inputMode="numeric"
-						{...register("minOrderSubtotal")}
+						control={form.control}
+						name="minOrderSubtotal"
 					/>
 				</Field>
 			</div>

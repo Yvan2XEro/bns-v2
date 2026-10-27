@@ -11,6 +11,7 @@ import { StockAdjust } from "~/components/seller/stock-adjust-drawer";
 import { StatusChip } from "~/components/shop/status-chip";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { NumberInput } from "~/components/ui/number-input";
 import { useCatalogueStockT } from "~/hooks/use-catalogue-stock-t";
 import { useCurrencyCode } from "~/hooks/use-order-money";
 import { useRecordMovement } from "~/hooks/use-record-movement";
@@ -236,15 +237,15 @@ function VariantStock({
 														<StatusChip kind="low" />
 													) : null}
 													<span className="font-bold text-ink tabular-nums">
-														{available}
+														{available.toLocaleString(locale)}
 													</span>
 												</span>
 											</td>
 											<td className="px-3 py-3 text-right text-ink-muted tabular-nums">
-												{variant.stockReserved}
+												{variant.stockReserved.toLocaleString(locale)}
 											</td>
 											<td className="px-3 py-3 text-right text-ink-muted tabular-nums">
-												{variant.stockOnHand}
+												{variant.stockOnHand.toLocaleString(locale)}
 											</td>
 										</>
 									) : (
@@ -258,16 +259,15 @@ function VariantStock({
 									{receiving ? (
 										<>
 											<td className="w-28 px-3 py-2">
-												<Input
-													inputMode="numeric"
+												<NumberInput
 													placeholder="0"
 													aria-label={t("receivedFor", { variant: label })}
 													aria-invalid={Boolean(lineErrors[variant.id])}
 													value={quantities[variant.id] ?? ""}
-													onChange={(event) =>
+													onValueChange={(digits) =>
 														setQuantities((current) => ({
 															...current,
-															[variant.id]: event.target.value,
+															[variant.id]: digits,
 														}))
 													}
 													className="h-9 text-right"
@@ -280,15 +280,14 @@ function VariantStock({
 											</td>
 											{showCost && (
 												<td className="w-32 px-3 py-2">
-													<Input
-														inputMode="numeric"
-														placeholder={currencyCode}
+													<NumberInput
+														unit={currencyCode}
 														aria-label={t("unitCostFor", { variant: label })}
 														value={costs[variant.id] ?? ""}
-														onChange={(event) =>
+														onValueChange={(digits) =>
 															setCosts((current) => ({
 																...current,
-																[variant.id]: event.target.value,
+																[variant.id]: digits,
 															}))
 														}
 														className="h-9 text-right"

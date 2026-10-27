@@ -12,6 +12,7 @@ import { useReducer } from "react";
 import { Confirm } from "~/components/callable/confirm";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
+import { NumberInput } from "~/components/ui/number-input";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import {
@@ -642,15 +643,11 @@ export function PurchaseOrderDetailClient({
 											max: formatOrderMoney(order.deliveryFee, locale),
 										})}
 									</span>
-									<input
-										inputMode="numeric"
+									<NumberInput
+										plain
 										value={state.failedDeliveryCost}
-										onChange={(event) =>
-											patch({
-												failedDeliveryCost: event.target.value
-													.replace(/\D/g, "")
-													.slice(0, 10),
-											})
+										onValueChange={(digits) =>
+											patch({ failedDeliveryCost: digits.slice(0, 10) })
 										}
 										className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 									/>

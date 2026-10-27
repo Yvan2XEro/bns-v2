@@ -2,12 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { type Resolver, useForm, useWatch } from "react-hook-form";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { FormNumberInput } from "~/components/ui/number-input";
 import { useCurrencyCode } from "~/hooks/use-order-money";
 import { useRecordMovement } from "~/hooks/use-record-movement";
 import { ApiError, ERROR_CODES, resolveErrorMessage } from "~/lib/apiError";
@@ -20,6 +21,7 @@ import {
 	movementDelta,
 	movementFormSchema,
 	NOTE_MAX,
+	signedDelta,
 } from "~/lib/stock";
 import { cn } from "~/lib/utils";
 import type { VariantDoc } from "~/types";
@@ -46,6 +48,7 @@ export function StockAdjustForm({
 }) {
 	const currencyCode = useCurrencyCode();
 	const t = useTranslations("Stock");
+	const locale = useLocale();
 	const tRoot = useTranslations();
 	const recordMovement = useRecordMovement(shopId);
 	// The counters the form is checked against; refreshed when the ledger
@@ -198,7 +201,7 @@ export function StockAdjustForm({
 
 			<div className="space-y-1.5">
 				<Label htmlFor="stock-amount">{t(`types.${type}.amountLabel`)}</Label>
-				<Input id="stock-amount" inputMode="numeric" {...register("amount")} />
+				<FormNumberInput id="stock-amount" control={control} name="amount" />
 				{amountError ? (
 					<p className="text-bad-ink text-xs">
 						{t(amountError, { reserved: stockReserved })}
@@ -209,7 +212,7 @@ export function StockAdjustForm({
 					delta !== 0 && (
 						<p className="text-ink-muted text-xs">
 							{t("correctionGap", {
-								delta: delta > 0 ? `+${delta}` : `${delta}`,
+								delta: signedDelta(delta, locale),
 							})}
 						</p>
 					)
@@ -219,11 +222,11 @@ export function StockAdjustForm({
 			{type === "receipt" && (
 				<div className="space-y-1.5">
 					<Label htmlFor="stock-cost">{t("unitCost")}</Label>
-					<Input
+					<FormNumberInput
 						id="stock-cost"
-						inputMode="numeric"
-						placeholder={currencyCode}
-						{...register("unitCost")}
+						control={control}
+						name="unitCost"
+						unit={currencyCode}
 					/>
 				</div>
 			)}
@@ -246,7 +249,8 @@ export function StockAdjustForm({
 						after !== null && after < 0 ? "text-bad-ink" : "text-ink",
 					)}
 				>
-					{stockOnHand} → {after ?? "—"}
+					{stockOnHand.toLocaleString(locale)} →{" "}
+					{after === null ? "—" : after.toLocaleString(locale)}
 				</span>
 			</div>
 
@@ -282,7 +286,7 @@ export function StockAdjustForm({
 					)}
 					{delta !== null && delta !== 0
 						? t("saveWithDelta", {
-								delta: delta > 0 ? `+${delta}` : `${delta}`,
+								delta: signedDelta(delta, locale),
 							})
 						: t("save")}
 				</Button>

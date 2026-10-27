@@ -146,9 +146,10 @@ export function availableDelta(row: {
 		: row.quantity;
 }
 
-/** "+3" or "−2" (true minus sign), as the history prints a delta. */
-export function signedDelta(value: number): string {
-	return value > 0 ? `+${value}` : `−${Math.abs(value)}`;
+/** "+3" or "−2" (true minus sign), as the history prints a delta; grouped in `locale`. */
+export function signedDelta(value: number, locale?: string): string {
+	const digits = Math.abs(value).toLocaleString(locale);
+	return value > 0 ? `+${digits}` : `−${digits}`;
 }
 
 export type MovementTone =

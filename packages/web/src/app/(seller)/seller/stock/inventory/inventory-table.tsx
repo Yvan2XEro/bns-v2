@@ -1,11 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type {
-	FieldArrayWithId,
-	FieldErrors,
-	UseFormRegister,
-} from "react-hook-form";
+import type { Control, FieldArrayWithId, FieldErrors } from "react-hook-form";
+import { FormNumberInput } from "~/components/ui/number-input";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import type { CountFilter, CountFormState, CountRow } from "~/lib/inventory";
 import { parseAmount } from "~/lib/product-form";
@@ -17,14 +14,14 @@ export const FILTERS: Filter[] = ["all", "todo", "counted", "gap"];
 export function InventoryTable({
 	fields,
 	rows,
-	register,
+	control,
 	errors,
 	indexes,
 	showCost,
 }: {
 	fields: FieldArrayWithId<CountFormState, "rows", "id">[];
 	rows: CountRow[];
-	register: UseFormRegister<CountFormState>;
+	control: Control<CountFormState>;
 	/** Per-row validation errors from a failed submit; drives the invalid highlight. */
 	errors: FieldErrors<CountFormState>["rows"];
 	/** The rows to show, in order: filtered and paginated by the caller. */
@@ -99,11 +96,12 @@ export function InventoryTable({
 									<label className="sr-only" htmlFor={`count-${row.variantId}`}>
 										{row.productTitle} {row.label}
 									</label>
-									<input
+									<FormNumberInput
+										plain
 										id={`count-${row.variantId}`}
-										inputMode="numeric"
 										aria-invalid={invalid}
-										{...register(`rows.${index}.counted`)}
+										control={control}
+										name={`rows.${index}.counted`}
 										className={cn(
 											"h-9 w-full rounded-md border px-2 text-right outline-none focus:border-[var(--shop-accent-border,var(--c-brand-line))]",
 											invalid ? "border-red-400 bg-red-50" : "border-line",

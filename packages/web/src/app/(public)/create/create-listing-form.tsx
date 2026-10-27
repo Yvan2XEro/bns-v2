@@ -26,6 +26,7 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { NumberInput } from "~/components/ui/number-input";
 import {
 	Select,
 	SelectContent,
@@ -803,14 +804,12 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 												<span className="text-destructive"> *</span>
 											)}
 										</Label>
-										<Input
+										<NumberInput
 											id="price"
-											type="number"
 											placeholder="0"
-											min="0"
 											value={formData.price}
-											onChange={(e) =>
-												setFormData((p) => ({ ...p, price: e.target.value }))
+											onValueChange={(price) =>
+												setFormData((p) => ({ ...p, price }))
 											}
 											required={priceField.required}
 										/>

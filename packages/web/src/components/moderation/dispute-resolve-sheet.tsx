@@ -10,6 +10,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
+import { NumberInput } from "~/components/ui/number-input";
 import {
 	useModerationDisputeAction,
 	usePreviewDisputeOutcome,
@@ -142,12 +143,12 @@ export function DisputeResolveSheet({
 						<span className="font-medium">
 							{t("refundAmount", { currency: currencyCode })}
 						</span>
-						<input
-							inputMode="numeric"
+						<NumberInput
+							plain
 							className={field}
 							value={form.refund}
-							onChange={(e) => {
-								patch({ refund: e.target.value });
+							onValueChange={(refund) => {
+								patch({ refund });
 								preview.reset();
 							}}
 						/>

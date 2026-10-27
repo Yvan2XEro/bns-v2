@@ -102,7 +102,6 @@ export function InventoryClient({
 		formState,
 		getValues,
 		handleSubmit,
-		register,
 		reset,
 		setError,
 	} = useForm<CountFormState>({
@@ -344,7 +343,7 @@ export function InventoryClient({
 					<InventoryTable
 						fields={fields}
 						rows={rows}
-						register={register}
+						control={control}
 						errors={formState.errors.rows}
 						indexes={pageIndexes}
 						showCost={showCost}

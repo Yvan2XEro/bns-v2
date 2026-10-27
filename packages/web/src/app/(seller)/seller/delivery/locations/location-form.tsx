@@ -13,6 +13,7 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
+import { FormNumberInput } from "~/components/ui/number-input";
 import { useAppConfig } from "~/hooks/use-app-config";
 import {
 	useCreateLocation,
@@ -221,10 +222,10 @@ export function LocationDialog({
 							<label htmlFor="loc-fee" className="block text-sm">
 								{t("fieldPickupFee")}
 							</label>
-							<Input
+							<FormNumberInput
 								id="loc-fee"
-								inputMode="numeric"
-								{...register("pickupFee")}
+								control={form.control}
+								name="pickupFee"
 							/>
 							<FieldError>{err(errors.pickupFee?.message)}</FieldError>
 						</div>

@@ -21,6 +21,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { NumberInput } from "~/components/ui/number-input";
 import {
 	Select,
 	SelectContent,
@@ -393,15 +394,13 @@ export function SearchClient({
 					{t("price", { currency: currencyCode })}
 				</Label>
 				<div className="flex gap-2">
-					<Input
-						type="number"
+					<NumberInput
 						placeholder={t("minPrice")}
 						className="h-9 rounded-lg text-sm"
-						inputMode="numeric"
 						aria-label={t("minPrice")}
 						value={priceDraft.minPrice}
-						onChange={(e) =>
-							setPriceDraft((d) => ({ ...d, minPrice: e.target.value }))
+						onValueChange={(minPrice) =>
+							setPriceDraft((d) => ({ ...d, minPrice }))
 						}
 						onBlur={() => commitPrice("minPrice")}
 						onKeyDown={(e) => {
@@ -409,15 +408,13 @@ export function SearchClient({
 						}}
 					/>
 					<span className="flex items-center text-ink-faint">—</span>
-					<Input
-						type="number"
+					<NumberInput
 						placeholder={t("maxPrice")}
 						className="h-9 rounded-lg text-sm"
-						inputMode="numeric"
 						aria-label={t("maxPrice")}
 						value={priceDraft.maxPrice}
-						onChange={(e) =>
-							setPriceDraft((d) => ({ ...d, maxPrice: e.target.value }))
+						onValueChange={(maxPrice) =>
+							setPriceDraft((d) => ({ ...d, maxPrice }))
 						}
 						onBlur={() => commitPrice("maxPrice")}
 						onKeyDown={(e) => {

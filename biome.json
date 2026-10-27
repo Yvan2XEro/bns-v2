@@ -74,6 +74,14 @@
 			"security": {
 				"noDangerouslySetInnerHtmlWithChildren": "error"
 			},
+			"a11y": {
+				"noLabelWithoutControl": {
+					"level": "error",
+					"options": {
+						"inputComponents": ["NumberInput", "FormNumberInput"]
+					}
+				}
+			},
 			"performance": {
 				"noDelete": "warn",
 				"noImgElement": "warn"

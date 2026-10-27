@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Controller, useForm } from "react-hook-form";
+import { FormNumberInput } from "~/components/ui/number-input";
 import { useCurrencyCode } from "~/hooks/use-order-money";
 import { useReturnAction } from "~/hooks/use-returns";
 import { resolveErrorMessage } from "~/lib/apiError";
@@ -86,9 +87,10 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 						</label>
 						<label className="block text-sm">
 							{t("deductionAmount", { currency: currencyCode })}
-							<input
-								{...form.register(`items.${index}.deductionAmount`)}
-								inputMode="numeric"
+							<FormNumberInput
+								plain
+								control={form.control}
+								name={`items.${index}.deductionAmount`}
 								readOnly={view.basis === "non_conformity"}
 								className="mt-1 block min-h-11 w-full rounded-lg border px-2 read-only:bg-subtle"
 								aria-invalid={Boolean(errors?.deductionAmount)}

@@ -41,7 +41,7 @@ export function RecentMovements({
 									availableDelta(movement) > 0 ? "text-ok-ink" : "text-bad-ink",
 								)}
 							>
-								{signedDelta(availableDelta(movement))}
+								{signedDelta(availableDelta(movement), locale)}
 							</span>
 							<div className="min-w-0 text-sm">
 								<p className="font-medium text-ink">

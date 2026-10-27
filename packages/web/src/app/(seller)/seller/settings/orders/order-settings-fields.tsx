@@ -7,6 +7,7 @@ import { type FieldError as RhfFieldError, useForm } from "react-hook-form";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { FormNumberInput } from "~/components/ui/number-input";
 import { Textarea } from "~/components/ui/textarea";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import { useSaveOrderSettings } from "~/hooks/use-order-settings";
@@ -38,7 +39,7 @@ export function OrderSettingsForm({
 	const tRoot = useTranslations();
 	const locale = useLocaleKey();
 	const save = useSaveOrderSettings(shopId);
-	const { formState, handleSubmit, register, reset, setError, watch } =
+	const { control, formState, handleSubmit, register, reset, setError, watch } =
 		useForm<OrderSettingsFormValues>({
 			resolver: zodResolver(orderSettingsSchema),
 			mode: "onChange",
@@ -80,9 +81,10 @@ export function OrderSettingsForm({
 						<>
 							<div className="space-y-1.5">
 								<Label htmlFor="delivery-fee">{t("deliveryFee")}</Label>
-								<Input
+								<FormNumberInput
 									id="delivery-fee"
-									inputMode="numeric"
+									control={control}
+									name="deliveryFee"
 									className="h-11"
 									placeholder={
 										view.cityDefaultFee === null
@@ -91,7 +93,6 @@ export function OrderSettingsForm({
 									}
 									aria-invalid={Boolean(errors.deliveryFee)}
 									aria-describedby="delivery-fee-hint"
-									{...register("deliveryFee")}
 								/>
 								<p id="delivery-fee-hint" className="text-ink-muted text-xs">
 									{view.cityDefaultFee === null

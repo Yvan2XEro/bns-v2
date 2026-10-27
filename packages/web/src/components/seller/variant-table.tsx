@@ -13,6 +13,7 @@ import {
 	ProductIssueText,
 } from "~/components/seller/product-issue-text";
 import { StockAdjust } from "~/components/seller/stock-adjust-drawer";
+import { FormNumberInput } from "~/components/ui/number-input";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { type ProductFormState, parseAmount } from "~/lib/product-form";
 import { marginPercent, variantLabel } from "~/lib/variants";
@@ -146,9 +147,10 @@ export function VariantTable({
 										<ProductIssueText issue={at("barcode")} />
 									</td>
 									<td className="w-32 px-2 py-2">
-										<input
-											{...register(`variants.${index}.price`)}
-											inputMode="numeric"
+										<FormNumberInput
+											plain
+											control={control}
+											name={`variants.${index}.price`}
 											aria-label={t("colPrice")}
 											aria-invalid={Boolean(at("price"))}
 											className={cellFor("price")}
@@ -157,9 +159,10 @@ export function VariantTable({
 									</td>
 									{showCost && (
 										<td className="w-32 px-2 py-2">
-											<input
-												{...register(`variants.${index}.cost`)}
-												inputMode="numeric"
+											<FormNumberInput
+												plain
+												control={control}
+												name={`variants.${index}.cost`}
 												aria-label={t("colCost")}
 												aria-invalid={Boolean(at("cost"))}
 												className={cellFor("cost")}
@@ -177,8 +180,8 @@ export function VariantTable({
 									<td className="w-32 px-2 py-2">
 										{row.id ? (
 											<div className="pt-2 text-right">
-												<p className="font-semibold text-ink">
-													{row.stockOnHand ?? 0}
+												<p className="font-semibold text-ink tabular-nums">
+													{(row.stockOnHand ?? 0).toLocaleString(locale)}
 												</p>
 												<button
 													type="button"
@@ -190,9 +193,10 @@ export function VariantTable({
 											</div>
 										) : (
 											<>
-												<input
-													{...register(`variants.${index}.initialStock`)}
-													inputMode="numeric"
+												<FormNumberInput
+													plain
+													control={control}
+													name={`variants.${index}.initialStock`}
 													disabled={!row.trackInventory}
 													placeholder="0"
 													aria-label={t("colStock")}
@@ -204,9 +208,10 @@ export function VariantTable({
 										)}
 									</td>
 									<td className="w-20 px-3 py-2">
-										<input
-											{...register(`variants.${index}.threshold`)}
-											inputMode="numeric"
+										<FormNumberInput
+											plain
+											control={control}
+											name={`variants.${index}.threshold`}
 											aria-label={t("colThreshold")}
 											aria-invalid={Boolean(at("threshold"))}
 											className={cellFor("threshold")}

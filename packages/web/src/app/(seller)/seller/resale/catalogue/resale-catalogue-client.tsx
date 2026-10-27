@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
+import { NumberInput } from "~/components/ui/number-input";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { useNavCategories } from "~/hooks/use-nav-categories";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
@@ -663,14 +664,13 @@ function ResellPanel({
 							<span className="sr-only">{t("decrease")}</span>
 						</button>
 						<span className="flex items-baseline gap-1">
-							<input
+							<NumberInput
+								plain
 								id="resell-price"
-								type="number"
-								inputMode="numeric"
-								min={active.minRetailPrice ?? 1}
-								step={1}
-								value={Number.isFinite(price) ? price : ""}
-								onChange={(event) => setPrice(event.target.valueAsNumber)}
+								value={Number.isFinite(price) ? String(price) : ""}
+								onValueChange={(digits) =>
+									setPrice(digits === "" ? Number.NaN : Number(digits))
+								}
 								aria-invalid={submitted && invalid(active.id)}
 								className="w-28 bg-transparent text-right font-extrabold text-[22px] tabular-nums outline-none"
 							/>
