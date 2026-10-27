@@ -102,24 +102,28 @@ async function getEnabledProviders(): Promise<
 }
 
 /** Overbrand's single sign-on, for system administrators (auth/sso). */
-function SsoButton({ label }: { label: string }) {
+function SsoButton({ label, icon }: { label: string; icon: string }) {
 	return (
 		<a
 			href="/api/public/auth/sso/start"
 			style={{
 				alignItems: "center",
-				background: "#0f172a",
+				background: "#ffffff",
+				border: "1px solid #dbe4f0",
 				borderRadius: 12,
-				color: "#ffffff",
+				color: "#0f172a",
 				display: "flex",
 				fontSize: 14,
 				fontWeight: 600,
+				gap: 10,
 				justifyContent: "center",
 				marginBottom: 12,
 				minHeight: 44,
 				textDecoration: "none",
 			}}
 		>
+			{/* biome-ignore lint/performance/noImgElement: a static mark in Payload's login, outside next/image's reach */}
+			<img src={icon} alt="" width={20} height={20} />
 			Sign in with {label}
 		</a>
 	);
@@ -130,7 +134,7 @@ export default async function AdminSocialLogin() {
 	const sso = ssoConfig(process.env);
 
 	if (providers.length === 0) {
-		return sso ? <SsoButton label={sso.label} /> : null;
+		return sso ? <SsoButton label={sso.label} icon={sso.icon} /> : null;
 	}
 
 	return (
@@ -144,7 +148,7 @@ export default async function AdminSocialLogin() {
 				padding: 16,
 			}}
 		>
-			{sso ? <SsoButton label={sso.label} /> : null}
+			{sso ? <SsoButton label={sso.label} icon={sso.icon} /> : null}
 			<div style={{ display: "grid", gap: 4 }}>
 				<strong style={{ color: "#0f172a", fontSize: 16 }}>
 					Continue with a provider

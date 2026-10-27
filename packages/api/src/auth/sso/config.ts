@@ -20,6 +20,8 @@ export interface SsoConfig {
 	scopes: string;
 	/** The provider's name on the panel's sign-in button. */
 	label: string;
+	/** The button's icon: a path the API serves, or a full URL. */
+	icon: string;
 }
 
 export const OIDC_DEFAULTS = {
@@ -27,6 +29,8 @@ export const OIDC_DEFAULTS = {
 	requiredRole: "bunSellemAdmin",
 	scopes: "openid profile email roles",
 	label: "Overbrand",
+	/** Overbrand's mark, from its favicon, served by the API (public/sso). */
+	icon: "/sso/overbrand.png",
 } as const;
 
 type Env = Record<string, string | undefined>;
@@ -59,5 +63,6 @@ export function ssoConfig(env: Env): SsoConfig | null {
 			value(env, "OIDC_REQUIRED_ROLE") ?? OIDC_DEFAULTS.requiredRole,
 		scopes: value(env, "OIDC_SCOPES") ?? OIDC_DEFAULTS.scopes,
 		label: value(env, "OIDC_LABEL") ?? OIDC_DEFAULTS.label,
+		icon: value(env, "OIDC_ICON") ?? OIDC_DEFAULTS.icon,
 	};
 }

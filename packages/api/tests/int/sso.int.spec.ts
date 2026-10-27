@@ -32,6 +32,7 @@ describe("ssoConfig", () => {
 			requiredRole: "bunSellemAdmin",
 			scopes: OIDC_DEFAULTS.scopes,
 			label: "Overbrand",
+			icon: "/sso/overbrand.png",
 		});
 	});
 

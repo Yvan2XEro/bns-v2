@@ -41,6 +41,7 @@ unknown email is refused. Refusals are logged (`[sso] refused` and why).
 | `OIDC_REQUIRED_ROLE` | `bunSellemAdmin` |
 | `OIDC_SCOPES` | `openid profile email roles` |
 | `OIDC_LABEL` | `Overbrand` (the button's wording) |
+| `OIDC_ICON` | `/sso/overbrand.png` (Overbrand's mark, served by the API; a full URL works too) |
 
 The callback is built on `PAYLOAD_PUBLIC_SERVER_URL`, so it matches the
 redirect URI registered at Logto.
