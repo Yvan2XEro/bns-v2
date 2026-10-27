@@ -62,7 +62,17 @@ export async function GET(request: NextRequest) {
 	try {
 		const claims = await verifiedClaims(settings, pending, code);
 		const access = ssoAccess(claims, settings.requiredRole);
-		if (!access.allowed) throw new Error(access.reason);
+		if (!access.allowed) {
+			if (access.reason === "missing_role") {
+				// Role names only: enough to see a typo or a role given elsewhere.
+				payload.logger.warn({
+					msg: "[sso] refused: missing role",
+					required: settings.requiredRole,
+					received: access.received,
+				});
+			}
+			throw new Error(access.reason);
+		}
 
 		const user = await resolveSsoUser(payload, access);
 		const { cookie } = await issuePayloadSession(payload, user);

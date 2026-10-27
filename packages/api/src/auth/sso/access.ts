@@ -9,11 +9,15 @@ export interface SsoClaims {
 	email?: unknown;
 	email_verified?: unknown;
 	roles?: unknown;
+	/** Logto's organization roles, as "organizationId:roleName". */
+	organization_roles?: unknown;
 }
 
 export type SsoAccess =
 	| { allowed: true; subject: string; email: string | null }
-	| { allowed: false; reason: "no_subject" | "missing_role" };
+	| { allowed: false; reason: "no_subject" }
+	/** `received`: the role names that did come, for the refusal's log. */
+	| { allowed: false; reason: "missing_role"; received: string[] };
 
 /** Logto sends role names; other providers may send `{ name }` objects. */
 function roleNames(roles: unknown): string[] {
@@ -32,12 +36,21 @@ function roleNames(roles: unknown): string[] {
 	});
 }
 
+/** Every role the claims grant: user roles, and organization roles by name. */
+export function grantedRoles(claims: SsoClaims): string[] {
+	const organizationRoles = roleNames(claims.organization_roles).map((role) =>
+		role.slice(role.indexOf(":") + 1),
+	);
+	return [...new Set([...roleNames(claims.roles), ...organizationRoles])];
+}
+
 export function ssoAccess(claims: SsoClaims, requiredRole: string): SsoAccess {
 	if (typeof claims.sub !== "string" || !claims.sub) {
 		return { allowed: false, reason: "no_subject" };
 	}
-	if (!roleNames(claims.roles).includes(requiredRole)) {
-		return { allowed: false, reason: "missing_role" };
+	const granted = grantedRoles(claims);
+	if (!granted.includes(requiredRole)) {
+		return { allowed: false, reason: "missing_role", received: granted };
 	}
 	// Only an address the provider vouches for may find the account to link.
 	const email =

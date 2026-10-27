@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createRemoteJWKSet, type JWTPayload, jwtVerify } from "jose";
+import { grantedRoles } from "./access";
 import type { SsoConfig } from "./config";
 
 /** Holds the login in flight between the redirect and the callback. */
@@ -132,15 +133,27 @@ export async function verifiedClaims(
 	);
 	if (claims.nonce !== pending.nonce) throw new Error("nonce_mismatch");
 
-	if (claims.roles === undefined && tokens.access_token) {
+	// Providers differ on which roles the ID token carries (Logto may leave
+	// them to userinfo): ask userinfo whenever the token lacks the role.
+	if (
+		tokens.access_token &&
+		!grantedRoles(claims).includes(config.requiredRole)
+	) {
 		const info = await fetch(config.userinfoEndpoint, {
 			headers: { Authorization: `Bearer ${tokens.access_token}` },
 		});
 		if (info.ok) {
 			const extra = (await info.json()) as Record<string, unknown>;
 			// The ID token's subject is the one verified: userinfo only adds.
-			if (extra.sub === claims.sub)
-				return { ...extra, ...claims, roles: extra.roles };
+			if (extra.sub === claims.sub) {
+				return {
+					...extra,
+					...claims,
+					roles: extra.roles ?? claims.roles,
+					organization_roles:
+						extra.organization_roles ?? claims.organization_roles,
+				};
+			}
 		}
 	}
 	return claims;

@@ -62,8 +62,15 @@ describe("ssoAccess", () => {
 		expect(ssoAccess({ sub: "u1", roles: ["viewer"] }, role)).toEqual({
 			allowed: false,
 			reason: "missing_role",
+			received: ["viewer"],
 		});
 		expect(ssoAccess({ sub: "u1" }, role)).toMatchObject({ allowed: false });
+	});
+
+	it("takes the role as a Logto organization role too", () => {
+		expect(
+			ssoAccess({ sub: "u1", organization_roles: [`org1:${role}`] }, role),
+		).toMatchObject({ allowed: true, subject: "u1" });
 	});
 
 	it("needs a subject", () => {
