@@ -2,6 +2,7 @@ import config from "@payload-config";
 import { getPayload } from "payload";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 import type { OAuthProvider } from "@/auth/oauth/types";
+import { ssoConfig } from "@/auth/sso/config";
 
 const ALL_PROVIDERS: Array<{ label: string; value: OAuthProvider }> = [
 	{ label: "Google", value: "google" },
@@ -100,10 +101,37 @@ async function getEnabledProviders(): Promise<
 	}
 }
 
+/** Overbrand's single sign-on, for system administrators (auth/sso). */
+function SsoButton({ label }: { label: string }) {
+	return (
+		<a
+			href="/api/public/auth/sso/start"
+			style={{
+				alignItems: "center",
+				background: "#0f172a",
+				borderRadius: 12,
+				color: "#ffffff",
+				display: "flex",
+				fontSize: 14,
+				fontWeight: 600,
+				justifyContent: "center",
+				marginBottom: 12,
+				minHeight: 44,
+				textDecoration: "none",
+			}}
+		>
+			Sign in with {label}
+		</a>
+	);
+}
+
 export default async function AdminSocialLogin() {
 	const providers = await getEnabledProviders();
+	const sso = ssoConfig(process.env);
 
-	if (providers.length === 0) return null;
+	if (providers.length === 0) {
+		return sso ? <SsoButton label={sso.label} /> : null;
+	}
 
 	return (
 		<div
@@ -116,6 +144,7 @@ export default async function AdminSocialLogin() {
 				padding: 16,
 			}}
 		>
+			{sso ? <SsoButton label={sso.label} /> : null}
 			<div style={{ display: "grid", gap: 4 }}>
 				<strong style={{ color: "#0f172a", fontSize: 16 }}>
 					Continue with a provider

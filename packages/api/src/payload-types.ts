@@ -349,7 +349,7 @@ export interface User {
   providerAccountId: string;
   authProviders?:
     | {
-        provider: 'local' | 'google' | 'apple' | 'facebook';
+        provider: 'local' | 'google' | 'apple' | 'facebook' | 'oidc';
         providerAccountId: string;
         refreshToken?: string | null;
         id?: string | null;

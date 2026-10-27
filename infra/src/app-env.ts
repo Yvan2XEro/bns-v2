@@ -137,6 +137,18 @@ export const APP_ENV = {
 	APPLE_NATIVE_CLIENT_ID: api(),
 	FACEBOOK_OAUTH_APP_ID: api(),
 	FACEBOOK_OAUTH_APP_SECRET: api(true),
+	// Overbrand's single sign-on to the Payload panel; every OIDC_* but the
+	// client has a default (packages/api/src/auth/sso/config.ts).
+	OIDC_CLIENT_ID: api(),
+	OIDC_CLIENT_SECRET: api(true),
+	OIDC_ISSUER: api(),
+	OIDC_AUTHORIZATION_ENDPOINT: api(),
+	OIDC_TOKEN_ENDPOINT: api(),
+	OIDC_USERINFO_ENDPOINT: api(),
+	OIDC_JWKS_URI: api(),
+	OIDC_REQUIRED_ROLE: api(),
+	OIDC_SCOPES: api(),
+	OIDC_LABEL: api(),
 
 	// ── Payments and delivery ──
 	PAYMENTS_PROVIDER: api(),

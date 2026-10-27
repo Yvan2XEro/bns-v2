@@ -382,6 +382,8 @@ export const Users: CollectionConfig = {
 						{ label: "Google", value: "google" },
 						{ label: "Apple", value: "apple" },
 						{ label: "Facebook", value: "facebook" },
+						// Overbrand's single sign-on to the panel (auth/sso).
+						{ label: "SSO (OpenID Connect)", value: "oidc" },
 					],
 					required: true,
 				},
