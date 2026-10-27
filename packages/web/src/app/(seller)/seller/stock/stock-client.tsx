@@ -1,50 +1,35 @@
 "use client";
 
-import { ClipboardList, PackagePlus } from "lucide-react";
+import { ClipboardList, PackagePlus, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { MovementsTable } from "~/components/seller/movements-table";
-import {
-	StockAdjustBody,
-	StockAdjustDrawer,
-} from "~/components/seller/stock-adjust-drawer";
+import { StockAdjust } from "~/components/seller/stock-adjust-drawer";
 import { StockSummaryCards } from "~/components/seller/stock-summary-cards";
 import { useCatalogueStockT } from "~/hooks/use-catalogue-stock-t";
 import { useMovements, useStockSummary } from "~/hooks/use-stock";
 import { useStockCountOverview } from "~/hooks/use-stock-count-session";
 import {
+	type HistoryFilters,
+	historyFiltersOf,
+	historySearch,
 	MOVEMENT_FILTERS,
 	type MovementFilter,
 	type MovementFormState,
 } from "~/lib/stock";
 import { cn } from "~/lib/utils";
 
-const TYPE_FILTERS = MOVEMENT_FILTERS;
-type TypeFilter = MovementFilter;
 const PAGE_SIZE = 30;
-/** Tailwind's `xl`: from here the adjust form sits beside the history. */
-const PANEL_QUERY = "(min-width: 1280px)";
 
-interface State {
-	filter: TypeFilter;
-	page: number;
-	drawerOpen: boolean;
-	/** Bumped to restart the side panel's form (after a save, or a new preset). */
-	panelKey: number;
-	/** Only the first form honours the `?adjust=` deep link. */
-	deepLink: string | null;
-	preset: Partial<MovementFormState> | undefined;
-}
-
-function reducer(state: State, patch: Partial<State>): State {
-	return { ...state, ...patch };
-}
-
-const panelVisible = () =>
-	typeof window !== "undefined" && window.matchMedia(PANEL_QUERY).matches;
-
+/**
+ * The shop's stock: its counters and the whole ledger, full width. Recording
+ * a movement opens the adjust sheet over the page; the history's filters live
+ * in the URL (`?type=`, `?page=`), and `?adjust=<variant>` opens the sheet on
+ * that variant.
+ */
 export function StockClient({
 	shopId,
 	canSeeCosts,
@@ -57,28 +42,23 @@ export function StockClient({
 	const t = useTranslations("Stock");
 	const ts = useCatalogueStockT("stock");
 	const locale = useLocale();
-	const panelRef = useRef<HTMLElement>(null);
-	const [state, patch] = useReducer(reducer, {
-		filter: "all",
-		page: 1,
-		drawerOpen: false,
-		panelKey: 0,
-		deepLink: adjustVariantId,
-		preset: undefined,
-	});
-
-	// A deep link opens the drawer only where there is no side panel to show it.
-	useEffect(() => {
-		if (adjustVariantId && !panelVisible()) patch({ drawerOpen: true });
-	}, [adjustVariantId]);
+	const router = useRouter();
+	const pathname = usePathname();
+	const search = useSearchParams();
+	const filters = historyFiltersOf(search, []);
+	const go = useCallback(
+		(next: HistoryFilters) =>
+			router.replace(`${pathname}${historySearch(next)}`, { scroll: false }),
+		[router, pathname],
+	);
 
 	// The summary exposes the purchase cost, so it is asked for only when the
 	// member may see it; the API refuses it to staff either way.
 	const summary = useStockSummary(shopId, canSeeCosts);
 	const overview = useStockCountOverview(shopId);
 	const movements = useMovements(shopId, {
-		type: TYPE_FILTERS[state.filter],
-		page: state.page,
+		type: MOVEMENT_FILTERS[filters.type],
+		page: filters.page,
 		limit: PAGE_SIZE,
 	});
 
@@ -88,6 +68,23 @@ export function StockClient({
 		void refetchMovements();
 		if (canSeeCosts) void refetchSummary();
 	}, [refetchMovements, refetchSummary, canSeeCosts]);
+
+	// A movement is the newest of the ledger: after one, the history goes back
+	// to its first page (the mutation already dropped the cached pages).
+	const adjust = async (defaults?: Partial<MovementFormState>) => {
+		const saved = await StockAdjust.call({ defaults });
+		if (saved) go({ ...filters, page: 1 });
+	};
+
+	// `?adjust=` opens the sheet once, then leaves the URL.
+	const deepLinked = useRef(false);
+	useEffect(() => {
+		if (!adjustVariantId || deepLinked.current) return;
+		deepLinked.current = true;
+		go(filters);
+		// After the shell's sheet root has subscribed (its effect runs too).
+		setTimeout(() => void StockAdjust.call({ variantId: adjustVariantId }), 0);
+	}, [adjustVariantId, go, filters]);
 
 	const page = movements.data;
 	const lastCount = overview.data?.lastCompletedAt;
@@ -110,15 +107,6 @@ export function StockClient({
 		.filter(Boolean)
 		.join(" · ");
 
-	const openAdjust = (preset: Partial<MovementFormState> | undefined) => {
-		if (panelVisible()) {
-			patch({ preset, deepLink: null, panelKey: state.panelKey + 1 });
-			panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-			panelRef.current?.querySelector<HTMLElement>("input")?.focus();
-		} else {
-			patch({ preset, deepLink: null, drawerOpen: true });
-		}
-	};
 	const receiptPreset: Partial<MovementFormState> = {
 		type: "receipt",
 		note: ts("receiptNote", {
@@ -128,9 +116,6 @@ export function StockClient({
 			}),
 		}),
 	};
-	// The mutation already dropped the ledger and the counters; the new
-	// movement is the newest one, so the history goes back to its first page.
-	const afterSave = () => patch({ page: 1 });
 
 	return (
 		<div className="space-y-5">
@@ -149,7 +134,15 @@ export function StockClient({
 					</Link>
 					<button
 						type="button"
-						onClick={() => openAdjust(receiptPreset)}
+						onClick={() => void adjust()}
+						className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))]"
+					>
+						<SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+						{t("adjustTitle")}
+					</button>
+					<button
+						type="button"
+						onClick={() => void adjust(receiptPreset)}
 						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 					>
 						<PackagePlus aria-hidden="true" className="h-4 w-4" />
@@ -160,22 +153,22 @@ export function StockClient({
 
 			{summary.data && <StockSummaryCards summary={summary.data} />}
 
-			<div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-				<section className="min-w-0 space-y-4 rounded-xl border border-line bg-surface p-4">
-					<div className="flex flex-wrap items-center justify-between gap-3">
-						<h2 className="font-bold text-base text-ink">
-							{t("movementsTitle")}
-						</h2>
-						<div className="flex flex-wrap gap-2">
-							{(Object.keys(TYPE_FILTERS) as TypeFilter[]).map((value) => (
+			<section className="min-w-0 space-y-4 rounded-xl border border-line bg-surface p-4">
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<h2 className="font-bold text-base text-ink">
+						{t("movementsTitle")}
+					</h2>
+					<div className="flex flex-wrap gap-2">
+						{(Object.keys(MOVEMENT_FILTERS) as MovementFilter[]).map(
+							(value) => (
 								<button
 									key={value}
 									type="button"
-									aria-pressed={state.filter === value}
-									onClick={() => patch({ filter: value, page: 1 })}
+									aria-pressed={filters.type === value}
+									onClick={() => go({ ...filters, type: value, page: 1 })}
 									className={cn(
 										"inline-flex h-8 items-center rounded-full border px-3 font-medium text-sm",
-										state.filter === value
+										filters.type === value
 											? "border-ink bg-night font-semibold text-white"
 											: "border-line bg-surface text-ink-soft hover:border-[var(--shop-accent-border,var(--c-brand-line))]",
 									)}
@@ -184,95 +177,47 @@ export function StockClient({
 										? ts("reservationsFilter")
 										: t(`filter.${value}`)}
 								</button>
-							))}
-							<button
-								type="button"
-								onClick={() => openAdjust(undefined)}
-								className="inline-flex h-8 items-center rounded-full border border-line bg-surface px-3 font-medium text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))] xl:hidden"
-							>
-								{t("adjustTitle")}
-							</button>
-						</div>
+							),
+						)}
 					</div>
+				</div>
 
-					{movements.isPending && <LoadingRows />}
-					{movements.isError && (
-						<LoadError title={t("errorTitle")} onRetry={retry} />
-					)}
-					{page && !movements.isError && (
-						<div aria-busy={movements.isFetching} className="space-y-4">
-							{page.docs.length === 0 ? (
-								<p className="p-8 text-center text-ink-muted text-sm">
-									{t("noMovements")}
-								</p>
-							) : (
-								<>
-									<MovementsTable rows={page.docs} />
-									<div className="flex justify-end gap-2 text-sm">
-										<button
-											type="button"
-											disabled={page.page <= 1}
-											onClick={() => patch({ page: state.page - 1 })}
-											className="h-9 rounded-lg border border-line bg-surface px-3 disabled:opacity-40"
-										>
-											{t("previous")}
-										</button>
-										<button
-											type="button"
-											disabled={!page.hasNextPage}
-											onClick={() => patch({ page: state.page + 1 })}
-											className="h-9 rounded-lg border border-line bg-surface px-3 disabled:opacity-40"
-										>
-											{t("next")}
-										</button>
-									</div>
-								</>
-							)}
-						</div>
-					)}
-				</section>
-
-				<section
-					ref={panelRef}
-					aria-labelledby="stock-adjust-panel"
-					className="hidden scroll-mt-4 space-y-4 rounded-xl border border-line bg-surface p-4 xl:sticky xl:top-4 xl:block"
-				>
-					<div className="space-y-1">
-						<h2
-							id="stock-adjust-panel"
-							className="font-bold text-base text-ink"
-						>
-							{t("adjustTitle")}
-						</h2>
-						<p className="text-ink-muted text-sm">{t("adjustSubtitle")}</p>
+				{movements.isPending && <LoadingRows />}
+				{movements.isError && (
+					<LoadError title={t("errorTitle")} onRetry={retry} />
+				)}
+				{page && !movements.isError && (
+					<div aria-busy={movements.isFetching} className="space-y-4">
+						{page.docs.length === 0 ? (
+							<p className="p-8 text-center text-ink-muted text-sm">
+								{t("noMovements")}
+							</p>
+						) : (
+							<>
+								<MovementsTable rows={page.docs} />
+								<div className="flex justify-end gap-2 text-sm">
+									<button
+										type="button"
+										disabled={page.page <= 1}
+										onClick={() => go({ ...filters, page: filters.page - 1 })}
+										className="h-9 rounded-lg border border-line bg-surface px-3 disabled:opacity-40"
+									>
+										{t("previous")}
+									</button>
+									<button
+										type="button"
+										disabled={!page.hasNextPage}
+										onClick={() => go({ ...filters, page: filters.page + 1 })}
+										className="h-9 rounded-lg border border-line bg-surface px-3 disabled:opacity-40"
+									>
+										{t("next")}
+									</button>
+								</div>
+							</>
+						)}
 					</div>
-					<StockAdjustBody
-						key={state.panelKey}
-						shopId={shopId}
-						initialVariantId={state.deepLink}
-						defaults={state.preset}
-						onSaved={afterSave}
-						onOpenChange={() =>
-							patch({
-								deepLink: null,
-								preset: undefined,
-								panelKey: state.panelKey + 1,
-							})
-						}
-					/>
-				</section>
-			</div>
-
-			<StockAdjustDrawer
-				shopId={shopId}
-				open={state.drawerOpen}
-				initialVariantId={state.deepLink}
-				defaults={state.preset}
-				onOpenChange={(drawerOpen) =>
-					patch(drawerOpen ? { drawerOpen } : { drawerOpen, deepLink: null })
-				}
-				onSaved={afterSave}
-			/>
+				)}
+			</section>
 		</div>
 	);
 }

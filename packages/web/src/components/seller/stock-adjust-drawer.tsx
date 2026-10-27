@@ -16,53 +16,15 @@ import type { VariantDoc } from "~/types";
 import { StockAdjustForm } from "./stock-adjust-form";
 import { type PickedVariant, toPicked, VariantPicker } from "./variant-picker";
 
-/** The adjust form as a sheet on the right edge of the screen. */
+/** The adjust form as a sheet on the right edge of the screen; full width on a phone. */
 const SHEET =
 	"top-0 right-0 left-auto h-full max-w-md translate-x-0 translate-y-0 space-y-5 overflow-y-auto rounded-none sm:rounded-none";
 
-export function StockAdjustDrawer({
-	shopId,
-	open,
-	onOpenChange,
-	initialVariantId,
-	onSaved,
-	defaults,
-}: {
-	shopId: string;
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	initialVariantId?: string | null;
-	onSaved: (variant: VariantDoc) => void;
-	defaults?: Partial<MovementFormState>;
-}) {
-	const t = useTranslations("Stock");
-
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className={SHEET}>
-				<div className="space-y-1">
-					<DialogTitle>{t("adjustTitle")}</DialogTitle>
-					<DialogDescription>{t("adjustSubtitle")}</DialogDescription>
-				</div>
-				{/* Radix unmounts the content when the drawer closes, so the body
-				    starts from a clean form on every opening. */}
-				<StockAdjustBody
-					shopId={shopId}
-					initialVariantId={initialVariantId ?? null}
-					onOpenChange={onOpenChange}
-					onSaved={onSaved}
-					defaults={defaults}
-				/>
-			</DialogContent>
-		</Dialog>
-	);
-}
-
 /**
- * Pick a variant, then record one movement for it. Shared by the drawer and
- * the stock page's fixed side panel; `onOpenChange(false)` means "done".
+ * Pick a variant (unless one is given), then record one movement for it;
+ * `onOpenChange(false)` means "done".
  */
-export function StockAdjustBody({
+function StockAdjustBody({
 	shopId,
 	initialVariantId,
 	onOpenChange,
@@ -115,17 +77,19 @@ export function StockAdjustBody({
 }
 
 /**
- * The same sheet, opened in place from wherever a variant's stock shows:
+ * The adjust sheet, opened in place from wherever stock shows:
  * `await StockAdjust.call({ variantId })` resolves with the variant as the
- * ledger left it, or null when the sheet is closed without saving. The page
- * stays where it is (an unsaved product form keeps its edits). Mounted once,
- * with the shop, by the seller shell.
+ * ledger left it, or null when the sheet is closed without saving. Without a
+ * variant it starts on the product search; `defaults` presets the form (the
+ * stock page's "record a receipt"). The page stays where it is (an unsaved
+ * product form keeps its edits). Mounted once, with the shop, by the seller
+ * shell.
  */
 export const StockAdjust = createCallable<
-	{ variantId: string },
+	{ variantId?: string; defaults?: Partial<MovementFormState> },
 	VariantDoc | null,
 	{ shopId: string }
->(({ call, variantId }) => {
+>(({ call, variantId, defaults }) => {
 	const t = useTranslations("Stock");
 	const close = () => call.end(null);
 
@@ -143,7 +107,8 @@ export const StockAdjust = createCallable<
 				</div>
 				<StockAdjustBody
 					shopId={call.root.shopId}
-					initialVariantId={variantId}
+					initialVariantId={variantId ?? null}
+					defaults={defaults}
 					onOpenChange={(open) => {
 						if (!open) close();
 					}}
