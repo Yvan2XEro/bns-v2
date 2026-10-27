@@ -4,6 +4,7 @@ import { Info, Package, Printer } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { Confirm } from "~/components/callable/confirm";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import { useShopPurchaseOrders } from "~/hooks/use-purchase-orders";
@@ -279,8 +280,13 @@ function RequestsCard({ shopId }: { shopId: string }) {
 						<button
 							type="button"
 							disabled={decide.isPending}
-							onClick={() => {
-								if (window.confirm(t("confirmDecline")))
+							onClick={async () => {
+								const confirmed = await Confirm.call({
+									title: t("confirmDecline"),
+									confirmLabel: t("decline"),
+									tone: "danger",
+								});
+								if (confirmed)
 									decide.mutate({ linkId: link.id, action: "decline" });
 							}}
 							className="h-[34px] rounded-lg border border-line bg-surface px-3 font-semibold text-[13px] text-ink disabled:opacity-50"

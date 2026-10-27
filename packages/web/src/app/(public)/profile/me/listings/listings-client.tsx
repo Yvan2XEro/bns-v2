@@ -18,6 +18,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
+import { Confirm } from "~/components/callable/confirm";
+import { Notice } from "~/components/callable/notice";
 import { BoostDialog } from "~/components/listing/boost-dialog";
 import {
 	DropdownMenu,
@@ -41,6 +43,7 @@ function getListingImageUrl(listing: Listing): string | null {
 export function MyListingsClient({ listings }: { listings: Listing[] }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Listing");
+	const tCommon = useTranslations("Common");
 	// "Let", "Position filled": a flat or a job is not "sold".
 	const tKind = useTranslations("ListingKind");
 	// The reason in the seller's language, whoever moderated the listing.
@@ -51,36 +54,54 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 	const [isPending, startTransition] = useTransition();
 
 	async function handleMarkAsSold(id: string) {
-		if (!confirm(t("confirmMarkSold"))) return;
+		if (
+			!(await Confirm.call({
+				title: t("confirmMarkSold"),
+				confirmLabel: t("markAsSold"),
+			}))
+		)
+			return;
 
 		startTransition(async () => {
 			const result = await markListingAsSold(id);
 			if (!result.success) {
-				alert(result.error);
+				void Notice.call({ title: tCommon("error"), message: result.error });
 			}
 			router.refresh();
 		});
 	}
 
 	async function handleRenew(id: string) {
-		if (!confirm(t("confirmRenew"))) return;
+		if (
+			!(await Confirm.call({
+				title: t("confirmRenew"),
+			}))
+		)
+			return;
 
 		startTransition(async () => {
 			const result = await renewListing(id);
 			if (!result.success) {
-				alert(result.error);
+				void Notice.call({ title: tCommon("error"), message: result.error });
 			}
 			router.refresh();
 		});
 	}
 
 	async function handleDelete(id: string) {
-		if (!confirm(t("confirmDelete"))) return;
+		if (
+			!(await Confirm.call({
+				title: t("confirmDelete"),
+				confirmLabel: tCommon("delete"),
+				tone: "danger",
+			}))
+		)
+			return;
 
 		startTransition(async () => {
 			const result = await deleteListing(id);
 			if (!result.success) {
-				alert(result.error);
+				void Notice.call({ title: tCommon("error"), message: result.error });
 			}
 			router.refresh();
 		});

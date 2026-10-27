@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent } from "react";
 import type {
@@ -13,6 +12,7 @@ import {
 	type IssueAt,
 	ProductIssueText,
 } from "~/components/seller/product-issue-text";
+import { StockAdjust } from "~/components/seller/stock-adjust-drawer";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { type ProductFormState, parseAmount } from "~/lib/product-form";
 import { marginPercent, variantLabel } from "~/lib/variants";
@@ -53,6 +53,13 @@ export function VariantTable({
 			});
 			setValue(`variants.${index}.cost`, first.cost, { shouldDirty: true });
 		});
+	};
+
+	// The adjustment is its own ledger write, saved at once; the form only
+	// shows the new stock, so it is not marked as an edit to save.
+	const adjust = async (index: number, variantId: string) => {
+		const saved = await StockAdjust.call({ variantId });
+		if (saved) setValue(`variants.${index}.stockOnHand`, saved.stockOnHand);
 	};
 
 	const quantityOf = (row: ProductFormState["variants"][number]) =>
@@ -173,12 +180,13 @@ export function VariantTable({
 												<p className="font-semibold text-ink">
 													{row.stockOnHand ?? 0}
 												</p>
-												<Link
-													href={`/seller/stock?adjust=${row.id}`}
+												<button
+													type="button"
+													onClick={() => row.id && void adjust(index, row.id)}
 													className="text-[var(--shop-accent-text,var(--c-brand))] text-xs hover:underline"
 												>
 													{t("adjust")}
-												</Link>
+												</button>
 											</div>
 										) : (
 											<>

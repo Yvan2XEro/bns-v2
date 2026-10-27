@@ -3,6 +3,7 @@
 import { Upload, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
+import { Notice } from "~/components/callable/notice";
 import { Button } from "~/components/ui/button";
 import { ImageCropper } from "~/components/ui/image-cropper";
 import { Label } from "~/components/ui/label";
@@ -42,7 +43,7 @@ export function ImagePicker({
 	function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
 		const files = Array.from(e.target.files || []);
 		if (previews.length + files.length > max) {
-			alert(t("maximumImagesAllowed", { max: limit }));
+			void Notice.call({ title: t("maximumImagesAllowed", { max: limit }) });
 			if (fileInputRef.current) fileInputRef.current.value = "";
 			return;
 		}

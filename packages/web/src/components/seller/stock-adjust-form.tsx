@@ -20,6 +20,7 @@ import {
 	NOTE_MAX,
 } from "~/lib/stock";
 import { cn } from "~/lib/utils";
+import type { VariantDoc } from "~/types";
 import { MovementTypePicker } from "./movement-type-picker";
 import type { PickedVariant } from "./variant-picker";
 
@@ -37,7 +38,8 @@ export function StockAdjustForm({
 	defaults?: Partial<MovementFormState>;
 	/** Absent when the drawer was opened on one variant from the editor. */
 	onChangeVariant: (() => void) | null;
-	onSaved: () => void;
+	/** With the variant as the ledger left it. */
+	onSaved: (variant: VariantDoc) => void;
 	onCancel: () => void;
 }) {
 	const currencyCode = useCurrencyCode();
@@ -71,7 +73,7 @@ export function StockAdjustForm({
 		);
 		const cost = parseAmount(values.unitCost);
 		try {
-			await recordMovement.mutateAsync({
+			const { variant: saved } = await recordMovement.mutateAsync({
 				variantId: variant.id,
 				input: {
 					type: values.type,
@@ -82,7 +84,7 @@ export function StockAdjustForm({
 					...(values.note.trim() ? { note: values.note.trim() } : {}),
 				},
 			});
-			onSaved();
+			onSaved(saved);
 		} catch (error) {
 			// The ledger refused the write — a race, or units already reserved.
 			// Its answer is the truth, so it is shown instead of being retried.

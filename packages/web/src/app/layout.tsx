@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { NotificationLanguageSync } from "~/components/notification-language-sync";
 import "./globals.css";
+import { CallableRoots } from "~/components/callable/callable-roots";
 import { Monitoring } from "~/components/monitoring";
 import { QueryProvider } from "~/components/query-provider";
 import { AppConfigProvider } from "~/hooks/use-app-config";
@@ -124,6 +125,7 @@ export default async function RootLayout({
 								<ChatProvider>{children}</ChatProvider>
 								<Monitoring />
 								<NotificationLanguageSync />
+								<CallableRoots />
 							</AuthProvider>
 						</AppConfigProvider>
 					</QueryProvider>

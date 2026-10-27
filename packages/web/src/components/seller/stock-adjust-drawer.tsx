@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { createCallable } from "react-call";
+import { CLOSE_ANIMATION_MS } from "~/components/callable/callable";
 import {
 	Dialog,
 	DialogContent,
@@ -10,8 +12,13 @@ import {
 } from "~/components/ui/dialog";
 import { useVariant } from "~/hooks/use-variants";
 import type { MovementFormState } from "~/lib/stock";
+import type { VariantDoc } from "~/types";
 import { StockAdjustForm } from "./stock-adjust-form";
 import { type PickedVariant, toPicked, VariantPicker } from "./variant-picker";
+
+/** The adjust form as a sheet on the right edge of the screen. */
+const SHEET =
+	"top-0 right-0 left-auto h-full max-w-md translate-x-0 translate-y-0 space-y-5 overflow-y-auto rounded-none sm:rounded-none";
 
 export function StockAdjustDrawer({
 	shopId,
@@ -25,14 +32,14 @@ export function StockAdjustDrawer({
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	initialVariantId?: string | null;
-	onSaved: () => void;
+	onSaved: (variant: VariantDoc) => void;
 	defaults?: Partial<MovementFormState>;
 }) {
 	const t = useTranslations("Stock");
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="top-0 right-0 left-auto h-full max-w-md translate-x-0 translate-y-0 space-y-5 overflow-y-auto rounded-none sm:rounded-none">
+			<DialogContent className={SHEET}>
 				<div className="space-y-1">
 					<DialogTitle>{t("adjustTitle")}</DialogTitle>
 					<DialogDescription>{t("adjustSubtitle")}</DialogDescription>
@@ -65,7 +72,7 @@ export function StockAdjustBody({
 	shopId: string;
 	initialVariantId: string | null;
 	onOpenChange: (open: boolean) => void;
-	onSaved: () => void;
+	onSaved: (variant: VariantDoc) => void;
 	defaults?: Partial<MovementFormState>;
 }) {
 	const t = useTranslations("Stock");
@@ -98,11 +105,51 @@ export function StockAdjustBody({
 			variant={variant}
 			defaults={defaults}
 			onChangeVariant={initialVariantId ? null : () => setPicked(null)}
-			onSaved={() => {
-				onSaved();
+			onSaved={(saved) => {
+				onSaved(saved);
 				onOpenChange(false);
 			}}
 			onCancel={() => onOpenChange(false)}
 		/>
 	);
 }
+
+/**
+ * The same sheet, opened in place from wherever a variant's stock shows:
+ * `await StockAdjust.call({ variantId })` resolves with the variant as the
+ * ledger left it, or null when the sheet is closed without saving. The page
+ * stays where it is (an unsaved product form keeps its edits). Mounted once,
+ * with the shop, by the seller shell.
+ */
+export const StockAdjust = createCallable<
+	{ variantId: string },
+	VariantDoc | null,
+	{ shopId: string }
+>(({ call, variantId }) => {
+	const t = useTranslations("Stock");
+	const close = () => call.end(null);
+
+	return (
+		<Dialog
+			open={!call.ended}
+			onOpenChange={(open) => {
+				if (!open) close();
+			}}
+		>
+			<DialogContent className={SHEET}>
+				<div className="space-y-1">
+					<DialogTitle>{t("adjustTitle")}</DialogTitle>
+					<DialogDescription>{t("adjustSubtitle")}</DialogDescription>
+				</div>
+				<StockAdjustBody
+					shopId={call.root.shopId}
+					initialVariantId={variantId}
+					onOpenChange={(open) => {
+						if (!open) close();
+					}}
+					onSaved={(saved) => call.end(saved)}
+				/>
+			</DialogContent>
+		</Dialog>
+	);
+}, CLOSE_ANIMATION_MS);

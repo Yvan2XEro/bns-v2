@@ -215,6 +215,7 @@
         "posthog-js": "1.435.8",
         "qrcode-generator": "2.0.4",
         "react": "19.2.3",
+        "react-call": "2.0.2",
         "react-dom": "19.2.3",
         "react-easy-crop": "^5.5.6",
         "react-hook-form": "^7.88.0",
@@ -3100,6 +3101,8 @@
     "range-parser": ["range-parser@1.2.1", "", {}, "sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg=="],
 
     "react": ["react@19.2.3", "", {}, "sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA=="],
+
+    "react-call": ["react-call@2.0.2", "", { "peerDependencies": { "react": ">=18", "react-dom": ">=18", "vite": ">=8" }, "optionalPeers": ["react-dom", "vite"] }, "sha512-egXLdccpWeRq+6XmR+jm/4Lg0w5zLAe/2jMzYdWtQkfe5qgfUJReZWdLWyPIfzZt215FBF6wFOZPaqne6MhNNw=="],
 
     "react-datepicker": ["react-datepicker@7.6.0", "", { "dependencies": { "@floating-ui/react": "^0.27.0", "clsx": "^2.1.1", "date-fns": "^3.6.0" }, "peerDependencies": { "react": "^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react-dom": "^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc" } }, "sha512-9cQH6Z/qa4LrGhzdc3XoHbhrxNcMi9MKjZmYgF/1MNNaJwvdSjv3Xd+jjvrEEbKEf71ZgCA3n7fQbdwd70qCRw=="],
 

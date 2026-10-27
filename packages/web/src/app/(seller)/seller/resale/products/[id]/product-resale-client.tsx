@@ -4,6 +4,7 @@ import { Check, Info, Lock, PauseCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { Confirm } from "~/components/callable/confirm";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import {
@@ -211,8 +212,13 @@ function Editor({
 						<button
 							type="button"
 							disabled={save.isPending || blocked}
-							onClick={() => {
-								if (!window.confirm(t("confirmSuspend"))) return;
+							onClick={async () => {
+								const confirmed = await Confirm.call({
+									title: t("confirmSuspend"),
+									confirmLabel: t("suspend"),
+									tone: "danger",
+								});
+								if (!confirmed) return;
 								const next = { ...draft, enabled: false };
 								setDraft(next);
 								submit(next);

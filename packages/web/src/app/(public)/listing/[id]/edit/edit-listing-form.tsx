@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { Notice } from "~/components/callable/notice";
 import { CategoryDropdown } from "~/components/category-picker";
 import { FieldIssueSummary } from "~/components/listing/field-issue-summary";
 import { ImagePicker } from "~/components/listing/image-picker";
@@ -399,7 +400,10 @@ export function EditListingForm({
 			router.push(`/listing/${listing.id}`);
 			router.refresh();
 		} catch {
-			alert(t("failedToUpdate"));
+			void Notice.call({
+				title: tCommon("error"),
+				message: t("failedToUpdate"),
+			});
 		} finally {
 			setIsSaving(false);
 		}

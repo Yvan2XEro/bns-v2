@@ -8,6 +8,7 @@ import { isBrandColor, shopTheme } from "~/lib/shop-theme";
 import type { MyShopResponse } from "~/types";
 import { SellerSidebar } from "./seller-sidebar";
 import { SellerTheme } from "./seller-theme";
+import { StockAdjust } from "./stock-adjust-drawer";
 import { SuspensionBanner } from "./suspension-banner";
 
 export async function SellerShell({
@@ -30,6 +31,7 @@ export async function SellerShell({
 		<SellerTheme theme={theme}>
 			<div className="min-h-screen bg-canvas lg:flex">
 				<Toaster richColors position="top-center" />
+				<StockAdjust shopId={shop.id} />
 				<SellerSidebar
 					shopId={shop.id}
 					name={shop.name}

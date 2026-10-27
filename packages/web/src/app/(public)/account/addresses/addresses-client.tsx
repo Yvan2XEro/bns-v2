@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AddressStep } from "~/app/(checkout)/checkout/address-step";
 import { AddressMapPreview } from "~/components/address/address-map-preview";
 import { SavedAddressCard } from "~/components/address/saved-address-card";
+import { Confirm } from "~/components/callable/confirm";
 import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { Button } from "~/components/ui/button";
@@ -179,9 +180,13 @@ export function AddressesClient() {
 												size="sm"
 												className="min-h-11 text-bad-ink-soft"
 												disabled={remove.isPending}
-												onClick={() => {
-													if (window.confirm(t("deleteConfirm")))
-														remove.mutate(address.id);
+												onClick={async () => {
+													const confirmed = await Confirm.call({
+														title: t("deleteConfirm"),
+														confirmLabel: t("delete"),
+														tone: "danger",
+													});
+													if (confirmed) remove.mutate(address.id);
 												}}
 											>
 												{t("delete")}

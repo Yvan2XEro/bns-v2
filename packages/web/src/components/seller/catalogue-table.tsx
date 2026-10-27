@@ -4,6 +4,7 @@ import { ExternalLink, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CatalogueStockCell } from "~/components/seller/catalogue-stock-cell";
+import { StockAdjust } from "~/components/seller/stock-adjust-drawer";
 import { StatusChip } from "~/components/shop/status-chip";
 import {
 	DropdownMenu,
@@ -98,10 +99,16 @@ function RowMenu({
 					</DropdownMenuItem>
 				)}
 				{!isResale(row) && row.singleVariantId && (
-					<DropdownMenuItem asChild>
-						<Link href={`/seller/stock?adjust=${row.singleVariantId}`}>
-							{tc("adjustStock")}
-						</Link>
+					<DropdownMenuItem
+						onSelect={() => {
+							const variantId = row.singleVariantId;
+							// Once the menu has closed: a Radix dialog opened while a
+							// menu is still open keeps the page unclickable after it.
+							if (variantId)
+								setTimeout(() => void StockAdjust.call({ variantId }), 0);
+						}}
+					>
+						{tc("adjustStock")}
 					</DropdownMenuItem>
 				)}
 				{published && (

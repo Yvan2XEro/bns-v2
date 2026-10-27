@@ -4,6 +4,7 @@ import { LoaderCircle, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { SavedAddressCard } from "~/components/address/saved-address-card";
+import { Confirm } from "~/components/callable/confirm";
 import { Button } from "~/components/ui/button";
 import {
 	useDeleteAddress,
@@ -213,9 +214,13 @@ export function CheckoutAddressPanel({
 									size="sm"
 									className="min-h-11 text-bad-ink-soft"
 									disabled={remove.isPending}
-									onClick={() => {
-										if (window.confirm(t("deleteConfirm")))
-											remove.mutate(address.id);
+									onClick={async () => {
+										const confirmed = await Confirm.call({
+											title: t("deleteConfirm"),
+											confirmLabel: t("delete"),
+											tone: "danger",
+										});
+										if (confirmed) remove.mutate(address.id);
 									}}
 								>
 									{t("delete")}

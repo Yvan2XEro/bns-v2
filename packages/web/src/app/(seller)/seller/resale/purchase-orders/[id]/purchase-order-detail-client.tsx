@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useReducer } from "react";
+import { Confirm } from "~/components/callable/confirm";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
 import { useAppConfig } from "~/hooks/use-app-config";
@@ -743,8 +744,14 @@ export function PurchaseOrderDetailClient({
 										(state.cancelReason === "seller_other" &&
 											!state.cancelNote.trim())
 									}
-									onClick={() => {
-										if (!window.confirm(t("confirmCancelBody"))) return;
+									onClick={async () => {
+										const confirmed = await Confirm.call({
+											title: t("cancelAction"),
+											message: t("confirmCancelBody"),
+											confirmLabel: t("cancelAction"),
+											tone: "danger",
+										});
+										if (!confirmed) return;
 										action.mutate({
 											purchaseOrderId,
 											action: "cancel",

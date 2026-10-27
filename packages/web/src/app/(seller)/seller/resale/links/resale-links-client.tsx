@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useReducer } from "react";
+import { Confirm } from "~/components/callable/confirm";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import {
 	useCancelResaleLinkRequest,
@@ -49,13 +50,18 @@ export function ResaleLinksClient({
 	const errorMessage = error
 		? resolveErrorMessage(error, tRoot, t("actionFailed"))
 		: null;
-	const run = (
+	const run = async (
 		link: ResaleLinkListItem,
 		action: "approve" | "decline" | "suspend" | "reinstate" | "revoke",
 	) => {
 		if (
 			(action === "revoke" || action === "decline") &&
-			!window.confirm(t("confirmDecision"))
+			!(await Confirm.call({
+				title: t("confirmDecision"),
+				message: action === "revoke" ? t("revokedHelp") : undefined,
+				confirmLabel: t(action),
+				tone: "danger",
+			}))
 		)
 			return;
 		decide.mutate({
@@ -151,10 +157,14 @@ export function ResaleLinksClient({
 						side={side}
 						t={t}
 						pending={decide.isPending || cancelRequest.isPending}
-						onAction={(action) => run(link, action)}
-						onCancelRequest={() => {
-							if (window.confirm(t("confirmCancelRequest")))
-								cancelRequest.mutate({ linkId: link.id });
+						onAction={(action) => void run(link, action)}
+						onCancelRequest={async () => {
+							const confirmed = await Confirm.call({
+								title: t("confirmCancelRequest"),
+								confirmLabel: t("cancelRequest"),
+								tone: "danger",
+							});
+							if (confirmed) cancelRequest.mutate({ linkId: link.id });
 						}}
 						reason={state.reason}
 						note={state.note}

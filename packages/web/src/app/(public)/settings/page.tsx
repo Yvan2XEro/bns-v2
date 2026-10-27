@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { Confirm } from "~/components/callable/confirm";
+import { Notice } from "~/components/callable/notice";
 import { PhoneVerificationForm } from "~/components/shop/phone-verification/phone-verification-form";
 import { Button } from "~/components/ui/button";
 import {
@@ -113,17 +115,15 @@ export default function SettingsPage() {
 	}
 
 	async function handleDeleteAccount() {
-		const confirmed = window.confirm(
-			"Are you sure you want to delete your account? This action cannot be undone.",
-		);
-
+		// One dialog that asks for a typed word, instead of two confirms in a row.
+		const confirmed = await Confirm.call({
+			title: t("deleteAccountConfirmTitle"),
+			message: t("deleteAccountConfirmBody"),
+			confirmLabel: t("deleteAccount"),
+			tone: "danger",
+			typeToConfirm: t("deleteAccountWord"),
+		});
 		if (!confirmed) return;
-
-		const doubleConfirm = window.confirm(
-			"This will permanently delete your account and all your data. Continue?",
-		);
-
-		if (!doubleConfirm) return;
 
 		try {
 			const res = await fetch(`/api/users/${currentUser.id}`, {
@@ -138,7 +138,10 @@ export default function SettingsPage() {
 			await logout();
 			router.push("/");
 		} catch (err) {
-			alert(err instanceof Error ? err.message : t("failedToDeleteAccount"));
+			void Notice.call({
+				title: t("failedToDeleteAccount"),
+				message: err instanceof Error ? err.message : undefined,
+			});
 		}
 	}
 
