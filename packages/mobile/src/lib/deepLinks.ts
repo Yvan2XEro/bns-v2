@@ -122,3 +122,27 @@ export function notificationUrl(data: Record<string, unknown>): string | null {
 	if (listingId) return `/listing/${listingId}`;
 	return null;
 }
+
+/** The part of a notification tap the app reads (expo-notifications' response). */
+export interface PushTap {
+	actionIdentifier: string;
+	notification: {
+		request: { identifier: string; content: { data?: unknown } };
+	};
+}
+
+/**
+ * Where a tap on a push notification leads, with the notification's id so a
+ * tap is followed once: a tap on the notification itself (not on one of its
+ * action buttons) whose data names a destination.
+ */
+export function pushTapTarget(
+	tap: PushTap | null | undefined,
+	defaultAction: string,
+): { id: string; url: string } | null {
+	if (!tap || tap.actionIdentifier !== defaultAction) return null;
+	const data = tap.notification.request.content.data;
+	if (!data || typeof data !== "object") return null;
+	const url = notificationUrl(data as Record<string, unknown>);
+	return url ? { id: tap.notification.request.identifier, url } : null;
+}

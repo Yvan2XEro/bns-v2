@@ -8,6 +8,7 @@ import {
 	GROUP_DEEP_LINKS,
 	notificationUrl,
 	PAYMENT_DEEP_LINKS,
+	pushTapTarget,
 	toAppPath,
 } from "./deepLinks";
 
@@ -109,5 +110,32 @@ describe("notificationUrl", () => {
 	test("ignores an empty url and says nothing for an empty payload", () => {
 		expect(notificationUrl({ url: "", listingId: "l-1" })).toBe("/listing/l-1");
 		expect(notificationUrl({})).toBeNull();
+	});
+});
+
+describe("a tap on a push notification", () => {
+	const DEFAULT = "expo.modules.notifications.actions.DEFAULT";
+	const tap = (data: unknown, actionIdentifier = DEFAULT) => ({
+		actionIdentifier,
+		notification: { request: { identifier: "n-1", content: { data } } },
+	});
+
+	test("leads where its data says, once per notification", () => {
+		expect(
+			pushTapTarget(
+				tap({ url: "/messages/c-1", conversationId: "c-1" }),
+				DEFAULT,
+			),
+		).toEqual({ id: "n-1", url: "/messages/c-1" });
+		expect(pushTapTarget(tap({ conversationId: "c-2" }), DEFAULT)?.url).toBe(
+			"/messages/c-2",
+		);
+	});
+
+	test("goes nowhere without a destination, a tap, or on an action button", () => {
+		expect(pushTapTarget(tap({}), DEFAULT)).toBeNull();
+		expect(pushTapTarget(tap(null), DEFAULT)).toBeNull();
+		expect(pushTapTarget(null, DEFAULT)).toBeNull();
+		expect(pushTapTarget(tap({ url: "/x" }, "reply"), DEFAULT)).toBeNull();
 	});
 });

@@ -17,7 +17,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
-import { Redirect, router, Stack, usePathname } from "expo-router";
+import {
+	Redirect,
+	router,
+	Stack,
+	usePathname,
+	useRootNavigationState,
+} from "expo-router";
 import {
 	DarkTheme,
 	DefaultTheme,
@@ -71,7 +77,7 @@ import { api } from "@/src/lib/api";
 import "@/src/lib/appFocus";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
 import { setContentLocale } from "@/src/lib/contentLocale";
-import { notificationUrl, toAppPath } from "@/src/lib/deepLinks";
+import { pushTapTarget, toAppPath } from "@/src/lib/deepLinks";
 import { reportError } from "@/src/lib/monitoring";
 import { syncPushToken } from "@/src/lib/notifications";
 
@@ -233,7 +239,6 @@ export default function RootLayout() {
 										<ChatProvider>
 											<AlertProvider>
 												<PushTokenRegistrar />
-												<PushNotificationHandler />
 												<RootLayoutNav />
 												<OfflineBanner />
 												<MonitoringBridge />
@@ -327,12 +332,14 @@ function PushTokenRegistrar() {
 	return null;
 }
 
-// ─── PushNotificationHandler ─────────────────────────────────────────────────
-// Handles deep-link navigation when the user taps a push notification.
-// Works for two scenarios:
-//   - Cold start: app was killed, notification tap launches it
-//   - Background: app was backgrounded, user taps notification
-// Navigation is deferred until auth is resolved and the user is logged in.
+// ─── PushTapNavigator ────────────────────────────────────────────────────────
+// Follows a tap on a push notification to the screen it names, whether the
+// tap launched the app (cold start) or brought it back from the background.
+// Rendered next to the Stack, so it only runs once the router exists — past
+// the loading screen and the onboarding — and it waits for the root
+// navigator to be ready: a push before that is dropped, and the app stays on
+// its first screen (home). The destination opens on top of home, so "back"
+// lands there. Signed-out, the tap waits for the sign-in.
 
 function navigateFromNotificationUrl(url: string) {
 	const path = toAppPath(url);
@@ -344,41 +351,25 @@ function navigateFromNotificationUrl(url: string) {
 	void Linking.openURL(url);
 }
 
-function PushNotificationHandler() {
-	const { isLoading, user } = useAuth();
-	const pendingUrlRef = useRef<string | null>(null);
-	const isReady = !isLoading && !!user;
+function PushTapNavigator() {
+	const { user } = useAuth();
+	const navigationReady = Boolean(useRootNavigationState()?.key);
+	const response = Notifications.useLastNotificationResponse();
+	const followed = useRef<string | null>(null);
 
 	useEffect(() => {
-		Notifications.getLastNotificationResponseAsync().then((response) => {
-			if (!response) return;
-			const url = notificationUrl(
-				response.notification.request.content.data as Record<string, unknown>,
-			);
-			if (url) pendingUrlRef.current = url;
-		});
-	}, []);
-
-	useEffect(() => {
-		const sub = Notifications.addNotificationResponseReceivedListener(
-			(response) => {
-				const url = notificationUrl(
-					response.notification.request.content.data as Record<string, unknown>,
-				);
-				if (!url) return;
-				if (isReady) navigateFromNotificationUrl(url);
-				else pendingUrlRef.current = url;
-			},
+		const target = pushTapTarget(
+			response,
+			Notifications.DEFAULT_ACTION_IDENTIFIER,
 		);
-		return () => sub.remove();
-	}, [isReady]);
-
-	useEffect(() => {
-		if (isReady && pendingUrlRef.current) {
-			navigateFromNotificationUrl(pendingUrlRef.current);
-			pendingUrlRef.current = null;
-		}
-	}, [isReady]);
+		if (!target || !navigationReady || !user) return;
+		if (followed.current === target.id) return;
+		followed.current = target.id;
+		// Followed once: the app reloading or this screen remounting must not
+		// replay an old tap.
+		Notifications.clearLastNotificationResponse();
+		navigateFromNotificationUrl(target.url);
+	}, [response, navigationReady, user]);
 
 	return null;
 }
@@ -767,6 +758,7 @@ function RootLayoutNav() {
 					/>
 					<Stack.Screen name="courier/index" options={{ headerShown: false }} />
 				</Stack>
+				<PushTapNavigator />
 			</SellerBrandProvider>
 
 			<StatusBar style="auto" />
