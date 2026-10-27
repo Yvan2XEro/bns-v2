@@ -31,6 +31,7 @@ export default function StockAdjustSheet() {
 		variant,
 		v,
 		current,
+		reserved,
 		form,
 		type,
 		result,
@@ -74,11 +75,17 @@ export default function StockAdjustSheet() {
 								.filter(Boolean)
 								.join(" · ")}
 							current={current}
+							reserved={reserved}
 							lowStockThreshold={v.lowStockThreshold}
 							tracked={v.trackInventory}
 						/>
 
 						<MovementTypePicker value={type} onChange={changeType} />
+						{type === "return" ? (
+							<Text style={[styles.meta, { color: c.muted }]}>
+								{t("stock.returnNote")}
+							</Text>
+						) : null}
 
 						<View style={styles.amountRow}>
 							<Text style={[styles.label, styles.flex, { color: c.body }]}>
@@ -135,7 +142,7 @@ export default function StockAdjustSheet() {
 						</View>
 						{amountError ? (
 							<Text style={[styles.meta, { color: c.danger }]}>
-								{t(amountError)}
+								{t(amountError, { reserved, count: current })}
 							</Text>
 						) : null}
 

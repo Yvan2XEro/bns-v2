@@ -474,6 +474,8 @@ export function useRecordMovement() {
 			quantity: number;
 			unitCost?: number;
 			note?: string;
+			/** A correction's base: refused with stock.countStale if it moved. */
+			expectedStockOnHand?: number;
 		}) =>
 			api.post<MovementResponse>(
 				`/api/variants/${variantId}/stock-movements`,

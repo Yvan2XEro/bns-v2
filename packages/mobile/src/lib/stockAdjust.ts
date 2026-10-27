@@ -52,15 +52,27 @@ export const STOCK_ADJUST_ERROR_KEYS = {
 	invalid: "stock.amountInvalid",
 	noChange: "stock.noChange",
 	negative: "apiErrors.stock.negative",
+	belowReserved: "stock.belowReserved",
 } as const;
 
 /**
- * Only the client-side floor is validated here (a blank/invalid amount, no
- * actual change, or a result below zero). The ledger owns the real refusal
- * — a concurrent write or units already reserved — and its answer is shown
- * as it comes, never re-derived here.
+ * What the amount holds after the type changes: a correction is the counted
+ * stock, so it starts from the stock on hand; any other type starts empty.
  */
-export function stockAdjustSchema(current: number) {
+export function amountAfterTypeChange(
+	next: ManualMovementType,
+	current: number,
+): string {
+	return next === "adjustment" ? String(current) : "";
+}
+
+/**
+ * The ledger's floor is checked while typing: a blank/invalid amount, no
+ * actual change, a result below zero, or — taking units away — below what
+ * orders hold (`reserved`). The ledger still owns the last word (a
+ * concurrent write) and its answer is shown as it comes.
+ */
+export function stockAdjustSchema(current: number, reserved = 0) {
 	return z
 		.object({
 			type: z.enum(["receipt", "adjustment", "loss", "return"]),
@@ -79,6 +91,13 @@ export function stockAdjustSchema(current: number) {
 				return;
 			}
 			const result = movementFromForm(values.type, current, values.amount);
+			if (result && result.quantity < 0 && result.stockAfter < reserved) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ["amount"],
+					message: STOCK_ADJUST_ERROR_KEYS.belowReserved,
+				});
+			}
 			if (!result) {
 				const quantity =
 					values.type === "adjustment"

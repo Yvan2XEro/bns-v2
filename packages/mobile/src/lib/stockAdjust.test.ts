@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+	amountAfterTypeChange,
 	availableDelta,
 	emptyStockAdjustForm,
 	movementFromForm,
@@ -136,5 +137,36 @@ describe("availableDelta", () => {
 		expect(availableDelta({ type: "release", quantity: -1 })).toBe(1);
 		expect(availableDelta({ type: "receipt", quantity: 5 })).toBe(5);
 		expect(signedDelta(-2)).toBe("−2");
+	});
+});
+
+describe("the floor is what orders hold", () => {
+	const issues = (values: Partial<typeof emptyStockAdjustForm>) => {
+		const result = stockAdjustSchema(10, 3).safeParse({
+			...emptyStockAdjustForm,
+			...values,
+		});
+		return result.success ? [] : result.error.issues.map((i) => i.message);
+	};
+
+	test("takes no more than the units orders do not hold", () => {
+		expect(issues({ type: "loss", amount: "7" })).toEqual([]);
+		expect(issues({ type: "loss", amount: "8" })).toEqual([
+			"stock.belowReserved",
+		]);
+		expect(issues({ type: "adjustment", amount: "2" })).toEqual([
+			"stock.belowReserved",
+		]);
+	});
+
+	test("adding is never held back", () => {
+		expect(issues({ type: "receipt", amount: "1" })).toEqual([]);
+	});
+});
+
+describe("amountAfterTypeChange", () => {
+	test("a correction starts from the stock on hand, any other type empty", () => {
+		expect(amountAfterTypeChange("adjustment", 12)).toBe("12");
+		expect(amountAfterTypeChange("receipt", 12)).toBe("");
 	});
 });

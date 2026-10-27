@@ -1,16 +1,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
-import { useMemo, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useRef } from "react";
+import { type Resolver, useForm } from "react-hook-form";
 import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	useRecordMovement,
 	useVariant,
 	type VariantWithProduct,
 } from "@/src/hooks/useShops";
-import { resolveErrorMessage } from "@/src/lib/apiError";
+import { hasErrorCode, resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import {
+	amountAfterTypeChange,
 	emptyStockAdjustForm,
 	movementFromForm,
 	type StockAdjustFormValues,
@@ -36,11 +37,19 @@ export function useStockAdjustForm(variantId: string | undefined) {
 
 	const v: VariantWithProduct | undefined = variant.data;
 	const current = v?.stockOnHand ?? 0;
+	const reserved = v?.stockReserved ?? 0;
 
-	const resolver = useMemo(
-		() => zodResolver(stockAdjustSchema(current)),
-		[current],
-	);
+	// Read at validation time, so a refetched variant applies at once.
+	const levels = useRef({ current, reserved });
+	levels.current = { current, reserved };
+	const resolver: Resolver<StockAdjustFormValues> = (
+		values,
+		context,
+		options,
+	) =>
+		zodResolver(
+			stockAdjustSchema(levels.current.current, levels.current.reserved),
+		)(values, context, options);
 	const form = useForm<StockAdjustFormValues>({
 		resolver,
 		defaultValues: emptyStockAdjustForm,
@@ -62,7 +71,11 @@ export function useStockAdjustForm(variantId: string | undefined) {
 	 */
 	function changeType(next: ManualMovementType) {
 		form.setValue("type", next, { shouldDirty: true });
-		form.setValue("amount", "", { shouldDirty: true });
+		// A correction starts from the stock on hand: "10 counted" must not
+		// carry over from "10 received".
+		form.setValue("amount", amountAfterTypeChange(next, current), {
+			shouldDirty: true,
+		});
 		void form.trigger();
 	}
 
@@ -81,6 +94,11 @@ export function useStockAdjustForm(variantId: string | undefined) {
 					? { unitCost: cost }
 					: {}),
 				...(values.note.trim() ? { note: values.note.trim() } : {}),
+				// A correction is absolute: it lands only on the stock it was
+				// computed from.
+				...(values.type === "adjustment"
+					? { expectedStockOnHand: current }
+					: {}),
 			},
 			{
 				onSuccess: () => {
@@ -92,6 +110,13 @@ export function useStockAdjustForm(variantId: string | undefined) {
 				},
 				onError: (error) => {
 					submittingRef.current = false;
+					if (hasErrorCode(error, "stock.countStale")) {
+						// A sale or another member moved the stock: reload it and
+						// let the seller decide again from the new figure.
+						void variant.refetch();
+						form.setError("amount", { message: "stock.staleStock" });
+						return;
+					}
 					// The ledger's refusal (e.g. units already reserved) is shown
 					// verbatim on the field and never retried; the sheet keeps the
 					// value the seller typed so they can see what was rejected.
@@ -105,6 +130,7 @@ export function useStockAdjustForm(variantId: string | undefined) {
 		variant,
 		v,
 		current,
+		reserved,
 		form,
 		type,
 		amount,

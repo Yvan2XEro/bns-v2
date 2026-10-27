@@ -8,11 +8,14 @@ import { useTranslation } from "@/src/lib/i18n";
 export function VariantSummaryCard({
 	title,
 	current,
+	reserved = 0,
 	lowStockThreshold,
 	tracked,
 }: {
 	title: string;
 	current: number;
+	/** Units orders hold: the stock cannot go below them. */
+	reserved?: number;
 	lowStockThreshold?: number | null;
 	tracked: boolean;
 }) {
@@ -38,6 +41,14 @@ export function VariantSummaryCard({
 								})
 							: t("stock.current", { count: current })}
 					</Text>
+					{reserved > 0 ? (
+						<Text style={[styles.meta, { color: c.muted }]}>
+							{t("stock.reservedLine", {
+								reserved,
+								available: Math.max(0, current - reserved),
+							})}
+						</Text>
+					) : null}
 				</View>
 			</View>
 
