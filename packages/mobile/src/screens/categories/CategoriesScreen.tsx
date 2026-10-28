@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { useCategoryCounts } from "@/src/hooks/useCategoryCounts";
 import {
 	CATEGORIES_QUERY_KEY,
 	CATEGORIES_STALE_TIME_MS,
@@ -27,6 +28,11 @@ import {
 	type TreeCategory,
 } from "@/src/lib/categoryTree";
 import { useTranslation } from "@/src/lib/i18n";
+import { useUserLocation } from "@/src/lib/useUserLocation";
+import {
+	countOf,
+	rankByCounts,
+} from "../../../../api/src/contracts/categoryCounts";
 
 /** Third-level chips shown under a sub-category before "See all N". */
 const GROUP_CHIPS = 8;
@@ -102,10 +108,21 @@ export function CategoriesScreen() {
 		queryFn: () => api.get<{ categories: unknown[] }>("/api/public/categories"),
 		staleTime: CATEGORIES_STALE_TIME_MS,
 	});
+	// The browsing city's best stocked first, at every level; nothing hidden.
+	const { browsePlace } = useUserLocation();
+	const counts = useCategoryCounts(browsePlace?.name ?? null);
 	const rubrics = useMemo(
-		() => categoryTree((data?.categories ?? []) as never[]),
-		[data],
+		() =>
+			rankByCounts(categoryTree((data?.categories ?? []) as never[]), counts),
+		[data, counts],
 	);
+	const count = (id: string) => countOf(id, counts);
+	/** "Plomberie · 12" when the city's counts apply. */
+	const withCount = (category: TreeCategory) => {
+		const n = count(category.id);
+		return n === null ? category.name : `${category.name} · ${n}`;
+	};
+	const quiet = (id: string) => (count(id) === 0 ? styles.empty : null);
 	const [selected, setSelected] = useState<string | undefined>(params.rubric);
 	const current: CategoryRubric | undefined =
 		rubrics.find((r) => r.id === selected) ?? rubrics[0];
@@ -115,8 +132,9 @@ export function CategoriesScreen() {
 		pane.current?.scrollTo({ y: 0, animated: false });
 	};
 
-	const groups = current?.children.filter((g) => g.children.length > 0) ?? [];
-	const leaves = current?.children.filter((g) => g.children.length === 0) ?? [];
+	const ranked = rankByCounts(current?.children ?? [], counts);
+	const groups = ranked.filter((g) => g.children.length > 0);
+	const leaves = ranked.filter((g) => g.children.length === 0);
 	const tileColumns = isTablet ? 4 : 2;
 
 	return (
@@ -218,7 +236,7 @@ export function CategoriesScreen() {
 									>
 										<Pressable
 											onPress={() => openCategory(group.id)}
-											style={styles.groupHead}
+											style={[styles.groupHead, quiet(group.id)]}
 										>
 											<Thumb
 												category={group}
@@ -231,7 +249,7 @@ export function CategoriesScreen() {
 												style={[styles.groupName, { color: textColor }]}
 												numberOfLines={2}
 											>
-												{group.name}
+												{withCount(group)}
 											</Text>
 											<Ionicons
 												name="chevron-forward"
@@ -240,20 +258,26 @@ export function CategoriesScreen() {
 											/>
 										</Pressable>
 										<View style={styles.chips}>
-											{group.children.slice(0, GROUP_CHIPS).map((child) => (
-												<Pressable
-													key={child.id}
-													onPress={() => openCategory(child.id)}
-													style={[styles.chip, { borderColor }]}
-												>
-													<Text
-														style={[styles.chipLabel, { color: textColor }]}
-														numberOfLines={1}
+											{rankByCounts(group.children, counts)
+												.slice(0, GROUP_CHIPS)
+												.map((child) => (
+													<Pressable
+														key={child.id}
+														onPress={() => openCategory(child.id)}
+														style={[
+															styles.chip,
+															{ borderColor },
+															quiet(child.id),
+														]}
 													>
-														{child.name}
-													</Text>
-												</Pressable>
-											))}
+														<Text
+															style={[styles.chipLabel, { color: textColor }]}
+															numberOfLines={1}
+														>
+															{withCount(child)}
+														</Text>
+													</Pressable>
+												))}
 											{group.children.length > GROUP_CHIPS && (
 												<Pressable
 													onPress={() => openCategory(group.id)}
@@ -280,6 +304,7 @@ export function CategoriesScreen() {
 												onPress={() => openCategory(leaf.id)}
 												style={[
 													styles.tile,
+													quiet(leaf.id),
 													{
 														width: `${100 / tileColumns - 2}%`,
 														backgroundColor: cardBg,
@@ -309,7 +334,7 @@ export function CategoriesScreen() {
 													style={[styles.tileLabel, { color: textColor }]}
 													numberOfLines={2}
 												>
-													{leaf.name}
+													{withCount(leaf)}
 												</Text>
 											</Pressable>
 										))}
@@ -404,6 +429,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		overflow: "hidden",
 	},
+	empty: { opacity: 0.5 },
 	tileLabel: {
 		fontSize: 12,
 		lineHeight: 16,

@@ -252,6 +252,9 @@ export async function configureIndex(
 				"boostedUntil",
 				"_geo",
 			],
+			// The category counts per city facet on every category, well over
+			// Meilisearch's default of 100 values.
+			faceting: { maxValuesPerFacet: 1000 },
 		});
 		configuredAttributes = filterableAttributes;
 		console.log(

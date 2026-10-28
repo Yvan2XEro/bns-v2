@@ -60,16 +60,18 @@ function render(
 		pathname = "/",
 		user = null,
 		shopsEnabled = true,
+		client = new QueryClient(),
 	}: {
 		pathname?: string;
 		user?: Partial<User> | null;
 		shopsEnabled?: boolean;
+		client?: QueryClient;
 	} = {},
 ): string {
 	return renderToStaticMarkup(
 		<AppRouterContext.Provider value={router as never}>
 			<PathnameContext.Provider value={pathname}>
-				<QueryClientProvider client={new QueryClient()}>
+				<QueryClientProvider client={client}>
 					<NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
 						<AppConfigProvider
 							initialConfig={{
@@ -256,6 +258,33 @@ describe("categories menu, open", () => {
 		// Computers has none of its own: a tile.
 		expect(html).toContain("aspect-[4/3]");
 		expect(html).toContain('href="/search?category=com"');
+	});
+
+	test("the city's best stocked come first, with their count; empty ones quieter", () => {
+		const client = new QueryClient();
+		client.setQueryData(["category-counts", "Douala"], {
+			city: "Douala",
+			total: 120,
+			counts: { ele: 100, pho: 70, com: 30, "pho-c": 50, "pho-a": 20 },
+		});
+		const html = render(
+			<CategoriesMenu
+				rubrics={rubrics}
+				city="Douala"
+				shopsEnabled={false}
+				defaultOpen
+			/>,
+			{ shopsEnabled: false, client },
+		);
+		// Electronics now leads the rail, so it is the open rubric.
+		expect(html.indexOf("category=ele")).toBeLessThan(
+			html.indexOf("category=veh"),
+		);
+		expect(html.indexOf("category=pho-c")).toBeLessThan(
+			html.indexOf("category=pho-a"),
+		);
+		expect(html).toMatch(/Phone C<span[^>]*>50<\/span>/);
+		expect(html).toMatch(/opacity-60[^"]*" href="\/search\?category=pho-b"/);
 	});
 
 	test("Boutiques sits apart, and the shops line names rubric and city", () => {

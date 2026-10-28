@@ -302,6 +302,7 @@
 		"verifiedShops": "Boutiques vérifiées",
 		"allOf": "Tout {name}",
 		"seeAllCount": "Voir les {count}",
+		"listingCount": "{count, number}",
 		"shopsOf": "Boutiques {name}",
 		"shopsOfIn": "Boutiques {name} à {city}",
 		"trustLine": "Petites annonces et boutiques près de chez vous",

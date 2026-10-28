@@ -46,6 +46,7 @@ import { SearchField } from "@/src/components/SearchBar";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useApplyLaunchMode } from "@/src/hooks/useAppMode";
+import { useCategoryCounts } from "@/src/hooks/useCategoryCounts";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import {
 	CATEGORIES_QUERY_KEY,
@@ -62,6 +63,7 @@ import {
 	resolveListingImageUrl,
 } from "@/src/lib/resolveImageUrl";
 import { useUserLocation } from "@/src/lib/useUserLocation";
+import { rankByCounts } from "../../../../api/src/contracts/categoryCounts";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const RECENT_PAGE = 20;
@@ -376,13 +378,18 @@ export default function HomeScreen() {
 		}));
 
 	// Two rows of rubrics; when there are more, the last cell is "See all".
+	// The browsing city's best stocked rubrics first.
+	const categoryCounts = useCategoryCounts(browseCity);
 	const rubrics = React.useMemo(
 		() =>
-			categoryTree(categoriesData?.categories ?? []).map((rubric) => ({
+			rankByCounts(
+				categoryTree(categoriesData?.categories ?? []),
+				categoryCounts,
+			).map((rubric) => ({
 				...rubric,
 				image: rubric.imageUrl ? { url: rubric.imageUrl } : undefined,
 			})),
-		[categoriesData],
+		[categoriesData, categoryCounts],
 	);
 	const catColumns = isTablet ? 8 : 4;
 	const homeRubrics =

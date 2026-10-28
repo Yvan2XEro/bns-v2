@@ -10,10 +10,12 @@ import {
 	useCallback,
 	useEffect,
 	useId,
+	useMemo,
 	useReducer,
 	useRef,
 } from "react";
 import { CategoryIcon } from "~/components/category-icon";
+import { useCategoryCounts } from "~/hooks/use-category-counts";
 import { shopSearchKey } from "~/hooks/use-shop-search";
 import {
 	AIM_DELAY,
@@ -30,6 +32,11 @@ import {
 } from "~/lib/nav";
 import { shopApi } from "~/lib/shop-api";
 import { cn } from "~/lib/utils";
+import {
+	type CategoryCounts,
+	countOf,
+	rankByCounts,
+} from "../../../../api/src/contracts/categoryCounts";
 
 interface CategoriesMenuProps {
 	rubrics: NavRubric[];
@@ -57,7 +64,7 @@ function clearTimer(timer: TimerRef) {
  * diagonal tolerance toward the pane; Escape and an outside click close it.
  */
 export function CategoriesMenu({
-	rubrics,
+	rubrics: editorial,
 	city,
 	shopsEnabled,
 	themed = false,
@@ -66,6 +73,12 @@ export function CategoriesMenu({
 }: CategoriesMenuProps) {
 	const t = useTranslations("Nav");
 	const panelId = useId();
+	// What the browsing city has most of comes first, at every level.
+	const counts = useCategoryCounts(city);
+	const rubrics = useMemo(
+		() => rankByCounts(editorial, counts),
+		[editorial, counts],
+	);
 	const [{ open, active }, dispatch] = useReducer(megaMenuReducer, {
 		open: defaultOpen,
 		active: 0,
@@ -334,6 +347,7 @@ export function CategoriesMenu({
 									</h2>
 									<RubricPane
 										rubric={current}
+										counts={counts}
 										onNavigate={() => close(false)}
 									/>
 									<Link
@@ -361,6 +375,18 @@ export function CategoriesMenu({
 	);
 }
 
+/** A category's listings in the browsing city, after its name. */
+function Count({ id, counts }: { id: string; counts: CategoryCounts | null }) {
+	const t = useTranslations("Nav");
+	const n = countOf(id, counts);
+	if (n === null) return null;
+	return (
+		<span className="ml-1.5 font-normal text-ink-faint text-xs">
+			{t("listingCount", { count: n })}
+		</span>
+	);
+}
+
 /** Third-level links shown under a sub-category before "See all N". */
 export const GROUP_LINKS = 5;
 
@@ -375,14 +401,19 @@ const LINK_FOCUS =
  */
 function RubricPane({
 	rubric,
+	counts,
 	onNavigate,
 }: {
 	rubric: NavRubric;
+	counts: CategoryCounts | null;
 	onNavigate: () => void;
 }) {
 	const t = useTranslations("Nav");
-	const groups = rubric.children.filter((c) => c.children.length > 0);
-	const leaves = rubric.children.filter((c) => c.children.length === 0);
+	const ranked = rankByCounts(rubric.children, counts);
+	const groups = ranked.filter((c) => c.children.length > 0);
+	const leaves = ranked.filter((c) => c.children.length === 0);
+	// Empty in the city: still there, but quieter.
+	const empty = (id: string) => countOf(id, counts) === 0;
 
 	return (
 		<div className="space-y-5">
@@ -395,6 +426,7 @@ function RubricPane({
 								onClick={onNavigate}
 								className={cn(
 									"flex items-center gap-2.5 rounded-lg font-semibold text-ink text-sm hover:text-brand",
+									empty(group.id) && "opacity-60",
 									LINK_FOCUS,
 								)}
 							>
@@ -405,23 +437,30 @@ function RubricPane({
 									decorative
 									className="shrink-0"
 								/>
-								<span className="min-w-0">{group.name}</span>
+								<span className="min-w-0">
+									{group.name}
+									<Count id={group.id} counts={counts} />
+								</span>
 							</Link>
 							<ul className="mt-1.5 space-y-0.5 pl-[46px]">
-								{group.children.slice(0, GROUP_LINKS).map((child) => (
-									<li key={child.id}>
-										<Link
-											href={categoryHref(child.id)}
-											onClick={onNavigate}
-											className={cn(
-												"block truncate rounded py-0.5 text-ink-soft text-sm hover:text-brand hover:underline",
-												LINK_FOCUS,
-											)}
-										>
-											{child.name}
-										</Link>
-									</li>
-								))}
+								{rankByCounts(group.children, counts)
+									.slice(0, GROUP_LINKS)
+									.map((child) => (
+										<li key={child.id}>
+											<Link
+												href={categoryHref(child.id)}
+												onClick={onNavigate}
+												className={cn(
+													"block truncate rounded py-0.5 text-ink-soft text-sm hover:text-brand hover:underline",
+													empty(child.id) && "opacity-60",
+													LINK_FOCUS,
+												)}
+											>
+												{child.name}
+												<Count id={child.id} counts={counts} />
+											</Link>
+										</li>
+									))}
 								{group.children.length > GROUP_LINKS && (
 									<li>
 										<Link
@@ -456,6 +495,7 @@ function RubricPane({
 								onClick={onNavigate}
 								className={cn(
 									"group block overflow-hidden rounded-xl border border-line hover:border-brand-line",
+									empty(leaf.id) && "opacity-60",
 									LINK_FOCUS,
 								)}
 							>
@@ -474,6 +514,7 @@ function RubricPane({
 								</span>
 								<span className="block truncate px-2.5 py-2 font-medium text-ink text-sm group-hover:text-brand">
 									{leaf.name}
+									<Count id={leaf.id} counts={counts} />
 								</span>
 							</Link>
 						</li>
