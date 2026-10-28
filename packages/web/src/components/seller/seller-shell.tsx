@@ -44,7 +44,8 @@ export async function SellerShell({
 					retail={shopProfileRules(shop.profile).retail}
 				/>
 				<div className="min-w-0 flex-1">
-					<div className="flex items-center justify-end gap-1 border-line border-b bg-surface px-2 lg:px-6">
+					{/* Stays in view while the page scrolls. */}
+					<div className="sticky top-0 z-30 flex items-center justify-end gap-1 border-line border-b bg-surface px-2 lg:px-6">
 						{novu && (
 							<NotificationInbox
 								novu={novu}
