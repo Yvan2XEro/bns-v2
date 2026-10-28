@@ -51,13 +51,39 @@ const OWN_PROFILE: Record<string, string> = {
 };
 
 /**
+ * Seller pages whose app screen has another path, or none: a notification
+ * names the website's page, and the app opens its own (the seller hub when
+ * it has no screen for it).
+ */
+const SELLER_PAGES: [RegExp, (match: RegExpMatchArray) => string][] = [
+	[/^\/seller\/messages\/([^/]+)$/, (m) => `/seller/inbox/${m[1]}`],
+	[/^\/seller\/messages$/, () => "/seller/inbox"],
+	[
+		/^\/seller\/catalogue\/([^/]+)(\/(variants|stock))?$/,
+		(m) => `/seller/product/${m[1]}`,
+	],
+	[/^\/seller\/disputes\/([^/]+)$/, (m) => `/disputes/${m[1]}`],
+	[/^\/seller\/disputes$/, () => "/seller"],
+	[/^\/seller\/resale\/links(\/[^/]+)?$/, () => "/seller"],
+];
+
+/**
  * The app route for a website path and query. Most pages share their path;
  * the few that differ are mapped here, once.
  */
 export function appPathFor(pathname: string, search = ""): string {
 	const params = new URLSearchParams(search);
-	const own = OWN_PROFILE[pathname.replace(/\/+$/, "")];
+	const path = pathname.replace(/\/+$/, "") || "/";
+	const own = OWN_PROFILE[path];
 	if (own) return own;
+	const shopConversation = params.get("conversation");
+	if (path === "/seller/messages" && shopConversation) {
+		return `/seller/inbox/${encodeURIComponent(shopConversation)}`;
+	}
+	for (const [pattern, toApp] of SELLER_PAGES) {
+		const match = path.match(pattern);
+		if (match) return toApp(match);
+	}
 	// The website opens a conversation with a query; the app has its own screen.
 	const conversation = params.get("conversation");
 	if (pathname === "/messages" && conversation) {

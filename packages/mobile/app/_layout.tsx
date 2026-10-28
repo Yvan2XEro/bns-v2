@@ -79,8 +79,8 @@ import { AuthProvider, useAuth } from "@/src/lib/auth";
 import { setContentLocale } from "@/src/lib/contentLocale";
 import {
 	canFollowPushTap,
+	notificationRoute,
 	pushTapTarget,
-	toAppPath,
 } from "@/src/lib/deepLinks";
 import { reportError } from "@/src/lib/monitoring";
 import { syncPushToken } from "@/src/lib/notifications";
@@ -347,7 +347,7 @@ function PushTokenRegistrar() {
 // lands there. Signed-out, the tap waits for the sign-in.
 
 function navigateFromNotificationUrl(url: string) {
-	const path = toAppPath(url);
+	const path = notificationRoute(url);
 	if (path) {
 		router.push(path as Parameters<typeof router.push>[0]);
 		return;

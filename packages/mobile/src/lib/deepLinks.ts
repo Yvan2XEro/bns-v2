@@ -1,3 +1,5 @@
+import { appPathFor } from "../../../api/src/contracts/appLinks";
+
 /**
  * The ways a link can name a screen of this app: a bare path (what
  * `buildExpoPushData` on the API puts in a push's `data.url`) or the app's
@@ -160,4 +162,17 @@ export function canFollowPushTap(state: {
 	signedIn: boolean;
 }): boolean {
 	return state.navigationReady && state.signedIn && state.pathname !== "/";
+}
+
+/**
+ * The app screen a notification link opens. Novu's in-app notifications name
+ * the website's pages (`/seller/messages/…`, `/seller/catalogue/…`); the app
+ * maps the few whose screen differs (contracts/appLinks.ts). Null: the link
+ * points outside the app.
+ */
+export function notificationRoute(url: string): string | null {
+	const path = toAppPath(url);
+	if (!path) return null;
+	const [pathname = "/", search = ""] = path.split(/(?=\?)/);
+	return appPathFor(pathname, search);
 }

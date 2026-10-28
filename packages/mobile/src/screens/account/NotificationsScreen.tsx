@@ -30,6 +30,7 @@ import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { notificationRoute } from "@/src/lib/deepLinks";
 import { useTranslation } from "@/src/lib/i18n";
 import { registerForPushNotificationsAsync } from "@/src/lib/notifications";
 import { compactTimeAgo } from "@/src/lib/timeAgo";
@@ -83,8 +84,11 @@ function notificationIcon(tags: string[]): {
 }
 
 function navigate(url: string) {
-	if (url.startsWith("/")) {
-		router.push(url as Parameters<typeof router.push>[0]);
+	// The website's page names its app screen (e.g. /seller/messages/… is
+	// the app's /seller/inbox/…); a link outside the app opens outside it.
+	const route = notificationRoute(url);
+	if (route) {
+		router.push(route as Parameters<typeof router.push>[0]);
 	} else {
 		Linking.openURL(url);
 	}
