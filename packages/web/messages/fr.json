@@ -1610,7 +1610,30 @@
 		"variantFilter": "Variante",
 		"allVariants": "Toutes les variantes"
 	},
+	"StockLevels": {
+		"search": "Chercher un produit, une variante, un SKU",
+		"state": {
+			"all": "Tout",
+			"out": "Rupture",
+			"low": "Stock faible",
+			"ok": "En stock"
+		},
+		"colProduct": "Produit",
+		"colAvailable": "Disponibles",
+		"colReserved": "Réservées",
+		"colOnHand": "En stock",
+		"colThreshold": "Alerte si ≤",
+		"colState": "État",
+		"colActions": "Actions",
+		"untracked": "Stock non suivi",
+		"inStock": "En stock",
+		"adjust": "Ajuster",
+		"empty": "Aucun produit en stock pour l'instant.",
+		"noMatch": "Aucune variante ne correspond à ces filtres.",
+		"pageOf": "Page {page} sur {pages}"
+	},
 	"Stock": {
+		"tabs": { "levels": "État du stock", "movements": "Mouvements" },
 		"title": "Stock",
 		"startInventory": "Lancer un inventaire",
 		"adjustTitle": "Ajuster le stock",

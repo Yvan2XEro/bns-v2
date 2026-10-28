@@ -1610,7 +1610,30 @@
 		"variantFilter": "Variant",
 		"allVariants": "All variants"
 	},
+	"StockLevels": {
+		"search": "Search a product, a variant, a SKU",
+		"state": {
+			"all": "All",
+			"out": "Out of stock",
+			"low": "Low stock",
+			"ok": "In stock"
+		},
+		"colProduct": "Product",
+		"colAvailable": "Available",
+		"colReserved": "Reserved",
+		"colOnHand": "On hand",
+		"colThreshold": "Alert at ≤",
+		"colState": "State",
+		"colActions": "Actions",
+		"untracked": "Stock not tracked",
+		"inStock": "In stock",
+		"adjust": "Adjust",
+		"empty": "No products in stock yet.",
+		"noMatch": "No variant matches these filters.",
+		"pageOf": "Page {page} of {pages}"
+	},
 	"Stock": {
+		"tabs": { "levels": "Current stock", "movements": "Movements" },
 		"title": "Stock",
 		"startInventory": "Start a stock count",
 		"adjustTitle": "Adjust stock",

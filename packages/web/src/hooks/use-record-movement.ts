@@ -7,7 +7,11 @@ import {
 } from "@tanstack/react-query";
 import { catalogueRootKey } from "~/hooks/use-catalogue";
 import { myShopKey } from "~/hooks/use-my-shop";
-import { movementsRootKey, stockSummaryKey } from "~/hooks/use-stock";
+import {
+	movementsRootKey,
+	shopVariantsKey,
+	stockSummaryKey,
+} from "~/hooks/use-stock";
 import { variantKey } from "~/hooks/use-variants";
 import type { ApiError } from "~/lib/apiError";
 import { type MovementInput, shopApi } from "~/lib/shop-api";
@@ -45,6 +49,7 @@ export function useRecordMovement(
 			for (const queryKey of [
 				movementsRootKey(shopId),
 				stockSummaryKey(shopId),
+				shopVariantsKey(shopId),
 				catalogueRootKey(shopId),
 				variantKey(variantId),
 				myShopKey,
