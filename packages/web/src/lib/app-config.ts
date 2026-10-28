@@ -53,6 +53,8 @@ export interface AppConfig {
 	insightsEnabled: boolean;
 	resaleEnabled: boolean;
 	resalePrepaidEnabled: boolean;
+	/** Generated share cards and the share dialog (app-settings › Sharing). */
+	shareCardsEnabled: boolean;
 	/** Photos a listing or a product may carry; read it through `usePhotoLimit`. */
 	photosIncluded: number;
 	/** Sentry and PostHog, configured on the API; off until it sends them. */
@@ -86,6 +88,7 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	insightsEnabled: false,
 	resaleEnabled: false,
 	resalePrepaidEnabled: false,
+	shareCardsEnabled: false,
 	photosIncluded: PHOTO_LIMIT.default,
 	monitoring: NO_MONITORING,
 };

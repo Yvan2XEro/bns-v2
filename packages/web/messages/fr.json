@@ -1,4 +1,17 @@
 {
+	"ShareDialog": {
+		"title": "Partager",
+		"previewAlt": "Aperçu de la carte de partage",
+		"shareCard": "Partager l'image",
+		"shareCardHint": "Statut WhatsApp, story, toute application",
+		"downloadStory": "Télécharger la carte story",
+		"downloadStoryHint": "Format vertical, pour un statut ou une story",
+		"downloadSquare": "Télécharger la carte carrée",
+		"downloadSquareHint": "Pour une publication Instagram ou Facebook",
+		"copyLink": "Copier le lien",
+		"copied": "Lien copié",
+		"copyPrompt": "Copiez ce lien :"
+	},
 	"ShareCard": {
 		"cta": "Voir sur BuyNSellem",
 		"verified": "Vérifiée",

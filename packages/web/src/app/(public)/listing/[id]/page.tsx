@@ -464,7 +464,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										className="h-9 w-9 rounded-lg border border-line"
 									/>
 									<WhatsAppShareButton title={listing.title} />
-									<ShareButton title={listing.title} />
+									<ShareButton listingId={listing.id} title={listing.title} />
 								</div>
 							</div>
 

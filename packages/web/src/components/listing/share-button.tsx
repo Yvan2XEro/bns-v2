@@ -4,22 +4,33 @@ import { Check, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { WhatsAppIcon } from "~/components/icons/whatsapp-icon";
+import { ShareDialog } from "~/components/share/share-dialog";
+import { useAppConfig } from "~/hooks/use-app-config";
 import { whatsappShareUrl } from "../../../../api/src/contracts/whatsapp";
 
 const ICON_BUTTON =
 	"flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink-muted hover:bg-subtle";
 
 export function ShareButton({
+	listingId,
 	title,
 	className,
 }: {
+	listingId: string;
 	title: string;
 	className?: string;
 }) {
 	const t = useTranslations("Listing");
 	const [copied, setCopied] = useState(false);
+	const { shareCardsEnabled } = useAppConfig();
 
 	async function handleShare() {
+		// The share dialog (cards, networks, downloads) once an admin turned
+		// the cards on; the system sheet or a copied link otherwise.
+		if (shareCardsEnabled) {
+			await ShareDialog.call({ kind: "listing", id: listingId, title });
+			return;
+		}
 		const url = window.location.href;
 
 		if (navigator.share) {

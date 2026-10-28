@@ -1,4 +1,17 @@
 {
+	"ShareDialog": {
+		"title": "Share",
+		"previewAlt": "Share card preview",
+		"shareCard": "Share the picture",
+		"shareCardHint": "WhatsApp Status, a story, any app",
+		"downloadStory": "Download the story card",
+		"downloadStoryHint": "Vertical, for a Status or a story",
+		"downloadSquare": "Download the square card",
+		"downloadSquareHint": "For an Instagram or Facebook post",
+		"copyLink": "Copy link",
+		"copied": "Link copied",
+		"copyPrompt": "Copy this link:"
+	},
 	"ShareCard": {
 		"cta": "See it on BuyNSellem",
 		"verified": "Verified",

@@ -1,5 +1,6 @@
 "use client";
 
+import { ShareDialog } from "~/components/share/share-dialog";
 import { Confirm } from "./confirm";
 import { Notice } from "./notice";
 
@@ -9,6 +10,7 @@ export function CallableRoots() {
 		<>
 			<Confirm />
 			<Notice />
+			<ShareDialog />
 		</>
 	);
 }

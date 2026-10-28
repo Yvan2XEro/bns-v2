@@ -3,7 +3,9 @@
 import { Check, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { ShareDialog } from "~/components/share/share-dialog";
 import { Button } from "~/components/ui/button";
+import { useAppConfig } from "~/hooks/use-app-config";
 import { shopUrl } from "~/lib/shop-url";
 
 export function ShareShopButton({
@@ -19,8 +21,14 @@ export function ShareShopButton({
 }) {
 	const t = useTranslations("Shop");
 	const [copied, setCopied] = useState(false);
+	const { shareCardsEnabled } = useAppConfig();
 
 	async function share() {
+		// The share dialog once an admin turned the cards on.
+		if (shareCardsEnabled) {
+			await ShareDialog.call({ kind: "shop", handle, title: name });
+			return;
+		}
 		const url = shopUrl(handle);
 		if (navigator.share) {
 			try {
