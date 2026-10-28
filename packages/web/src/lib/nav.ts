@@ -10,12 +10,17 @@ export interface NavCategory {
 	searchAliases?: string | null;
 }
 
+/** A rubric's sub-category, with its own sub-categories (the third level). */
+export interface NavGroup extends NavCategory {
+	children: NavCategory[];
+}
+
 export interface NavRubric {
 	id: string;
 	name: string;
 	icon?: string | null;
 	imageUrl?: string | null;
-	children: NavCategory[];
+	children: NavGroup[];
 }
 
 type RawCategory = {
@@ -45,7 +50,10 @@ export function toNavCategories(raw: RawCategory[]): NavCategory[] {
 	}));
 }
 
-/** Top-level categories in API order, each with its direct children. */
+/**
+ * Top-level categories in API order, each with its children and theirs: the
+ * menu draws three levels.
+ */
 export function navRubrics(categories: NavCategory[]): NavRubric[] {
 	const ids = new Set(categories.map((c) => c.id));
 	return categories
@@ -55,7 +63,12 @@ export function navRubrics(categories: NavCategory[]): NavRubric[] {
 			name: c.name,
 			icon: c.icon ?? null,
 			imageUrl: c.imageUrl ?? null,
-			children: categories.filter((child) => child.parent === c.id),
+			children: categories
+				.filter((child) => child.parent === c.id)
+				.map((child) => ({
+					...child,
+					children: categories.filter((g) => g.parent === child.id),
+				})),
 		}));
 }
 

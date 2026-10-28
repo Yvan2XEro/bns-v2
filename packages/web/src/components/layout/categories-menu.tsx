@@ -265,7 +265,7 @@ export function CategoriesMenu({
 						aria-label={t("allCategories")}
 						className="container mx-auto grid max-w-7xl grid-cols-[15rem_1fr] px-4 sm:px-6 lg:px-8"
 					>
-						<ul className="max-h-[70vh] overflow-y-auto py-2 pr-2">
+						<ul className="max-h-[75vh] overflow-y-auto py-2 pr-2">
 							{rubrics.length === 0 && (
 								<li className="px-3 py-2 text-ink-muted text-sm">
 									{t("loading")}
@@ -283,7 +283,7 @@ export function CategoriesMenu({
 										onClick={() => close(false)}
 										aria-current={index === active ? "true" : undefined}
 										className={cn(
-											"flex items-center justify-between rounded-lg px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line",
+											"flex items-center justify-between rounded-lg px-2.5 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line",
 											index === active
 												? "bg-brand-soft font-semibold text-brand"
 												: "text-ink hover:bg-canvas",
@@ -293,7 +293,7 @@ export function CategoriesMenu({
 											<CategoryIcon
 												category={rubric}
 												imageUrl={rubric.imageUrl}
-												size={28}
+												size={22}
 												decorative
 												className="shrink-0"
 											/>
@@ -311,7 +311,7 @@ export function CategoriesMenu({
 									<Link
 										href={shopsDirectoryHref({})}
 										onClick={() => close(false)}
-										className="flex items-center justify-between rounded-lg px-3 py-2 font-semibold text-ink text-sm hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
+										className="flex items-center justify-between rounded-lg px-2.5 py-1.5 font-semibold text-ink text-sm hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 									>
 										{t("shops")}
 										<ChevronRight
@@ -325,39 +325,21 @@ export function CategoriesMenu({
 
 						<div
 							ref={paneRef}
-							className="min-h-48 border-line border-l px-6 py-4"
+							className="max-h-[75vh] min-h-48 overflow-y-auto border-line border-l px-6 py-4"
 						>
 							{current && (
 								<>
-									<h2 className="mb-2 font-bold font-heading text-base text-ink">
+									<h2 className="mb-3 font-bold font-heading text-base text-ink">
 										{current.name}
 									</h2>
-									{current.children.length > 0 && (
-										<ul className="grid grid-cols-2 gap-x-6 gap-y-0.5 lg:grid-cols-3">
-											{current.children.map((child) => (
-												<li key={child.id}>
-													<Link
-														href={categoryHref(child.id)}
-														onClick={() => close(false)}
-														className="flex items-center gap-2 rounded px-1 py-1.5 text-ink-soft text-sm hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
-													>
-														<CategoryIcon
-															category={child}
-															imageUrl={child.imageUrl}
-															size={22}
-															decorative
-															className="shrink-0"
-														/>
-														{child.name}
-													</Link>
-												</li>
-											))}
-										</ul>
-									)}
+									<RubricPane
+										rubric={current}
+										onNavigate={() => close(false)}
+									/>
 									<Link
 										href={categoryHref(current.id)}
 										onClick={() => close(false)}
-										className="mt-3 inline-flex items-center gap-1 rounded px-1 font-semibold text-brand text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
+										className="mt-4 inline-flex items-center gap-1 rounded px-1 font-semibold text-brand text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 									>
 										{t("allOf", { name: current.name })}
 										<ChevronRight aria-hidden="true" className="h-4 w-4" />
@@ -374,6 +356,129 @@ export function CategoriesMenu({
 						</div>
 					</nav>
 				</div>
+			)}
+		</div>
+	);
+}
+
+/** Third-level links shown under a sub-category before "See all N". */
+export const GROUP_LINKS = 5;
+
+const LINK_FOCUS =
+	"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line";
+
+/**
+ * The active rubric's sub-categories: a column for each one that has its
+ * own (photo, name, its first links, "See all N"), then a photo tile for
+ * each one that has none — so a rubric of three entries still fills the
+ * pane, and the third level is one click away.
+ */
+function RubricPane({
+	rubric,
+	onNavigate,
+}: {
+	rubric: NavRubric;
+	onNavigate: () => void;
+}) {
+	const t = useTranslations("Nav");
+	const groups = rubric.children.filter((c) => c.children.length > 0);
+	const leaves = rubric.children.filter((c) => c.children.length === 0);
+
+	return (
+		<div className="space-y-5">
+			{groups.length > 0 && (
+				<ul className="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-3 xl:grid-cols-4">
+					{groups.map((group) => (
+						<li key={group.id} className="min-w-0">
+							<Link
+								href={categoryHref(group.id)}
+								onClick={onNavigate}
+								className={cn(
+									"flex items-center gap-2.5 rounded-lg font-semibold text-ink text-sm hover:text-brand",
+									LINK_FOCUS,
+								)}
+							>
+								<CategoryIcon
+									category={group}
+									imageUrl={group.imageUrl}
+									size={36}
+									decorative
+									className="shrink-0"
+								/>
+								<span className="min-w-0">{group.name}</span>
+							</Link>
+							<ul className="mt-1.5 space-y-0.5 pl-[46px]">
+								{group.children.slice(0, GROUP_LINKS).map((child) => (
+									<li key={child.id}>
+										<Link
+											href={categoryHref(child.id)}
+											onClick={onNavigate}
+											className={cn(
+												"block truncate rounded py-0.5 text-ink-soft text-sm hover:text-brand hover:underline",
+												LINK_FOCUS,
+											)}
+										>
+											{child.name}
+										</Link>
+									</li>
+								))}
+								{group.children.length > GROUP_LINKS && (
+									<li>
+										<Link
+											href={categoryHref(group.id)}
+											onClick={onNavigate}
+											className={cn(
+												"inline-flex items-center gap-0.5 rounded py-0.5 font-medium text-brand text-xs hover:underline",
+												LINK_FOCUS,
+											)}
+										>
+											{t("seeAllCount", { count: group.children.length })}
+											<ChevronRight aria-hidden="true" className="h-3 w-3" />
+										</Link>
+									</li>
+								)}
+							</ul>
+						</li>
+					))}
+				</ul>
+			)}
+			{leaves.length > 0 && (
+				<ul
+					className={cn(
+						"grid grid-cols-3 gap-3 lg:grid-cols-4 xl:grid-cols-5",
+						groups.length > 0 && "border-line border-t pt-4",
+					)}
+				>
+					{leaves.map((leaf) => (
+						<li key={leaf.id}>
+							<Link
+								href={categoryHref(leaf.id)}
+								onClick={onNavigate}
+								className={cn(
+									"group block overflow-hidden rounded-xl border border-line hover:border-brand-line",
+									LINK_FOCUS,
+								)}
+							>
+								<span className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-subtle">
+									{leaf.imageUrl ? (
+										// biome-ignore lint/performance/noImgElement: a Media thumbnail, already sized
+										<img
+											src={leaf.imageUrl}
+											alt=""
+											loading="lazy"
+											className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+										/>
+									) : (
+										<CategoryIcon category={leaf} size={44} decorative />
+									)}
+								</span>
+								<span className="block truncate px-2.5 py-2 font-medium text-ink text-sm group-hover:text-brand">
+									{leaf.name}
+								</span>
+							</Link>
+						</li>
+					))}
+				</ul>
 			)}
 		</div>
 	);

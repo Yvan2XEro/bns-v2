@@ -31,13 +31,14 @@ const rubrics = (focus: number): MegaFocus => ({
 });
 
 describe("category tree", () => {
-	test("top-level rubrics keep API order and carry their direct children", () => {
+	test("top-level rubrics keep API order and carry two levels below them", () => {
 		const tree = navRubrics(
 			toNavCategories([
 				{ id: "v", name: "Véhicules" },
 				{ id: "e", name: "Électronique", parent: null },
 				{ id: "p", name: "Téléphones", parent: { id: "e" } },
 				{ id: "o", name: "Ordinateurs", parent: "e" },
+				{ id: "s", name: "Smartphones", parent: "p" },
 				{ id: "x", name: "Orphan", parent: "missing" },
 			]),
 		);
@@ -45,6 +46,9 @@ describe("category tree", () => {
 		expect(tree[1].children.map((c) => c.name)).toEqual([
 			"Téléphones",
 			"Ordinateurs",
+		]);
+		expect(tree[1].children[0].children.map((c) => c.name)).toEqual([
+			"Smartphones",
 		]);
 	});
 });

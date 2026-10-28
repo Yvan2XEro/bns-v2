@@ -21,6 +21,11 @@ const CATEGORIES: NavCategory[] = [
 	{ id: "ele", name: "Electronics", parent: null },
 	{ id: "pho", name: "Phones", parent: "ele" },
 	{ id: "com", name: "Computers", parent: "ele" },
+	...["a", "b", "c", "d", "e", "f"].map((x) => ({
+		id: `pho-${x}`,
+		name: `Phone ${x.toUpperCase()}`,
+		parent: "pho",
+	})),
 ];
 
 const noop = async () => {};
@@ -233,6 +238,24 @@ describe("categories menu, open", () => {
 		expect(html).toContain('href="/search?category=veh"');
 		expect(html).toContain('href="/search?category=ele"');
 		expect(html).not.toContain("<img");
+	});
+
+	test("a sub-category with its own heads a column of its first five, then 'See all'", () => {
+		const html = render(
+			<CategoriesMenu
+				rubrics={[rubrics[1], rubrics[0]]}
+				city={null}
+				shopsEnabled={false}
+				defaultOpen
+			/>,
+			{ shopsEnabled: false },
+		);
+		expect(html).toContain('href="/search?category=pho-e"');
+		expect(html).not.toContain('href="/search?category=pho-f"');
+		expect(html).toContain("See all 6");
+		// Computers has none of its own: a tile.
+		expect(html).toContain("aspect-[4/3]");
+		expect(html).toContain('href="/search?category=com"');
 	});
 
 	test("Boutiques sits apart, and the shops line names rubric and city", () => {

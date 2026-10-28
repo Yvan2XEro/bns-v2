@@ -301,6 +301,7 @@
 		"shops": "Shops",
 		"verifiedShops": "Verified shops",
 		"allOf": "All of {name}",
+		"seeAllCount": "See all {count}",
 		"shopsOf": "{name} shops",
 		"shopsOfIn": "{name} shops in {city}",
 		"trustLine": "Classifieds and shops near you",
