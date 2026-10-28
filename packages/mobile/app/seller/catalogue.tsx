@@ -18,6 +18,7 @@ import { CatalogueRowItem } from "@/src/components/seller/CatalogueRowItem";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCatalogueStepper } from "@/src/hooks/useCatalogueStepper";
+import { usePrintStockCount } from "@/src/hooks/usePrintStockCount";
 import { useCatalogue, useMyShop } from "@/src/hooks/useShops";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
@@ -42,6 +43,7 @@ export default function CatalogueScreen() {
 	const catalogue = useCatalogue(shop?.id, filter);
 	const readOnly = shop?.status !== "active";
 	const { stepState, step } = useCatalogueStepper(shop?.id, filter);
+	const printSheet = usePrintStockCount(shop?.id);
 
 	const counts = catalogue.data?.counts;
 	const countFor = (f: CatalogueFilter) =>
@@ -69,16 +71,38 @@ export default function CatalogueScreen() {
 					counts ? t("catalogue.productsCount", { count: counts.all }) : null
 				}
 				right={
-					readOnly ? undefined : (
+					<View style={styles.headerActions}>
 						<Pressable
-							onPress={() => router.push("/seller/product/new" as never)}
-							style={[styles.addBtn, { backgroundColor: c.sell }]}
+							onPress={printSheet.choose}
+							disabled={!shop || printSheet.pending}
+							style={[
+								styles.addBtn,
+								{
+									backgroundColor: c.card,
+									borderColor: c.border,
+									borderWidth: 1,
+								},
+							]}
 							accessibilityRole="button"
-							accessibilityLabel={t("catalogue.addProduct")}
+							accessibilityLabel={t("stock.printTitle")}
 						>
-							<Ionicons name="add" size={18} color="#fff" />
+							{printSheet.pending ? (
+								<ActivityIndicator size="small" color={c.text} />
+							) : (
+								<Ionicons name="print-outline" size={18} color={c.text} />
+							)}
 						</Pressable>
-					)
+						{readOnly ? null : (
+							<Pressable
+								onPress={() => router.push("/seller/product/new" as never)}
+								style={[styles.addBtn, { backgroundColor: c.sell }]}
+								accessibilityRole="button"
+								accessibilityLabel={t("catalogue.addProduct")}
+							>
+								<Ionicons name="add" size={18} color="#fff" />
+							</Pressable>
+						)}
+					</View>
 				}
 			/>
 
@@ -241,6 +265,7 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
 	meta: { fontSize: 13, fontFamily: Fonts.body },
+	headerActions: { flexDirection: "row", gap: 8 },
 	addBtn: {
 		width: 44,
 		height: 44,

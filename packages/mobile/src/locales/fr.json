@@ -2275,6 +2275,11 @@
 		"insufficient": "Activité insuffisante"
 	},
 	"stock": {
+		"printTitle": "Imprimer une feuille d'inventaire",
+		"printBody": "Avec le stock attendu de chaque ligne, ou à l'aveugle pour un comptage qui n'en est pas influencé. L'impression permet aussi d'enregistrer en PDF.",
+		"printSheet": "Feuille d'inventaire",
+		"printBlind": "Feuille à l'aveugle",
+		"printFailed": "La feuille n'a pas pu être préparée",
 		"notTracked": "Stock non suivi",
 		"outOfStock": "Rupture",
 		"lowCount": "{{count}} · stock faible",

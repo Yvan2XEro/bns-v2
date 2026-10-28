@@ -2272,6 +2272,11 @@
 		"insufficient": "Not enough activity"
 	},
 	"stock": {
+		"printTitle": "Print a stock count sheet",
+		"printBody": "With each line's expected stock, or blind so the count is not steered by it. Printing can also save a PDF.",
+		"printSheet": "Stock count sheet",
+		"printBlind": "Blind count sheet",
+		"printFailed": "The sheet could not be prepared",
 		"notTracked": "Stock not tracked",
 		"outOfStock": "Out of stock",
 		"lowCount": "{{count}} · low stock",
