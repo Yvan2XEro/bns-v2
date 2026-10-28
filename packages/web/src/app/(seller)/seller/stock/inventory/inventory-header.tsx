@@ -1,8 +1,14 @@
 "use client";
 
-import { LoaderCircle, Printer } from "lucide-react";
+import { ChevronDown, LoaderCircle, Printer } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 
 export function InventoryHeader({
 	startedLabel,
@@ -37,14 +43,43 @@ export function InventoryHeader({
 				<p className="text-ink-muted text-sm">{t("subtitle")}</p>
 			</div>
 			<div className="flex flex-wrap gap-2 print:hidden">
-				<button
-					type="button"
-					onClick={() => window.print()}
-					className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 text-sm"
-				>
-					<Printer aria-hidden="true" className="h-4 w-4" />
-					{t("print")}
-				</button>
+				{/* A sheet designed for paper (the API's print document), in a
+				    new tab that opens the print dialog — not this screen printed. */}
+				<DropdownMenu>
+					<DropdownMenuTrigger className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 text-sm data-[state=open]:border-[var(--shop-accent-border,var(--c-brand-line))]">
+						<Printer aria-hidden="true" className="h-4 w-4" />
+						{t("print")}
+						<ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-72">
+						<DropdownMenuItem asChild>
+							<a
+								href="/print/stock-count?autoprint=1"
+								target="_blank"
+								rel="noopener"
+								className="flex flex-col items-start gap-0.5"
+							>
+								<span className="font-medium">{t("printSheet")}</span>
+								<span className="text-ink-muted text-xs">
+									{t("printSheetHint")}
+								</span>
+							</a>
+						</DropdownMenuItem>
+						<DropdownMenuItem asChild>
+							<a
+								href="/print/stock-count?autoprint=1&blind=1"
+								target="_blank"
+								rel="noopener"
+								className="flex flex-col items-start gap-0.5"
+							>
+								<span className="font-medium">{t("printBlind")}</span>
+								<span className="text-ink-muted text-xs">
+									{t("printBlindHint")}
+								</span>
+							</a>
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
 				<button
 					type="button"
 					onClick={onSaveDraft}

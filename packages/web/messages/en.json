@@ -1713,6 +1713,10 @@
 		"saveWithDelta": "Save {delta}"
 	},
 	"Inventory": {
+		"printSheet": "Stock count sheet",
+		"printSheetHint": "With each line's expected stock.",
+		"printBlind": "Blind count sheet",
+		"printBlindHint": "Without the expected stock, so the count is not steered by it.",
 		"breadcrumb": "Stock",
 		"title": "Stock count",
 		"heading": "Stock count of {date}",

@@ -1713,6 +1713,10 @@
 		"saveWithDelta": "Enregistrer {delta}"
 	},
 	"Inventory": {
+		"printSheet": "Feuille d'inventaire",
+		"printSheetHint": "Avec le stock attendu de chaque ligne.",
+		"printBlind": "Feuille de comptage à l'aveugle",
+		"printBlindHint": "Sans le stock attendu, pour un comptage qui n'en est pas influencé.",
 		"breadcrumb": "Stock",
 		"title": "Inventaire",
 		"heading": "Inventaire du {date}",
