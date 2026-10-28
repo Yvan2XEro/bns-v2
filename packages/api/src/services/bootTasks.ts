@@ -18,6 +18,7 @@ import {
 	categoryCatchUpFingerprint,
 } from "./categoryCatchUp";
 import { isNotificationProviderConfigured } from "./notificationProvider";
+import { importTaxonomy, taxonomyFingerprint } from "./taxonomyImport";
 
 /**
  * What used to be the manual half of a release checklist, now run by the API
@@ -61,6 +62,18 @@ export function bootTasks(): DeployTask<Payload>[] {
 			run: async (payload) => {
 				await catchUpCategories(payload, {
 					log: (line) => payload.logger.info(`[categories] ${line.trim()}`),
+				});
+			},
+		},
+		{
+			// The taxonomy extension (seed/taxonomy): new categories, attributes,
+			// options, aliases and tags, added without touching what is there.
+			// After the catch-up, whose attributes it builds on.
+			name: "taxonomy-extension",
+			fingerprint: taxonomyFingerprint(),
+			run: async (payload) => {
+				await importTaxonomy(payload, {
+					log: (line) => payload.logger.info(`[taxonomy] ${line}`),
 				});
 			},
 		},

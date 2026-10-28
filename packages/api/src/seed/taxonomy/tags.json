@@ -1,0 +1,243 @@
+[
+	{
+		"slug": "bulk-sale",
+		"name": {
+			"fr": "Vente en gros",
+			"en": "Wholesale"
+		},
+		"emoji": "📦",
+		"categories": [
+			"food-agriculture",
+			"building-materials",
+			"power-energy-equipment",
+			"business-industrial",
+			"office-school"
+		]
+	},
+	{
+		"slug": "made-to-order",
+		"name": {
+			"fr": "Fabriqué sur commande",
+			"en": "Made to order"
+		},
+		"emoji": "🛠️",
+		"categories": [
+			"fabrics-textiles",
+			"african-fabrics-wax",
+			"furniture",
+			"building-materials",
+			"arts-crafts",
+			"beauty-personal-care"
+		]
+	},
+	{
+		"slug": "handmade",
+		"name": {
+			"fr": "Fait main",
+			"en": "Handmade"
+		},
+		"emoji": "🧵",
+		"categories": [
+			"fabrics-textiles",
+			"african-fabrics-wax",
+			"arts-crafts",
+			"home-decor-lighting",
+			"beauty-personal-care"
+		]
+	},
+	{
+		"slug": "locally-produced",
+		"name": {
+			"fr": "Produit local",
+			"en": "Locally produced"
+		},
+		"emoji": "🇨🇲",
+		"categories": [
+			"food-agriculture",
+			"african-fabrics-wax",
+			"arts-crafts",
+			"beauty-personal-care"
+		]
+	},
+	{
+		"slug": "farm-fresh",
+		"name": {
+			"fr": "Récolte récente / frais",
+			"en": "Farm-fresh"
+		},
+		"emoji": "🌿",
+		"categories": [
+			"fresh-food-produce",
+			"fruits-vegetables",
+			"meat-fish-poultry",
+			"local-staples-grains"
+		]
+	},
+	{
+		"slug": "installation-included",
+		"name": {
+			"fr": "Installation incluse",
+			"en": "Installation included"
+		},
+		"emoji": "🔧",
+		"categories": [
+			"power-energy-equipment",
+			"generators",
+			"solar-panels-kits",
+			"inverters-ups",
+			"security-surveillance",
+			"appliances",
+			"building-materials"
+		]
+	},
+	{
+		"slug": "after-sales-support",
+		"name": {
+			"fr": "Service après-vente",
+			"en": "After-sales support"
+		},
+		"emoji": "🧰",
+		"categories": [
+			"electronics",
+			"power-energy-equipment",
+			"business-industrial",
+			"appliances",
+			"office-school"
+		]
+	},
+	{
+		"slug": "custom-measurements",
+		"name": {
+			"fr": "Sur mesure",
+			"en": "Custom measurements"
+		},
+		"emoji": "📏",
+		"categories": [
+			"womens-clothing",
+			"mens-clothing",
+			"fabrics-textiles",
+			"african-fabrics-wax",
+			"furniture"
+		]
+	},
+	{
+		"slug": "home-service",
+		"name": {
+			"fr": "Prestation à domicile",
+			"en": "Home service available"
+		},
+		"emoji": "🏠",
+		"categories": [
+			"services",
+			"beauty-personal-services",
+			"tailoring-sewing-services",
+			"private-tutoring-services",
+			"home-repair-maintenance-services",
+			"cleaning-laundry-services",
+			"electrical-plumbing-services"
+		]
+	},
+	{
+		"slug": "same-day-service",
+		"name": {
+			"fr": "Service le jour même",
+			"en": "Same-day service"
+		},
+		"emoji": "⏱️",
+		"categories": [
+			"services",
+			"phone-computer-repair-services",
+			"transport-delivery-services",
+			"cleaning-laundry-services",
+			"appliance-repair-services"
+		]
+	},
+	{
+		"slug": "weekend-available",
+		"name": {
+			"fr": "Disponible le week-end",
+			"en": "Weekend availability"
+		},
+		"emoji": "🗓️",
+		"categories": [
+			"services",
+			"private-tutoring-services",
+			"beauty-personal-services",
+			"event-rental-planning-services",
+			"catering-food-services",
+			"transport-delivery-services"
+		]
+	},
+	{
+		"slug": "licensed-professional",
+		"name": {
+			"fr": "Professionnel agréé",
+			"en": "Licensed professional"
+		},
+		"emoji": "✅",
+		"categories": [
+			"money-transfer-services",
+			"health-parapharmacy",
+			"construction-contractor-services",
+			"electrical-plumbing-services",
+			"security-installation-services",
+			"services"
+		]
+	},
+	{
+		"slug": "internship",
+		"name": {
+			"fr": "Stage",
+			"en": "Internship"
+		},
+		"emoji": "🎓",
+		"categories": [
+			"job-offers",
+			"tech-office-jobs",
+			"hospitality-jobs",
+			"construction-jobs",
+			"agriculture-jobs"
+		]
+	},
+	{
+		"slug": "commission-based",
+		"name": {
+			"fr": "Rémunération à la commission",
+			"en": "Commission-based pay"
+		},
+		"emoji": "💼",
+		"categories": [
+			"job-offers",
+			"retail-sales-jobs",
+			"transport-logistics-jobs"
+		]
+	},
+	{
+		"slug": "includes-training",
+		"name": {
+			"fr": "Formation initiale incluse",
+			"en": "Training provided"
+		},
+		"emoji": "📘",
+		"categories": [
+			"job-offers",
+			"retail-sales-jobs",
+			"transport-logistics-jobs",
+			"hospitality-jobs",
+			"tech-office-jobs"
+		]
+	},
+	{
+		"slug": "export-ready",
+		"name": {
+			"fr": "Prêt pour export",
+			"en": "Export-ready"
+		},
+		"emoji": "🌍",
+		"categories": [
+			"food-agriculture",
+			"business-industrial",
+			"building-materials"
+		]
+	}
+]
