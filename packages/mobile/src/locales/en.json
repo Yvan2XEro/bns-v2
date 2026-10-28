@@ -2271,6 +2271,24 @@
 		"action_slow_response": "Turn on message notifications to reply sooner",
 		"insufficient": "Not enough activity"
 	},
+	"share": {
+		"title": "Share",
+		"whatsappStatus": "WhatsApp Status",
+		"whatsappStatusHint": "The card as a picture, captioned with the link",
+		"whatsappChat": "WhatsApp chat",
+		"whatsappChatHint": "The link, with its preview",
+		"instagramStory": "Instagram story",
+		"instagramStoryHint": "The card as the story's background",
+		"facebookStory": "Facebook story",
+		"facebookStoryHint": "The card as the story's background",
+		"copyLink": "Copy link",
+		"copyLinkHint": "Paste it anywhere",
+		"more": "More…",
+		"moreHint": "All your apps",
+		"copied": "Link copied",
+		"notInstalled": "This app is not installed on your phone.",
+		"failed": "Sharing did not go through. Try again."
+	},
 	"stock": {
 		"printTitle": "Print a stock count sheet",
 		"printBody": "With each line's expected stock, or blind so the count is not steered by it. Printing can also save a PDF.",

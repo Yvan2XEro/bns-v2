@@ -25,6 +25,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { ShareSheet } from "@/src/components/share/ShareSheet";
 import { ShopBrandProvider, useBrandFor } from "@/src/components/shop/brand";
 import { DeliveryCities } from "@/src/components/shop/DeliveryCities";
 import { LegalBlock } from "@/src/components/shop/LegalBlock";
@@ -91,7 +92,7 @@ export default function ShopScreen() {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
-	const { webUrl } = useAppConfig();
+	const { webUrl, shareCardsEnabled } = useAppConfig();
 	const { columns, cardWidth, gutter } = useResponsive();
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 	const barHeight = insets.top + TOP_BAR_ROW;
@@ -321,6 +322,15 @@ export default function ShopScreen() {
 
 	const share = async () => {
 		if (!shop) return;
+		// The share panel once an admin turned the cards on.
+		if (shareCardsEnabled && webUrl) {
+			await ShareSheet.call({
+				kind: "shop",
+				handle: shop.handle,
+				title: shop.name,
+			});
+			return;
+		}
 		const url = shopUrl(shop.handle, webUrl);
 		await Share.share({ message: `${shop.name}\n${url}`, url });
 	};

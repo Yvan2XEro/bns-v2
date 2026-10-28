@@ -64,6 +64,7 @@ import { MonitoringBridge } from "@/src/components/MonitoringBridge";
 import { NotificationLanguageSync } from "@/src/components/NotificationLanguageSync";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { QueryPersistence } from "@/src/components/QueryPersistence";
+import { ShareSheet } from "@/src/components/share/ShareSheet";
 import { SellerBrandProvider } from "@/src/components/shop/sellerBrand";
 import { AlertProvider } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
@@ -242,6 +243,7 @@ export default function RootLayout() {
 									<NovuWrapper>
 										<ChatProvider>
 											<AlertProvider>
+												<ShareSheet />
 												<PushTokenRegistrar />
 												<RootLayoutNav />
 												<OfflineBanner />

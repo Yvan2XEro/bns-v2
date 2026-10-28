@@ -23,6 +23,7 @@ data:
   # Novu Cloud; for a self-hosted Novu, its API and WebSocket service.
   NOVU_API_URL: "https://api.novu.co"
   NOVU_SOCKET_URL: ""
+  FACEBOOK_APP_ID: ""
   # Overbrand's SSO to the Payload panel: empty keeps each default
   # (packages/api/src/auth/sso/config.ts); the client id and secret are in
   # secret.yaml.

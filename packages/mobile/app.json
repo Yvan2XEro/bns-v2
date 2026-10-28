@@ -147,6 +147,18 @@
 			"expo-font",
 			"expo-image",
 			"expo-sharing",
+			[
+				"react-native-share",
+				{
+					"ios": ["whatsapp", "instagram-stories", "facebook-stories"],
+					"android": [
+						"com.whatsapp",
+						"com.whatsapp.w4b",
+						"com.instagram.android",
+						"com.facebook.katana"
+					]
+				}
+			],
 			"expo-web-browser",
 			"expo-status-bar",
 			"expo-apple-authentication",
@@ -161,7 +173,8 @@
 				{
 					"initialOrientation": "DEFAULT"
 				}
-			]
+			],
+			"expo-build-properties"
 		],
 		"locales": {
 			"en": {

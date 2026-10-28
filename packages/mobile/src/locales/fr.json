@@ -2274,6 +2274,24 @@
 		"action_slow_response": "Activez les notifications pour répondre plus vite",
 		"insufficient": "Activité insuffisante"
 	},
+	"share": {
+		"title": "Partager",
+		"whatsappStatus": "Statut WhatsApp",
+		"whatsappStatusHint": "La carte en image, avec le lien en légende",
+		"whatsappChat": "Discussion WhatsApp",
+		"whatsappChatHint": "Le lien, avec son aperçu",
+		"instagramStory": "Story Instagram",
+		"instagramStoryHint": "La carte en fond de story",
+		"facebookStory": "Story Facebook",
+		"facebookStoryHint": "La carte en fond de story",
+		"copyLink": "Copier le lien",
+		"copyLinkHint": "À coller où vous voulez",
+		"more": "Plus…",
+		"moreHint": "Toutes vos applications",
+		"copied": "Lien copié",
+		"notInstalled": "Cette application n'est pas installée sur votre téléphone.",
+		"failed": "Le partage n'a pas abouti. Réessayez."
+	},
 	"stock": {
 		"printTitle": "Imprimer une feuille d'inventaire",
 		"printBody": "Avec le stock attendu de chaque ligne, ou à l'aveugle pour un comptage qui n'en est pas influencé. L'impression permet aussi d'enregistrer en PDF.",

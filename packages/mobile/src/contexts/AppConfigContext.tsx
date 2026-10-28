@@ -49,6 +49,10 @@ export interface AppConfig {
 	insightsEnabled: boolean;
 	resaleEnabled: boolean;
 	resalePrepaidEnabled: boolean;
+	/** Generated share cards and the share panel (app-settings › Sharing). */
+	shareCardsEnabled: boolean;
+	/** Needed by Instagram and Facebook stories; null leaves them out. */
+	facebookAppId: string | null;
 	/** Rate, minimum and maximum for the buyer protection fee. */
 	buyerProtection: BuyerProtectionConfig;
 	/** Photos a listing or a product may carry (admin setting); the API refuses more. */
@@ -83,6 +87,8 @@ const DEFAULT: AppConfig = {
 	insightsEnabled: false,
 	resaleEnabled: false,
 	resalePrepaidEnabled: false,
+	shareCardsEnabled: false,
+	facebookAppId: null,
 	buyerProtection: { bps: 300, min: 100, max: 15_000 },
 	photosIncluded: PHOTO_LIMIT.default,
 	monitoring: NO_MONITORING,

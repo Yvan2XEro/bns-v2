@@ -164,6 +164,7 @@ describe("GET /api/public/config", () => {
 			resaleEnabled: false,
 			resalePrepaidEnabled: false,
 			shareCardsEnabled: false,
+			facebookAppId: null,
 			photosIncluded: 3,
 			// Send-only keys; their own spec covers the values.
 			monitoring: expect.any(Object),

@@ -244,6 +244,10 @@ export async function GET(request?: Request) {
 		resaleEnabled,
 		resalePrepaidEnabled,
 		shareCardsEnabled,
+		// Instagram and Facebook stories take a story only from an app that
+		// names its Facebook app: a public id, not a secret. Unset, the apps
+		// leave those two destinations out.
+		facebookAppId: process.env.FACEBOOK_APP_ID?.trim() || null,
 		// Photos a listing or a product may carry; the API refuses more.
 		photosIncluded,
 		// Sentry and PostHog: public send-only keys, set on the API alone.

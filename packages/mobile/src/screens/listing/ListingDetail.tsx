@@ -25,6 +25,7 @@ import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { BuyBox } from "@/src/components/order/BuyBox";
 import { DeliveryEstimates } from "@/src/components/order/DeliveryEstimates";
 import { ReviewStars } from "@/src/components/ReviewStars";
+import { ShareSheet } from "@/src/components/share/ShareSheet";
 import { ShopSellerCard } from "@/src/components/shop/ShopSellerCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -151,7 +152,7 @@ export function ListingDetail({ id }: { id: string }) {
 	const [lightboxIdx, setLightboxIdx] = useState(0);
 	const [descExpanded, setDescExpanded] = useState(false);
 	const startConversation = useStartConversation();
-	const { webUrl } = useAppConfig();
+	const { webUrl, shareCardsEnabled } = useAppConfig();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -299,6 +300,12 @@ export function ListingDetail({ id }: { id: string }) {
 	});
 
 	const handleShare = async () => {
+		// The share panel (WhatsApp Status, stories, …) once an admin turned
+		// the cards on; the system sheet with the link otherwise.
+		if (shareCardsEnabled && webUrl && listing && id) {
+			await ShareSheet.call({ kind: "listing", id, title: listing.title });
+			return;
+		}
 		const url = `${webUrl ?? ""}/listing/${id}`;
 		Share.share({
 			title: listing?.title,
