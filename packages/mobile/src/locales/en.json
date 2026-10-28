@@ -4814,5 +4814,11 @@
 		"selectConversation": "Pick a conversation to read it here",
 		"selectListing": "Pick a listing to see it here",
 		"selectItem": "Pick an item to see it here"
+	},
+	"categories": {
+		"title": "All categories",
+		"allOf": "All of {{name}}",
+		"seeAllCount": "See all {{count}}",
+		"more": "See all"
 	}
 }

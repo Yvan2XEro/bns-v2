@@ -54,6 +54,7 @@ import {
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { categoryTree } from "@/src/lib/categoryTree";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import {
@@ -374,9 +375,18 @@ export default function HomeScreen() {
 			isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
 		}));
 
-	const categories = (categoriesData?.categories ?? [])
-		.filter(Boolean)
-		.filter((cat: any) => !!cat?.id && !!cat?.name);
+	// Two rows of rubrics; when there are more, the last cell is "See all".
+	const rubrics = React.useMemo(
+		() =>
+			categoryTree(categoriesData?.categories ?? []).map((rubric) => ({
+				...rubric,
+				image: rubric.imageUrl ? { url: rubric.imageUrl } : undefined,
+			})),
+		[categoriesData],
+	);
+	const catColumns = isTablet ? 8 : 4;
+	const homeRubrics =
+		rubrics.length > catColumns * 2 ? catColumns * 2 - 1 : rubrics.length;
 	const rawHits = (recentData?.pages ?? []).flatMap((page) => page.hits ?? []);
 	const homeListings = rawHits.filter(Boolean).map((l: any) => ({
 		...l,
@@ -770,35 +780,82 @@ export default function HomeScreen() {
 					}
 				>
 					<View style={[styles.homeContent, { backgroundColor: bg }]}>
-						{/* Catégories */}
-						{categories.length > 0 && (
+						{/* Catégories: the rubrics in two rows, the rest one tap away */}
+						{rubrics.length > 0 && (
 							<View style={styles.section}>
 								<View style={styles.sectionHeader}>
 									<Text style={[styles.sectionTitle, { color: textColor }]}>
 										{t("home.categories")}
 									</Text>
+									<Pressable
+										onPress={() => router.push("/categories")}
+										hitSlop={8}
+									>
+										<Text style={[styles.seeAll, { color: primaryColor }]}>
+											{t("home.seeAll")}
+										</Text>
+									</Pressable>
 								</View>
-								<ScrollView
-									horizontal
-									showsHorizontalScrollIndicator={false}
-									contentContainerStyle={styles.catList}
-								>
-									{categories.map((cat: any, _i: number) => (
-										<CategoryIcon
-											key={cat.id}
-											category={cat}
-											// The one search of the app, filtered on the category
-											// itself rather than its name typed as text; on a tablet
-											// its results open listings beside them.
-											onPress={() =>
-												router.push({
-													pathname: "/(tabs)/search",
-													params: { category: String(cat.id) },
-												})
-											}
-										/>
+								<View style={styles.catGrid}>
+									{rubrics.slice(0, homeRubrics).map((rubric) => (
+										<View
+											key={rubric.id}
+											style={[
+												styles.catCell,
+												{ width: `${100 / catColumns}%` },
+											]}
+										>
+											<CategoryIcon
+												category={rubric}
+												// A rubric opens its sub-categories; one without any
+												// goes straight to the search filtered on it.
+												onPress={() =>
+													rubric.children.length > 0
+														? router.push({
+																pathname: "/categories",
+																params: { rubric: rubric.id },
+															})
+														: router.push({
+																pathname: "/(tabs)/search",
+																params: { category: rubric.id },
+															})
+												}
+											/>
+										</View>
 									))}
-								</ScrollView>
+									{rubrics.length > homeRubrics && (
+										<View
+											style={[
+												styles.catCell,
+												{ width: `${100 / catColumns}%` },
+											]}
+										>
+											<Pressable
+												onPress={() => router.push("/categories")}
+												style={styles.catMore}
+											>
+												<View
+													style={[
+														styles.catMoreIcon,
+														{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+													]}
+												>
+													<Ionicons
+														name="grid"
+														size={22}
+														color={primaryColor}
+													/>
+												</View>
+												<Text
+													style={[styles.catMoreLabel, { color: primaryColor }]}
+													numberOfLines={2}
+												>
+													{t("categories.more")}
+												</Text>
+											</Pressable>
+										</View>
+									)}
+								</View>
 							</View>
 						)}
 
@@ -1286,7 +1343,27 @@ const styles = StyleSheet.create({
 	sectionTitleShrink: { flexShrink: 1 },
 	locationSection: { marginTop: 20 },
 	seeAll: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	catList: { paddingHorizontal: 16, gap: 8 },
+	catGrid: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		paddingHorizontal: 8,
+		rowGap: 12,
+	},
+	catCell: { alignItems: "center" },
+	catMore: { alignItems: "center", width: 72 },
+	catMoreIcon: {
+		width: 56,
+		height: 56,
+		borderRadius: 56 * 0.3,
+		alignItems: "center",
+		justifyContent: "center",
+		marginBottom: 6,
+	},
+	catMoreLabel: {
+		fontSize: 11,
+		textAlign: "center",
+		fontFamily: Fonts.bodySemibold,
+	},
 
 	/* ── Featured ── */
 	featuredList: { paddingHorizontal: 16, gap: 12 },

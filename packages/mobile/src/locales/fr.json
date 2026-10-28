@@ -4817,5 +4817,11 @@
 		"selectConversation": "Choisissez une conversation pour la lire ici",
 		"selectListing": "Choisissez une annonce pour la voir ici",
 		"selectItem": "Choisissez un élément pour le voir ici"
+	},
+	"categories": {
+		"title": "Toutes les catégories",
+		"allOf": "Tout {{name}}",
+		"seeAllCount": "Voir les {{count}}",
+		"more": "Tout voir"
 	}
 }

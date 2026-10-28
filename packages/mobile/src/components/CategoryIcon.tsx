@@ -77,8 +77,9 @@ export function CategoryIcon({
 								resolveListingImageUrl(category.image, "thumbnail") ??
 								category.image.url,
 						}}
-						style={{ width: size * 0.55, height: size * 0.55 }}
-						contentFit="contain"
+						// Category pictures are photos: they fill the tile.
+						style={StyleSheet.absoluteFill}
+						contentFit="cover"
 					/>
 				) : (
 					<Ionicons name="cube-outline" size={size * 0.42} color={tint.icon} />
@@ -95,8 +96,9 @@ export function CategoryIcon({
 }
 
 const styles = StyleSheet.create({
-	container: { alignItems: "center", width: 72, marginRight: 4 },
+	container: { alignItems: "center", width: 72 },
 	circle: {
+		overflow: "hidden",
 		alignItems: "center",
 		justifyContent: "center",
 		marginBottom: 6,
