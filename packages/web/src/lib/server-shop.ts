@@ -83,6 +83,17 @@ export const getShopsEnabled = cache(async (): Promise<boolean> => {
 	return config?.shopsEnabled === true;
 });
 
+/**
+ * The generated share images (link previews, Status and story cards): off
+ * until an admin turns them on, and off when the config cannot be read.
+ */
+export const getShareCardsEnabled = cache(async (): Promise<boolean> => {
+	const config = await serverGet<{ shareCardsEnabled?: boolean }>(
+		"/api/public/config",
+	);
+	return config?.shareCardsEnabled === true;
+});
+
 /** Root categories, the ones a shop picks "what it sells" from. */
 export const getTopCategories = cache(async (): Promise<Category[]> => {
 	const data = await serverGet<{ categories?: Category[] }>(

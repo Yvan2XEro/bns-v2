@@ -11,7 +11,8 @@ import { ShopHero } from "~/components/shop/shop-hero";
 import { ShopStickyContact } from "~/components/shop/shop-sticky-contact";
 import { IOS_APP_ID } from "~/lib/app-stores";
 import { serverFetch } from "~/lib/server-api";
-import { lookupShop } from "~/lib/server-shop";
+import { getShareCardsEnabled, lookupShop } from "~/lib/server-shop";
+import { cardPath } from "~/lib/share-card/formats";
 import { type CategoryNode, groupedCounts } from "~/lib/shop-category-groups";
 import {
 	parsePage,
@@ -137,8 +138,13 @@ export async function generateMetadata({
 	const description =
 		shop.description?.slice(0, 155).replace(/\n/g, " ") ||
 		t("metaDescription", { name: shop.name });
-	const image = shop.banner?.url ?? shop.logo?.url ?? null;
 	const canonical = shopUrl(shop.handle);
+	// The generated card (app-settings › Sharing) when it is on; else the
+	// banner or the logo, as before.
+	const card = (await getShareCardsEnabled())
+		? `${new URL(canonical).origin}${cardPath({ kind: "shop", handle: shop.handle }, "og")}`
+		: null;
+	const image = card ?? shop.banner?.url ?? shop.logo?.url ?? null;
 
 	return {
 		title: shop.name,
@@ -151,7 +157,19 @@ export async function generateMetadata({
 			description,
 			url: canonical,
 			type: "website",
-			...(image && { images: [{ url: image, alt: shop.name }] }),
+			...(image && {
+				images: [
+					card
+						? {
+								url: card,
+								width: 1200,
+								height: 630,
+								type: "image/jpeg",
+								alt: shop.name,
+							}
+						: { url: image, alt: shop.name },
+				],
+			}),
 		},
 		twitter: {
 			card: image ? "summary_large_image" : "summary",

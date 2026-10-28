@@ -1,4 +1,10 @@
 {
+	"ShareCard": {
+		"cta": "Voir sur BuyNSellem",
+		"verified": "Vérifiée",
+		"rating": "{rating}/5 ({count} avis)",
+		"listings": "{count, plural, =0 {Aucune annonce} one {# annonce} other {# annonces}}"
+	},
 	"ShopDirectory": {
 		"metaTitle": "Boutiques",
 		"metaTitleIn": "Boutiques à {city}",

@@ -237,6 +237,23 @@ export const AppSettings: GlobalConfig = {
 			],
 		},
 		{
+			name: "sharing",
+			type: "group",
+			label: "Sharing",
+			fields: [
+				{
+					name: "cardsEnabled",
+					type: "checkbox",
+					label: "Share cards",
+					defaultValue: false,
+					admin: {
+						description:
+							"On: listings and shops get generated share images — the link preview (WhatsApp, Facebook, LinkedIn, X), a 9:16 card for WhatsApp Status and stories, a square post — and the share buttons offer them. Off: link previews keep the listing's first photo and the card URLs answer 404.",
+					},
+				},
+			],
+		},
+		{
 			name: "media",
 			type: "group",
 			label: "Photos",

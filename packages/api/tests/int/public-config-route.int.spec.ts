@@ -57,6 +57,24 @@ describe("GET /api/public/config", () => {
 		expect(await (await GET()).json()).toMatchObject({ shopsEnabled: false });
 	});
 
+	it("keeps share cards off until an admin turns them on", async () => {
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/config/route"
+		);
+		findGlobal.mockResolvedValue({});
+		expect(await (await GET()).json()).toMatchObject({
+			shareCardsEnabled: false,
+		});
+		findGlobal.mockResolvedValue({ sharing: { cardsEnabled: true } });
+		expect(await (await GET()).json()).toMatchObject({
+			shareCardsEnabled: true,
+		});
+		findGlobal.mockRejectedValue(new Error("down"));
+		expect(await (await GET()).json()).toMatchObject({
+			shareCardsEnabled: false,
+		});
+	});
+
 	it("exposes ordersEnabled false and no cities when the flag is off", async () => {
 		findGlobal.mockResolvedValue({
 			orders: { enabled: false, launchCities: [] },
@@ -145,6 +163,7 @@ describe("GET /api/public/config", () => {
 			intercityEnabled: false,
 			resaleEnabled: false,
 			resalePrepaidEnabled: false,
+			shareCardsEnabled: false,
 			photosIncluded: 3,
 			// Send-only keys; their own spec covers the values.
 			monitoring: expect.any(Object),

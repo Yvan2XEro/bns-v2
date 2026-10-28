@@ -7168,6 +7168,12 @@ export interface AppSetting {
     enabled?: boolean | null;
     maxPerUser?: number | null;
   };
+  sharing?: {
+    /**
+     * On: listings and shops get generated share images — the link preview (WhatsApp, Facebook, LinkedIn, X), a 9:16 card for WhatsApp Status and stories, a square post — and the share buttons offer them. Off: link previews keep the listing's first photo and the card URLs answer 404.
+     */
+    cardsEnabled?: boolean | null;
+  };
   media?: {
     /**
      * Photos a seller can add to a classified listing or a shop product (at most 10). Content that already has more keeps its photos but cannot add any. Extra photos will become a paid option.
@@ -7548,6 +7554,11 @@ export interface AppSettingsSelect<T extends boolean = true> {
     | {
         enabled?: T;
         maxPerUser?: T;
+      };
+  sharing?:
+    | T
+    | {
+        cardsEnabled?: T;
       };
   media?:
     | T

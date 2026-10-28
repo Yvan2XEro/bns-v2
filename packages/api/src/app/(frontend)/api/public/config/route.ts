@@ -53,6 +53,9 @@ export async function GET(request?: Request) {
 	let intercityEnabled = false;
 	let resaleEnabled = false;
 	let resalePrepaidEnabled = false;
+	// Generated share images (link previews, Status/story cards): off until
+	// an admin turns them on (app-settings › Sharing).
+	let shareCardsEnabled = false;
 	let photosIncluded: number = PHOTO_LIMIT.default;
 	let payloadRef: Payload | undefined;
 
@@ -61,6 +64,7 @@ export async function GET(request?: Request) {
 		payloadRef = payload;
 		const settings = await payload.findGlobal({ slug: "app-settings" });
 		insightsEnabled = settings.insights?.enabled ?? false;
+		shareCardsEnabled = settings.sharing?.cardsEnabled === true;
 		photosIncluded = normalizePhotoLimit(settings.media?.photosIncluded);
 		const deliverySettings = await getDeliverySettings(payload);
 		const resaleSettings = await getResaleSettings(payload);
@@ -239,6 +243,7 @@ export async function GET(request?: Request) {
 		intercityEnabled,
 		resaleEnabled,
 		resalePrepaidEnabled,
+		shareCardsEnabled,
 		// Photos a listing or a product may carry; the API refuses more.
 		photosIncluded,
 		// Sentry and PostHog: public send-only keys, set on the API alone.

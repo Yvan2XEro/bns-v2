@@ -54,7 +54,13 @@ import { listingStructuredData } from "~/lib/listing-structured-data";
 import { formatOrderMoneyRange, renderOrderMoney } from "~/lib/order-money";
 import { hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
-import { getMarket, getMyShop, getPublicShop } from "~/lib/server-shop";
+import {
+	getMarket,
+	getMyShop,
+	getPublicShop,
+	getShareCardsEnabled,
+} from "~/lib/server-shop";
+import { cardPath } from "~/lib/share-card/formats";
 import { timeAgo } from "~/lib/time-ago";
 import type { Listing, Tag, User } from "~/types";
 import { BuyBox } from "./buy-box";
@@ -96,7 +102,13 @@ export async function generateMetadata({
 	const imageUrls = (listing.images ?? [])
 		.map((img) => (img.image as { url?: string })?.url)
 		.filter((u): u is string => Boolean(u));
-	const firstImage = imageUrls[0];
+	// The generated card (app-settings › Sharing) when it is on, sized for
+	// every preview; else the listing's first photo, as before.
+	const card =
+		listing.status === "published" && (await getShareCardsEnabled())
+			? `${WEB_URL}${cardPath({ kind: "listing", id }, "og", listing.updatedAt)}`
+			: null;
+	const firstImage = card ?? imageUrls[0];
 
 	return {
 		title,
@@ -111,7 +123,15 @@ export async function generateMetadata({
 			type: "website",
 			...(firstImage && {
 				images: [
-					{ url: firstImage, width: 1200, height: 630, alt: listing.title },
+					card
+						? {
+								url: card,
+								width: 1200,
+								height: 630,
+								type: "image/jpeg",
+								alt: listing.title,
+							}
+						: { url: firstImage, alt: listing.title },
 				],
 			}),
 		},
