@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	Controller,
@@ -290,6 +290,15 @@ export function ProductEditor({
 	};
 
 	const heading = detail ? title || t("untitled") : t("newProduct");
+	const locale = useLocale();
+	const when = (iso: string) =>
+		new Date(iso).toLocaleString(locale, {
+			day: "numeric",
+			month: "short",
+			year: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 	const listing = detail?.response.listing ?? null;
 	const saved = saveProduct.isSuccess && !formState.isDirty;
 	// The zod resolver runs before the mutation starts, so the mutation's own
@@ -303,6 +312,10 @@ export function ProductEditor({
 					section="catalogue"
 					href="/seller/catalogue"
 					reference={heading}
+					details={[
+						t("modifiedAt", { date: when(detail.response.product.updatedAt) }),
+						t("createdAt", { date: when(detail.response.product.createdAt) }),
+					]}
 				/>
 			)}
 			<ProductEditorHeader

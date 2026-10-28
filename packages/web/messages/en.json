@@ -209,6 +209,9 @@
 		"level3Action": "Verify my business"
 	},
 	"SellerShell": {
+		"whereAmI": "You are here",
+		"unreadMessages": "{count, plural, one {# unread message} other {# unread messages}}",
+		"newProduct": "New product",
 		"toProcess": "{count, plural, one {# order to process} other {# orders to process}}",
 		"level": "Lvl {level}",
 		"group_sales": "Sales",
@@ -1487,6 +1490,8 @@
 		"bulkUndo": "Undo"
 	},
 	"ProductEditor": {
+		"modifiedAt": "Modified {date}",
+		"createdAt": "Created {date}",
 		"tabsLabel": "Product sections",
 		"tabs": {
 			"details": "Product",

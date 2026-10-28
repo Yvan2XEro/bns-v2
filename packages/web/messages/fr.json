@@ -209,6 +209,9 @@
 		"level3Action": "Vérifier mon entreprise"
 	},
 	"SellerShell": {
+		"whereAmI": "Vous êtes ici",
+		"unreadMessages": "{count, plural, one {# message non lu} other {# messages non lus}}",
+		"newProduct": "Nouveau produit",
 		"toProcess": "{count, plural, one {# commande à traiter} other {# commandes à traiter}}",
 		"level": "Niv. {level}",
 		"group_sales": "Ventes",
@@ -1487,6 +1490,8 @@
 		"bulkUndo": "Annuler"
 	},
 	"ProductEditor": {
+		"modifiedAt": "Modifié le {date}",
+		"createdAt": "Créé le {date}",
 		"tabsLabel": "Sections du produit",
 		"tabs": {
 			"details": "Produit",
