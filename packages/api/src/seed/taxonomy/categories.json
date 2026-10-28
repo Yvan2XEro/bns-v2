@@ -27,7 +27,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2971142,
+			"source": "https://pixabay.com/photos/wheel-rim-auto-tire-dealer-tire-2971142/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "car-parts",
@@ -101,7 +106,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5985938,
+			"source": "https://pixabay.com/photos/starter-engine-auto-part-5985938/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "motorcycle-parts",
@@ -168,7 +178,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3077216,
+			"source": "https://pixabay.com/photos/carburetor-motorcycle-carburetor-3077216/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "tires-wheels",
@@ -215,7 +230,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1868894,
+			"source": "https://pixabay.com/photos/pile-tires-rubber-stacked-used-1868894/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "vehicle-batteries",
@@ -292,7 +312,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 791333,
+			"source": "https://pixabay.com/photos/signs-safety-danger-risk-car-791333/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "car-electronics-accessories",
@@ -359,7 +384,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 618402,
+			"source": "https://pixabay.com/photos/chevrolet-smart-key-car-key-618402/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "vehicle-accessories",
@@ -419,7 +449,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1099622,
+			"source": "https://pixabay.com/photos/seat-cushion-auto-accessories-1099622/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "vehicle-rentals",
@@ -439,7 +474,12 @@
 			"price": "auto",
 			"photos": "auto"
 		},
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 2616375,
+			"source": "https://pixabay.com/photos/guy-man-male-people-hand-hold-2616375/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "rooms-shared-housing",
@@ -491,7 +531,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2486092,
+			"source": "https://pixabay.com/photos/home-interiors-kitchen-2486092/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "vacation-rentals",
@@ -543,7 +588,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4657751,
+			"source": "https://pixabay.com/photos/holiday-home-cottage-netherlands-4657751/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "parking-storage-rentals",
@@ -625,7 +675,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1553550,
+			"source": "https://pixabay.com/photos/storage-warehouse-storage-warehouse-1553550/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "phone-accessories",
@@ -713,7 +768,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5671111,
+			"source": "https://pixabay.com/photos/casings-accessories-housings-5671111/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "chargers-cables",
@@ -790,7 +850,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2690301,
+			"source": "https://pixabay.com/photos/bible-iphone-mobile-read-2690301/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "phone-cases-protection",
@@ -850,7 +915,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1091302,
+			"source": "https://pixabay.com/photos/ios-new-mobile-gadget-pad-1091302/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "computer-accessories",
@@ -924,7 +994,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 74533,
+			"source": "https://pixabay.com/photos/mouse-red-computer-information-74533/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "computer-components",
@@ -1012,7 +1087,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4393376,
+			"source": "https://pixabay.com/photos/cpu-processor-chip-motherboard-4393376/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "keyboards-mice",
@@ -1079,7 +1159,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 886462,
+			"source": "https://pixabay.com/photos/keyboard-computer-keys-white-886462/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "storage-memory",
@@ -1163,7 +1248,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1138076,
+			"source": "https://pixabay.com/photos/sd-card-storage-data-technology-1138076/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "audio-video-equipment",
@@ -1223,7 +1313,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 6745942,
+			"source": "https://pixabay.com/photos/camera-film-cinema-6745942/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "speakers-home-audio",
@@ -1270,7 +1365,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1822630,
+			"source": "https://pixabay.com/photos/techland-audio-audiovector-stereo-1822630/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "headphones-earbuds",
@@ -1344,7 +1444,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4334557,
+			"source": "https://pixabay.com/photos/music-headset-sound-headphones-4334557/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "projectors-video",
@@ -1421,7 +1526,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 7023604,
+			"source": "https://pixabay.com/photos/projector-video-projector-7023604/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "cameras-photography",
@@ -1488,7 +1598,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3480569,
+			"source": "https://pixabay.com/photos/cameras-old-retro-film-vintage-3480569/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "camera-accessories",
@@ -1562,7 +1677,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4830248,
+			"source": "https://pixabay.com/photos/camera-lens-photography-flat-4830248/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "networking-internet",
@@ -1629,7 +1749,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3100049,
+			"source": "https://pixabay.com/photos/sever-digitization-mainframe-3100049/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "routers-modems",
@@ -1710,7 +1835,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1572617,
+			"source": "https://pixabay.com/photos/network-cable-ethernet-1572617/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "satellite-internet-equipment",
@@ -1784,7 +1914,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 15669,
+			"source": "https://pixabay.com/photos/aerial-antenna-communication-15669/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "security-surveillance",
@@ -1851,7 +1986,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1124585,
+			"source": "https://pixabay.com/photos/camera-monitoring-security-1124585/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "cctv-systems",
@@ -1928,7 +2068,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1305045,
+			"source": "https://pixabay.com/photos/monitoring-security-surveillance-1305045/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "printers-scanners",
@@ -2002,7 +2147,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5169618,
+			"source": "https://pixabay.com/photos/office-printer-copier-jobs-5169618/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "ink-toner",
@@ -2032,7 +2182,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2823592,
+			"source": "https://pixabay.com/photos/bottle-3d-model-cinema-4d-2823592/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "kitchenware-tableware",
@@ -2106,7 +2261,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3532396,
+			"source": "https://pixabay.com/photos/dishes-vintage-table-plate-flowers-3532396/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "cookware-utensils",
@@ -2173,7 +2333,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 419249,
+			"source": "https://pixabay.com/photos/pans-copper-old-baking-molds-419249/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "home-decor-lighting",
@@ -2240,7 +2405,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1854110,
+			"source": "https://pixabay.com/photos/curtains-decoration-indoors-plant-1854110/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "lamps-lighting",
@@ -2321,7 +2491,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1603766,
+			"source": "https://pixabay.com/photos/light-bulbs-lights-lamps-1603766/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "bedding-linens",
@@ -2388,7 +2563,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 820149,
+			"source": "https://pixabay.com/photos/pillows-sheets-bed-linen-820149/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "mattresses-bedding",
@@ -2465,7 +2645,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2489615,
+			"source": "https://pixabay.com/photos/mattress-bed-pillow-sleep-relax-2489615/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "building-materials",
@@ -2539,7 +2724,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1260304,
+			"source": "https://pixabay.com/photos/brick-wall-wall-background-building-1260304/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "cement-aggregates",
@@ -2630,7 +2820,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1320200,
+			"source": "https://pixabay.com/photos/concrete-plant-gravel-plant-concrete-1320200/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "steel-rebar-roofing",
@@ -2707,7 +2902,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 474792,
+			"source": "https://pixabay.com/photos/iron-rods-reinforcing-bars-474792/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "plumbing-electrical-supplies",
@@ -2784,7 +2984,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 840835,
+			"source": "https://pixabay.com/photos/plumbing-pipe-wrenches-plumber-840835/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "paint-finishing",
@@ -2868,7 +3073,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2724137,
+			"source": "https://pixabay.com/photos/paint-to-dye-tinting-brush-dye-2724137/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "tiles-sanitaryware",
@@ -2959,7 +3169,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1284608,
+			"source": "https://pixabay.com/photos/toilet-bidet-vater-sanitary-1284608/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "doors-windows",
@@ -3043,7 +3258,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2096367,
+			"source": "https://pixabay.com/photos/door-window-wooden-blue-entrance-2096367/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "power-energy-equipment",
@@ -3124,7 +3344,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 62560,
+			"source": "https://pixabay.com/photos/solar-system-solar-cells-technology-62560/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "generators",
@@ -3215,7 +3440,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5476642,
+			"source": "https://pixabay.com/photos/generator-alternator-equipment-5476642/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "solar-panels-kits",
@@ -3292,7 +3522,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2742302,
+			"source": "https://pixabay.com/photos/photovoltaic-system-solar-2742302/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "inverters-ups",
@@ -3362,7 +3597,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2476790,
+			"source": "https://pixabay.com/photos/data-center-engine-room-2476790/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "batteries-chargers",
@@ -3446,7 +3686,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3909954,
+			"source": "https://pixabay.com/photos/charger-batteries-energy-3909954/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "tools-hardware",
@@ -3513,7 +3758,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 864983,
+			"source": "https://pixabay.com/photos/tools-construct-craft-repair-864983/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "power-tools",
@@ -3590,7 +3840,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5471252,
+			"source": "https://pixabay.com/photos/cordless-drill-power-tool-drill-5471252/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "hand-tools",
@@ -3657,7 +3912,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 15539,
+			"source": "https://pixabay.com/photos/tools-hammer-wrench-screw-nails-15539/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "footwear",
@@ -3761,7 +4021,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 584850,
+			"source": "https://pixabay.com/photos/shoes-footwear-hiking-shoes-walking-584850/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "mens-shoes",
@@ -3828,7 +4093,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5983822,
+			"source": "https://pixabay.com/photos/brogue-shoes-shoes-leather-shoes-5983822/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "womens-shoes",
@@ -3895,7 +4165,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4769669,
+			"source": "https://pixabay.com/photos/wedding-womens-shoes-leather-shoes-4769669/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "bags-luggage",
@@ -4006,7 +4281,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1149289,
+			"source": "https://pixabay.com/photos/luggage-travel-sunlight-vacations-1149289/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "fabrics-textiles",
@@ -4097,7 +4377,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3506846,
+			"source": "https://pixabay.com/photos/fabric-tissue-cotton-textile-3506846/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "african-fabrics-wax",
@@ -4164,7 +4449,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1016295,
+			"source": "https://pixabay.com/photos/african-print-ankara-ghana-textile-1016295/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "sewing-supplies",
@@ -4238,7 +4528,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2406328,
+			"source": "https://pixabay.com/photos/tape-measure-scissors-2406328/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "beauty-personal-care",
@@ -4310,7 +4605,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1746322,
+			"source": "https://pixabay.com/photos/makeup-brush-paint-brush-cosmetics-1746322/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "hair-extensions-wigs",
@@ -4414,7 +4714,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1144298,
+			"source": "https://pixabay.com/photos/weft-extension-hair-extension-1144298/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "wigs-weaves",
@@ -4548,7 +4853,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2218520,
+			"source": "https://pixabay.com/photos/braid-african-girl-black-beautiful-2218520/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "skin-makeup-cosmetics",
@@ -4615,7 +4925,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3081015,
+			"source": "https://pixabay.com/photos/makeup-cosmetics-glass-lipstick-3081015/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "makeup-cosmetics",
@@ -4733,7 +5048,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 9086984,
+			"source": "https://pixabay.com/photos/cosmetics-makeup-woman-face-girl-9086984/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "skincare-products",
@@ -4800,7 +5120,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4993472,
+			"source": "https://pixabay.com/photos/beauty-cosmetic-products-cosmetics-4993472/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "hair-care-products",
@@ -4874,7 +5199,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 586185,
+			"source": "https://pixabay.com/photos/woman-hair-drying-girl-female-586185/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "beauty-tools-equipment",
@@ -4934,7 +5264,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4047422,
+			"source": "https://pixabay.com/photos/cosmetics-make-up-set-make-up-4047422/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "barber-salon-equipment",
@@ -5001,7 +5336,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1098831,
+			"source": "https://pixabay.com/photos/hairdresser-scissors-combs-1098831/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "health-parapharmacy",
@@ -5073,7 +5413,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1729445,
+			"source": "https://pixabay.com/photos/pharmacy-isolated-health-medicine-1729445/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "health-monitoring-devices",
@@ -5154,7 +5499,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 949092,
+			"source": "https://pixabay.com/photos/blood-pressure-measuring-device-949092/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "first-aid-hygiene",
@@ -5221,7 +5571,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3082670,
+			"source": "https://pixabay.com/photos/first-aid-supply-nurse-rescue-3082670/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "mobility-aids",
@@ -5302,7 +5657,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4027745,
+			"source": "https://pixabay.com/photos/disabled-stroller-illness-4027745/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "maternal-personal-care",
@@ -5362,7 +5722,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 6178270,
+			"source": "https://pixabay.com/photos/pregnant-woman-belly-mother-parent-6178270/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "food-agriculture",
@@ -5427,7 +5792,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 10470647,
+			"source": "https://pixabay.com/photos/pumpkin-orange-green-variety-10470647/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "fresh-food-produce",
@@ -5494,7 +5864,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1584999,
+			"source": "https://pixabay.com/photos/vegetables-water-droplets-fresh-1584999/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "fruits-vegetables",
@@ -5584,7 +5959,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3679075,
+			"source": "https://pixabay.com/photos/vegetables-ingredients-harvest-3679075/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "meat-fish-poultry",
@@ -5658,7 +6038,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1747910,
+			"source": "https://pixabay.com/photos/ground-meat-meat-food-minced-1747910/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "local-staples-grains",
@@ -5725,7 +6110,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2380804,
+			"source": "https://pixabay.com/photos/rice-rice-bowl-asian-food-2380804/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "grains-legumes",
@@ -5799,7 +6189,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2606866,
+			"source": "https://pixabay.com/photos/beans-legumes-food-market-shopping-2606866/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "oils-condiments",
@@ -5859,7 +6254,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 887348,
+			"source": "https://pixabay.com/photos/food-condiment-spices-powder-887348/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "local-food-products",
@@ -5926,7 +6326,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4493420,
+			"source": "https://pixabay.com/photos/banana-woman-mom-food-street-4493420/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "snacks-processed-foods",
@@ -6000,7 +6405,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 435452,
+			"source": "https://pixabay.com/photos/supermarket-shopping-sales-store-435452/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "farming-agriculture",
@@ -6060,7 +6470,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1154356,
+			"source": "https://pixabay.com/photos/coffee-beans-sack-burlap-colombia-1154356/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "seeds-seedlings",
@@ -6141,7 +6556,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4036130,
+			"source": "https://pixabay.com/photos/plant-little-plants-sow-grow-4036130/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "fertilizer-soil",
@@ -6208,7 +6628,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 7977570,
+			"source": "https://pixabay.com/photos/family-father-dad-plant-town-7977570/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "irrigation-pumps",
@@ -6292,7 +6717,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4362428,
+			"source": "https://pixabay.com/photos/tractor-grass-agriculture-summer-4362428/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "farm-tools-machinery",
@@ -6366,7 +6796,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3736829,
+			"source": "https://pixabay.com/photos/tractor-agriculture-vehicle-machine-3736829/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "livestock-feed",
@@ -6440,7 +6875,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2615928,
+			"source": "https://pixabay.com/photos/feed-animal-nutrition-pellets-2615928/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "poultry-farming-equipment",
@@ -6507,7 +6947,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4474176,
+			"source": "https://pixabay.com/photos/chickens-birds-poultry-hens-4474176/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "animals-pets",
@@ -6572,7 +7017,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3715733,
+			"source": "https://pixabay.com/photos/pets-cat-dog-animals-mammals-3715733/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "pets",
@@ -6639,7 +7089,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4988985,
+			"source": "https://pixabay.com/photos/dog-corgi-cute-animal-4988985/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "dogs-cats",
@@ -6739,7 +7194,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 7174266,
+			"source": "https://pixabay.com/photos/dog-cat-animals-bull-terrier-pets-7174266/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "birds-aquarium",
@@ -6792,7 +7252,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 7314666,
+			"source": "https://pixabay.com/photos/fishes-underwater-yellow-fish-7314666/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "small-pets",
@@ -6852,7 +7317,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3161014,
+			"source": "https://pixabay.com/photos/cute-small-portrait-golden-hamster-3161014/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "livestock-animals",
@@ -6943,7 +7413,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 8175061,
+			"source": "https://pixabay.com/photos/animal-cow-mammal-milk-livestock-8175061/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "cattle",
@@ -7003,7 +7478,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 10260871,
+			"source": "https://pixabay.com/photos/hungarian-grey-cattle-calf-meadow-10260871/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "sheep-goats",
@@ -7093,7 +7573,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5426756,
+			"source": "https://pixabay.com/photos/goat-boer-goat-farm-animal-ears-5426756/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "poultry-rabbits",
@@ -7160,7 +7645,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5609100,
+			"source": "https://pixabay.com/photos/hen-rabbit-dwarf-rabbit-plumage-5609100/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "animal-supplies",
@@ -7294,7 +7784,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3474823,
+			"source": "https://pixabay.com/photos/bowls-containers-dogs-cats-3474823/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "cages-coops",
@@ -7405,7 +7900,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5599141,
+			"source": "https://pixabay.com/photos/roosters-hens-chickens-chicken-coop-5599141/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "business-industrial",
@@ -7484,7 +7984,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 10489741,
+			"source": "https://pixabay.com/photos/industry-worker-factory-safety-10489741/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "construction-machinery",
@@ -7558,7 +8063,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 800996,
+			"source": "https://pixabay.com/photos/excavator-construction-site-vehicle-800996/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "concrete-mixing-compaction",
@@ -7608,7 +8118,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1201545,
+			"source": "https://pixabay.com/photos/work-craft-concrete-mixer-concrete-1201545/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "earthmoving-machinery",
@@ -7658,7 +8173,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1212472,
+			"source": "https://pixabay.com/photos/excavator-construction-machine-1212472/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "commercial-kitchen-equipment",
@@ -7725,7 +8245,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 6993379,
+			"source": "https://pixabay.com/photos/deep-fryer-grill-stall-fast-food-6993379/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "refrigeration-cold-storage",
@@ -7775,7 +8300,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1868175,
+			"source": "https://pixabay.com/photos/bottles-food-gallon-inside-light-1868175/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "shop-market-equipment",
@@ -7849,7 +8379,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 58865,
+			"source": "https://pixabay.com/photos/shopping-venture-shopping-58865/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "weighing-scales",
@@ -7926,7 +8461,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1198649,
+			"source": "https://pixabay.com/photos/libra-weigh-weight-old-measure-up-1198649/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "display-shelving",
@@ -8010,7 +8550,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5956725,
+			"source": "https://pixabay.com/photos/milk-drinks-supermarket-5956725/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "point-of-sale-equipment",
@@ -8077,7 +8622,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 812867,
+			"source": "https://pixabay.com/photos/casio-qt2100-epos-pos-812867/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "warehouse-handling-equipment",
@@ -8144,7 +8694,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2974155,
+			"source": "https://pixabay.com/photos/forklift-machinery-machine-building-2974155/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "office-machinery-equipment",
@@ -8211,7 +8766,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 686304,
+			"source": "https://pixabay.com/photos/copier-printer-technology-686304/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "office-school",
@@ -8276,7 +8836,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1559010,
+			"source": "https://pixabay.com/photos/back-to-school-paper-colored-paper-1559010/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "school-supplies",
@@ -8343,7 +8908,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 8127500,
+			"source": "https://pixabay.com/photos/color-pencils-crayons-colorful-8127500/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "stationery-school-kits",
@@ -8410,7 +8980,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 6099511,
+			"source": "https://pixabay.com/photos/pencils-colored-pencils-art-draw-6099511/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "school-uniforms-bags",
@@ -8470,7 +9045,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 876543,
+			"source": "https://pixabay.com/photos/children-india-education-classroom-876543/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "office-supplies-equipment",
@@ -8537,7 +9117,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2065542,
+			"source": "https://pixabay.com/photos/office-office-supplies-desk-2065542/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "paper-toner-stationery",
@@ -8604,7 +9189,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 514998,
+			"source": "https://pixabay.com/photos/notes-paper-ball-of-paper-memo-514998/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "musical-instruments",
@@ -8671,7 +9261,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1836655,
+			"source": "https://pixabay.com/photos/guitar-music-acoustic-guitar-1836655/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "instruments-accessories",
@@ -8745,7 +9340,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5010593,
+			"source": "https://pixabay.com/photos/cello-part-strings-5010593/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "arts-crafts",
@@ -8819,7 +9419,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4635711,
+			"source": "https://pixabay.com/photos/volume-potters-pottery-hub-rotate-4635711/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "bicycles-mobility",
@@ -8879,7 +9484,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 9828774,
+			"source": "https://pixabay.com/photos/bicycle-to-go-biking-transport-9828774/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "bicycles",
@@ -8963,7 +9573,12 @@
 					"en": "Dimensions"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 6950837,
+			"source": "https://pixabay.com/photos/san-francisco-woman-electric-bike-6950837/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "camping-outdoor",
@@ -9030,7 +9645,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 548022,
+			"source": "https://pixabay.com/photos/tent-camp-night-camping-stars-548022/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "toys-games",
@@ -9148,7 +9768,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4519063,
+			"source": "https://pixabay.com/photos/toy-playmobil-to-play-4519063/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "party-event-supplies",
@@ -9222,7 +9847,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2080466,
+			"source": "https://pixabay.com/photos/streamer-carnival-party-2080466/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "event-decorations",
@@ -9289,7 +9919,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 1846114,
+			"source": "https://pixabay.com/photos/wedding-aisle-flower-arrangement-1846114/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "event-equipment-rentals",
@@ -9309,7 +9944,12 @@
 			"price": "auto",
 			"photos": "auto"
 		},
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 1132528,
+			"source": "https://pixabay.com/photos/mic-microphone-sound-check-sing-1132528/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "baby-transport-safety",
@@ -9376,7 +10016,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 85321,
+			"source": "https://pixabay.com/photos/child-sleeping-car-seat-girl-baby-85321/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "strollers-car-seats",
@@ -9450,7 +10095,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 7376325,
+			"source": "https://pixabay.com/photos/mother-baby-stroller-woman-casual-7376325/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "baby-feeding-care",
@@ -9517,7 +10167,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 105063,
+			"source": "https://pixabay.com/photos/infant-vial-feed-mother-105063/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "baby-feeding-equipment",
@@ -9584,7 +10239,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4893500,
+			"source": "https://pixabay.com/photos/kid-food-fruit-baby-bottle-4893500/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "baby-hygiene",
@@ -9658,7 +10318,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 799964,
+			"source": "https://pixabay.com/photos/baby-cute-boy-child-toddler-799964/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "kids-toys-games",
@@ -9783,7 +10448,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4926029,
+			"source": "https://pixabay.com/photos/kids-play-games-childhood-4926029/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "vocational-training-courses",
@@ -9803,7 +10473,12 @@
 			"price": "auto",
 			"photos": "optional"
 		},
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 834138,
+			"source": "https://pixabay.com/photos/language-school-team-interns-834138/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "it-digital-training",
@@ -9893,7 +10568,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 5550480,
+			"source": "https://pixabay.com/photos/virtual-learning-online-learn-5550480/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "language-professional-training",
@@ -9960,7 +10640,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4702060,
+			"source": "https://pixabay.com/photos/woman-work-office-whiteboard-4702060/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "beauty-personal-services",
@@ -9990,7 +10675,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4682912,
+			"source": "https://pixabay.com/photos/hairdresser-maintenance-hair-4682912/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "tailoring-sewing-services",
@@ -10005,7 +10695,12 @@
 		},
 		"searchAliases": "couture, couturier, couturiere, retouche, kaba sur mesure, tailor, seamstress, alterations",
 		"icon": "scissors",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 1838324,
+			"source": "https://pixabay.com/photos/antique-sewing-machine-home-old-1838324/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "transport-delivery-services",
@@ -10072,7 +10767,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 7210175,
+			"source": "https://pixabay.com/photos/food-delivery-courier-motorcycle-7210175/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "moving-relocation-services",
@@ -10087,7 +10787,12 @@
 		},
 		"searchAliases": "demenagement, manutention, aide demenageur, moving service, relocation, loading",
 		"icon": "truck",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 5574911,
+			"source": "https://pixabay.com/photos/home-house-family-husband-and-wife-5574911/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "private-tutoring-services",
@@ -10191,7 +10896,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 10220834,
+			"source": "https://pixabay.com/photos/teacher-pupil-classroom-learning-10220834/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "phone-computer-repair-services",
@@ -10272,7 +10982,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 8326389,
+			"source": "https://pixabay.com/photos/technician-repair-telephone-mobile-8326389/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "home-repair-maintenance-services",
@@ -10287,7 +11002,12 @@
 		},
 		"searchAliases": "bricolage domicile, reparateur, maintenance maison, handyman, home maintenance, travaux",
 		"icon": "wrench",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 228010,
+			"source": "https://pixabay.com/photos/plumber-handyman-repair-worker-228010/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "event-rental-planning-services",
@@ -10317,7 +11037,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 4705709,
+			"source": "https://pixabay.com/photos/deco-wedding-flowers-decoration-4705709/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "catering-food-services",
@@ -10384,7 +11109,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3955616,
+			"source": "https://pixabay.com/photos/buffet-korean-food-birthday-3955616/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "cleaning-laundry-services",
@@ -10399,7 +11129,12 @@
 		},
 		"searchAliases": "menage, nettoyage maison, pressing, lavage, cleaning service, laundry, housekeeping",
 		"icon": "spray-can",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 10508195,
+			"source": "https://pixabay.com/photos/laundry-room-washing-machine-dryer-10508195/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "printing-design-services",
@@ -10414,7 +11149,12 @@
 		},
 		"searchAliases": "impression, photocopie, graphisme, infographie, impression tshirt, printing, graphic design",
 		"icon": "printer",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 1822374,
+			"source": "https://pixabay.com/photos/printing-the-colors-pattern-1822374/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "photography-video-services",
@@ -10429,7 +11169,12 @@
 		},
 		"searchAliases": "photographe, cameraman, video mariage, shooting, photographer, videographer",
 		"icon": "camera",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 7447261,
+			"source": "https://pixabay.com/photos/gimbal-camera-photography-equipment-7447261/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "it-digital-services",
@@ -10444,7 +11189,12 @@
 		},
 		"searchAliases": "developpeur, creation site web, maintenance informatique, community manager, web design, IT support",
 		"icon": "laptop",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 6521720,
+			"source": "https://pixabay.com/photos/software-developer-web-developer-6521720/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "electrical-plumbing-services",
@@ -10459,7 +11209,12 @@
 		},
 		"searchAliases": "electricien, plombier, installation electrique, depannage plomberie, electrician, plumber",
 		"icon": "wrench",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 228010,
+			"source": "https://pixabay.com/photos/plumber-handyman-repair-worker-228010/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "construction-contractor-services",
@@ -10533,7 +11288,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 2179251,
+			"source": "https://pixabay.com/photos/black-and-white-building-house-2179251/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "vehicle-repair-maintenance-services",
@@ -10548,7 +11308,12 @@
 		},
 		"searchAliases": "mecanicien, garage auto, vidange, diagnostic auto, mechanic, car repair, motorcycle repair",
 		"icon": "car-front",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 3691962,
+			"source": "https://pixabay.com/photos/auto-repair-oil-change-oil-auto-3691962/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "appliance-repair-services",
@@ -10563,7 +11328,12 @@
 		},
 		"searchAliases": "reparation refrigerateur, reparateur machine a laver, climatiseur, appliance repair, fridge repair",
 		"icon": "refrigerator",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 1816642,
+			"source": "https://pixabay.com/photos/water-heater-boiler-maintenance-1816642/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "security-installation-services",
@@ -10578,7 +11348,12 @@
 		},
 		"searchAliases": "installation camera surveillance, alarme maison, controle acces, cctv installation, security installer",
 		"icon": "shield-check",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 2417559,
+			"source": "https://pixabay.com/photos/cctv-cameras-installers-2417559/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "money-transfer-services",
@@ -10638,7 +11413,12 @@
 					"en": "Specifications"
 				}
 			}
-		]
+		],
+		"image": {
+			"pixabayId": 3505893,
+			"source": "https://pixabay.com/photos/iphone-x-iphone-x-apple-mobile-3505893/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "moving-cleanout-services",
@@ -10668,7 +11448,12 @@
 		},
 		"searchAliases": "emploi serveur, cuisinier, hotel, restaurant, waiter, cook, hospitality job",
 		"icon": "chef-hat",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 1118183,
+			"source": "https://pixabay.com/photos/employee-restaurant-shanghai-1118183/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "construction-jobs",
@@ -10683,7 +11468,12 @@
 		},
 		"searchAliases": "emploi macon, electricien emploi, plomberie emploi, chantier, construction job, trades job",
 		"icon": "construction",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 4592881,
+			"source": "https://pixabay.com/photos/first-mayo-1st-mayo-construction-4592881/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "transport-logistics-jobs",
@@ -10698,7 +11488,12 @@
 		},
 		"searchAliases": "chauffeur emploi, livreur emploi, magasinier, logistique, driver job, logistics job",
 		"icon": "truck",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 3392100,
+			"source": "https://pixabay.com/photos/highway-road-trucks-vehicles-3392100/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "domestic-care-jobs",
@@ -10713,7 +11508,12 @@
 		},
 		"searchAliases": "gardien, menagere, nounou, aide domicile, domestic worker, nanny, caregiver",
 		"icon": "house",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 403074,
+			"source": "https://pixabay.com/photos/ironing-press-clothing-clothes-403074/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "retail-sales-jobs",
@@ -10728,7 +11528,12 @@
 		},
 		"searchAliases": "vendeur, commercial, caissier, boutique, sales assistant, cashier, retail job",
 		"icon": "store",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 2607121,
+			"source": "https://pixabay.com/photos/shop-store-open-shopping-retail-2607121/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "agriculture-jobs",
@@ -10743,7 +11548,12 @@
 		},
 		"searchAliases": "ouvrier agricole, fermier, aviculture emploi, farm worker, agriculture job",
 		"icon": "sprout",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 6839857,
+			"source": "https://pixabay.com/photos/farmer-field-smile-happy-6839857/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "tech-office-jobs",
@@ -10758,7 +11568,12 @@
 		},
 		"searchAliases": "developpeur emploi, secretaire, comptable, informatique emploi, developer job, office job",
 		"icon": "laptop",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 6744833,
+			"source": "https://pixabay.com/photos/hands-typing-elderly-hands-6744833/",
+			"license": "Pixabay Content License"
+		}
 	},
 	{
 		"slug": "security-jobs",
@@ -10773,6 +11588,11 @@
 		},
 		"searchAliases": "agent securite, vigile, gardiennage, security guard, guard job",
 		"icon": "shield-check",
-		"attributes": []
+		"attributes": [],
+		"image": {
+			"pixabayId": 5530813,
+			"source": "https://pixabay.com/photos/safety-security-man-guy-protection-5530813/",
+			"license": "Pixabay Content License"
+		}
 	}
 ]

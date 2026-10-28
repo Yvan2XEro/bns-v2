@@ -1,4 +1,5 @@
 import type { Payload } from "payload";
+import sharp from "sharp";
 import { fingerprintOf } from "../lib/deployTasks";
 import type { Category } from "../payload-types";
 import { fetchFileByURL } from "../seed/seedCategories";
@@ -43,8 +44,18 @@ export interface TaxonomyCategory {
 	icon?: string;
 	listingForm?: Category["listingForm"];
 	attributes: TaxonomyAttribute[];
-	/** A free picture (CC0 or public domain), with where it comes from. */
-	image?: { url: string; source: string; license: string };
+	/**
+	 * Its picture: a Pixabay photo, fetched by its id at import time (Pixabay's
+	 * terms forbid hotlinking and its URLs expire) and stored in Media, or a
+	 * URL; with where it comes from and its licence — free for commercial use,
+	 * no credit required.
+	 */
+	image?: {
+		pixabayId?: number;
+		url?: string;
+		source: string;
+		license: string;
+	};
 }
 
 export interface TaxonomyExisting {
@@ -71,8 +82,50 @@ export const TAXONOMY = {
 	tags: tagsData as TaxonomyTag[],
 };
 
+// Pixabay sits behind Cloudflare, which turns away requests with no agent.
+const PIXABAY_HEADERS = { "user-agent": "BuyNSellem/1.0 (+taxonomy import)" };
+
+/**
+ * A Pixabay photo by its id: its current URL asked of the API (they expire),
+ * downloaded and cropped to 800×600 like every category picture.
+ */
+export async function pixabayPicture(id: number, slug: string, key: string) {
+	const lookup = await fetch(
+		`https://pixabay.com/api/?key=${encodeURIComponent(key)}&id=${id}`,
+		{ headers: PIXABAY_HEADERS },
+	);
+	if (!lookup.ok) throw new Error(`Pixabay ${id}: ${lookup.status}`);
+	const hit = ((await lookup.json()) as { hits?: { largeImageURL?: string }[] })
+		.hits?.[0];
+	if (!hit?.largeImageURL) throw new Error(`Pixabay ${id}: not found`);
+	let photo = await fetch(hit.largeImageURL, { headers: PIXABAY_HEADERS });
+	// Its CDN limits the rate: two more tries after a pause, then the next boot.
+	for (let wait = 5_000; photo.status === 429 && wait <= 20_000; wait *= 4) {
+		await new Promise((resolve) => setTimeout(resolve, wait));
+		photo = await fetch(hit.largeImageURL, { headers: PIXABAY_HEADERS });
+	}
+	if (!photo.ok) throw new Error(`Pixabay ${id}: ${photo.status}`);
+	const data = await sharp(Buffer.from(await photo.arrayBuffer()))
+		.resize(800, 600, { fit: "cover" })
+		.jpeg({ quality: 80, progressive: true })
+		.toBuffer();
+	return {
+		name: `category-${slug}.jpg`,
+		data,
+		mimetype: "image/jpeg",
+		size: data.byteLength,
+	};
+}
+
+/**
+ * Changes with the data, and once with the Pixabay key: a deploy that adds
+ * the key runs the task again, which gives each category its picture.
+ */
 export function taxonomyFingerprint(): string {
-	return fingerprintOf(TAXONOMY);
+	return fingerprintOf({
+		taxonomy: TAXONOMY,
+		pictures: Boolean(process.env.PIXABAY_API_KEY),
+	});
 }
 
 type Locale = "fr" | "en";
@@ -154,6 +207,8 @@ export function mergeAliases(
 export interface TaxonomyReport {
 	categoriesCreated: number;
 	picturesAdded: number;
+	/** Pictures that could not be fetched: the next run tries them again. */
+	picturesFailed: number;
 	attributesAdded: number;
 	optionsAdded: number;
 	aliasesUpdated: number;
@@ -182,12 +237,15 @@ export async function importTaxonomy(
 	const report: TaxonomyReport = {
 		categoriesCreated: 0,
 		picturesAdded: 0,
+		picturesFailed: 0,
 		attributesAdded: 0,
 		optionsAdded: 0,
 		aliasesUpdated: 0,
 		tagsCreated: 0,
 		tagsExtended: 0,
 	};
+	if (options.withPictures !== false && !process.env.PIXABAY_API_KEY)
+		log("no PIXABAY_API_KEY: categories created without their Pixabay photo");
 
 	const read = async (slug: string, locale: Locale = "fr") =>
 		(
@@ -203,9 +261,15 @@ export async function importTaxonomy(
 		).docs[0] as unknown as CategoryDoc | undefined;
 
 	const picture = async (category: TaxonomyCategory) => {
-		if (!category.image || options.withPictures === false) return undefined;
+		const image = category.image;
+		if (!image || options.withPictures === false) return undefined;
+		const key = process.env.PIXABAY_API_KEY;
+		if (image.pixabayId && !key) return undefined;
 		try {
-			const file = await fetchFileByURL(category.image.url, category.slug);
+			const file =
+				image.pixabayId && key
+					? await pixabayPicture(image.pixabayId, category.slug, key)
+					: await fetchFileByURL(image.url ?? "", category.slug);
 			const media = await payload.create({
 				collection: "media",
 				data: { alt: category.name.fr },
@@ -215,6 +279,7 @@ export async function importTaxonomy(
 			return String(media.id);
 		} catch (error) {
 			log(`picture for ${category.slug} not added: ${error}`);
+			report.picturesFailed++;
 			return undefined;
 		}
 	};
@@ -483,7 +548,7 @@ export async function importTaxonomy(
 	}
 
 	log(
-		`taxonomy: ${report.categoriesCreated} categories, ${report.picturesAdded} pictures, ${report.attributesAdded} attributes, ${report.optionsAdded} options, ${report.aliasesUpdated} alias lists, ${report.tagsCreated} tags created, ${report.tagsExtended} extended`,
+		`taxonomy: ${report.categoriesCreated} categories, ${report.picturesAdded} pictures (${report.picturesFailed} failed), ${report.attributesAdded} attributes, ${report.optionsAdded} options, ${report.aliasesUpdated} alias lists, ${report.tagsCreated} tags created, ${report.tagsExtended} extended`,
 	);
 	return report;
 }

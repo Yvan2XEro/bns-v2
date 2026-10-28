@@ -41,7 +41,16 @@ targets) and that the import is complete and idempotent.
 
 ## Pictures
 
-None yet: the free (CC0 / public domain) pictures found on Wikimedia Commons
-were not fit for a storefront. Adding `image` to a category later is enough:
-the task's fingerprint changes, it runs again and gives each category
-without a picture the one it now names.
+164 of the 167 new categories have a photo, chosen by hand on Pixabay,
+under the Pixabay Content License — free for commercial use, no credit
+required. No file is kept in the repository: each category's `image` names
+the Pixabay id, page (`source`) and licence, and the import asks Pixabay's API
+for the photo's current URL (`PIXABAY_API_KEY`), crops it to 800×600 and
+stores it in Media (the bucket). Without the key, categories are created
+without their photo; a photo that cannot be fetched fails the task, so the
+next boot retries the missing ones.
+
+Three have none yet, no photo found being fit: `wigs-weaves`,
+`animal-supplies`, `moving-cleanout-services`. Adding an `image` later is
+enough: the task's fingerprint changes and it gives the picture to each
+category still without one.

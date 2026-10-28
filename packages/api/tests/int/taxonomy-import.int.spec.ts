@@ -1,5 +1,6 @@
 // @vitest-environment node
 import type { Payload } from "payload";
+import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	categorySeedAttributes,
@@ -148,13 +149,18 @@ describe("the taxonomy extension links up with the seed", () => {
 		expect(slugsOfTags).not.toContain("mobile-money-accepted");
 	});
 
-	it("takes its pictures from free licences only", () => {
-		const unfree = TAXONOMY.categories
-			.filter(
-				(c) => c.image && !/^(cc0|public domain|pd)/i.test(c.image.license),
-			)
-			.map((c) => c.slug);
-		expect(unfree).toEqual([]);
+	it("takes its pictures from free licences only, each one named by its Pixabay id", () => {
+		const problems = TAXONOMY.categories.flatMap((c) => {
+			if (!c.image) return [];
+			const free = /^(cc0|public domain|pd|pixabay content license)/i.test(
+				c.image.license,
+			);
+			const named = c.image.pixabayId
+				? c.image.source.endsWith(`-${c.image.pixabayId}/`)
+				: Boolean(c.image.url);
+			return free && named ? [] : [c.slug];
+		});
+		expect(problems).toEqual([]);
 	});
 });
 
@@ -203,18 +209,30 @@ describe("helpers", () => {
 });
 
 describe("importing the extension onto a seeded database", () => {
-	beforeEach(() =>
-		vi.stubGlobal(
-			"fetch",
-			vi.fn(
-				async () =>
-					new Response(new Uint8Array([0xff, 0xd8, 0xff]), {
-						headers: { "content-type": "image/jpeg" },
-					}),
-			),
-		),
-	);
-	afterEach(() => vi.unstubAllGlobals());
+	// Pixabay's API answers with the photo's current URL, then the photo.
+	const photo = sharp({
+		create: { width: 1280, height: 853, channels: 3, background: "#888" },
+	})
+		.jpeg()
+		.toBuffer();
+	const answer = async (url: string) =>
+		url.startsWith("https://pixabay.com/api/")
+			? Response.json({
+					hits: [{ largeImageURL: "https://cdn.pixabay.com/photo.jpg" }],
+				})
+			: new Response(new Uint8Array(await photo), {
+					headers: { "content-type": "image/jpeg" },
+				});
+	const fetchMock = vi.fn(answer);
+	beforeEach(() => {
+		fetchMock.mockReset().mockImplementation(answer);
+		vi.stubGlobal("fetch", fetchMock);
+		vi.stubEnv("PIXABAY_API_KEY", "test-key");
+	});
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+	});
 
 	async function seeded() {
 		const payload = fakePayload({ categories: [], tags: [], media: [] });
@@ -256,6 +274,26 @@ describe("importing the extension onto a seeded database", () => {
 		expect(wrong).toEqual([]);
 	});
 
+	it("creates the categories without photos when there is no Pixabay key", async () => {
+		vi.stubEnv("PIXABAY_API_KEY", "");
+		const payload = await seeded();
+		fetchMock.mockClear();
+		const report = await importTaxonomy(payload as unknown as Payload);
+		expect(report.categoriesCreated).toBe(TAXONOMY.categories.length);
+		expect(report.picturesAdded).toBe(0);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("counts the photos it could not fetch, for the next run to retry", async () => {
+		const payload = await seeded();
+		fetchMock.mockImplementation(
+			async () => new Response("rate limited", { status: 503 }),
+		);
+		const report = await importTaxonomy(payload as unknown as Payload);
+		const withPhoto = TAXONOMY.categories.filter((c) => c.image).length;
+		expect(report.picturesFailed).toBe(withPhoto);
+	});
+
 	it("adds attributes, options, aliases and tags to what was there", async () => {
 		const payload = await seeded();
 		await importTaxonomy(payload as unknown as Payload);
@@ -294,6 +332,7 @@ describe("importing the extension onto a seeded database", () => {
 		expect(again).toEqual({
 			categoriesCreated: 0,
 			picturesAdded: 0,
+			picturesFailed: 0,
 			attributesAdded: 0,
 			optionsAdded: 0,
 			aliasesUpdated: 0,

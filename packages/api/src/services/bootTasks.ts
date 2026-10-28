@@ -72,9 +72,13 @@ export function bootTasks(): DeployTask<Payload>[] {
 			name: "taxonomy-extension",
 			fingerprint: taxonomyFingerprint(),
 			run: async (payload) => {
-				await importTaxonomy(payload, {
+				const report = await importTaxonomy(payload, {
 					log: (line) => payload.logger.info(`[taxonomy] ${line}`),
 				});
+				// Failing leaves the task unrecorded: the next boot fetches the
+				// pictures still missing (Pixabay limits its rate).
+				if (report.picturesFailed > 0)
+					throw new Error(`${report.picturesFailed} pictures not fetched`);
 			},
 		},
 	];
