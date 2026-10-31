@@ -13,6 +13,7 @@ import type { Listing, User } from "~/types";
 import { cardLogo, cardPhoto, cardQr } from "./assets";
 import type { CardContent } from "./card";
 import { CARD_FORMATS, type CardFormat, displayUrl } from "./formats";
+import { shopFacts } from "./shop-facts";
 
 const WEB_URL = (
 	process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com"
@@ -85,6 +86,8 @@ export async function listingCard(
 		content: {
 			headline: listing.title,
 			highlight: kindPriceText(money, listing, tKind) || null,
+			stars: null,
+			facts: [],
 			byline: publicShop
 				? {
 						name: publicShop.name,
@@ -104,6 +107,24 @@ export async function listingCard(
 			logo,
 		},
 	};
+}
+
+/** When a shop's latest listings went up: its newest few, from the search. */
+async function recentListingDates(shopId: string): Promise<string[]> {
+	try {
+		const response = await serverFetch(
+			`/api/public/search?shop=${encodeURIComponent(shopId)}&sort=newest&limit=50`,
+		);
+		if (!response.ok) return [];
+		const body = (await response.json()) as {
+			hits?: { createdAt?: unknown }[];
+		};
+		return (body.hits ?? [])
+			.map((hit) => hit.createdAt)
+			.filter((date): date is string => typeof date === "string");
+	} catch {
+		return [];
+	}
 }
 
 /** A shop's card, or null when the shop is not public. */
@@ -126,21 +147,45 @@ export async function shopCard(
 		cardLogo(),
 		labels(locale),
 	]);
-	const rating =
+	const tTrust = await getTranslations({ locale, namespace: "ShopTrust" });
+	// Its stars and what is new beat its catalogue size: "5 new listings
+	// this week" says the shop is alive, "120 listings" says nothing.
+	const stars =
 		shop.totalReviews > 0
-			? t("rating", {
-					rating: shop.rating.toLocaleString(locale, {
+			? {
+					value: shop.rating,
+					label: `${shop.rating.toLocaleString(locale, {
+						minimumFractionDigits: 1,
 						maximumFractionDigits: 1,
-					}),
-					count: shop.totalReviews,
-				})
+					})} · ${t("reviews", { count: shop.totalReviews })}`,
+				}
 			: null;
-	const listings = t("listings", { count: shop.publishedListingCount });
+	const facts = shopFacts(
+		{
+			verified: Boolean(shop.badge),
+			recentListingDates: await recentListingDates(shop.id),
+			responseTime: shop.trust.responseTime,
+			isNew: shop.trust.isNew,
+			totalReviews: shop.totalReviews,
+			memberSince: shop.trust.memberSince,
+			now: new Date(),
+		},
+		{
+			verified: t("verifiedShop"),
+			newThisWeek: (count) => t("newThisWeek", { count }),
+			newThisMonth: (count) => t("newThisMonth", { count }),
+			responseTime: (bucket) => tTrust(`responseTime.${bucket}`),
+			newShop: t("newShop"),
+			since: (year) => t("since", { year }),
+		},
+	);
 
 	return {
 		content: {
 			headline: shop.name,
-			highlight: rating ? `${rating} · ${listings}` : listings,
+			highlight: null,
+			stars,
+			facts,
 			byline: null,
 			place: shop.location.city,
 			blurb: shop.description,

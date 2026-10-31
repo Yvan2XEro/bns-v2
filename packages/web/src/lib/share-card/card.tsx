@@ -1,12 +1,17 @@
 import type { ReactElement } from "react";
 import { type CardFormat, clip, STORY_SAFE_MARGIN } from "./formats";
+import type { CardFact } from "./shop-facts";
 
 /** What a card says, whatever it shows: a listing or a shop. */
 export interface CardContent {
 	/** The listing's title, the shop's name. */
 	headline: string;
-	/** The price, or the shop's rating and listings: the line in colour. */
+	/** The price: the line in colour. */
 	highlight: string | null;
+	/** A shop's rating, drawn as stars, with its reviews ("4,8 · 23 avis"). */
+	stars: { value: number; label: string } | null;
+	/** A shop's selling points: verified, new listings, replies… */
+	facts: CardFact[];
 	/** Who sells: the shop (or the seller), with its logo and badge. */
 	byline: { name: string; logo: string | null; verified: boolean } | null;
 	/** Where: the city. */
@@ -144,6 +149,92 @@ function Byline({ content, size }: { content: CardContent; size: number }) {
 	);
 }
 
+const star = (fill: string) =>
+	`data:image/svg+xml;base64,${Buffer.from(
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="h"><stop offset="50%" stop-color="${AMBER}"/><stop offset="50%" stop-color="#475569"/></linearGradient></defs><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="${fill}"/></svg>`,
+	).toString("base64")}`;
+const STAR_FULL = star(AMBER);
+const STAR_HALF = star("url(#h)");
+const STAR_EMPTY = star("#475569");
+
+/** Five stars, to the half, then the rating and reviews. */
+function Stars({ content, size }: { content: CardContent; size: number }) {
+	if (!content.stars) return null;
+	const { value, label } = content.stars;
+	return (
+		<div style={{ display: "flex", alignItems: "center", gap: size * 0.3 }}>
+			<div style={{ display: "flex", gap: size * 0.08 }}>
+				{[0, 1, 2, 3, 4].map((i) => (
+					// biome-ignore lint/performance/noImgElement: a card is drawn by Satori, not the browser
+					<img
+						key={i}
+						src={
+							value >= i + 0.75
+								? STAR_FULL
+								: value >= i + 0.25
+									? STAR_HALF
+									: STAR_EMPTY
+						}
+						width={size}
+						height={size}
+						alt=""
+					/>
+				))}
+			</div>
+			<div
+				style={{
+					display: "flex",
+					fontSize: size * 0.72,
+					fontWeight: 800,
+					color: AMBER,
+				}}
+			>
+				{label}
+			</div>
+		</div>
+	);
+}
+
+const FACT_TONES: Record<CardFact["tone"], { color: string; bg: string }> = {
+	verified: { color: "#bbf7d0", bg: "#14532d" },
+	fresh: { color: "#fde68a", bg: "#713f12" },
+	plain: { color: "#e2e8f0", bg: "#334155" },
+};
+
+/** A shop's selling points, as pills. */
+function Facts({ content, size }: { content: CardContent; size: number }) {
+	if (content.facts.length === 0) return null;
+	return (
+		<div style={{ display: "flex", flexWrap: "wrap", gap: size * 0.3 }}>
+			{content.facts.map((fact) => {
+				const tone = FACT_TONES[fact.tone];
+				return (
+					<div
+						key={fact.text}
+						style={{
+							display: "flex",
+							alignItems: "center",
+							gap: size * 0.2,
+							fontSize: size * 0.5,
+							fontWeight: 600,
+							color: tone.color,
+							backgroundColor: tone.bg,
+							borderRadius: size,
+							padding: `${size * 0.16}px ${size * 0.4}px`,
+						}}
+					>
+						{fact.tone === "verified" ? (
+							// biome-ignore lint/performance/noImgElement: a card is drawn by Satori, not the browser
+							<img src={CHECK} width={size * 0.5} height={size * 0.5} alt="" />
+						) : null}
+						{clip(fact.text, 40)}
+					</div>
+				);
+			})}
+		</div>
+	);
+}
+
 function Link({
 	content,
 	qrSize,
@@ -237,7 +328,13 @@ function Story(content: CardContent) {
 		>
 			<Brand logo={content.logo} size={64} />
 			<div style={{ display: "flex", marginTop: 28 }}>
-				<Photo content={content} width={936} height={720} radius={44} />
+				{/* A shop says more under its photo: the photo gives it room. */}
+				<Photo
+					content={content}
+					width={936}
+					height={content.facts.length > 0 ? 580 : 720}
+					radius={44}
+				/>
 			</div>
 			<div
 				style={{
@@ -261,12 +358,14 @@ function Story(content: CardContent) {
 					color={AMBER}
 					max={48}
 				/>
+				<Stars content={content} size={60} />
+				<Facts content={content} size={58} />
 				<Text
 					text={content.blurb}
 					size={36}
 					weight={400}
 					color={MUTED}
-					max={90}
+					max={content.facts.length > 0 ? 60 : 90}
 				/>
 				<Byline content={content} size={64} />
 				<Text
@@ -329,12 +428,14 @@ function Preview(content: CardContent) {
 						color={AMBER}
 						max={48}
 					/>
+					<Stars content={content} size={36} />
+					<Facts content={content} size={40} />
 					<Text
 						text={content.blurb}
 						size={24}
 						weight={400}
 						color={MUTED}
-						max={90}
+						max={content.facts.length > 0 ? 60 : 90}
 					/>
 					<Byline content={content} size={40} />
 					<Text
@@ -400,6 +501,8 @@ function Square(content: CardContent) {
 						color={AMBER}
 						max={48}
 					/>
+					<Stars content={content} size={44} />
+					<Facts content={content} size={46} />
 					<Byline content={content} size={48} />
 					<Text
 						text={content.place}

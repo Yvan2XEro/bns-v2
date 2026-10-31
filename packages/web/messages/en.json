@@ -15,8 +15,12 @@
 	"ShareCard": {
 		"cta": "See it on BuyNSellem",
 		"verified": "Verified",
-		"rating": "{rating}/5 ({count} reviews)",
-		"listings": "{count, plural, =0 {No listings} one {# listing} other {# listings}}"
+		"reviews": "{count, plural, one {# review} other {# reviews}}",
+		"verifiedShop": "Verified shop",
+		"newThisWeek": "{count, plural, one {# new listing this week} other {# new listings this week}}",
+		"newThisMonth": "{count, plural, one {# new listing this month} other {# new listings this month}}",
+		"newShop": "New shop",
+		"since": "On BuyNSellem since {year}"
 	},
 	"ShopDirectory": {
 		"metaTitle": "Shops",
@@ -1654,7 +1658,10 @@
 		"pageOf": "Page {page} of {pages}"
 	},
 	"Stock": {
-		"tabs": { "levels": "Current stock", "movements": "Movements" },
+		"tabs": {
+			"levels": "Current stock",
+			"movements": "Movements"
+		},
 		"title": "Stock",
 		"startInventory": "Start a stock count",
 		"adjustTitle": "Adjust stock",
