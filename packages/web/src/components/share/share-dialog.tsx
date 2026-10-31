@@ -1,8 +1,15 @@
 "use client";
 
-import { Check, Download, Link2, Share2 } from "lucide-react";
+import {
+	Check,
+	Download,
+	ImageOff,
+	Link2,
+	LoaderCircle,
+	Share2,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { createCallable } from "react-call";
 import { CLOSE_ANIMATION_MS } from "~/components/callable/callable";
 import { WhatsAppIcon } from "~/components/icons/whatsapp-icon";
@@ -39,6 +46,48 @@ function Icon({ children }: { children: ReactNode }) {
 		<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-subtle text-ink-mid">
 			{children}
 		</span>
+	);
+}
+
+/**
+ * The story card, generated on demand (a second or two the first time): a
+ * spinner until it has loaded, never its alt text in an empty frame.
+ */
+function CardPreview({ src, alt }: { src: string; alt: string }) {
+	const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
+	const ref = useRef<HTMLImageElement>(null);
+	// A card already cached can finish before React attaches onLoad.
+	useEffect(() => {
+		if (ref.current?.complete && ref.current.naturalWidth > 0)
+			setState("ready");
+	}, []);
+
+	return (
+		<div className="relative h-48 w-[108px] shrink-0 overflow-hidden rounded-lg bg-subtle">
+			{/* biome-ignore lint/performance/noImgElement: the card is a generated JPEG served by this site */}
+			<img
+				ref={ref}
+				src={src}
+				alt={alt}
+				width={108}
+				height={192}
+				onLoad={() => setState("ready")}
+				onError={() => setState("failed")}
+				className={`h-full w-full object-cover transition-opacity duration-200 ${state === "ready" ? "opacity-100" : "opacity-0"}`}
+			/>
+			{state !== "ready" && (
+				<div
+					aria-hidden="true"
+					className="absolute inset-0 flex items-center justify-center text-ink-faint"
+				>
+					{state === "loading" ? (
+						<LoaderCircle className="h-6 w-6 animate-spin" />
+					) : (
+						<ImageOff className="h-6 w-6" />
+					)}
+				</div>
+			)}
+		</div>
 	);
 }
 
@@ -137,14 +186,7 @@ export const ShareDialog = createCallable<ShareDialogProps, void>(
 						</DialogDescription>
 					</DialogHeader>
 					<div className="flex gap-4">
-						{/* biome-ignore lint/performance/noImgElement: the card is a generated JPEG served by this site */}
-						<img
-							src={card("story")}
-							alt={t("previewAlt")}
-							width={108}
-							height={192}
-							className="h-48 w-[108px] shrink-0 rounded-lg bg-subtle object-cover"
-						/>
+						<CardPreview src={card("story")} alt={t("previewAlt")} />
 						<div className="flex min-w-0 flex-1 flex-col gap-2">
 							{canShareFiles && (
 								<button

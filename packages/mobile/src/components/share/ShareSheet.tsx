@@ -50,6 +50,7 @@ export const ShareSheet = createCallable<ShareSubject, void>(
 		const { t, i18n } = useTranslation();
 		const { webUrl, facebookAppId } = useAppConfig();
 		const [busy, setBusy] = useState<ShareChannel | null>(null);
+		const [previewReady, setPreviewReady] = useState(false);
 		const lang = i18n.language.startsWith("en") ? "en" : "fr";
 		const close = () => call.end();
 
@@ -100,15 +101,25 @@ export const ShareSheet = createCallable<ShareSubject, void>(
 					<View style={[styles.handle, { backgroundColor: c.border }]} />
 					<View style={styles.head}>
 						{webUrl ? (
-							<Image
-								source={{
-									uri: cardImageUrl(webUrl, subject, "story", lang),
-								}}
-								style={[styles.preview, { backgroundColor: c.input }]}
-								contentFit="cover"
-								transition={150}
-								accessibilityIgnoresInvertColors
-							/>
+							<View style={[styles.preview, { backgroundColor: c.input }]}>
+								<Image
+									source={{
+										uri: cardImageUrl(webUrl, subject, "story", lang),
+									}}
+									style={StyleSheet.absoluteFill}
+									contentFit="cover"
+									transition={150}
+									onLoad={() => setPreviewReady(true)}
+									accessibilityIgnoresInvertColors
+								/>
+								{/* The card is generated on demand: a spinner until it is. */}
+								{!previewReady && (
+									<ActivityIndicator
+										style={StyleSheet.absoluteFill}
+										color={c.primary}
+									/>
+								)}
+							</View>
 						) : null}
 						<View style={styles.headText}>
 							<Text style={[styles.title, { color: c.text }]}>
@@ -188,7 +199,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		marginBottom: 8,
 	},
-	preview: { width: 54, height: 96, borderRadius: 8 },
+	preview: { width: 54, height: 96, borderRadius: 8, overflow: "hidden" },
 	headText: { flex: 1, gap: 2 },
 	title: { fontFamily: Fonts.bodyBold, fontSize: 18 },
 	subtitle: { fontFamily: Fonts.body, fontSize: 14 },
