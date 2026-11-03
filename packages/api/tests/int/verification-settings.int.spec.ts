@@ -89,6 +89,25 @@ describe("getVerificationSettings", () => {
 		});
 	});
 
+	it("trims the consent version, as a client's is trimmed", async () => {
+		const payload = fakePayload(
+			{},
+			{
+				globals: {
+					"app-settings": {
+						verification: {
+							enabled: true,
+							authorisation: { ...GRANTED, consentVersion: " kyc-staging-v1 " },
+						},
+					},
+				},
+			},
+		);
+		expect((await getVerificationSettings(payload)).consentVersion).toBe(
+			"kyc-staging-v1",
+		);
+	});
+
 	it("fails closed when the global is unreadable", async () => {
 		const payload = fakePayload({});
 		payload.findGlobal = async () => {

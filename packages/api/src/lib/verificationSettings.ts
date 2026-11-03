@@ -68,7 +68,11 @@ export async function getVerificationSettings(
 			enabled: v?.enabled === true,
 			kycProvider: provider === "smileid" ? "smileid" : "didit",
 			autoApproveIdentity: v?.autoApproveIdentity === true,
-			consentVersion: typeof consent === "string" && consent ? consent : null,
+			// Trimmed like the version a client sends back (kyc-session's body
+			// schema): a stray space typed in the admin otherwise refused
+			// every consent, the form unticking itself in a loop.
+			consentVersion:
+				typeof consent === "string" && consent.trim() ? consent.trim() : null,
 		};
 	} catch {
 		return {

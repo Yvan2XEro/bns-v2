@@ -143,7 +143,11 @@ export function IdentityClient({ shopId }: { shopId: string }) {
 				)}
 			/>
 
-			<Button type="submit" disabled={busy}>
+			{/* Like the app: no recorded notice version, nothing to consent to. */}
+			<Button
+				type="submit"
+				disabled={busy || !view.enabled || !view.consentVersion}
+			>
 				{busy ? t("consent.starting") : t("consent.start")}
 			</Button>
 		</form>
