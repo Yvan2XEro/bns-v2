@@ -1386,7 +1386,7 @@
 			"requestOpen": "A request for this level is already open.",
 			"cooldown": "You cannot open a new request yet. Please try again later.",
 			"invalidTransition": "This request is not in a state where that action applies.",
-			"consentRequired": "Please accept the current data-protection notice to continue.",
+			"consentRequired": "The data protection notice has been updated: read it again, then tick the box again.",
 			"tooManyAttempts": "Too many verification attempts. Please try again later.",
 			"kycUnavailable": "Identity verification is unavailable right now. Please try again shortly.",
 			"documentLimit": "You have reached the maximum number of documents for this request.",

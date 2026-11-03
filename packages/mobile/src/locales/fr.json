@@ -1389,7 +1389,7 @@
 			"requestOpen": "Une demande pour ce niveau est déjà en cours.",
 			"cooldown": "Vous ne pouvez pas encore ouvrir une nouvelle demande. Réessayez plus tard.",
 			"invalidTransition": "Cette demande n'est pas dans un état permettant cette action.",
-			"consentRequired": "Veuillez accepter la notice de protection des données en vigueur pour continuer.",
+			"consentRequired": "La notice de protection des données a été mise à jour : relisez-la puis cochez à nouveau la case.",
 			"tooManyAttempts": "Trop de tentatives de vérification. Réessayez plus tard.",
 			"kycUnavailable": "La vérification d'identité est indisponible pour le moment. Réessayez sous peu.",
 			"documentLimit": "Vous avez atteint le nombre maximum de documents pour cette demande.",
