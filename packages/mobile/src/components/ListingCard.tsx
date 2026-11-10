@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import {
 	Pressable,
@@ -18,6 +17,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { useShopBrandIfAny } from "@/src/components/shop/brand";
+import { feedback } from "@/src/lib/feedback";
 import { parseDate } from "@/src/lib/formatDate";
 import i18n from "@/src/lib/i18n";
 import {
@@ -122,7 +122,8 @@ export function ListingCard({
 			withSpring(1.25, { damping: 8, stiffness: 500 }),
 			withSpring(1, { damping: 12, stiffness: 300 }),
 		);
-		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+		// Saving is a small win and gets its strike; un-saving only a tick.
+		feedback(isFavorite ? "tap" : "pop");
 		onToggleFavorite(listing.id);
 	};
 

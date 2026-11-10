@@ -59,7 +59,36 @@ Rules:
 - Listing cards have no box: the photo carries the card and the words sit on the ground.
 
 ## Motion
-Press feedback is a 0.97 scale spring. The tab icon dips and settles once. The favourite heart pops to 1.25. Nothing loops except skeletons.
+Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.3, 1`), and exits are faster than entrances.
+- **Presses:** a 0.97 scale spring.
+- **Tabs:** the tab icon dips and settles once.
+- **Favourite heart:** pops to 1.25.
+- **Cart count:** hops once when it goes up.
+- **The one authored moment is the publish stamp** (`PublishedStamp`). When a listing goes live, a yellow price tag is stamped onto the screen with an ink ring.
+- **Reduce Motion:** the stamp, the sheet and the toast fade instead of moving.
+- **Loops:** none, except skeletons.
+
+## Alerts
+- **Toast:** news that needs no answer ("Saved", "Link copied"). It is an ink card at the top that leaves after 3–5 s and is announced to screen readers. `showSuccess` always routes here.
+- **Sheet:** only decisions and errors. One tinted tile names the kind, the title is set in Bricolage, and the actions are 52pt high. In a row, cancel sits left and the action right. Action buttons are `#2f43b5` in both themes. Never white on yellow.
+
+## Sound and haptics
+`src/lib/feedback.ts`, one call per meaningful moment, never per tap.
+- **The voice is a balafon:** a struck wooden bar over a gourd, pentatonic. The six files in `assets/sounds` are synthesised, not sampled. They are under 0.6 s and mixed quietly.
+- **Each sound has one meaning:**
+
+| Sound | Moment |
+|---|---|
+| pop | a favourite is saved |
+| send | your message leaves |
+| receive | their message arrives |
+| success | something you asked for went through |
+| error | a refusal |
+| notice | a warning |
+
+- **Haptics follow the same meaning.** An error only buzzes when its sheet already sounds. Removing a favourite or a confirm prompt only ticks.
+- **Respecting the user:** sounds obey the iPhone silent switch, mix with other audio, and can be switched off in Settings → Sounds.
+- **Robustness:** a build without the audio module keeps its haptics.
 
 ## The ndop pattern
 `src/components/brand/NdopPattern.tsx` draws lozenges strung on a line, with dots, in white at 9% opacity. Use it only on shell surfaces. It is decorative, hidden from screen readers, and never sits behind body text smaller than 15pt.

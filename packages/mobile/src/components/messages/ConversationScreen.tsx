@@ -30,6 +30,7 @@ import {
 	conversationHeader,
 	messageAuthorLabel,
 } from "@/src/lib/conversationView";
+import { feedback } from "@/src/lib/feedback";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { track } from "@/src/lib/monitoring";
@@ -307,6 +308,16 @@ export function ConversationScreen({
 				return { ...old, docs: [...old.docs, msg] };
 			});
 			queryClient.invalidateQueries({ queryKey: ["conversations"] });
+			// The other person's words arrive with a soft two-note strike; our
+			// own echo (it carries the tempId) and system notes stay silent.
+			const senderId = msg.sender?.id ?? msg.sender;
+			if (
+				!msg.tempId &&
+				senderId &&
+				senderId !== user?.id &&
+				!isSystemMessage(msg)
+			)
+				feedback("receive");
 			// Mark as read immediately since we're viewing the conversation
 			chatClient.markRead(conversationId, [msg.id]);
 			chatClient.markDelivered(conversationId, msg.id);
@@ -324,6 +335,7 @@ export function ConversationScreen({
 
 		// Kept on screen, marked as not sent, so the text can be retried.
 		const onFailed = ({ tempId, error }: { tempId: string; error: string }) => {
+			feedback("error", { sound: false });
 			track(ANALYTICS_EVENTS.messageFailed, {
 				platform: "mobile",
 				reason: error,
@@ -462,6 +474,7 @@ export function ConversationScreen({
 		});
 		queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		setSending(false);
+		feedback("send");
 		// The answer comes by push: a first message sent is when to ask.
 		void askForPushInContext();
 	}

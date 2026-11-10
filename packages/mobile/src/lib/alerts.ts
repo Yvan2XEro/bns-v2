@@ -42,15 +42,20 @@ export interface Alerts {
 	hideAlert: () => void;
 }
 
+/** Shows passing news that needs no answer (a toast). */
+export type Notify = (title: string, message?: string) => void;
+
 /**
  * The app's alerts over one awaited sheet (`present`). The callback API stays
  * as it was; `confirm` is the awaited one for new code. A dismissed confirm
- * counts as a cancel, so `onCancel` runs for it too.
+ * counts as a cancel, so `onCancel` runs for it too. Given `notify`, a
+ * success — which never has a choice to offer — is news, not a dialog.
  */
 export function createAlerts(
 	present: PresentAlert,
 	hide: () => void,
 	t: (key: string) => string,
+	notify?: Notify,
 ): Alerts {
 	const run = async (request: AlertRequest) => {
 		const index = await present(request);
@@ -88,7 +93,9 @@ export function createAlerts(
 	return {
 		showAlert,
 		showSuccess: (title, message) =>
-			showAlert(title, message, undefined, "success"),
+			notify
+				? notify(title, message || undefined)
+				: showAlert(title, message, undefined, "success"),
 		showError: (title, message) =>
 			showAlert(title, message, undefined, "error"),
 		showWarning: (title, message) =>

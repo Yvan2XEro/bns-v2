@@ -23,6 +23,7 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { PublishedStamp } from "@/src/components/brand/PublishedStamp";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { CityPicker } from "@/src/components/CityPicker";
 import {
@@ -1971,15 +1972,11 @@ function PublishedView({
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={styles.publishedWrap}>
-				<View
-					style={[
-						styles.lockCircle,
-						{ backgroundColor: "#ddf3e5", alignSelf: "center" },
-					]}
+				<PublishedStamp />
+				<Text
+					style={[styles.noUserHeading, { color: textColor }]}
+					accessibilityRole="header"
 				>
-					<Ionicons name="checkmark" size={36} color="#19733f" />
-				</View>
-				<Text style={[styles.noUserHeading, { color: textColor }]}>
 					{t("create.publishSuccess")}
 				</Text>
 				<Text style={[styles.noUserSub, { color: mutedColor }]}>

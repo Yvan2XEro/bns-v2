@@ -84,6 +84,7 @@ import {
 	notificationRoute,
 	pushTapTarget,
 } from "@/src/lib/deepLinks";
+import { loadFeedbackPreferences } from "@/src/lib/feedback";
 import { reportError } from "@/src/lib/monitoring";
 import { syncPushToken } from "@/src/lib/notifications";
 
@@ -203,8 +204,9 @@ const NdopDark = {
 
 export default function RootLayout() {
 	usePhonePortraitLock();
-	// Load saved language + theme preferences before first render
+	// Load saved language + theme + sound preferences before first render
 	useEffect(() => {
+		void loadFeedbackPreferences();
 		Promise.all([
 			AsyncStorage.getItem(LANG_STORAGE_KEY),
 			AsyncStorage.getItem(THEME_STORAGE_KEY),

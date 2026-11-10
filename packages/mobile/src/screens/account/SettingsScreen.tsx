@@ -24,6 +24,7 @@ import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import { PermissionList } from "@/src/components/settings/PermissionList";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { areSoundsEnabled, setSoundsEnabled } from "@/src/lib/feedback";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 
 export const LANG_STORAGE_KEY = "app_language";
@@ -87,6 +88,7 @@ export function SettingsScreen() {
 	const [langPickerOpen, setLangPickerOpen] = useState(false);
 	const [updateChecked, setUpdateChecked] = useState(false);
 	const [checkError, setCheckError] = useState(false);
+	const [soundsOn, setSoundsOn] = useState(areSoundsEnabled());
 
 	const { isChecking, isDownloading, isUpdateAvailable, isUpdatePending } =
 		Updates.useUpdates();
@@ -219,6 +221,39 @@ export function SettingsScreen() {
 							ios_backgroundColor="#c9cce0"
 						/>
 					</View>
+				</Section>
+
+				{/* Sounds */}
+				<Section
+					title={t("settings.soundsSection")}
+					icon="musical-notes-outline"
+					{...sectionColors}
+				>
+					<View style={[styles.switchRow, { borderColor }]}>
+						<Ionicons
+							name={soundsOn ? "volume-medium-outline" : "volume-mute-outline"}
+							size={17}
+							color={isDark ? "#a3a7c8" : "#4a4f78"}
+							style={{ marginRight: 10 }}
+						/>
+						<Text style={[styles.switchLabel, { color: textColor, flex: 1 }]}>
+							{t("settings.soundsLabel")}
+						</Text>
+						<Switch
+							value={soundsOn}
+							onValueChange={(on) => {
+								setSoundsOn(on);
+								void setSoundsEnabled(on);
+							}}
+							accessibilityLabel={t("settings.soundsLabel")}
+							trackColor={{ false: "#c9cce0", true: primaryColor }}
+							thumbColor="#fff"
+							ios_backgroundColor="#c9cce0"
+						/>
+					</View>
+					<Text style={[styles.soundsHint, { color: mutedColor }]}>
+						{t("settings.soundsHint")}
+					</Text>
 				</Section>
 
 				{/* Updates */}
@@ -462,6 +497,12 @@ export function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+	soundsHint: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+		marginTop: 8,
+	},
 	safe: { flex: 1 },
 	header: {
 		flexDirection: "row",

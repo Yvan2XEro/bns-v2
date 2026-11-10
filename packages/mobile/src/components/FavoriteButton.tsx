@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { Pressable } from "react-native";
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
 	withSpring,
 } from "react-native-reanimated";
+import { feedback } from "@/src/lib/feedback";
 
 interface FavoriteButtonProps {
 	isFavorite: boolean;
@@ -26,15 +26,20 @@ export function FavoriteButton({
 	}));
 
 	const handlePress = () => {
-		scale.value = withSpring(1.4, { duration: 150 }, () => {
-			scale.value = withSpring(1, { duration: 150 });
+		scale.value = withSpring(1.25, { duration: 140 }, () => {
+			scale.value = withSpring(1, { duration: 180 });
 		});
-		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		feedback(isFavorite ? "tap" : "pop");
 		onToggle();
 	};
 
 	return (
-		<Pressable onPress={handlePress} hitSlop={8}>
+		<Pressable
+			onPress={handlePress}
+			hitSlop={8}
+			accessibilityRole="button"
+			accessibilityState={{ selected: isFavorite }}
+		>
 			<Animated.View style={animStyle}>
 				<Ionicons
 					name={isFavorite ? "heart" : "heart-outline"}
