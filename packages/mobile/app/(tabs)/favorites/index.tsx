@@ -64,14 +64,14 @@ export default function FavoritesScreen() {
 	const [refreshing, setRefreshing] = React.useState(false);
 
 	// ── Colors ──────────────────────────────────────────────────────
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
-	const inputBg = isDark ? "#162032" : "#f1f5f9";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const accentBg = isDark ? "#12163a" : "#e9ecfa";
+	const inputBg = isDark ? "#13183e" : "#eceef5";
 
 	// ── Scroll ──────────────────────────────────────────────────────
 	const scrollY = useSharedValue(0);
@@ -160,8 +160,8 @@ export default function FavoritesScreen() {
 				style={[styles.safe, { backgroundColor: accentBg }]}
 			>
 				<View style={[styles.noUserHeader, { backgroundColor: accentBg }]}>
-					<View style={[styles.heartIconWrap, { backgroundColor: "#fee2e2" }]}>
-						<Ionicons name="heart" size={22} color="#ef4444" />
+					<View style={[styles.heartIconWrap, { backgroundColor: "#fbe3e0" }]}>
+						<Ionicons name="heart" size={22} color="#e5574b" />
 					</View>
 					<Text style={[styles.pageTitle, { color: textColor }]}>
 						{t("favorites.title")}
@@ -196,8 +196,8 @@ export default function FavoritesScreen() {
 			<View style={[styles.headerWrap, { backgroundColor: accentBg }]}>
 				{/* Expanded row — collapses on scroll */}
 				<Animated.View style={[styles.expandedRow, expandedRowStyle]}>
-					<View style={[styles.heartIconWrap, { backgroundColor: "#fee2e2" }]}>
-						<Ionicons name="heart" size={22} color="#ef4444" />
+					<View style={[styles.heartIconWrap, { backgroundColor: "#fbe3e0" }]}>
+						<Ionicons name="heart" size={22} color="#e5574b" />
 					</View>
 					<View style={{ flex: 1 }}>
 						<Text style={[styles.pageTitle, { color: textColor }]}>
@@ -232,7 +232,7 @@ export default function FavoritesScreen() {
 					style={[styles.compactBar, compactStyle]}
 					pointerEvents="none"
 				>
-					<Ionicons name="heart" size={14} color="#ef4444" />
+					<Ionicons name="heart" size={14} color="#e5574b" />
 					<Text style={[styles.compactTitle, { color: textColor }]}>
 						Favoris
 					</Text>
@@ -266,8 +266,8 @@ export default function FavoritesScreen() {
 										query.length > 0
 											? primaryColor
 											: isDark
-												? "#1e3a5f"
-												: "#dbeafe",
+												? "#2a3170"
+												: "#e3e7f8",
 								},
 							]}
 						>
@@ -289,7 +289,7 @@ export default function FavoritesScreen() {
 								<View
 									style={[
 										styles.clearBubble,
-										{ backgroundColor: isDark ? "#334155" : "#e2e8f0" },
+										{ backgroundColor: isDark ? "#3a3f66" : "#e1e3ee" },
 									]}
 								>
 									<Ionicons name="close" size={11} color={mutedColor} />

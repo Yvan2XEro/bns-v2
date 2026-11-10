@@ -60,7 +60,7 @@ export function AssigneeSheet({
 					{
 						backgroundColor: c.isDark
 							? "rgba(0,0,0,0.6)"
-							: "rgba(15,23,42,0.4)",
+							: "rgba(18, 22, 58,0.4)",
 					},
 				]}
 				onPress={onClose}

@@ -155,13 +155,13 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 			form.formState.errors.method ||
 			form.formState.errors.transactionId ||
 			form.formState.errors.evidenceIds ? (
-				<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+				<Text accessibilityRole="alert" style={{ color: "#d23a2e" }}>
 					{form.formState.errors.amount?.message ??
 						t("returns.refundProofValidation")}
 				</Text>
 			) : null}
 			{form.formState.errors.root ? (
-				<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+				<Text accessibilityRole="alert" style={{ color: "#d23a2e" }}>
 					{form.formState.errors.root.message}
 				</Text>
 			) : null}

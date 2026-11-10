@@ -69,26 +69,26 @@ function getStatusConfig(
 	return {
 		completed: {
 			label: t("boostHistory.statusCompleted"),
-			color: "#16a34a",
-			bg: "#dcfce7",
+			color: "#1e8a4f",
+			bg: "#ddf3e5",
 			icon: "checkmark-circle",
 		},
 		pending: {
 			label: t("boostHistory.statusActive"),
-			color: "#2563eb",
-			bg: "#dbeafe",
+			color: "#2f43b5",
+			bg: "#e3e7f8",
 			icon: "time",
 		},
 		failed: {
 			label: t("boostHistory.statusFailed"),
-			color: "#dc2626",
-			bg: "#fee2e2",
+			color: "#d23a2e",
+			bg: "#fbe3e0",
 			icon: "close-circle",
 		},
 		refunded: {
 			label: t("boostHistory.statusRefunded"),
-			color: "#64748b",
-			bg: "#f1f5f9",
+			color: "#5b6088",
+			bg: "#eceef5",
 			icon: "refresh-circle",
 		},
 	};
@@ -151,10 +151,10 @@ function BoostCard({
 						<View
 							style={[
 								styles.thumbFallback,
-								{ backgroundColor: isDark ? "#1a1200" : "#fef3c7" },
+								{ backgroundColor: isDark ? "#1a1400" : "#fff1c7" },
 							]}
 						>
-							<Ionicons name="rocket" size={22} color="#f59e0b" />
+							<Ionicons name="rocket" size={22} color="#ffb81c" />
 						</View>
 					)}
 					{isActive && <View style={styles.activeDot} />}
@@ -174,10 +174,10 @@ function BoostCard({
 						<View
 							style={[
 								styles.durationPill,
-								{ backgroundColor: isDark ? "#1a1200" : "#fef3c7" },
+								{ backgroundColor: isDark ? "#1a1400" : "#fff1c7" },
 							]}
 						>
-							<Ionicons name="flash" size={10} color="#f59e0b" />
+							<Ionicons name="flash" size={10} color="#ffb81c" />
 							<Text style={styles.durationPillText}>{durationLabel}</Text>
 						</View>
 						<Text style={[styles.cardDate, { color: mutedColor }]}>
@@ -190,7 +190,7 @@ function BoostCard({
 						<View
 							style={[
 								styles.progressTrack,
-								{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+								{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
 							]}
 						>
 							<View
@@ -198,7 +198,7 @@ function BoostCard({
 									styles.progressFill,
 									{
 										width: `${progress * 100}%` as any,
-										backgroundColor: "#f59e0b",
+										backgroundColor: "#ffb81c",
 									},
 								]}
 							/>
@@ -235,12 +235,12 @@ export function BoostHistoryScreen() {
 	// Sparkline follows the real card width (list column is capped on tablets).
 	const CHART_W = Math.min(width, contentMaxWidth) - 64;
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	const PAGE_SIZE = 15;
 
@@ -376,21 +376,21 @@ export function BoostHistoryScreen() {
 										value: String(payments.length),
 										icon: "rocket-outline",
 										color: primaryColor,
-										iconBg: isDark ? "#1e3a5f" : "#dbeafe",
+										iconBg: isDark ? "#2a3170" : "#e3e7f8",
 									},
 									{
 										label: t("boostHistory.active"),
 										value: String(active),
 										icon: "flash",
-										color: "#2563eb",
-										iconBg: isDark ? "#1e3a5f" : "#dbeafe",
+										color: "#2f43b5",
+										iconBg: isDark ? "#2a3170" : "#e3e7f8",
 									},
 									{
 										label: t("boostHistory.completed"),
 										value: String(completed),
 										icon: "checkmark-circle",
-										color: "#16a34a",
-										iconBg: isDark ? "#0f2a1a" : "#dcfce7",
+										color: "#1e8a4f",
+										iconBg: isDark ? "#0f2a1a" : "#ddf3e5",
 									},
 								].map(({ label, value, icon, color, iconBg }) => (
 									<View
@@ -418,18 +418,18 @@ export function BoostHistoryScreen() {
 								style={[
 									styles.spentBanner,
 									{
-										backgroundColor: isDark ? "#1a1200" : "#fffbeb",
-										borderColor: isDark ? "#451a03" : "#fde68a",
+										backgroundColor: isDark ? "#1a1400" : "#fff9e8",
+										borderColor: isDark ? "#3a2a00" : "#ffe08a",
 									},
 								]}
 							>
 								<View
 									style={[
 										styles.spentIconBox,
-										{ backgroundColor: isDark ? "#451a03" : "#fef3c7" },
+										{ backgroundColor: isDark ? "#3a2a00" : "#fff1c7" },
 									]}
 								>
-									<Ionicons name="wallet-outline" size={18} color="#f59e0b" />
+									<Ionicons name="wallet-outline" size={18} color="#ffb81c" />
 								</View>
 								<View style={{ flex: 1 }}>
 									<Text style={[styles.spentLabel, { color: mutedColor }]}>
@@ -438,7 +438,7 @@ export function BoostHistoryScreen() {
 									<Text
 										style={[
 											styles.spentAmount,
-											{ color: isDark ? "#fbbf24" : "#92400e" },
+											{ color: isDark ? "#ffc94a" : "#6e4700" },
 										]}
 									>
 										{formatPrice(totalSpent, i18n.language)}
@@ -473,12 +473,12 @@ export function BoostHistoryScreen() {
 											>
 												<Stop
 													offset="0%"
-													stopColor="#f59e0b"
+													stopColor="#ffb81c"
 													stopOpacity={0.25}
 												/>
 												<Stop
 													offset="100%"
-													stopColor="#f59e0b"
+													stopColor="#ffb81c"
 													stopOpacity={0}
 												/>
 											</LinearGradient>
@@ -490,7 +490,7 @@ export function BoostHistoryScreen() {
 										<Polyline
 											points={chartPoints.map((p) => `${p.x},${p.y}`).join(" ")}
 											fill="none"
-											stroke="#f59e0b"
+											stroke="#ffb81c"
 											strokeWidth={2}
 											strokeLinejoin="round"
 											strokeLinecap="round"
@@ -505,12 +505,12 @@ export function BoostHistoryScreen() {
 												rx={3.5}
 												fill={
 													p.value > 0
-														? "#f59e0b"
+														? "#ffb81c"
 														: isDark
-															? "#1e293b"
-															: "#e2e8f0"
+															? "#1a1f4a"
+															: "#e1e3ee"
 												}
-												stroke={isDark ? "#0b1120" : "#ffffff"}
+												stroke={isDark ? "#0c1030" : "#ffffff"}
 												strokeWidth={1.5}
 											/>
 										))}
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	statVal: { fontSize: 18, fontFamily: Fonts.displayExtrabold, lineHeight: 22 },
-	statLabel: { fontSize: 10, fontFamily: Fonts.bodySemibold },
+	statLabel: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 
 	/* Spent banner */
 	spentBanner: {
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
 	chartTitle: { fontSize: 13, fontFamily: Fonts.displayBold },
 	chartSub: { fontSize: 11, fontFamily: Fonts.body },
 	chartLabels: { flexDirection: "row", justifyContent: "space-between" },
-	chartLabel: { fontSize: 10, fontFamily: Fonts.body },
+	chartLabel: { fontSize: 11, fontFamily: Fonts.body },
 
 	/* Section */
 	sectionRow: {
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
 		width: 8,
 		height: 8,
 		borderRadius: 4,
-		backgroundColor: "#22c55e",
+		backgroundColor: "#34b26a",
 		borderWidth: 1.5,
 		borderColor: "#fff",
 	},
@@ -720,9 +720,9 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 	},
 	durationPillText: {
-		fontSize: 10,
+		fontSize: 11,
 		fontFamily: Fonts.displayBold,
-		color: "#f59e0b",
+		color: "#ffb81c",
 	},
 	cardDate: { fontSize: 11, fontFamily: Fonts.body },
 	progressTrack: { height: 4, borderRadius: 2, overflow: "hidden" },
@@ -731,7 +731,7 @@ const styles = StyleSheet.create({
 	cardAmount: {
 		fontSize: 14,
 		fontFamily: Fonts.displayExtrabold,
-		color: "#f59e0b",
+		color: "#ffb81c",
 		textAlign: "right",
 		lineHeight: 18,
 	},
@@ -743,5 +743,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 7,
 		paddingVertical: 3,
 	},
-	statusText: { fontSize: 10, fontFamily: Fonts.displayBold },
+	statusText: { fontSize: 11, fontFamily: Fonts.displayBold },
 });

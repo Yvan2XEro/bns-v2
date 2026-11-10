@@ -78,8 +78,8 @@ export default function SellerTabLayout() {
 	const activeColor = brand
 		? sellerBrandPalette(brand, isDark ? "dark" : "light").primary
 		: isDark
-			? "#3b82f6"
-			: "#1e40af";
+			? "#6878ea"
+			: "#23338f";
 	const tabOptions = useTabNavigatorOptions(activeColor);
 
 	if (resolved === "pending") return <LoadingScreen />;
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		top: -4,
 		right: -8,
-		backgroundColor: "#dc2626",
+		backgroundColor: "#d23a2e",
 		borderRadius: 10,
 		minWidth: 18,
 		height: 18,
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
 	},
 	badgeText: {
 		color: "#fff",
-		fontSize: 10,
+		fontSize: 11,
 		fontFamily: Fonts.displayExtrabold,
 	},
 });

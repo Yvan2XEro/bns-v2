@@ -590,8 +590,8 @@ function toneColors(c: ShopPalette, tone: DisputeTone) {
 		case "warning":
 			return {
 				soft: c.warningSoft,
-				border: c.isDark ? c.warningSoft : "#fde68a",
-				strong: "#d97706",
+				border: c.isDark ? c.warningSoft : "#ffe08a",
+				strong: "#9a6a00",
 				text: c.warningText,
 				icon: "hourglass-outline" as const,
 			};
@@ -600,7 +600,7 @@ function toneColors(c: ShopPalette, tone: DisputeTone) {
 				soft: c.primarySoft,
 				border: c.primarySoft,
 				strong: c.primary,
-				text: c.isDark ? "#93c5fd" : c.primary,
+				text: c.isDark ? "#a9b4f0" : c.primary,
 				icon: "scale-outline" as const,
 			};
 		case "success":
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 	},
 	error: {
-		color: "#dc2626",
+		color: "#d23a2e",
 		fontFamily: Fonts.bodyMedium,
 		margin: 16,
 		textAlign: "center",

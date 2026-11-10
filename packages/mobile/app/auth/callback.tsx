@@ -20,10 +20,10 @@ export default function AuthCallbackScreen() {
 	const exchangeFailed = useRef(false);
 	const redirectTo = getSafeAuthRedirect(params.redirect);
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
 
 	// The deep link carries the transfer token. The login screen normally
 	// exchanges it, but after a relaunch nobody else will: exchange it here

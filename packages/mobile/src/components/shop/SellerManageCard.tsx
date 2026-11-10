@@ -137,5 +137,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 5,
 	},
-	badgeText: { color: "#fff", fontSize: 11, fontFamily: Fonts.displayBold },
+	badgeText: { color: "#12163a", fontSize: 11, fontFamily: Fonts.displayBold },
 });

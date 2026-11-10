@@ -157,7 +157,7 @@ function TrustStrip({ shop }: { shop: PublicShop }) {
 					<Ionicons
 						name={TRUST_ICONS[item.kind]}
 						size={13}
-						color={item.kind === "rating" ? "#f59e0b" : c.muted}
+						color={item.kind === "rating" ? "#ffb81c" : c.muted}
 					/>
 					<Text
 						style={[

@@ -99,12 +99,12 @@ export default function PublicProfileScreen() {
 	const [reviewRating, setReviewRating] = useState(0);
 	const [reviewComment, setReviewComment] = useState("");
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 	const isOwnProfile = user?.id === userId;
 
 	const {
@@ -243,7 +243,7 @@ export default function PublicProfileScreen() {
 						<View
 							style={[
 								styles.avatarPlaceholder,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+								{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 							]}
 						>
 							<Text style={[styles.avatarLetter, { color: primaryColor }]}>
@@ -447,7 +447,7 @@ export default function PublicProfileScreen() {
 										<View
 											style={[
 												styles.reviewerAvatar,
-												{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+												{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 											]}
 										>
 											<Text
@@ -472,7 +472,7 @@ export default function PublicProfileScreen() {
 										<Text
 											style={[
 												styles.reviewComment,
-												{ color: isDark ? "#cbd5e1" : "#334155" },
+												{ color: isDark ? "#c9cce0" : "#3a3f66" },
 											]}
 										>
 											{review.comment}
@@ -553,7 +553,7 @@ export default function PublicProfileScreen() {
 									<Ionicons
 										name={s <= reviewRating ? "star" : "star-outline"}
 										size={36}
-										color={s <= reviewRating ? "#f59e0b" : mutedColor}
+										color={s <= reviewRating ? "#ffb81c" : mutedColor}
 									/>
 								</Pressable>
 							))}
@@ -585,8 +585,8 @@ export default function PublicProfileScreen() {
 									backgroundColor:
 										reviewRating === 0
 											? isDark
-												? "#1e293b"
-												: "#e2e8f0"
+												? "#1a1f4a"
+												: "#e1e3ee"
 											: primaryColor,
 								},
 							]}
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingVertical: 12,
 	},
-	msgBtnText: { color: "#fff", fontFamily: Fonts.displayBold, fontSize: 14 },
+	msgBtnText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 14 },
 	iconBtn: {
 		width: 46,
 		height: 46,
@@ -778,5 +778,5 @@ const styles = StyleSheet.create({
 		textAlignVertical: "top",
 	},
 	submitBtn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
-	submitText: { fontSize: 15, fontFamily: Fonts.displayBold },
+	submitText: { fontSize: 15, fontFamily: Fonts.bodyBold },
 });

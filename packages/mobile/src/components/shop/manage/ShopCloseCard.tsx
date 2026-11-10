@@ -8,6 +8,7 @@ import {
 	TextInput,
 	View,
 } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { formStyles as f } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCloseShopForm } from "@/src/hooks/useCloseShopForm";
@@ -97,5 +98,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	dangerText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+	dangerText: { color: "#fff", fontSize: 15, fontFamily: Fonts.bodyBold },
 });

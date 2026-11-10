@@ -648,7 +648,7 @@ function EvidenceTile({
 			style={[
 				styles.thumb,
 				{
-					borderColor: entry.status === "failed" ? "#dc2626" : c.border,
+					borderColor: entry.status === "failed" ? "#d23a2e" : c.border,
 					backgroundColor: c.input,
 				},
 			]}
@@ -674,7 +674,7 @@ function EvidenceTile({
 				</View>
 			) : entry.status === "done" ? (
 				<View style={styles.thumbDone}>
-					<Ionicons name="checkmark-circle" size={18} color="#16a34a" />
+					<Ionicons name="checkmark-circle" size={18} color="#1e8a4f" />
 				</View>
 			) : null}
 			{removable ? (
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 	},
 	multiline: { minHeight: 150, textAlignVertical: "top" },
-	error: { color: "#dc2626", fontFamily: Fonts.bodySemibold },
+	error: { color: "#d23a2e", fontFamily: Fonts.bodySemibold },
 	rowBetween: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
 		...StyleSheet.absoluteFill,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "rgba(15,23,42,0.45)",
+		backgroundColor: "rgba(18, 22, 58,0.45)",
 	},
 	thumbFailed: { backgroundColor: "rgba(220,38,38,0.55)" },
 	thumbDone: {
@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
 		borderRadius: 11,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "rgba(15,23,42,0.7)",
+		backgroundColor: "rgba(18, 22, 58,0.7)",
 	},
 	addTile: {
 		alignItems: "center",
@@ -850,5 +850,5 @@ const styles = StyleSheet.create({
 		minHeight: 52,
 		padding: 12,
 	},
-	buttonText: { color: "#fff", fontFamily: Fonts.displayBold, fontSize: 16 },
+	buttonText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
 });

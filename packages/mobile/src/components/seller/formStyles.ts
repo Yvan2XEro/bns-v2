@@ -33,5 +33,5 @@ export const formStyles = StyleSheet.create({
 	},
 	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
-	error: { fontSize: 12, fontFamily: Fonts.body, color: "#dc2626" },
+	error: { fontSize: 12, fontFamily: Fonts.body, color: "#d23a2e" },
 });

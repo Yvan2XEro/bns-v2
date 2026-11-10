@@ -18,7 +18,7 @@ export function FavoriteButton({
 	isFavorite,
 	onToggle,
 	size = 24,
-	color = "#dc2626",
+	color = "#d23a2e",
 }: FavoriteButtonProps) {
 	const scale = useSharedValue(1);
 	const animStyle = useAnimatedStyle(() => ({
@@ -39,7 +39,7 @@ export function FavoriteButton({
 				<Ionicons
 					name={isFavorite ? "heart" : "heart-outline"}
 					size={size}
-					color={isFavorite ? color : "#94a3b8"}
+					color={isFavorite ? color : "#777ca3"}
 				/>
 			</Animated.View>
 		</Pressable>

@@ -90,13 +90,13 @@ function SectionCard({
 				<View
 					style={[
 						styles.sectionIconBox,
-						{ backgroundColor: isDark ? "#0f172a" : "#f1f5f9" },
+						{ backgroundColor: isDark ? "#12163a" : "#eceef5" },
 					]}
 				>
 					<Ionicons
 						name={icon}
 						size={16}
-						color={isDark ? "#94a3b8" : "#475569"}
+						color={isDark ? "#a3a7c8" : "#4a4f78"}
 					/>
 				</View>
 				<Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
@@ -110,7 +110,7 @@ function FieldLabel({ label, required, mutedColor }: any) {
 	return (
 		<Text style={[styles.fieldLabel, { color: mutedColor }]}>
 			{label}
-			{required && <Text style={{ color: "#ef4444" }}> *</Text>}
+			{required && <Text style={{ color: "#e5574b" }}> *</Text>}
 		</Text>
 	);
 }
@@ -259,7 +259,7 @@ function EditAttributeField({
 						styles.inputRow,
 						{
 							backgroundColor: inputBg,
-							borderColor: showIssue ? "#ef4444" : borderColor,
+							borderColor: showIssue ? "#e5574b" : borderColor,
 						},
 					]}
 				>
@@ -302,7 +302,7 @@ function EditAttributeField({
 			)}
 
 			{showIssue ? (
-				<Text style={[styles.attrError, { color: "#ef4444" }]}>
+				<Text style={[styles.attrError, { color: "#e5574b" }]}>
 					{attributeIssueMessage(issue, t)}
 				</Text>
 			) : bounds ? (
@@ -321,13 +321,13 @@ export default function EditListingScreen() {
 	const { t } = useTranslation();
 	const { photosIncluded } = useAppConfig();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const inputBg = isDark ? "#0b1120" : "#f8fafc";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const inputBg = isDark ? "#0c1030" : "#f4f5f9";
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["listing", id],
@@ -1071,24 +1071,24 @@ export default function EditListingScreen() {
 								{ bg: string; text: string; border: string }
 							> = {
 								draft: {
-									bg: isDark ? "#1e293b" : "#f1f5f9",
-									text: isDark ? "#94a3b8" : "#64748b",
-									border: isDark ? "#334155" : "#cbd5e1",
+									bg: isDark ? "#1a1f4a" : "#eceef5",
+									text: isDark ? "#a3a7c8" : "#5b6088",
+									border: isDark ? "#3a3f66" : "#c9cce0",
 								},
 								pending: {
-									bg: isDark ? "#2d1f00" : "#fffbeb",
-									text: isDark ? "#fbbf24" : "#92400e",
-									border: isDark ? "#854d0e" : "#fde68a",
+									bg: isDark ? "#2a2000" : "#fff9e8",
+									text: isDark ? "#ffc94a" : "#6e4700",
+									border: isDark ? "#6e4d00" : "#ffe08a",
 								},
 								published: {
-									bg: isDark ? "#052e16" : "#f0fdf4",
-									text: isDark ? "#4ade80" : "#15803d",
-									border: isDark ? "#166534" : "#bbf7d0",
+									bg: isDark ? "#0b2a18" : "#effaf3",
+									text: isDark ? "#4ade80" : "#19733f",
+									border: isDark ? "#155c35" : "#bbf7d0",
 								},
 								rejected: {
-									bg: isDark ? "#2d0707" : "#fef2f2",
-									text: isDark ? "#f87171" : "#b91c1c",
-									border: isDark ? "#991b1b" : "#fecaca",
+									bg: isDark ? "#2b0b09" : "#fdf1ef",
+									text: isDark ? "#ee7d72" : "#b02c22",
+									border: isDark ? "#8e2219" : "#f7cbc6",
 								},
 								sold: {
 									bg: isDark ? "#1e1440" : "#faf5ff",
@@ -1157,8 +1157,8 @@ export default function EditListingScreen() {
 											style={{
 												borderRadius: 10,
 												borderWidth: 1,
-												borderColor: isDark ? "#854d0e" : "#fde68a",
-												backgroundColor: isDark ? "#2d1f00" : "#fffbeb",
+												borderColor: isDark ? "#6e4d00" : "#ffe08a",
+												backgroundColor: isDark ? "#2a2000" : "#fff9e8",
 												padding: 10,
 												flexDirection: "row",
 												gap: 8,
@@ -1171,7 +1171,7 @@ export default function EditListingScreen() {
 													flex: 1,
 													fontSize: 12,
 													fontFamily: Fonts.body,
-													color: isDark ? "#fbbf24" : "#92400e",
+													color: isDark ? "#ffc94a" : "#6e4700",
 												}}
 											>
 												{t("edit.statusPublishedNotice")}
@@ -1184,8 +1184,8 @@ export default function EditListingScreen() {
 											style={{
 												borderRadius: 10,
 												borderWidth: 1,
-												borderColor: isDark ? "#991b1b" : "#fecaca",
-												backgroundColor: isDark ? "#2d0707" : "#fef2f2",
+												borderColor: isDark ? "#8e2219" : "#f7cbc6",
+												backgroundColor: isDark ? "#2b0b09" : "#fdf1ef",
 												padding: 10,
 												gap: 4,
 											}}
@@ -1194,7 +1194,7 @@ export default function EditListingScreen() {
 												style={{
 													fontSize: 12,
 													fontFamily: Fonts.bodySemibold,
-													color: isDark ? "#f87171" : "#b91c1c",
+													color: isDark ? "#ee7d72" : "#b02c22",
 												}}
 											>
 												{t("edit.statusRejectedNotice")}
@@ -1204,7 +1204,7 @@ export default function EditListingScreen() {
 													style={{
 														fontSize: 12,
 														fontFamily: Fonts.body,
-														color: isDark ? "#f87171" : "#b91c1c",
+														color: isDark ? "#ee7d72" : "#b02c22",
 													}}
 												>
 													{t("edit.statusRejectionReason", {
@@ -1252,8 +1252,8 @@ export default function EditListingScreen() {
 										borderColor: active ? primaryColor : borderColor,
 										backgroundColor: active
 											? isDark
-												? "rgba(59,130,246,0.1)"
-												: "rgba(30,64,175,0.05)"
+												? "rgba(104, 120, 234,0.1)"
+												: "rgba(35, 51, 143,0.05)"
 											: cardBg,
 										padding: 14,
 										flexDirection: "row",
@@ -1383,7 +1383,7 @@ const styles = StyleSheet.create({
 	saveBtnText: {
 		color: "#fff",
 		fontSize: 13,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 
 	scroll: { padding: 16, gap: 12, paddingBottom: 48 },
@@ -1556,7 +1556,7 @@ const styles = StyleSheet.create({
 	},
 	mainBadgeText: {
 		color: "#fff",
-		fontSize: 9,
+		fontSize: 11,
 		fontFamily: Fonts.displayBold,
 	},
 	removeImageBtn: {
@@ -1598,6 +1598,6 @@ const styles = StyleSheet.create({
 	submitText: {
 		color: "#fff",
 		fontSize: 16,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 });

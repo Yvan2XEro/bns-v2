@@ -99,7 +99,7 @@ export function ShopBrandColorCard({
 				autoCapitalize="characters"
 				autoCorrect={false}
 				maxLength={7}
-				placeholder="#1E40AF"
+				placeholder="#23338f"
 				placeholderTextColor={c.muted}
 				accessibilityLabel={t("shop.brandColorCustom")}
 				style={[
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
 		padding: 12,
 	},
 	button: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
-	buttonText: { fontSize: 13, fontFamily: Fonts.displayBold },
+	buttonText: { fontSize: 13, fontFamily: Fonts.bodyBold },
 	chip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
 	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	action: {

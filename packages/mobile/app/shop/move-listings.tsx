@@ -329,5 +329,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 6,
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

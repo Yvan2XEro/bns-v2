@@ -49,7 +49,7 @@ export function ShopCard({
 					<LevelBadge badge={hit.badge} size="sm" />
 					<View style={styles.row}>
 						{reviews > 0 ? (
-							<Ionicons name="star" size={12} color="#f59e0b" />
+							<Ionicons name="star" size={12} color="#ffb81c" />
 						) : null}
 						<Text style={[styles.meta, { color: c.body }]}>{rating}</Text>
 					</View>
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 1,
 	},
 	sponsoredText: {
-		fontSize: 10,
+		fontSize: 11,
 		fontFamily: Fonts.bodySemibold,
 		textTransform: "uppercase",
 		letterSpacing: 0.4,

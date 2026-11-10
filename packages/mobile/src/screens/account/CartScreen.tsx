@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 	},
 	undoText: { flex: 1, fontSize: 14 },
-	undoAction: { fontSize: 14, fontWeight: "700" },
+	undoAction: { fontSize: 14, fontFamily: Fonts.bodyBold },
 	safe: { flex: 1 },
 	body: { flex: 1 },
 	list: { padding: 16 },

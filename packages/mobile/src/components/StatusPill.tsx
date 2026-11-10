@@ -1,15 +1,16 @@
 import { StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-	published: { bg: "#dcfce7", text: "#166534" },
-	pending: { bg: "#dbeafe", text: "#1e40af" },
-	rejected: { bg: "#fee2e2", text: "#991b1b" },
-	sold: { bg: "#f3f4f6", text: "#374151" },
+	published: { bg: "#ddf3e5", text: "#155c35" },
+	pending: { bg: "#e3e7f8", text: "#23338f" },
+	rejected: { bg: "#fbe3e0", text: "#8e2219" },
+	sold: { bg: "#eceef5", text: "#3a3f66" },
 	expired: { bg: "#fff7ed", text: "#9a3412" },
-	boosted: { bg: "#fef3c7", text: "#92400e" },
-	completed: { bg: "#dcfce7", text: "#166534" },
-	failed: { bg: "#fee2e2", text: "#991b1b" },
-	refunded: { bg: "#f3f4f6", text: "#374151" },
+	boosted: { bg: "#fff1c7", text: "#6e4700" },
+	completed: { bg: "#ddf3e5", text: "#155c35" },
+	failed: { bg: "#fbe3e0", text: "#8e2219" },
+	refunded: { bg: "#eceef5", text: "#3a3f66" },
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -30,7 +31,7 @@ interface StatusPillProps {
 }
 
 export function StatusPill({ status, label }: StatusPillProps) {
-	const colors = STATUS_COLORS[status] ?? { bg: "#f3f4f6", text: "#374151" };
+	const colors = STATUS_COLORS[status] ?? { bg: "#eceef5", text: "#3a3f66" };
 	return (
 		<View style={[styles.pill, { backgroundColor: colors.bg }]}>
 			<Text style={[styles.text, { color: colors.text }]}>
@@ -47,5 +48,5 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 		alignSelf: "flex-start",
 	},
-	text: { fontSize: 12, fontWeight: "600" },
+	text: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 });

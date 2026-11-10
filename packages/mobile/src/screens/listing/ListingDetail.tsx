@@ -154,12 +154,12 @@ export function ListingDetail({ id }: { id: string }) {
 	const startConversation = useStartConversation();
 	const { webUrl, shareCardsEnabled } = useAppConfig();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	const { data: listingData, isLoading } = useQuery({
 		queryKey: ["listing", id],
@@ -375,7 +375,7 @@ export function ListingDetail({ id }: { id: string }) {
 						styles.backBtn,
 						{
 							top: safeTop + 12,
-							backgroundColor: isDark ? "#1e293b" : "#ffffff",
+							backgroundColor: isDark ? "#1a1f4a" : "#ffffff",
 							borderWidth: 1,
 							borderColor,
 						},
@@ -463,7 +463,7 @@ export function ListingDetail({ id }: { id: string }) {
 							{
 								width: galleryWidth,
 								height: galleryHeight,
-								backgroundColor: isDark ? "#1e293b" : "#e2e8f0",
+								backgroundColor: isDark ? "#1a1f4a" : "#e1e3ee",
 							},
 						]}
 					>
@@ -504,7 +504,7 @@ export function ListingDetail({ id }: { id: string }) {
 
 			{listing.isBoosted && (
 				<View style={styles.boostedBadge}>
-					<Ionicons name="flash" size={12} color="#fff" />
+					<Ionicons name="flash" size={12} color="#ffb81c" />
 					<Text style={styles.boostedText}>{t("listing.featured")}</Text>
 				</View>
 			)}
@@ -519,20 +519,20 @@ export function ListingDetail({ id }: { id: string }) {
 				pointerEvents="box-none"
 			>
 				<HeaderBackButton
-					color="#0f172a"
+					color="#12163a"
 					fallback="/(tabs)/home"
 					icon="chevron-back"
 					style={styles.floatBtn}
 				/>
 				<View style={styles.topBarEnd}>
-					<CartHeaderButton style={styles.floatBtn} color="#0f172a" />
+					<CartHeaderButton style={styles.floatBtn} color="#12163a" />
 					<Pressable
 						onPress={handleShare}
 						style={styles.floatBtn}
 						accessibilityRole="button"
 						accessibilityLabel={t("listing.share")}
 					>
-						<Ionicons name="share-outline" size={20} color="#0f172a" />
+						<Ionicons name="share-outline" size={20} color="#12163a" />
 					</Pressable>
 					{!isOwner && (
 						<Pressable
@@ -547,7 +547,7 @@ export function ListingDetail({ id }: { id: string }) {
 							<Ionicons
 								name={isFavorite ? "heart" : "heart-outline"}
 								size={20}
-								color={isFavorite ? "#ef4444" : "#0f172a"}
+								color={isFavorite ? "#e5574b" : "#12163a"}
 							/>
 						</Pressable>
 					)}
@@ -581,11 +581,18 @@ export function ListingDetail({ id }: { id: string }) {
 					>
 						{/* Price, title, chips, meta — straight on the sheet, no card */}
 						<View style={styles.hero}>
-							<Text style={[styles.price, { color: primaryColor }]}>
-								{kindPriceText(priceLabel, listing, (key) =>
-									t(`listingKind.${key}`),
-								)}
-							</Text>
+							<View
+								style={[
+									styles.priceTag,
+									listing.status === "sold" && styles.priceTagSold,
+								]}
+							>
+								<Text style={styles.price}>
+									{kindPriceText(priceLabel, listing, (key) =>
+										t(`listingKind.${key}`),
+									)}
+								</Text>
+							</View>
 							{listing.status === "sold" && (
 								<Text
 									style={[styles.title, { color: mutedColor, fontSize: 14 }]}
@@ -600,7 +607,11 @@ export function ListingDetail({ id }: { id: string }) {
 							</Text>
 							<View style={styles.metaRow2}>
 								<View style={styles.metaItem}>
-									<Ionicons name="location-outline" size={14} color="#f59e0b" />
+									<Ionicons
+										name="location-outline"
+										size={14}
+										color={mutedColor}
+									/>
 									<Text style={[styles.metaText, { color: mutedColor }]}>
 										{listing.location ?? "—"}
 									</Text>
@@ -632,7 +643,7 @@ export function ListingDetail({ id }: { id: string }) {
 										<View
 											style={[
 												styles.chip,
-												{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+												{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
 											]}
 										>
 											<Text style={[styles.chipText, { color: textColor }]}>
@@ -642,8 +653,8 @@ export function ListingDetail({ id }: { id: string }) {
 									)}
 									{listing.isBoosted && (
 										<View style={[styles.chip, styles.chipFeatured]}>
-											<Ionicons name="flash" size={12} color="#b45309" />
-											<Text style={[styles.chipText, { color: "#92400e" }]}>
+											<Ionicons name="flash" size={12} color="#8a5a00" />
+											<Text style={[styles.chipText, { color: "#6e4700" }]}>
 												{t("listing.featured")}
 											</Text>
 										</View>
@@ -693,7 +704,7 @@ export function ListingDetail({ id }: { id: string }) {
 							<Text
 								style={[
 									styles.description,
-									{ color: isDark ? "#cbd5e1" : "#334155" },
+									{ color: isDark ? "#c9cce0" : "#3a3f66" },
 								]}
 								numberOfLines={descExpanded ? undefined : 4}
 							>
@@ -770,8 +781,8 @@ export function ListingDetail({ id }: { id: string }) {
 												gap: 4,
 												borderRadius: 20,
 												borderWidth: 1,
-												borderColor: isDark ? "#1e3a5f" : "#bfdbfe",
-												backgroundColor: isDark ? "#0f2544" : "#eff6ff",
+												borderColor: isDark ? "#2a3170" : "#c5ccf0",
+												backgroundColor: isDark ? "#0f2544" : "#eff1fb",
 												paddingHorizontal: 10,
 												paddingVertical: 4,
 											}}
@@ -827,7 +838,7 @@ export function ListingDetail({ id }: { id: string }) {
 										<View
 											style={[
 												styles.sellerAvatarPlaceholder,
-												{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+												{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 											]}
 										>
 											<Text
@@ -867,7 +878,7 @@ export function ListingDetail({ id }: { id: string }) {
 						<View
 							style={[
 								styles.safetyStrip,
-								{ borderColor: isDark ? "#1e3a5f" : "#e2e8f0" },
+								{ borderColor: isDark ? "#2a3170" : "#e1e3ee" },
 							]}
 						>
 							<Ionicons
@@ -1116,7 +1127,7 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		top: 12,
 		left: 12,
-		backgroundColor: "#f59e0b",
+		backgroundColor: "#12163a",
 		borderRadius: 8,
 		paddingHorizontal: 10,
 		paddingVertical: 4,
@@ -1124,7 +1135,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 4,
 	},
-	boostedText: { color: "#fff", fontSize: 12, fontFamily: Fonts.displayBold },
+	boostedText: { color: "#fff", fontSize: 12, fontFamily: Fonts.bodyBold },
 
 	// ── Content ──
 	// Rises over the gallery's bottom edge like a sheet.
@@ -1156,13 +1167,13 @@ const styles = StyleSheet.create({
 		backgroundColor: "#ffffff",
 		alignItems: "center",
 		justifyContent: "center",
-		shadowColor: "#0f172a",
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.15,
 		shadowRadius: 6,
 		elevation: 3,
 	},
-	hero: { gap: 8, marginBottom: 4 },
+	hero: { gap: 10, marginBottom: 4 },
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
 	chip: {
 		flexDirection: "row",
@@ -1172,20 +1183,42 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 4,
 	},
-	chipFeatured: { backgroundColor: "#fef3c7" },
+	chipFeatured: { backgroundColor: "#fff1c7" },
 	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	price: { fontSize: 28, fontFamily: Fonts.displayExtrabold },
+	// The price is painted on a sign, as at the market.
+	priceTag: {
+		alignSelf: "flex-start",
+		backgroundColor: "#ffb81c",
+		borderRadius: 10,
+		paddingHorizontal: 12,
+		paddingTop: 4,
+		paddingBottom: 6,
+	},
+	priceTagSold: { backgroundColor: "#c9cce0" },
+	price: {
+		fontSize: 30,
+		lineHeight: 36,
+		color: "#12163a",
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.8,
+	},
 	priceSuffix: { fontSize: 16, fontFamily: Fonts.body },
-	title: { fontSize: 19, fontFamily: Fonts.displayBold, lineHeight: 25 },
+	title: {
+		fontSize: 22,
+		fontFamily: Fonts.displayBold,
+		lineHeight: 27,
+		letterSpacing: -0.4,
+	},
 	metaRow2: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
 	metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
 	metaText: { fontSize: 13, fontFamily: Fonts.body },
 	sectionTitle: {
-		fontSize: 16,
+		fontSize: 18,
 		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.2,
 		marginBottom: 12,
 	},
-	description: { fontSize: 14, lineHeight: 22, fontFamily: Fonts.body },
+	description: { fontSize: 15, lineHeight: 23, fontFamily: Fonts.body },
 	readMore: { marginTop: 8, fontSize: 14, fontFamily: Fonts.bodySemibold },
 	attrGroup: { marginBottom: 12 },
 	attrGroupTitle: {
@@ -1243,7 +1276,8 @@ const styles = StyleSheet.create({
 		left: 0,
 		right: 0,
 		borderTopWidth: 1,
-		padding: 16,
+		paddingHorizontal: 16,
+		paddingTop: 12,
 		paddingBottom: 24,
 	},
 	actionButtons: { flexDirection: "row", gap: 10 },
@@ -1253,19 +1287,21 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		borderRadius: 14,
+		borderRadius: 12,
+		minHeight: 52,
 		paddingVertical: 14,
 	},
-	msgBtnText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	msgBtnText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 	boostBtn: {
 		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		borderRadius: 14,
+		borderRadius: 12,
+		minHeight: 52,
 		paddingVertical: 14,
-		backgroundColor: "#f59e0b",
+		backgroundColor: "#ffb81c",
 	},
 	boostIconBtn: {
 		width: 52,
@@ -1273,7 +1309,7 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#f59e0b",
+		backgroundColor: "#ffb81c",
 	},
 	editBtn: {
 		flex: 1,
@@ -1281,15 +1317,17 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 6,
-		borderRadius: 14,
+		borderRadius: 12,
+		minHeight: 52,
 		paddingVertical: 14,
 	},
-	editBtnText: { fontSize: 15, fontFamily: Fonts.displayBold },
+	editBtnText: { fontSize: 15, fontFamily: Fonts.bodyBold },
 	callBtnSquare: {
 		width: 52,
 		alignItems: "center",
 		justifyContent: "center",
-		borderRadius: 14,
+		borderRadius: 12,
+		minHeight: 52,
 		paddingVertical: 14,
 	},
 	callBtn: {
@@ -1298,7 +1336,8 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 6,
-		borderRadius: 14,
+		borderRadius: 12,
+		minHeight: 52,
 		paddingVertical: 14,
 	},
 });

@@ -43,7 +43,7 @@ describe("shopSettingsGroups", () => {
 
 	test("keeps the brand colour reachable and the close row for the owner only", () => {
 		const ids = (owner: boolean) =>
-			shopSettingsGroups(shop({ brandColor: "#1e40af" }), owner)
+			shopSettingsGroups(shop({ brandColor: "#23338f" }), owner)
 				.flatMap((g) => g.rows)
 				.map((row) => row.id);
 		expect(ids(true)).toContain("color");

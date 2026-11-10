@@ -5,7 +5,7 @@ import type { PaymentChannel } from "@/src/lib/paymentStatus";
 /** Each operator's own colours, so the choice reads at a glance. */
 const MARKS: Record<PaymentChannel, { label: string; bg: string; fg: string }> =
 	{
-		"cm.mtn": { label: "MTN", bg: "#ffcc00", fg: "#111827" },
+		"cm.mtn": { label: "MTN", bg: "#ffcc00", fg: "#12163a" },
 		"cm.orange": { label: "OM", bg: "#ff7900", fg: "#ffffff" },
 	};
 

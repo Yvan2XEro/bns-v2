@@ -35,33 +35,33 @@ function getStatusConfig(t: (key: string) => string) {
 	return {
 		published: {
 			label: t("listings.statusPublished"),
-			bg: "#dcfce7",
-			text: "#166534",
-			dotColor: "#22c55e",
+			bg: "#ddf3e5",
+			text: "#155c35",
+			dotColor: "#34b26a",
 		},
 		pending: {
 			label: t("listings.statusPending"),
-			bg: "#dbeafe",
-			text: "#1e40af",
-			dotColor: "#3b82f6",
+			bg: "#e3e7f8",
+			text: "#23338f",
+			dotColor: "#6878ea",
 		},
 		review: {
 			label: t("listings.statusReview"),
-			bg: "#dbeafe",
-			text: "#1e40af",
-			dotColor: "#3b82f6",
+			bg: "#e3e7f8",
+			text: "#23338f",
+			dotColor: "#6878ea",
 		},
 		rejected: {
 			label: t("listings.statusRejected"),
-			bg: "#fee2e2",
-			text: "#991b1b",
-			dotColor: "#ef4444",
+			bg: "#fbe3e0",
+			text: "#8e2219",
+			dotColor: "#e5574b",
 		},
 		sold: {
 			label: t("listings.statusSold"),
-			bg: "#f3f4f6",
-			text: "#374151",
-			dotColor: "#94a3b8",
+			bg: "#eceef5",
+			text: "#3a3f66",
+			dotColor: "#777ca3",
 		},
 		expired: {
 			label: t("listings.statusExpired"),
@@ -93,9 +93,9 @@ function StatusBadge({
 			}
 		: known) ?? {
 		label: status,
-		bg: "#f3f4f6",
-		text: "#374151",
-		dotColor: "#94a3b8",
+		bg: "#eceef5",
+		text: "#3a3f66",
+		dotColor: "#777ca3",
 	};
 	return (
 		<View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
@@ -122,12 +122,12 @@ export function MyListingsScreen() {
 	const { t } = useTranslation();
 	const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	const FILTERS: { key: FilterKey; label: string }[] = [
 		{ key: "all", label: t("listings.filterAll") },
@@ -208,19 +208,19 @@ export function MyListingsScreen() {
 		{
 			key: "published" as const,
 			label: t("listings.published"),
-			color: "#22c55e",
+			color: "#34b26a",
 			icon: "checkmark-circle-outline" as const,
 		},
 		{
 			key: "pending" as const,
 			label: t("listings.pending"),
-			color: "#3b82f6",
+			color: "#6878ea",
 			icon: "time-outline" as const,
 		},
 		{
 			key: "sold" as const,
 			label: t("listings.sold"),
-			color: "#94a3b8",
+			color: "#777ca3",
 			icon: "bag-check-outline" as const,
 		},
 	];
@@ -249,7 +249,7 @@ export function MyListingsScreen() {
 						<View
 							style={[
 								styles.imagePlaceholder,
-								{ backgroundColor: isDark ? "#162032" : "#e2e8f0" },
+								{ backgroundColor: isDark ? "#13183e" : "#e1e3ee" },
 							]}
 						>
 							<Ionicons name="image-outline" size={24} color={mutedColor} />
@@ -294,7 +294,7 @@ export function MyListingsScreen() {
 						onPress={() => router.push(`/listing/${item.id}/edit`)}
 						style={[
 							styles.actionBtn,
-							{ backgroundColor: isDark ? "#0f172a" : "#f1f5f9" },
+							{ backgroundColor: isDark ? "#12163a" : "#eceef5" },
 						]}
 						hitSlop={4}
 					>
@@ -313,11 +313,11 @@ export function MyListingsScreen() {
 							}
 							style={[
 								styles.actionBtn,
-								{ backgroundColor: isDark ? "#0f172a" : "#f0fdf4" },
+								{ backgroundColor: isDark ? "#12163a" : "#effaf3" },
 							]}
 							hitSlop={4}
 						>
-							<Ionicons name="bag-check-outline" size={15} color="#22c55e" />
+							<Ionicons name="bag-check-outline" size={15} color="#34b26a" />
 						</Pressable>
 					)}
 					<Pressable
@@ -328,11 +328,11 @@ export function MyListingsScreen() {
 						}
 						style={[
 							styles.actionBtn,
-							{ backgroundColor: isDark ? "#0f172a" : "#fee2e2" },
+							{ backgroundColor: isDark ? "#12163a" : "#fbe3e0" },
 						]}
 						hitSlop={4}
 					>
-						<Ionicons name="trash-outline" size={15} color="#dc2626" />
+						<Ionicons name="trash-outline" size={15} color="#d23a2e" />
 					</Pressable>
 				</View>
 			</AnimatedPressable>
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
 	newBtnText: {
 		color: "#fff",
 		fontSize: 13,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 
 	/* Stats */
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
 		lineHeight: 24,
 	},
 	statLabel: {
-		fontSize: 10,
+		fontSize: 11,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		top: 6,
 		left: 6,
-		backgroundColor: "#f59e0b",
+		backgroundColor: "#ffb81c",
 		borderRadius: 6,
 		width: 18,
 		height: 18,

@@ -32,8 +32,8 @@ const ICONS: Record<
 	whatsappChat: { name: "chatbubble-ellipses", color: "#25D366" },
 	instagramStory: { name: "logo-instagram", color: "#E1306C" },
 	facebookStory: { name: "logo-facebook", color: "#1877F2" },
-	copyLink: { name: "link", color: "#64748b" },
-	more: { name: "share-outline", color: "#64748b" },
+	copyLink: { name: "link", color: "#5b6088" },
+	more: { name: "share-outline", color: "#5b6088" },
 };
 
 /**
@@ -178,7 +178,7 @@ export const ShareSheet = createCallable<ShareSubject, void>(
 );
 
 const styles = StyleSheet.create({
-	backdrop: { flex: 1, backgroundColor: "rgba(15,23,42,0.5)" },
+	backdrop: { flex: 1, backgroundColor: "rgba(18, 22, 58,0.5)" },
 	sheet: {
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,

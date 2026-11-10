@@ -148,5 +148,5 @@ const styles = StyleSheet.create({
 	},
 	number: { fontFamily: Fonts.displaySemibold, fontSize: 16 },
 	body: { fontFamily: Fonts.body, fontSize: 13 },
-	overdue: { color: "#dc2626", fontFamily: Fonts.bodySemibold, fontSize: 12 },
+	overdue: { color: "#d23a2e", fontFamily: Fonts.bodySemibold, fontSize: 12 },
 });

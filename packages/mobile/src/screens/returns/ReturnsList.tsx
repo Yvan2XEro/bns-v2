@@ -29,11 +29,11 @@ export function ReturnsList({ selectedId, onOpen }: SplitListProps) {
 	const { t, i18n } = useTranslation();
 	const query = useBuyerReturns();
 	const colors = {
-		bg: dark ? "#0b1120" : "#f8fafc",
-		text: dark ? "#e2e8f0" : "#0f172a",
-		muted: dark ? "#94a3b8" : "#64748b",
-		border: dark ? "#1e3a5f" : "#e2e8f0",
-		primary: dark ? "#60a5fa" : "#1e40af",
+		bg: dark ? "#0c1030" : "#f4f5f9",
+		text: dark ? "#e1e3ee" : "#12163a",
+		muted: dark ? "#a3a7c8" : "#5b6088",
+		border: dark ? "#2a3170" : "#e1e3ee",
+		primary: dark ? "#9aa8f5" : "#23338f",
 	};
 	return (
 		<SafeAreaView
@@ -119,32 +119,32 @@ function ReturnRow({
 			style={[
 				styles.card,
 				{
-					backgroundColor: dark ? "#111c2e" : "#fff",
-					borderColor: dark ? "#1e3a5f" : "#e2e8f0",
+					backgroundColor: dark ? "#11163a" : "#fff",
+					borderColor: dark ? "#2a3170" : "#e1e3ee",
 				},
 				selectedStyle,
 			]}
 		>
 			<View style={styles.row}>
-				<Text style={[styles.number, { color: dark ? "#e2e8f0" : "#0f172a" }]}>
+				<Text style={[styles.number, { color: dark ? "#e1e3ee" : "#12163a" }]}>
 					{item.number}
 				</Text>
 				{item.overdue ? (
 					<Text style={styles.overdue}>{t("returns.overdue")}</Text>
 				) : null}
 			</View>
-			<Text style={[styles.body, { color: dark ? "#94a3b8" : "#64748b" }]}>
+			<Text style={[styles.body, { color: dark ? "#a3a7c8" : "#5b6088" }]}>
 				{t("returns.order", { number: item.orderNumber })} ·{" "}
 				{t(RETURN_BASIS_LABELS[item.basis])}
 			</Text>
-			<Text style={[styles.body, { color: dark ? "#94a3b8" : "#64748b" }]}>
+			<Text style={[styles.body, { color: dark ? "#a3a7c8" : "#5b6088" }]}>
 				{t(RETURN_CASE_STATUS_LABELS[item.status])} ·{" "}
 				{t("returns.refundAmount", {
 					amount: formatPrice(item.refundAmount, locale),
 				})}
 			</Text>
 			{item.nextDeadline ? (
-				<Text style={[styles.body, { color: dark ? "#94a3b8" : "#64748b" }]}>
+				<Text style={[styles.body, { color: dark ? "#a3a7c8" : "#5b6088" }]}>
 					{t("returns.deadline", {
 						date: new Date(item.nextDeadline).toLocaleDateString(locale),
 					})}
@@ -176,5 +176,5 @@ const styles = StyleSheet.create({
 	},
 	number: { fontFamily: Fonts.displaySemibold, fontSize: 16 },
 	body: { fontFamily: Fonts.body, fontSize: 13 },
-	overdue: { color: "#dc2626", fontFamily: Fonts.bodySemibold, fontSize: 12 },
+	overdue: { color: "#d23a2e", fontFamily: Fonts.bodySemibold, fontSize: 12 },
 });

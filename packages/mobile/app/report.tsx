@@ -41,12 +41,12 @@ export default function ReportModal() {
 	const [reason, setReason] = useState("");
 	const [description, setDescription] = useState("");
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	const { mutate: submit, isPending } = useMutation({
 		mutationFn: () =>
@@ -91,7 +91,7 @@ export default function ReportModal() {
 							styles.reasonBtn,
 							{
 								backgroundColor:
-									reason === key ? (isDark ? "#1e3a5f" : "#dbeafe") : cardBg,
+									reason === key ? (isDark ? "#2a3170" : "#e3e7f8") : cardBg,
 								borderColor: reason === key ? primaryColor : borderColor,
 								borderWidth: reason === key ? 2 : 1,
 							},
@@ -134,9 +134,9 @@ export default function ReportModal() {
 						{
 							backgroundColor: !reason
 								? isDark
-									? "#1e293b"
-									: "#e2e8f0"
-								: "#dc2626",
+									? "#1a1f4a"
+									: "#e1e3ee"
+								: "#d23a2e",
 						},
 					]}
 				>
@@ -188,5 +188,5 @@ const styles = StyleSheet.create({
 		textAlignVertical: "top",
 	},
 	submitBtn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
-	submitText: { fontSize: 16, fontFamily: Fonts.displayBold },
+	submitText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

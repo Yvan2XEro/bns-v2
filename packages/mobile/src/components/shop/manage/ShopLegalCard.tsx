@@ -7,6 +7,7 @@ import {
 	TextInput,
 	View,
 } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { formStyles as f } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useUpdateShopLegalForm } from "@/src/hooks/useUpdateShopLegalForm";
@@ -176,5 +177,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	saveText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+	saveText: { color: "#fff", fontSize: 15, fontFamily: Fonts.bodyBold },
 });

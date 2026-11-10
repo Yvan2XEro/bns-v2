@@ -189,7 +189,7 @@ export function CategorySheet({
 		[onSelect, close],
 	);
 
-	const sheetBg = isDark ? "#0b1120" : "#ffffff";
+	const sheetBg = isDark ? "#0c1030" : "#ffffff";
 	const selectedId = value?.id ? String(value.id) : null;
 
 	const renderRow = (
@@ -548,7 +548,7 @@ export function CategoryField({
 }
 
 const styles = StyleSheet.create({
-	backdrop: { backgroundColor: "rgba(15, 23, 42, 0.45)" },
+	backdrop: { backgroundColor: "rgba(18, 22, 58, 0.45)" },
 	backdropFill: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
 	sheetWrap: { maxHeight: "88%", width: "100%", alignItems: "center" },
 	sheet: {

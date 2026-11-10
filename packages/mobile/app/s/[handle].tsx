@@ -619,7 +619,7 @@ export default function ShopScreen() {
 												<Ionicons
 													name="logo-whatsapp"
 													size={19}
-													color="#16a34a"
+													color="#1e8a4f"
 												/>
 											</Pressable>
 										) : null}

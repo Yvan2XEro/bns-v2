@@ -17,12 +17,12 @@ export default function BoostModal() {
 	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	return (
 		<SafeAreaView
@@ -36,7 +36,7 @@ export default function BoostModal() {
 			<View style={[styles.container, centeredContent]}>
 				<View style={styles.header}>
 					<View style={styles.rocketIconWrap}>
-						<Ionicons name="rocket-outline" size={44} color="#f59e0b" />
+						<Ionicons name="rocket-outline" size={44} color="#ffb81c" />
 					</View>
 					<Text style={[styles.title, { color: textColor }]}>
 						{t("boost.boostTitle")}
@@ -58,7 +58,7 @@ export default function BoostModal() {
 					<View
 						style={[
 							styles.unavailableBadge,
-							{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+							{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 						]}
 					>
 						<Ionicons
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
 	},
 	rocketIconWrap: {
 		alignItems: "center",
-		backgroundColor: "rgba(245,158,11,0.12)",
+		backgroundColor: "rgba(255, 184, 28,0.12)",
 		borderRadius: 40,
 		height: 80,
 		justifyContent: "center",

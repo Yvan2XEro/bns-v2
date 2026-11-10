@@ -22,6 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
+import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 
 const MAX_SCALE = 4;
@@ -233,6 +234,6 @@ const styles = StyleSheet.create({
 		alignSelf: "center",
 		color: "#fff",
 		fontSize: 14,
-		fontWeight: "600",
+		fontFamily: Fonts.bodySemibold,
 	},
 });

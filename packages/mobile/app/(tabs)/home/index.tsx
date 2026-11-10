@@ -7,8 +7,9 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useRef, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { setStatusBarStyle } from "expo-status-bar";
+import React, { useCallback, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
@@ -37,6 +38,7 @@ import {
 } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { NdopPattern } from "@/src/components/brand/NdopPattern";
 import { CartHeaderButton } from "@/src/components/CartHeaderButton";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -94,13 +96,12 @@ function NotificationBell({
 			accessibilityLabel={t("notifications.title")}
 			style={[styles.bellBtn, { backgroundColor: cardBg, borderColor }]}
 		>
-			<Ionicons name="notifications-outline" size={18} color={mutedColor} />
+			<Ionicons name="notifications-outline" size={19} color={mutedColor} />
 			{unseenCount > 0 && <View style={styles.bellBadge} />}
 		</Pressable>
 	);
 }
 const darkIcon = require("@/assets/icon2-dark.png");
-const lightIcon = require("@/assets/icon2.png");
 export default function HomeScreen() {
 	useApplyLaunchMode();
 	const isDark = useColorScheme() === "dark";
@@ -110,7 +111,6 @@ export default function HomeScreen() {
 	const novuReady = useNotificationReady();
 	const queryClient = useQueryClient();
 	const filterParams = useLocalSearchParams();
-	const scheme = useColorScheme();
 	const { width, isTablet, columns, cardWidth, dialogMaxWidth } =
 		useResponsive();
 	// Hero cards stay readable instead of becoming a 970pt letterbox on iPad.
@@ -239,13 +239,25 @@ export default function HomeScreen() {
 	};
 
 	// ── Colors ────────────────────────────────────────────────────
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	// The ndop shell: the home header is the one indigo field in the app.
+	const accentBg = isDark ? "#13183e" : "#1d2a7a";
+	const shellIcon = "#ffffff";
+	const shellBtnBg = "rgba(255,255,255,0.12)";
+	const shellBtnBorder = "rgba(255,255,255,0.16)";
+
+	// White status-bar ink over the indigo, restored for every other screen.
+	useFocusEffect(
+		useCallback(() => {
+			setStatusBarStyle("light");
+			return () => setStatusBarStyle("auto");
+		}, []),
+	);
 
 	// ── Géolocalisation ───────────────────────────────────────────
 	// The remembered location: AsyncStorage when signed out, the user's profile
@@ -520,37 +532,41 @@ export default function HomeScreen() {
 		>
 			{/* ══ Header ══ */}
 			<View style={[styles.header, { backgroundColor: accentBg }]}>
+				<NdopPattern />
 				{/* ── Ligne 1 : Logo  |  Nom  |  spacer  |  Avatar ── */}
 				<Animated.View style={[styles.topRow, topRowStyle]}>
 					<Animated.View style={[styles.logoImgWrap, logoAnimStyle]}>
 						<Image
-							source={scheme === "dark" ? darkIcon : lightIcon}
+							source={darkIcon}
 							style={{ width: "100%", height: "100%" }}
 							contentFit="contain"
 						/>
 					</Animated.View>
 					<Animated.Text
-						style={[styles.appName, { color: textColor }, appNameAnimStyle]}
+						style={[styles.appName, { color: "#ffffff" }, appNameAnimStyle]}
 					>
 						{"Buy"}
-						<Text style={{ color: "#f59e0b" }}>'N'</Text>
+						<Text style={{ color: "#ffb81c" }}>'N'</Text>
 						{"Sellem"}
 					</Animated.Text>
 
 					<View style={{ flex: 1 }} />
 
 					<CartHeaderButton
-						style={[styles.bellBtn, { backgroundColor: cardBg, borderColor }]}
-						color={mutedColor}
-						size={18}
+						style={[
+							styles.bellBtn,
+							{ backgroundColor: shellBtnBg, borderColor: shellBtnBorder },
+						]}
+						color={shellIcon}
+						size={19}
 					/>
 
 					{/* Bell icon — only rendered after NovuProvider context is established */}
 					{user && novuReady && (
 						<NotificationBell
-							cardBg={cardBg}
-							borderColor={borderColor}
-							mutedColor={mutedColor}
+							cardBg={shellBtnBg}
+							borderColor={shellBtnBorder}
+							mutedColor={shellIcon}
 						/>
 					)}
 
@@ -559,7 +575,10 @@ export default function HomeScreen() {
 						hitSlop={4}
 						accessibilityRole="button"
 						accessibilityLabel={t("account.title")}
-						style={[styles.avatarBtn, { backgroundColor: cardBg, borderColor }]}
+						style={[
+							styles.avatarBtn,
+							{ backgroundColor: shellBtnBg, borderColor: shellBtnBorder },
+						]}
 					>
 						{user?.avatar?.url ? (
 							<Image
@@ -572,7 +591,7 @@ export default function HomeScreen() {
 								contentFit="cover"
 							/>
 						) : (
-							<Ionicons name="person-outline" size={18} color={mutedColor} />
+							<Ionicons name="person-outline" size={19} color={shellIcon} />
 						)}
 					</Pressable>
 				</Animated.View>
@@ -604,7 +623,7 @@ export default function HomeScreen() {
 					{/* Bouton Annuler animé */}
 					<Animated.View style={cancelStyle}>
 						<Pressable onPress={onSearchCancel} style={styles.cancelBtn}>
-							<Text style={[styles.cancelText, { color: primaryColor }]}>
+							<Text style={[styles.cancelText, { color: "#ffffff" }]}>
 								{t("common.cancel")}
 							</Text>
 						</Pressable>
@@ -631,8 +650,8 @@ export default function HomeScreen() {
 													backgroundColor: active
 														? primaryColor
 														: isDark
-															? "#1e293b"
-															: "#f1f5f9",
+															? "#1a1f4a"
+															: "#eceef5",
 												},
 											]}
 										>
@@ -678,8 +697,8 @@ export default function HomeScreen() {
 												activeFilterCount > 0
 													? primaryColor
 													: isDark
-														? "#1e293b"
-														: "#f1f5f9",
+														? "#1a1f4a"
+														: "#eceef5",
 										},
 									]}
 								>
@@ -844,7 +863,10 @@ export default function HomeScreen() {
 												<View
 													style={[
 														styles.catMoreIcon,
-														{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+														{
+															backgroundColor: isDark ? "#1a1f4a" : "#ffffff",
+															borderColor: isDark ? "#2a3170" : "#e1e3ee",
+														},
 													]}
 												>
 													<Ionicons
@@ -876,7 +898,7 @@ export default function HomeScreen() {
 							<View style={styles.section}>
 								<View style={styles.sectionHeader}>
 									<View style={styles.sectionTitleRow}>
-										<Ionicons name="flash" size={16} color="#f59e0b" />
+										<Ionicons name="flash" size={16} color="#ffb81c" />
 										<Text style={[styles.sectionTitle, { color: textColor }]}>
 											{t("home.featured")}
 										</Text>
@@ -914,18 +936,20 @@ export default function HomeScreen() {
 													blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6.",
 												}}
 											/>
+											<View style={styles.featuredBadge}>
+												<Ionicons name="flash" size={11} color="#ffb81c" />
+												<Text style={styles.featuredBadgeText}>
+													{t("home.featuredBadge")}
+												</Text>
+											</View>
 											<View style={styles.featuredOverlay}>
-												<View style={styles.featuredBadge}>
-													<Ionicons name="flash" size={11} color="#fff" />
-													<Text style={styles.featuredBadgeText}>
-														{t("home.featuredBadge")}
+												<View style={styles.featuredPriceTag}>
+													<Text style={styles.featuredPrice} numberOfLines={1}>
+														{listing.price
+															? formatPrice(listing.price, i18n.language)
+															: t("listing.priceOnRequest")}
 													</Text>
 												</View>
-												<Text style={styles.featuredPrice}>
-													{listing.price
-														? formatPrice(listing.price, i18n.language)
-														: t("listing.priceOnRequest")}
-												</Text>
 												<Text style={styles.featuredTitle} numberOfLines={1}>
 													{listing.title}
 												</Text>
@@ -1059,8 +1083,8 @@ export default function HomeScreen() {
 								style={[
 									styles.locationPrompt,
 									{
-										backgroundColor: isDark ? "#1e293b" : "#eef2ff",
-										borderColor: isDark ? "#1e3a5f" : "#bfdbfe",
+										backgroundColor: isDark ? "#1a1f4a" : "#e9ecfa",
+										borderColor: isDark ? "#2a3170" : "#c5ccf0",
 									},
 								]}
 							>
@@ -1108,7 +1132,7 @@ export default function HomeScreen() {
 								style={[
 									styles.locationPrompt,
 									{
-										backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+										backgroundColor: isDark ? "#1a1f4a" : "#f4f5f9",
 										borderColor,
 									},
 								]}
@@ -1193,7 +1217,7 @@ export default function HomeScreen() {
 								{
 									color: textColor,
 									borderColor: primaryColor,
-									backgroundColor: isDark ? "#0b1120" : "#f8fafc",
+									backgroundColor: isDark ? "#0c1030" : "#f4f5f9",
 								},
 							]}
 							returnKeyType="done"
@@ -1204,7 +1228,7 @@ export default function HomeScreen() {
 								onPress={() => setSaveDialogOpen(false)}
 								style={[
 									styles.modalBtn,
-									{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+									{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
 								]}
 							>
 								<Text style={[styles.modalBtnText, { color: mutedColor }]}>
@@ -1218,7 +1242,7 @@ export default function HomeScreen() {
 									styles.modalBtn,
 									{
 										backgroundColor:
-											saveStatus === "saved" ? "#16a34a" : primaryColor,
+											saveStatus === "saved" ? "#1e8a4f" : primaryColor,
 									},
 								]}
 							>
@@ -1253,9 +1277,10 @@ const styles = StyleSheet.create({
 
 	/* ── Header ── */
 	header: {
-		paddingHorizontal: 14,
+		paddingHorizontal: 16,
 		paddingTop: 6,
-		paddingBottom: 10,
+		paddingBottom: 14,
+		overflow: "hidden",
 		gap: 0, // géré par marginBottom animé de topRow
 	},
 
@@ -1272,20 +1297,21 @@ const styles = StyleSheet.create({
 	appName: {
 		fontSize: 26,
 		fontFamily: Fonts.displayExtrabold,
-		letterSpacing: -0.5,
+		letterSpacing: -0.8,
 	},
 	moreBtn: {
-		marginTop: 12,
-		minHeight: 44,
+		marginTop: 4,
+		marginHorizontal: 16,
+		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	bellBtn: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
+		width: 40,
+		height: 40,
+		borderRadius: 20,
 		alignItems: "center",
 		justifyContent: "center",
 		borderWidth: 1,
@@ -1298,20 +1324,20 @@ const styles = StyleSheet.create({
 		width: 8,
 		height: 8,
 		borderRadius: 4,
-		backgroundColor: "#ef4444",
+		backgroundColor: "#ffb81c",
 		borderWidth: 1.5,
-		borderColor: "#fff",
+		borderColor: "#1d2a7a",
 	},
 	avatarBtn: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
+		width: 40,
+		height: 40,
+		borderRadius: 20,
 		alignItems: "center",
 		justifyContent: "center",
 		borderWidth: 1,
 		overflow: "hidden",
 	},
-	avatar: { width: 36, height: 36 },
+	avatar: { width: 40, height: 40 },
 
 	/* Ligne 2 : search + annuler */
 	searchRow: {
@@ -1333,11 +1359,12 @@ const styles = StyleSheet.create({
 
 	/* ── Home content ── */
 	homeContent: {
-		borderTopLeftRadius: 16,
-		borderTopRightRadius: 16,
+		borderTopLeftRadius: 22,
+		borderTopRightRadius: 22,
+		paddingTop: 4,
 		paddingBottom: 40,
 	},
-	section: { marginTop: 20 },
+	section: { marginTop: 24 },
 	sectionHeader: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -1346,10 +1373,15 @@ const styles = StyleSheet.create({
 		marginBottom: 12,
 	},
 	sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-	sectionTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
+	sectionTitle: {
+		fontSize: 20,
+		lineHeight: 25,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.4,
+	},
 	sectionTitleShrink: { flexShrink: 1 },
 	locationSection: { marginTop: 20 },
-	seeAll: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	seeAll: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	catGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
@@ -1359,6 +1391,7 @@ const styles = StyleSheet.create({
 	catCell: { alignItems: "center" },
 	catMore: { alignItems: "center", width: 72 },
 	catMoreIcon: {
+		borderWidth: 1,
 		width: 56,
 		height: 56,
 		borderRadius: 56 * 0.3,
@@ -1374,38 +1407,59 @@ const styles = StyleSheet.create({
 
 	/* ── Featured ── */
 	featuredList: { paddingHorizontal: 16, gap: 12 },
-	featuredCard: { borderRadius: 14, overflow: "hidden" },
+	featuredCard: { borderRadius: 16, overflow: "hidden" },
 	featuredImage: { width: "100%", height: 190 },
 	featuredOverlay: {
 		position: "absolute",
 		bottom: 0,
 		left: 0,
 		right: 0,
-		padding: 12,
-		backgroundColor: "rgba(0,0,0,0.45)",
+		paddingHorizontal: 14,
+		paddingTop: 12,
+		paddingBottom: 12,
+		backgroundColor: "rgba(18, 22, 58,0.66)",
+		gap: 2,
 	},
 	featuredBadge: {
-		backgroundColor: "#f59e0b",
-		alignSelf: "flex-start",
+		position: "absolute",
+		top: 12,
+		left: 12,
+		backgroundColor: "#12163a",
 		borderRadius: 6,
-		paddingHorizontal: 6,
-		paddingVertical: 3,
-		marginBottom: 6,
+		paddingHorizontal: 7,
+		paddingVertical: 4,
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 3,
+		gap: 4,
 	},
 	featuredBadgeText: {
 		color: "#fff",
 		fontSize: 11,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
+	},
+	featuredPriceTag: {
+		position: "absolute",
+		top: -18,
+		left: 14,
+		backgroundColor: "#ffb81c",
+		borderRadius: 7,
+		paddingHorizontal: 9,
+		paddingTop: 3,
+		paddingBottom: 4,
 	},
 	featuredPrice: {
-		color: "#fff",
+		color: "#12163a",
 		fontSize: 18,
+		lineHeight: 22,
 		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.4,
 	},
-	featuredTitle: { color: "#fff", fontSize: 14, fontFamily: Fonts.body },
+	featuredTitle: {
+		color: "#fff",
+		fontSize: 15,
+		fontFamily: Fonts.bodySemibold,
+		marginTop: 10,
+	},
 	featuredMeta: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -1430,8 +1484,8 @@ const styles = StyleSheet.create({
 	/* ── Search mode ── */
 	content: {
 		flex: 1,
-		borderTopLeftRadius: 16,
-		borderTopRightRadius: 16,
+		borderTopLeftRadius: 22,
+		borderTopRightRadius: 22,
 		overflow: "hidden",
 	},
 	sortBar: {
@@ -1447,11 +1501,11 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
-		borderRadius: 20,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
+		borderRadius: 10,
+		paddingHorizontal: 12,
+		minHeight: 36,
 	},
-	sortText: { fontSize: 12 },
+	sortText: { fontSize: 13 },
 	countBadge: {
 		borderRadius: 10,
 		paddingHorizontal: 8,
@@ -1478,9 +1532,9 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 6,
 		paddingHorizontal: 18,
-		paddingVertical: 12,
-		borderRadius: 28,
-		shadowColor: "#000",
+		paddingVertical: 13,
+		borderRadius: 14,
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 4 },
 		shadowOpacity: 0.2,
 		shadowRadius: 8,

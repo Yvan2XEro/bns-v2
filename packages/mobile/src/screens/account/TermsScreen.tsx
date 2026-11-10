@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -26,11 +27,11 @@ export function TermsScreen() {
 	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const _cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const _cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	return (
 		<SafeAreaView
@@ -75,10 +76,10 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 		borderBottomWidth: 1,
 	},
-	title: { fontSize: 17, fontWeight: "700" },
+	title: { fontSize: 17, fontFamily: Fonts.bodyBold },
 	scroll: { padding: 20, paddingBottom: 40 },
 	updated: { fontSize: 12, marginBottom: 20, textAlign: "center" },
 	section: { marginBottom: 20 },
-	sectionTitle: { fontSize: 15, fontWeight: "700", marginBottom: 8 },
+	sectionTitle: { fontSize: 15, fontFamily: Fonts.bodyBold, marginBottom: 8 },
 	paragraph: { fontSize: 14, lineHeight: 22 },
 });

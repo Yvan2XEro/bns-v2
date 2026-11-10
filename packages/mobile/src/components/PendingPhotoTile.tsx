@@ -9,6 +9,7 @@ import {
 	View,
 	type ViewStyle,
 } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import type { PendingPhoto } from "@/src/lib/photoQueue";
 
@@ -82,14 +83,14 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 4,
 		padding: 6,
-		backgroundColor: "rgba(15,23,42,0.45)",
+		backgroundColor: "rgba(18, 22, 58,0.45)",
 		borderRadius: 12,
 	},
 	failed: { backgroundColor: "rgba(185,28,28,0.7)" },
 	label: {
 		color: "#fff",
 		fontSize: 11,
-		fontWeight: "600",
+		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
 	remove: {
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
 		width: 28,
 		height: 28,
 		borderRadius: 14,
-		backgroundColor: "rgba(15,23,42,0.7)",
+		backgroundColor: "rgba(18, 22, 58,0.7)",
 		alignItems: "center",
 		justifyContent: "center",
 	},

@@ -170,14 +170,14 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 						)}
 					/>
 					{form.formState.errors.items?.[index] ? (
-						<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+						<Text accessibilityRole="alert" style={{ color: "#d23a2e" }}>
 							{t("returns.inspectionValidation")}
 						</Text>
 					) : null}
 				</View>
 			))}
 			{form.formState.errors.root ? (
-				<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+				<Text accessibilityRole="alert" style={{ color: "#d23a2e" }}>
 					{form.formState.errors.root.message}
 				</Text>
 			) : null}

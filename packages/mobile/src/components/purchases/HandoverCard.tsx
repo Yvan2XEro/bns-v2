@@ -134,8 +134,8 @@ export function HandoverCard({
 }
 
 /** The design system's ink: the card reads as the one thing to keep safe. */
-const INK = "#0f172a";
-const AMBER = "#fbbf24";
+const INK = "#12163a";
+const AMBER = "#ffc94a";
 
 const styles = StyleSheet.create({
 	card: {
@@ -152,9 +152,9 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		fontFamily: Fonts.displayBold,
 	},
-	sms: { color: "#94a3b8", fontSize: 12, fontFamily: Fonts.bodySemibold },
+	sms: { color: "#777ca3", fontSize: 12, fontFamily: Fonts.bodySemibold },
 	body: {
-		color: "#cbd5e1",
+		color: "#c9cce0",
 		fontSize: 14,
 		fontFamily: Fonts.body,
 		lineHeight: 20,
@@ -164,9 +164,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 		height: 64,
 		borderRadius: 12,
-		backgroundColor: "#1e293b",
+		backgroundColor: "#1a1f4a",
 		borderWidth: 1,
-		borderColor: "#334155",
+		borderColor: "#3a3f66",
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		borderRadius: 12,
 		borderWidth: 1,
-		borderColor: "#334155",
+		borderColor: "#3a3f66",
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		fontFamily: Fonts.bodySemibold,
 	},
-	muted: { color: "#94a3b8", fontSize: 12, fontFamily: Fonts.body },
+	muted: { color: "#777ca3", fontSize: 12, fontFamily: Fonts.body },
 	locked: { borderRadius: 12, padding: 12, gap: 6 },
 	lockedTitle: { flexDirection: "row", alignItems: "center", gap: 6 },
 });

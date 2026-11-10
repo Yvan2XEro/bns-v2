@@ -42,7 +42,7 @@ export function FieldIssueList({
 		<View style={styles.box} accessibilityRole="alert">
 			{issues.map((issue) => (
 				<View key={`${issue.path}:${issue.rule}`} style={styles.row}>
-					<Ionicons name="alert-circle" size={14} color="#dc2626" />
+					<Ionicons name="alert-circle" size={14} color="#d23a2e" />
 					<Text style={styles.text}>
 						<Text style={styles.label}>{labelOf(issue.path)} — </Text>
 						{issueMessage(t, issue)}
@@ -59,11 +59,11 @@ const styles = StyleSheet.create({
 		padding: 12,
 		borderRadius: 12,
 		borderWidth: 1,
-		borderColor: "#fca5a5",
-		backgroundColor: "#fef2f2",
+		borderColor: "#f2a79f",
+		backgroundColor: "#fdf1ef",
 		marginVertical: 8,
 	},
 	row: { flexDirection: "row", gap: 6, alignItems: "flex-start" },
-	text: { flex: 1, fontSize: 13, fontFamily: Fonts.body, color: "#991b1b" },
+	text: { flex: 1, fontSize: 13, fontFamily: Fonts.body, color: "#8e2219" },
 	label: { fontFamily: Fonts.bodySemibold },
 });

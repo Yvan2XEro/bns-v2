@@ -59,18 +59,18 @@ interface CustomAlertProps {
 
 const ACCENT: Record<AlertType, string> = {
 	success: "#10b981",
-	error: "#ef4444",
-	warning: "#f59e0b",
-	info: "#1e40af", // overridden at runtime for dark mode
-	confirm: "#1e40af",
+	error: "#e5574b",
+	warning: "#ffb81c",
+	info: "#23338f", // overridden at runtime for dark mode
+	confirm: "#23338f",
 };
 
 const ACCENT_DARK: Record<AlertType, string> = {
 	success: "#10b981",
-	error: "#ef4444",
-	warning: "#f59e0b",
-	info: "#3b82f6",
-	confirm: "#3b82f6",
+	error: "#e5574b",
+	warning: "#ffb81c",
+	info: "#6878ea",
+	confirm: "#6878ea",
 };
 
 const ICON: Record<AlertType, keyof typeof Ionicons.glyphMap> = {
@@ -112,10 +112,10 @@ export default function CustomAlert({
 			}
 		: null;
 
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const dividerColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const dividerColor = isDark ? "#2a3170" : "#e1e3ee";
 	const accent = isDark ? ACCENT_DARK[type] : ACCENT[type];
 
 	const [modalOpen, setModalOpen] = useState(false);
@@ -198,7 +198,7 @@ export default function CustomAlert({
 		const bgColor = isCancel
 			? "transparent"
 			: isDestructive
-				? "#ef4444"
+				? "#e5574b"
 				: accent;
 		const txtColor = isCancel ? mutedColor : "#ffffff";
 
@@ -251,7 +251,7 @@ export default function CustomAlert({
 				<View
 					style={[
 						styles.handle,
-						{ backgroundColor: isDark ? "#334155" : "#cbd5e1" },
+						{ backgroundColor: isDark ? "#3a3f66" : "#c9cce0" },
 					]}
 				/>
 
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
 	cancelColumnBtn: { marginTop: 4 },
 	buttonText: {
 		fontSize: 15,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 		letterSpacing: 0.2,
 	},
 });

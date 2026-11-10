@@ -524,7 +524,7 @@ function VariantPrice({
 								styles.priceInput,
 								{
 									backgroundColor: c.input,
-									borderColor: fieldState.error ? "#DC2626" : c.border,
+									borderColor: fieldState.error ? "#d23a2e" : c.border,
 									color: c.text,
 								},
 							]}
@@ -613,9 +613,9 @@ const styles = StyleSheet.create({
 		width: "100%",
 	},
 	fieldError: {
-		color: "#DC2626",
+		color: "#d23a2e",
 		fontFamily: Fonts.body,
-		fontSize: 10,
+		fontSize: 11,
 	},
 	primaryButton: {
 		alignItems: "center",

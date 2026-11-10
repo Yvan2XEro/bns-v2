@@ -9,6 +9,7 @@ import {
 	View,
 } from "react-native";
 import { z } from "zod";
+import { Fonts } from "@/constants/theme";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import type { SubmitPayoutAccountInput } from "@/src/hooks/useSellerPayments";
@@ -83,7 +84,7 @@ export function PayoutAccountForm({
 											s.meta,
 											{
 												color: selected ? c.primary : c.text,
-												fontWeight: "600",
+												fontFamily: Fonts.bodySemibold,
 											},
 										]}
 									>

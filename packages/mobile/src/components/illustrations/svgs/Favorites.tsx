@@ -10,18 +10,18 @@ import {
 } from "../animated";
 
 const B = {
-	base: "#1e40af",
-	mid: "#3b82f6",
-	light: "#93c5fd",
-	pale: "#dbeafe",
-	dark: "#1e3a8a",
+	base: "#23338f",
+	mid: "#6878ea",
+	light: "#a9b4f0",
+	pale: "#e3e7f8",
+	dark: "#1a2672",
 };
 const Y = {
-	dark: "#b45309",
-	base: "#d97706",
-	mid: "#f59e0b",
-	light: "#fbbf24",
-	pale: "#fef3c7",
+	dark: "#8a5a00",
+	base: "#9a6a00",
+	mid: "#ffb81c",
+	light: "#ffc94a",
+	pale: "#fff1c7",
 };
 
 type Props = { color?: string; size?: number };

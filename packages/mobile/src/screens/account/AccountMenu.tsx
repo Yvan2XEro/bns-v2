@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { NdopPattern } from "@/src/components/brand/NdopPattern";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
 import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
@@ -63,15 +64,15 @@ function MenuItem({
 	selected,
 }: MenuItemProps) {
 	const selectedStyle = useSelectedRowStyle()(selected);
-	const textColor = danger ? "#dc2626" : isDark ? "#e2e8f0" : "#0f172a";
+	const textColor = danger ? "#d23a2e" : isDark ? "#e1e3ee" : "#12163a";
 	const resolvedIconColor = danger
-		? "#dc2626"
-		: (iconColor ?? (isDark ? "#94a3b8" : "#475569"));
+		? "#d23a2e"
+		: (iconColor ?? (isDark ? "#a3a7c8" : "#4a4f78"));
 	const resolvedIconBg = danger
 		? isDark
-			? "#3b1111"
-			: "#fee2e2"
-		: (iconBg ?? (isDark ? "#1e293b" : "#f1f5f9"));
+			? "#3a1310"
+			: "#fbe3e0"
+		: (iconBg ?? (isDark ? "#1a1f4a" : "#eceef5"));
 
 	return (
 		<AnimatedPressable
@@ -93,7 +94,7 @@ function MenuItem({
 					<Text
 						style={[
 							styles.menuSublabel,
-							{ color: isDark ? "#64748b" : "#94a3b8" },
+							{ color: isDark ? "#a3a7c8" : "#5b6088" },
 						]}
 					>
 						{sublabel}
@@ -104,7 +105,7 @@ function MenuItem({
 			<Ionicons
 				name="chevron-forward"
 				size={16}
-				color={isDark ? "#334155" : "#cbd5e1"}
+				color={isDark ? "#4a4f78" : "#c9cce0"}
 			/>
 		</AnimatedPressable>
 	);
@@ -155,13 +156,13 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 
 	const notificationReady = useNotificationReady();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e293b" : "#f1f5f9";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#1a1f4a" : "#eceef5";
+	const accentBg = isDark ? "#12163a" : "#e9ecfa";
 
 	if (!user) {
 		const goLogin = () =>
@@ -176,7 +177,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 			});
 		const cardStyle = [
 			styles.sectionCard,
-			{ backgroundColor: cardBg, borderColor: isDark ? "#1e3a5f" : "#e2e8f0" },
+			{ backgroundColor: cardBg, borderColor: isDark ? "#2a3170" : "#e1e3ee" },
 		];
 		const language =
 			i18n.language?.slice(0, 2) === "en" ? "English" : "Français";
@@ -189,7 +190,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 					<View
 						style={[
 							styles.accountIconWrap,
-							{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+							{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 						]}
 					>
 						<Ionicons name="person" size={22} color={primaryColor} />
@@ -209,10 +210,11 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 							style={[
 								styles.guestCard,
 								{
-									backgroundColor: isDark ? "#13213f" : "#1e40af",
+									backgroundColor: isDark ? "#1d2568" : "#1d2a7a",
 								},
 							]}
 						>
+							<NdopPattern />
 							<Text style={styles.guestTitle}>{t("account.guestTitle")}</Text>
 							<Text style={styles.guestPrompt}>
 								{t("account.signInPrompt")}
@@ -225,7 +227,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								] as const
 							).map(([icon, label]) => (
 								<View key={icon} style={styles.guestPerk}>
-									<Ionicons name={icon} size={16} color="#bfdbfe" />
+									<Ionicons name={icon} size={16} color="#c5ccf0" />
 									<Text style={styles.guestPerkText}>{label}</Text>
 								</View>
 							))}
@@ -233,7 +235,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								<Pressable
 									onPress={goLogin}
 									accessibilityRole="button"
-									style={[styles.guestPrimary, { backgroundColor: "#f59e0b" }]}
+									style={[styles.guestPrimary, { backgroundColor: "#ffb81c" }]}
 								>
 									<Text style={styles.guestPrimaryText}>
 										{t("account.signIn")}
@@ -404,7 +406,10 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 						<AnimatedPressable
 							{...entry("editProfile")}
 							scaleTo={0.95}
-							style={[styles.editBtn, { backgroundColor: cardBg }]}
+							style={[
+								styles.editBtn,
+								{ backgroundColor: cardBg, borderColor, borderWidth: 1 },
+							]}
 						>
 							<Ionicons name="pencil" size={14} color={primaryColor} />
 							<Text style={[styles.editBtnText, { color: primaryColor }]}>
@@ -428,7 +433,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 									styles.sectionCard,
 									{
 										backgroundColor: cardBg,
-										borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+										borderColor: isDark ? "#2a3170" : "#e1e3ee",
 									},
 								]}
 							>
@@ -440,8 +445,8 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 											? t("account.moderationPending", { count: pendingCount })
 											: t("account.moderationIdle")
 									}
-									iconBg={isDark ? "#451a03" : "#fef3c7"}
-									iconColor="#d97706"
+									iconBg={isDark ? "#3a2a00" : "#fff1c7"}
+									iconColor="#9a6a00"
 									rightElement={
 										pendingCount > 0 ? (
 											<View style={styles.notifBadge}>
@@ -469,7 +474,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 									styles.sectionCard,
 									{
 										backgroundColor: cardBg,
-										borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+										borderColor: isDark ? "#2a3170" : "#e1e3ee",
 									},
 								]}
 							>
@@ -482,7 +487,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 												? t("account.shopSuspended")
 												: t("account.myShop")
 										}
-										iconBg={isDark ? "#172554" : "#dbeafe"}
+										iconBg={isDark ? "#1d2568" : "#e3e7f8"}
 										iconColor={primaryColor}
 										rightElement={
 											<LevelBadge badge={ownShop.badge} size="sm" />
@@ -496,8 +501,8 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 										icon="storefront-outline"
 										label={t("account.openShop")}
 										sublabel={t("account.openShopSublabel")}
-										iconBg={isDark ? "#451a03" : "#fef3c7"}
-										iconColor="#d97706"
+										iconBg={isDark ? "#3a2a00" : "#fff1c7"}
+										iconColor="#9a6a00"
 										onPress={() => router.push("/shop/create")}
 										isDark={isDark}
 										borderColor={borderColor}
@@ -516,7 +521,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 												? t("sellerMode.switchToBuyerSub")
 												: t("sellerMode.switchToSellerSub")
 										}
-										iconBg={isDark ? "#172554" : "#dbeafe"}
+										iconBg={isDark ? "#1d2568" : "#e3e7f8"}
 										iconColor={primaryColor}
 										onPress={() =>
 											switchAppMode(inSellerMode ? "buyer" : "seller")
@@ -539,7 +544,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								styles.sectionCard,
 								{
 									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+									borderColor: isDark ? "#2a3170" : "#e1e3ee",
 								},
 							]}
 						>
@@ -624,7 +629,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								styles.sectionCard,
 								{
 									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+									borderColor: isDark ? "#2a3170" : "#e1e3ee",
 								},
 							]}
 						>
@@ -656,7 +661,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								styles.sectionCard,
 								{
 									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+									borderColor: isDark ? "#2a3170" : "#e1e3ee",
 								},
 							]}
 						>
@@ -697,7 +702,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								styles.sectionCard,
 								{
 									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+									borderColor: isDark ? "#2a3170" : "#e1e3ee",
 								},
 							]}
 						>
@@ -746,7 +751,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								styles.sectionCard,
 								{
 									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+									borderColor: isDark ? "#2a3170" : "#e1e3ee",
 								},
 							]}
 						>
@@ -767,34 +772,39 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 }
 
 const styles = StyleSheet.create({
-	guestCard: { borderRadius: 22, padding: 20, gap: 10 },
-	guestTitle: { color: "#ffffff", fontFamily: Fonts.displayBold, fontSize: 22 },
+	guestCard: { borderRadius: 22, padding: 20, gap: 10, overflow: "hidden" },
+	guestTitle: {
+		color: "#ffffff",
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 24,
+		letterSpacing: -0.5,
+	},
 	guestPrompt: {
-		color: "#dbeafe",
+		color: "#e3e7f8",
 		fontFamily: Fonts.body,
 		fontSize: 14,
 		lineHeight: 20,
 		marginBottom: 4,
 	},
 	guestPerk: { flexDirection: "row", alignItems: "center", gap: 10 },
-	guestPerkText: { color: "#eff6ff", fontFamily: Fonts.body, fontSize: 14 },
+	guestPerkText: { color: "#eff1fb", fontFamily: Fonts.body, fontSize: 14 },
 	guestActions: { flexDirection: "row", gap: 10, marginTop: 10 },
 	guestPrimary: {
 		flex: 1,
-		height: 46,
-		borderRadius: 14,
+		height: 50,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	guestPrimaryText: {
-		color: "#0f172a",
+		color: "#12163a",
 		fontFamily: Fonts.bodySemibold,
 		fontSize: 15,
 	},
 	guestSecondary: {
 		flex: 1,
-		height: 46,
-		borderRadius: 14,
+		height: 50,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 		borderWidth: 1,
@@ -863,33 +873,34 @@ const styles = StyleSheet.create({
 		backgroundColor: "#fff",
 		borderRadius: 10,
 	},
-	userName: { fontSize: 18, fontFamily: Fonts.displayBold, marginBottom: 3 },
-	memberSince: { fontSize: 12, marginTop: 3, fontFamily: Fonts.body },
+	userName: {
+		fontSize: 22,
+		lineHeight: 27,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.5,
+		marginBottom: 3,
+	},
+	memberSince: { fontSize: 13, marginTop: 3, fontFamily: Fonts.body },
 	editBtn: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 5,
 		borderRadius: 10,
-		paddingHorizontal: 10,
-		paddingVertical: 7,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.08,
-		shadowRadius: 4,
-		elevation: 2,
+		paddingHorizontal: 12,
+		minHeight: 36,
 	},
-	editBtnText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	editBtnText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 
 	/* ── Content ── */
 	content: {
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		paddingTop: 20,
+		borderTopLeftRadius: 22,
+		borderTopRightRadius: 22,
+		paddingTop: 24,
 		minHeight: 500,
 	},
-	section: { paddingHorizontal: 16, marginBottom: 12 },
+	section: { paddingHorizontal: 16, marginBottom: 20 },
 	sectionLabel: {
-		fontSize: 11,
+		fontSize: 12,
 		textTransform: "uppercase",
 		fontFamily: Fonts.bodySemibold,
 		letterSpacing: 1,
@@ -907,19 +918,20 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: 14,
-		paddingVertical: 13,
-		borderBottomWidth: 1,
+		paddingVertical: 12,
+		minHeight: 56,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 		gap: 12,
 	},
 	iconBox: {
-		width: 34,
-		height: 34,
+		width: 36,
+		height: 36,
 		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	menuLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	menuSublabel: { fontSize: 11, fontFamily: Fonts.body, marginTop: 1 },
+	menuLabel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	menuSublabel: { fontSize: 12, fontFamily: Fonts.body, marginTop: 2 },
 
 	/* ── Register row ── */
 	registerRow: {
@@ -931,7 +943,7 @@ const styles = StyleSheet.create({
 	registerText: { fontSize: 14, fontFamily: Fonts.body },
 	registerLink: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	notifBadge: {
-		backgroundColor: "#dc2626",
+		backgroundColor: "#d23a2e",
 		borderRadius: 10,
 		minWidth: 18,
 		height: 18,
@@ -942,7 +954,7 @@ const styles = StyleSheet.create({
 	},
 	notifBadgeText: {
 		color: "#fff",
-		fontSize: 10,
+		fontSize: 11,
 		fontFamily: Fonts.displayExtrabold,
 	},
 });

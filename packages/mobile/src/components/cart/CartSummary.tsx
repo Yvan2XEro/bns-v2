@@ -153,5 +153,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	ctaText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

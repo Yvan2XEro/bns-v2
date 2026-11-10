@@ -1,17 +1,17 @@
 import "../src/lib/i18n";
 import { Ionicons } from "@expo/vector-icons";
 import {
-	DMSans_400Regular,
-	DMSans_500Medium,
-	DMSans_600SemiBold,
-	DMSans_700Bold,
-} from "@expo-google-fonts/dm-sans";
+	BricolageGrotesque_500Medium,
+	BricolageGrotesque_600SemiBold,
+	BricolageGrotesque_700Bold,
+	BricolageGrotesque_800ExtraBold,
+} from "@expo-google-fonts/bricolage-grotesque";
 import {
-	Outfit_500Medium,
-	Outfit_600SemiBold,
-	Outfit_700Bold,
-	Outfit_800ExtraBold,
-} from "@expo-google-fonts/outfit";
+	Figtree_400Regular,
+	Figtree_500Medium,
+	Figtree_600SemiBold,
+	Figtree_700Bold,
+} from "@expo-google-fonts/figtree";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -40,6 +40,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { Colors } from "@/constants/theme";
 import {
 	AppConfigProvider,
 	useAppConfig,
@@ -142,7 +143,7 @@ const errorStyles = StyleSheet.create({
 		textAlign: "center",
 	},
 	button: {
-		backgroundColor: "#1e40af",
+		backgroundColor: "#23338f",
 		borderRadius: 12,
 		marginTop: 12,
 		paddingHorizontal: 24,
@@ -173,6 +174,33 @@ export const unstable_settings = { anchor: "(tabs)" };
 
 // ─── Root layout ──────────────────────────────────────────────────────────────
 
+// Navigation chrome (headers, back chevrons, screen grounds) in the Ndop
+// palette rather than React Navigation's stock blue and grey.
+const NdopLight = {
+	...DefaultTheme,
+	colors: {
+		...DefaultTheme.colors,
+		primary: Colors.light.primary,
+		background: Colors.light.background,
+		card: Colors.light.card,
+		text: Colors.light.foreground,
+		border: Colors.light.border,
+		notification: Colors.light.destructive,
+	},
+};
+const NdopDark = {
+	...DarkTheme,
+	colors: {
+		...DarkTheme.colors,
+		primary: Colors.dark.primary,
+		background: Colors.dark.background,
+		card: Colors.dark.background,
+		text: Colors.dark.foreground,
+		border: Colors.dark.border,
+		notification: Colors.dark.destructive,
+	},
+};
+
 export default function RootLayout() {
 	usePhonePortraitLock();
 	// Load saved language + theme preferences before first render
@@ -192,14 +220,14 @@ export default function RootLayout() {
 
 	const [fontsLoaded, fontError] = useFonts({
 		...Ionicons.font,
-		DMSans_400Regular,
-		DMSans_500Medium,
-		DMSans_600SemiBold,
-		DMSans_700Bold,
-		Outfit_500Medium,
-		Outfit_600SemiBold,
-		Outfit_700Bold,
-		Outfit_800ExtraBold,
+		Figtree_400Regular,
+		Figtree_500Medium,
+		Figtree_600SemiBold,
+		Figtree_700Bold,
+		BricolageGrotesque_500Medium,
+		BricolageGrotesque_600SemiBold,
+		BricolageGrotesque_700Bold,
+		BricolageGrotesque_800ExtraBold,
 	});
 
 	// A font that fails to resolve must not strand the user on the splash
@@ -419,7 +447,7 @@ function RootLayoutNav() {
 	}
 
 	return (
-		<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+		<ThemeProvider value={colorScheme === "dark" ? NdopDark : NdopLight}>
 			<SellerBrandProvider>
 				<Stack>
 					<Stack.Screen name="onboarding" options={{ headerShown: false }} />

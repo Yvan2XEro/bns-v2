@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	buttonText: { fontSize: 15, fontFamily: Fonts.displayBold },
+	buttonText: { fontSize: 15, fontFamily: Fonts.bodyBold },
 	added: { minHeight: 44, justifyContent: "center" },
 	small: { fontSize: 13, fontFamily: Fonts.body },
 	badges: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

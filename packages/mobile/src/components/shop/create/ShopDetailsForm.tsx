@@ -196,7 +196,7 @@ export function ShopDetailsForm({ phone }: { phone: PhoneStatus }) {
 				]}
 			>
 				{isPending ? (
-					<ActivityIndicator color="#fff" />
+					<ActivityIndicator color="#12163a" />
 				) : (
 					<Text style={styles.submitText}>{t("shop.createSubmit")}</Text>
 				)}
@@ -243,5 +243,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	submitText: { color: "#12163a", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

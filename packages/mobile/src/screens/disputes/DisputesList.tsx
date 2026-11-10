@@ -30,11 +30,11 @@ export function DisputesList({ selectedId, onOpen }: SplitListProps) {
 	const { t, i18n } = useTranslation();
 	const query = useBuyerDisputes();
 	const colors = {
-		bg: dark ? "#0b1120" : "#f8fafc",
-		text: dark ? "#e2e8f0" : "#0f172a",
-		muted: dark ? "#94a3b8" : "#64748b",
-		border: dark ? "#1e3a5f" : "#e2e8f0",
-		card: dark ? "#111c2e" : "#ffffff",
+		bg: dark ? "#0c1030" : "#f4f5f9",
+		text: dark ? "#e1e3ee" : "#12163a",
+		muted: dark ? "#a3a7c8" : "#5b6088",
+		border: dark ? "#2a3170" : "#e1e3ee",
+		card: dark ? "#11163a" : "#ffffff",
 		primary: dark ? "#c4b5fd" : "#6d28d9",
 	};
 	return (
@@ -112,9 +112,9 @@ function DisputeRow({
 }) {
 	const { t } = useTranslation();
 	const selectedStyle = useSelectedRowStyle()(selected);
-	const bg = dark ? "#111c2e" : "#fff";
-	const text = dark ? "#e2e8f0" : "#0f172a";
-	const muted = dark ? "#94a3b8" : "#64748b";
+	const bg = dark ? "#11163a" : "#fff";
+	const text = dark ? "#e1e3ee" : "#12163a";
+	const muted = dark ? "#a3a7c8" : "#5b6088";
 	return (
 		<Pressable
 			accessibilityRole="button"
@@ -122,7 +122,7 @@ function DisputeRow({
 			accessibilityState={{ selected: Boolean(selected) }}
 			style={[
 				styles.card,
-				{ backgroundColor: bg, borderColor: dark ? "#1e3a5f" : "#e2e8f0" },
+				{ backgroundColor: bg, borderColor: dark ? "#2a3170" : "#e1e3ee" },
 				selectedStyle,
 			]}
 		>
@@ -131,7 +131,7 @@ function DisputeRow({
 				<Text
 					style={[
 						styles.status,
-						{ color: item.overdue ? "#dc2626" : "#6d28d9" },
+						{ color: item.overdue ? "#d23a2e" : "#6d28d9" },
 					]}
 				>
 					{t(DISPUTE_STATUS_LABELS[item.status])}
@@ -189,5 +189,5 @@ const styles = StyleSheet.create({
 		gap: 10,
 		justifyContent: "flex-end",
 	},
-	overdue: { color: "#dc2626", fontFamily: Fonts.bodyMedium, fontSize: 12 },
+	overdue: { color: "#d23a2e", fontFamily: Fonts.bodyMedium, fontSize: 12 },
 });

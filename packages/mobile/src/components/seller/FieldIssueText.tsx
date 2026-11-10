@@ -14,4 +14,4 @@ export function FieldIssueText({ issue }: { issue: FieldIssue | undefined }) {
 	);
 }
 
-export const ISSUE_BORDER = "#dc2626";
+export const ISSUE_BORDER = "#d23a2e";

@@ -157,12 +157,12 @@ export function ConversationScreen({
 	const listRef = useRef<FlatList>(null);
 	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	const { data: convData } = useQuery({
 		queryKey: ["conversation", conversationId],
@@ -583,7 +583,7 @@ export function ConversationScreen({
 						<View
 							style={[
 								styles.msgAvatar,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+								{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 							]}
 						>
 							<Text
@@ -601,9 +601,12 @@ export function ConversationScreen({
 						style={[
 							styles.bubble,
 							{
-								backgroundColor: isMe ? primaryColor : cardBg,
-								borderColor: isMe ? primaryColor : borderColor,
+								// Own messages in deep indigo in both themes: white text
+								// keeps its contrast where the dark primary would not.
+								backgroundColor: isMe ? MY_BUBBLE : cardBg,
+								borderColor: isMe ? MY_BUBBLE : borderColor,
 							},
+							isMe ? styles.bubbleMine : styles.bubbleTheirs,
 							item.listing ? { width: "86%", maxWidth: "86%" } : null,
 						]}
 					>
@@ -620,7 +623,7 @@ export function ConversationScreen({
 											: borderColor,
 										backgroundColor: isMe
 											? "rgba(255,255,255,0.12)"
-											: "#f8fafc",
+											: "#f4f5f9",
 									},
 								]}
 							>
@@ -684,7 +687,7 @@ export function ConversationScreen({
 									style={[
 										styles.readTick,
 										{
-											color: isRead ? "#60a5fa" : "rgba(255,255,255,0.5)",
+											color: isRead ? "#9aa8f5" : "rgba(255,255,255,0.5)",
 										},
 									]}
 								>
@@ -712,7 +715,7 @@ export function ConversationScreen({
 						hitSlop={8}
 						style={styles.failedRow}
 					>
-						<Ionicons name="alert-circle" size={14} color="#dc2626" />
+						<Ionicons name="alert-circle" size={14} color="#d23a2e" />
 						<Text style={styles.failedText}>{t("messages.notSent")}</Text>
 					</Pressable>
 				)}
@@ -761,7 +764,7 @@ export function ConversationScreen({
 							<View
 								style={[
 									styles.headerAvatar,
-									{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+									{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 								]}
 							>
 								{header?.logoUrl ? (
@@ -791,7 +794,7 @@ export function ConversationScreen({
 								{header?.title || t("messages.user")}
 							</Text>
 							{!header?.isShop && isOtherOnline ? (
-								<Text style={[styles.onlineLabel, { color: "#22c55e" }]}>
+								<Text style={[styles.onlineLabel, { color: "#34b26a" }]}>
 									{t("messages.online")}
 								</Text>
 							) : header?.subtitle ? (
@@ -883,7 +886,7 @@ export function ConversationScreen({
 									<View
 										style={[
 											styles.msgAvatar,
-											{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+											{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 										]}
 									>
 										<Text
@@ -976,7 +979,7 @@ export function ConversationScreen({
 										styles.msgInput,
 										{
 											color: textColor,
-											backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
+											backgroundColor: isDark ? "#0c1030" : "#eceef5",
 											borderColor,
 										},
 									]}
@@ -994,8 +997,8 @@ export function ConversationScreen({
 											backgroundColor: text.trim()
 												? primaryColor
 												: isDark
-													? "#1e293b"
-													: "#e2e8f0",
+													? "#1a1f4a"
+													: "#e1e3ee",
 										},
 									]}
 								>
@@ -1017,6 +1020,8 @@ export function ConversationScreen({
 		</SafeAreaView>
 	);
 }
+
+const MY_BUBBLE = "#2f43b5";
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
@@ -1046,7 +1051,7 @@ const styles = StyleSheet.create({
 		width: 12,
 		height: 12,
 		borderRadius: 6,
-		backgroundColor: "#22c55e",
+		backgroundColor: "#34b26a",
 		borderWidth: 2,
 		borderColor: "white",
 	},
@@ -1082,7 +1087,7 @@ const styles = StyleSheet.create({
 		marginBottom: 2,
 	},
 	bubble: {
-		borderRadius: 18,
+		borderRadius: 20,
 		borderWidth: 1,
 		paddingHorizontal: 14,
 		paddingVertical: 10,
@@ -1093,14 +1098,16 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingVertical: 10,
 	},
-	bubbleText: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.body },
+	bubbleMine: { borderBottomRightRadius: 6 },
+	bubbleTheirs: { borderBottomLeftRadius: 6 },
+	bubbleText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.body },
 	bubbleMeta: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "flex-end",
 		gap: 2,
 	},
-	bubbleTime: { fontSize: 10, fontFamily: Fonts.body },
+	bubbleTime: { fontSize: 11, fontFamily: Fonts.body },
 	readTick: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 	failedRow: {
 		flexDirection: "row",
@@ -1113,7 +1120,7 @@ const styles = StyleSheet.create({
 	},
 	failedText: {
 		fontSize: 12,
-		color: "#dc2626",
+		color: "#d23a2e",
 		fontFamily: Fonts.bodySemibold,
 	},
 	offlineHint: { fontSize: 12, paddingHorizontal: 16, paddingBottom: 6 },
@@ -1164,7 +1171,7 @@ const styles = StyleSheet.create({
 	},
 	blockedAction: {
 		fontSize: 14,
-		fontWeight: "600",
+
 		fontFamily: Fonts.body,
 	},
 	msgInput: {

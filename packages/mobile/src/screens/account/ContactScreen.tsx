@@ -11,6 +11,7 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -43,12 +44,12 @@ export function ContactScreen() {
 	const [message, setMessage] = useState("");
 	const [sent, setSent] = useState(false);
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	const { mutate: sendMessage, isPending } = useMutation({
 		mutationFn: () =>
@@ -68,7 +69,7 @@ export function ContactScreen() {
 					<Ionicons
 						name="checkmark-circle"
 						size={64}
-						color="#16a34a"
+						color="#1e8a4f"
 						style={{ marginBottom: 16 }}
 					/>
 					<Text style={[styles.title, { color: textColor }]}>
@@ -219,11 +220,11 @@ const styles = StyleSheet.create({
 	headerTitle: {
 		flex: 1,
 		fontSize: 18,
-		fontWeight: "700",
+		fontFamily: Fonts.bodyBold,
 		textAlign: "center",
 	},
 	scroll: { padding: 20, gap: 12, paddingBottom: 40 },
-	fieldLabel: { fontSize: 13, fontWeight: "600", marginBottom: 6 },
+	fieldLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold, marginBottom: 6 },
 	field: {
 		borderRadius: 10,
 		borderWidth: 1.5,
@@ -247,12 +248,12 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 7,
 	},
-	subjectText: { fontSize: 13, fontWeight: "500" },
+	subjectText: { fontSize: 13, fontFamily: Fonts.bodyMedium },
 	btn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
-	btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+	btnText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
 	title: {
 		fontSize: 22,
-		fontWeight: "800",
+		fontFamily: Fonts.displayExtrabold,
 		marginBottom: 8,
 		textAlign: "center",
 	},

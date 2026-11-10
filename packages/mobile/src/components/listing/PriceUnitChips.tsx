@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { listingKindRules, type PriceUnit } from "@/src/lib/listingKind";
 
@@ -79,7 +80,7 @@ export function priceUnitToSend(
 
 const styles = StyleSheet.create({
 	wrap: { marginTop: 12, gap: 8 },
-	label: { fontSize: 13, fontWeight: "600" },
+	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	chip: {
 		minHeight: 36,
@@ -88,5 +89,5 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 		justifyContent: "center",
 	},
-	chipText: { fontSize: 14, fontWeight: "600" },
+	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });

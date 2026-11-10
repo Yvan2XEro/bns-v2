@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { restrictionClearKey } from "@/src/lib/billing";
 import { useTranslation } from "@/src/lib/i18n";
@@ -47,7 +48,12 @@ export function RestrictionBanner({
 				<Text style={[s.body, { color: c.body }]}>
 					{t("billing.restrictedAllowed")}
 				</Text>
-				<Text style={[s.body, { color: c.dangerText, fontWeight: "600" }]}>
+				<Text
+					style={[
+						s.body,
+						{ color: c.dangerText, fontFamily: Fonts.bodySemibold },
+					]}
+				>
 					{t(restrictionClearKey(restricted.reason))}
 				</Text>
 			</View>

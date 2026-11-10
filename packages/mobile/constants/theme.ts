@@ -1,90 +1,127 @@
 // ─── Color Palette ────────────────────────────────────────────────────────────
-// Matches the web globals.css palette exactly.
+// "Ndop": the indigo of Grassfields resist-dyed cloth carries the shell, and
+// the yellow of hand-painted market signage marks the one action that matters.
+// Neutrals are tinted from the indigo, never plain grey.
 
 export const Colors = {
 	light: {
 		// Surfaces
-		background: "#f8fafc",
-		foreground: "#0f172a",
+		background: "#f4f5f9",
+		foreground: "#12163a",
 		card: "#ffffff",
-		cardForeground: "#0f172a",
+		cardForeground: "#12163a",
+		/** Raised field inside a card: inputs, segmented tracks, image wells */
+		well: "#eceef5",
 
-		// Brand
-		primary: "#1e40af",
+		// Brand — ndop indigo
+		primary: "#23338f",
 		primaryForeground: "#ffffff",
+		primaryPressed: "#1a2672",
+		primaryTint: "#e3e7f8",
+
+		// Signage yellow — sell CTA, price tags, boosted
+		sun: "#ffb81c",
+		sunForeground: "#12163a",
+		sunTint: "#fff1c7",
 
 		// Secondary / Muted
-		secondary: "#f1f5f9",
-		secondaryForeground: "#0f172a",
-		muted: "#f1f5f9",
-		mutedForeground: "#64748b",
+		secondary: "#eceef5",
+		secondaryForeground: "#12163a",
+		muted: "#eceef5",
+		mutedForeground: "#5b6088",
+		faint: "#777ca3",
 
-		// Accent (amber)
-		accent: "#fef3c7",
-		accentForeground: "#78350f",
+		// Accent (signage yellow, soft)
+		accent: "#fff1c7",
+		accentForeground: "#5c3b00",
 
 		// Destructive
-		destructive: "#dc2626",
+		destructive: "#d23a2e",
 		destructiveForeground: "#ffffff",
 
 		// Borders & Input
-		border: "#e2e8f0",
-		input: "#e2e8f0",
-		ring: "#1e40af",
+		border: "#e1e3ee",
+		borderStrong: "#c9cce0",
+		input: "#e1e3ee",
+		ring: "#23338f",
 
 		// Convenience aliases used by navigation / tab bars
-		text: "#0f172a",
-		tint: "#1e40af",
-		icon: "#64748b",
-		tabIconDefault: "#64748b",
-		tabIconSelected: "#1e40af",
+		text: "#12163a",
+		tint: "#23338f",
+		icon: "#5b6088",
+		tabIconDefault: "#777ca3",
+		tabIconSelected: "#23338f",
 
 		// Status colours
-		success: "#16a34a",
-		warning: "#d97706",
-		info: "#0ea5e9",
+		success: "#1e8a4f",
+		successTint: "#ddf3e5",
+		warning: "#9a6a00",
+		warningTint: "#fff1c7",
+		info: "#2f43b5",
+		dangerTint: "#fbe3e0",
+
+		/** Ndop shell: the indigo header field and its ink */
+		shell: "#1d2a7a",
+		shellForeground: "#ffffff",
+		shellMuted: "#b8c0ec",
 	},
 	dark: {
 		// Surfaces
-		background: "#0b1120",
-		foreground: "#e2e8f0",
-		card: "#1e293b",
-		cardForeground: "#e2e8f0",
+		background: "#0c1030",
+		foreground: "#e1e3ee",
+		card: "#1a1f4a",
+		cardForeground: "#e1e3ee",
+		well: "#13183e",
 
 		// Brand
-		primary: "#3b82f6",
-		primaryForeground: "#ffffff",
+		primary: "#6878ea",
+		primaryForeground: "#0c1030",
+		primaryPressed: "#9aa8f5",
+		primaryTint: "#1d2568",
+
+		sun: "#ffc94a",
+		sunForeground: "#12163a",
+		sunTint: "#3a2a00",
 
 		// Secondary / Muted
-		secondary: "#1e293b",
-		secondaryForeground: "#e2e8f0",
-		muted: "#1e293b",
-		mutedForeground: "#94a3b8",
+		secondary: "#1a1f4a",
+		secondaryForeground: "#e1e3ee",
+		muted: "#1a1f4a",
+		mutedForeground: "#a3a7c8",
+		faint: "#777ca3",
 
-		// Accent (dark amber)
-		accent: "#451a03",
-		accentForeground: "#fef3c7",
+		// Accent (dark signage)
+		accent: "#3a2a00",
+		accentForeground: "#fff1c7",
 
 		// Destructive
-		destructive: "#ef4444",
+		destructive: "#e5574b",
 		destructiveForeground: "#ffffff",
 
 		// Borders & Input
-		border: "#1e3a5f",
-		input: "#1e3a5f",
-		ring: "#3b82f6",
+		border: "#2a3170",
+		borderStrong: "#3a4290",
+		input: "#2a3170",
+		ring: "#6878ea",
 
 		// Convenience aliases
-		text: "#e2e8f0",
-		tint: "#3b82f6",
-		icon: "#94a3b8",
-		tabIconDefault: "#94a3b8",
-		tabIconSelected: "#3b82f6",
+		text: "#e1e3ee",
+		tint: "#6878ea",
+		icon: "#a3a7c8",
+		tabIconDefault: "#777ca3",
+		tabIconSelected: "#ffc94a",
 
 		// Status colours
-		success: "#22c55e",
-		warning: "#f59e0b",
-		info: "#38bdf8",
+		success: "#34b26a",
+		successTint: "#0b2a18",
+		warning: "#ffc94a",
+		warningTint: "#3a2a00",
+		info: "#9aa8f5",
+		dangerTint: "#3d0f0b",
+
+		shell: "#13183e",
+		shellForeground: "#ffffff",
+		shellMuted: "#a3a7c8",
 	},
 } as const;
 
@@ -134,52 +171,68 @@ export const borderRadius = {
 } as const;
 
 // ─── Typography ───────────────────────────────────────────────────────────────
-// Matches the web: DM Sans (body) + Outfit (display/headings)
+// Bricolage Grotesque — the painted-sign voice: headings, prices, numbers.
+// Figtree — the working face: body, labels, controls.
 
-/**
- * Font family names — use these in fontFamily style props.
- * DM Sans  → body text (same as web --font-body)
- * Outfit   → headings, titles, bold labels (same as web --font-display)
- */
 export const Fonts = {
-	// Body — DM Sans (maps to web's `--font-body: DM Sans`)
-	body: "DMSans_400Regular",
-	bodyMedium: "DMSans_500Medium",
-	bodySemibold: "DMSans_600SemiBold",
-	bodyBold: "DMSans_700Bold",
+	body: "Figtree_400Regular",
+	bodyMedium: "Figtree_500Medium",
+	bodySemibold: "Figtree_600SemiBold",
+	bodyBold: "Figtree_700Bold",
 
-	// Display — Outfit (maps to web's `--font-display: Outfit`)
-	displayMedium: "Outfit_500Medium",
-	displaySemibold: "Outfit_600SemiBold",
-	displayBold: "Outfit_700Bold",
-	displayExtrabold: "Outfit_800ExtraBold",
+	displayMedium: "BricolageGrotesque_500Medium",
+	displaySemibold: "BricolageGrotesque_600SemiBold",
+	displayBold: "BricolageGrotesque_700Bold",
+	displayExtrabold: "BricolageGrotesque_800ExtraBold",
 } as const;
 
 /**
- * Shorthand text-style presets mirroring the web design.
- * Import and spread these in StyleSheet definitions.
+ * Shorthand text-style presets. Spread these in StyleSheet definitions.
  */
 export const TextStyles = {
-	// Headings (Outfit)
-	h1: { fontFamily: Fonts.displayExtrabold, fontSize: 28, letterSpacing: -0.5 },
-	h2: { fontFamily: Fonts.displayBold, fontSize: 22, letterSpacing: -0.3 },
-	h3: { fontFamily: Fonts.displayBold, fontSize: 18 },
-	h4: { fontFamily: Fonts.displaySemibold, fontSize: 16 },
+	// Headings (Bricolage)
+	h1: {
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 30,
+		lineHeight: 34,
+		letterSpacing: -0.8,
+	},
+	h2: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 23,
+		lineHeight: 28,
+		letterSpacing: -0.5,
+	},
+	h3: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 18,
+		lineHeight: 23,
+		letterSpacing: -0.2,
+	},
+	h4: { fontFamily: Fonts.displaySemibold, fontSize: 16, lineHeight: 21 },
 
-	// Body (DM Sans)
-	bodyLg: { fontFamily: Fonts.body, fontSize: 17, lineHeight: 26 },
+	// Body (Figtree)
+	bodyLg: { fontFamily: Fonts.body, fontSize: 17, lineHeight: 25 },
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
-	bodySm: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 20 },
-	caption: { fontFamily: Fonts.body, fontSize: 11 },
+	bodySm: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
+	caption: { fontFamily: Fonts.bodyMedium, fontSize: 12, lineHeight: 16 },
 
-	// Labels (DM Sans Medium/Semibold)
+	// Labels
 	labelLg: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
 	label: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
-	labelSm: { fontFamily: Fonts.bodySemibold, fontSize: 11 },
+	labelSm: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
 
-	// Price / highlight (Outfit)
-	price: { fontFamily: Fonts.displayBold, fontSize: 16 },
-	priceLg: { fontFamily: Fonts.displayExtrabold, fontSize: 26 },
+	// Price (Bricolage, tabular-feeling weight)
+	price: {
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 17,
+		letterSpacing: -0.3,
+	},
+	priceLg: {
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 30,
+		letterSpacing: -0.8,
+	},
 } as const;
 
 export const typography = {
@@ -238,35 +291,35 @@ export const shadows = {
 		elevation: 0,
 	},
 	sm: {
-		shadowColor: "#0f172a",
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.05,
 		shadowRadius: 2,
 		elevation: 1,
 	},
 	md: {
-		shadowColor: "#0f172a",
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.08,
 		shadowRadius: 6,
 		elevation: 3,
 	},
 	lg: {
-		shadowColor: "#0f172a",
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 4 },
 		shadowOpacity: 0.12,
 		shadowRadius: 12,
 		elevation: 6,
 	},
 	xl: {
-		shadowColor: "#0f172a",
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 8 },
 		shadowOpacity: 0.16,
 		shadowRadius: 20,
 		elevation: 10,
 	},
 	"2xl": {
-		shadowColor: "#0f172a",
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 16 },
 		shadowOpacity: 0.2,
 		shadowRadius: 32,

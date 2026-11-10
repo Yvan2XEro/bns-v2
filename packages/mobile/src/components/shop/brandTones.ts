@@ -23,16 +23,16 @@ export function brandTones(
 }
 
 export const BRAND_SWATCHES = [
-	"#1E40AF",
+	"#23338f",
 	"#0E7490",
 	"#0F766E",
-	"#15803D",
-	"#B45309",
+	"#19733f",
+	"#8a5a00",
 	"#9A3412",
-	"#B91C1C",
+	"#b02c22",
 	"#BE185D",
 	"#7C3AED",
-	"#334155",
+	"#3a3f66",
 ] as const;
 
 /**
@@ -52,7 +52,7 @@ export function parseBrandColorInput(
 }
 
 const WHITE = "#FFFFFF";
-const INK = "#0F172A";
+const INK = "#12163a";
 
 function mixHex(a: string, b: string, weightOfB: number): string {
 	const rgb = (hex: string) => {

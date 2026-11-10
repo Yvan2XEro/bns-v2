@@ -14,12 +14,12 @@ export function SafetyScreen() {
 	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
 
 	const TIPS: Array<{ icon: IoniconsName; title: string; desc: string }> = [
 		{
@@ -72,7 +72,7 @@ export function SafetyScreen() {
 				<View
 					style={[
 						styles.heroWrap,
-						{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9", borderColor },
+						{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5", borderColor },
 					]}
 				>
 					<Ionicons
@@ -96,7 +96,7 @@ export function SafetyScreen() {
 						<View
 							style={[
 								styles.tipIconWrap,
-								{ backgroundColor: isDark ? "#0b1120" : "#f8fafc" },
+								{ backgroundColor: isDark ? "#0c1030" : "#f4f5f9" },
 							]}
 						>
 							<Ionicons name={tip.icon} size={22} color={primaryColor} />

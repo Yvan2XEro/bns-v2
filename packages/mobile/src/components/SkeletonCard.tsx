@@ -40,7 +40,7 @@ function SkeletonBlock({
 					width: w as any,
 					height: h,
 					borderRadius,
-					backgroundColor: isDark ? "#1e3a5f" : "#e2e8f0",
+					backgroundColor: isDark ? "#2a3170" : "#e1e3ee",
 				},
 				animStyle,
 				style,
@@ -56,11 +56,15 @@ export function SkeletonCard({ cardWidth }: { cardWidth?: number }) {
 
 	return (
 		<View style={[styles.card, { width: w }]}>
-			<SkeletonBlock width={w} height={w * 0.75} borderRadius={0} />
+			<SkeletonBlock
+				width={w}
+				height={Math.round(w * 0.75)}
+				borderRadius={14}
+			/>
 			<View style={styles.content}>
-				<SkeletonBlock width="55%" height={14} />
-				<SkeletonBlock width="80%" height={12} style={{ marginTop: 6 }} />
-				<SkeletonBlock width="60%" height={10} style={{ marginTop: 6 }} />
+				<SkeletonBlock width="85%" height={13} />
+				<SkeletonBlock width="55%" height={13} style={{ marginTop: 5 }} />
+				<SkeletonBlock width="45%" height={10} style={{ marginTop: 7 }} />
 			</View>
 		</View>
 	);
@@ -70,7 +74,7 @@ export function SkeletonRow() {
 	const isDark = useColorScheme() === "dark";
 	return (
 		<View
-			style={[styles.row, { backgroundColor: isDark ? "#1e293b" : "#fff" }]}
+			style={[styles.row, { backgroundColor: isDark ? "#1a1f4a" : "#fff" }]}
 		>
 			<SkeletonBlock width={70} height={70} borderRadius={8} />
 			<View style={styles.rowContent}>
@@ -94,8 +98,8 @@ export function SkeletonConversationRow() {
 			style={[
 				convStyles.row,
 				{
-					backgroundColor: isDark ? "#1e293b" : "#fff",
-					borderBottomColor: isDark ? "#1e3a5f" : "#f1f5f9",
+					backgroundColor: isDark ? "#1a1f4a" : "#fff",
+					borderBottomColor: isDark ? "#2a3170" : "#eceef5",
 				},
 			]}
 		>
@@ -168,18 +172,13 @@ const convStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-	card: {
-		borderRadius: 14,
-		overflow: "hidden",
-		borderWidth: 1,
-		borderColor: "#e2e8f0",
-	},
-	content: { padding: 10, gap: 0 },
+	card: {},
+	content: { paddingTop: 8, paddingHorizontal: 2, paddingBottom: 4 },
 	row: {
 		flexDirection: "row",
 		borderRadius: 12,
 		borderWidth: 1,
-		borderColor: "#e2e8f0",
+		borderColor: "#e1e3ee",
 		padding: 10,
 		gap: 12,
 		alignItems: "center",

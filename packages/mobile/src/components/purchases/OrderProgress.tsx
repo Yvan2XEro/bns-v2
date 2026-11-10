@@ -137,5 +137,5 @@ const styles = StyleSheet.create({
 	nodeCurrent: { borderWidth: 2 },
 	core: { width: 10, height: 10, borderRadius: 5 },
 	label: { fontSize: 11, fontFamily: Fonts.bodySemibold },
-	time: { fontSize: 10, fontFamily: Fonts.body },
+	time: { fontSize: 11, fontFamily: Fonts.body },
 });

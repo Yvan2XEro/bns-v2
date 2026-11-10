@@ -41,12 +41,12 @@ export function ReturnCase({ id }: { id: string }) {
 		defaultValues: { tracking: "" },
 	});
 	const colors = {
-		bg: dark ? "#0b1120" : "#f8fafc",
-		card: dark ? "#111c2e" : "#fff",
-		text: dark ? "#e2e8f0" : "#0f172a",
-		muted: dark ? "#94a3b8" : "#64748b",
-		border: dark ? "#1e3a5f" : "#e2e8f0",
-		primary: dark ? "#60a5fa" : "#1e40af",
+		bg: dark ? "#0c1030" : "#f4f5f9",
+		card: dark ? "#11163a" : "#fff",
+		text: dark ? "#e1e3ee" : "#12163a",
+		muted: dark ? "#a3a7c8" : "#5b6088",
+		border: dark ? "#2a3170" : "#e1e3ee",
+		primary: dark ? "#9aa8f5" : "#23338f",
 	};
 	const runAction = (action: ReturnAction, suppliedBody?: unknown) => {
 		const body =
@@ -256,7 +256,7 @@ export function ReturnCase({ id }: { id: string }) {
 											item === "cancel" ||
 											item === "contest_refund" ||
 											item === "contest_deduction"
-												? "#dc2626"
+												? "#d23a2e"
 												: colors.primary
 										}
 										onPress={() => runAction(item)}
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
 	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
 	amount: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
 	caption: { fontFamily: Fonts.body, fontSize: 12 },
-	error: { color: "#dc2626", fontFamily: Fonts.bodySemibold },
+	error: { color: "#d23a2e", fontFamily: Fonts.bodySemibold },
 	row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	method: { borderRadius: 9, borderWidth: 1, padding: 10 },
 	input: {
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
 	},
 	buttonText: { color: "#fff", fontFamily: Fonts.bodySemibold },
 	event: {
-		borderLeftColor: "#94a3b8",
+		borderLeftColor: "#777ca3",
 		borderLeftWidth: 2,
 		gap: 2,
 		paddingLeft: 10,

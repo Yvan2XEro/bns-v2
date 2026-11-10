@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
 	metric: { flex: 1, minWidth: 0, gap: 5 },
 	label: { fontSize: 11, fontFamily: Fonts.body },
 	value: { fontSize: 13, fontFamily: Fonts.displayBold },
-	delta: { fontSize: 10, fontFamily: Fonts.body },
+	delta: { fontSize: 11, fontFamily: Fonts.body },
 	action: {
 		minHeight: 44,
 		borderTopWidth: StyleSheet.hairlineWidth,

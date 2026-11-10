@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface Chip {
@@ -37,18 +38,18 @@ export function FilterChips({
 					{
 						backgroundColor: hasFilters
 							? isDark
-								? "#1e3a5f"
-								: "#dbeafe"
+								? "#2a3170"
+								: "#e3e7f8"
 							: isDark
-								? "#1e293b"
-								: "#f1f5f9",
+								? "#1a1f4a"
+								: "#eceef5",
 						borderColor: hasFilters
 							? isDark
-								? "#3b82f6"
-								: "#1e40af"
+								? "#6878ea"
+								: "#23338f"
 							: isDark
-								? "#1e3a5f"
-								: "#e2e8f0",
+								? "#2a3170"
+								: "#e1e3ee",
 					},
 				]}
 			>
@@ -58,11 +59,11 @@ export function FilterChips({
 					color={
 						hasFilters
 							? isDark
-								? "#93c5fd"
-								: "#1e40af"
+								? "#a9b4f0"
+								: "#23338f"
 							: isDark
-								? "#94a3b8"
-								: "#64748b"
+								? "#a3a7c8"
+								: "#5b6088"
 					}
 				/>
 				<Text
@@ -71,11 +72,11 @@ export function FilterChips({
 						{
 							color: hasFilters
 								? isDark
-									? "#93c5fd"
-									: "#1e40af"
+									? "#a9b4f0"
+									: "#23338f"
 								: isDark
-									? "#94a3b8"
-									: "#64748b",
+									? "#a3a7c8"
+									: "#5b6088",
 						},
 					]}
 				>
@@ -88,13 +89,13 @@ export function FilterChips({
 					style={[
 						styles.chip,
 						{
-							backgroundColor: isDark ? "#1e3a5f" : "#dbeafe",
-							borderColor: isDark ? "#3b82f6" : "#1e40af",
+							backgroundColor: isDark ? "#2a3170" : "#e3e7f8",
+							borderColor: isDark ? "#6878ea" : "#23338f",
 						},
 					]}
 				>
 					<Text
-						style={[styles.chipText, { color: isDark ? "#93c5fd" : "#1e40af" }]}
+						style={[styles.chipText, { color: isDark ? "#a9b4f0" : "#23338f" }]}
 					>
 						{chip.label}
 					</Text>
@@ -102,7 +103,7 @@ export function FilterChips({
 						<Ionicons
 							name="close"
 							size={12}
-							color={isDark ? "#93c5fd" : "#1e40af"}
+							color={isDark ? "#a9b4f0" : "#23338f"}
 						/>
 					</Pressable>
 				</View>
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 6,
 	},
-	filterText: { fontSize: 13, fontWeight: "600" },
+	filterText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	chip: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -138,5 +139,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 6,
 	},
-	chipText: { fontSize: 13, fontWeight: "500" },
+	chipText: { fontSize: 13, fontFamily: Fonts.bodyMedium },
 });

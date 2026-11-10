@@ -12,8 +12,8 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
-const TINT_LIGHT = { bg: "#f1f5f9", icon: "#475569" };
-const TINT_DARK = { bg: "#1e293b", icon: "#94a3b8" };
+const TINT_LIGHT = { bg: "#ffffff", icon: "#23338f", border: "#e1e3ee" };
+const TINT_DARK = { bg: "#1a1f4a", icon: "#a9b4f0", border: "#2a3170" };
 
 interface Category {
 	id: string;
@@ -42,9 +42,8 @@ export function CategoryIcon({
 
 	const handlePress = () => {
 		scale.value = withSequence(
-			withSpring(0.85, { damping: 8, stiffness: 400 }),
-			withSpring(1.08, { damping: 6, stiffness: 300 }),
-			withSpring(1, { damping: 12 }),
+			withSpring(0.92, { damping: 14, stiffness: 500 }),
+			withSpring(1, { damping: 14, stiffness: 300 }),
 		);
 		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		onPress(category.id);
@@ -57,6 +56,8 @@ export function CategoryIcon({
 			onPress={handlePress}
 			activeOpacity={1}
 			style={styles.container}
+			accessibilityRole="button"
+			accessibilityLabel={category.name}
 		>
 			<Animated.View
 				style={[
@@ -66,6 +67,7 @@ export function CategoryIcon({
 						height: size,
 						borderRadius: size * 0.3,
 						backgroundColor: tint.bg,
+						borderColor: tint.border,
 					},
 					animStyle,
 				]}
@@ -82,11 +84,11 @@ export function CategoryIcon({
 						contentFit="cover"
 					/>
 				) : (
-					<Ionicons name="cube-outline" size={size * 0.42} color={tint.icon} />
+					<Ionicons name="cube-outline" size={size * 0.4} color={tint.icon} />
 				)}
 			</Animated.View>
 			<Text
-				style={[styles.label, { color: isDark ? "#94a3b8" : "#334155" }]}
+				style={[styles.label, { color: isDark ? "#a3a7c8" : "#3a3f66" }]}
 				numberOfLines={2}
 			>
 				{category.name}
@@ -101,7 +103,13 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 		alignItems: "center",
 		justifyContent: "center",
+		borderWidth: 1,
 		marginBottom: 6,
 	},
-	label: { fontSize: 11, textAlign: "center", fontFamily: Fonts.bodySemibold },
+	label: {
+		fontSize: 12,
+		lineHeight: 15,
+		textAlign: "center",
+		fontFamily: Fonts.bodySemibold,
+	},
 });

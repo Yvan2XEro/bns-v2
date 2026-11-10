@@ -99,7 +99,7 @@ export default function CatalogueScreen() {
 								accessibilityRole="button"
 								accessibilityLabel={t("catalogue.addProduct")}
 							>
-								<Ionicons name="add" size={18} color="#fff" />
+								<Ionicons name="add" size={18} color="#12163a" />
 							</Pressable>
 						)}
 					</View>

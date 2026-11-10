@@ -21,5 +21,5 @@ export const billingStyles = StyleSheet.create({
 		flexDirection: "row",
 		gap: 6,
 	},
-	buttonText: { fontSize: 14, fontFamily: Fonts.displayBold, color: "#fff" },
+	buttonText: { fontSize: 14, fontFamily: Fonts.bodyBold, color: "#fff" },
 });

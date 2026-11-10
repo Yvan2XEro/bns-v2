@@ -57,30 +57,30 @@ function notificationIcon(tags: string[]): {
 	if (tag.includes("approved") || tag.includes("published"))
 		return {
 			name: "checkmark-circle-outline",
-			color: "#16a34a",
-			bg: "#dcfce7",
+			color: "#1e8a4f",
+			bg: "#ddf3e5",
 		};
 	if (tag.includes("rejected"))
-		return { name: "close-circle-outline", color: "#dc2626", bg: "#fee2e2" };
+		return { name: "close-circle-outline", color: "#d23a2e", bg: "#fbe3e0" };
 	if (tag.includes("message"))
-		return { name: "chatbubble-outline", color: "#1e40af", bg: "#dbeafe" };
+		return { name: "chatbubble-outline", color: "#23338f", bg: "#e3e7f8" };
 	if (tag.includes("boost"))
-		return { name: "rocket-outline", color: "#d97706", bg: "#fef3c7" };
+		return { name: "rocket-outline", color: "#9a6a00", bg: "#fff1c7" };
 	if (tag.includes("alert") || tag.includes("search"))
 		return { name: "bookmark-outline", color: "#7c3aed", bg: "#ede9fe" };
 	if (tag.includes("sold"))
-		return { name: "cash-outline", color: "#16a34a", bg: "#dcfce7" };
+		return { name: "cash-outline", color: "#1e8a4f", bg: "#ddf3e5" };
 	if (tag.includes("expired"))
-		return { name: "time-outline", color: "#dc2626", bg: "#fee2e2" };
+		return { name: "time-outline", color: "#d23a2e", bg: "#fbe3e0" };
 	if (tag.includes("verified"))
 		return {
 			name: "shield-checkmark-outline",
-			color: "#16a34a",
-			bg: "#dcfce7",
+			color: "#1e8a4f",
+			bg: "#ddf3e5",
 		};
 	if (tag.includes("review"))
-		return { name: "star-outline", color: "#d97706", bg: "#fef3c7" };
-	return { name: "notifications-outline", color: "#1e40af", bg: "#dbeafe" };
+		return { name: "star-outline", color: "#9a6a00", bg: "#fff1c7" };
+	return { name: "notifications-outline", color: "#23338f", bg: "#e3e7f8" };
 }
 
 function navigate(url: string) {
@@ -161,7 +161,7 @@ function NotificationRow({
 }) {
 	const { t, i18n } = useTranslation();
 	const icon = notificationIcon(item.tags ?? []);
-	const unreadBg = isDark ? "rgba(30,58,95,0.4)" : "#eff6ff";
+	const unreadBg = isDark ? "rgba(30,58,95,0.4)" : "#eff1fb";
 	const rowBg = item.isRead ? cardBg : unreadBg;
 	const data = item.data as Record<string, unknown> | undefined;
 	const listingId = data?.listingId as string | undefined;
@@ -214,7 +214,7 @@ function NotificationRow({
 					? t("notifications.unread")
 					: t("notifications.read"),
 				icon: item.isRead ? "mail-unread-outline" : "mail-open-outline",
-				color: "#3b82f6",
+				color: "#6878ea",
 				onPress: async () => {
 					methods.close();
 					if (item.isRead) await item.unread();
@@ -226,7 +226,7 @@ function NotificationRow({
 					? t("notifications.restore")
 					: t("notifications.archive"),
 				icon: item.isArchived ? "arrow-undo-outline" : "archive-outline",
-				color: "#f59e0b",
+				color: "#ffb81c",
 				onPress: async () => {
 					methods.close();
 					if (item.isArchived) await item.unarchive();
@@ -372,8 +372,8 @@ function NotificationRow({
 export function NotificationsScreen() {
 	const notificationReady = useNotificationReady();
 	const isDark = useColorScheme() === "dark";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const accentBg = isDark ? "#12163a" : "#e9ecfa";
 
 	if (!notificationReady) {
 		return (
@@ -408,11 +408,11 @@ function NotificationsContent({
 }) {
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const borderColor = isDark ? "#1e293b" : "#f1f5f9";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const borderColor = isDark ? "#1a1f4a" : "#eceef5";
 
 	const { notifications, isLoading, hasMore, fetchMore, readAll, refetch } =
 		useNotifications();
@@ -470,7 +470,7 @@ function NotificationsContent({
 			{/* Header */}
 			<View style={[styles.header, { backgroundColor: accentBg }]}>
 				<HeaderBackButton
-					color={isDark ? "#e2e8f0" : "#0f172a"}
+					color={isDark ? "#e1e3ee" : "#12163a"}
 					fallback="/(tabs)/account"
 					inline
 					style={styles.backBtn}
@@ -500,12 +500,12 @@ function NotificationsContent({
 				<View
 					style={[
 						styles.permBanner,
-						{ backgroundColor: isDark ? "#1e293b" : "#fefce8" },
+						{ backgroundColor: isDark ? "#1a1f4a" : "#fefce8" },
 					]}
 				>
-					<Ionicons name="warning-outline" size={18} color="#d97706" />
+					<Ionicons name="warning-outline" size={18} color="#9a6a00" />
 					<Text
-						style={[styles.permText, { color: isDark ? "#fbbf24" : "#92400e" }]}
+						style={[styles.permText, { color: isDark ? "#ffc94a" : "#6e4700" }]}
 					>
 						{t("notifications.deniedBannerText")}
 					</Text>
@@ -520,7 +520,7 @@ function NotificationsContent({
 				<View
 					style={[
 						styles.permBanner,
-						{ backgroundColor: isDark ? "#1e3a5f" : "#eff6ff" },
+						{ backgroundColor: isDark ? "#2a3170" : "#eff1fb" },
 					]}
 				>
 					<Ionicons
@@ -529,7 +529,7 @@ function NotificationsContent({
 						color={primaryColor}
 					/>
 					<Text
-						style={[styles.permText, { color: isDark ? "#93c5fd" : "#1e40af" }]}
+						style={[styles.permText, { color: isDark ? "#a9b4f0" : "#23338f" }]}
 					>
 						{t("notifications.undeterminedBannerText")}
 					</Text>
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
 		width: 8,
 		height: 8,
 		borderRadius: 4,
-		backgroundColor: "#3b82f6",
+		backgroundColor: "#6878ea",
 		marginTop: 6,
 	},
 

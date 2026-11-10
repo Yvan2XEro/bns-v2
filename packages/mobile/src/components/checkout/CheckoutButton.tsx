@@ -39,12 +39,12 @@ export function CheckoutButton({
 			accessibilityRole="button"
 			accessibilityLabel={label}
 			accessibilityState={{ disabled: inactive, busy: loading }}
-			style={[
+			style={({ pressed }) => [
 				styles.button,
 				primary
 					? { backgroundColor: c.primary }
 					: { borderColor: c.border, borderWidth: 1, backgroundColor: c.card },
-				{ opacity: disabled ? 0.5 : 1 },
+				{ opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
 				style,
 			]}
 		>
@@ -67,12 +67,12 @@ export function CheckoutButton({
 const styles = StyleSheet.create({
 	button: {
 		minHeight: 52,
-		borderRadius: 14,
+		borderRadius: 12,
 		paddingHorizontal: 16,
 		flexDirection: "row",
 		gap: 8,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	text: { fontSize: 16, fontFamily: Fonts.displayBold },
+	text: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

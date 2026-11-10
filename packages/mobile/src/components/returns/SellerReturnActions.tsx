@@ -53,7 +53,7 @@ export function SellerReturnActions({ view }: { view: ReturnCaseView }) {
 					</Pressable>
 				))}
 			{mutation.isError ? (
-				<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+				<Text accessibilityRole="alert" style={{ color: "#d23a2e" }}>
 					{resolveErrorMessage(mutation.error, t)}
 				</Text>
 			) : null}

@@ -23,9 +23,9 @@ export function SearchSegments({
 }) {
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	return (
 		<View style={[styles.segments, { borderBottomColor: borderColor }]}>
@@ -59,8 +59,8 @@ export function SearchSegments({
 									backgroundColor: isActive
 										? primaryColor
 										: isDark
-											? "#1e293b"
-											: "#f1f5f9",
+											? "#1a1f4a"
+											: "#eceef5",
 								},
 							]}
 						>

@@ -90,7 +90,7 @@ export function EmptyState({
 	const resolvedIllustration: EmptyStateIllustration =
 		illustration ?? (icon ? (ICON_TO_ILLUSTRATION[icon] ?? "empty") : "empty");
 	const isDark = useColorScheme() === "dark";
-	const color = isDark ? "#3b82f6" : "#1e40af";
+	const color = isDark ? "#6878ea" : "#23338f";
 
 	const opacity = useSharedValue(0);
 	const translateY = useSharedValue(20);
@@ -124,13 +124,13 @@ export function EmptyState({
 				)}
 			</Animated.View>
 
-			<Text style={[styles.title, { color: isDark ? "#e2e8f0" : "#0f172a" }]}>
+			<Text style={[styles.title, { color: isDark ? "#e1e3ee" : "#12163a" }]}>
 				{title}
 			</Text>
 
 			{subtitle && (
 				<Text
-					style={[styles.subtitle, { color: isDark ? "#94a3b8" : "#64748b" }]}
+					style={[styles.subtitle, { color: isDark ? "#a3a7c8" : "#5b6088" }]}
 				>
 					{subtitle}
 				</Text>
@@ -143,7 +143,7 @@ export function EmptyState({
 					haptic="light"
 					style={[
 						styles.cta,
-						{ backgroundColor: isDark ? "#3b82f6" : "#1e40af" },
+						{ backgroundColor: isDark ? "#6878ea" : "#23338f" },
 					]}
 				>
 					<Text style={styles.ctaText}>{ctaLabel}</Text>
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
 	},
 	ctaText: {
 		color: "#fff",
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 		fontSize: 15,
 	},
 });

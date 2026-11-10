@@ -101,7 +101,7 @@ export function ShopContactBar({
 						accessibilityRole="button"
 						accessibilityLabel={t("shop.whatsapp")}
 					>
-						<Ionicons name="logo-whatsapp" size={20} color="#16a34a" />
+						<Ionicons name="logo-whatsapp" size={20} color="#1e8a4f" />
 					</Pressable>
 				) : null}
 			</View>

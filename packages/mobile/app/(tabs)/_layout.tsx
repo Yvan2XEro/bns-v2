@@ -77,7 +77,7 @@ function AnimatedTabIcon({
 	focusedName,
 	color,
 	focused,
-	size = 26,
+	size = 24,
 }: {
 	name: IoniconsName;
 	focusedName: IoniconsName;
@@ -90,17 +90,16 @@ function AnimatedTabIcon({
 	useEffect(() => {
 		if (focused) {
 			Animated.sequence([
-				Animated.spring(scale, {
-					toValue: 1.22,
+				Animated.timing(scale, {
+					toValue: 0.86,
+					duration: 90,
 					useNativeDriver: true,
-					speed: 50,
-					bounciness: 14,
 				}),
 				Animated.spring(scale, {
 					toValue: 1,
 					useNativeDriver: true,
-					speed: 20,
-					bounciness: 8,
+					speed: 24,
+					bounciness: 6,
 				}),
 			]).start();
 		}
@@ -127,7 +126,7 @@ function SellButton() {
 	return (
 		<View style={[styles.sellWrap, isExpanded && styles.sellWrapRail]}>
 			<View style={styles.sellBtn}>
-				<Ionicons name="add" size={28} color="#0f172a" />
+				<Ionicons name="add" size={26} color="#12163a" />
 			</View>
 		</View>
 	);
@@ -162,7 +161,7 @@ export default function TabLayout() {
 
 	const unreadCount = unreadData?.count ?? 0;
 
-	const tabOptions = useTabNavigatorOptions(isDark ? "#3b82f6" : "#1e40af");
+	const tabOptions = useTabNavigatorOptions(isDark ? "#ffc94a" : "#23338f");
 
 	return (
 		<Tabs screenOptions={tabOptions}>
@@ -238,31 +237,31 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
 	sellWrap: {
-		width: 52,
-		height: 52,
+		width: 56,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
-		marginTop: -16,
+		marginTop: -6,
 	},
 	sellWrapRail: { marginTop: 0 },
+	// A painted sign plaque: yellow, squared, an ink edge along its foot.
 	sellBtn: {
-		width: 52,
-		height: 52,
-		borderRadius: 26,
+		width: 56,
+		height: 42,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#f59e0b",
-		shadowColor: "#f59e0b",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.4,
-		shadowRadius: 8,
-		elevation: 8,
+		backgroundColor: "#ffb81c",
+		borderBottomWidth: 3,
+		borderBottomColor: "#9a6a00",
 	},
 	badge: {
 		position: "absolute",
 		top: -4,
-		right: -8,
-		backgroundColor: "#dc2626",
+		right: -9,
+		backgroundColor: "#d23a2e",
+		borderWidth: 2,
+		borderColor: "#ffffff",
 		borderRadius: 10,
 		minWidth: 18,
 		height: 18,
@@ -272,7 +271,7 @@ const styles = StyleSheet.create({
 	},
 	badgeText: {
 		color: "#fff",
-		fontSize: 10,
+		fontSize: 11,
 		fontFamily: Fonts.displayExtrabold,
 	},
 });

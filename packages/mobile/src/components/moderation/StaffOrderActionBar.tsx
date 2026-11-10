@@ -98,6 +98,6 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 		minHeight: 44,
 	},
-	btnText: { fontSize: 15, fontFamily: Fonts.displayBold },
+	btnText: { fontSize: 15, fontFamily: Fonts.bodyBold },
 	meta: { fontSize: 12, fontFamily: Fonts.body, flex: 1, textAlign: "center" },
 });

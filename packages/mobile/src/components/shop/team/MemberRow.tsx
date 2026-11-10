@@ -81,5 +81,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 8,
 		paddingVertical: 2,
 	},
-	chipText: { fontSize: 10, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 });

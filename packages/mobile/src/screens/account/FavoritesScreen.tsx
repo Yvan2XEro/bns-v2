@@ -22,10 +22,10 @@ export function FavoritesScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { columns, cardWidth } = useResponsive();
 	const { t } = useTranslation();
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
 
 	const { favorites, isLoading, isError, refetch, toggleFavorite } =
 		useFavoriteActions();

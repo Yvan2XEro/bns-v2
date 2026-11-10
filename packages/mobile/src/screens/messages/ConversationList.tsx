@@ -167,13 +167,13 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 		setRefreshing(false);
 	};
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const accentBg = isDark ? "#12163a" : "#e9ecfa";
 
 	const unreadCount = useMemo(
 		() => conversations.filter((c) => (c.unreadCount ?? 0) > 0).length,
@@ -270,7 +270,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 					<View
 						style={[
 							styles.msgIconWrap,
-							{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+							{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 						]}
 					>
 						<Ionicons name="chatbubbles" size={22} color={primaryColor} />
@@ -348,8 +348,8 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 						{
 							backgroundColor: pressed
 								? isDark
-									? "#162032"
-									: "#f8fafc"
+									? "#13183e"
+									: "#f4f5f9"
 								: cardBg,
 							borderBottomColor: borderColor,
 						},
@@ -395,7 +395,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 									<View
 										style={[
 											styles.shopChip,
-											{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+											{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 										]}
 									>
 										<Text
@@ -463,7 +463,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 							disabled={markingAllRead}
 							style={[
 								styles.markReadBtn,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+								{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 							]}
 						>
 							{markingAllRead ? (
@@ -486,7 +486,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 						<View
 							style={[
 								styles.countBadge,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+								{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 							]}
 						>
 							<Text
@@ -535,8 +535,8 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 									backgroundColor: active
 										? primaryColor
 										: isDark
-											? "#1e293b"
-											: "#f1f5f9",
+											? "#1a1f4a"
+											: "#eceef5",
 								},
 							]}
 						>
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
 		width: 14,
 		height: 14,
 		borderRadius: 7,
-		backgroundColor: "#dc2626",
+		backgroundColor: "#d23a2e",
 		borderWidth: 2,
 		borderColor: "white",
 	},
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
 		width: 14,
 		height: 14,
 		borderRadius: 7,
-		backgroundColor: "#22c55e",
+		backgroundColor: "#34b26a",
 		borderWidth: 2,
 	},
 	convContent: { flex: 1 },
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 6,
 		paddingVertical: 2,
 	},
-	shopChipText: { fontSize: 10, fontFamily: Fonts.bodySemibold },
+	shopChipText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 	convTime: { fontSize: 12, fontFamily: Fonts.body },
 	convContext: { fontSize: 12, fontFamily: Fonts.body, marginBottom: 2 },
 	convLastMsg: { fontSize: 13, fontFamily: Fonts.body },
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displayBold,
 	},
 	deleteAction: {
-		backgroundColor: "#dc2626",
+		backgroundColor: "#d23a2e",
 		justifyContent: "center",
 		alignItems: "center",
 		width: 80,

@@ -7,6 +7,7 @@ import {
 	TextInput,
 	View,
 } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { CityPicker } from "@/src/components/CityPicker";
 import { formStyles as f } from "@/src/components/seller/formStyles";
 import { CategoryChips } from "@/src/components/shop/CategoryChips";
@@ -252,5 +253,5 @@ export function ShopProfileCard({
 
 const styles = StyleSheet.create({
 	save: { height: 52, alignItems: "center", justifyContent: "center" },
-	saveText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+	saveText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

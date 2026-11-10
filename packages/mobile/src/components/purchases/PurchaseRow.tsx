@@ -23,10 +23,10 @@ const TONES: Record<
 	PurchaseStatusTone,
 	{ light: [string, string]; dark: [string, string] }
 > = {
-	neutral: { light: ["#f1f5f9", "#475569"], dark: ["#1e293b", "#cbd5e1"] },
-	progress: { light: ["#dbeafe", "#1e40af"], dark: ["#172554", "#93c5fd"] },
-	success: { light: ["#dcfce7", "#166534"], dark: ["#052e16", "#86efac"] },
-	danger: { light: ["#fee2e2", "#991b1b"], dark: ["#450a0a", "#fca5a5"] },
+	neutral: { light: ["#eceef5", "#4a4f78"], dark: ["#1a1f4a", "#c9cce0"] },
+	progress: { light: ["#e3e7f8", "#23338f"], dark: ["#1d2568", "#a9b4f0"] },
+	success: { light: ["#ddf3e5", "#155c35"], dark: ["#0b2a18", "#8fddb0"] },
+	danger: { light: ["#fbe3e0", "#8e2219"], dark: ["#3d0f0b", "#f2a79f"] },
 };
 
 /** The buyer-facing status as a tinted pill with a dot. */

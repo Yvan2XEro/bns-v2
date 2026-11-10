@@ -277,5 +277,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

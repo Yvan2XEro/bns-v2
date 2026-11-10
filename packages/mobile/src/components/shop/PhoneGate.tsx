@@ -218,5 +218,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 10,
 	},
-	buttonText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	buttonText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

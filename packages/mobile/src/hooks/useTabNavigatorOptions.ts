@@ -12,7 +12,7 @@ type BottomTabNavigationOptions = Exclude<
 	(...args: never[]) => unknown
 >;
 
-const INACTIVE_TINT = "#94a3b8";
+const INACTIVE_TINT = "#777ca3";
 /** Width of the navigation rail on a tablet in landscape. */
 export const RAIL_WIDTH = 88;
 
@@ -29,8 +29,8 @@ export function useTabNavigatorOptions(
 	const { isTablet, isExpanded } = useResponsive();
 
 	return useMemo<BottomTabNavigationOptions>(() => {
-		const background = isDark ? "#0b1120" : "#ffffff";
-		const border = isDark ? "#1e3a5f" : "#e2e8f0";
+		const background = isDark ? "#0c1030" : "#ffffff";
+		const border = isDark ? "#2a3170" : "#e1e3ee";
 		const shared: BottomTabNavigationOptions = {
 			tabBarActiveTintColor: activeTint,
 			tabBarInactiveTintColor: INACTIVE_TINT,
@@ -40,8 +40,9 @@ export function useTabNavigatorOptions(
 			// than cut. Phones keep their instant switch.
 			animation: isTablet ? "shift" : "none",
 			tabBarLabelStyle: {
-				fontSize: 10,
+				fontSize: 11,
 				fontFamily: Fonts.bodySemibold,
+				letterSpacing: 0.1,
 				marginBottom: isExpanded ? 0 : 4,
 			},
 		};
@@ -67,9 +68,10 @@ export function useTabNavigatorOptions(
 				backgroundColor: background,
 				borderTopColor: border,
 				borderTopWidth: 1,
-				paddingTop: 10,
-				paddingBottom: Math.max(insets.bottom, 6),
-				height: 68 + insets.bottom,
+				paddingTop: 8,
+				paddingBottom: Math.max(insets.bottom, 8),
+				height: 64 + insets.bottom,
+				elevation: 0,
 			},
 		};
 	}, [activeTint, isDark, insets, isTablet, isExpanded]);

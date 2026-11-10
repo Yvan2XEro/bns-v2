@@ -110,21 +110,17 @@ export function ListingCard({
 	const age = compactTimeAgo(listing.createdAt);
 	const shopName = listingShopName(listing);
 	// On a shop's page the card takes the shop's colour, as on web.
-	const shopAccent = useShopBrandIfAny()?.accentText ?? "#1e40af";
+	const shopAccent =
+		useShopBrandIfAny()?.accentText ?? (isDark ? "#9aa8f5" : "#23338f");
 
-	// Colors — matches web palette exactly
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textPrimary = isDark ? "#e2e8f0" : "#0f172a";
-	const textTitle = isDark ? "#cbd5e1" : "#334155";
-	const textMuted = "#94a3b8";
-	const borderNormal = isDark ? "#1e3a5f" : "#e2e8f0";
-	const placeholderBg = isDark ? "#0f172a" : "#f1f5f9";
+	const textPrimary = isDark ? "#e1e3ee" : "#12163a";
+	const textMuted = isDark ? "#a3a7c8" : "#5b6088";
+	const placeholderBg = isDark ? "#13183e" : "#e1e3ee";
 
 	const handleFavorite = () => {
 		heartScale.value = withSequence(
-			withSpring(1.5, { damping: 5, stiffness: 400 }),
-			withSpring(0.85, { damping: 8 }),
-			withSpring(1, { damping: 10 }),
+			withSpring(1.25, { damping: 8, stiffness: 500 }),
+			withSpring(1, { damping: 12, stiffness: 300 }),
 		);
 		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 		onToggleFavorite(listing.id);
@@ -153,88 +149,58 @@ export function ListingCard({
 			}}
 		>
 			<Animated.View
-				style={[
-					styles.card,
-					{
-						width: w,
-						backgroundColor: cardBg,
-						// Boosted → amber ring, normal → slate border (mirrors web)
-						borderColor: listing.isBoosted
-							? "rgba(245,158,11,0.5)"
-							: borderNormal,
-						borderWidth: listing.isBoosted ? 1.5 : 1,
-					},
-					selectedStyle(selected),
-					cardStyle,
-				]}
+				style={[styles.card, { width: w }, selectedStyle(selected), cardStyle]}
 			>
-				{/* ── Image ── */}
-				<View>
+				{/* ── Photo, with the price painted on it ── */}
+				<View
+					style={[
+						styles.photo,
+						{ backgroundColor: placeholderBg },
+						listing.isBoosted && styles.photoBoosted,
+					]}
+				>
 					{imageUrl ? (
 						<Image
 							source={{ uri: imageUrl }}
-							style={{ width: w, height: imageH }}
+							style={{ width: "100%", height: imageH }}
 							contentFit="cover"
 							placeholder={{ blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6." }}
 							transition={200}
+							recyclingKey={listing.id}
 						/>
 					) : (
-						<View
-							style={[
-								styles.imagePlaceholder,
-								{ width: w, height: imageH, backgroundColor: placeholderBg },
-							]}
-						>
+						<View style={[styles.imagePlaceholder, { height: imageH }]}>
 							<Ionicons name="image-outline" size={28} color={textMuted} />
 						</View>
 					)}
 
-					{/* Top-left — boost badge + condition badge */}
+					{/* Top-left — boosted, condition, protected purchase */}
 					<View style={styles.topLeft}>
 						{listing.isBoosted && (
 							<View style={styles.boostBadge}>
-								<Ionicons name="flash" size={9} color="#fff" />
-								<Text style={styles.boostText}>À LA UNE</Text>
+								<Ionicons name="flash" size={10} color="#ffb81c" />
+								<Text style={styles.boostText}>
+									{i18n.t("home.featuredBadge")}
+								</Text>
 							</View>
 						)}
 						{conditionLabel && (
-							<View
-								style={[
-									styles.conditionBadge,
-									{
-										backgroundColor: isDark
-											? "rgba(30,41,59,0.92)"
-											: "rgba(255,255,255,0.92)",
-									},
-								]}
-							>
-								<Text style={[styles.conditionText, { color: textPrimary }]}>
-									{conditionLabel}
-								</Text>
+							<View style={styles.chip}>
+								<Text style={styles.chipText}>{conditionLabel}</Text>
 							</View>
 						)}
 						{listing.orderable && (
 							// Bought on the platform, not arranged with a stranger.
-							<View
-								style={[
-									styles.conditionBadge,
-									styles.orderableBadge,
-									{
-										backgroundColor: isDark
-											? "rgba(15,23,42,0.85)"
-											: "rgba(255,255,255,0.92)",
-									},
-								]}
-							>
-								<Ionicons name="shield-checkmark" size={10} color="#15803d" />
-								<Text style={[styles.conditionText, { color: "#15803d" }]}>
+							<View style={styles.chip}>
+								<Ionicons name="shield-checkmark" size={11} color="#19733f" />
+								<Text style={[styles.chipText, { color: "#155c35" }]}>
 									{i18n.t("listing.orderableBadge")}
 								</Text>
 							</View>
 						)}
 					</View>
 
-					{/* Top-right — favorite button */}
+					{/* Top-right — favorite */}
 					<Pressable
 						onPress={handleFavorite}
 						hitSlop={10}
@@ -246,78 +212,56 @@ export function ListingCard({
 						accessibilityState={{ selected: isFavorite }}
 					>
 						<Animated.View
-							style={[
-								styles.favBtn,
-								{
-									backgroundColor: isFavorite
-										? "#ef4444"
-										: isDark
-											? "rgba(15,23,42,0.72)"
-											: "rgba(255,255,255,0.82)",
-								},
-								heartStyle,
-							]}
+							style={[styles.favBtn, isFavorite && styles.favBtnOn, heartStyle]}
 						>
 							<Ionicons
 								name={isFavorite ? "heart" : "heart-outline"}
-								size={15}
-								color={isFavorite ? "#fff" : textMuted}
+								size={17}
+								color={isFavorite ? "#ffffff" : "#12163a"}
 							/>
 						</Animated.View>
 					</Pressable>
 
-					{/* Bottom-right — photo count */}
-					{photoCount > 1 && (
-						<View style={styles.photoBadge}>
-							<Ionicons name="camera-outline" size={10} color="#fff" />
-							<Text style={styles.photoText}>{photoCount}</Text>
-						</View>
-					)}
-				</View>
-
-				{/* ── Content ── */}
-				<View style={styles.content}>
-					{/* Price — prominent, same as web */}
-					<Text
-						style={[styles.price, { color: textPrimary }]}
-						numberOfLines={1}
-					>
-						{priceText}
-					</Text>
-
-					{/* Title — 2-line clamp */}
-					<Text style={[styles.title, { color: textTitle }]} numberOfLines={2}>
-						{listing.title ?? "—"}
-					</Text>
-
-					{/* Meta row: location (left) + time (right) */}
-					<View style={styles.metaRow}>
-						<View style={styles.metaLeft}>
-							<Ionicons name="location-outline" size={11} color={textMuted} />
+					{/* Bottom — the price tag, and the photo count */}
+					<View style={styles.bottomRow} pointerEvents="none">
+						<View style={styles.priceTag}>
 							<Text
-								style={[styles.metaText, { color: textMuted }]}
+								style={styles.priceText}
 								numberOfLines={1}
+								adjustsFontSizeToFit
+								minimumFontScale={0.8}
 							>
-								{listing.location ?? "—"}
+								{priceText}
 							</Text>
 						</View>
-						{age && (
-							<View style={styles.metaRight}>
-								<Ionicons name="time-outline" size={11} color={textMuted} />
-								<Text style={[styles.metaText, { color: textMuted }]}>
-									{age}
-								</Text>
+						{photoCount > 1 && (
+							<View style={styles.photoBadge}>
+								<Ionicons name="images-outline" size={11} color="#fff" />
+								<Text style={styles.photoText}>{photoCount}</Text>
 							</View>
 						)}
 					</View>
+				</View>
+
+				{/* ── Words ── */}
+				<View style={styles.content}>
+					<Text
+						style={[styles.title, { color: textPrimary }]}
+						numberOfLines={2}
+					>
+						{listing.title ?? "—"}
+					</Text>
+
+					<Text
+						style={[styles.metaText, { color: textMuted }]}
+						numberOfLines={1}
+					>
+						{[listing.location, age].filter(Boolean).join(" · ") || "—"}
+					</Text>
 
 					{shopName ? (
 						<View style={styles.shopRow}>
-							<Ionicons
-								name="storefront-outline"
-								size={11}
-								color={shopAccent}
-							/>
+							<Ionicons name="storefront" size={11} color={shopAccent} />
 							<Text
 								style={[styles.shopText, { color: shopAccent }]}
 								numberOfLines={1}
@@ -335,12 +279,15 @@ export function ListingCard({
 const styles = StyleSheet.create({
 	card: {
 		borderRadius: 14,
+	},
+	photo: {
+		borderRadius: 14,
 		overflow: "hidden",
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.07,
-		shadowRadius: 8,
-		elevation: 2,
+	},
+	// Boosted listings carry a signage-yellow frame instead of a glow.
+	photoBoosted: {
+		borderWidth: 2,
+		borderColor: "#ffb81c",
 	},
 	imagePlaceholder: {
 		alignItems: "center",
@@ -350,133 +297,124 @@ const styles = StyleSheet.create({
 	// ── Badges ──
 	topLeft: {
 		position: "absolute",
-		top: 7,
-		left: 7,
-		flexDirection: "column",
+		top: 8,
+		left: 8,
+		right: 48,
+		alignItems: "flex-start",
 		gap: 4,
 	},
 	boostBadge: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 3,
-		backgroundColor: "#f59e0b",
-		borderRadius: 4,
-		paddingHorizontal: 5,
-		paddingVertical: 2,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.2,
-		shadowRadius: 2,
-		elevation: 2,
+		backgroundColor: "#12163a",
+		borderRadius: 6,
+		paddingHorizontal: 6,
+		paddingVertical: 3,
 	},
 	boostText: {
-		color: "#fff",
-		fontSize: 9,
-		fontFamily: Fonts.displayBold,
-		letterSpacing: 0.4,
+		color: "#ffffff",
+		fontSize: 11,
+		fontFamily: Fonts.bodyBold,
+		letterSpacing: 0.2,
 	},
-	orderableBadge: { flexDirection: "row", alignItems: "center", gap: 3 },
-	conditionBadge: {
-		borderRadius: 4,
-		paddingHorizontal: 5,
-		paddingVertical: 2,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.12,
-		shadowRadius: 2,
-		elevation: 1,
+	chip: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 3,
+		backgroundColor: "rgba(255,255,255,0.94)",
+		borderRadius: 6,
+		paddingHorizontal: 6,
+		paddingVertical: 3,
 	},
-	conditionText: {
-		fontSize: 9,
-		fontFamily: Fonts.bodySemibold,
+	chipText: {
+		fontSize: 11,
+		fontFamily: Fonts.bodyBold,
+		color: "#12163a",
 	},
 
 	// ── Favorite ──
 	favWrap: {
 		position: "absolute",
-		top: 7,
-		right: 7,
+		top: 6,
+		right: 6,
 	},
 	favBtn: {
-		width: 30,
-		height: 30,
-		borderRadius: 15,
+		width: 34,
+		height: 34,
+		borderRadius: 17,
 		alignItems: "center",
 		justifyContent: "center",
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.15,
-		shadowRadius: 3,
+		backgroundColor: "rgba(255,255,255,0.94)",
+	},
+	favBtnOn: { backgroundColor: "#d23a2e" },
+
+	// ── Price tag + photo count ──
+	bottomRow: {
+		position: "absolute",
+		left: 8,
+		right: 8,
+		bottom: 8,
+		flexDirection: "row",
+		alignItems: "flex-end",
+		justifyContent: "space-between",
+		gap: 6,
+	},
+	priceTag: {
+		flexShrink: 1,
+		backgroundColor: "#ffb81c",
+		borderRadius: 7,
+		paddingHorizontal: 8,
+		paddingTop: 3,
+		paddingBottom: 4,
+		shadowColor: "#12163a",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.18,
+		shadowRadius: 4,
 		elevation: 2,
 	},
-
-	// ── Photo count ──
+	priceText: {
+		color: "#12163a",
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 15,
+		lineHeight: 19,
+		letterSpacing: -0.3,
+	},
 	photoBadge: {
-		position: "absolute",
-		bottom: 7,
-		right: 7,
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 3,
-		backgroundColor: "rgba(0,0,0,0.6)",
-		borderRadius: 5,
-		paddingHorizontal: 5,
-		paddingVertical: 2,
+		backgroundColor: "rgba(18, 22, 58,0.72)",
+		borderRadius: 6,
+		paddingHorizontal: 6,
+		paddingVertical: 3,
 	},
 	photoText: {
 		color: "#fff",
-		fontSize: 10,
-		fontFamily: Fonts.body,
+		fontSize: 11,
+		fontFamily: Fonts.bodySemibold,
 	},
 
-	// ── Content ──
+	// ── Words ──
 	content: {
-		padding: 10,
-		gap: 2,
-	},
-	price: {
-		fontFamily: Fonts.displayBold,
-		fontSize: 17,
-		lineHeight: 22,
-	},
-	priceCurrency: {
-		fontFamily: Fonts.body,
-		fontSize: 11,
+		paddingTop: 8,
+		paddingHorizontal: 2,
+		paddingBottom: 4,
+		gap: 3,
 	},
 	title: {
-		fontFamily: Fonts.body,
-		fontSize: 13,
-		lineHeight: 18,
-		marginTop: 1,
-	},
-	metaRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		marginTop: 5,
-	},
-	metaLeft: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 3,
-		flex: 1,
-		minWidth: 0,
-	},
-	metaRight: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 3,
-		flexShrink: 0,
-		marginLeft: 6,
+		fontFamily: Fonts.bodyMedium,
+		fontSize: 14,
+		lineHeight: 19,
 	},
 	metaText: {
 		fontFamily: Fonts.body,
-		fontSize: 11,
-		flexShrink: 1,
+		fontSize: 12,
+		lineHeight: 16,
 	},
-	shopRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+	shopRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 1 },
 	shopText: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
 		flexShrink: 1,
 	},

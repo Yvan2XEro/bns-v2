@@ -28,8 +28,8 @@ interface SearchFieldProps {
 
 /**
  * The app's search field — the home screen's look, shared so every screen
- * that searches reads the same: rounded card, tinted icon tile, primary
- * border while in use.
+ * that searches reads the same: a plain white field, primary border while in
+ * use.
  */
 export function SearchField({
 	value,
@@ -46,38 +46,21 @@ export function SearchField({
 	const isDark = useColorScheme() === "dark";
 	const [focused, setFocused] = useState(false);
 	const highlighted = active ?? focused;
-	const primary = isDark ? "#3b82f6" : "#1e40af";
-	const muted = isDark ? "#94a3b8" : "#64748b";
+	const primary = isDark ? "#6878ea" : "#23338f";
+	const muted = isDark ? "#a3a7c8" : "#5b6088";
 
 	return (
 		<View
 			style={[
 				styles.field,
 				{
-					backgroundColor: isDark ? "#1e293b" : "#ffffff",
-					borderColor: highlighted ? primary : isDark ? "#1e3a5f" : "#e2e8f0",
+					backgroundColor: isDark ? "#1a1f4a" : "#ffffff",
+					borderColor: highlighted ? primary : isDark ? "#2a3170" : "#d6d9e8",
 				},
 				style,
 			]}
 		>
-			<View
-				style={[
-					styles.iconTile,
-					{
-						backgroundColor: highlighted
-							? primary
-							: isDark
-								? "#111827"
-								: "#eef2ff",
-					},
-				]}
-			>
-				<Ionicons
-					name="search"
-					size={15}
-					color={highlighted ? "#fff" : primary}
-				/>
-			</View>
+			<Ionicons name="search" size={19} color={highlighted ? primary : muted} />
 			<TextInput
 				ref={ref}
 				value={value}
@@ -92,7 +75,7 @@ export function SearchField({
 				}}
 				placeholder={placeholder}
 				placeholderTextColor={muted}
-				style={[styles.input, { color: isDark ? "#e2e8f0" : "#0f172a" }]}
+				style={[styles.input, { color: isDark ? "#e1e3ee" : "#12163a" }]}
 				autoFocus={autoFocus}
 				returnKeyType="search"
 			/>
@@ -124,24 +107,12 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		borderRadius: 16,
+		minHeight: 48,
+		borderRadius: 12,
 		borderWidth: 1.5,
-		paddingHorizontal: 8,
-		paddingVertical: 8,
-		shadowColor: "#1e40af",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.08,
-		shadowRadius: 6,
-		elevation: 2,
-	},
-	iconTile: {
-		width: 32,
-		height: 32,
-		borderRadius: 10,
-		alignItems: "center",
-		justifyContent: "center",
+		paddingHorizontal: 14,
 	},
 	// Android's TextInput carries its own vertical padding; without this the
-	// field grows taller than the icon tile.
-	input: { flex: 1, fontSize: 15, padding: 0, fontFamily: Fonts.body },
+	// field grows past its 48pt.
+	input: { flex: 1, fontSize: 16, padding: 0, fontFamily: Fonts.body },
 });

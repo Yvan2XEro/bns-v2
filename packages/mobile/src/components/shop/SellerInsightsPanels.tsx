@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
 	},
 	metricLabel: { fontSize: 11, fontFamily: Fonts.body },
 	metricValue: { fontSize: 16, fontFamily: Fonts.displayBold },
-	metricDelta: { fontSize: 10, fontFamily: Fonts.body },
+	metricDelta: { fontSize: 11, fontFamily: Fonts.body },
 	panel: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 12 },
 	panelTitle: { fontSize: 15, fontFamily: Fonts.displayBold, marginTop: 2 },
 	funnelLine: { gap: 5 },

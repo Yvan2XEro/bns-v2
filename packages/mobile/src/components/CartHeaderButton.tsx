@@ -7,6 +7,7 @@ import {
 	View,
 	type ViewStyle,
 } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useCart } from "@/src/hooks/useCart";
 import { useAuth } from "@/src/lib/auth";
 import { cartItemCount } from "@/src/lib/cartCount";
@@ -50,12 +51,14 @@ export function CartHeaderButton({
 						height: 18,
 						borderRadius: 9,
 						paddingHorizontal: 4,
-						backgroundColor: "#ef4444",
+						backgroundColor: "#e5574b",
 						alignItems: "center",
 						justifyContent: "center",
 					}}
 				>
-					<Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
+					<Text
+						style={{ color: "#fff", fontSize: 11, fontFamily: Fonts.bodyBold }}
+					>
 						{count > 99 ? "99+" : count}
 					</Text>
 				</View>

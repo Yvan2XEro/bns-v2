@@ -105,6 +105,6 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 		minHeight: 44,
 	},
-	btnText: { fontSize: 15, fontFamily: Fonts.displayBold, color: "#fff" },
+	btnText: { fontSize: 15, fontFamily: Fonts.bodyBold, color: "#fff" },
 	meta: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
 });

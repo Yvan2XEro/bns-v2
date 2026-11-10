@@ -298,14 +298,14 @@ export default function CreateScreen() {
 		opacity: opacity.value,
 	}));
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primary = isDark ? "#3b82f6" : "#1e40af";
-	const border = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
-	const inputBg = isDark ? "#162032" : "#f8fafc";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primary = isDark ? "#6878ea" : "#23338f";
+	const border = isDark ? "#2a3170" : "#e1e3ee";
+	const accentBg = isDark ? "#12163a" : "#e9ecfa";
+	const inputBg = isDark ? "#13183e" : "#f4f5f9";
 
 	// Pre-fill the location from the remembered place, so a seller does not
 	// re-enter their city on every listing. Only ever fills an empty field, and
@@ -477,10 +477,10 @@ export default function CreateScreen() {
 					<View
 						style={[
 							styles.sellIconWrap,
-							{ backgroundColor: isDark ? "#422006" : "#fef3c7" },
+							{ backgroundColor: isDark ? "#2e2300" : "#fff1c7" },
 						]}
 					>
-						<Ionicons name="pricetag" size={22} color="#d97706" />
+						<Ionicons name="pricetag" size={22} color="#9a6a00" />
 					</View>
 					<Text style={[styles.noUserTitle, { color: textColor }]}>
 						{t("create.sell")}
@@ -505,10 +505,10 @@ export default function CreateScreen() {
 					<View
 						style={[
 							styles.sellIconWrap,
-							{ backgroundColor: isDark ? "#422006" : "#fef3c7" },
+							{ backgroundColor: isDark ? "#2e2300" : "#fff1c7" },
 						]}
 					>
-						<Ionicons name="pricetag" size={22} color="#d97706" />
+						<Ionicons name="pricetag" size={22} color="#9a6a00" />
 					</View>
 					<Text style={[styles.noUserTitle, { color: textColor }]}>
 						{t("create.sell")}
@@ -519,7 +519,7 @@ export default function CreateScreen() {
 						<View
 							style={[
 								styles.lockCircle,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+								{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 							]}
 						>
 							<Ionicons name="lock-closed" size={32} color={primary} />
@@ -662,7 +662,10 @@ export default function CreateScreen() {
 					onPress={() =>
 						stepIndex > 0 ? goToStep(steps[stepIndex - 1]) : router.back()
 					}
-					style={[styles.backBtn, { backgroundColor: cardBg }]}
+					style={[
+						styles.backBtn,
+						{ backgroundColor: cardBg, borderColor: border, borderWidth: 1 },
+					]}
 				>
 					<Ionicons name="arrow-back" size={18} color={textColor} />
 				</Pressable>
@@ -1050,10 +1053,10 @@ function DetailsStep({
 						<View
 							style={[
 								styles.priceBadge,
-								{ backgroundColor: isDark ? "#422006" : "#fef3c7" },
+								{ backgroundColor: isDark ? "#2e2300" : "#fff1c7" },
 							]}
 						>
-							<Text style={[styles.priceBadgeText, { color: "#b45309" }]}>
+							<Text style={[styles.priceBadgeText, { color: "#8a5a00" }]}>
 								{t("common.currency", { defaultValue: "XAF" })}
 							</Text>
 						</View>
@@ -1387,7 +1390,7 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 							styles.attrInput,
 							{
 								color: textColor,
-								borderColor: showIssue ? "#ef4444" : border,
+								borderColor: showIssue ? "#e5574b" : border,
 								backgroundColor: inputBg,
 							},
 						]}
@@ -1402,7 +1405,7 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 			)}
 
 			{showIssue ? (
-				<Text style={[styles.attrError, { color: "#ef4444" }]}>
+				<Text style={[styles.attrError, { color: "#e5574b" }]}>
 					{attributeIssueMessage(issue, t)}
 				</Text>
 			) : boundsHint ? (
@@ -1501,8 +1504,8 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 				style={[
 					styles.tipCard,
 					{
-						backgroundColor: isDark ? "#1e3a5f" : "#dbeafe",
-						borderColor: isDark ? "#2d5a9e" : "#bfdbfe",
+						backgroundColor: isDark ? "#2a3170" : "#e3e7f8",
+						borderColor: isDark ? "#2d5a9e" : "#c5ccf0",
 					},
 				]}
 			>
@@ -1558,7 +1561,7 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 							accessibilityLabel={t("create.removePhoto")}
 							style={styles.photoDeleteBtn}
 						>
-							<Ionicons name="close-circle" size={26} color="#ef4444" />
+							<Ionicons name="close-circle" size={26} color="#e5574b" />
 						</Pressable>
 					</View>
 				))}
@@ -1579,7 +1582,7 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 					style={[
 						styles.addPhotoBtn,
 						{
-							backgroundColor: isDark ? "#162032" : "#f0f7ff",
+							backgroundColor: isDark ? "#13183e" : "#f1f3fc",
 							borderColor: primary,
 						},
 						full && { opacity: 0.4 },
@@ -1595,7 +1598,7 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 							<View
 								style={[
 									styles.addIconCircle,
-									{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+									{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 								]}
 							>
 								<Ionicons name="add" size={24} color={primary} />
@@ -1614,7 +1617,7 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 			/>
 
 			{photosRequired && form.images.length === 0 && (
-				<Text style={[styles.photoRequired, { color: "#ef4444" }]}>
+				<Text style={[styles.photoRequired, { color: "#e5574b" }]}>
 					{t("create.photoRequired")}
 				</Text>
 			)}
@@ -1842,7 +1845,7 @@ function ReviewStep({
 						<View
 							style={[
 								styles.reviewIconWrap,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+								{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
 							]}
 						>
 							<Ionicons name={row.icon as any} size={14} color={primary} />
@@ -1862,7 +1865,7 @@ function ReviewStep({
 							onPress={() => setStep(row.step)}
 							style={[
 								styles.editPill,
-								{ backgroundColor: isDark ? "#162032" : "#f0f7ff" },
+								{ backgroundColor: isDark ? "#13183e" : "#f1f3fc" },
 							]}
 						>
 							<Text style={[styles.editPillText, { color: primary }]}>
@@ -1888,13 +1891,13 @@ function ReviewStep({
 				onPress={() => submit("pending")}
 				disabled={isPending}
 				accessibilityRole="button"
-				style={[styles.publishBtn, { backgroundColor: "#f59e0b" }]}
+				style={[styles.publishBtn, { backgroundColor: "#ffb81c" }]}
 			>
 				{isPending ? (
-					<ActivityIndicator color="#fff" />
+					<ActivityIndicator color="#12163a" />
 				) : (
 					<>
-						<Ionicons name="rocket-outline" size={20} color="#fff" />
+						<Ionicons name="rocket-outline" size={20} color="#12163a" />
 						<Text style={styles.publishBtnText}>{t("create.publishBtn")}</Text>
 					</>
 				)}
@@ -1971,10 +1974,10 @@ function PublishedView({
 				<View
 					style={[
 						styles.lockCircle,
-						{ backgroundColor: "#dcfce7", alignSelf: "center" },
+						{ backgroundColor: "#ddf3e5", alignSelf: "center" },
 					]}
 				>
-					<Ionicons name="checkmark" size={36} color="#15803d" />
+					<Ionicons name="checkmark" size={36} color="#19733f" />
 				</View>
 				<Text style={[styles.noUserHeading, { color: textColor }]}>
 					{t("create.publishSuccess")}
@@ -1994,7 +1997,7 @@ function PublishedView({
 					accessibilityRole="button"
 					style={[styles.loginBtn, { backgroundColor: "#25D366" }]}
 				>
-					<Text style={[styles.loginBtnText, { color: "#0f172a" }]}>
+					<Text style={[styles.loginBtnText, { color: "#12163a" }]}>
 						{t("create.shareWhatsApp")}
 					</Text>
 				</Pressable>
@@ -2024,7 +2027,7 @@ function FieldHeader({ icon, label, required, colors }: any) {
 			<Ionicons name={icon} size={14} color={primary} />
 			<Text style={[styles.fieldLabel, { color: textColor }]}>
 				{label}
-				{required && <Text style={{ color: "#ef4444" }}> *</Text>}
+				{required && <Text style={{ color: "#e5574b" }}> *</Text>}
 			</Text>
 		</View>
 	);
@@ -2041,7 +2044,7 @@ function NextButton({ label, onPress, active, colors }: any) {
 			style={[
 				styles.nextBtn,
 				{
-					backgroundColor: active ? primary : isDark ? "#1e293b" : "#e2e8f0",
+					backgroundColor: active ? primary : isDark ? "#1a1f4a" : "#e1e3ee",
 					opacity: active ? 1 : 0.6,
 				},
 			]}
@@ -2133,8 +2136,8 @@ const styles = StyleSheet.create({
 	},
 	loginBtnText: {
 		color: "#fff",
-		fontSize: 15,
-		fontFamily: Fonts.displayBold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 
 	/* ── Header ── */
@@ -2147,25 +2150,20 @@ const styles = StyleSheet.create({
 		paddingBottom: 12,
 	},
 	backBtn: {
-		width: 36,
-		height: 36,
-		borderRadius: 10,
+		width: 40,
+		height: 40,
+		borderRadius: 20,
 		alignItems: "center",
 		justifyContent: "center",
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.08,
-		shadowRadius: 4,
-		elevation: 2,
 	},
 	headerCenter: { flex: 1 },
 	headerTitle: {
-		fontSize: 17,
+		fontSize: 18,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},
 	headerStep: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.body,
 		marginTop: 1,
 	},
@@ -2181,13 +2179,14 @@ const styles = StyleSheet.create({
 
 	/* ── Step headings ── */
 	stepTitle: {
-		fontSize: 22,
-		fontFamily: Fonts.displayBold,
-		letterSpacing: -0.3,
+		fontSize: 26,
+		lineHeight: 31,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.7,
 		marginBottom: 6,
 	},
 	stepSub: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.body,
 		lineHeight: 20,
 		marginBottom: 20,
@@ -2285,8 +2284,9 @@ const styles = StyleSheet.create({
 		borderRadius: 10,
 		paddingHorizontal: 12,
 		paddingVertical: 10,
-		fontSize: 18,
-		fontFamily: Fonts.displayBold,
+		fontSize: 22,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.4,
 	},
 	priceBadge: {
 		borderRadius: 10,
@@ -2428,7 +2428,7 @@ const styles = StyleSheet.create({
 	},
 	photoPrimaryText: {
 		color: "#fff",
-		fontSize: 9,
+		fontSize: 11,
 		fontFamily: Fonts.displayBold,
 	},
 	photoMakeMainBtn: {
@@ -2438,7 +2438,7 @@ const styles = StyleSheet.create({
 		width: 30,
 		height: 30,
 		borderRadius: 15,
-		backgroundColor: "rgba(15,23,42,0.65)",
+		backgroundColor: "rgba(18, 22, 58,0.65)",
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -2509,18 +2509,17 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 10,
-		borderRadius: 16,
+		borderRadius: 14,
+		minHeight: 56,
 		paddingVertical: 16,
-		shadowColor: "#f59e0b",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.35,
-		shadowRadius: 10,
-		elevation: 6,
+		// The sign plaque, as on the sell tab: a darker foot, no glow.
+		borderBottomWidth: 3,
+		borderBottomColor: "#9a6a00",
 	},
 	publishBtnText: {
-		color: "#fff",
+		color: "#12163a",
 		fontSize: 17,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 	draftBtn: {
 		alignItems: "center",
@@ -2548,12 +2547,13 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		borderRadius: 16,
+		borderRadius: 12,
+		minHeight: 52,
 		paddingVertical: 15,
 		marginTop: 8,
 	},
 	nextBtnText: {
 		fontSize: 16,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 });

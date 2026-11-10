@@ -31,5 +31,5 @@ export function ReviewStars({
 
 const styles = StyleSheet.create({
 	row: { flexDirection: "row", alignItems: "center", gap: 2 },
-	count: { fontSize: 12, color: "#64748b", marginLeft: 4 },
+	count: { fontSize: 12, color: "#5b6088", marginLeft: 4 },
 });

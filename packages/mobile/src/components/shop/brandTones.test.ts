@@ -79,7 +79,7 @@ describe("sellerBrandPalette", () => {
 	});
 
 	test("the soft fill is the shop's", () => {
-		const theme = shopTheme("#15803D");
+		const theme = shopTheme("#19733f");
 		expect(sellerBrandPalette(theme, "light").primarySoft).toBe(
 			theme.light.accentSoft,
 		);

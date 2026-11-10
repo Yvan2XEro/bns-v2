@@ -10,9 +10,9 @@ import { ShopAvatar } from "./ShopAvatar";
 import { useShopTheme } from "./theme";
 
 /** The hub's header band: dark in both themes, like the design's seller space. */
-export const HUB_HEADER_BG = "#0f172a";
+export const HUB_HEADER_BG = "#12163a";
 const ON_DARK = "#ffffff";
-const ON_DARK_MUTED = "#94a3b8";
+const ON_DARK_MUTED = "#a9b4f0";
 
 /**
  * The seller hub's bar — back, avatar, shop name, public page. Distinct from
@@ -122,8 +122,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	shopName: { fontSize: 18, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	shopName: {
+		fontSize: 20,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.4,
+	},
+	meta: { fontSize: 13, fontFamily: Fonts.body },
 	linkCard: {
 		flexDirection: "row",
 		alignItems: "center",

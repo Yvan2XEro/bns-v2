@@ -32,12 +32,12 @@ export function SavedSearchesScreen() {
 	const queryClient = useQueryClient();
 	const { showConfirm } = useAlert();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
 
 	const { data, isLoading, refetch } = useQuery({
 		queryKey: ["saved-searches"],
@@ -140,7 +140,7 @@ export function SavedSearchesScreen() {
 										thumbColor={item.alertEnabled ? primaryColor : "#f4f4f5"}
 										trackColor={{
 											false: borderColor,
-											true: isDark ? "#1e3a5f" : "#dbeafe",
+											true: isDark ? "#2a3170" : "#e3e7f8",
 										}}
 									/>
 									<Text style={[styles.alertLabel, { color: mutedColor }]}>
@@ -157,10 +157,10 @@ export function SavedSearchesScreen() {
 									}
 									style={[
 										styles.deleteBtn,
-										{ backgroundColor: isDark ? "#1a0a0a" : "#fee2e2" },
+										{ backgroundColor: isDark ? "#1a0a0a" : "#fbe3e0" },
 									]}
 								>
-									<Ionicons name="trash" size={16} color="#dc2626" />
+									<Ionicons name="trash" size={16} color="#d23a2e" />
 								</Pressable>
 							</View>
 						</Pressable>
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
 	searchName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	searchDate: { fontSize: 12, fontFamily: Fonts.body },
 	searchActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-	alertLabel: { fontSize: 10, fontFamily: Fonts.bodySemibold },
+	alertLabel: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 	deleteBtn: {
 		width: 36,
 		height: 36,

@@ -87,7 +87,7 @@ export function ReturnEvidenceUpload({
 				</Pressable>
 			))}
 			{error ? (
-				<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+				<Text accessibilityRole="alert" style={{ color: "#d23a2e" }}>
 					{error}
 				</Text>
 			) : null}

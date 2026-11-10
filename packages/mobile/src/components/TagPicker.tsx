@@ -57,9 +57,9 @@ export function TagPicker({
 	const isDark = useColorScheme() === "dark";
 	const [visible, setVisible] = useState(false);
 
-	const modalBg = isDark ? "#0b1120" : "#f8fafc";
-	const separatorColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const chipBg = isDark ? "#1e293b" : "#f1f5f9";
+	const modalBg = isDark ? "#0c1030" : "#f4f5f9";
+	const separatorColor = isDark ? "#2a3170" : "#e1e3ee";
+	const chipBg = isDark ? "#1a1f4a" : "#eceef5";
 
 	const useSlugMode =
 		selectedSlugs !== undefined && onChangeSlugs !== undefined;
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
 	},
 	doneBtnText: {
 		fontSize: 15,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 		color: "#fff",
 	},
 });

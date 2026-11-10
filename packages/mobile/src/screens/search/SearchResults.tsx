@@ -239,13 +239,13 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 
 	const pairs = chunkIntoRows(listings, columns);
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const accentBg = isDark ? "#12163a" : "#e9ecfa";
 
 	// ── Save search dialog ─────────────────────────────────────────
 	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -355,7 +355,7 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 						styles.searchWrap,
 						{
 							backgroundColor: cardBg,
-							shadowColor: isDark ? "#000" : "#94a3b8",
+							shadowColor: isDark ? "#000" : "#777ca3",
 						},
 					]}
 				>
@@ -388,7 +388,7 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 							hitSlop={10}
 							style={[
 								styles.clearBtn,
-								{ backgroundColor: isDark ? "#334155" : "#f1f5f9" },
+								{ backgroundColor: isDark ? "#3a3f66" : "#eceef5" },
 							]}
 						>
 							<Ionicons name="close" size={13} color={mutedColor} />
@@ -403,8 +403,8 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 										activeFilterCount > 0
 											? primaryColor
 											: isDark
-												? "#334155"
-												: "#f1f5f9",
+												? "#3a3f66"
+												: "#eceef5",
 								},
 							]}
 							hitSlop={8}
@@ -443,8 +443,8 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 												backgroundColor: active
 													? primaryColor
 													: isDark
-														? "#1e293b"
-														: "#f1f5f9",
+														? "#1a1f4a"
+														: "#eceef5",
 												borderColor: active ? primaryColor : "transparent",
 											},
 										]}
@@ -479,8 +479,8 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 											activeFilterCount > 0
 												? primaryColor
 												: isDark
-													? "#1e293b"
-													: "#f1f5f9",
+													? "#1a1f4a"
+													: "#eceef5",
 										borderColor:
 											activeFilterCount > 0 ? primaryColor : borderColor,
 									},
@@ -652,7 +652,7 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 								{
 									color: textColor,
 									borderColor: primaryColor,
-									backgroundColor: isDark ? "#0b1120" : "#f8fafc",
+									backgroundColor: isDark ? "#0c1030" : "#f4f5f9",
 								},
 							]}
 							returnKeyType="done"
@@ -664,7 +664,7 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 								onPress={() => setSaveDialogOpen(false)}
 								style={[
 									styles.modalBtn,
-									{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+									{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
 								]}
 							>
 								<Text style={[styles.modalBtnText, { color: mutedColor }]}>
@@ -680,7 +680,7 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 									styles.modalBtnPrimary,
 									{
 										backgroundColor:
-											saveStatus === "saved" ? "#16a34a" : primaryColor,
+											saveStatus === "saved" ? "#1e8a4f" : primaryColor,
 									},
 								]}
 							>

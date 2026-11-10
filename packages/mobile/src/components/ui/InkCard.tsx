@@ -7,11 +7,11 @@ import { useShopTheme } from "@/src/components/shop/theme";
 /** Text colours on the ink card, the same in both themes. */
 export const ON_INK = {
 	text: "#ffffff",
-	muted: "#94a3b8",
-	faint: "#64748b",
-	amber: "#fcd34d",
-	green: "#86efac",
-	rule: "#334155",
+	muted: "#777ca3",
+	faint: "#5b6088",
+	amber: "#ffd25a",
+	green: "#8fddb0",
+	rule: "#3a3f66",
 } as const;
 
 /** The dark money card the design opens payments and billing with. */

@@ -93,24 +93,24 @@ function Section({
 						{
 							backgroundColor: danger
 								? isDark
-									? "#3b1111"
-									: "#fee2e2"
+									? "#3a1310"
+									: "#fbe3e0"
 								: isDark
-									? "#1e293b"
-									: "#f1f5f9",
+									? "#1a1f4a"
+									: "#eceef5",
 						},
 					]}
 				>
 					<Ionicons
 						name={icon}
 						size={15}
-						color={danger ? "#dc2626" : isDark ? "#94a3b8" : "#475569"}
+						color={danger ? "#d23a2e" : isDark ? "#a3a7c8" : "#4a4f78"}
 					/>
 				</View>
 				<Text
 					style={[
 						styles.sectionTitle,
-						{ color: danger ? "#dc2626" : textColor },
+						{ color: danger ? "#d23a2e" : textColor },
 					]}
 				>
 					{title}
@@ -172,13 +172,13 @@ export function SecurityScreen() {
 	const [phoneInput, setPhoneInput] = useState("");
 	const [otpCode, setOtpCode] = useState("");
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const inputBg = isDark ? "#0b1120" : "#f8fafc";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const inputBg = isDark ? "#0c1030" : "#f4f5f9";
 
 	const { mutate: changePassword, isPending: pwdLoading } = useMutation({
 		mutationFn: async () => {
@@ -493,7 +493,7 @@ export function SecurityScreen() {
 						<View
 							style={[
 								styles.versionBadge,
-								{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+								{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
 							]}
 						>
 							<Text style={[styles.versionText, { color: primaryColor }]}>
@@ -513,7 +513,7 @@ export function SecurityScreen() {
 						{t("settings.dangerDesc")}
 					</Text>
 					<Pressable onPress={handleDeleteAccount} style={styles.deleteBtn}>
-						<Ionicons name="trash-outline" size={16} color="#dc2626" />
+						<Ionicons name="trash-outline" size={16} color="#d23a2e" />
 						<Text style={styles.deleteText}>
 							{t("settings.deleteMyAccount")}
 						</Text>
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
 	btnText: {
 		color: "#fff",
 		fontSize: 15,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 	btnSecondary: {
 		borderRadius: 10,
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
 	},
 	btnSecondaryText: {
 		fontSize: 15,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 	currentRow: {
 		flexDirection: "row",
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 11,
 	},
 	deleteText: {
-		color: "#dc2626",
+		color: "#d23a2e",
 		fontSize: 14,
 		fontFamily: Fonts.displayBold,
 	},

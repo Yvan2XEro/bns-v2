@@ -205,8 +205,8 @@ export function DecisionSheet({
 																	? destructive
 																		? c.dangerSoft
 																		: c.isDark
-																			? "#1e3a5f"
-																			: "#dbeafe"
+																			? "#2a3170"
+																			: "#e3e7f8"
 																	: "transparent",
 																borderColor: selected
 																	? destructive
@@ -351,8 +351,8 @@ export function DecisionSheet({
 								{
 									backgroundColor: !ready
 										? c.isDark
-											? "#334155"
-											: "#e2e8f0"
+											? "#3a3f66"
+											: "#e1e3ee"
 										: destructive
 											? c.danger
 											: c.primary,

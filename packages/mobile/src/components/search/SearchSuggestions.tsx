@@ -7,12 +7,12 @@ import { useTranslation } from "@/src/lib/i18n";
 function usePalette() {
 	const isDark = useColorScheme() === "dark";
 	return {
-		card: isDark ? "#1e293b" : "#ffffff",
-		text: isDark ? "#e2e8f0" : "#0f172a",
-		muted: isDark ? "#94a3b8" : "#64748b",
-		primary: isDark ? "#3b82f6" : "#1e40af",
-		border: isDark ? "#1e3a5f" : "#e2e8f0",
-		chip: isDark ? "#172554" : "#eff6ff",
+		card: isDark ? "#1a1f4a" : "#ffffff",
+		text: isDark ? "#e1e3ee" : "#12163a",
+		muted: isDark ? "#a3a7c8" : "#5b6088",
+		primary: isDark ? "#6878ea" : "#23338f",
+		border: isDark ? "#2a3170" : "#e1e3ee",
+		chip: isDark ? "#1d2568" : "#eff1fb",
 	};
 }
 

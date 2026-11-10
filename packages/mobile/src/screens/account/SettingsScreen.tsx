@@ -61,13 +61,13 @@ function Section({
 				<View
 					style={[
 						styles.sectionIconBox,
-						{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+						{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
 					]}
 				>
 					<Ionicons
 						name={icon}
 						size={15}
-						color={isDark ? "#94a3b8" : "#475569"}
+						color={isDark ? "#a3a7c8" : "#4a4f78"}
 					/>
 				</View>
 				<Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
@@ -118,13 +118,13 @@ export function SettingsScreen() {
 		(i18n.language?.slice(0, 2) as Locale | undefined) ?? "fr";
 	const version = Constants.expoConfig?.version ?? "1.0.0";
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const inputBg = isDark ? "#0b1120" : "#f8fafc";
+	const bg = isDark ? "#0c1030" : "#f4f5f9";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const inputBg = isDark ? "#0c1030" : "#f4f5f9";
 
 	const sectionColors = { cardBg, borderColor, textColor, isDark };
 
@@ -205,7 +205,7 @@ export function SettingsScreen() {
 						<Ionicons
 							name={isDark ? "moon" : "sunny-outline"}
 							size={17}
-							color={isDark ? "#94a3b8" : "#475569"}
+							color={isDark ? "#a3a7c8" : "#4a4f78"}
 							style={{ marginRight: 10 }}
 						/>
 						<Text style={[styles.switchLabel, { color: textColor, flex: 1 }]}>
@@ -214,9 +214,9 @@ export function SettingsScreen() {
 						<Switch
 							value={isDark}
 							onValueChange={toggleDarkMode}
-							trackColor={{ false: "#CBD5E1", true: primaryColor }}
+							trackColor={{ false: "#c9cce0", true: primaryColor }}
 							thumbColor="#fff"
-							ios_backgroundColor="#CBD5E1"
+							ios_backgroundColor="#c9cce0"
 						/>
 					</View>
 				</Section>
@@ -250,10 +250,10 @@ export function SettingsScreen() {
 									<Ionicons
 										name="checkmark-circle"
 										size={17}
-										color="#22c55e"
+										color="#34b26a"
 										style={{ marginRight: 6 }}
 									/>
-									<Text style={[styles.updateStatusText, { color: "#22c55e" }]}>
+									<Text style={[styles.updateStatusText, { color: "#34b26a" }]}>
 										{t("settings.readyToInstall")}
 									</Text>
 								</>
@@ -276,10 +276,10 @@ export function SettingsScreen() {
 									<Ionicons
 										name="checkmark-circle-outline"
 										size={17}
-										color="#22c55e"
+										color="#34b26a"
 										style={{ marginRight: 6 }}
 									/>
-									<Text style={[styles.updateStatusText, { color: "#22c55e" }]}>
+									<Text style={[styles.updateStatusText, { color: "#34b26a" }]}>
 										{t("settings.upToDate")}
 									</Text>
 								</>
@@ -288,10 +288,10 @@ export function SettingsScreen() {
 									<Ionicons
 										name="alert-circle-outline"
 										size={17}
-										color="#ef4444"
+										color="#e5574b"
 										style={{ marginRight: 6 }}
 									/>
-									<Text style={[styles.updateStatusText, { color: "#ef4444" }]}>
+									<Text style={[styles.updateStatusText, { color: "#e5574b" }]}>
 										{t("settings.checkFailed")}
 									</Text>
 								</>
@@ -306,7 +306,7 @@ export function SettingsScreen() {
 						{isUpdatePending ? (
 							<Pressable
 								onPress={handleRestart}
-								style={[styles.updateBtn, { backgroundColor: "#22c55e" }]}
+								style={[styles.updateBtn, { backgroundColor: "#34b26a" }]}
 							>
 								<Text style={styles.updateBtnText}>
 									{t("settings.restartNow")}
@@ -335,7 +335,7 @@ export function SettingsScreen() {
 								style={[
 									styles.updateBtn,
 									{
-										backgroundColor: isDark ? "#1e3a5f" : "#e2e8f0",
+										backgroundColor: isDark ? "#2a3170" : "#e1e3ee",
 										opacity: isChecking ? 0.6 : 1,
 									},
 								]}
@@ -343,7 +343,7 @@ export function SettingsScreen() {
 								<Text
 									style={[
 										styles.updateBtnText,
-										{ color: isDark ? "#93c5fd" : "#475569" },
+										{ color: isDark ? "#a9b4f0" : "#4a4f78" },
 									]}
 								>
 									{t("settings.checkForUpdates")}
@@ -375,7 +375,7 @@ export function SettingsScreen() {
 						<View
 							style={[
 								styles.versionBadge,
-								{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+								{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
 							]}
 						>
 							<Text style={[styles.versionText, { color: primaryColor }]}>
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
 	},
 	updateBtnText: {
 		fontSize: 13,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 		color: "#ffffff",
 	},
 	infoLabel: {
