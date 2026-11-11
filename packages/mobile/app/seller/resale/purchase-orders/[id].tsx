@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { alerts } from "@/src/contexts/AlertContext";
@@ -539,7 +540,7 @@ export default function ResalePurchaseOrderDetailScreen() {
 					{action.isError ? (
 						<Text
 							accessibilityRole="alert"
-							style={[styles.error, { color: c.danger }]}
+							style={[styles.error, { color: dangerInk(c) }]}
 						>
 							{t("sellerResale.actionFailed")}
 						</Text>
@@ -621,14 +622,19 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		gap: 8,
 		justifyContent: "center",
-		minHeight: 44,
+		minHeight: 48,
 		paddingHorizontal: 14,
 	},
 	writeText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
 	safe: { flex: 1 },
 	spinner: { marginTop: 40 },
 	content: { padding: 16, gap: 12, paddingBottom: 36 },
-	card: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 10 },
+	card: {
+		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 14,
+		padding: 14,
+		gap: 10,
+	},
 	heading: { fontSize: 15, fontFamily: Fonts.displayBold },
 	body: { fontSize: 14, fontFamily: Fonts.body },
 	amount: { fontSize: 15, fontFamily: Fonts.bodySemibold },

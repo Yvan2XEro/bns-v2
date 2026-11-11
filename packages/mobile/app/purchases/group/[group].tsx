@@ -1,16 +1,13 @@
+import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
+import { fillOf, inkOf } from "@/src/components/checkout/fill";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -46,7 +43,7 @@ export default function CheckoutGroupScreen() {
 		>
 			<SellerHeader title={t("checkoutGroup.groupScreenTitle")} />
 			{query.isPending ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<OrderListSkeleton rows={3} />
 			) : query.isError || !query.data || !flow ? (
 				<EmptyState
 					illustration="notFound"
@@ -68,7 +65,10 @@ export default function CheckoutGroupScreen() {
 						ListHeaderComponent={
 							<View style={styles.header}>
 								{flow.position ? (
-									<Text style={[styles.step, { color: c.text }]}>
+									<Text
+										style={[styles.step, { color: c.text }]}
+										accessibilityRole="header"
+									>
 										{t("checkoutGroup.stepperPosition", {
 											n: flow.position.n,
 											total: flow.position.total,
@@ -119,27 +119,37 @@ function OrderCard({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const number = t("purchases.orderNumber", { number: order.orderNumber });
+	const fill = fillOf(c);
+	const ink = inkOf(c);
 
 	return (
 		<View
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
 			<View style={styles.row}>
-				<Text style={[styles.title, { color: c.text }]}>{order.shop.name}</Text>
-				<Text style={[styles.title, { color: c.text }]}>
+				<Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
+					{order.shop.name}
+				</Text>
+				<Text style={[styles.price, { color: c.text }]}>
 					{formatPrice(order.total, locale)}
 				</Text>
 			</View>
 			<Text style={[styles.meta, { color: c.muted }]}>{number}</Text>
 			{step === "paid" ? (
-				<Text style={[styles.meta, { color: c.primary }]}>
-					{t("checkoutGroup.summaryPaid", { count: 1 })}
-				</Text>
+				<View style={styles.state}>
+					<Ionicons name="checkmark-circle" size={16} color={c.successText} />
+					<Text style={[styles.stateText, { color: c.successText }]}>
+						{t("checkoutGroup.summaryPaid", { count: 1 })}
+					</Text>
+				</View>
 			) : null}
 			{step === "expired" ? (
-				<Text style={[styles.meta, { color: c.dangerText }]}>
-					{t("checkoutGroup.summaryExpired", { count: 1 })}
-				</Text>
+				<View style={styles.state}>
+					<Ionicons name="time-outline" size={16} color={c.dangerText} />
+					<Text style={[styles.stateText, { color: c.dangerText }]}>
+						{t("checkoutGroup.summaryExpired", { count: 1 })}
+					</Text>
+				</View>
 			) : null}
 			{order.payableNow ? (
 				<>
@@ -157,19 +167,17 @@ function OrderCard({
 						accessibilityLabel={t("checkoutGroup.payThisOrder", {
 							orderNumber: order.orderNumber,
 						})}
-						style={[
+						style={({ pressed }) => [
 							styles.button,
 							{
-								backgroundColor: isNext ? c.primary : c.card,
-								borderColor: c.primary,
+								backgroundColor: isNext ? fill.bg : c.card,
+								borderColor: isNext ? fill.bg : c.border,
+								opacity: pressed ? 0.85 : 1,
 							},
 						]}
 					>
 						<Text
-							style={[
-								styles.buttonText,
-								{ color: isNext ? "#fff" : c.primary },
-							]}
+							style={[styles.buttonText, { color: isNext ? fill.fg : ink }]}
 						>
 							{t("checkoutGroup.payThisOrder", {
 								orderNumber: order.orderNumber,
@@ -186,9 +194,10 @@ function OrderCard({
 				})}
 				style={styles.link}
 			>
-				<Text style={[styles.buttonText, { color: c.primary }]}>
+				<Text style={[styles.linkText, { color: ink }]}>
 					{t("checkoutGroup.viewOrder", { orderNumber: order.orderNumber })}
 				</Text>
+				<Ionicons name="chevron-forward" size={16} color={ink} />
 			</Pressable>
 		</View>
 	);
@@ -197,11 +206,11 @@ function OrderCard({
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	list: { padding: 16 },
-	header: { gap: 4, marginBottom: 12 },
-	step: { fontSize: 16, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	header: { gap: 4, marginBottom: 16 },
+	step: { fontSize: 20, lineHeight: 25, fontFamily: Fonts.displayBold },
+	meta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 	card: {
-		padding: 14,
+		padding: 16,
 		gap: 8,
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -210,15 +219,31 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
+		gap: 12,
 	},
-	title: { fontSize: 15, fontFamily: Fonts.displayBold },
+	title: { flex: 1, fontSize: 16, fontFamily: Fonts.bodySemibold },
+	price: {
+		fontSize: 18,
+		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
+	},
+	state: { flexDirection: "row", alignItems: "center", gap: 6 },
+	stateText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	button: {
-		minHeight: 44,
+		minHeight: 52,
+		marginTop: 4,
 		borderRadius: 12,
 		borderWidth: 1,
+		paddingHorizontal: 16,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	buttonText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	link: { minHeight: 44, justifyContent: "center" },
+	buttonText: { fontSize: 16, fontFamily: Fonts.bodyBold, textAlign: "center" },
+	link: {
+		minHeight: 44,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+	},
+	linkText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 });

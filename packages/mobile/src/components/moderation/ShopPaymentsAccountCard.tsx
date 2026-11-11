@@ -1,10 +1,4 @@
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formatDate } from "@/src/lib/formatDate";
 import {
@@ -16,6 +10,7 @@ import type {
 	ShopPaymentsPendingAccount,
 	ShopPaymentsSheet,
 } from "@/src/types/api";
+import { DecisionButton, ModerationCard, SectionTitle } from "./ModerationKit";
 import type { ModerationPalette, Translate } from "./theme";
 
 interface ShopPaymentsAccountCardProps {
@@ -44,50 +39,78 @@ export function ShopPaymentsAccountCard({
 	t,
 }: ShopPaymentsAccountCardProps) {
 	return (
-		<View style={{ gap: 10 }}>
-			<Text style={[styles.sectionLabel, { color: c.muted }]}>
-				{t("moderation.paymentsAccountLabel")}
-			</Text>
-			<Text style={[styles.body, { color: c.text }]}>
-				{connectedAccount
-					? `${t(CONNECTED_ACCOUNT_STATUSES[connectedAccount.status])} · ${
-							connectedAccount.lastSyncedAt
-								? formatDate(connectedAccount.lastSyncedAt)
-								: "—"
-						}`
-					: t("moderation.paymentsAccountNone")}
-			</Text>
+		<>
+			<ModerationCard>
+				<Block
+					label={t("moderation.paymentsAccountLabel")}
+					value={
+						connectedAccount
+							? `${t(CONNECTED_ACCOUNT_STATUSES[connectedAccount.status])} · ${
+									connectedAccount.lastSyncedAt
+										? formatDate(connectedAccount.lastSyncedAt)
+										: "—"
+								}`
+							: t("moderation.paymentsAccountNone")
+					}
+					c={c}
+				/>
+				<View style={[styles.rule, { backgroundColor: c.border }]} />
+				<Block
+					label={t("moderation.paymentsPayoutAccountLabel")}
+					value={
+						payoutAccount
+							? `${t(PAYOUT_METHODS[payoutAccount.method])} · ${payoutAccount.accountNumberMasked}`
+							: t("moderation.paymentsPayoutAccountNone")
+					}
+					c={c}
+				/>
+			</ModerationCard>
 
-			<Text style={[styles.sectionLabel, { color: c.muted, marginTop: 6 }]}>
-				{t("moderation.paymentsPayoutAccountLabel")}
-			</Text>
-			<Text style={[styles.body, { color: c.text }]}>
-				{payoutAccount
-					? `${t(PAYOUT_METHODS[payoutAccount.method])} · ${payoutAccount.accountNumberMasked}`
-					: t("moderation.paymentsPayoutAccountNone")}
-			</Text>
+			<View style={styles.section}>
+				<SectionTitle>
+					{t("moderation.paymentsPendingAccountsTitle")}
+				</SectionTitle>
+				{pendingAccounts.length === 0 ? (
+					<Text style={[styles.empty, { color: c.muted }]}>
+						{t("moderation.paymentsPendingAccountsEmpty")}
+					</Text>
+				) : (
+					pendingAccounts.map((account) => (
+						<PendingAccountRow
+							key={account.id}
+							account={account}
+							actionable={actionable}
+							pending={decisionPending}
+							onApprove={() => onApprove(account.id)}
+							onReject={() => onReject(account.id)}
+							c={c}
+							t={t}
+						/>
+					))
+				)}
+			</View>
+		</>
+	);
+}
 
-			<Text style={[styles.sectionLabel, { color: c.muted, marginTop: 6 }]}>
-				{t("moderation.paymentsPendingAccountsTitle")}
+function Block({
+	label,
+	value,
+	c,
+}: {
+	label: string;
+	value: string;
+	c: ModerationPalette;
+}) {
+	return (
+		<View style={styles.block}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.blockLabel, { color: c.text }]}
+			>
+				{label}
 			</Text>
-			{pendingAccounts.length === 0 ? (
-				<Text style={[styles.meta, { color: c.muted }]}>
-					{t("moderation.paymentsPendingAccountsEmpty")}
-				</Text>
-			) : (
-				pendingAccounts.map((account) => (
-					<PendingAccountRow
-						key={account.id}
-						account={account}
-						actionable={actionable}
-						pending={decisionPending}
-						onApprove={() => onApprove(account.id)}
-						onReject={() => onReject(account.id)}
-						c={c}
-						t={t}
-					/>
-				))
-			)}
+			<Text style={[styles.body, { color: c.text }]}>{value}</Text>
 		</View>
 	);
 }
@@ -110,9 +133,9 @@ function PendingAccountRow({
 	t: Translate;
 }) {
 	return (
-		<View style={[styles.row, { borderColor: c.border }]}>
-			<View style={{ flex: 1, gap: 2 }}>
-				<Text style={[styles.body, { color: c.text }]}>
+		<ModerationCard>
+			<View style={styles.block}>
+				<Text style={[styles.accountLine, { color: c.text }]}>
 					{t(PAYOUT_METHODS[account.method])} · {account.accountNumberMasked}
 				</Text>
 				{account.nameMatch ? (
@@ -122,62 +145,35 @@ function PendingAccountRow({
 				) : null}
 			</View>
 			{actionable ? (
-				<View style={{ flexDirection: "row", gap: 8 }}>
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={t("moderation.paymentsApprove")}
-						onPress={onApprove}
-						disabled={pending}
-						style={[styles.smallBtn, { backgroundColor: c.success }]}
-					>
-						{pending ? (
-							<ActivityIndicator color="#fff" size="small" />
-						) : (
-							<Text style={styles.smallBtnText}>
-								{t("moderation.paymentsApprove")}
-							</Text>
-						)}
-					</Pressable>
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={t("moderation.paymentsReject")}
+				// Both open the confirmation sheet; reject sits left, as everywhere.
+				<View style={styles.actions}>
+					<DecisionButton
+						variant="dangerOutline"
+						label={t("moderation.paymentsReject")}
 						onPress={onReject}
 						disabled={pending}
-						style={[styles.smallBtn, { backgroundColor: c.danger }]}
-					>
-						<Text style={styles.smallBtnText}>
-							{t("moderation.paymentsReject")}
-						</Text>
-					</Pressable>
+					/>
+					<DecisionButton
+						variant="approve"
+						icon="checkmark"
+						label={t("moderation.paymentsApprove")}
+						onPress={onApprove}
+						disabled={pending}
+					/>
 				</View>
 			) : null}
-		</View>
+		</ModerationCard>
 	);
 }
 
 const styles = StyleSheet.create({
-	sectionLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
-	},
-	body: { fontSize: 14, fontFamily: Fonts.body },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
-	row: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		borderWidth: StyleSheet.hairlineWidth,
-		borderRadius: 12,
-		padding: 10,
-	},
-	smallBtn: {
-		minHeight: 36,
-		borderRadius: 10,
-		paddingHorizontal: 12,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	smallBtnText: { fontSize: 12, fontFamily: Fonts.bodySemibold, color: "#fff" },
+	section: { gap: 8 },
+	block: { gap: 3 },
+	blockLabel: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.displayBold },
+	rule: { height: StyleSheet.hairlineWidth },
+	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	accountLine: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	actions: { flexDirection: "row", gap: 10 },
 });

@@ -2,10 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import type { ComponentProps } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { cityLabel, districtLabel } from "@/src/lib/sellerOrders";
 import type { OrderView } from "@/src/types/order";
+import { inkOf } from "../checkout/fill";
+import { TotalTag } from "../checkout/TotalTag";
 import { useShopTheme } from "../shop/theme";
 import { Card, purchaseText } from "./ui";
 
@@ -17,17 +20,10 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 	const money = (amount: number) => formatPrice(amount, lang);
 	const { delivery } = order;
 
-	const row = (label: string, value: string, strong = false) => (
+	const row = (label: string, value: string) => (
 		<View style={styles.amount}>
-			<Text style={[purchaseText.muted, { color: c.muted }]}>{label}</Text>
-			<Text
-				style={[
-					strong ? purchaseText.strong : purchaseText.body,
-					{ color: c.text },
-				]}
-			>
-				{value}
-			</Text>
+			<Text style={[purchaseText.body, { color: c.body }]}>{label}</Text>
+			<Text style={[styles.value, { color: c.text }]}>{value}</Text>
 		</View>
 	);
 
@@ -50,7 +46,7 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 									{ backgroundColor: c.primarySoft },
 								]}
 							>
-								<Ionicons name="cube-outline" size={22} color={c.primary} />
+								<Ionicons name="cube-outline" size={22} color={inkOf(c)} />
 							</View>
 						)}
 						<View style={styles.itemMain}>
@@ -69,7 +65,7 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 								})}
 							</Text>
 						</View>
-						<Text style={[purchaseText.strong, { color: c.text }]}>
+						<Text style={[styles.price, { color: c.text }]}>
 							{money(item.lineSubtotal)}
 						</Text>
 					</View>
@@ -79,7 +75,16 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 			<Card title={t("purchases.amounts")}>
 				{row(t("purchases.subtotal"), money(order.amounts.subtotal))}
 				{row(t("purchases.deliveryFee"), money(order.amounts.deliveryFee))}
-				{row(t("purchases.total"), money(order.amounts.total), true)}
+				<View
+					style={[styles.total, { borderTopColor: c.border }]}
+					accessible
+					accessibilityLabel={`${t("purchases.total")} ${money(order.amounts.total)}`}
+				>
+					<Text style={[styles.totalLabel, { color: c.text }]}>
+						{t("purchases.total")}
+					</Text>
+					<TotalTag amount={money(order.amounts.total)} />
+				</View>
 				<Text style={[purchaseText.muted, { color: c.muted }]}>
 					{order.paymentMethod === "cod"
 						? t("purchases.paymentCod")
@@ -152,7 +157,7 @@ function InfoLine({
 			<Ionicons
 				name={icon}
 				size={18}
-				color={c.primary}
+				color={inkOf(c)}
 				style={styles.infoIcon}
 			/>
 			<View style={styles.itemMain}>
@@ -172,5 +177,29 @@ const styles = StyleSheet.create({
 	thumb: { width: 52, height: 52, borderRadius: 12 },
 	thumbEmpty: { alignItems: "center", justifyContent: "center" },
 	itemMain: { flex: 1, minWidth: 0, gap: 2 },
-	amount: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+	amount: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		gap: 12,
+	},
+	value: {
+		fontSize: 15,
+		fontFamily: Fonts.bodySemibold,
+		fontVariant: ["tabular-nums"],
+	},
+	price: {
+		fontSize: 16,
+		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
+	},
+	total: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		gap: 12,
+		paddingTop: 12,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
+	totalLabel: { fontSize: 17, fontFamily: Fonts.displayBold },
 });

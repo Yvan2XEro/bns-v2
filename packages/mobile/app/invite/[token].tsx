@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { PhoneGate } from "@/src/components/shop/PhoneGate";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -242,7 +243,7 @@ export default function InviteScreen() {
 								accessibilityRole="button"
 								accessibilityLabel={t("invite.signIn")}
 								onPress={goSignIn}
-								style={[styles.primaryButton, { backgroundColor: c.primary }]}
+								style={[styles.primaryButton, { backgroundColor: fillOf(c) }]}
 							>
 								<Text style={styles.primaryLabel}>
 									{t("invite.signIn", { shop: invitation.shop.name })}
@@ -285,7 +286,7 @@ export default function InviteScreen() {
 								onPress={() => {
 									void onSwitchAccount();
 								}}
-								style={[styles.primaryButton, { backgroundColor: c.primary }]}
+								style={[styles.primaryButton, { backgroundColor: fillOf(c) }]}
 							>
 								<Text style={styles.primaryLabel}>
 									{t("invite.switchAccount")}
@@ -306,7 +307,7 @@ export default function InviteScreen() {
 								style={[
 									styles.primaryButton,
 									{
-										backgroundColor: c.primary,
+										backgroundColor: fillOf(c),
 										opacity: acceptMutation.isPending ? 0.7 : 1,
 									},
 								]}
@@ -326,7 +327,7 @@ export default function InviteScreen() {
 								disabled={declineMutation.isPending}
 								style={styles.linkButton}
 							>
-								<Text style={[styles.linkLabel, { color: c.danger }]}>
+								<Text style={[styles.linkLabel, { color: dangerInk(c) }]}>
 									{t("invite.decline")}
 								</Text>
 							</Pressable>
@@ -339,7 +340,7 @@ export default function InviteScreen() {
 								accessibilityRole="button"
 								accessibilityLabel={t("invite.joinedCta")}
 								onPress={goSeller}
-								style={[styles.primaryButton, { backgroundColor: c.primary }]}
+								style={[styles.primaryButton, { backgroundColor: fillOf(c) }]}
 							>
 								<Text style={styles.primaryLabel}>{t("invite.joined")}</Text>
 							</Pressable>
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	primaryLabel: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	primaryLabel: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 	linkButton: { alignItems: "center", padding: 8 },
 	linkLabel: { fontSize: 14, fontFamily: Fonts.displaySemibold },
 });

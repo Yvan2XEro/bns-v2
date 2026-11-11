@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { restrictionClearKey } from "@/src/lib/billing";
 import { useTranslation } from "@/src/lib/i18n";
@@ -32,7 +33,7 @@ export function RestrictionBanner({
 				},
 			]}
 		>
-			<Ionicons name="shield-outline" size={20} color={c.danger} />
+			<Ionicons name="shield-outline" size={20} color={dangerInk(c)} />
 			<View style={{ flex: 1, gap: 6 }}>
 				<Text style={[s.cardTitle, { color: c.dangerText }]}>
 					{t("billing.restrictedTitle")}

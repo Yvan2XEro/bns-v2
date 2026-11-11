@@ -10,7 +10,6 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
-import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useSplitPlace, useSplitQuote } from "@/src/hooks/useCheckoutGroup";
@@ -32,7 +31,9 @@ import type {
 import { CheckoutButton } from "./CheckoutButton";
 import { useAppLocale, useCheckoutFlow } from "./CheckoutProvider";
 import { DeliveryOptionCard } from "./DeliveryOptionCard";
+import { FormError } from "./FormError";
 import { PaymentMethodPicker } from "./PaymentMethodPicker";
+import { TotalTag } from "./TotalTag";
 
 /**
  * The review of a multi-shop cart: one quote, one card per group with its own
@@ -131,16 +132,17 @@ export function SplitReview({ address }: { address: AddressInput }) {
 				{methodPicker}
 				{quote.isError ? (
 					<>
-						<Text style={formStyles.error} accessibilityRole="alert">
-							{resolveErrorMessage(quote.error, t)}
-						</Text>
+						<FormError message={resolveErrorMessage(quote.error, t)} />
 						<CheckoutButton
 							label={t("checkout.retryQuote")}
 							onPress={() => requestQuote(method, picks)}
 						/>
 					</>
 				) : (
-					<ActivityIndicator color={c.primary} />
+					<ActivityIndicator
+						color={c.primary}
+						accessibilityLabel={t("checkout.loadingQuote")}
+					/>
 				)}
 			</View>
 		);
@@ -174,7 +176,10 @@ export function SplitReview({ address }: { address: AddressInput }) {
 							{ backgroundColor: c.card, borderColor: c.border },
 						]}
 					>
-						<Text style={[styles.title, { color: c.text }]}>
+						<Text
+							style={[styles.title, { color: c.text }]}
+							accessibilityRole="header"
+						>
 							{t("checkoutGroup.deliveryFor", {
 								shop: group.storefrontShop.name,
 							})}
@@ -208,7 +213,10 @@ export function SplitReview({ address }: { address: AddressInput }) {
 			ListFooterComponent={
 				<View style={{ gap: 12, marginTop: 16 }}>
 					{view.unavailableGroups.length > 0 ? (
-						<View style={{ gap: 4 }}>
+						<View
+							style={[styles.unavailable, { backgroundColor: c.dangerSoft }]}
+							accessibilityRole="alert"
+						>
 							<Text style={[styles.title, { color: c.dangerText }]}>
 								{t("checkoutGroup.unavailableTitle")}
 							</Text>
@@ -222,11 +230,16 @@ export function SplitReview({ address }: { address: AddressInput }) {
 							))}
 						</View>
 					) : null}
-					<AmountRow
-						label={t("checkoutGroup.grandTotal")}
-						value={formatPrice(view.grandTotal, locale)}
-						strong
-					/>
+					<View
+						style={[styles.grand, { borderTopColor: c.border }]}
+						accessible
+						accessibilityLabel={`${t("checkoutGroup.grandTotal")} ${formatPrice(view.grandTotal, locale)}`}
+					>
+						<Text style={[styles.grandLabel, { color: c.text }]}>
+							{t("checkoutGroup.grandTotal")}
+						</Text>
+						<TotalTag amount={formatPrice(view.grandTotal, locale)} />
+					</View>
 					<Pressable
 						onPress={() => setAccepted(!accepted)}
 						accessibilityRole="checkbox"
@@ -239,15 +252,13 @@ export function SplitReview({ address }: { address: AddressInput }) {
 							size={24}
 							color={accepted ? c.primary : c.muted}
 						/>
-						<Text style={[styles.meta, { flex: 1, color: c.text }]}>
+						<Text style={[styles.acceptText, { color: c.text }]}>
 							{t("checkout.acceptTerms")}
 						</Text>
 					</Pressable>
-					{placeError ? (
-						<Text style={formStyles.error} accessibilityRole="alert">
-							{resolveErrorMessage(placeError, t)}
-						</Text>
-					) : null}
+					<FormError
+						message={placeError ? resolveErrorMessage(placeError, t) : null}
+					/>
 					<CheckoutButton
 						label={t("checkoutGroup.placeOrders")}
 						onPress={placeOrders}
@@ -272,8 +283,17 @@ function AmountRow({
 	const c = useShopTheme();
 	return (
 		<View style={styles.row}>
-			<Text style={[styles.meta, { color: c.muted }]}>{label}</Text>
-			<Text style={[strong ? styles.title : styles.meta, { color: c.text }]}>
+			<Text
+				style={[
+					strong ? styles.strongLabel : styles.meta,
+					{ color: strong ? c.text : c.body },
+				]}
+			>
+				{label}
+			</Text>
+			<Text
+				style={[strong ? styles.strongValue : styles.value, { color: c.text }]}
+			>
 				{value}
 			</Text>
 		</View>
@@ -287,8 +307,30 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
 	},
-	title: { fontSize: 16, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	title: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	meta: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.body },
+	value: {
+		fontSize: 14,
+		fontFamily: Fonts.bodySemibold,
+		fontVariant: ["tabular-nums"],
+	},
+	strongLabel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	strongValue: {
+		fontSize: 17,
+		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
+	},
+	unavailable: { gap: 4, padding: 14, borderRadius: 14 },
+	grand: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: 12,
+		paddingTop: 14,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
+	grandLabel: { fontSize: 18, fontFamily: Fonts.displayBold, flexShrink: 1 },
+	acceptText: { flex: 1, fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
 	row: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -297,7 +339,7 @@ const styles = StyleSheet.create({
 	accept: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
-		minHeight: 44,
+		gap: 12,
+		minHeight: 48,
 	},
 });

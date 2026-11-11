@@ -7,9 +7,9 @@ Ndop is the indigo resist-dyed cloth of the Grassfields: white lozenges and dots
 
 The app takes four things from that world and nothing else:
 - **Palette.** Ndop indigo carries the shell, signage yellow marks prices and the sell action, and the neutrals are tinted indigo instead of grey.
-- **Type.** Bricolage Grotesque is the painted-sign voice, and Figtree is the working face.
+- **Type.** Outfit is the painted-sign voice, and DM Sans is the working face.
 - **Density.** Photo-led feeds, large prices, generous touch targets of 48–56pt.
-- **One signature move: the price tag.** Every price is set in Bricolage ExtraBold, ink on a yellow tag. On a card it sits on the photo; on a listing it is the largest thing on screen.
+- **One signature move: the price tag.** Every price is set in Outfit ExtraBold, ink on a yellow tag. On a card it sits on the photo; on a listing it is the largest thing on screen.
 
 Navigation, controls, sheets and gestures stay native. The world never supplies them.
 
@@ -43,15 +43,15 @@ Rules:
 
 | Style | Face | Size / line |
 |---|---|---|
-| h1 | Bricolage ExtraBold | 30 / 34, -0.8 |
-| h2 | Bricolage Bold | 23 / 28, -0.5 |
-| section title | Bricolage Bold | 20 / 25, -0.4 |
-| price (card) | Bricolage ExtraBold | 15 / 19 |
-| price (listing) | Bricolage ExtraBold | 30 / 36 |
-| body | Figtree Regular | 15 / 22 (16 in inputs and chat) |
-| label | Figtree SemiBold | 13–15 |
-| button | Figtree Bold | 16 |
-| meta | Figtree Regular | 12 / 16 |
+| h1 | Outfit ExtraBold | 30 / 34, -0.8 |
+| h2 | Outfit Bold | 23 / 28, -0.5 |
+| section title | Outfit Bold | 20 / 25, -0.4 |
+| price (card) | Outfit ExtraBold | 15 / 19 |
+| price (listing) | Outfit ExtraBold | 30 / 36 |
+| body | DM Sans Regular | 15 / 22 (16 in inputs and chat) |
+| label | DM Sans SemiBold | 13–15 |
+| button | DM Sans Bold | 16 |
+| meta | DM Sans Regular | 12 / 16 |
 
 ## Shape
 - Cards and photos: 14–16 radius. Buttons and inputs: 12. Tags and badges: 6–10.
@@ -70,7 +70,7 @@ Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.
 
 ## Alerts
 - **Toast:** news that needs no answer ("Saved", "Link copied"). It is an ink card at the top that leaves after 3–5 s and is announced to screen readers. `showSuccess` always routes here.
-- **Sheet:** only decisions and errors. One tinted tile names the kind, the title is set in Bricolage, and the actions are 52pt high. In a row, cancel sits left and the action right. Action buttons are `#2f43b5` in both themes. Never white on yellow.
+- **Sheet:** only decisions and errors. One tinted tile names the kind, the title is set in Outfit, and the actions are 52pt high. In a row, cancel sits left and the action right. Action buttons are `#2f43b5` in both themes. Never white on yellow.
 
 ## Sound and haptics
 `src/lib/feedback.ts`, one call per meaningful moment, never per tap.

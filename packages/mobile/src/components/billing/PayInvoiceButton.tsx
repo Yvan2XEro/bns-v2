@@ -1,5 +1,6 @@
 import * as WebBrowser from "expo-web-browser";
 import { ActivityIndicator, Pressable, Text } from "react-native";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { usePayInvoice } from "@/src/hooks/useBilling";
@@ -48,7 +49,7 @@ export function PayInvoiceButton({
 			accessibilityState={{ busy: pay.isPending, disabled: pay.isPending }}
 			onPress={onPay}
 			disabled={pay.isPending}
-			style={[s.button, { backgroundColor: c.primary }]}
+			style={[s.button, { backgroundColor: fillOf(c) }]}
 		>
 			{pay.isPending ? <ActivityIndicator color="#fff" /> : null}
 			<Text style={s.buttonText}>

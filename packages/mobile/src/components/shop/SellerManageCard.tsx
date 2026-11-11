@@ -24,7 +24,10 @@ export function SellerManageCard({ tiles }: { tiles: ManageTile[] }) {
 
 	return (
 		<>
-			<Text style={[styles.sectionLabel, { color: c.muted }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.sectionLabel, { color: c.text }]}
+			>
 				{t("seller.manage")}
 			</Text>
 			<View style={styles.grid}>
@@ -97,10 +100,11 @@ function Tile({
 
 const styles = StyleSheet.create({
 	sectionLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
+		fontSize: 19,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.3,
+		marginTop: 6,
 	},
 	grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
 	tile: {
@@ -109,8 +113,8 @@ const styles = StyleSheet.create({
 		flexGrow: 1,
 		gap: 4,
 		padding: 14,
-		borderRadius: 18,
-		borderWidth: 1,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
 	},
 	tileWide: { width: "100%" },
 	pressed: { opacity: 0.85 },
@@ -128,7 +132,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	tileTitle: { fontSize: 15, fontFamily: Fonts.displayBold },
-	tileBody: { fontSize: 12, fontFamily: Fonts.body, lineHeight: 16 },
+	tileBody: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	badge: {
 		minWidth: 20,
 		height: 20,

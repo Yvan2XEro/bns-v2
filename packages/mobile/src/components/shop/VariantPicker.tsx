@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
 	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	chip: {
-		minHeight: 44,
+		minHeight: 48,
 		minWidth: 44,
 		borderRadius: 12,
 		borderWidth: 1,

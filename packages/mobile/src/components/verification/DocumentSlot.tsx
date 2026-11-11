@@ -9,6 +9,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import type { UploadedVerificationDocument } from "@/src/hooks/useVerification";
@@ -209,7 +210,7 @@ export function DocumentSlot({
 			<View style={styles.headerRow}>
 				<Text style={[styles.label, { color: c.text }]}>
 					{label}
-					{required ? <Text style={{ color: c.danger }}> *</Text> : null}
+					{required ? <Text style={{ color: dangerInk(c) }}> *</Text> : null}
 				</Text>
 			</View>
 
@@ -245,7 +246,7 @@ export function DocumentSlot({
 							{document.originalFilename}
 						</Text>
 						{deleting ? (
-							<ActivityIndicator color={c.danger} size="small" />
+							<ActivityIndicator color={dangerInk(c)} size="small" />
 						) : !busy ? (
 							<Pressable
 								onPress={() => confirmDelete(document.id)}
@@ -254,7 +255,7 @@ export function DocumentSlot({
 								accessibilityRole="button"
 								accessibilityLabel={`${t("verification.documents.delete")} ${document.originalFilename}`}
 							>
-								<Ionicons name="trash-outline" size={18} color={c.danger} />
+								<Ionicons name="trash-outline" size={18} color={dangerInk(c)} />
 							</Pressable>
 						) : null}
 					</View>
@@ -302,7 +303,7 @@ export function DocumentSlot({
 			) : null}
 
 			{message ? (
-				<Text style={[styles.error, { color: c.danger }]} role="alert">
+				<Text style={[styles.error, { color: dangerInk(c) }]} role="alert">
 					{message}
 				</Text>
 			) : null}
@@ -359,7 +360,7 @@ const styles = StyleSheet.create({
 	},
 	label: { fontSize: 14, fontFamily: Fonts.bodySemibold, flex: 1 },
 	deleteButton: {
-		minHeight: 44,
+		minHeight: 48,
 		minWidth: 44,
 		alignItems: "center",
 		justifyContent: "center",
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
 		gap: 10,
 		borderRadius: 10,
 		padding: 10,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	thumb: { width: 36, height: 36, borderRadius: 8 },
 	filename: { flex: 1, fontSize: 13, fontFamily: Fonts.body },

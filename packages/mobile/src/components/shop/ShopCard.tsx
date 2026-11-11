@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
 		padding: 14,
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	name: { fontSize: 16, fontFamily: Fonts.displayBold },
 	row: { flexDirection: "row", alignItems: "center", gap: 6 },

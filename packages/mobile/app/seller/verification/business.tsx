@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { SegmentedControl } from "@/src/components/ui/SegmentedControl";
@@ -246,7 +247,7 @@ export default function BusinessVerificationScreen() {
 									{submit.isError ? (
 										<Text
 											role="alert"
-											style={[styles.submitError, { color: c.danger }]}
+											style={[styles.submitError, { color: dangerInk(c) }]}
 										>
 											{resolveErrorMessage(submit.error, t)}
 										</Text>
@@ -259,7 +260,7 @@ export default function BusinessVerificationScreen() {
 										style={[
 											styles.submit,
 											{
-												backgroundColor: c.primary,
+												backgroundColor: fillOf(c),
 												opacity: !ready || submit.isPending ? 0.5 : 1,
 											},
 										]}

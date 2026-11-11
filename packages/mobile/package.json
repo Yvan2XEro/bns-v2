@@ -14,8 +14,8 @@
 	},
 	"dependencies": {
 		"@bns/chat-client": "workspace:*",
-		"@expo-google-fonts/bricolage-grotesque": "^0.4.1",
-		"@expo-google-fonts/figtree": "^0.4.1",
+		"@expo-google-fonts/dm-sans": "^0.4.2",
+		"@expo-google-fonts/outfit": "^0.4.3",
 		"@expo/vector-icons": "^15.0.3",
 		"@hookform/resolvers": "^5.9.1",
 		"@novu/react-native": "^2.6.1",

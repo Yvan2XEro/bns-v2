@@ -77,7 +77,7 @@ export function RequirementList({
 const styles = StyleSheet.create({
 	wrap: { marginTop: 10, gap: 8 },
 	title: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
 		textTransform: "uppercase",
 		letterSpacing: 0.6,

@@ -12,9 +12,9 @@ export const formStyles = StyleSheet.create({
 	labelRow: { flexDirection: "row", justifyContent: "space-between" },
 	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	counter: { fontSize: 12, fontFamily: Fonts.body },
-	hint: { fontSize: 12, fontFamily: Fonts.body },
+	hint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	input: {
-		minHeight: 46,
+		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		paddingHorizontal: 12,
@@ -33,5 +33,6 @@ export const formStyles = StyleSheet.create({
 	},
 	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
-	error: { fontSize: 12, fontFamily: Fonts.body, color: "#d23a2e" },
+	/** Colour comes from the caller: `dangerInk(c)`, legible in both themes. */
+	error: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 });

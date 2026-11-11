@@ -122,7 +122,10 @@ export const ShareSheet = createCallable<ShareSubject, void>(
 							</View>
 						) : null}
 						<View style={styles.headText}>
-							<Text style={[styles.title, { color: c.text }]}>
+							<Text
+								style={[styles.title, { color: c.text }]}
+								accessibilityRole="header"
+							>
 								{t("share.title")}
 							</Text>
 							<Text
@@ -133,43 +136,42 @@ export const ShareSheet = createCallable<ShareSubject, void>(
 							</Text>
 						</View>
 					</View>
-					{shareChannels(facebookAppId).map((channel) => (
-						<Pressable
-							key={channel}
-							onPress={() => void run(channel)}
-							disabled={busy !== null}
-							style={({ pressed }) => [
-								styles.row,
-								{ borderColor: c.border, opacity: pressed ? 0.7 : 1 },
-							]}
-							accessibilityRole="button"
-							accessibilityLabel={t(`share.${channel}`)}
-						>
-							<View
-								style={[
-									styles.icon,
-									{ backgroundColor: `${ICONS[channel].color}1a` },
+					{shareChannels(facebookAppId).map((channel) => {
+						// The neutral channels take the theme's muted ink, so the
+						// glyph holds its contrast on the dark sheet.
+						const tint =
+							channel === "copyLink" || channel === "more"
+								? c.muted
+								: ICONS[channel].color;
+						return (
+							<Pressable
+								key={channel}
+								onPress={() => void run(channel)}
+								disabled={busy !== null}
+								style={({ pressed }) => [
+									styles.row,
+									{ borderColor: c.border, opacity: pressed ? 0.7 : 1 },
 								]}
+								accessibilityRole="button"
+								accessibilityLabel={t(`share.${channel}`)}
 							>
-								<Ionicons
-									name={ICONS[channel].name}
-									size={22}
-									color={ICONS[channel].color}
-								/>
-							</View>
-							<View style={styles.rowText}>
-								<Text style={[styles.rowTitle, { color: c.text }]}>
-									{t(`share.${channel}`)}
-								</Text>
-								<Text style={[styles.rowHint, { color: c.muted }]}>
-									{t(`share.${channel}Hint`)}
-								</Text>
-							</View>
-							{busy === channel ? (
-								<ActivityIndicator color={c.primary} />
-							) : null}
-						</Pressable>
-					))}
+								<View style={[styles.icon, { backgroundColor: `${tint}1a` }]}>
+									<Ionicons name={ICONS[channel].name} size={22} color={tint} />
+								</View>
+								<View style={styles.rowText}>
+									<Text style={[styles.rowTitle, { color: c.text }]}>
+										{t(`share.${channel}`)}
+									</Text>
+									<Text style={[styles.rowHint, { color: c.muted }]}>
+										{t(`share.${channel}Hint`)}
+									</Text>
+								</View>
+								{busy === channel ? (
+									<ActivityIndicator color={c.primary} />
+								) : null}
+							</Pressable>
+						);
+					})}
 				</View>
 			</Modal>
 		);
@@ -201,13 +203,19 @@ const styles = StyleSheet.create({
 	},
 	preview: { width: 54, height: 96, borderRadius: 8, overflow: "hidden" },
 	headText: { flex: 1, gap: 2 },
-	title: { fontFamily: Fonts.bodyBold, fontSize: 18 },
-	subtitle: { fontFamily: Fonts.body, fontSize: 14 },
+	title: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
+	},
+	subtitle: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 19 },
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
-		paddingVertical: 12,
+		minHeight: 60,
+		paddingVertical: 10,
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
 	icon: {
@@ -219,5 +227,5 @@ const styles = StyleSheet.create({
 	},
 	rowText: { flex: 1, gap: 2 },
 	rowTitle: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
-	rowHint: { fontFamily: Fonts.body, fontSize: 12 },
+	rowHint: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 17 },
 });

@@ -41,7 +41,9 @@ export function HandoverCard({
 		<View style={[styles.card, { borderColor: c.isDark ? c.border : INK }]}>
 			<View style={styles.head}>
 				<Ionicons name="key-outline" size={18} color={AMBER} />
-				<Text style={styles.title}>{t("purchases.handoverTitle")}</Text>
+				<Text style={styles.title} accessibilityRole="header">
+					{t("purchases.handoverTitle")}
+				</Text>
 				<Text style={styles.sms}>{t("purchases.handoverAlsoSms")}</Text>
 			</View>
 
@@ -136,6 +138,8 @@ export function HandoverCard({
 /** The design system's ink: the card reads as the one thing to keep safe. */
 const INK = "#12163a";
 const AMBER = "#ffc94a";
+/** The shell's muted ink: 9:1 on the ink card, where the faint grey was 4.2:1. */
+const INK_MUTED = "#b8c0ec";
 
 const styles = StyleSheet.create({
 	card: {
@@ -149,15 +153,16 @@ const styles = StyleSheet.create({
 	title: {
 		flex: 1,
 		color: "#fff",
-		fontSize: 16,
+		fontSize: 18,
+		lineHeight: 23,
 		fontFamily: Fonts.displayBold,
 	},
-	sms: { color: "#777ca3", fontSize: 12, fontFamily: Fonts.bodySemibold },
+	sms: { color: INK_MUTED, fontSize: 12, fontFamily: Fonts.bodySemibold },
 	body: {
 		color: "#c9cce0",
-		fontSize: 14,
+		fontSize: 15,
 		fontFamily: Fonts.body,
-		lineHeight: 20,
+		lineHeight: 22,
 	},
 	digits: { flexDirection: "row", gap: 8 },
 	digit: {
@@ -174,6 +179,7 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontSize: 30,
 		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
 	},
 	warningRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
 	warning: {
@@ -184,19 +190,19 @@ const styles = StyleSheet.create({
 		lineHeight: 20,
 	},
 	regenerate: {
-		minHeight: 44,
+		minHeight: 52,
 		borderRadius: 12,
 		borderWidth: 1,
-		borderColor: "#3a3f66",
+		borderColor: "#4a4f78",
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	regenerateText: {
 		color: "#fff",
-		fontSize: 15,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
-	muted: { color: "#777ca3", fontSize: 12, fontFamily: Fonts.body },
+	muted: { color: INK_MUTED, fontSize: 13, fontFamily: Fonts.body },
 	locked: { borderRadius: 12, padding: 12, gap: 6 },
 	lockedTitle: { flexDirection: "row", alignItems: "center", gap: 6 },
 });

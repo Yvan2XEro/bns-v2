@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
+import { fillOf, inkOf } from "@/src/components/checkout/fill";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { PurchaseStatusPill } from "@/src/components/purchases/PurchaseRow";
@@ -78,6 +79,7 @@ type ProblemForm = z.infer<typeof problemSchema>;
 
 export default function ReportOrderProblemScreen() {
 	const c = useShopTheme();
+	const fill = fillOf(c);
 	const { t } = useTranslation();
 	const lang = useAppLocale();
 	const params = useLocalSearchParams<{ id: string }>();
@@ -287,7 +289,7 @@ export default function ReportOrderProblemScreen() {
 						<View
 							style={[styles.orderIcon, { backgroundColor: c.primarySoft }]}
 						>
-							<Ionicons name="bag-handle-outline" size={20} color={c.primary} />
+							<Ionicons name="bag-handle-outline" size={20} color={inkOf(c)} />
 						</View>
 						<View style={{ flex: 1, minWidth: 0 }}>
 							<Text
@@ -331,6 +333,7 @@ export default function ReportOrderProblemScreen() {
 							))}
 							<Pressable
 								accessibilityRole="link"
+								style={styles.linkTarget}
 								onPress={() =>
 									caseId &&
 									router.replace({
@@ -339,7 +342,7 @@ export default function ReportOrderProblemScreen() {
 									})
 								}
 							>
-								<Text style={[styles.link, { color: c.primary }]}>
+								<Text style={[styles.link, { color: inkOf(c) }]}>
 									{t("disputes.openCase")}
 								</Text>
 							</Pressable>
@@ -401,7 +404,9 @@ export default function ReportOrderProblemScreen() {
 							)}
 						/>
 						{form.formState.errors.description ? (
-							<Text style={styles.error}>{t("disputes.descriptionError")}</Text>
+							<Text style={[styles.error, { color: c.dangerText }]}>
+								{t("disputes.descriptionError")}
+							</Text>
 						) : null}
 
 						<View style={styles.rowBetween}>
@@ -450,7 +455,9 @@ export default function ReportOrderProblemScreen() {
 							</Text>
 						) : null}
 						{evidenceError ? (
-							<Text style={styles.error}>{evidenceError}</Text>
+							<Text style={[styles.error, { color: c.dangerText }]}>
+								{evidenceError}
+							</Text>
 						) : null}
 					</View>
 
@@ -511,7 +518,7 @@ export default function ReportOrderProblemScreen() {
 							</>
 						) : null}
 						{form.formState.errors.requestedAmount ? (
-							<Text style={styles.error}>
+							<Text style={[styles.error, { color: c.dangerText }]}>
 								{t(
 									`disputes.amountError.${form.formState.errors.requestedAmount.message}`,
 								)}
@@ -563,7 +570,9 @@ export default function ReportOrderProblemScreen() {
 							</>
 						) : null}
 						{form.formState.errors.items ? (
-							<Text style={styles.error}>{t("disputes.itemsRequired")}</Text>
+							<Text style={[styles.error, { color: c.dangerText }]}>
+								{t("disputes.itemsRequired")}
+							</Text>
 						) : null}
 					</View>
 
@@ -595,7 +604,10 @@ export default function ReportOrderProblemScreen() {
 						</Text>
 					</View>
 					{submitError ? (
-						<Text accessibilityRole="alert" style={styles.error}>
+						<Text
+							accessibilityRole="alert"
+							style={[styles.error, { color: c.dangerText }]}
+						>
 							{submitError}
 						</Text>
 					) : null}
@@ -609,17 +621,20 @@ export default function ReportOrderProblemScreen() {
 					accessibilityState={{ busy }}
 					disabled={busy}
 					onPress={onSend}
-					style={[styles.button, { backgroundColor: c.primary }]}
+					style={({ pressed }) => [
+						styles.button,
+						{ backgroundColor: fill.bg, opacity: pressed ? 0.85 : 1 },
+					]}
 				>
 					{busy ? (
 						<View style={styles.busyRow}>
-							<ActivityIndicator color="#fff" />
-							<Text style={styles.buttonText}>
+							<ActivityIndicator color={fill.fg} />
+							<Text style={[styles.buttonText, { color: fill.fg }]}>
 								{caseId ? t("disputes.uploadingEvidence") : t("common.loading")}
 							</Text>
 						</View>
 					) : (
-						<Text style={styles.buttonText}>
+						<Text style={[styles.buttonText, { color: fill.fg }]}>
 							{locked && failed.length > 0
 								? t("disputes.retryUploads")
 								: t("disputes.submitReport")}
@@ -648,7 +663,7 @@ function EvidenceTile({
 			style={[
 				styles.thumb,
 				{
-					borderColor: entry.status === "failed" ? "#d23a2e" : c.border,
+					borderColor: entry.status === "failed" ? c.danger : c.border,
 					backgroundColor: c.input,
 				},
 			]}
@@ -682,7 +697,7 @@ function EvidenceTile({
 					accessibilityRole="button"
 					accessibilityLabel={t("disputes.removeEvidence")}
 					onPress={onRemove}
-					hitSlop={8}
+					hitSlop={13}
 					style={styles.thumbRemove}
 				>
 					<Ionicons name="close" size={14} color="#fff" />
@@ -724,17 +739,13 @@ function Choice({
 				styles.choice,
 				{
 					borderColor: selected ? c.primary : c.border,
-					borderWidth: selected ? 1.5 : 1,
 					backgroundColor: selected ? c.primarySoft : c.card,
+					opacity: disabled ? 0.5 : 1,
 				},
 			]}
 		>
-			<Ionicons name={mark} size={20} color={selected ? c.primary : c.muted} />
-			<Text
-				style={[styles.choiceText, { color: selected ? c.primary : c.text }]}
-			>
-				{label}
-			</Text>
+			<Ionicons name={mark} size={20} color={selected ? inkOf(c) : c.muted} />
+			<Text style={[styles.choiceText, { color: c.text }]}>{label}</Text>
 		</Pressable>
 	);
 }
@@ -747,7 +758,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 12,
 		borderRadius: 16,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		padding: 12,
 	},
 	orderIcon: {
@@ -757,12 +768,17 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	orderTitle: { fontFamily: Fonts.displayBold, fontSize: 15 },
-	orderMeta: { fontFamily: Fonts.body, fontSize: 12, marginTop: 2 },
-	card: { borderRadius: 16, borderWidth: 1, gap: 13, padding: 16 },
-	title: { fontFamily: Fonts.displaySemibold, fontSize: 17 },
-	label: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
-	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 21 },
+	orderTitle: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	orderMeta: { fontFamily: Fonts.body, fontSize: 13, marginTop: 2 },
+	card: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		gap: 12,
+		padding: 16,
+	},
+	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	label: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	choices: { gap: 8 },
 	grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	choice: {
@@ -770,27 +786,28 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 10,
 		borderRadius: 12,
+		borderWidth: 1.5,
 		minHeight: 48,
 		paddingHorizontal: 12,
 		paddingVertical: 10,
 		flexGrow: 1,
 		flexBasis: "45%",
 	},
-	choiceText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	choiceText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 15 },
 	nextRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 	nextText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 14 },
-	note: { fontFamily: Fonts.body, fontSize: 12, lineHeight: 18 },
+	note: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
 	bar: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
 	input: {
 		borderRadius: 12,
 		borderWidth: 1,
-		minHeight: 46,
+		minHeight: 48,
 		padding: 12,
 		fontFamily: Fonts.body,
 		fontSize: 15,
 	},
 	multiline: { minHeight: 150, textAlignVertical: "top" },
-	error: { color: "#d23a2e", fontFamily: Fonts.bodySemibold },
+	error: { fontFamily: Fonts.bodySemibold, fontSize: 13, lineHeight: 19 },
 	rowBetween: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -798,7 +815,12 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	counter: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
-	link: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	linkTarget: { minHeight: 44, justifyContent: "center" },
+	link: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		textDecorationLine: "underline",
+	},
 	thumbs: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	thumb: {
 		width: 76,
@@ -815,7 +837,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		backgroundColor: "rgba(18, 22, 58,0.45)",
 	},
-	thumbFailed: { backgroundColor: "rgba(220,38,38,0.55)" },
+	thumbFailed: { backgroundColor: "rgba(210, 58, 46, 0.6)" },
 	thumbDone: {
 		position: "absolute",
 		bottom: 4,
@@ -841,14 +863,14 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 		gap: 2,
 	},
-	addText: { fontFamily: Fonts.bodySemibold, fontSize: 11 },
+	addText: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
 	busyRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 	button: {
 		alignItems: "center",
-		borderRadius: 14,
+		borderRadius: 12,
 		justifyContent: "center",
 		minHeight: 52,
 		padding: 12,
 	},
-	buttonText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
+	buttonText: { fontFamily: Fonts.bodyBold, fontSize: 16 },
 });

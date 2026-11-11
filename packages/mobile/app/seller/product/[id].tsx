@@ -19,6 +19,7 @@ import { formStyles as f } from "@/src/components/seller/formStyles";
 import { ProductEditorContent } from "@/src/components/seller/ProductEditorContent";
 import { ProductFooter } from "@/src/components/seller/ProductFooter";
 import { ProductWizardContent } from "@/src/components/seller/ProductWizardContent";
+import { dangerInk } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { StepSegments } from "@/src/components/ui/StepSegments";
@@ -255,7 +256,7 @@ export default function ProductScreen() {
 			{creating ? <StepSegments count={3} current={step - 1} /> : null}
 			{readOnly ? (
 				<View style={[styles.banner, { backgroundColor: c.dangerSoft }]}>
-					<Ionicons name="ban" size={16} color={c.danger} />
+					<Ionicons name="ban" size={16} color={dangerInk(c)} />
 					<Text style={[f.hint, { color: c.dangerText, flex: 1 }]}>
 						{t("product.readOnly")}
 					</Text>

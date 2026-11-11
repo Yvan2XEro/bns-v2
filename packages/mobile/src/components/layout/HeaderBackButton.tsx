@@ -46,7 +46,7 @@ export function HeaderBackButton({
 		<Pressable
 			onPress={goBack}
 			style={[inline ? styles.inline : styles.button, style]}
-			hitSlop={inline ? 12 : 8}
+			hitSlop={inline ? 12 : 4}
 			accessibilityRole="button"
 			accessibilityLabel={
 				icon === "close" ? t("common.close") : t("common.back")
@@ -60,8 +60,8 @@ export function HeaderBackButton({
 const styles = StyleSheet.create({
 	inline: { alignItems: "center", justifyContent: "center" },
 	button: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},

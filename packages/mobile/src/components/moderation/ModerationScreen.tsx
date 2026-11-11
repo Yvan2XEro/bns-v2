@@ -44,7 +44,11 @@ export function ModerationScreen({
 					style={styles.backBtn}
 				/>
 				<View style={styles.headerText}>
-					<Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
+					<Text
+						accessibilityRole="header"
+						style={[styles.title, { color: c.text }]}
+						numberOfLines={1}
+					>
 						{title}
 					</Text>
 					{subtitle ? (
@@ -79,18 +83,29 @@ const styles = StyleSheet.create({
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 12,
-		paddingVertical: 12,
+		gap: 6,
+		minHeight: 60,
+		paddingHorizontal: 8,
+		paddingVertical: 8,
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	backBtn: {
-		width: 36,
-		height: 36,
+		width: 44,
+		height: 44,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	headerText: { flex: 1 },
-	title: { fontSize: 17, fontFamily: Fonts.displayBold },
-	subtitle: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
+	title: {
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
+		fontFamily: Fonts.displayBold,
+	},
+	subtitle: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+		marginTop: 1,
+	},
 });

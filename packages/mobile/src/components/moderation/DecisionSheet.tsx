@@ -14,6 +14,7 @@ import {
 	TextInput,
 	View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import {
@@ -23,6 +24,7 @@ import {
 } from "@/src/lib/decisionSheetForm";
 import { useTranslation } from "@/src/lib/i18n";
 import { useModerationTheme } from "./theme";
+import { tonesOf } from "./tones";
 
 export interface DecisionChoice {
 	value: string;
@@ -65,6 +67,10 @@ interface DecisionSheetProps {
  * an account, closing a report. Each of those needs some mix of a reason, a
  * duration and a free-text note, and going through the same component is what
  * keeps a moderator from meeting three different confirmation flows.
+ *
+ * The confirm button stays grey until the form is complete, and turns red
+ * only for a sanction: the colour of the button is the last thing a
+ * moderator reads before the decision leaves.
  */
 export function DecisionSheet({
 	visible,
@@ -84,7 +90,9 @@ export function DecisionSheet({
 	onClose,
 }: DecisionSheetProps) {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const sheet = useSheetPresentation();
+	const insets = useSafeAreaInsets();
 	const { t } = useTranslation();
 
 	const needsChoice = Boolean(choices?.length);
@@ -131,16 +139,23 @@ export function DecisionSheet({
 		});
 	});
 
+	const accent = destructive ? k.dangerText : k.linkText;
+	const selectedFill = destructive ? k.dangerFill : k.primaryFill;
+	const confirmFill = !ready ? k.disabledFill : selectedFill;
+
 	return (
 		<Modal
 			visible={visible}
 			transparent
 			animationType={sheet.animationType}
 			onRequestClose={onClose}
+			statusBarTranslucent
 		>
 			<Pressable
 				style={[styles.backdrop, { backgroundColor: c.overlay }]}
 				onPress={onClose}
+				accessibilityRole="button"
+				accessibilityLabel={t("common.close")}
 			/>
 			<KeyboardAvoidingView
 				behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -148,29 +163,46 @@ export function DecisionSheet({
 				pointerEvents="box-none"
 			>
 				<View
+					accessibilityViewIsModal
 					style={[
 						styles.sheet,
-						{ backgroundColor: c.card, borderColor: c.border },
+						{
+							backgroundColor: c.card,
+							borderColor: c.border,
+							paddingBottom: sheet.panel ? 20 : Math.max(insets.bottom, 12) + 8,
+						},
 						sheet.panel,
 					]}
 				>
-					<View style={styles.grabber}>
-						<View style={[styles.grabberBar, { backgroundColor: c.border }]} />
-					</View>
+					{sheet.panel ? null : (
+						<View style={styles.grabber}>
+							<View
+								style={[styles.grabberBar, { backgroundColor: c.border }]}
+							/>
+						</View>
+					)}
 
 					<View style={styles.header}>
-						<View style={{ flex: 1 }}>
-							<Text style={[styles.title, { color: c.text }]}>{title}</Text>
+						<View style={styles.flex}>
+							<Text
+								accessibilityRole="header"
+								style={[styles.title, { color: c.text }]}
+							>
+								{title}
+							</Text>
 							{subtitle ? (
-								<Text
-									style={[styles.subtitle, { color: c.muted }]}
-									numberOfLines={2}
-								>
+								<Text style={[styles.subtitle, { color: c.muted }]}>
 									{subtitle}
 								</Text>
 							) : null}
 						</View>
-						<Pressable onPress={onClose} hitSlop={10}>
+						<Pressable
+							onPress={onClose}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel={t("common.close")}
+							style={styles.closeBtn}
+						>
 							<Ionicons name="close" size={24} color={c.muted} />
 						</Pressable>
 					</View>
@@ -178,12 +210,12 @@ export function DecisionSheet({
 					<ScrollView
 						style={styles.body}
 						keyboardShouldPersistTaps="handled"
-						contentContainerStyle={{ paddingBottom: 8 }}
+						contentContainerStyle={styles.bodyContent}
 					>
 						{needsChoice ? (
-							<>
+							<View style={styles.field}>
 								{choicesLabel ? (
-									<Text style={[styles.fieldLabel, { color: c.muted }]}>
+									<Text style={[styles.fieldLabel, { color: c.text }]}>
 										{choicesLabel}
 									</Text>
 								) : null}
@@ -191,12 +223,15 @@ export function DecisionSheet({
 									control={form.control}
 									name="choice"
 									render={({ field }) => (
-										<View style={styles.choices}>
+										<View style={styles.choices} accessibilityRole="radiogroup">
 											{choices?.map((option) => {
 												const selected = field.value === option.value;
 												return (
 													<Pressable
 														key={option.value}
+														accessibilityRole="radio"
+														accessibilityState={{ checked: selected }}
+														accessibilityLabel={option.label}
 														onPress={() => field.onChange(option.value)}
 														style={[
 															styles.choice,
@@ -204,31 +239,35 @@ export function DecisionSheet({
 																backgroundColor: selected
 																	? destructive
 																		? c.dangerSoft
-																		: c.isDark
-																			? "#2a3170"
-																			: "#e3e7f8"
-																	: "transparent",
-																borderColor: selected
-																	? destructive
-																		? c.danger
-																		: c.primary
-																	: c.border,
+																		: k.selectedSoft
+																	: c.card,
+																borderColor: selected ? accent : c.border,
 																borderWidth: selected ? 2 : 1,
 															},
 														]}
 													>
 														<Text
-															style={[styles.choiceText, { color: c.text }]}
+															style={[
+																styles.choiceText,
+																{
+																	color: c.text,
+																	fontFamily: selected
+																		? Fonts.bodySemibold
+																		: Fonts.body,
+																},
+															]}
 														>
 															{option.label}
 														</Text>
-														{selected ? (
-															<Ionicons
-																name="checkmark-circle"
-																size={18}
-																color={destructive ? c.danger : c.primary}
-															/>
-														) : null}
+														<Ionicons
+															name={
+																selected
+																	? "radio-button-on"
+																	: "radio-button-off"
+															}
+															size={20}
+															color={selected ? accent : c.muted}
+														/>
 													</Pressable>
 												);
 											})}
@@ -236,48 +275,49 @@ export function DecisionSheet({
 									)}
 								/>
 								{errors.choice ? (
-									<Text style={[styles.errorText, { color: c.danger }]}>
+									<Text style={[styles.errorText, { color: k.dangerText }]}>
 										{t(errors.choice.message ?? "")}
 									</Text>
 								) : null}
-							</>
+							</View>
 						) : null}
 
 						{needsDuration ? (
-							<>
-								<Text
-									style={[
-										styles.fieldLabel,
-										{ color: c.muted, marginTop: needsChoice ? 16 : 0 },
-									]}
-								>
+							<View style={styles.field}>
+								<Text style={[styles.fieldLabel, { color: c.text }]}>
 									{durationsLabel}
 								</Text>
 								<Controller
 									control={form.control}
 									name="duration"
 									render={({ field }) => (
-										<View style={styles.durations}>
+										<View
+											style={styles.durations}
+											accessibilityRole="radiogroup"
+										>
 											{durations?.map((option) => {
 												const selected = field.value === option.value;
 												return (
 													<Pressable
 														key={String(option.value)}
+														accessibilityRole="radio"
+														accessibilityState={{ checked: selected }}
+														accessibilityLabel={option.label}
 														onPress={() => field.onChange(option.value)}
 														style={[
 															styles.duration,
 															{
 																backgroundColor: selected
-																	? c.danger
-																	: "transparent",
-																borderColor: selected ? c.danger : c.border,
+																	? selectedFill
+																	: c.card,
+																borderColor: selected ? selectedFill : c.border,
 															},
 														]}
 													>
 														<Text
 															style={[
 																styles.durationText,
-																{ color: selected ? "#fff" : c.text },
+																{ color: selected ? "#ffffff" : c.text },
 															]}
 														>
 															{option.label}
@@ -289,18 +329,16 @@ export function DecisionSheet({
 									)}
 								/>
 								{errors.duration ? (
-									<Text style={[styles.errorText, { color: c.danger }]}>
+									<Text style={[styles.errorText, { color: k.dangerText }]}>
 										{t(errors.duration.message ?? "")}
 									</Text>
 								) : null}
-							</>
+							</View>
 						) : null}
 
 						{textLabel ? (
-							<>
-								<Text
-									style={[styles.fieldLabel, { color: c.muted, marginTop: 16 }]}
-								>
+							<View style={styles.field}>
+								<Text style={[styles.fieldLabel, { color: c.text }]}>
 									{textLabel}
 								</Text>
 								<Controller
@@ -313,12 +351,13 @@ export function DecisionSheet({
 											onBlur={field.onBlur}
 											placeholder={textPlaceholder}
 											placeholderTextColor={c.muted}
+											accessibilityLabel={textLabel}
 											multiline
 											style={[
 												styles.textarea,
 												{
 													backgroundColor: c.bg,
-													borderColor: c.border,
+													borderColor: errors.text ? k.dangerText : c.border,
 													color: c.text,
 												},
 											]}
@@ -326,47 +365,58 @@ export function DecisionSheet({
 									)}
 								/>
 								{errors.text ? (
-									<Text style={[styles.errorText, { color: c.danger }]}>
+									<Text style={[styles.errorText, { color: k.dangerText }]}>
 										{t(errors.text.message ?? "")}
 									</Text>
 								) : null}
-							</>
+							</View>
 						) : null}
 					</ScrollView>
 
+					{/* Cancel left, the decision right, as in every alert sheet. */}
 					<View style={[styles.footer, { borderTopColor: c.border }]}>
 						<Pressable
 							onPress={onClose}
-							style={[styles.secondaryBtn, { borderColor: c.border }]}
+							accessibilityRole="button"
+							accessibilityLabel={t("common.cancel")}
+							style={({ pressed }) => [
+								styles.secondaryBtn,
+								{
+									borderColor: c.isDark ? "#3a4290" : "#c9cce0",
+									opacity: pressed ? 0.8 : 1,
+								},
+							]}
 						>
-							<Text style={[styles.secondaryText, { color: c.text }]}>
+							<Text style={[styles.btnText, { color: c.text }]}>
 								{t("common.cancel")}
 							</Text>
 						</Pressable>
 						<Pressable
 							onPress={submit}
 							disabled={!ready || pending}
-							style={[
+							accessibilityRole="button"
+							accessibilityLabel={confirmLabel}
+							accessibilityState={{
+								disabled: !ready || Boolean(pending),
+								busy: Boolean(pending),
+							}}
+							style={({ pressed }) => [
 								styles.confirmBtn,
 								{
-									backgroundColor: !ready
-										? c.isDark
-											? "#3a3f66"
-											: "#e1e3ee"
-										: destructive
-											? c.danger
-											: c.primary,
+									backgroundColor: confirmFill,
+									opacity: pressed ? 0.88 : 1,
 								},
 							]}
 						>
 							{pending ? (
-								<ActivityIndicator color="#fff" />
+								<ActivityIndicator color="#ffffff" />
 							) : (
 								<Text
 									style={[
-										styles.confirmText,
-										{ color: ready ? "#fff" : c.muted },
+										styles.btnText,
+										{ color: ready ? "#ffffff" : k.disabledText },
 									]}
+									numberOfLines={2}
 								>
 									{confirmLabel}
 								</Text>
@@ -380,6 +430,7 @@ export function DecisionSheet({
 }
 
 const styles = StyleSheet.create({
+	flex: { flex: 1 },
 	backdrop: {
 		position: "absolute",
 		top: 0,
@@ -395,55 +446,72 @@ const styles = StyleSheet.create({
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,
 		borderWidth: StyleSheet.hairlineWidth,
-		paddingBottom: 24,
 	},
 	grabber: { alignItems: "center", paddingTop: 8 },
 	grabberBar: { width: 40, height: 4, borderRadius: 2 },
 	header: {
 		flexDirection: "row",
 		alignItems: "flex-start",
-		gap: 12,
-		paddingHorizontal: 20,
-		paddingTop: 12,
+		gap: 8,
+		paddingLeft: 20,
+		paddingRight: 10,
+		paddingTop: 14,
 		paddingBottom: 8,
 	},
-	title: { fontSize: 18, fontFamily: Fonts.displayBold },
-	subtitle: { fontSize: 13, fontFamily: Fonts.body, marginTop: 2 },
-	body: { paddingHorizontal: 20, flexGrow: 0, flexShrink: 1 },
-	fieldLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
-		marginBottom: 8,
+	title: {
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
+		fontFamily: Fonts.displayBold,
 	},
-	errorText: { fontSize: 12, fontFamily: Fonts.body, marginTop: 6 },
+	subtitle: {
+		fontSize: 14,
+		lineHeight: 20,
+		fontFamily: Fonts.body,
+		marginTop: 4,
+	},
+	closeBtn: {
+		width: 44,
+		height: 44,
+		alignItems: "center",
+		justifyContent: "center",
+		marginTop: -8,
+	},
+	body: { paddingHorizontal: 20, flexGrow: 0, flexShrink: 1 },
+	bodyContent: { paddingTop: 4, paddingBottom: 12, gap: 20 },
+	field: { gap: 8 },
+	fieldLabel: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	errorText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodyMedium },
 	choices: { gap: 8 },
 	choice: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
+		gap: 12,
+		minHeight: 52,
 		borderRadius: 12,
 		paddingHorizontal: 14,
-		paddingVertical: 12,
+		paddingVertical: 10,
 	},
-	choiceText: { fontSize: 14, fontFamily: Fonts.body, flex: 1 },
+	choiceText: { fontSize: 15, lineHeight: 20, flex: 1 },
 	durations: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	duration: {
-		borderRadius: 999,
+		minHeight: 48,
+		justifyContent: "center",
+		borderRadius: 12,
 		borderWidth: 1.5,
 		paddingHorizontal: 16,
-		paddingVertical: 9,
 	},
-	durationText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	durationText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	textarea: {
 		borderRadius: 12,
 		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		fontSize: 14,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
+		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
-		minHeight: 88,
+		minHeight: 96,
 		textAlignVertical: "top",
 	},
 	footer: {
@@ -451,22 +519,29 @@ const styles = StyleSheet.create({
 		gap: 10,
 		paddingHorizontal: 20,
 		paddingTop: 14,
-		marginTop: 8,
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
 	secondaryBtn: {
 		flex: 1,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		borderWidth: 1.5,
-		paddingVertical: 14,
 		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 12,
 	},
-	secondaryText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	confirmBtn: {
-		flex: 2,
-		borderRadius: 14,
-		paddingVertical: 14,
+		flex: 1.6,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 14,
 	},
-	confirmText: { fontSize: 15, fontFamily: Fonts.displayBold },
+	btnText: {
+		fontSize: 16,
+		lineHeight: 20,
+		fontFamily: Fonts.bodyBold,
+		textAlign: "center",
+	},
 });

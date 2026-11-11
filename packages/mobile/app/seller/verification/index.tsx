@@ -16,6 +16,7 @@ import {
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { LevelLadder } from "@/src/components/verification/LevelLadder";
@@ -213,7 +214,7 @@ function HubFooter({
 				onPress={onPress}
 				style={[
 					styles.footerBtn,
-					{ backgroundColor: c.primary, opacity: pending ? 0.6 : 1 },
+					{ backgroundColor: fillOf(c), opacity: pending ? 0.6 : 1 },
 				]}
 			>
 				{pending ? (
@@ -257,7 +258,7 @@ function HubError({
 				accessibilityRole="button"
 				accessibilityLabel={t("common.retry")}
 				onPress={onRetry}
-				style={[styles.retryBtn, { backgroundColor: c.primary }]}
+				style={[styles.retryBtn, { backgroundColor: fillOf(c) }]}
 			>
 				<Text style={styles.retryLabel}>{t("common.retry")}</Text>
 			</Pressable>
@@ -279,16 +280,16 @@ const styles = StyleSheet.create({
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
 	footerBtn: {
-		minHeight: 50,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingHorizontal: 20,
 	},
 	footerLabel: {
 		color: "#ffffff",
-		fontSize: 15,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 	skeletonBlock: { height: 96, borderRadius: 16 },
 	errorWrap: {
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	retryBtn: {
-		minHeight: 44,
+		minHeight: 48,
 		minWidth: 44,
 		paddingHorizontal: 20,
 		borderRadius: 12,
@@ -313,8 +314,8 @@ const styles = StyleSheet.create({
 	},
 	retryLabel: {
 		color: "#ffffff",
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 	banner: {
 		flexDirection: "row",

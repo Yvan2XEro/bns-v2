@@ -5,7 +5,9 @@ import type {
 	ModerationShopTeamMember,
 	ShopActivityView,
 } from "@/src/types/api";
+import { SectionTitle } from "./ModerationKit";
 import type { ModerationPalette, Translate } from "./theme";
+import { tonesOf } from "./tones";
 
 interface ShopTeamCardProps {
 	team: ModerationShopTeamMember[];
@@ -24,33 +26,55 @@ interface ShopTeamCardProps {
 export function ShopTeamCard({ team, activity, c, t }: ShopTeamCardProps) {
 	return (
 		<>
-			<View style={{ gap: 8 }}>
-				<Text style={[styles.sectionLabel, { color: c.muted }]}>
-					{t("moderation.teamSectionTitle")}
-				</Text>
+			<View style={styles.section}>
+				<SectionTitle>{t("moderation.teamSectionTitle")}</SectionTitle>
 				{team.length === 0 ? (
-					<Text style={[styles.meta, { color: c.muted }]}>
+					<Text style={[styles.empty, { color: c.muted }]}>
 						{t("moderation.teamEmpty")}
 					</Text>
 				) : (
-					team.map((member) => (
-						<TeamMemberRow key={member.id} member={member} c={c} t={t} />
-					))
+					<View
+						style={[
+							styles.group,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						{team.map((member, index) => (
+							<TeamMemberRow
+								key={member.id}
+								member={member}
+								first={index === 0}
+								c={c}
+								t={t}
+							/>
+						))}
+					</View>
 				)}
 			</View>
 
-			<View style={{ gap: 8 }}>
-				<Text style={[styles.sectionLabel, { color: c.muted }]}>
-					{t("moderation.teamActivitySectionTitle")}
-				</Text>
+			<View style={styles.section}>
+				<SectionTitle>{t("moderation.teamActivitySectionTitle")}</SectionTitle>
 				{activity.length === 0 ? (
-					<Text style={[styles.meta, { color: c.muted }]}>
+					<Text style={[styles.empty, { color: c.muted }]}>
 						{t("moderation.teamActivityEmpty")}
 					</Text>
 				) : (
-					activity.map((entry) => (
-						<ActivityRow key={entry.id} entry={entry} c={c} t={t} />
-					))
+					<View
+						style={[
+							styles.group,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						{activity.map((entry, index) => (
+							<ActivityRow
+								key={entry.id}
+								entry={entry}
+								first={index === 0}
+								c={c}
+								t={t}
+							/>
+						))}
+					</View>
 				)}
 			</View>
 		</>
@@ -59,13 +83,16 @@ export function ShopTeamCard({ team, activity, c, t }: ShopTeamCardProps) {
 
 function TeamMemberRow({
 	member,
+	first,
 	c,
 	t,
 }: {
 	member: ModerationShopTeamMember;
+	first: boolean;
 	c: ModerationPalette;
 	t: Translate;
 }) {
+	const k = tonesOf(c);
 	const joined = formatDate(member.joinedAt, {
 		day: "numeric",
 		month: "short",
@@ -74,12 +101,13 @@ function TeamMemberRow({
 	return (
 		<View
 			style={[
-				styles.historyRow,
-				{ backgroundColor: c.card, borderColor: c.border },
+				styles.row,
+				!first && styles.divided,
+				{ borderTopColor: c.border },
 			]}
 		>
-			<View style={{ flex: 1 }}>
-				<Text style={[styles.historyAction, { color: c.text }]}>
+			<View style={styles.flex}>
+				<Text style={[styles.rowTitle, { color: c.text }]}>
 					{member.name ?? "—"}
 				</Text>
 				{joined ? (
@@ -88,12 +116,7 @@ function TeamMemberRow({
 					</Text>
 				) : null}
 			</View>
-			<View
-				style={[
-					styles.roleChip,
-					{ backgroundColor: c.bg, borderColor: c.border },
-				]}
-			>
+			<View style={[styles.roleChip, { backgroundColor: k.selectedSoft }]}>
 				<Text style={[styles.roleChipText, { color: c.text }]}>
 					{t(`moderation.teamRole_${member.role}`)}
 				</Text>
@@ -104,10 +127,12 @@ function TeamMemberRow({
 
 function ActivityRow({
 	entry,
+	first,
 	c,
 	t,
 }: {
 	entry: ShopActivityView;
+	first: boolean;
 	c: ModerationPalette;
 	t: Translate;
 }) {
@@ -115,12 +140,13 @@ function ActivityRow({
 	return (
 		<View
 			style={[
-				styles.historyRow,
-				{ backgroundColor: c.card, borderColor: c.border },
+				styles.row,
+				!first && styles.divided,
+				{ borderTopColor: c.border },
 			]}
 		>
-			<View style={{ flex: 1 }}>
-				<Text style={[styles.historyAction, { color: c.text }]}>
+			<View style={styles.flex}>
+				<Text style={[styles.rowTitle, { color: c.text }]}>
 					{t(`moderation.teamActivityAction_${entry.action.replace(".", "_")}`)}
 				</Text>
 				<Text style={[styles.meta, { color: c.muted }]}>
@@ -132,32 +158,28 @@ function ActivityRow({
 }
 
 const styles = StyleSheet.create({
-	sectionLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
+	flex: { flex: 1 },
+	section: { gap: 8 },
+	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	group: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingHorizontal: 14,
 	},
-	meta: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
-	historyRow: {
+	row: {
 		flexDirection: "row",
 		alignItems: "center",
-		borderRadius: 12,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 12,
-		minHeight: 44,
-		gap: 8,
+		gap: 10,
+		minHeight: 56,
+		paddingVertical: 10,
 	},
-	historyAction: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	divided: { borderTopWidth: StyleSheet.hairlineWidth },
+	rowTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body, marginTop: 1 },
 	roleChip: {
-		borderRadius: 999,
-		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 8,
 		paddingHorizontal: 10,
 		paddingVertical: 4,
 	},
-	roleChipText: {
-		fontSize: 11,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-	},
+	roleChipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 });

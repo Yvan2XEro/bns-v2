@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	targetText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 });

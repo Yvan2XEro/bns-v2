@@ -21,6 +21,8 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
+import { fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { alerts } from "@/src/contexts/AlertContext";
@@ -93,7 +95,7 @@ export default function ResaleCatalogueScreen() {
 	if (shopLoading || !shop) {
 		return (
 			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<ListSkeleton />
 			</SafeAreaView>
 		);
 	}
@@ -306,7 +308,7 @@ function TermsCard({
 				style={[
 					styles.primaryButton,
 					{
-						backgroundColor: c.primary,
+						backgroundColor: fillOf(c),
 						opacity: accepted && version && !loading ? 1 : 0.55,
 					},
 				]}
@@ -430,7 +432,7 @@ function CatalogueProductCard({
 					style={[
 						styles.primaryButton,
 						{
-							backgroundColor: c.primary,
+							backgroundColor: fillOf(c),
 							opacity: product.linkStatus === "requested" ? 0.55 : 1,
 						},
 					]}
@@ -459,7 +461,7 @@ function CatalogueProductCard({
 						style={[
 							styles.primaryButton,
 							{
-								backgroundColor: c.primary,
+								backgroundColor: fillOf(c),
 								opacity: isPending || product.variants.length === 0 ? 0.55 : 1,
 							},
 						]}
@@ -559,7 +561,7 @@ const styles = StyleSheet.create({
 		marginHorizontal: 16,
 		marginTop: 12,
 		paddingHorizontal: 12,
-		minHeight: 46,
+		minHeight: 48,
 	},
 	searchInput: {
 		flex: 1,
@@ -575,7 +577,7 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		marginHorizontal: 16,
 		marginTop: 10,
-		minHeight: 44,
+		minHeight: 48,
 		paddingHorizontal: 14,
 	},
 	ordersText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
@@ -607,7 +609,7 @@ const styles = StyleSheet.create({
 		borderRadius: 9,
 		borderWidth: 1,
 		fontFamily: Fonts.bodyMedium,
-		minHeight: 42,
+		minHeight: 48,
 		paddingHorizontal: 10,
 		textAlign: "right",
 		width: "100%",
@@ -621,10 +623,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		borderRadius: 10,
 		justifyContent: "center",
-		minHeight: 44,
+		minHeight: 48,
 		paddingHorizontal: 14,
 	},
-	primaryText: { color: "#fff", fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	primaryText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
 	terms: {
 		borderRadius: 14,
 		borderWidth: 1,
@@ -644,6 +646,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		flexDirection: "row",
 		gap: 8,
-		minHeight: 44,
+		minHeight: 48,
 	},
 });

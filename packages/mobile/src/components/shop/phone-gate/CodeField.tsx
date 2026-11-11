@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 import { type Control, Controller, type FieldError } from "react-hook-form";
 import { Pressable, Text, TextInput, View } from "react-native";
+import { dangerInk } from "@/src/components/shop/ink";
 import { formatCountdown } from "@/src/lib/countdown";
 import { useTranslation } from "@/src/lib/i18n";
 import { useShopTheme } from "../theme";
@@ -67,7 +68,7 @@ export function CodeField({
 				)}
 			/>
 			{error ? (
-				<Text style={[fieldStyles.hint, { color: c.danger }]}>
+				<Text style={[fieldStyles.hint, { color: dangerInk(c) }]}>
 					{error.message}
 				</Text>
 			) : null}

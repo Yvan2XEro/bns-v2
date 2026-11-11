@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useIsSellerTabRoot } from "@/src/contexts/SellerTabRootContext";
 import { useTranslation } from "@/src/lib/i18n";
 import { shopUrlLabel } from "@/src/lib/shopHandle";
@@ -9,10 +9,16 @@ import type { MyShop } from "@/src/types/api";
 import { ShopAvatar } from "./ShopAvatar";
 import { useShopTheme } from "./theme";
 
-/** The hub's header band: dark in both themes, like the design's seller space. */
-export const HUB_HEADER_BG = "#12163a";
+/**
+ * The hub's header band is the Ndop shell, as on the buyer's home header: the
+ * seller hub is the home of the seller space (DESIGN.md, Colour rules).
+ */
+export function useHubHeaderBg(): string {
+	return useShopTheme().isDark ? Colors.dark.shell : Colors.light.shell;
+}
 const ON_DARK = "#ffffff";
-const ON_DARK_MUTED = "#a9b4f0";
+/** Shell ink for anything set on the yellow share plaque. */
+const ON_SUN = Colors.light.sunForeground;
 
 /**
  * The seller hub's bar — back, avatar, shop name, public page. Distinct from
@@ -23,9 +29,13 @@ const ON_DARK_MUTED = "#a9b4f0";
 export function SellerHubBar({ shop }: { shop: MyShop }) {
 	const { t } = useTranslation();
 	const tabRoot = useIsSellerTabRoot();
+	const bg = useHubHeaderBg();
+	const onDarkMuted = useShopTheme().isDark
+		? Colors.dark.shellMuted
+		: Colors.light.shellMuted;
 
 	return (
-		<View style={[styles.bar, { backgroundColor: HUB_HEADER_BG }]}>
+		<View style={[styles.bar, { backgroundColor: bg }]}>
 			<View style={styles.topRow}>
 				{tabRoot ? null : (
 					<Pressable
@@ -49,10 +59,14 @@ export function SellerHubBar({ shop }: { shop: MyShop }) {
 					radius={12}
 				/>
 				<View style={{ flex: 1 }}>
-					<Text style={[styles.shopName, { color: ON_DARK }]} numberOfLines={1}>
+					<Text
+						accessibilityRole="header"
+						style={[styles.shopName, { color: ON_DARK }]}
+						numberOfLines={1}
+					>
 						{shop.name}
 					</Text>
-					<Text style={[styles.meta, { color: ON_DARK_MUTED }]}>
+					<Text style={[styles.meta, { color: onDarkMuted }]}>
 						{t("seller.space")}
 					</Text>
 				</View>
@@ -82,12 +96,16 @@ export function SellerHubLinkCard({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const bg = useHubHeaderBg();
+	const onDarkMuted = c.isDark
+		? Colors.dark.shellMuted
+		: Colors.light.shellMuted;
 
 	return (
-		<View style={[styles.band, { backgroundColor: HUB_HEADER_BG }]}>
+		<View style={[styles.band, { backgroundColor: bg }]}>
 			<View style={styles.linkCard}>
 				<View style={{ flex: 1 }}>
-					<Text style={[styles.meta, { color: ON_DARK_MUTED }]}>
+					<Text style={[styles.meta, { color: onDarkMuted }]}>
 						{t("seller.publicPage")}
 					</Text>
 					<Text style={[styles.link, { color: ON_DARK }]} numberOfLines={1}>
@@ -100,11 +118,7 @@ export function SellerHubLinkCard({
 					accessibilityRole="button"
 					accessibilityLabel={t("shop.shareLabel", { name: shop.name })}
 				>
-					<Ionicons
-						name="share-social-outline"
-						size={16}
-						color={HUB_HEADER_BG}
-					/>
+					<Ionicons name="share-social-outline" size={16} color={ON_SUN} />
 					<Text style={styles.shareText}>{t("seller.share")}</Text>
 				</Pressable>
 			</View>
@@ -117,8 +131,8 @@ const styles = StyleSheet.create({
 	band: { paddingHorizontal: 16, paddingBottom: 16 },
 	topRow: { flexDirection: "row", alignItems: "center", gap: 12 },
 	iconHit: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -144,11 +158,11 @@ const styles = StyleSheet.create({
 		borderRadius: 10,
 		paddingHorizontal: 12,
 		paddingVertical: 8,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	shareText: {
-		color: HUB_HEADER_BG,
-		fontSize: 13,
-		fontFamily: Fonts.bodySemibold,
+		color: ON_SUN,
+		fontSize: 14,
+		fontFamily: Fonts.bodyBold,
 	},
 });

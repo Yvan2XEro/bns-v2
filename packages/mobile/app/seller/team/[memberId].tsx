@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -198,7 +199,7 @@ export default function MemberDetailScreen() {
 								accessibilityLabel={t("team.remove")}
 								style={[styles.removeBtn, { borderColor: c.danger }]}
 							>
-								<Text style={[styles.removeText, { color: c.danger }]}>
+								<Text style={[styles.removeText, { color: dangerInk(c) }]}>
 									{t("team.remove")}
 								</Text>
 							</Pressable>
@@ -267,11 +268,16 @@ const styles = StyleSheet.create({
 		marginTop: 4,
 	},
 	chipText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
-	card: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
+	card: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 14,
+		gap: 10,
+	},
 	cardTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	roleRow: { flexDirection: "row", gap: 8 },
 	roleChip: {
-		minHeight: 44,
+		minHeight: 48,
 		paddingHorizontal: 16,
 		borderRadius: 999,
 		borderWidth: 1,
@@ -280,7 +286,7 @@ const styles = StyleSheet.create({
 	},
 	roleChipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	removeBtn: {
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
@@ -289,7 +295,7 @@ const styles = StyleSheet.create({
 	removeText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	activitySection: { gap: 8 },
 	activityRow: {
-		minHeight: 44,
+		minHeight: 48,
 		padding: 12,
 		borderRadius: 14,
 		borderWidth: 1,

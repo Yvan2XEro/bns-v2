@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -39,7 +40,10 @@ export function BuyerCard({ order }: { order: OrderView }) {
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
 			<View style={styles.head}>
-				<Text style={[styles.title, { color: c.text }]}>
+				<Text
+					accessibilityRole="header"
+					style={[styles.title, { color: c.text }]}
+				>
 					{delivery.method === "pickup"
 						? t("sellerOrders.pickupBlock")
 						: t("sellerOrders.deliveryBlock")}
@@ -65,7 +69,7 @@ export function BuyerCard({ order }: { order: OrderView }) {
 						onPress={() => Linking.openURL(tel)}
 						accessibilityRole="link"
 						accessibilityLabel={t("sellerOrders.callBuyer")}
-						style={[styles.button, { backgroundColor: c.primary }]}
+						style={[styles.button, { backgroundColor: fillOf(c) }]}
 					>
 						<Ionicons name="call" size={18} color="#fff" />
 						<Text style={[styles.buttonText, { color: "#fff" }]}>
@@ -96,26 +100,36 @@ export function BuyerCard({ order }: { order: OrderView }) {
 }
 
 const styles = StyleSheet.create({
-	card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
+	card: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 14,
+		gap: 10,
+	},
 	head: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
 		gap: 8,
 	},
-	title: { fontSize: 16, fontFamily: Fonts.displayBold },
+	title: {
+		flex: 1,
+		fontSize: 18,
+		lineHeight: 23,
+		fontFamily: Fonts.displayBold,
+	},
 	row: { gap: 2 },
-	label: { fontSize: 12, fontFamily: Fonts.body },
-	value: { fontSize: 14, fontFamily: Fonts.bodyMedium },
+	label: { fontSize: 12, fontFamily: Fonts.bodyMedium },
+	value: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodyMedium },
 	hint: { fontSize: 12, fontFamily: Fonts.body },
 	buttons: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	button: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
-		minHeight: 44,
+		minHeight: 48,
 		paddingHorizontal: 14,
 		borderRadius: 12,
 	},
-	buttonText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	buttonText: { fontSize: 15, fontFamily: Fonts.bodyBold },
 });

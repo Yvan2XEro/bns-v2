@@ -1,20 +1,15 @@
 import { Image } from "expo-image";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useDocumentUrl } from "@/src/hooks/useModerationVerification";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ModerationVerificationDetail } from "@/src/types/api";
+import { DecisionButton, InlineNotice, ModerationCard } from "./ModerationKit";
 import { useModerationTheme } from "./theme";
+import { tonesOf } from "./tones";
 
 type DocumentMeta =
 	ModerationVerificationDetail["request"]["documents"][number];
@@ -29,6 +24,7 @@ type DocumentMeta =
  */
 export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
 	const [activeId, setActiveId] = useState<string | null>(
 		documents[0]?.id ?? null,
@@ -55,14 +51,12 @@ export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 	if (documents.length === 0) return null;
 
 	return (
-		<View
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-		>
-			<Text style={[styles.title, { color: c.text }]}>
-				{t("moderation.verifDocumentsTitle")}
-			</Text>
-
-			<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+		<ModerationCard title={t("moderation.verifDocumentsTitle")}>
+			<ScrollView
+				horizontal
+				showsHorizontalScrollIndicator={false}
+				accessibilityRole="tablist"
+			>
 				<View style={styles.chips}>
 					{documents.map((doc) => {
 						const selected = doc.id === activeId;
@@ -72,22 +66,27 @@ export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 						return (
 							<Pressable
 								key={doc.id}
-								accessibilityRole="button"
+								accessibilityRole="tab"
 								accessibilityLabel={label}
 								accessibilityState={{ selected }}
 								onPress={() => selectDocument(doc.id)}
 								style={[
 									styles.chip,
 									{
-										backgroundColor: selected ? c.primary : "transparent",
-										borderColor: selected ? c.primary : c.border,
+										backgroundColor: selected ? k.selectedSoft : c.card,
+										borderColor: selected ? k.linkText : c.border,
 									},
 								]}
 							>
 								<Text
 									style={[
 										styles.chipText,
-										{ color: selected ? "#fff" : c.text },
+										{
+											color: selected ? k.linkText : c.text,
+											fontFamily: selected
+												? Fonts.bodyBold
+												: Fonts.bodySemibold,
+										},
 									]}
 								>
 									{label}
@@ -99,45 +98,32 @@ export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 			</ScrollView>
 
 			{active?.purgedAt ? (
-				<Text
-					style={[styles.purged, { color: c.muted, backgroundColor: c.bg }]}
-				>
-					{t("moderation.verifDocumentPurged")}
-				</Text>
+				<InlineNotice
+					tone="neutral"
+					text={t("moderation.verifDocumentPurged")}
+				/>
 			) : null}
 
 			{active && !active.purgedAt && !documentUrl.data ? (
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel={t("moderation.verifDocumentView")}
-					disabled={documentUrl.isPending}
+				// Every open is logged, so it is an explicit, labelled tap.
+				<DecisionButton
+					variant="secondary"
+					icon="eye-outline"
+					label={t("moderation.verifDocumentView")}
 					onPress={view}
-					style={[styles.viewBtn, { backgroundColor: c.primary }]}
-				>
-					{documentUrl.isPending ? (
-						<ActivityIndicator color="#fff" />
-					) : (
-						<Text style={styles.viewBtnText}>
-							{t("moderation.verifDocumentView")}
-						</Text>
-					)}
-				</Pressable>
+					pending={documentUrl.isPending}
+					grow={0}
+				/>
 			) : null}
 
 			{documentUrl.isError ? (
-				<Text
-					accessibilityRole="alert"
-					style={[
-						styles.error,
-						{ color: c.danger, backgroundColor: c.dangerSoft },
-					]}
-				>
-					{resolveErrorMessage(
+				<InlineNotice
+					text={resolveErrorMessage(
 						documentUrl.error,
 						t,
 						t("moderation.verifDocumentViewFailed"),
 					)}
-				</Text>
+				/>
 			) : null}
 
 			{documentUrl.data &&
@@ -146,7 +132,7 @@ export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 				<Image
 					source={{ uri: documentUrl.data.url }}
 					cachePolicy="none"
-					style={styles.preview}
+					style={[styles.preview, { backgroundColor: c.bg }]}
 					contentFit="contain"
 					accessibilityLabel={
 						active.kind
@@ -155,46 +141,20 @@ export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 					}
 				/>
 			) : null}
-		</View>
+		</ModerationCard>
 	);
 }
 
 const styles = StyleSheet.create({
-	card: {
-		borderRadius: 14,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 14,
-		gap: 12,
-	},
-	title: { fontSize: 15, fontFamily: Fonts.displayBold },
 	chips: { flexDirection: "row", gap: 8 },
 	chip: {
-		borderRadius: 999,
+		borderRadius: 12,
 		borderWidth: 1.5,
 		paddingHorizontal: 14,
 		minHeight: 44,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	purged: {
-		fontSize: 13,
-		fontFamily: Fonts.body,
-		borderRadius: 10,
-		padding: 10,
-	},
-	viewBtn: {
-		minHeight: 44,
-		borderRadius: 12,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	viewBtnText: { fontSize: 14, fontFamily: Fonts.bodySemibold, color: "#fff" },
-	error: {
-		fontSize: 13,
-		fontFamily: Fonts.body,
-		borderRadius: 10,
-		padding: 10,
-	},
-	preview: { width: "100%", height: 320, borderRadius: 12 },
+	chipText: { fontSize: 14 },
+	preview: { width: "100%", height: 360, borderRadius: 12 },
 });

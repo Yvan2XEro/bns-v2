@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk } from "@/src/components/shop/ink";
 import { ShopBrandingCard } from "@/src/components/shop/manage/ShopBrandingCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -55,7 +56,10 @@ export default function ShopSettingsScreen() {
 
 					{groups.map((group) => (
 						<View key={group.titleKey} style={styles.group}>
-							<Text style={[styles.groupTitle, { color: c.muted }]}>
+							<Text
+								accessibilityRole="header"
+								style={[styles.groupTitle, { color: c.muted }]}
+							>
 								{t(group.titleKey)}
 							</Text>
 							<View
@@ -143,7 +147,9 @@ function SettingsRowButton({
 		>
 			{danger ? (
 				<View style={styles.dangerText}>
-					<Text style={[styles.rowLabel, { color: c.danger }]}>{label}</Text>
+					<Text style={[styles.rowLabel, { color: dangerInk(c) }]}>
+						{label}
+					</Text>
 					<Text style={[styles.rowHint, { color: c.muted }]} numberOfLines={2}>
 						{value}
 					</Text>
@@ -151,10 +157,7 @@ function SettingsRowButton({
 			) : (
 				<>
 					<Text style={[styles.rowLabel, { color: c.text }]}>{label}</Text>
-					<Text
-						style={[styles.rowValue, { color: row.value ? c.muted : c.border }]}
-						numberOfLines={1}
-					>
+					<Text style={[styles.rowValue, { color: c.muted }]} numberOfLines={1}>
 						{value}
 					</Text>
 				</>

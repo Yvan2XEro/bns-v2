@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/src/components/EmptyState";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
+import { SkeletonConversationRow } from "@/src/components/SkeletonCard";
 import { InboxFilterChips } from "@/src/components/shop/inbox/InboxFilterChips";
 import { InboxRow } from "@/src/components/shop/inbox/InboxRow";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -87,7 +88,14 @@ export function SellerInboxList({ selectedId, onOpen }: SplitListProps) {
 			<InboxFilterChips active={filter} totals={totals} onChange={setFilter} />
 
 			{inbox.isLoading ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<View
+					accessibilityLabel={t("common.loading")}
+					accessibilityState={{ busy: true }}
+				>
+					{[0, 1, 2, 3, 4, 5].map((i) => (
+						<SkeletonConversationRow key={i} />
+					))}
+				</View>
 			) : inbox.isError ? (
 				<EmptyState
 					icon="cloud-offline-outline"
@@ -119,6 +127,7 @@ export function SellerInboxList({ selectedId, onOpen }: SplitListProps) {
 							refreshing={inbox.isRefetching && !inbox.isFetchingNextPage}
 							onRefresh={() => inbox.refetch()}
 							tintColor={c.primary}
+							colors={[c.primary]}
 						/>
 					}
 					onEndReached={() =>

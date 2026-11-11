@@ -1,7 +1,15 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Redirect, router } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import {
+	ActivityIndicator,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
 import { CheckoutGate } from "@/src/components/checkout/CheckoutGate";
 import { CheckoutHeader } from "@/src/components/checkout/CheckoutHeader";
@@ -10,6 +18,7 @@ import {
 	useCheckoutFlow,
 } from "@/src/components/checkout/CheckoutProvider";
 import { DeliveryOptionCard } from "@/src/components/checkout/DeliveryOptionCard";
+import { FormError } from "@/src/components/checkout/FormError";
 import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPicker";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { formStyles } from "@/src/components/seller/formStyles";
@@ -88,7 +97,10 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 	return (
 		<ScreenColumn width="reading">
 			<ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-				<Text style={[formStyles.sectionTitle, { color: c.text }]}>
+				<Text
+					style={[styles.title, { color: c.text }]}
+					accessibilityRole="header"
+				>
 					{t("checkout.deliveryOptions")}
 				</Text>
 				{protectedPaymentEnabled ? (
@@ -103,22 +115,40 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 					/>
 				) : null}
 				{options.isPending ? (
-					<View style={formStyles.row}>
+					<View
+						style={formStyles.row}
+						accessibilityRole="progressbar"
+						accessibilityLabel={t("checkout.loadingOptions")}
+					>
 						<ActivityIndicator color={c.primary} />
-						<Text style={[formStyles.hint, { color: c.muted }]}>
+						<Text style={[styles.body, { color: c.muted }]}>
 							{t("checkout.loadingOptions")}
 						</Text>
 					</View>
 				) : null}
 				{options.error ? (
-					<Text style={formStyles.error} accessibilityRole="alert">
-						{resolveErrorMessage(options.error, t)}
-					</Text>
+					<View style={{ gap: 10 }}>
+						<FormError message={resolveErrorMessage(options.error, t)} />
+						<CheckoutButton
+							variant="outline"
+							icon="refresh"
+							label={t("common.retry")}
+							onPress={() => void options.refetch()}
+						/>
+					</View>
 				) : null}
 				{options.isSuccess && list.length === 0 ? (
-					<Text style={[formStyles.hint, { color: c.body }]}>
-						{t("checkout.noDeliveryOptions")}
-					</Text>
+					<View
+						style={[
+							styles.empty,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Ionicons name="bicycle-outline" size={22} color={c.muted} />
+						<Text style={[styles.body, { color: c.body, flex: 1 }]}>
+							{t("checkout.noDeliveryOptions")}
+						</Text>
+					</View>
 				) : null}
 				<View accessibilityRole="radiogroup" style={{ gap: 12 }}>
 					{list.map((option) => (
@@ -135,7 +165,7 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 				{options.data?.unavailable.map((option, index) => (
 					<Text
 						key={`${option.method}-${index}`}
-						style={[formStyles.hint, { color: c.warningText }]}
+						style={[styles.note, { color: c.warningText }]}
 					>
 						{t(`checkout.deliveryUnavailable.${option.reason}`, {
 							amount: formatPrice(option.minOrderSubtotal ?? 0, i18n.language),
@@ -159,3 +189,17 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 		</ScreenColumn>
 	);
 }
+
+const styles = StyleSheet.create({
+	title: { fontSize: 20, lineHeight: 25, fontFamily: Fonts.displayBold },
+	body: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
+	note: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.bodyMedium },
+	empty: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		padding: 16,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
+});

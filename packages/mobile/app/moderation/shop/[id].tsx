@@ -1,12 +1,16 @@
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import {
 	type DecisionChoice,
 	type DecisionDuration,
 	DecisionSheet,
 } from "@/src/components/moderation/DecisionSheet";
+import {
+	DetailSkeleton,
+	LoadError,
+} from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { ShopActionBar } from "@/src/components/moderation/ShopActionBar";
 import { ShopHistoryList } from "@/src/components/moderation/ShopHistoryList";
@@ -74,7 +78,7 @@ export default function ModerateShopScreen() {
 	const [suspending, setSuspending] = useState(false);
 	const [paymentsSheet, setPaymentsSheet] = useState<PaymentsSheetState>(null);
 
-	const { data, isLoading } = useModerationShop(id);
+	const { data, isLoading, isError, error, refetch } = useModerationShop(id);
 	const { mutate: suspend, isPending: suspendPending } = useSuspendShop();
 	const { mutate: unsuspend, isPending: liftPending } = useUnsuspendShop();
 	const { mutate: holdPayouts, isPending: holdPending } = useHoldShopPayouts();
@@ -301,16 +305,17 @@ export default function ModerateShopScreen() {
 
 	return (
 		<ModerationScreen title={t("moderation.shopTitle")} subtitle={shop?.name}>
-			{isLoading || !data || !shop || !owner || !suspension ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+			{isLoading ? (
+				<DetailSkeleton />
+			) : isError || !data || !shop || !owner || !suspension ? (
+				<LoadError
+					title={t("common.error")}
+					message={error ? resolveErrorMessage(error, t) : undefined}
+					onRetry={() => void refetch()}
+				/>
 			) : (
 				<>
-					<ScrollView
-						contentContainerStyle={[
-							{ padding: 16, gap: 14, paddingBottom: 24 },
-							centeredContent,
-						]}
-					>
+					<ScrollView contentContainerStyle={[styles.content, centeredContent]}>
 						<ShopIdentityCard
 							shop={shop}
 							owner={owner}
@@ -417,3 +422,7 @@ export default function ModerateShopScreen() {
 		</ModerationScreen>
 	);
 }
+
+const styles = StyleSheet.create({
+	content: { padding: 16, gap: 14, paddingBottom: 24 },
+});

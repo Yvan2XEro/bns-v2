@@ -8,6 +8,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -93,7 +94,10 @@ export function FieldError({ message }: { message: string | undefined }) {
 	const c = useShopTheme();
 	if (!message) return null;
 	return (
-		<Text accessibilityRole="alert" style={[styles.error, { color: c.danger }]}>
+		<Text
+			accessibilityRole="alert"
+			style={[styles.error, { color: dangerInk(c) }]}
+		>
 			{message}
 		</Text>
 	);
@@ -117,8 +121,8 @@ export function SheetButton({
 }) {
 	const c = useShopTheme();
 	const filled = tone !== "secondary" && !(outline && tone === "danger");
-	const bg = !filled ? c.card : tone === "danger" ? c.danger : c.primary;
-	const fg = filled ? "#fff" : tone === "danger" ? c.danger : c.primary;
+	const bg = !filled ? c.card : tone === "danger" ? c.danger : fillOf(c);
+	const fg = filled ? "#fff" : tone === "danger" ? dangerInk(c) : c.link;
 	return (
 		<Pressable
 			onPress={onPress}
@@ -169,12 +173,12 @@ const styles = StyleSheet.create({
 	},
 	error: { fontSize: 13, fontFamily: Fonts.bodyMedium },
 	button: {
-		minHeight: 48,
+		minHeight: 52,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingHorizontal: 16,
 	},
-	buttonText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	buttonText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

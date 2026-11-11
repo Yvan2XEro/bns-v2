@@ -35,7 +35,7 @@ export function TeamLimitMeter({ team }: { team: TeamView }) {
 const styles = StyleSheet.create({
 	card: {
 		borderRadius: 16,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		padding: 14,
 		marginBottom: 12,
 	},

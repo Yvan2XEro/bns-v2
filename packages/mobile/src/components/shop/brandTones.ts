@@ -72,20 +72,27 @@ function mixHex(a: string, b: string, weightOfB: number): string {
 }
 
 /**
- * The seller screens' `primary` in the shop's colour. It fills buttons under
- * white text and colours links on the page, so it is the shop's text tone
- * darkened until white reads on it (4.5:1 in light, 3:1 in dark, the platform
- * blue's own compromise there).
+ * The seller screens' `primary` in the shop's colour. It colours links and
+ * rails on the page, so it is the shop's text tone darkened until white reads
+ * on it (4.5:1 in light, 3:1 in dark, the platform blue's own compromise
+ * there). `fill`, the colour behind a white button label, keeps darkening to
+ * 4.5:1 in both themes: a 16pt label is body text, not large text.
  */
 export function sellerBrandPalette(
 	theme: ShopTheme,
 	scheme: "light" | "dark",
-): { primary: string; primarySoft: string } {
+): { primary: string; primarySoft: string; fill: string } {
 	const tones = scheme === "dark" ? theme.dark : theme.light;
-	const target = scheme === "dark" ? 3 : 4.5;
-	let primary = tones.accentText;
-	for (let step = 1; step <= 20 && contrast(primary, WHITE) < target; step++) {
-		primary = mixHex(tones.accentText, INK, step / 20);
-	}
-	return { primary, primarySoft: tones.accentSoft };
+	const darkenTo = (target: number) => {
+		let tone = tones.accentText;
+		for (let step = 1; step <= 20 && contrast(tone, WHITE) < target; step++) {
+			tone = mixHex(tones.accentText, INK, step / 20);
+		}
+		return tone;
+	};
+	return {
+		primary: darkenTo(scheme === "dark" ? 3 : 4.5),
+		primarySoft: tones.accentSoft,
+		fill: darkenTo(4.5),
+	};
 }

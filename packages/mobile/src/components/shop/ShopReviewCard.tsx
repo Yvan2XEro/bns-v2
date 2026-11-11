@@ -61,7 +61,12 @@ export function ShopReviewCard({ review }: { review: PublicShopReview }) {
 }
 
 const styles = StyleSheet.create({
-	card: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 10 },
+	card: {
+		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 14,
+		padding: 14,
+		marginBottom: 10,
+	},
 	head: { flexDirection: "row", alignItems: "center", gap: 8 },
 	stars: { flexDirection: "row", gap: 1 },
 	name: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },

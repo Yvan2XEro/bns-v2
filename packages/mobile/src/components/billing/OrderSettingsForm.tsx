@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { ComponentProps } from "react";
 import { Controller, type FieldPath, useForm } from "react-hook-form";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useUpdateOrderSettings } from "@/src/hooks/useOrderSettings";
@@ -170,7 +171,7 @@ export function OrderSettingsForm({
 					style={[
 						s.button,
 						{
-							backgroundColor: c.primary,
+							backgroundColor: fillOf(c),
 							opacity: !formState.isDirty || save.isPending ? 0.5 : 1,
 						},
 					]}

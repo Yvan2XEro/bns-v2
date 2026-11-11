@@ -36,39 +36,52 @@ export function DeliveryOptionCard({
 			onPress={onSelect}
 			disabled={!selectable}
 			accessibilityRole="radio"
-			accessibilityLabel={`${title}, ${fee}`}
+			accessibilityLabel={`${title}, ${fee}, ${t("checkout.eta", { eta: option.etaText })}`}
 			accessibilityState={{ checked, disabled: !selectable }}
-			style={[
+			style={({ pressed }) => [
 				styles.card,
 				{
 					borderColor: checked ? c.primary : c.border,
 					backgroundColor: checked ? c.primarySoft : c.card,
-					opacity: selectable ? 1 : 0.6,
+					opacity: selectable ? (pressed ? 0.85 : 1) : 0.6,
 				},
 			]}
 		>
 			<View style={styles.row}>
-				<Ionicons
-					name={pickup ? "storefront-outline" : "bicycle-outline"}
-					size={18}
-					color={c.text}
-				/>
-				<Text style={[styles.title, { color: c.text }]}>{title}</Text>
-				<Ionicons
-					name={checked ? "radio-button-on" : "radio-button-off"}
-					size={20}
-					color={checked ? c.primary : c.muted}
-				/>
+				<View
+					style={[
+						styles.tile,
+						{ backgroundColor: checked ? c.card : c.neutralSoft },
+					]}
+				>
+					<Ionicons
+						name={pickup ? "storefront-outline" : "bicycle-outline"}
+						size={20}
+						color={checked ? c.primary : c.text}
+					/>
+				</View>
+				<View style={styles.main}>
+					<Text style={[styles.title, { color: c.text }]}>{title}</Text>
+					<Text style={[styles.meta, { color: c.body }]}>
+						{t("checkout.eta", { eta: option.etaText })}
+					</Text>
+				</View>
+				<View style={styles.end}>
+					<Text
+						style={[
+							styles.fee,
+							{ color: option.fee === 0 ? c.successText : c.text },
+						]}
+					>
+						{fee}
+					</Text>
+					<Ionicons
+						name={checked ? "radio-button-on" : "radio-button-off"}
+						size={22}
+						color={checked ? c.primary : c.muted}
+					/>
+				</View>
 			</View>
-			<View style={styles.row}>
-				<Text style={[styles.meta, { color: c.body, flex: 1 }]}>
-					{t("checkout.fee")}
-				</Text>
-				<Text style={[styles.meta, { color: c.text }]}>{fee}</Text>
-			</View>
-			<Text style={[styles.meta, { color: c.muted }]}>
-				{t("checkout.eta", { eta: option.etaText })}
-			</Text>
 			{option.promisedBy ? (
 				<Text style={[styles.meta, { color: c.muted }]}>
 					{t("checkout.promisedBy", {
@@ -77,14 +90,19 @@ export function DeliveryOptionCard({
 				</Text>
 			) : null}
 			{option.freeApplied && option.originalFee ? (
-				<Text style={[styles.meta, { color: c.primary }]}>
+				<Text style={[styles.meta, { color: c.successText }]}>
 					{t("checkout.freeDeliveryApplied", {
 						amount: formatPrice(option.originalFee, locale),
 					})}
 				</Text>
 			) : null}
 			{point ? (
-				<View style={[styles.point, { backgroundColor: c.card }]}>
+				<View
+					style={[
+						styles.point,
+						{ backgroundColor: checked ? c.card : c.neutralSoft },
+					]}
+				>
 					<Text
 						style={[
 							styles.meta,
@@ -107,9 +125,12 @@ export function DeliveryOptionCard({
 				</View>
 			) : null}
 			{selectable ? null : (
-				<Text style={[styles.meta, { color: c.warningText }]}>
-					{t("checkout.codUnavailableOption")}
-				</Text>
+				<View style={styles.row}>
+					<Ionicons name="information-circle" size={16} color={c.warningText} />
+					<Text style={[styles.meta, styles.main, { color: c.warningText }]}>
+						{t("checkout.codUnavailableOption")}
+					</Text>
+				</View>
 			)}
 		</Pressable>
 	);
@@ -117,14 +138,28 @@ export function DeliveryOptionCard({
 
 const styles = StyleSheet.create({
 	card: {
-		borderWidth: 1,
+		borderWidth: 1.5,
 		borderRadius: 16,
 		padding: 14,
-		gap: 6,
-		minHeight: 44,
+		gap: 8,
+		minHeight: 48,
 	},
-	row: { flexDirection: "row", alignItems: "center", gap: 8 },
-	title: { flex: 1, fontSize: 15, fontFamily: Fonts.bodySemibold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
-	point: { marginTop: 4, padding: 10, borderRadius: 12, gap: 2 },
+	row: { flexDirection: "row", alignItems: "center", gap: 12 },
+	tile: {
+		width: 40,
+		height: 40,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	main: { flex: 1, gap: 2 },
+	end: { alignItems: "flex-end", gap: 6 },
+	title: { fontSize: 16, fontFamily: Fonts.bodySemibold },
+	fee: {
+		fontSize: 16,
+		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
+	},
+	meta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
+	point: { padding: 12, borderRadius: 12, gap: 2 },
 });

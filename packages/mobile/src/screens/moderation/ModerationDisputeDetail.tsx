@@ -2,24 +2,37 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useReducer } from "react";
 import {
-	ActivityIndicator,
 	Pressable,
 	ScrollView,
 	StyleSheet,
+	Switch,
 	Text,
 	TextInput,
 	View,
 } from "react-native";
-import { Fonts } from "@/constants/theme";
-import { EmptyState } from "@/src/components/EmptyState";
+import { Colors, Fonts } from "@/constants/theme";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import {
+	DecisionButton,
+	DetailSkeleton,
+	FactRow,
+	InlineNotice,
+	LoadError,
+	ModerationCard,
+} from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
-import { useModerationTheme } from "@/src/components/moderation/theme";
+import {
+	type ModerationPalette,
+	useModerationTheme,
+} from "@/src/components/moderation/theme";
+import { tonesOf } from "@/src/components/moderation/tones";
+import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	useModerationDispute,
 	useModerationDisputeAction,
 	usePreviewDisputeOutcome,
 } from "@/src/hooks/useModerationDisputes";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import {
 	DISPUTE_REASON_LABELS,
 	DISPUTE_STATUS_LABELS,
@@ -87,7 +100,9 @@ function reducer(state: FormState, patch: Partial<FormState>): FormState {
 
 export function ModerationDisputeDetail({ id }: { id: string }) {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t, i18n } = useTranslation();
+	const { showConfirm, showSuccess } = useAlert();
 	const detail = useModerationDispute(id);
 	const action = useModerationDisputeAction(id ?? "");
 	const preview = usePreviewDisputeOutcome(id ?? "");
@@ -102,14 +117,13 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 		return (
 			<ModerationScreen title={t("moderationDisputes.detailTitle")}>
 				{detail.isError ? (
-					<EmptyState
-						illustration="notFound"
+					<LoadError
 						title={t("moderationDisputes.loadError")}
-						ctaLabel={t("common.retry")}
-						onCta={() => void detail.refetch()}
+						message={resolveErrorMessage(detail.error, t)}
+						onRetry={() => void detail.refetch()}
 					/>
 				) : (
-					<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+					<DetailSkeleton />
 				)}
 			</ModerationScreen>
 		);
@@ -118,30 +132,54 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 	const sheet = detail.data;
 	const dispute = sheet.dispute;
 	const locale = i18n.language === "en" ? "en" : "fr";
+	const sun = c.isDark ? Colors.dark.sun : Colors.light.sun;
+	const refundValid = Number.isSafeInteger(refundAmount) && refundAmount >= 0;
+	const formComplete =
+		Boolean(form.note.trim()) &&
+		Boolean(form.statementFr.trim()) &&
+		Boolean(form.statementEn.trim());
+	const onSaved = () => showSuccess(t("moderationDisputes.actionSaved"));
 	const previewDecision = () => {
 		if (!Number.isSafeInteger(refundAmount) || refundAmount < 0) return;
 		preview.mutate(refundAmount);
 	};
 	const resolve = () => {
 		if (!previewCurrent) return;
-		action.mutate({
-			action: "resolve",
-			outcome: form.outcome,
-			refundAmount,
-			returnRequired: form.returnRequired,
-			returnShippingPaidBy: form.returnRequired
-				? form.returnShippingPaidBy
-				: null,
-			liableParty: form.liableParty,
-			reasonCode: form.reasonCode,
-			publicStatement: {
-				fr: form.statementFr.trim(),
-				en: form.statementEn.trim(),
+		action.mutate(
+			{
+				action: "resolve",
+				outcome: form.outcome,
+				refundAmount,
+				returnRequired: form.returnRequired,
+				returnShippingPaidBy: form.returnRequired
+					? form.returnShippingPaidBy
+					: null,
+				liableParty: form.liableParty,
+				reasonCode: form.reasonCode,
+				publicStatement: {
+					fr: form.statementFr.trim(),
+					en: form.statementEn.trim(),
+				},
+				note: form.note.trim(),
 			},
-			note: form.note.trim(),
-		});
+			{ onSuccess: onSaved },
+		);
 	};
-	const assign = () => action.mutate({ action: "assign" });
+	// The ruling moves money and is published to both parties: it is read
+	// back, with the refund the preview computed, before it leaves.
+	const confirmResolve = () => {
+		if (!previewCurrent || !preview.data) return;
+		showConfirm(
+			t("moderationDisputes.confirmResolve"),
+			`${t(DISPUTE_STATUS_LABELS[form.outcome])} · ${t(
+				"moderationDisputes.previewRefund",
+				{ amount: formatPrice(preview.data.refundAmount, locale) },
+			)}`,
+			resolve,
+		);
+	};
+	const assign = () =>
+		action.mutate({ action: "assign" }, { onSuccess: onSaved });
 
 	return (
 		<ModerationScreen
@@ -152,214 +190,237 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 				<ScrollView
 					contentContainerStyle={styles.content}
 					keyboardShouldPersistTaps="handled"
+					keyboardDismissMode="on-drag"
 				>
 					{action.isError || preview.isError ? (
-						<Text
-							accessibilityRole="alert"
-							style={[styles.error, { color: c.danger }]}
-						>
-							{t("moderationDisputes.actionError")}
-						</Text>
+						<InlineNotice text={t("moderationDisputes.actionError")} />
 					) : null}
-					{action.isSuccess ? (
-						<Text style={[styles.notice, { color: c.success }]}>
-							{t("moderationDisputes.actionSaved")}
+
+					<ModerationCard
+						title={t("moderationDisputes.caseSummary")}
+						right={
+							// The amount at stake is a price: ink on the yellow tag.
+							<View style={[styles.priceTag, { backgroundColor: sun }]}>
+								<Text style={styles.priceText}>
+									{formatPrice(dispute.amountAtStake, locale)}
+								</Text>
+							</View>
+						}
+					>
+						<Text style={[styles.lead, { color: c.text }]}>
+							{t(DISPUTE_REASON_LABELS[dispute.reason])}
 						</Text>
-					) : null}
-					<Card title={t("moderationDisputes.caseSummary")} c={c}>
-						<Body
-							text={`${t("disputes.order", { number: dispute.orderNumber })} · ${t(DISPUTE_REASON_LABELS[dispute.reason])}`}
-							color={c.text}
+						<Text style={[styles.meta, { color: c.muted }]}>
+							{t("disputes.order", { number: dispute.orderNumber })} ·{" "}
+							{t(DISPUTE_STATUS_LABELS[dispute.status])}
+						</Text>
+						<View style={[styles.rule, { backgroundColor: c.border }]} />
+						<FactRow
+							label={t("moderationDisputes.buyerDisputes")}
+							value={String(sheet.partyHistory.buyerDisputes12m)}
 						/>
-						<Body
-							text={`${t(DISPUTE_STATUS_LABELS[dispute.status])} · ${formatPrice(dispute.amountAtStake, locale)}`}
-							color={c.muted}
+						<FactRow
+							label={t("moderationDisputes.buyerRefusals")}
+							value={String(sheet.partyHistory.buyerRefusalScore)}
 						/>
-						<Body
-							text={`${t("moderationDisputes.buyerDisputes")}: ${sheet.partyHistory.buyerDisputes12m}`}
-							color={c.muted}
-						/>
-						<Body
-							text={`${t("moderationDisputes.buyerRefusals")}: ${sheet.partyHistory.buyerRefusalScore}`}
-							color={c.muted}
-						/>
-						<Body
-							text={`${t("moderationDisputes.shopLossRate")}: ${sheet.partyHistory.shopDisputeLossRate === null ? "—" : `${Math.round(sheet.partyHistory.shopDisputeLossRate * 100)}%`}`}
-							color={c.muted}
-						/>
-						<Pressable
-							accessibilityRole="button"
-							style={[styles.outlineButton, { borderColor: c.border }]}
-							onPress={() =>
-								router.push({
-									pathname: "/disputes/[id]",
-									params: { id: dispute.id },
-								})
+						<FactRow
+							label={t("moderationDisputes.shopLossRate")}
+							value={
+								sheet.partyHistory.shopDisputeLossRate === null
+									? "—"
+									: `${Math.round(sheet.partyHistory.shopDisputeLossRate * 100)}%`
 							}
-						>
-							<Text style={[styles.buttonLabel, { color: c.primary }]}>
-								{t("moderationDisputes.openThread")}
-							</Text>
-						</Pressable>
-						<Pressable
-							accessibilityRole="button"
-							disabled={action.isPending}
-							style={[styles.outlineButton, { borderColor: c.border }]}
-							onPress={assign}
-						>
-							<Text style={[styles.buttonLabel, { color: c.primary }]}>
-								{t("moderationDisputes.assignToMe")}
-							</Text>
-						</Pressable>
-					</Card>
-					<Card title={t("moderationDisputes.proofChecklist")} c={c}>
-						{sheet.proofChecklist.map((row) => (
-							<Body
-								key={row.requirement}
-								text={`${t(`moderationDisputes.proof.${row.requirement}`)}: ${row.established ? t("moderationDisputes.proven") : t("moderationDisputes.notProven")}${row.source ? ` · ${row.source}` : ""}`}
-								color={row.established ? c.success : c.muted}
+						/>
+						<View style={styles.buttons}>
+							<DecisionButton
+								variant="secondary"
+								icon="chatbubbles-outline"
+								label={t("moderationDisputes.openThread")}
+								onPress={() =>
+									router.push({
+										pathname: "/disputes/[id]",
+										params: { id: dispute.id },
+									})
+								}
+								grow={0}
 							/>
-						))}
-					</Card>
+							<DecisionButton
+								variant="secondary"
+								icon="person-add-outline"
+								label={t("moderationDisputes.assignToMe")}
+								onPress={assign}
+								disabled={action.isPending}
+								grow={0}
+							/>
+						</View>
+					</ModerationCard>
+
+					<ModerationCard title={t("moderationDisputes.proofChecklist")}>
+						{sheet.proofChecklist.map((row) => {
+							const label = t(`moderationDisputes.proof.${row.requirement}`);
+							const state = row.established
+								? t("moderationDisputes.proven")
+								: t("moderationDisputes.notProven");
+							return (
+								<View
+									key={row.requirement}
+									style={styles.proofRow}
+									accessible
+									accessibilityLabel={`${label}: ${state}`}
+								>
+									<Ionicons
+										name={
+											row.established ? "checkmark-circle" : "ellipse-outline"
+										}
+										size={20}
+										color={row.established ? k.successText : c.muted}
+									/>
+									<View style={styles.flex}>
+										<Text style={[styles.body, { color: c.text }]}>
+											{label}
+										</Text>
+										<Text
+											style={[
+												styles.meta,
+												{ color: row.established ? k.successText : c.muted },
+											]}
+										>
+											{state}
+											{row.source ? ` · ${row.source}` : ""}
+										</Text>
+									</View>
+								</View>
+							);
+						})}
+					</ModerationCard>
+
 					{dispute.status === "under_review" ? (
-						<Card title={t("moderationDisputes.resolveTitle")} c={c}>
-							<Choice
-								title={t("moderationDisputes.outcome")}
-								values={outcomes}
-								selected={form.outcome}
-								label={(value) => t(DISPUTE_STATUS_LABELS[value])}
-								onSelect={(outcome) => patch({ outcome })}
-								c={c}
-							/>
-							<Field
-								label={t("moderationDisputes.refundAmount")}
-								value={form.refund}
-								keyboardType="number-pad"
-								onChangeText={(refund) => {
-									patch({ refund });
-									preview.reset();
-								}}
-							/>
-							<Choice
-								title={t("moderationDisputes.liableParty")}
-								values={liabilities}
-								selected={form.liableParty}
-								label={(value) => t(`moderationDisputes.liability.${value}`)}
-								onSelect={(liableParty) => patch({ liableParty })}
-								c={c}
-							/>
-							<Choice
-								title={t("moderationDisputes.reasonCodeLabel")}
-								values={reasonCodes}
-								selected={form.reasonCode}
-								label={(value) => t(`moderationDisputes.reasonCode.${value}`)}
-								onSelect={(reasonCode) => patch({ reasonCode })}
-								c={c}
-							/>
-							<Toggle
-								label={t("moderationDisputes.returnRequired")}
-								enabled={form.returnRequired}
-								onPress={() => patch({ returnRequired: !form.returnRequired })}
-								c={c}
-							/>
-							{form.returnRequired ? (
+						<ModerationCard title={t("moderationDisputes.resolveTitle")}>
+							<View style={styles.form}>
 								<Choice
-									title={t("moderationDisputes.returnShippingPayer")}
-									values={["seller", "buyer"] as const}
-									selected={form.returnShippingPaidBy}
+									title={t("moderationDisputes.outcome")}
+									values={outcomes}
+									selected={form.outcome}
+									label={(value) => t(DISPUTE_STATUS_LABELS[value])}
+									onSelect={(outcome) => patch({ outcome })}
+									c={c}
+								/>
+								<Field
+									label={t("moderationDisputes.refundAmount")}
+									value={form.refund}
+									keyboardType="number-pad"
+									suffix="FCFA"
+									onChangeText={(refund) => {
+										patch({ refund });
+										preview.reset();
+									}}
+								/>
+								<Choice
+									title={t("moderationDisputes.liableParty")}
+									values={liabilities}
+									selected={form.liableParty}
 									label={(value) => t(`moderationDisputes.liability.${value}`)}
-									onSelect={(returnShippingPaidBy) =>
-										patch({ returnShippingPaidBy })
+									onSelect={(liableParty) => patch({ liableParty })}
+									c={c}
+								/>
+								<Choice
+									title={t("moderationDisputes.reasonCodeLabel")}
+									values={reasonCodes}
+									selected={form.reasonCode}
+									label={(value) => t(`moderationDisputes.reasonCode.${value}`)}
+									onSelect={(reasonCode) => patch({ reasonCode })}
+									c={c}
+								/>
+								<Toggle
+									label={t("moderationDisputes.returnRequired")}
+									enabled={form.returnRequired}
+									onPress={() =>
+										patch({ returnRequired: !form.returnRequired })
 									}
 									c={c}
 								/>
-							) : null}
-							<Field
-								label={t("moderationDisputes.statementFr")}
-								value={form.statementFr}
-								onChangeText={(statementFr) => patch({ statementFr })}
-							/>
-							<Field
-								label={t("moderationDisputes.statementEn")}
-								value={form.statementEn}
-								onChangeText={(statementEn) => patch({ statementEn })}
-							/>
-							<Field
-								label={t("moderationDisputes.internalNote")}
-								value={form.note}
-								onChangeText={(note) => patch({ note })}
-							/>
-							<Pressable
-								accessibilityRole="button"
-								disabled={
-									preview.isPending ||
-									!Number.isSafeInteger(refundAmount) ||
-									refundAmount < 0
-								}
-								onPress={previewDecision}
-								style={[styles.primaryButton, { backgroundColor: c.primary }]}
-							>
-								{preview.isPending ? (
-									<ActivityIndicator color="#fff" />
-								) : (
-									<Text style={styles.primaryLabel}>
-										{t("moderationDisputes.preview")}
-									</Text>
-								)}
-							</Pressable>
-							{preview.data ? (
-								<View
-									style={[
-										styles.preview,
-										{ backgroundColor: c.bg, borderColor: c.border },
-									]}
-								>
-									<Body
-										text={t("moderationDisputes.previewRefund", {
-											amount: formatPrice(preview.data.refundAmount, locale),
-										})}
-										color={c.text}
-									/>
-									<Body
-										text={t("moderationDisputes.previewBreakdown", {
-											goods: formatPrice(preview.data.breakdown.goods, locale),
-											delivery: formatPrice(
-												preview.data.breakdown.outboundDelivery,
-												locale,
-											),
-											protection: formatPrice(
-												preview.data.breakdown.buyerProtectionFee,
-												locale,
-											),
-										})}
-										color={c.muted}
-									/>
-									<Pressable
-										accessibilityRole="button"
-										disabled={
-											!previewCurrent ||
-											action.isPending ||
-											!form.note.trim() ||
-											!form.statementFr.trim() ||
-											!form.statementEn.trim()
+								{form.returnRequired ? (
+									<Choice
+										title={t("moderationDisputes.returnShippingPayer")}
+										values={["seller", "buyer"] as const}
+										selected={form.returnShippingPaidBy}
+										label={(value) =>
+											t(`moderationDisputes.liability.${value}`)
 										}
-										onPress={resolve}
+										onSelect={(returnShippingPaidBy) =>
+											patch({ returnShippingPaidBy })
+										}
+										c={c}
+									/>
+								) : null}
+								<Field
+									label={t("moderationDisputes.statementFr")}
+									value={form.statementFr}
+									onChangeText={(statementFr) => patch({ statementFr })}
+								/>
+								<Field
+									label={t("moderationDisputes.statementEn")}
+									value={form.statementEn}
+									onChangeText={(statementEn) => patch({ statementEn })}
+								/>
+								<Field
+									label={t("moderationDisputes.internalNote")}
+									value={form.note}
+									onChangeText={(note) => patch({ note })}
+								/>
+
+								{/* Two steps, in order: compute the allocation, then rule
+								    on it. Changing the refund clears the preview. */}
+								<DecisionButton
+									variant={preview.data ? "secondary" : "primary"}
+									icon="calculator-outline"
+									label={t("moderationDisputes.preview")}
+									onPress={previewDecision}
+									pending={preview.isPending}
+									disabled={!refundValid}
+									grow={0}
+								/>
+								{preview.data ? (
+									<View
 										style={[
-											styles.primaryButton,
-											{ backgroundColor: c.danger },
+											styles.preview,
+											{ backgroundColor: c.bg, borderColor: c.border },
 										]}
 									>
-										{action.isPending ? (
-											<ActivityIndicator color="#fff" />
-										) : (
-											<Text style={styles.primaryLabel}>
-												{t("moderationDisputes.confirmResolve")}
-											</Text>
-										)}
-									</Pressable>
-								</View>
-							) : null}
-						</Card>
+										<Text style={[styles.previewTotal, { color: c.text }]}>
+											{t("moderationDisputes.previewRefund", {
+												amount: formatPrice(preview.data.refundAmount, locale),
+											})}
+										</Text>
+										<Text style={[styles.meta, { color: c.muted }]}>
+											{t("moderationDisputes.previewBreakdown", {
+												goods: formatPrice(
+													preview.data.breakdown.goods,
+													locale,
+												),
+												delivery: formatPrice(
+													preview.data.breakdown.outboundDelivery,
+													locale,
+												),
+												protection: formatPrice(
+													preview.data.breakdown.buyerProtectionFee,
+													locale,
+												),
+											})}
+										</Text>
+										<DecisionButton
+											variant="primary"
+											icon="checkmark-done"
+											label={t("moderationDisputes.confirmResolve")}
+											onPress={confirmResolve}
+											pending={action.isPending}
+											disabled={!previewCurrent || !formComplete}
+											grow={0}
+										/>
+									</View>
+								) : null}
+							</View>
+						</ModerationCard>
 					) : null}
 				</ScrollView>
 			</ScreenColumn>
@@ -367,52 +428,46 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 	);
 }
 
-function Card({
-	title,
-	c,
-	children,
-}: {
-	title: string;
-	c: ReturnType<typeof useModerationTheme>;
-	children: React.ReactNode;
-}) {
-	return (
-		<View
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-		>
-			<Text style={[styles.title, { color: c.text }]}>{title}</Text>
-			{children}
-		</View>
-	);
-}
-
-function Body({ text, color }: { text: string; color: string }) {
-	return <Text style={[styles.body, { color }]}>{text}</Text>;
-}
-
 function Field({
 	label,
 	value,
 	onChangeText,
 	keyboardType,
+	suffix,
 }: {
 	label: string;
 	value: string;
 	onChangeText: (value: string) => void;
 	keyboardType?: "number-pad";
+	suffix?: string;
 }): React.JSX.Element {
 	const c = useModerationTheme();
+	const multiline = keyboardType === undefined;
 	return (
 		<View style={styles.field}>
 			<Text style={[styles.label, { color: c.text }]}>{label}</Text>
-			<TextInput
-				accessibilityLabel={label}
-				multiline={keyboardType === undefined}
-				keyboardType={keyboardType}
-				value={value}
-				onChangeText={onChangeText}
-				style={[styles.input, { color: c.text, borderColor: c.border }]}
-			/>
+			<View
+				style={[
+					styles.inputWrap,
+					{ backgroundColor: c.bg, borderColor: c.border },
+				]}
+			>
+				<TextInput
+					accessibilityLabel={label}
+					multiline={multiline}
+					keyboardType={keyboardType}
+					value={value}
+					onChangeText={onChangeText}
+					style={[
+						styles.input,
+						multiline && styles.inputMultiline,
+						{ color: c.text },
+					]}
+				/>
+				{suffix ? (
+					<Text style={[styles.suffix, { color: c.muted }]}>{suffix}</Text>
+				) : null}
+			</View>
 		</View>
 	);
 }
@@ -430,36 +485,47 @@ function Choice<T extends string>({
 	selected: T;
 	label: (value: T) => string;
 	onSelect: (value: T) => void;
-	c: ReturnType<typeof useModerationTheme>;
+	c: ModerationPalette;
 }) {
+	const k = tonesOf(c);
 	return (
 		<View style={styles.field}>
 			<Text style={[styles.label, { color: c.text }]}>{title}</Text>
-			<View style={styles.choices}>
-				{values.map((value) => (
-					<Pressable
-						key={value}
-						accessibilityRole="button"
-						accessibilityState={{ selected: value === selected }}
-						onPress={() => onSelect(value)}
-						style={[
-							styles.choice,
-							{
-								borderColor: value === selected ? c.primary : c.border,
-								backgroundColor: value === selected ? c.primary : c.bg,
-							},
-						]}
-					>
-						<Text
+			<View style={styles.choices} accessibilityRole="radiogroup">
+				{values.map((value) => {
+					const on = value === selected;
+					return (
+						<Pressable
+							key={value}
+							accessibilityRole="radio"
+							accessibilityState={{ checked: on }}
+							onPress={() => onSelect(value)}
 							style={[
-								styles.choiceLabel,
-								{ color: value === selected ? "#fff" : c.text },
+								styles.choice,
+								{
+									borderColor: on ? k.linkText : c.border,
+									borderWidth: on ? 2 : 1,
+									backgroundColor: on ? k.selectedSoft : c.card,
+								},
 							]}
 						>
-							{label(value)}
-						</Text>
-					</Pressable>
-				))}
+							{on ? (
+								<Ionicons name="checkmark" size={16} color={k.linkText} />
+							) : null}
+							<Text
+								style={[
+									styles.choiceLabel,
+									{
+										color: on ? k.linkText : c.text,
+										fontFamily: on ? Fonts.bodySemibold : Fonts.body,
+									},
+								]}
+							>
+								{label(value)}
+							</Text>
+						</Pressable>
+					);
+				})}
 			</View>
 		</View>
 	);
@@ -474,67 +540,100 @@ function Toggle({
 	label: string;
 	enabled: boolean;
 	onPress: () => void;
-	c: ReturnType<typeof useModerationTheme>;
+	c: ModerationPalette;
 }) {
+	const k = tonesOf(c);
 	return (
 		<Pressable
-			accessibilityRole="checkbox"
+			accessibilityRole="switch"
 			accessibilityState={{ checked: enabled }}
+			accessibilityLabel={label}
 			onPress={onPress}
-			style={[styles.outlineButton, { borderColor: c.border }]}
+			style={[styles.toggle, { borderColor: c.border }]}
 		>
-			<Ionicons
-				name={enabled ? "checkbox" : "square-outline"}
-				size={19}
-				color={c.primary}
-			/>
-			<Text style={[styles.buttonLabel, { color: c.text }]}>{label}</Text>
+			<Text style={[styles.toggleLabel, { color: c.text }]}>{label}</Text>
+			<View
+				importantForAccessibility="no-hide-descendants"
+				accessibilityElementsHidden
+			>
+				<Switch
+					value={enabled}
+					onValueChange={onPress}
+					trackColor={{
+						false: c.isDark ? "#3a4290" : "#c9cce0",
+						true: k.primaryFill,
+					}}
+					thumbColor="#ffffff"
+					ios_backgroundColor={c.isDark ? "#3a4290" : "#c9cce0"}
+				/>
+			</View>
 		</Pressable>
 	);
 }
 
 const styles = StyleSheet.create({
-	content: { padding: 16, paddingBottom: 36, gap: 14 },
-	card: { borderRadius: 14, borderWidth: 1, padding: 15, gap: 12 },
-	title: { fontFamily: Fonts.displaySemibold, fontSize: 17 },
-	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
-	error: { fontFamily: Fonts.bodySemibold },
-	notice: { fontFamily: Fonts.bodySemibold },
-	field: { gap: 6 },
-	label: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
-	input: {
-		borderWidth: 1,
-		borderRadius: 10,
-		minHeight: 44,
-		padding: 10,
-		textAlignVertical: "top",
+	flex: { flex: 1 },
+	content: { padding: 16, paddingBottom: 40, gap: 14 },
+	priceTag: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
+	priceText: {
+		color: Colors.light.sunForeground,
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 15,
+		lineHeight: 19,
 	},
-	choices: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+	lead: { fontFamily: Fonts.bodySemibold, fontSize: 16, lineHeight: 22 },
+	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 21 },
+	meta: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
+	rule: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
+	buttons: { gap: 8, marginTop: 4 },
+	proofRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+	form: { gap: 18 },
+	field: { gap: 8 },
+	label: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 20 },
+	inputWrap: {
+		flexDirection: "row",
+		alignItems: "center",
+		borderWidth: 1.5,
+		borderRadius: 12,
+		minHeight: 48,
+		paddingHorizontal: 14,
+	},
+	input: {
+		flex: 1,
+		fontFamily: Fonts.body,
+		fontSize: 16,
+		lineHeight: 22,
+		paddingVertical: 12,
+	},
+	inputMultiline: { minHeight: 72, textAlignVertical: "top" },
+	suffix: { fontFamily: Fonts.bodySemibold, fontSize: 14, marginLeft: 8 },
+	choices: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	choice: {
-		borderWidth: 1,
-		borderRadius: 18,
-		paddingHorizontal: 10,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		minHeight: 44,
+		borderRadius: 12,
+		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},
-	choiceLabel: { fontFamily: Fonts.body, fontSize: 12 },
-	outlineButton: {
-		alignItems: "center",
-		borderWidth: 1,
-		borderRadius: 10,
+	choiceLabel: { fontSize: 14, lineHeight: 19 },
+	toggle: {
 		flexDirection: "row",
-		gap: 8,
-		justifyContent: "center",
-		minHeight: 44,
-		padding: 10,
-	},
-	buttonLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
-	primaryButton: {
 		alignItems: "center",
-		borderRadius: 10,
-		justifyContent: "center",
-		minHeight: 46,
-		padding: 12,
+		justifyContent: "space-between",
+		gap: 12,
+		minHeight: 56,
+		borderTopWidth: StyleSheet.hairlineWidth,
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		paddingVertical: 6,
 	},
-	primaryLabel: { color: "#fff", fontFamily: Fonts.bodySemibold },
-	preview: { borderRadius: 12, borderWidth: 1, gap: 10, padding: 12 },
+	toggleLabel: {
+		flex: 1,
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 20,
+	},
+	preview: { borderRadius: 12, borderWidth: 1, gap: 10, padding: 14 },
+	previewTotal: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
 });

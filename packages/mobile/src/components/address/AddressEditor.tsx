@@ -8,6 +8,7 @@ import { ChoiceChips } from "@/src/components/checkout/ChoiceChips";
 import { LocationField } from "@/src/components/checkout/LocationField";
 import { FormRow } from "@/src/components/layout/FormRow";
 import { formStyles } from "@/src/components/seller/formStyles";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAuth } from "@/src/lib/auth";
 import {
@@ -296,7 +297,10 @@ export function AddressEditor({
 				</View>
 			) : null}
 			{formError ? (
-				<Text style={formStyles.error} accessibilityLiveRegion="polite">
+				<Text
+					style={[formStyles.error, { color: dangerInk(c) }]}
+					accessibilityLiveRegion="polite"
+				>
 					{formError}
 				</Text>
 			) : null}

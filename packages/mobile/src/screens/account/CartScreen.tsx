@@ -2,13 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { CartLineRow } from "@/src/components/cart/CartLineRow";
@@ -18,6 +12,7 @@ import {
 } from "@/src/components/cart/CartSummary";
 import { SplitCart } from "@/src/components/cart/SplitCart";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -114,7 +109,7 @@ export function CartScreen() {
 			onCta={() => router.push("/auth/login")}
 		/>
 	) : cart.isPending ? (
-		<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+		<OrderListSkeleton rows={3} />
 	) : cart.isError ? (
 		<EmptyState
 			illustration="notFound"
@@ -250,7 +245,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 		borderRadius: 12,
 	},
-	undoText: { flex: 1, fontSize: 14 },
+	undoText: { flex: 1, fontSize: 14, fontFamily: Fonts.body },
 	undoAction: { fontSize: 14, fontFamily: Fonts.bodyBold },
 	safe: { flex: 1 },
 	body: { flex: 1 },
@@ -261,9 +256,9 @@ const styles = StyleSheet.create({
 		gap: 12,
 		padding: 12,
 		borderRadius: 16,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		marginBottom: 10,
 	},
 	shopName: { fontSize: 15, fontFamily: Fonts.displayBold },
-	shopMeta: { fontSize: 12, fontFamily: Fonts.body },
+	shopMeta: { fontSize: 13, fontFamily: Fonts.body },
 });

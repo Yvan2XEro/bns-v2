@@ -6,6 +6,7 @@ import {
 	SheetButton,
 } from "@/src/components/sellerOrders/FormBits";
 import { HandoverKeypad } from "@/src/components/sellerOrders/HandoverKeypad";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import {
 	useAssignShopRider,
@@ -37,7 +38,7 @@ function ErrorLine({ error }: { error: unknown }) {
 	const { t } = useTranslation();
 	if (!error) return null;
 	return (
-		<Text accessibilityRole="alert" style={{ color: c.danger }}>
+		<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
 			{resolveErrorMessage(error, t, t("shipmentPanel.actionFailed"))}
 		</Text>
 	);

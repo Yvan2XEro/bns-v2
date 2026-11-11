@@ -11,6 +11,7 @@ import { Fonts } from "@/constants/theme";
 import { CityPicker } from "@/src/components/CityPicker";
 import { formStyles as f } from "@/src/components/seller/formStyles";
 import { CategoryChips } from "@/src/components/shop/CategoryChips";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCategories } from "@/src/hooks/useListings";
 import { useUpdateShopForm } from "@/src/hooks/useUpdateShopForm";
@@ -83,7 +84,9 @@ export function ShopProfileCard({
 							)}
 						/>
 						{form.formState.errors.name ? (
-							<Text style={f.error}>{t("shop.nameInvalid")}</Text>
+							<Text style={[f.error, { color: dangerInk(c) }]}>
+								{t("shop.nameInvalid")}
+							</Text>
 						) : null}
 					</>
 				) : null}
@@ -217,7 +220,9 @@ export function ShopProfileCard({
 							)}
 						/>
 						{form.formState.errors.email ? (
-							<Text style={f.error}>{t("shop.contactEmailInvalid")}</Text>
+							<Text style={[f.error, { color: dangerInk(c) }]}>
+								{t("shop.contactEmailInvalid")}
+							</Text>
 						) : (
 							<Text style={[f.hint, { color: c.muted }]}>
 								{t("shop.contactsHint")}
@@ -236,7 +241,7 @@ export function ShopProfileCard({
 					f.card,
 					styles.save,
 					{
-						backgroundColor: c.primary,
+						backgroundColor: fillOf(c),
 						opacity: disabled || !form.formState.isValid ? 0.5 : 1,
 					},
 				]}

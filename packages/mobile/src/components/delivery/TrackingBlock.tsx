@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import * as Linking from "expo-linking";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useRevealRiderPhone } from "@/src/hooks/useShipments";
@@ -141,7 +142,7 @@ export function TrackingBlock({
 				{t("tracking.title", { number: view.shipmentNumber })}
 			</Text>
 			{outcome ? (
-				<Text style={{ color: c.danger, fontFamily: Fonts.bodySemibold }}>
+				<Text style={{ color: dangerInk(c), fontFamily: Fonts.bodySemibold }}>
 					{t(shipmentStatusLabel("buyer", view.status))}
 				</Text>
 			) : null}

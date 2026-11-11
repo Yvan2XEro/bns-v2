@@ -145,7 +145,12 @@ function Cell({ cell }: { cell: MatrixCell }) {
 }
 
 const styles = StyleSheet.create({
-	card: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 2 },
+	card: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 14,
+		gap: 2,
+	},
 	title: {
 		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,

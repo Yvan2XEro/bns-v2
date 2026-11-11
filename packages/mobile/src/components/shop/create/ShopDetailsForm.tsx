@@ -11,6 +11,7 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { Fonts } from "@/constants/theme";
 import { CityPicker } from "@/src/components/CityPicker";
+import { dangerInk, successInk } from "@/src/components/shop/ink";
 import { useCreateShopForm } from "@/src/hooks/useCreateShopForm";
 import { useCategories } from "@/src/hooks/useListings";
 import { useTranslation } from "@/src/lib/i18n";
@@ -117,7 +118,7 @@ export function ShopDetailsForm({ phone }: { phone: PhoneStatus }) {
 					)}
 				/>
 				{form.formState.errors.name ? (
-					<Text style={[styles.hint, { color: c.danger }]}>
+					<Text style={[styles.hint, { color: dangerInk(c) }]}>
 						{t("shop.nameInvalid")}
 					</Text>
 				) : null}
@@ -139,7 +140,7 @@ export function ShopDetailsForm({ phone }: { phone: PhoneStatus }) {
 					)}
 				/>
 				{form.formState.errors.handle ? (
-					<Text style={[styles.hint, { color: c.danger }]}>
+					<Text style={[styles.hint, { color: dangerInk(c) }]}>
 						{form.formState.errors.handle.message}
 					</Text>
 				) : null}
@@ -179,7 +180,7 @@ export function ShopDetailsForm({ phone }: { phone: PhoneStatus }) {
 			</Field>
 
 			<View style={[styles.phoneRow, { backgroundColor: c.successSoft }]}>
-				<Ionicons name="checkmark-circle" size={18} color={c.success} />
+				<Ionicons name="checkmark-circle" size={18} color={successInk(c)} />
 				<Text style={[styles.phoneText, { color: c.successText }]}>
 					{t("shop.phoneVerifiedRow", { phone: maskedPhone })}
 				</Text>

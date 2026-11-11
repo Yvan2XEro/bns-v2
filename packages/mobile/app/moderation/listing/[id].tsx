@@ -3,18 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Colors, Fonts } from "@/constants/theme";
 import { DecisionSheet } from "@/src/components/moderation/DecisionSheet";
+import {
+	DecisionBar,
+	DecisionButton,
+	DetailSkeleton,
+	LoadError,
+	ModerationCard,
+} from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
+import { tonesOf } from "@/src/components/moderation/tones";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useListingDecision } from "@/src/hooks/useModeration";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -33,12 +34,13 @@ import {
 export default function ModerateListingScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t, i18n } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const { showError, showSuccess } = useAlert();
 	const [rejecting, setRejecting] = useState(false);
 
-	const { data, isLoading } = useQuery({
+	const { data, isLoading, isError, error, refetch } = useQuery({
 		queryKey: ["moderation", "listing", id],
 		queryFn: () => api.get<ListingDoc>(`/api/listings/${id}?depth=2`),
 		enabled: Boolean(id),
@@ -92,31 +94,34 @@ export default function ModerateListingScreen() {
 			title={t("moderation.reviewListing")}
 			subtitle={data?.title}
 		>
-			{isLoading || !data ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+			{isLoading ? (
+				<DetailSkeleton />
+			) : isError || !data ? (
+				<LoadError
+					title={t("common.error")}
+					message={error ? resolveErrorMessage(error, t) : undefined}
+					onRetry={() => void refetch()}
+				/>
 			) : (
 				<>
-					<ScrollView
-						contentContainerStyle={[
-							{ padding: 16, gap: 14, paddingBottom: 24 },
-							centeredContent,
-						]}
-					>
+					<ScrollView contentContainerStyle={[styles.content, centeredContent]}>
 						{data.images?.length ? (
 							<ScrollView
 								horizontal
 								showsHorizontalScrollIndicator={false}
-								contentContainerStyle={{ gap: 8 }}
+								contentContainerStyle={styles.photos}
 							>
-								{data.images.map((entry) => {
+								{data.images.map((entry, index) => {
 									const uri = resolveListingImageUrl(entry, "medium");
 									if (!uri) return null;
 									return (
 										<Image
 											key={uri}
 											source={{ uri }}
-											style={styles.photo}
+											style={[styles.photo, { backgroundColor: c.card }]}
 											contentFit="cover"
+											transition={150}
+											accessibilityLabel={`${data.title} ${index + 1}/${data.images?.length ?? 0}`}
 										/>
 									);
 								})}
@@ -135,25 +140,41 @@ export default function ModerateListingScreen() {
 							</View>
 						)}
 
-						<View
-							style={[
-								styles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<Text style={[styles.listingTitle, { color: c.text }]}>
+						<ModerationCard>
+							<Text
+								accessibilityRole="header"
+								style={[styles.listingTitle, { color: c.text }]}
+							>
 								{data.title}
 							</Text>
-							{typeof data.price === "number" ? (
-								<Text style={[styles.price, { color: c.primary }]}>
-									{formatPrice(data.price, i18n.language)}
-								</Text>
-							) : null}
-							{category ? (
-								<View style={[styles.pill, { backgroundColor: c.bg }]}>
-									<Text style={[styles.pillText, { color: c.muted }]}>
-										{category.name}
-									</Text>
+							{typeof data.price === "number" || category ? (
+								<View style={styles.tagRow}>
+									{typeof data.price === "number" ? (
+										// The price tag: ink on signage yellow, as everywhere else.
+										<View
+											style={[
+												styles.priceTag,
+												{
+													backgroundColor: c.isDark
+														? Colors.dark.sun
+														: Colors.light.sun,
+												},
+											]}
+										>
+											<Text style={styles.priceText}>
+												{formatPrice(data.price, i18n.language)}
+											</Text>
+										</View>
+									) : null}
+									{category ? (
+										<View
+											style={[styles.pill, { backgroundColor: k.selectedSoft }]}
+										>
+											<Text style={[styles.pillText, { color: c.text }]}>
+												{category.name}
+											</Text>
+										</View>
+									) : null}
 								</View>
 							) : null}
 							{data.description ? (
@@ -161,25 +182,30 @@ export default function ModerateListingScreen() {
 									{data.description}
 								</Text>
 							) : null}
-						</View>
+						</ModerationCard>
 
 						{seller ? (
 							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={`${seller.name || seller.email}, ${t("moderation.openAccount")}`}
 								onPress={() => router.push(`/moderation/user/${seller.id}`)}
-								style={[
-									styles.card,
+								style={({ pressed }) => [
 									styles.sellerCard,
-									{ backgroundColor: c.card, borderColor: c.border },
+									{
+										backgroundColor: c.card,
+										borderColor: c.border,
+										opacity: pressed ? 0.85 : 1,
+									},
 								]}
 							>
 								<View style={[styles.avatar, { backgroundColor: c.bg }]}>
 									<Ionicons name="person" size={18} color={c.muted} />
 								</View>
-								<View style={{ flex: 1 }}>
+								<View style={styles.flex}>
 									<Text style={[styles.sellerName, { color: c.text }]}>
 										{seller.name || seller.email}
 									</Text>
-									<Text style={[styles.sellerMeta, { color: c.muted }]}>
+									<Text style={[styles.sellerMeta, { color: k.linkText }]}>
 										{t("moderation.openAccount")}
 									</Text>
 								</View>
@@ -188,39 +214,26 @@ export default function ModerateListingScreen() {
 						) : null}
 					</ScrollView>
 
-					<View
-						style={[
-							styles.actions,
-							{ backgroundColor: c.card, borderTopColor: c.border },
-						]}
-					>
-						<Pressable
+					{/* Reject only opens the reason sheet, so it sits left and quiet;
+					    approve is the one-tap outcome and takes the wider slot. */}
+					<DecisionBar>
+						<DecisionButton
+							variant="dangerOutline"
+							icon="close"
+							label={t("moderation.reject")}
 							onPress={() => setRejecting(true)}
 							disabled={isPending}
-							style={[styles.rejectBtn, { borderColor: c.danger }]}
-						>
-							<Ionicons name="close" size={18} color={c.danger} />
-							<Text style={[styles.rejectText, { color: c.danger }]}>
-								{t("moderation.reject")}
-							</Text>
-						</Pressable>
-						<Pressable
+						/>
+						<DecisionButton
+							variant="approve"
+							icon="checkmark"
+							label={t("moderation.approve")}
 							onPress={() => run("approve")}
+							pending={isPending && !rejecting}
 							disabled={isPending}
-							style={[styles.approveBtn, { backgroundColor: c.success }]}
-						>
-							{isPending ? (
-								<ActivityIndicator color="#fff" />
-							) : (
-								<>
-									<Ionicons name="checkmark" size={18} color="#fff" />
-									<Text style={styles.approveText}>
-										{t("moderation.approve")}
-									</Text>
-								</>
-							)}
-						</Pressable>
-					</View>
+							grow={1.4}
+						/>
+					</DecisionBar>
 
 					<DecisionSheet
 						visible={rejecting}
@@ -260,68 +273,66 @@ export default function ModerateListingScreen() {
 }
 
 const styles = StyleSheet.create({
-	photo: { width: 220, height: 160, borderRadius: 12 },
+	flex: { flex: 1 },
+	content: { padding: 16, gap: 14, paddingBottom: 24 },
+	photos: { gap: 8 },
+	photo: { width: 240, height: 180, borderRadius: 14 },
 	noPhoto: {
-		height: 100,
-		borderRadius: 12,
+		height: 112,
+		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 6,
 	},
-	noPhotoText: { fontSize: 12, fontFamily: Fonts.body },
-	card: {
-		borderRadius: 14,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 14,
+	noPhotoText: { fontSize: 13, fontFamily: Fonts.body },
+	listingTitle: {
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
+		fontFamily: Fonts.displayBold,
+	},
+	tagRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		flexWrap: "wrap",
 		gap: 8,
 	},
-	listingTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
-	price: { fontSize: 16, fontFamily: Fonts.displayBold },
-	pill: {
-		alignSelf: "flex-start",
-		borderRadius: 999,
+	priceTag: {
+		borderRadius: 8,
 		paddingHorizontal: 10,
 		paddingVertical: 4,
 	},
-	pillText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	description: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 21 },
-	sellerCard: { flexDirection: "row", alignItems: "center", gap: 12 },
+	priceText: {
+		color: Colors.light.sunForeground,
+		fontSize: 18,
+		lineHeight: 23,
+		letterSpacing: -0.3,
+		fontFamily: Fonts.displayExtrabold,
+	},
+	pill: {
+		borderRadius: 8,
+		paddingHorizontal: 10,
+		paddingVertical: 5,
+	},
+	pillText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
+	sellerCard: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		minHeight: 64,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 14,
+	},
 	avatar: {
-		width: 38,
-		height: 38,
-		borderRadius: 19,
+		width: 40,
+		height: 40,
+		borderRadius: 20,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	sellerName: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	sellerMeta: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
-	actions: {
-		flexDirection: "row",
-		gap: 10,
-		padding: 16,
-		paddingBottom: 28,
-		borderTopWidth: StyleSheet.hairlineWidth,
-	},
-	rejectBtn: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 6,
-		borderRadius: 14,
-		borderWidth: 1.5,
-		paddingVertical: 14,
-	},
-	rejectText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	approveBtn: {
-		flex: 1.4,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 6,
-		borderRadius: 14,
-		paddingVertical: 14,
-	},
-	approveText: { fontSize: 15, fontFamily: Fonts.displayBold, color: "#fff" },
+	sellerName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	sellerMeta: { fontSize: 13, fontFamily: Fonts.bodySemibold, marginTop: 1 },
 });

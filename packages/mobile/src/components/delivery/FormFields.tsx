@@ -61,7 +61,7 @@ export function ToggleField({
 }) {
 	const c = useShopTheme();
 	return (
-		<View style={[formStyles.row, { minHeight: 44 }]}>
+		<View style={[formStyles.row, { minHeight: 48 }]}>
 			<Text
 				style={{ flex: 1, color: c.text, fontFamily: Fonts.body, fontSize: 14 }}
 			>

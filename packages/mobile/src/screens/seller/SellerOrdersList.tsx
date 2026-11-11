@@ -17,6 +17,7 @@ import { OrderRow } from "@/src/components/sellerOrders/OrderRow";
 import { OrderTabs } from "@/src/components/sellerOrders/OrderTabs";
 import { SellerEndSheet } from "@/src/components/sellerOrders/SellerEndSheet";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -86,7 +87,8 @@ export function SellerOrdersList({ selectedId, onOpen }: SplitListProps) {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<SellerHeader title={t("sellerOrders.title")} />
+				<ListSkeleton />
 			</SafeAreaView>
 		);
 	}
@@ -141,7 +143,7 @@ export function SellerOrdersList({ selectedId, onOpen }: SplitListProps) {
 			/>
 
 			{orders.isLoading ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<ListSkeleton />
 			) : orders.isError ? (
 				<EmptyState
 					illustration="notFound"
@@ -214,7 +216,6 @@ export function SellerOrdersList({ selectedId, onOpen }: SplitListProps) {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 40 },
 	search: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -223,8 +224,8 @@ const styles = StyleSheet.create({
 		marginTop: 12,
 		paddingHorizontal: 12,
 		borderRadius: 12,
-		borderWidth: 1,
-		minHeight: 44,
+		borderWidth: StyleSheet.hairlineWidth,
+		minHeight: 48,
 	},
 	searchInput: { flex: 1, fontSize: 15, fontFamily: Fonts.body },
 	list: { paddingHorizontal: 16, paddingBottom: 32 },

@@ -1,5 +1,6 @@
 import { type Control, Controller, type FieldError } from "react-hook-form";
 import { Text, TextInput, View } from "react-native";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useTranslation } from "@/src/lib/i18n";
 import { phoneExample } from "@/src/lib/market";
 import { useShopTheme } from "../theme";
@@ -49,7 +50,7 @@ export function PhoneNumberField({
 				)}
 			/>
 			{error ? (
-				<Text style={[fieldStyles.hint, { color: c.danger }]}>
+				<Text style={[fieldStyles.hint, { color: dangerInk(c) }]}>
 					{error.message}
 				</Text>
 			) : null}

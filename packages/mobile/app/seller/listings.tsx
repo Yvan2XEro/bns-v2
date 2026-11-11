@@ -3,18 +3,13 @@ import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -82,9 +77,7 @@ export default function ShopAdsScreen() {
 				subtitle={t(`sellerAds.subtitle.${profile}`)}
 			/>
 			{mine.isLoading || (allowed && ads.isLoading) ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<ListSkeleton />
 			) : !allowed ? (
 				<EmptyState illustration="auth" title={t("sellerAds.loadError")} />
 			) : ads.isError ? (
@@ -242,7 +235,7 @@ export default function ShopAdsScreen() {
 					<Pressable
 						onPress={() => router.push("/(tabs)/create")}
 						accessibilityRole="button"
-						style={[styles.add, { backgroundColor: c.primary }]}
+						style={[styles.add, { backgroundColor: fillOf(c) }]}
 					>
 						<Ionicons name="add" size={20} color="#fff" />
 						<Text style={styles.addText}>{t("sellerAds.add")}</Text>
@@ -255,7 +248,6 @@ export default function ShopAdsScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	filtersScroll: { flexGrow: 0 },
 	filters: { gap: 8, paddingHorizontal: 16, paddingVertical: 10 },
 	filter: {
@@ -299,5 +291,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 18,
 		borderRadius: 24,
 	},
-	addText: { color: "#fff", fontSize: 15, fontFamily: Fonts.bodySemibold },
+	addText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

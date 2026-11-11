@@ -1,49 +1,57 @@
 import { StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-	published: { bg: "#ddf3e5", text: "#155c35" },
-	pending: { bg: "#e3e7f8", text: "#23338f" },
-	rejected: { bg: "#fbe3e0", text: "#8e2219" },
-	sold: { bg: "#eceef5", text: "#3a3f66" },
-	expired: { bg: "#fff7ed", text: "#9a3412" },
-	boosted: { bg: "#fff1c7", text: "#6e4700" },
-	completed: { bg: "#ddf3e5", text: "#155c35" },
-	failed: { bg: "#fbe3e0", text: "#8e2219" },
-	refunded: { bg: "#eceef5", text: "#3a3f66" },
+type Tone = "success" | "info" | "danger" | "neutral" | "warning";
+
+const STATUS_TONES: Record<string, Tone> = {
+	published: "success",
+	pending: "info",
+	rejected: "danger",
+	sold: "neutral",
+	expired: "warning",
+	boosted: "warning",
+	completed: "success",
+	failed: "danger",
+	refunded: "neutral",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-	published: "Publié",
-	pending: "En attente",
-	rejected: "Rejeté",
-	sold: "Vendu",
-	expired: "Expiré",
-	boosted: "Boosté",
-	completed: "Terminé",
-	failed: "Échoué",
-	refunded: "Remboursé",
-};
+/** Soft fill and text pairs, 4.5:1 or better in both themes. */
+function toneColors(tone: Tone, isDark: boolean) {
+	const c = isDark ? Colors.dark : Colors.light;
+	switch (tone) {
+		case "success":
+			return { bg: c.successTint, text: c.successText };
+		case "info":
+			return { bg: c.primaryTint, text: c.link };
+		case "danger":
+			return { bg: c.dangerTint, text: c.dangerText };
+		case "warning":
+			return { bg: c.warningTint, text: c.warningText };
+		default:
+			return { bg: c.well, text: c.body };
+	}
+}
 
 interface StatusPillProps {
 	status: string;
-	label?: string;
+	/** Translated label: the pill has no copy of its own. */
+	label: string;
 }
 
 export function StatusPill({ status, label }: StatusPillProps) {
-	const colors = STATUS_COLORS[status] ?? { bg: "#eceef5", text: "#3a3f66" };
+	const isDark = useColorScheme() === "dark";
+	const colors = toneColors(STATUS_TONES[status] ?? "neutral", isDark);
 	return (
 		<View style={[styles.pill, { backgroundColor: colors.bg }]}>
-			<Text style={[styles.text, { color: colors.text }]}>
-				{label ?? STATUS_LABELS[status] ?? status}
-			</Text>
+			<Text style={[styles.text, { color: colors.text }]}>{label}</Text>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	pill: {
-		borderRadius: 20,
+		borderRadius: 8,
 		paddingHorizontal: 10,
 		paddingVertical: 3,
 		alignSelf: "flex-start",

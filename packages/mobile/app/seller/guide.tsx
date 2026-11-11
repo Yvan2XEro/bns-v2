@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 6,
-		minHeight: 44,
+		minHeight: 48,
 		alignSelf: "flex-start",
 	},
 	linkText: { fontSize: 14, fontFamily: Fonts.bodySemibold },

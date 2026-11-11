@@ -9,6 +9,7 @@ import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { HandoverFallbacks } from "@/src/components/sellerOrders/HandoverFallbacks";
 import { HandoverKeypad } from "@/src/components/sellerOrders/HandoverKeypad";
+import { dangerInk } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -144,7 +145,7 @@ export default function HandoverScreen() {
 							{state.wrong ? (
 								<Text
 									accessibilityRole="alert"
-									style={[styles.center, { color: c.danger }]}
+									style={[styles.center, { color: dangerInk(c) }]}
 								>
 									{t("sellerOrders.handoverWrong")}
 								</Text>
@@ -152,7 +153,7 @@ export default function HandoverScreen() {
 							{otherError ? (
 								<Text
 									accessibilityRole="alert"
-									style={[styles.center, { color: c.danger }]}
+									style={[styles.center, { color: dangerInk(c) }]}
 								>
 									{otherError}
 								</Text>

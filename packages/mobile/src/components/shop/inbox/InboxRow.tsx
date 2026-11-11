@@ -19,6 +19,9 @@ function relativeLabel(
 	return t(`time.${age.unit}Ago`, { count: age.count });
 }
 
+/** The unread badge: the same deep indigo as own bubbles, white stays legible on it in both themes. */
+const FILLED = "#2f43b5";
+
 /** One row of the shared shop inbox. Purely presentational: filtering, paging and navigation live in the screen. */
 export function InboxRow({
 	item,
@@ -37,48 +40,92 @@ export function InboxRow({
 	const buyerUri = resolveImageUrl(item.buyer?.avatarUrl ?? null);
 	const listingUri = resolveImageUrl(item.listing?.thumbnailUrl ?? null);
 	const unread = item.unreadCount > 0;
+	// The dark primary drops under 4.5:1 on the night card; its lighter
+	// tone does not.
+	const accent = c.link;
+	const time = item.lastMessage ? relativeLabel(t, item.lastMessage.at) : "";
+	const preview = item.lastMessage?.preview ?? t("inbox.noMessages");
+	const assigneeText = item.assignee
+		? item.assignee.suspended
+			? t("inbox.assignedSuspended", {
+					name: item.assignee.name ?? t("inbox.unknownMember"),
+				})
+			: t("inbox.assignedTo", {
+					name: item.assignee.name ?? t("inbox.unknownMember"),
+				})
+		: t("inbox.unassigned");
+	const state =
+		item.inboxStatus === "done"
+			? ("done" as const)
+			: item.awaitingReply
+				? ("awaiting" as const)
+				: null;
+	const a11yLabel = [
+		buyerName,
+		unread ? t("inbox.unreadCount", { count: item.unreadCount }) : null,
+		item.listing?.title ?? null,
+		preview,
+		time,
+		assigneeText,
+		state ? t(`inbox.filter_${state}`) : null,
+	]
+		.filter(Boolean)
+		.join(", ");
 
 	return (
 		<Pressable
 			onPress={onPress}
-			style={[
+			style={({ pressed }) => [
 				styles.row,
-				{ backgroundColor: c.card, borderColor: c.border },
+				{
+					backgroundColor: pressed ? c.neutralSoft : c.card,
+					borderColor: c.border,
+				},
 				selectedStyle,
 			]}
 			accessibilityRole="button"
 			accessibilityState={{ selected: Boolean(selected) }}
-			accessibilityLabel={buyerName}
+			accessibilityLabel={a11yLabel}
 		>
-			<View style={styles.avatarWrap}>
-				{buyerUri ? (
-					<Image
-						source={{ uri: buyerUri }}
-						style={styles.avatar}
-						contentFit="cover"
-					/>
-				) : (
-					<View
-						style={[styles.avatarFallback, { backgroundColor: c.primarySoft }]}
-					>
-						<Text style={{ color: c.primary, fontFamily: Fonts.displayBold }}>
-							{buyerName[0]?.toUpperCase() ?? "?"}
-						</Text>
-					</View>
-				)}
-				{unread ? (
-					<View style={[styles.unreadDot, { backgroundColor: c.sell }]} />
-				) : null}
-			</View>
+			{buyerUri ? (
+				<Image
+					source={{ uri: buyerUri }}
+					style={[styles.avatar, { backgroundColor: c.neutralSoft }]}
+					contentFit="cover"
+					accessible={false}
+				/>
+			) : (
+				<View style={[styles.avatar, { backgroundColor: c.primarySoft }]}>
+					<Text style={[styles.avatarInitial, { color: accent }]}>
+						{buyerName[0]?.toUpperCase() ?? "?"}
+					</Text>
+				</View>
+			)}
 
-			<View style={{ flex: 1 }}>
+			<View style={styles.content}>
 				<View style={styles.topLine}>
-					<Text style={[styles.name, { color: c.text }]} numberOfLines={1}>
+					<Text
+						style={[
+							styles.name,
+							{
+								color: c.text,
+								fontFamily: unread ? Fonts.displayBold : Fonts.displaySemibold,
+							},
+						]}
+						numberOfLines={1}
+					>
 						{buyerName}
 					</Text>
-					{item.lastMessage ? (
-						<Text style={[styles.time, { color: c.muted }]}>
-							{relativeLabel(t, item.lastMessage.at)}
+					{time ? (
+						<Text
+							style={[
+								styles.time,
+								unread
+									? { color: accent, fontFamily: Fonts.bodyBold }
+									: { color: c.muted },
+							]}
+						>
+							{time}
 						</Text>
 					) : null}
 				</View>
@@ -87,58 +134,89 @@ export function InboxRow({
 						{item.listing.title}
 					</Text>
 				) : null}
-				<Text
-					style={[
-						styles.preview,
-						{
-							color: unread ? c.text : c.muted,
-							fontFamily: unread ? Fonts.bodySemibold : Fonts.body,
-						},
-					]}
-					numberOfLines={1}
-				>
-					{item.lastMessage?.preview ?? t("inbox.noMessages")}
-				</Text>
-				{item.assignee ? (
+				<View style={styles.previewLine}>
 					<Text
 						style={[
-							styles.assignee,
-							{ color: item.assignee.suspended ? c.dangerText : c.muted },
+							styles.preview,
+							{
+								color: unread ? c.text : c.muted,
+								fontFamily: unread ? Fonts.bodySemibold : Fonts.body,
+							},
 						]}
 						numberOfLines={1}
 					>
-						{item.assignee.suspended
-							? t("inbox.assignedSuspended", {
-									name: item.assignee.name ?? t("inbox.unknownMember"),
-								})
-							: t("inbox.assignedTo", {
-									name: item.assignee.name ?? t("inbox.unknownMember"),
-								})}
+						{preview}
 					</Text>
-				) : (
-					<Text style={[styles.assignee, { color: c.muted }]}>
-						{t("inbox.unassigned")}
+					{unread ? (
+						<View style={[styles.badge, { backgroundColor: FILLED }]}>
+							<Text style={styles.badgeText}>
+								{item.unreadCount > 99 ? "99+" : item.unreadCount}
+							</Text>
+						</View>
+					) : null}
+				</View>
+				<View style={styles.metaLine}>
+					<Ionicons
+						name={item.assignee ? "person-outline" : "person-add-outline"}
+						size={13}
+						color={item.assignee?.suspended ? c.dangerText : c.muted}
+					/>
+					<Text
+						style={[
+							styles.assignee,
+							{ color: item.assignee?.suspended ? c.dangerText : c.muted },
+						]}
+						numberOfLines={1}
+					>
+						{assigneeText}
 					</Text>
-				)}
+					{state ? (
+						<View
+							style={[
+								styles.statePill,
+								{
+									backgroundColor:
+										state === "done" ? c.successSoft : c.warningSoft,
+								},
+							]}
+						>
+							<Text
+								style={[
+									styles.stateText,
+									{
+										color: state === "done" ? c.successText : c.warningText,
+									},
+								]}
+								numberOfLines={1}
+							>
+								{t(`inbox.filter_${state}`)}
+							</Text>
+						</View>
+					) : null}
+				</View>
 			</View>
 
-			{listingUri ? (
-				<Image
-					source={{ uri: listingUri }}
-					style={styles.thumb}
-					contentFit="cover"
-				/>
-			) : (
-				<View
-					style={[
-						styles.thumb,
-						styles.thumbFallback,
-						{ backgroundColor: c.neutralSoft },
-					]}
-				>
-					<Ionicons name="pricetag-outline" size={16} color={c.muted} />
-				</View>
-			)}
+			{item.listing ? (
+				listingUri ? (
+					<Image
+						source={{ uri: listingUri }}
+						style={[styles.thumb, { backgroundColor: c.neutralSoft }]}
+						contentFit="cover"
+						recyclingKey={listingUri}
+						accessible={false}
+					/>
+				) : (
+					<View
+						style={[
+							styles.thumb,
+							styles.thumbFallback,
+							{ backgroundColor: c.neutralSoft },
+						]}
+					>
+						<Ionicons name="pricetag-outline" size={18} color={c.muted} />
+					</View>
+				)
+			) : null}
 		</Pressable>
 	);
 }
@@ -147,36 +225,56 @@ const styles = StyleSheet.create({
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
+		gap: 12,
 		paddingHorizontal: 16,
 		paddingVertical: 12,
+		minHeight: 76,
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	avatarWrap: { position: "relative" },
-	avatar: { width: 44, height: 44, borderRadius: 22 },
-	avatarFallback: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
+	avatar: {
+		width: 52,
+		height: 52,
+		borderRadius: 26,
 		alignItems: "center",
 		justifyContent: "center",
+		overflow: "hidden",
 	},
-	unreadDot: {
-		position: "absolute",
-		top: -2,
-		right: -2,
-		width: 12,
-		height: 12,
+	avatarInitial: { fontSize: 20, fontFamily: Fonts.displayBold },
+	content: { flex: 1, gap: 2 },
+	topLine: { flexDirection: "row", alignItems: "baseline", gap: 8 },
+	name: { flex: 1, fontSize: 16, lineHeight: 21 },
+	time: { fontSize: 12, fontFamily: Fonts.body },
+	listing: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	previewLine: { flexDirection: "row", alignItems: "center", gap: 8 },
+	preview: { flex: 1, fontSize: 14, lineHeight: 19 },
+	badge: {
+		minWidth: 22,
+		height: 22,
+		borderRadius: 11,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 6,
+	},
+	badgeText: { color: "#ffffff", fontSize: 12, fontFamily: Fonts.displayBold },
+	metaLine: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		marginTop: 2,
+	},
+	assignee: {
+		flexShrink: 1,
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.body,
+	},
+	statePill: {
+		marginLeft: 4,
 		borderRadius: 6,
-		borderWidth: 2,
-		borderColor: "#fff",
+		paddingHorizontal: 6,
+		paddingVertical: 1,
 	},
-	topLine: { flexDirection: "row", alignItems: "center", gap: 6 },
-	name: { flex: 1, fontSize: 15, fontFamily: Fonts.displayBold },
-	time: { fontSize: 11, fontFamily: Fonts.body },
-	listing: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
-	preview: { fontSize: 13, marginTop: 2 },
-	assignee: { fontSize: 11, fontFamily: Fonts.body, marginTop: 3 },
-	thumb: { width: 44, height: 44, borderRadius: 8 },
+	stateText: { fontSize: 11, lineHeight: 15, fontFamily: Fonts.bodySemibold },
+	thumb: { width: 48, height: 48, borderRadius: 10 },
 	thumbFallback: { alignItems: "center", justifyContent: "center" },
 });

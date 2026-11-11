@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
+	Platform,
 	Pressable,
 	StyleSheet,
 	Text,
@@ -15,7 +16,7 @@ import {
 } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
@@ -32,9 +33,9 @@ import {
 } from "@/src/lib/conversationView";
 import { feedback } from "@/src/lib/feedback";
 import i18n, { useTranslation } from "@/src/lib/i18n";
-import { formatPrice } from "@/src/lib/market";
 import { track } from "@/src/lib/monitoring";
 import { askForPushInContext } from "@/src/lib/notifications";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import { isSystemMessage } from "@/src/lib/systemMessage";
 import type {
 	Conversation,
@@ -43,7 +44,14 @@ import type {
 	UserDoc,
 } from "@/src/types/api";
 import { ANALYTICS_EVENTS } from "../../../../api/src/contracts/monitoring";
+import {
+	type AttachedListing,
+	attachedListingOf,
+	ComposerListingChip,
+	MessageListingCard,
+} from "./ListingAttachment";
 import { SystemChip } from "./SystemChip";
+import { TypingIndicator } from "./TypingIndicator";
 
 function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
 	return value && typeof value === "object" && "doc" in value
@@ -78,37 +86,6 @@ function isViewerShopSide(
 	if (!shopOf(conv)) return false;
 	const buyerId = buyerIdOf(conv);
 	return buyerId !== null && buyerId !== userId;
-}
-
-function TypingDots({ color }: { color: string }) {
-	const [step, setStep] = useState(0);
-	useEffect(() => {
-		const id = setInterval(() => setStep((s) => (s + 1) % 3), 380);
-		return () => clearInterval(id);
-	}, []);
-	return (
-		<View
-			style={{
-				flexDirection: "row",
-				gap: 5,
-				alignItems: "center",
-				paddingVertical: 4,
-			}}
-		>
-			{[0, 1, 2].map((i) => (
-				<View
-					key={i}
-					style={{
-						width: 8,
-						height: 8,
-						borderRadius: 4,
-						backgroundColor: color,
-						opacity: step === i ? 1 : 0.28,
-					}}
-				/>
-			))}
-		</View>
-	);
 }
 
 export interface ConversationScreenProps {
@@ -158,12 +135,10 @@ export function ConversationScreen({
 	const listRef = useRef<FlatList>(null);
 	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const C = Colors[isDark ? "dark" : "light"];
+	// Links and initials: the dark primary drops under 4.5:1 on the night
+	// card, its lighter info tone does not.
+	const link = isDark ? C.info : C.primary;
 
 	const { data: convData } = useQuery({
 		queryKey: ["conversation", conversationId],
@@ -216,12 +191,8 @@ export function ConversationScreen({
 		: null;
 	const contextListingRaw =
 		contextListingData?.doc ?? contextListingData ?? null;
-	const [attachedListing, setAttachedListing] = useState<{
-		id: string;
-		title: string;
-		price?: number;
-		thumbnailUrl?: string;
-	} | null>(null);
+	const [attachedListing, setAttachedListing] =
+		useState<AttachedListing | null>(null);
 	const isOtherOnline = otherUser?.id ? onlineUsers.has(otherUser.id) : false;
 
 	const { isBlocked, blockId } = useIsBlocked(otherUser?.id);
@@ -253,12 +224,7 @@ export function ConversationScreen({
 	// Init listing attachment from URL param once data loads
 	useEffect(() => {
 		if (contextListingRaw && listingParam) {
-			setAttachedListing({
-				id: contextListingRaw.id,
-				title: contextListingRaw.title,
-				price: contextListingRaw.price,
-				thumbnailUrl: contextListingRaw.images?.[0]?.image?.url,
-			});
+			setAttachedListing(attachedListingOf(contextListingRaw));
 		}
 	}, [contextListingRaw, listingParam]);
 
@@ -508,9 +474,70 @@ export function ConversationScreen({
 			minute: "2-digit",
 		});
 
+	const peerLogo = resolveImageUrl(header?.logoUrl ?? null);
+	const peerName = header?.title || t("messages.user");
+	const peerAvatar: PeerAvatar = {
+		uri: peerLogo,
+		initial: peerName.charAt(0).toUpperCase() || "?",
+		square: Boolean(header?.isShop),
+	};
+
+	/**
+	 * Who to draw beside a message that is not ours: the other side of the
+	 * thread, or — in a shop thread read from the shop — a teammate, by name.
+	 */
+	function avatarFor(item: any): PeerAvatar {
+		const senderObj = typeof item.sender === "object" ? item.sender : null;
+		if (viewerIsShopSide && item.senderSide === "shop") {
+			return {
+				uri: resolveImageUrl(senderObj?.avatar?.url ?? null),
+				initial: senderObj?.name?.[0]?.toUpperCase() ?? "?",
+				square: false,
+			};
+		}
+		return peerAvatar;
+	}
+
+	function renderAvatar(avatar: PeerAvatar, size = 28) {
+		return (
+			<View
+				style={[
+					styles.msgAvatar,
+					{
+						width: size,
+						height: size,
+						borderRadius: avatar.square ? Math.round(size * 0.28) : size / 2,
+						backgroundColor: C.primaryTint,
+					},
+				]}
+				importantForAccessibility="no-hide-descendants"
+				accessibilityElementsHidden
+			>
+				{avatar.uri ? (
+					<Image
+						source={{ uri: avatar.uri }}
+						style={{ width: size, height: size }}
+						contentFit="cover"
+					/>
+				) : (
+					<Text
+						style={{
+							color: link,
+							fontFamily: Fonts.displayBold,
+							fontSize: Math.round(size * 0.43),
+						}}
+					>
+						{avatar.initial}
+					</Text>
+				)}
+			</View>
+		);
+	}
+
 	const renderMessage = ({ item, index }: { item: any; index: number }) => {
-		const isMe = item.sender?.id === user?.id || item.sender === user?.id;
+		const isMe = senderIdOf(item) === user?.id;
 		const prev = messages[index - 1];
+		const next = messages[index + 1];
 		const showDate =
 			!prev ||
 			new Date(item.createdAt).toDateString() !==
@@ -523,23 +550,30 @@ export function ConversationScreen({
 				? t("messages.today")
 				: msgDate === yesterday
 					? t("messages.yesterday")
-					: new Date(item.createdAt).toLocaleDateString(i18n.language);
+					: new Date(item.createdAt).toLocaleDateString(i18n.language, {
+							weekday: "long",
+							day: "numeric",
+							month: "long",
+						});
+
+		const dateSeparator = showDate ? (
+			<View style={styles.dateSep}>
+				<Text
+					accessibilityRole="header"
+					style={[
+						styles.dateLabel,
+						{ color: C.mutedForeground, backgroundColor: C.well },
+					]}
+				>
+					{dateLabel}
+				</Text>
+			</View>
+		) : null;
 
 		if (isSystemMessage(item)) {
 			return (
 				<>
-					{showDate && (
-						<View style={styles.dateSep}>
-							<Text
-								style={[
-									styles.dateLabel,
-									{ color: mutedColor, backgroundColor: bg },
-								]}
-							>
-								{dateLabel}
-							</Text>
-						</View>
-					)}
+					{dateSeparator}
 					<SystemChip
 						message={item}
 						side={viewerIsShopSide ? "shop" : "buyer"}
@@ -548,13 +582,20 @@ export function ConversationScreen({
 			);
 		}
 
+		// Consecutive messages from one sender read as one block: the tail,
+		// the avatar and the wider gap only close the run.
+		const startsRun = showDate || !sameRun(prev, item);
+		const endsRun = !sameRun(item, next);
+
 		const isRead = readByOther.has(item.id) || item.read;
+		const isPending =
+			isMe && !item.failed && Boolean(chatClient?.isPending(String(item.id)));
 		// Only a shop conversation needs attribution per message — more than
 		// one person can answer from that side. A classic 1:1 thread has
 		// exactly one "other" person, already named in the header.
 		const senderObj = typeof item.sender === "object" ? item.sender : null;
 		const authorLabel =
-			!isMe && shop
+			!isMe && shop && startsRun
 				? messageAuthorLabel({
 						senderSide: item.senderSide ?? null,
 						shopName: shop.name,
@@ -563,26 +604,16 @@ export function ConversationScreen({
 						viewerIsShopSide,
 					})
 				: null;
+		const listing = attachedListingOf(item.listing);
 
 		return (
 			<>
-				{showDate && (
-					<View style={styles.dateSep}>
-						<Text
-							style={[
-								styles.dateLabel,
-								{ color: mutedColor, backgroundColor: bg },
-							]}
-						>
-							{dateLabel}
-						</Text>
-					</View>
-				)}
-				{authorLabel && (
-					<Text style={[styles.authorLabel, { color: mutedColor }]}>
+				{dateSeparator}
+				{authorLabel ? (
+					<Text style={[styles.authorLabel, { color: C.mutedForeground }]}>
 						{authorLabel.primary}
 						{authorLabel.secondary ? (
-							<Text style={{ color: mutedColor }}>
+							<Text style={{ color: C.mutedForeground }}>
 								{" "}
 								{authorLabel.secondary === "formerMember"
 									? t("messages.formerMember")
@@ -590,25 +621,18 @@ export function ConversationScreen({
 							</Text>
 						) : null}
 					</Text>
-				)}
-				<View style={[styles.msgRow, isMe ? styles.msgRight : styles.msgLeft]}>
-					{!isMe && (
-						<View
-							style={[
-								styles.msgAvatar,
-								{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
-							]}
-						>
-							<Text
-								style={{
-									color: primaryColor,
-									fontFamily: Fonts.displayBold,
-									fontSize: 12,
-								}}
-							>
-								{otherUser?.name?.[0]?.toUpperCase() ?? "?"}
-							</Text>
-						</View>
+				) : null}
+				<View
+					style={[
+						styles.msgRow,
+						isMe ? styles.msgRight : styles.msgLeft,
+						{ marginBottom: endsRun ? 10 : 2 },
+					]}
+				>
+					{isMe ? null : endsRun ? (
+						renderAvatar(avatarFor(item))
+					) : (
+						<View style={styles.avatarSpacer} />
 					)}
 					<View
 						style={[
@@ -616,147 +640,103 @@ export function ConversationScreen({
 							{
 								// Own messages in deep indigo in both themes: white text
 								// keeps its contrast where the dark primary would not.
-								backgroundColor: isMe ? MY_BUBBLE : cardBg,
-								borderColor: isMe ? MY_BUBBLE : borderColor,
+								backgroundColor: isMe ? FILLED : C.card,
+								borderColor: isMe ? FILLED : C.border,
+								opacity: item.failed ? 0.72 : 1,
 							},
-							isMe ? styles.bubbleMine : styles.bubbleTheirs,
-							item.listing ? { width: "86%", maxWidth: "86%" } : null,
+							endsRun ? (isMe ? styles.bubbleMine : styles.bubbleTheirs) : null,
+							listing ? styles.bubbleWithListing : null,
 						]}
 					>
-						{item.listing && (
-							<Pressable
-								onPress={() =>
-									router.push(`/listing/${item.listing.id}` as never)
-								}
-								style={[
-									styles.msgListingCard,
-									{
-										borderBottomColor: isMe
-											? "rgba(255,255,255,0.2)"
-											: borderColor,
-										backgroundColor: isMe
-											? "rgba(255,255,255,0.12)"
-											: "#f4f5f9",
-									},
-								]}
-							>
-								{item.listing.thumbnailUrl && (
-									<Image
-										source={{ uri: item.listing.thumbnailUrl }}
-										style={styles.msgListingImg}
-										contentFit="cover"
-									/>
-								)}
-								<View style={styles.msgListingBottom}>
-									<View style={styles.msgListingInfo}>
-										<Text
-											style={[
-												styles.msgListingTitle,
-												{ color: isMe ? "#fff" : textColor },
-											]}
-											numberOfLines={2}
-										>
-											{item.listing.title}
-										</Text>
-										{item.listing.price != null && (
-											<Text
-												style={[
-													styles.msgListingPrice,
-													{
-														color: isMe
-															? "rgba(255,255,255,0.85)"
-															: primaryColor,
-													},
-												]}
-											>
-												{formatPrice(item.listing.price, i18n.language)}
-											</Text>
-										)}
-									</View>
-									<Ionicons
-										name="chevron-forward"
-										size={14}
-										color={isMe ? "rgba(255,255,255,0.6)" : mutedColor}
-									/>
-								</View>
-							</Pressable>
-						)}
+						{listing ? (
+							<MessageListingCard
+								listing={listing}
+								mine={isMe}
+								onPress={() => router.push(`/listing/${listing.id}` as never)}
+							/>
+						) : null}
 						<Text
-							style={[styles.bubbleText, { color: isMe ? "#fff" : textColor }]}
+							style={[
+								styles.bubbleText,
+								listing ? styles.bubbleTextUnderCard : null,
+								{ color: isMe ? "#ffffff" : C.foreground },
+							]}
 						>
 							{item.content}
 						</Text>
-						<View style={styles.bubbleMeta}>
+						<View
+							style={[
+								styles.bubbleMeta,
+								listing ? styles.bubbleTextUnderCard : null,
+							]}
+						>
 							<Text
 								style={[
 									styles.bubbleTime,
-									{ color: isMe ? "rgba(255,255,255,0.7)" : mutedColor },
+									{ color: isMe ? OWN_META : C.mutedForeground },
 								]}
 							>
 								{formatTime(item.createdAt)}
 							</Text>
-							{isMe && (
-								<Text
-									style={[
-										styles.readTick,
-										{
-											color: isRead ? "#9aa8f5" : "rgba(255,255,255,0.5)",
-										},
-									]}
-								>
-									{isRead ? " ✓✓" : " ✓"}
-								</Text>
-							)}
-							{isMe &&
-								!item.failed &&
-								chatClient?.isPending(String(item.id)) && (
-									<Ionicons
-										name="time-outline"
-										size={12}
-										color="rgba(255,255,255,0.7)"
-										accessibilityLabel={t("messages.sending")}
-										style={{ marginLeft: 4 }}
-									/>
-								)}
+							{isMe && !item.failed ? (
+								<Ionicons
+									name={
+										isPending
+											? "time-outline"
+											: isRead
+												? "checkmark-done"
+												: "checkmark"
+									}
+									size={15}
+									color={isRead && !isPending ? "#ffffff" : OWN_META}
+									accessibilityLabel={
+										isPending
+											? t("messages.sending")
+											: isRead
+												? t("messages.messageRead")
+												: t("messages.messageSent")
+									}
+								/>
+							) : null}
 						</View>
 					</View>
 				</View>
-				{isMe && item.failed && (
+				{isMe && item.failed ? (
 					<Pressable
 						onPress={() => retryMessage(item)}
 						accessibilityRole="button"
+						accessibilityLabel={t("messages.notSent")}
 						hitSlop={8}
-						style={styles.failedRow}
+						style={({ pressed }) => [
+							styles.failedRow,
+							{ opacity: pressed ? 0.6 : 1 },
+						]}
 					>
-						<Ionicons name="alert-circle" size={14} color="#d23a2e" />
-						<Text style={styles.failedText}>{t("messages.notSent")}</Text>
+						<Ionicons name="refresh" size={15} color={C.destructive} />
+						<Text style={[styles.failedText, { color: C.destructive }]}>
+							{t("messages.notSent")}
+						</Text>
 					</Pressable>
-				)}
+				) : null}
 			</>
 		);
 	};
 
 	if (!user) {
 		return (
-			<View
-				style={[
-					styles.safe,
-					{
-						backgroundColor: bg,
-						alignItems: "center",
-						justifyContent: "center",
-					},
-				]}
-			>
-				<Text style={{ color: textColor }}>{t("auth.loginRequired")}</Text>
+			<View style={[styles.safe, { backgroundColor: C.background }]}>
+				<EmptyState illustration="auth" title={t("auth.loginRequired")} />
 			</View>
 		);
 	}
 
+	const canSend = text.trim().length > 0 && !sending;
+	const nearLimit = text.length >= MAX_LENGTH - 100;
+
 	return (
 		<SafeAreaView
 			edges={renderHeader ? ["bottom"] : ["top", "bottom"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: C.background }]}
 		>
 			{renderHeader ? (
 				renderHeader(conv)
@@ -764,55 +744,41 @@ export function ConversationScreen({
 				<View
 					style={[
 						styles.header,
-						{ backgroundColor: cardBg, borderBottomColor: borderColor },
+						{ backgroundColor: C.card, borderBottomColor: C.border },
 					]}
 				>
 					<HeaderBackButton
-						color={textColor}
+						color={C.foreground}
 						fallback="/(tabs)/messages"
 						style={styles.backBtn}
 					/>
 					<View style={styles.headerInfo}>
 						<View style={styles.avatarWrapper}>
-							<View
-								style={[
-									styles.headerAvatar,
-									{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
-								]}
-							>
-								{header?.logoUrl ? (
-									<Image
-										source={{ uri: header.logoUrl }}
-										style={styles.headerAvatarImg}
-										contentFit="cover"
-									/>
-								) : (
-									<Text
-										style={{
-											color: primaryColor,
-											fontFamily: Fonts.displayBold,
-											fontSize: 16,
-										}}
-									>
-										{(header?.title ?? "?").charAt(0).toUpperCase() || "?"}
-									</Text>
-								)}
-							</View>
-							{!header?.isShop && isOtherOnline && (
-								<View style={styles.onlineDotHeader} />
-							)}
+							{renderAvatar(peerAvatar, 40)}
+							{!header?.isShop && isOtherOnline ? (
+								<View
+									style={[
+										styles.onlineDotHeader,
+										{ backgroundColor: C.success, borderColor: C.card },
+									]}
+								/>
+							) : null}
 						</View>
-						<View>
-							<Text style={[styles.headerName, { color: textColor }]}>
-								{header?.title || t("messages.user")}
+						<View style={styles.headerText}>
+							<Text
+								style={[styles.headerName, { color: C.foreground }]}
+								numberOfLines={1}
+								accessibilityRole="header"
+							>
+								{peerName}
 							</Text>
 							{!header?.isShop && isOtherOnline ? (
-								<Text style={[styles.onlineLabel, { color: "#34b26a" }]}>
+								<Text style={[styles.headerSub, { color: C.success }]}>
 									{t("messages.online")}
 								</Text>
 							) : header?.subtitle ? (
 								<Text
-									style={[styles.headerListing, { color: mutedColor }]}
+									style={[styles.headerSub, { color: C.mutedForeground }]}
 									numberOfLines={1}
 								>
 									{header.subtitle}
@@ -822,9 +788,11 @@ export function ConversationScreen({
 									onPress={() =>
 										router.push(`/listing/${attachedListing.id}` as never)
 									}
+									accessibilityRole="link"
+									hitSlop={{ top: 6, bottom: 6 }}
 								>
 									<Text
-										style={[styles.headerListing, { color: primaryColor }]}
+										style={[styles.headerSub, { color: link }]}
 										numberOfLines={1}
 									>
 										{attachedListing.title}
@@ -833,39 +801,58 @@ export function ConversationScreen({
 							) : null}
 						</View>
 					</View>
-					<Pressable
-						onPress={() =>
-							showAlert(
-								t("messages.options"),
-								"",
-								[
-									{
-										text: t("messages.viewProfile"),
-										onPress: () => router.push(`/profile/${otherUser?.id}`),
-									},
-									{
-										text: t("messages.report"),
-										onPress: () =>
-											router.push({
-												pathname: "/report",
-												params: { targetType: "user", targetId: otherUser?.id },
-											}),
-									},
-									{
-										text: isBlocked
-											? t("messages.unblock")
-											: t("messages.block"),
-										style: isBlocked ? "default" : "destructive",
-										onPress: confirmToggleBlock,
-									},
-									{ text: t("common.cancel"), style: "cancel" },
-								],
-								"info",
-							)
-						}
-					>
-						<Ionicons name="ellipsis-vertical" size={20} color={textColor} />
-					</Pressable>
+					{otherUser?.id ? (
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={t("messages.options")}
+							style={({ pressed }) => [
+								styles.optionsBtn,
+								{ opacity: pressed ? 0.6 : 1 },
+							]}
+							onPress={() =>
+								showAlert(
+									t("messages.options"),
+									"",
+									[
+										{
+											text: t("messages.viewProfile"),
+											onPress: () => router.push(`/profile/${otherUser?.id}`),
+										},
+										{
+											text: t("messages.report"),
+											onPress: () =>
+												router.push({
+													pathname: "/report",
+													params: {
+														targetType: "user",
+														targetId: otherUser?.id,
+													},
+												}),
+										},
+										{
+											text: isBlocked
+												? t("messages.unblock")
+												: t("messages.block"),
+											style: isBlocked ? "default" : "destructive",
+											onPress: confirmToggleBlock,
+										},
+										{ text: t("common.cancel"), style: "cancel" },
+									],
+									"info",
+								)
+							}
+						>
+							<Ionicons
+								name={
+									Platform.OS === "ios"
+										? "ellipsis-horizontal-circle-outline"
+										: "ellipsis-vertical"
+								}
+								size={Platform.OS === "ios" ? 24 : 20}
+								color={C.foreground}
+							/>
+						</Pressable>
+					) : null}
 				</View>
 			)}
 
@@ -875,7 +862,7 @@ export function ConversationScreen({
 				) : isError ? (
 					// A failed history fetch used to leave a permanently blank thread.
 					<EmptyState
-						icon="chatbubbles-outline"
+						icon="cloud-offline-outline"
 						title={t("common.error")}
 						subtitle={t("home.errorSub")}
 						ctaLabel={t("common.retry")}
@@ -887,39 +874,46 @@ export function ConversationScreen({
 						data={messages}
 						renderItem={renderMessage}
 						keyExtractor={(item) => item.id}
-						contentContainerStyle={[styles.msgList, centeredContent]}
+						contentContainerStyle={[
+							styles.msgList,
+							messages.length === 0 ? styles.msgListEmpty : null,
+							centeredContent,
+						]}
 						showsVerticalScrollIndicator={false}
 						keyboardDismissMode="interactive"
+						keyboardShouldPersistTaps="handled"
 						onContentSizeChange={() =>
 							listRef.current?.scrollToEnd({ animated: false })
 						}
+						ListEmptyComponent={
+							<View style={styles.threadEmpty}>
+								{renderAvatar(peerAvatar, 64)}
+								<Text
+									style={[styles.threadEmptyName, { color: C.foreground }]}
+									numberOfLines={1}
+								>
+									{peerName}
+								</Text>
+								<Text
+									style={[styles.threadEmptyText, { color: C.mutedForeground }]}
+								>
+									{t("inbox.noMessages")}
+								</Text>
+							</View>
+						}
 						ListFooterComponent={
 							isOtherTyping ? (
-								<View style={[styles.msgRow, styles.msgLeft, { marginTop: 4 }]}>
-									<View
-										style={[
-											styles.msgAvatar,
-											{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
-										]}
-									>
-										<Text
-											style={{
-												color: primaryColor,
-												fontFamily: Fonts.displayBold,
-												fontSize: 12,
-											}}
-										>
-											{otherUser?.name?.[0]?.toUpperCase() ?? "?"}
-										</Text>
-									</View>
+								<View style={[styles.msgRow, styles.msgLeft, { marginTop: 2 }]}>
+									{renderAvatar(peerAvatar)}
 									<View
 										style={[
 											styles.bubble,
+											styles.bubbleTheirs,
 											styles.typingBubble,
-											{ backgroundColor: cardBg, borderColor },
+											{ backgroundColor: C.card, borderColor: C.border },
 										]}
 									>
-										<TypingDots color={mutedColor} />
+										<TypingIndicator color={C.mutedForeground} />
 									</View>
 								</View>
 							) : null
@@ -927,101 +921,127 @@ export function ConversationScreen({
 					/>
 				)}
 
-				{/* Input bar */}
+				{/* Composer */}
 				<View
 					style={[
-						{ backgroundColor: cardBg, borderTopColor: borderColor },
 						styles.inputWrapper,
+						{ backgroundColor: C.card, borderTopColor: C.border },
 					]}
 				>
-					{attachedListing && (
-						<View style={[styles.attachBar, { borderColor }]}>
-							{attachedListing.thumbnailUrl && (
-								<Image
-									source={{ uri: attachedListing.thumbnailUrl }}
-									style={styles.attachImg}
-									contentFit="cover"
-								/>
-							)}
-							<View style={styles.attachInfo}>
-								<Text
-									style={[styles.attachTitle, { color: textColor }]}
-									numberOfLines={1}
-								>
-									{attachedListing.title}
-								</Text>
-								{attachedListing.price != null && (
-									<Text style={[styles.attachPrice, { color: primaryColor }]}>
-										{formatPrice(attachedListing.price, i18n.language)}
-									</Text>
-								)}
-							</View>
-							<Pressable
-								onPress={() => setAttachedListing(null)}
-								style={styles.attachDismiss}
-							>
-								<Ionicons name="close" size={16} color={mutedColor} />
-							</Pressable>
+					{attachedListing ? (
+						<View style={centeredContent}>
+							<ComposerListingChip
+								listing={attachedListing}
+								onRemove={() => setAttachedListing(null)}
+							/>
 						</View>
-					)}
+					) : null}
 					{isBlocked ? (
-						<View style={[styles.inputBar, centeredContent]}>
-							<Text style={[styles.blockedNotice, { color: mutedColor }]}>
+						<View style={[styles.blockedBar, centeredContent]}>
+							<Ionicons
+								name="ban-outline"
+								size={18}
+								color={C.mutedForeground}
+							/>
+							<Text
+								style={[styles.blockedNotice, { color: C.mutedForeground }]}
+							>
 								{t("messages.blockedNotice")}
 							</Text>
-							<Pressable onPress={confirmToggleBlock}>
-								<Text style={[styles.blockedAction, { color: primaryColor }]}>
+							<Pressable
+								onPress={confirmToggleBlock}
+								accessibilityRole="button"
+								style={({ pressed }) => [
+									styles.blockedActionBtn,
+									{ opacity: pressed ? 0.6 : 1 },
+								]}
+							>
+								<Text style={[styles.blockedAction, { color: link }]}>
 									{t("messages.unblock")}
 								</Text>
 							</Pressable>
 						</View>
 					) : (
 						<View style={centeredContent}>
-							{!chatConnected && (
-								<Text style={[styles.offlineHint, { color: mutedColor }]}>
-									{t("messages.queuedOffline")}
-								</Text>
-							)}
-							<View style={[styles.inputBar, centeredContent]}>
-								<TextInput
-									value={text}
-									onChangeText={handleTextChange}
-									placeholder={t("messages.writePlaceholder")}
-									placeholderTextColor={mutedColor}
-									style={[
-										styles.msgInput,
-										{
-											color: textColor,
-											backgroundColor: isDark ? "#0c1030" : "#eceef5",
-											borderColor,
-										},
-									]}
-									multiline
-									maxLength={1000}
-								/>
+							{!chatConnected ? (
+								<View
+									style={styles.offlineHint}
+									accessibilityLiveRegion="polite"
+								>
+									<Ionicons
+										name="cloud-offline-outline"
+										size={14}
+										color={C.mutedForeground}
+									/>
+									<Text
+										style={[
+											styles.offlineHintText,
+											{ color: C.mutedForeground },
+										]}
+									>
+										{t("messages.queuedOffline")}
+									</Text>
+								</View>
+							) : null}
+							<View style={styles.inputBar}>
+								<View style={styles.inputCol}>
+									<TextInput
+										value={text}
+										onChangeText={handleTextChange}
+										placeholder={t("messages.writePlaceholder")}
+										placeholderTextColor={C.faint}
+										accessibilityLabel={t("messages.writePlaceholder")}
+										selectionColor={link}
+										cursorColor={link}
+										style={[
+											styles.msgInput,
+											{
+												color: C.foreground,
+												backgroundColor: C.well,
+												borderColor: C.border,
+											},
+										]}
+										multiline
+										maxLength={MAX_LENGTH}
+									/>
+									{nearLimit ? (
+										<Text
+											style={[
+												styles.counter,
+												{
+													color:
+														text.length >= MAX_LENGTH
+															? C.destructive
+															: C.mutedForeground,
+												},
+											]}
+										>
+											{text.length}/{MAX_LENGTH}
+										</Text>
+									) : null}
+								</View>
 								<Pressable
 									onPress={() => text.trim() && sendMessage()}
 									accessibilityRole="button"
 									accessibilityLabel={t("messages.send")}
-									disabled={!text.trim() || sending}
-									style={[
+									accessibilityState={{ disabled: !canSend }}
+									disabled={!canSend}
+									style={({ pressed }) => [
 										styles.sendBtn,
 										{
-											backgroundColor: text.trim()
-												? primaryColor
-												: isDark
-													? "#1a1f4a"
-													: "#e1e3ee",
+											backgroundColor: canSend ? FILLED : C.well,
+											transform: [{ scale: pressed ? 0.94 : 1 }],
 										},
 									]}
 								>
 									{sending ? (
-										<ActivityIndicator size="small" color="#fff" />
+										<ActivityIndicator size="small" color="#ffffff" />
 									) : (
 										<Ionicons
 											name="send"
-											size={18}
-											color={text.trim() ? "#fff" : mutedColor}
+											size={19}
+											color={canSend ? "#ffffff" : C.faint}
+											style={styles.sendIcon}
 										/>
 									)}
 								</Pressable>
@@ -1034,83 +1054,134 @@ export function ConversationScreen({
 	);
 }
 
-const MY_BUBBLE = "#2f43b5";
+interface PeerAvatar {
+	uri: string | null;
+	initial: string;
+	/** A shop is a squared plaque, a person a circle. */
+	square: boolean;
+}
+
+/** Own bubbles and the send button: deep indigo in both themes, so white stays legible. */
+const FILLED = "#2f43b5";
+/** Time and ticks on an own bubble: white at 80% keeps 4.5:1 on `FILLED`. */
+const OWN_META = "rgba(255,255,255,0.8)";
+const MAX_LENGTH = 1000;
+/** Messages closer than this from one sender stack as a run. */
+const RUN_GAP_MS = 5 * 60_000;
+
+function senderIdOf(m: any): string | undefined {
+	return m?.sender?.id ?? m?.sender;
+}
+
+function sameRun(a: any, b: any): boolean {
+	if (!a || !b) return false;
+	if (isSystemMessage(a) || isSystemMessage(b)) return false;
+	if (senderIdOf(a) !== senderIdOf(b)) return false;
+	const ta = new Date(a.createdAt);
+	const tb = new Date(b.createdAt);
+	if (ta.toDateString() !== tb.toDateString()) return false;
+	return Math.abs(tb.getTime() - ta.getTime()) < RUN_GAP_MS;
+}
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
+		gap: 4,
+		paddingHorizontal: 4,
+		paddingVertical: 6,
+		minHeight: 56,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	backBtn: { width: 40, alignItems: "center", justifyContent: "center" },
-	headerInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
-	avatarWrapper: { position: "relative" },
-	headerAvatar: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
+	backBtn: {
+		width: 44,
+		height: 44,
 		alignItems: "center",
 		justifyContent: "center",
-		overflow: "hidden",
 	},
-	headerAvatarImg: { width: 40, height: 40 },
+	headerInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+	headerText: { flex: 1 },
+	avatarWrapper: { position: "relative" },
 	onlineDotHeader: {
 		position: "absolute",
-		bottom: 1,
-		right: 1,
+		bottom: 0,
+		right: 0,
 		width: 12,
 		height: 12,
 		borderRadius: 6,
-		backgroundColor: "#34b26a",
 		borderWidth: 2,
-		borderColor: "white",
 	},
-	headerName: { fontSize: 15, fontFamily: Fonts.displayBold },
-	headerListing: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	onlineLabel: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	msgList: { padding: 12, paddingBottom: 8 },
-	dateSep: { alignItems: "center", marginVertical: 12 },
+	headerName: {
+		fontSize: 17,
+		lineHeight: 22,
+		letterSpacing: -0.2,
+		fontFamily: Fonts.displayBold,
+	},
+	headerSub: { fontSize: 13, lineHeight: 17, fontFamily: Fonts.bodySemibold },
+	optionsBtn: {
+		width: 48,
+		height: 48,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	msgList: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },
+	msgListEmpty: { flexGrow: 1, justifyContent: "center" },
+	threadEmpty: { alignItems: "center", gap: 8, paddingHorizontal: 32 },
+	threadEmptyName: {
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
+		fontFamily: Fonts.displayBold,
+		marginTop: 4,
+	},
+	threadEmptyText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	dateSep: { alignItems: "center", marginTop: 14, marginBottom: 12 },
 	dateLabel: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
-		paddingHorizontal: 10,
-		paddingVertical: 3,
+		paddingHorizontal: 12,
+		paddingVertical: 4,
 		borderRadius: 10,
 		overflow: "hidden",
 	},
 	authorLabel: {
-		fontSize: 11,
+		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
-		marginLeft: 42,
-		marginBottom: 2,
+		// Avatar 28 + its 6pt gap + the bubble's own 14pt inset.
+		marginLeft: 48,
+		marginBottom: 3,
 	},
-	msgRow: { flexDirection: "row", alignItems: "flex-end", marginBottom: 6 },
+	msgRow: { flexDirection: "row", alignItems: "flex-end" },
 	msgLeft: { justifyContent: "flex-start" },
 	msgRight: { justifyContent: "flex-end" },
 	msgAvatar: {
-		width: 28,
-		height: 28,
-		borderRadius: 14,
 		alignItems: "center",
 		justifyContent: "center",
+		overflow: "hidden",
 		marginRight: 6,
-		marginBottom: 2,
 	},
+	avatarSpacer: { width: 28, marginRight: 6 },
 	bubble: {
 		borderRadius: 20,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		paddingHorizontal: 14,
-		paddingVertical: 10,
-		maxWidth: "75%",
+		paddingTop: 9,
+		paddingBottom: 7,
+		maxWidth: "78%",
 		gap: 2,
 	},
-	typingBubble: {
-		paddingHorizontal: 16,
-		paddingVertical: 10,
+	// A shared listing fills the bubble edge to edge, with a 6pt frame.
+	bubbleWithListing: {
+		width: "82%",
+		maxWidth: 340,
+		paddingHorizontal: 6,
+		paddingTop: 6,
 	},
+	bubbleTextUnderCard: { paddingHorizontal: 8 },
+	typingBubble: { paddingHorizontal: 16, paddingVertical: 10 },
 	bubbleMine: { borderBottomRightRadius: 6 },
 	bubbleTheirs: { borderBottomLeftRadius: 6 },
 	bubbleText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.body },
@@ -1118,90 +1189,90 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "flex-end",
-		gap: 2,
+		gap: 3,
 	},
-	bubbleTime: { fontSize: 11, fontFamily: Fonts.body },
-	readTick: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	bubbleTime: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
 	failedRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		alignSelf: "flex-end",
-		gap: 4,
-		marginTop: -2,
-		marginBottom: 6,
+		gap: 5,
+		minHeight: 32,
+		marginTop: -4,
+		marginBottom: 8,
+		paddingHorizontal: 4,
+	},
+	failedText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	offlineHint: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
 		paddingHorizontal: 16,
+		paddingTop: 8,
 	},
-	failedText: {
+	offlineHintText: {
+		flex: 1,
 		fontSize: 12,
-		color: "#d23a2e",
-		fontFamily: Fonts.bodySemibold,
+		lineHeight: 16,
+		fontFamily: Fonts.body,
 	},
-	offlineHint: { fontSize: 12, paddingHorizontal: 16, paddingBottom: 6 },
-	inputWrapper: { borderTopWidth: 1 },
-	attachBar: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 10,
-		paddingVertical: 8,
-		borderBottomWidth: 1,
-	},
-	attachImg: { width: 36, height: 36, borderRadius: 6 },
-	attachInfo: { flex: 1 },
-	attachTitle: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	attachPrice: { fontSize: 12, fontFamily: Fonts.displayBold },
-	attachDismiss: { padding: 4 },
-	msgListingCard: {
-		borderBottomWidth: 1,
-		marginHorizontal: -14,
-		marginTop: -10,
-		marginBottom: 6,
-		borderTopLeftRadius: 17,
-		borderTopRightRadius: 17,
-		overflow: "hidden",
-	},
-	msgListingImg: { width: "100%", height: 110 },
-	msgListingBottom: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 10,
-		paddingVertical: 8,
-	},
-	msgListingInfo: { flex: 1 },
-	msgListingTitle: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	msgListingPrice: { fontSize: 12, fontFamily: Fonts.displayBold },
+	inputWrapper: { borderTopWidth: StyleSheet.hairlineWidth },
 	inputBar: {
 		flexDirection: "row",
 		alignItems: "flex-end",
 		gap: 8,
-		padding: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+	},
+	inputCol: { flex: 1 },
+	blockedBar: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingLeft: 16,
+		paddingRight: 8,
+		paddingVertical: 4,
 	},
 	blockedNotice: {
 		flex: 1,
-		fontSize: 13,
-		fontFamily: Fonts.body,
-	},
-	blockedAction: {
 		fontSize: 14,
-
+		lineHeight: 19,
 		fontFamily: Fonts.body,
 	},
+	blockedActionBtn: {
+		minHeight: 48,
+		justifyContent: "center",
+		paddingHorizontal: 8,
+	},
+	blockedAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
 	msgInput: {
-		flex: 1,
-		borderRadius: 22,
-		borderWidth: 1,
-		paddingHorizontal: 14,
-		paddingVertical: 10,
-		fontSize: 15,
+		minHeight: 48,
+		maxHeight: 132,
+		borderRadius: 24,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingHorizontal: 16,
+		paddingTop: 13,
+		paddingBottom: 13,
+		fontSize: 16,
+		lineHeight: 21,
 		fontFamily: Fonts.body,
-		maxHeight: 100,
+		textAlignVertical: "center",
+	},
+	counter: {
+		alignSelf: "flex-end",
+		fontSize: 11,
+		lineHeight: 14,
+		fontFamily: Fonts.bodyMedium,
+		marginTop: 4,
+		marginRight: 12,
 	},
 	sendBtn: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
+		width: 48,
+		height: 48,
+		borderRadius: 24,
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	// The paper plane's visual centre sits left of its box.
+	sendIcon: { marginLeft: 3 },
 });

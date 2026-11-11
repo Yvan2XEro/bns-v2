@@ -18,6 +18,10 @@ export const Colors = {
 		primaryForeground: "#ffffff",
 		primaryPressed: "#1a2672",
 		primaryTint: "#e3e7f8",
+		/** Behind a white label: filled buttons, selected chips, ticked boxes */
+		primaryFill: "#23338f",
+		/** Brand-coloured words on a card: links, selected labels, inline actions */
+		link: "#23338f",
 
 		// Signage yellow — sell CTA, price tags, boosted
 		sun: "#ffb81c",
@@ -29,6 +33,8 @@ export const Colors = {
 		secondaryForeground: "#12163a",
 		muted: "#eceef5",
 		mutedForeground: "#5b6088",
+		/** Running text: descriptions, bios, secondary paragraphs */
+		body: "#3a3f66",
 		faint: "#777ca3",
 
 		// Accent (signage yellow, soft)
@@ -59,6 +65,11 @@ export const Colors = {
 		warningTint: "#fff1c7",
 		info: "#2f43b5",
 		dangerTint: "#fbe3e0",
+		// Status words: 4.5:1 or better on the card, the ground and the tint.
+		// `success`, `warning` and `destructive` are fills; these are for text.
+		successText: "#155c35",
+		warningText: "#6e4700",
+		dangerText: "#8e2219",
 
 		/** Ndop shell: the indigo header field and its ink */
 		shell: "#1d2a7a",
@@ -78,6 +89,10 @@ export const Colors = {
 		primaryForeground: "#0c1030",
 		primaryPressed: "#9aa8f5",
 		primaryTint: "#1d2568",
+		/** White on #6878ea is 3.8:1; filled actions step down to 8:1 */
+		primaryFill: "#2f43b5",
+		/** #6878ea on a night card is ~4.3:1; words lift to 7:1 */
+		link: "#9aa8f5",
 
 		sun: "#ffc94a",
 		sunForeground: "#12163a",
@@ -88,6 +103,7 @@ export const Colors = {
 		secondaryForeground: "#e1e3ee",
 		muted: "#1a1f4a",
 		mutedForeground: "#a3a7c8",
+		body: "#c9cce0",
 		faint: "#777ca3",
 
 		// Accent (dark signage)
@@ -118,6 +134,9 @@ export const Colors = {
 		warningTint: "#3a2a00",
 		info: "#9aa8f5",
 		dangerTint: "#3d0f0b",
+		successText: "#8fddb0",
+		warningText: "#ffd25a",
+		dangerText: "#f2a79f",
 
 		shell: "#13183e",
 		shellForeground: "#ffffff",
@@ -171,26 +190,27 @@ export const borderRadius = {
 } as const;
 
 // ─── Typography ───────────────────────────────────────────────────────────────
-// Bricolage Grotesque — the painted-sign voice: headings, prices, numbers.
-// Figtree — the working face: body, labels, controls.
+// Outfit — the display voice: headings, prices, numbers.
+// DM Sans — the working face: body, labels, controls.
+// Paired with the web (packages/web/src/app/layout.tsx) — keep the two in sync.
 
 export const Fonts = {
-	body: "Figtree_400Regular",
-	bodyMedium: "Figtree_500Medium",
-	bodySemibold: "Figtree_600SemiBold",
-	bodyBold: "Figtree_700Bold",
+	body: "DMSans_400Regular",
+	bodyMedium: "DMSans_500Medium",
+	bodySemibold: "DMSans_600SemiBold",
+	bodyBold: "DMSans_700Bold",
 
-	displayMedium: "BricolageGrotesque_500Medium",
-	displaySemibold: "BricolageGrotesque_600SemiBold",
-	displayBold: "BricolageGrotesque_700Bold",
-	displayExtrabold: "BricolageGrotesque_800ExtraBold",
+	displayMedium: "Outfit_500Medium",
+	displaySemibold: "Outfit_600SemiBold",
+	displayBold: "Outfit_700Bold",
+	displayExtrabold: "Outfit_800ExtraBold",
 } as const;
 
 /**
  * Shorthand text-style presets. Spread these in StyleSheet definitions.
  */
 export const TextStyles = {
-	// Headings (Bricolage)
+	// Headings (Outfit)
 	h1: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 30,
@@ -211,7 +231,7 @@ export const TextStyles = {
 	},
 	h4: { fontFamily: Fonts.displaySemibold, fontSize: 16, lineHeight: 21 },
 
-	// Body (Figtree)
+	// Body (DM Sans)
 	bodyLg: { fontFamily: Fonts.body, fontSize: 17, lineHeight: 25 },
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	bodySm: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
@@ -222,7 +242,7 @@ export const TextStyles = {
 	label: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
 	labelSm: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
 
-	// Price (Bricolage, tabular-feeling weight)
+	// Price (Outfit, tabular-feeling weight)
 	price: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 17,

@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Text, TextInput, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import {
@@ -18,6 +19,7 @@ import { useTranslation } from "@/src/lib/i18n";
 import { availableActions } from "@/src/lib/orderActions";
 import type { OrderView } from "@/src/types/order";
 import { CheckoutButton } from "./CheckoutButton";
+import { FormError } from "./FormError";
 
 /**
  * The SMS-code outcome. Whether "confirm" and "resend" exist comes from the
@@ -70,10 +72,7 @@ export function CodeEntry({
 
 	return (
 		<View style={{ gap: 10 }}>
-			<Text style={[formStyles.hint, { color: c.body }]}>
-				{t("checkout.codeBody")}
-			</Text>
-			<Text style={[formStyles.hint, { color: c.muted }]}>
+			<Text style={[formStyles.hint, { color: c.body, fontSize: 14 }]}>
 				{t("checkout.codeSent", { phone: order.delivery.phone })}
 			</Text>
 			{actions.includes("confirm_code") ? (
@@ -98,22 +97,27 @@ export function CodeEntry({
 									{
 										color: c.text,
 										backgroundColor: c.input,
-										borderColor: c.border,
-										fontSize: 20,
-										letterSpacing: 6,
+										borderColor: codeError ? c.danger : c.border,
+										minHeight: 56,
+										fontSize: 24,
+										fontFamily: Fonts.displayBold,
+										letterSpacing: 8,
+										textAlign: "center",
 									},
 								]}
 							/>
 						)}
 					/>
-					{codeError ? (
-						<Text style={formStyles.error} accessibilityLiveRegion="polite">
-							{codeError === "checkout.errorCode"
-								? t("checkout.errorCode")
-								: codeError}
-						</Text>
-					) : null}
-					<Text style={[formStyles.hint, { color: c.muted }]}>
+					<FormError
+						message={
+							codeError
+								? codeError === "checkout.errorCode"
+									? t("checkout.errorCode")
+									: codeError
+								: null
+						}
+					/>
+					<Text style={[formStyles.hint, { color: c.muted, fontSize: 13 }]}>
 						{t("checkout.attemptsLeft", {
 							count: order.confirmation.attemptsLeft,
 						})}
@@ -125,7 +129,7 @@ export function CodeEntry({
 					/>
 				</>
 			) : (
-				<Text style={[formStyles.hint, { color: c.warningText }]}>
+				<Text style={[formStyles.hint, { color: c.warningText, fontSize: 14 }]}>
 					{t("checkout.noMoreAttempts")}
 				</Text>
 			)}
@@ -151,15 +155,16 @@ export function CodeEntry({
 						}
 					/>
 					{resend.isSuccess ? (
-						<Text style={[formStyles.hint, { color: c.successText }]}>
+						<Text
+							style={[formStyles.hint, { color: c.successText, fontSize: 13 }]}
+							accessibilityLiveRegion="polite"
+						>
 							{t("checkout.codeSentAgain")}
 						</Text>
 					) : null}
-					{resend.error ? (
-						<Text style={formStyles.error} accessibilityRole="alert">
-							{resolveErrorMessage(resend.error, t)}
-						</Text>
-					) : null}
+					<FormError
+						message={resend.error ? resolveErrorMessage(resend.error, t) : null}
+					/>
 				</View>
 			) : null}
 		</View>

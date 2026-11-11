@@ -16,6 +16,7 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
+import { fillOf, inkOf } from "@/src/components/checkout/fill";
 import {
 	EvidenceStrip,
 	EvidenceViewer,
@@ -68,6 +69,7 @@ const buttons = [
 export function DisputeThread({ id }: { id: string }) {
 	const { t, i18n } = useTranslation();
 	const c = useShopTheme();
+	const fill = fillOf(c);
 	const view = useDispute(id);
 	const action = useDisputeAction(id ?? "");
 	const upload = useUploadDisputeEvidence(id ?? "");
@@ -227,7 +229,7 @@ export function DisputeThread({ id }: { id: string }) {
 								<View
 									style={[styles.bannerIcon, { backgroundColor: tone.strong }]}
 								>
-									<Ionicons name={tone.icon} size={20} color="#fff" />
+									<Ionicons name={tone.icon} size={20} color={fill.fg} />
 								</View>
 								<View style={styles.flex}>
 									<Text style={[styles.bannerTitle, { color: tone.text }]}>
@@ -353,7 +355,7 @@ export function DisputeThread({ id }: { id: string }) {
 												style={[
 													styles.bubble,
 													styles.mine,
-													{ backgroundColor: c.primary },
+													{ backgroundColor: OWN_BUBBLE },
 												]}
 											>
 												<Text style={[styles.body, { color: "#fff" }]}>
@@ -380,7 +382,7 @@ export function DisputeThread({ id }: { id: string }) {
 									<View key={message.id} style={styles.theirsRow}>
 										{author === "staff" ? (
 											<View
-												style={[styles.avatar, { backgroundColor: c.primary }]}
+												style={[styles.avatar, { backgroundColor: fill.bg }]}
 											>
 												<Ionicons
 													name="shield-checkmark"
@@ -404,7 +406,7 @@ export function DisputeThread({ id }: { id: string }) {
 														]}
 													>
 														<Text
-															style={[styles.badgeText, { color: c.primary }]}
+															style={[styles.badgeText, { color: inkOf(c) }]}
 														>
 															{t("disputes.staffBadge")}
 														</Text>
@@ -467,8 +469,8 @@ export function DisputeThread({ id }: { id: string }) {
 												styles.actionButton,
 												primary
 													? {
-															backgroundColor: c.primary,
-															borderColor: c.primary,
+															backgroundColor: fill.bg,
+															borderColor: fill.bg,
 														}
 													: {
 															backgroundColor: c.card,
@@ -484,9 +486,9 @@ export function DisputeThread({ id }: { id: string }) {
 													styles.actionText,
 													{
 														color: primary
-															? "#fff"
+															? fill.fg
 															: danger
-																? c.danger
+																? c.dangerText
 																: c.text,
 													},
 												]}
@@ -499,7 +501,10 @@ export function DisputeThread({ id }: { id: string }) {
 							</View>
 						) : null}
 						{action.isError || upload.isError ? (
-							<Text accessibilityRole="alert" style={styles.error}>
+							<Text
+								accessibilityRole="alert"
+								style={[styles.error, { color: c.dangerText }]}
+							>
 								{t("disputes.actionError")}
 							</Text>
 						) : null}
@@ -565,12 +570,12 @@ export function DisputeThread({ id }: { id: string }) {
 							accessibilityLabel={t("disputes.sendMessage")}
 							disabled={action.isPending}
 							onPress={() => void send()}
-							style={[styles.roundButton, { backgroundColor: c.primary }]}
+							style={[styles.roundButton, { backgroundColor: fill.bg }]}
 						>
 							{action.isPending ? (
-								<ActivityIndicator color="#fff" />
+								<ActivityIndicator color={fill.fg} />
 							) : (
-								<Ionicons name="send" size={18} color="#fff" />
+								<Ionicons name="send" size={18} color={fill.fg} />
 							)}
 						</Pressable>
 					</View>
@@ -599,8 +604,8 @@ function toneColors(c: ShopPalette, tone: DisputeTone) {
 			return {
 				soft: c.primarySoft,
 				border: c.primarySoft,
-				strong: c.primary,
-				text: c.isDark ? "#a9b4f0" : c.primary,
+				strong: fillOf(c).bg,
+				text: inkOf(c),
 				icon: "scale-outline" as const,
 			};
 		case "success":
@@ -649,7 +654,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 	},
 	chipText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
-	evidenceText: { fontFamily: Fonts.body, fontSize: 12 },
+	evidenceText: { fontFamily: Fonts.body, fontSize: 13 },
 	card: { borderRadius: 16, borderWidth: 1, gap: 8, padding: 16 },
 	title: { fontFamily: Fonts.displayBold, fontSize: 16 },
 	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
@@ -676,8 +681,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	badge: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 },
-	badgeText: { fontFamily: Fonts.bodySemibold, fontSize: 11 },
-	time: { fontFamily: Fonts.body, fontSize: 11 },
+	badgeText: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
+	time: { fontFamily: Fonts.body, fontSize: 12 },
 	actions: { gap: 10, marginTop: 6 },
 	actionButton: {
 		alignItems: "center",
@@ -709,28 +714,31 @@ const styles = StyleSheet.create({
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
 	roundButton: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
+		width: 48,
+		height: 48,
+		borderRadius: 24,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	input: {
 		flex: 1,
-		minHeight: 44,
+		minHeight: 48,
 		maxHeight: 120,
-		borderRadius: 22,
+		borderRadius: 24,
 		borderWidth: 1,
 		paddingHorizontal: 16,
 		paddingTop: 11,
 		paddingBottom: 11,
 		fontFamily: Fonts.body,
-		fontSize: 15,
+		fontSize: 16,
 	},
 	error: {
-		color: "#d23a2e",
 		fontFamily: Fonts.bodyMedium,
+		fontSize: 14,
 		margin: 16,
 		textAlign: "center",
 	},
 });
+
+/** DESIGN.md: own bubbles are #2f43b5 in both themes, so white stays legible. */
+const OWN_BUBBLE = "#2f43b5";

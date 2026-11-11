@@ -3,6 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Text, View } from "react-native";
 import { FormRow } from "@/src/components/layout/FormRow";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useActiveCouriers } from "@/src/hooks/useDeliverySettings";
@@ -135,7 +136,7 @@ export function ZoneForm({
 				/>
 			) : null}
 			{errorOf("courier") ? (
-				<Text accessibilityRole="alert" style={{ color: c.danger }}>
+				<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
 					{t(errorOf("courier") ?? "")}
 				</Text>
 			) : null}
@@ -235,7 +236,7 @@ export function ZoneForm({
 				)}
 			/>
 			{error && !serverField ? (
-				<Text accessibilityRole="alert" style={{ color: c.danger }}>
+				<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
 					{resolveErrorMessage(error, t, t("deliverySettings.saveFailed"))}
 				</Text>
 			) : null}

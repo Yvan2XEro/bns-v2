@@ -11,6 +11,7 @@ import {
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
+import { fillOf, inkOf } from "@/src/components/checkout/fill";
 import { useShopTheme } from "@/src/components/shop/theme";
 import type { SubmitPayoutAccountInput } from "@/src/hooks/useSellerPayments";
 import { useTranslation } from "@/src/lib/i18n";
@@ -83,7 +84,7 @@ export function PayoutAccountForm({
 										style={[
 											s.meta,
 											{
-												color: selected ? c.primary : c.text,
+												color: selected ? inkOf(c) : c.text,
 												fontFamily: Fonts.bodySemibold,
 											},
 										]}
@@ -108,6 +109,8 @@ export function PayoutAccountForm({
 						value={field.value}
 						onChangeText={field.onChange}
 						onBlur={field.onBlur}
+						accessibilityLabel={t("payments.setup_accountName")}
+						selectionColor={c.primary}
 						style={[
 							styles.input,
 							{
@@ -120,7 +123,10 @@ export function PayoutAccountForm({
 				)}
 			/>
 			{form.formState.errors.accountName ? (
-				<Text style={[s.meta, { color: c.danger }]}>
+				<Text
+					accessibilityRole="alert"
+					style={[s.meta, { color: c.dangerText }]}
+				>
 					{t(form.formState.errors.accountName.message ?? "")}
 				</Text>
 			) : null}
@@ -137,6 +143,8 @@ export function PayoutAccountForm({
 						onChangeText={field.onChange}
 						onBlur={field.onBlur}
 						keyboardType="phone-pad"
+						accessibilityLabel={t("payments.setup_accountNumber")}
+						selectionColor={c.primary}
 						style={[
 							styles.input,
 							{
@@ -149,7 +157,10 @@ export function PayoutAccountForm({
 				)}
 			/>
 			{form.formState.errors.accountNumber ? (
-				<Text style={[s.meta, { color: c.danger }]}>
+				<Text
+					accessibilityRole="alert"
+					style={[s.meta, { color: c.dangerText }]}
+				>
 					{t(form.formState.errors.accountNumber.message ?? "")}
 				</Text>
 			) : null}
@@ -167,12 +178,13 @@ export function PayoutAccountForm({
 					s.button,
 					styles.save,
 					{
-						backgroundColor: form.formState.isValid ? c.primary : c.neutralSoft,
+						backgroundColor: fillOf(c).bg,
+						opacity: form.formState.isValid && !pending ? 1 : 0.45,
 					},
 				]}
 			>
 				{pending ? (
-					<ActivityIndicator color="#fff" />
+					<ActivityIndicator color={fillOf(c).fg} />
 				) : (
 					<Text style={s.buttonText}>{t("payments.setup_save")}</Text>
 				)}
@@ -189,14 +201,17 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 		paddingHorizontal: 14,
 		paddingVertical: 9,
+		minHeight: 44,
+		justifyContent: "center",
 	},
 	input: {
 		borderRadius: 12,
 		borderWidth: 1.5,
 		paddingHorizontal: 12,
 		paddingVertical: 10,
-		fontSize: 14,
-		minHeight: 44,
+		fontFamily: Fonts.body,
+		fontSize: 16,
+		minHeight: 48,
 	},
 	save: { marginTop: 14 },
 });

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { billingStyles as s } from "./billingStyles";
 
@@ -103,7 +104,10 @@ export function SettingsField({
 			/>
 			{hint ? <Text style={[s.meta, { color: c.muted }]}>{hint}</Text> : null}
 			{error ? (
-				<Text accessibilityRole="alert" style={[s.meta, { color: c.danger }]}>
+				<Text
+					accessibilityRole="alert"
+					style={[s.meta, { color: dangerInk(c) }]}
+				>
 					{error}
 				</Text>
 			) : null}
@@ -116,10 +120,10 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	input: {
-		minHeight: 44,
+		minHeight: 48,
 		borderWidth: 1,
 		borderRadius: 12,
 		paddingHorizontal: 12,

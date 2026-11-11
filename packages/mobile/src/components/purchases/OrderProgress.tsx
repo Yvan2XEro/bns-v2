@@ -5,6 +5,7 @@ import { useTranslation } from "@/src/lib/i18n";
 import { orderProgress } from "@/src/lib/orderProgress";
 import type { OrderStatusName } from "@/src/lib/orderStatus";
 import type { OrderTimestamps } from "@/src/types/order";
+import { fillOf, inkOf } from "../checkout/fill";
 import { useShopTheme } from "../shop/theme";
 
 function stepTime(at: string, lang: "fr" | "en"): string {
@@ -31,11 +32,21 @@ export function OrderProgress({
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
 	const steps = orderProgress(status, timestamps);
 	if (!steps) return null;
+	const fill = fillOf(c).bg;
+	const current = steps.find((step) => step.state === "current");
 
 	return (
 		<View
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 			accessibilityRole="progressbar"
+			accessibilityLabel={
+				current ? t(`purchases.progress_${current.key}`) : undefined
+			}
+			accessibilityValue={{
+				min: 0,
+				max: steps.length,
+				now: steps.filter((step) => step.state !== "todo").length,
+			}}
 		>
 			{steps.map((step, index) => {
 				const reached = step.state !== "todo";
@@ -47,21 +58,17 @@ export function OrderProgress({
 									styles.line,
 									{
 										backgroundColor:
-											index === 0
-												? "transparent"
-												: reached
-													? c.primary
-													: c.border,
+											index === 0 ? "transparent" : reached ? fill : c.border,
 									},
 								]}
 							/>
 							<View
 								style={[
 									styles.node,
-									step.state === "done" && { backgroundColor: c.primary },
+									step.state === "done" && { backgroundColor: fill },
 									step.state === "current" && [
 										styles.nodeCurrent,
-										{ borderColor: c.primary, backgroundColor: c.card },
+										{ borderColor: inkOf(c), backgroundColor: c.card },
 									],
 									step.state === "todo" && {
 										borderColor: c.border,
@@ -73,7 +80,7 @@ export function OrderProgress({
 								{step.state === "done" ? (
 									<Ionicons name="checkmark" size={14} color="#ffffff" />
 								) : step.state === "current" ? (
-									<View style={[styles.core, { backgroundColor: c.primary }]} />
+									<View style={[styles.core, { backgroundColor: inkOf(c) }]} />
 								) : null}
 							</View>
 							<View
@@ -84,7 +91,7 @@ export function OrderProgress({
 											index === steps.length - 1
 												? "transparent"
 												: steps[index + 1]?.state !== "todo"
-													? c.primary
+													? fill
 													: c.border,
 									},
 								]}
@@ -96,13 +103,13 @@ export function OrderProgress({
 								{
 									color:
 										step.state === "current"
-											? c.primary
+											? inkOf(c)
 											: reached
 												? c.text
 												: c.muted,
 								},
 							]}
-							numberOfLines={1}
+							numberOfLines={2}
 						>
 							{t(`purchases.progress_${step.key}`)}
 						</Text>
@@ -119,9 +126,9 @@ export function OrderProgress({
 const styles = StyleSheet.create({
 	card: {
 		flexDirection: "row",
-		borderRadius: 18,
-		borderWidth: 1,
-		paddingVertical: 14,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingVertical: 16,
 		paddingHorizontal: 6,
 	},
 	step: { flex: 1, alignItems: "center", gap: 4 },
@@ -136,6 +143,12 @@ const styles = StyleSheet.create({
 	},
 	nodeCurrent: { borderWidth: 2 },
 	core: { width: 10, height: 10, borderRadius: 5 },
-	label: { fontSize: 11, fontFamily: Fonts.bodySemibold },
-	time: { fontSize: 11, fontFamily: Fonts.body },
+	label: {
+		fontSize: 12,
+		lineHeight: 15,
+		fontFamily: Fonts.bodySemibold,
+		textAlign: "center",
+		paddingHorizontal: 2,
+	},
+	time: { fontSize: 12, fontFamily: Fonts.body, fontVariant: ["tabular-nums"] },
 });

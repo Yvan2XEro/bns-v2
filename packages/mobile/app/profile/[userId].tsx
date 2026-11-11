@@ -18,11 +18,16 @@ import {
 	SafeAreaView,
 	useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import {
+	ListingGridSkeleton,
+	ProfileSkeleton,
+	SkeletonBox,
+} from "@/src/components/listing/Skeletons";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -99,12 +104,17 @@ export default function PublicProfileScreen() {
 	const [reviewRating, setReviewRating] = useState(0);
 	const [reviewComment, setReviewComment] = useState("");
 
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const c = isDark ? Colors.dark : Colors.light;
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const bodyColor = c.body;
+	const mutedColor = c.mutedForeground;
+	const primaryColor = c.primary;
+	const borderColor = c.border;
+	// White on the dark-mode primary fails contrast: filled buttons take the
+	// deeper indigo in dark mode.
+	const filledColor = c.primaryFill;
 	const isOwnProfile = user?.id === userId;
 
 	const {
@@ -118,7 +128,7 @@ export default function PublicProfileScreen() {
 		enabled: !!userId,
 	});
 
-	const { data: listingsData } = useQuery({
+	const { data: listingsData, isLoading: listingsLoading } = useQuery({
 		queryKey: ["profile-listings", userId],
 		queryFn: () =>
 			api.get<{ docs: any[] }>(
@@ -129,7 +139,7 @@ export default function PublicProfileScreen() {
 		enabled: !!userId,
 	});
 
-	const { data: reviewsData } = useQuery({
+	const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
 		queryKey: ["profile-reviews", userId],
 		queryFn: () =>
 			api.get<{ docs: any[] }>(
@@ -168,11 +178,33 @@ export default function PublicProfileScreen() {
 	// Responsive grid rows (2 on phone, 3–4 on tablet)
 	const pairs = chunkIntoRows(listings, columns);
 
+	const header = (
+		<View style={[styles.header, { borderBottomColor: borderColor }]}>
+			<HeaderBackButton
+				color={textColor}
+				fallback="/(tabs)/home"
+				style={styles.backBtn}
+			/>
+			<Text
+				style={[styles.headerTitle, { color: textColor }]}
+				accessibilityRole="header"
+				numberOfLines={1}
+			>
+				{t("profile.title")}
+			</Text>
+			<View style={styles.headerSpacer} />
+		</View>
+	);
+
 	if (isLoading) {
 		return (
-			<View style={[styles.loader, { backgroundColor: bg }]}>
-				<ActivityIndicator color={primaryColor} />
-			</View>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: bg }]}
+			>
+				{header}
+				<ProfileSkeleton />
+			</SafeAreaView>
 		);
 	}
 
@@ -184,20 +216,10 @@ export default function PublicProfileScreen() {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: bg }]}
 			>
-				<View style={[styles.header, { borderBottomColor: borderColor }]}>
-					<HeaderBackButton
-						color={textColor}
-						fallback="/(tabs)/home"
-						style={styles.backBtn}
-					/>
-					<Text style={[styles.headerTitle, { color: textColor }]}>
-						{t("profile.title")}
-					</Text>
-					<View style={{ width: 40 }} />
-				</View>
+				{header}
 				<EmptyState
-					icon="alert-circle-outline"
-					title={t("common.error")}
+					illustration="notFound"
+					title={t("home.errorTitle")}
 					subtitle={t("home.errorSub")}
 					ctaLabel={t("common.retry")}
 					onCta={() => refetch()}
@@ -211,18 +233,7 @@ export default function PublicProfileScreen() {
 			edges={["top"]}
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
-			{/* Header */}
-			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<HeaderBackButton
-					color={textColor}
-					fallback="/(tabs)/home"
-					style={styles.backBtn}
-				/>
-				<Text style={[styles.headerTitle, { color: textColor }]}>
-					{t("profile.title")}
-				</Text>
-				<View style={{ width: 40 }} />
-			</View>
+			{header}
 
 			<ScrollView showsVerticalScrollIndicator={false}>
 				{/* Profile card */}
@@ -243,17 +254,20 @@ export default function PublicProfileScreen() {
 						<View
 							style={[
 								styles.avatarPlaceholder,
-								{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
+								{ backgroundColor: c.primaryTint },
 							]}
 						>
 							<Text style={[styles.avatarLetter, { color: primaryColor }]}>
-								{profile?.name?.[0]?.toUpperCase()}
+								{profile?.name?.[0]?.toUpperCase() ?? "?"}
 							</Text>
 						</View>
 					)}
 
 					<View style={styles.nameRow}>
-						<Text style={[styles.name, { color: textColor }]}>
+						<Text
+							style={[styles.name, { color: textColor }]}
+							accessibilityRole="header"
+						>
 							{profile?.name}
 						</Text>
 						{userShop ? <LevelBadge badge={userShop.badge} size="sm" /> : null}
@@ -267,32 +281,39 @@ export default function PublicProfileScreen() {
 					/>
 
 					<View style={styles.metaRow}>
-						{profile?.location && (
+						{profile?.location ? (
 							<View style={styles.metaItem}>
 								<Ionicons
 									name="location-outline"
-									size={13}
+									size={14}
 									color={mutedColor}
 								/>
-								<Text style={[styles.metaText, { color: mutedColor }]}>
+								<Text style={[styles.metaText, { color: bodyColor }]}>
 									{profile.location}
 								</Text>
 							</View>
-						)}
-						{memberSince && (
-							<Text style={[styles.metaText, { color: mutedColor }]}>
-								{t("profile.memberSinceDate")} {memberSince}
-							</Text>
-						)}
+						) : null}
+						{memberSince ? (
+							<View style={styles.metaItem}>
+								<Ionicons
+									name="calendar-outline"
+									size={14}
+									color={mutedColor}
+								/>
+								<Text style={[styles.metaText, { color: mutedColor }]}>
+									{t("profile.memberSinceDate")} {memberSince}
+								</Text>
+							</View>
+						) : null}
 					</View>
 
-					{profile?.bio && (
-						<Text style={[styles.bio, { color: mutedColor }]}>
+					{profile?.bio ? (
+						<Text style={[styles.bio, { color: bodyColor }]}>
 							{profile.bio}
 						</Text>
-					)}
+					) : null}
 
-					{!isOwnProfile && (
+					{!isOwnProfile ? (
 						<View style={styles.actionRow}>
 							<Pressable
 								onPress={() =>
@@ -303,9 +324,16 @@ export default function PublicProfileScreen() {
 												params: getAuthModalParams(pathname),
 											})
 								}
-								style={[styles.msgBtn, { backgroundColor: primaryColor }]}
+								accessibilityRole="button"
+								style={({ pressed }) => [
+									styles.msgBtn,
+									{
+										backgroundColor: filledColor,
+										opacity: pressed ? 0.85 : 1,
+									},
+								]}
 							>
-								<Ionicons name="chatbubble" size={16} color="#fff" />
+								<Ionicons name="chatbubble-outline" size={18} color="#ffffff" />
 								<Text style={styles.msgBtnText}>{t("profile.message")}</Text>
 							</Pressable>
 							<Pressable
@@ -315,14 +343,17 @@ export default function PublicProfileScreen() {
 										params: { targetType: "user", targetId: userId },
 									})
 								}
+								accessibilityRole="button"
+								accessibilityLabel={t("profile.reportProfile")}
 								style={[
 									styles.iconBtn,
 									{ borderColor, backgroundColor: cardBg },
 								]}
 							>
-								<Ionicons name="flag-outline" size={16} color={mutedColor} />
+								<Ionicons name="flag-outline" size={19} color={bodyColor} />
 							</Pressable>
 							<Pressable
+								accessibilityRole="button"
 								accessibilityLabel={
 									isBlocked ? t("profile.unblock") : t("profile.block")
 								}
@@ -334,12 +365,12 @@ export default function PublicProfileScreen() {
 							>
 								<Ionicons
 									name={isBlocked ? "lock-open-outline" : "ban-outline"}
-									size={16}
-									color={mutedColor}
+									size={19}
+									color={isBlocked ? bodyColor : c.destructive}
 								/>
 							</Pressable>
 						</View>
-					)}
+					) : null}
 				</View>
 
 				{/* Tabs */}
@@ -349,23 +380,26 @@ export default function PublicProfileScreen() {
 						{ borderBottomColor: borderColor },
 						centeredContent,
 					]}
+					accessibilityRole="tablist"
 				>
 					{(["listings", "reviews"] as const).map((tab) => (
 						<Pressable
 							key={tab}
 							onPress={() => setActiveTab(tab)}
+							accessibilityRole="tab"
+							accessibilityState={{ selected: activeTab === tab }}
 							style={[
 								styles.tab,
 								activeTab === tab && {
 									borderBottomColor: primaryColor,
-									borderBottomWidth: 2,
+									borderBottomWidth: 3,
 								},
 							]}
 						>
 							<Text
 								style={[
 									styles.tabText,
-									{ color: activeTab === tab ? primaryColor : mutedColor },
+									{ color: activeTab === tab ? textColor : mutedColor },
 								]}
 							>
 								{tab === "listings"
@@ -383,9 +417,15 @@ export default function PublicProfileScreen() {
 				</View>
 
 				{/* Listings tab */}
-				{activeTab === "listings" && (
+				{activeTab === "listings" ? (
 					<View style={styles.grid}>
-						{pairs.length > 0 ? (
+						{listingsLoading ? (
+							<ListingGridSkeleton
+								cardWidth={CARD_W}
+								columns={columns}
+								rows={2}
+							/>
+						) : pairs.length > 0 ? (
 							pairs.map((pair, i) => (
 								<View key={i} style={styles.gridRow}>
 									{pair.map((listing: any) => (
@@ -401,40 +441,59 @@ export default function PublicProfileScreen() {
 								</View>
 							))
 						) : (
-							<View style={styles.emptyBox}>
-								<Ionicons
-									name="pricetag-outline"
-									size={36}
-									color={mutedColor}
-								/>
-								<Text style={[styles.emptyTitle, { color: textColor }]}>
-									{t("profile.noListingsYet")}
-								</Text>
-								<Text style={[styles.emptySub, { color: mutedColor }]}>
-									{t("profile.noListingsYetSub")}
-								</Text>
-							</View>
+							<EmptyState
+								illustration="listings"
+								title={t("profile.noListingsYet")}
+								subtitle={t("profile.noListingsYetSub")}
+								size={140}
+							/>
 						)}
 					</View>
-				)}
+				) : null}
 
 				{/* Reviews tab */}
-				{activeTab === "reviews" && (
+				{activeTab === "reviews" ? (
 					<View style={[styles.reviewsList, centeredContent]}>
 						{/* Add review button (non-own profile, logged in) */}
-						{!isOwnProfile && user && (
+						{!isOwnProfile && user ? (
 							<Pressable
 								onPress={() => setReviewModal(true)}
-								style={[styles.addReviewBtn, { backgroundColor: primaryColor }]}
+								accessibilityRole="button"
+								style={({ pressed }) => [
+									styles.addReviewBtn,
+									{
+										borderColor: c.borderStrong,
+										backgroundColor: pressed ? c.well : cardBg,
+									},
+								]}
 							>
-								<Ionicons name="star" size={16} color="#fff" />
-								<Text style={styles.addReviewText}>
+								<Ionicons name="star-outline" size={18} color={primaryColor} />
+								<Text style={[styles.addReviewText, { color: primaryColor }]}>
 									{t("profile.leaveReview")}
 								</Text>
 							</Pressable>
-						)}
+						) : null}
 
-						{reviews.length > 0 ? (
+						{reviewsLoading ? (
+							[0, 1].map((k) => (
+								<View
+									key={k}
+									style={[
+										styles.reviewCard,
+										{ backgroundColor: cardBg, borderColor },
+									]}
+								>
+									<View style={styles.reviewHeader}>
+										<SkeletonBox width={36} height={36} radius={18} />
+										<View style={{ flex: 1, gap: 6 }}>
+											<SkeletonBox width="40%" height={14} />
+											<SkeletonBox width={80} height={12} />
+										</View>
+									</View>
+									<SkeletonBox width="90%" height={13} />
+								</View>
+							))
+						) : reviews.length > 0 ? (
 							reviews.map((review: any) => (
 								<View
 									key={review.id}
@@ -447,52 +506,51 @@ export default function PublicProfileScreen() {
 										<View
 											style={[
 												styles.reviewerAvatar,
-												{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
+												{ backgroundColor: c.primaryTint },
 											]}
 										>
 											<Text
 												style={[styles.reviewerLetter, { color: primaryColor }]}
 											>
-												{review.reviewer?.name?.[0]?.toUpperCase()}
+												{review.reviewer?.name?.[0]?.toUpperCase() ?? "?"}
 											</Text>
 										</View>
-										<View style={{ flex: 1 }}>
-											<Text style={[styles.reviewerName, { color: textColor }]}>
+										<View style={{ flex: 1, gap: 3 }}>
+											<Text
+												style={[styles.reviewerName, { color: textColor }]}
+												numberOfLines={1}
+											>
 												{review.reviewer?.name}
 											</Text>
-											<ReviewStars rating={review.rating} size={12} />
+											<ReviewStars rating={review.rating} size={13} />
 										</View>
-										{formatDate(review.createdAt) && (
+										{formatDate(review.createdAt) ? (
 											<Text style={[styles.reviewDate, { color: mutedColor }]}>
 												{formatDate(review.createdAt)}
 											</Text>
-										)}
+										) : null}
 									</View>
-									{review.comment && (
-										<Text
-											style={[
-												styles.reviewComment,
-												{ color: isDark ? "#c9cce0" : "#3a3f66" },
-											]}
-										>
+									{review.comment ? (
+										<Text style={[styles.reviewComment, { color: bodyColor }]}>
 											{review.comment}
 										</Text>
-									)}
+									) : null}
 								</View>
 							))
 						) : (
-							<View style={styles.emptyBox}>
-								<Ionicons name="star-outline" size={36} color={mutedColor} />
-								<Text style={[styles.emptyTitle, { color: textColor }]}>
-									{t("profile.noReviewsYet")}
-								</Text>
-								<Text style={[styles.emptySub, { color: mutedColor }]}>
-									{t("profile.noReviewsYetSub")}
-								</Text>
-							</View>
+							<EmptyState
+								illustration="empty"
+								title={t("profile.noReviewsYet")}
+								subtitle={
+									!isOwnProfile && user
+										? t("profile.noReviewsYetSub")
+										: undefined
+								}
+								size={140}
+							/>
 						)}
 					</View>
-				)}
+				) : null}
 			</ScrollView>
 
 			{/* Add review modal */}
@@ -526,11 +584,19 @@ export default function PublicProfileScreen() {
 					<View
 						style={[styles.modalHeader, { borderBottomColor: borderColor }]}
 					>
-						<Text style={[styles.modalTitle, { color: textColor }]}>
+						<Text
+							style={[styles.modalTitle, { color: textColor }]}
+							accessibilityRole="header"
+						>
 							{t("profile.leaveReview")}
 						</Text>
-						<Pressable onPress={() => setReviewModal(false)}>
-							<Ionicons name="close" size={22} color={textColor} />
+						<Pressable
+							onPress={() => setReviewModal(false)}
+							accessibilityRole="button"
+							accessibilityLabel={t("common.close")}
+							style={styles.modalClose}
+						>
+							<Ionicons name="close" size={24} color={textColor} />
 						</Pressable>
 					</View>
 
@@ -544,19 +610,11 @@ export default function PublicProfileScreen() {
 							{t("profile.ratingLabel")}
 						</Text>
 						<View style={styles.starPicker}>
-							{[1, 2, 3, 4, 5].map((s) => (
-								<Pressable
-									key={s}
-									onPress={() => setReviewRating(s)}
-									hitSlop={8}
-								>
-									<Ionicons
-										name={s <= reviewRating ? "star" : "star-outline"}
-										size={36}
-										color={s <= reviewRating ? "#ffb81c" : mutedColor}
-									/>
-								</Pressable>
-							))}
+							<ReviewStars
+								rating={reviewRating}
+								onRate={setReviewRating}
+								size={34}
+							/>
 						</View>
 
 						{/* Comment */}
@@ -567,7 +625,7 @@ export default function PublicProfileScreen() {
 							value={reviewComment}
 							onChangeText={setReviewComment}
 							placeholder={t("profile.commentPlaceholder")}
-							placeholderTextColor={mutedColor}
+							placeholderTextColor={c.faint}
 							multiline
 							numberOfLines={4}
 							style={[
@@ -579,25 +637,25 @@ export default function PublicProfileScreen() {
 						<Pressable
 							onPress={() => reviewRating > 0 && submitReview()}
 							disabled={reviewRating === 0 || submittingReview}
+							accessibilityRole="button"
+							accessibilityState={{
+								disabled: reviewRating === 0 || submittingReview,
+								busy: submittingReview,
+							}}
 							style={[
 								styles.submitBtn,
 								{
-									backgroundColor:
-										reviewRating === 0
-											? isDark
-												? "#1a1f4a"
-												: "#e1e3ee"
-											: primaryColor,
+									backgroundColor: reviewRating === 0 ? c.well : filledColor,
 								},
 							]}
 						>
 							{submittingReview ? (
-								<ActivityIndicator color="#fff" />
+								<ActivityIndicator color="#ffffff" />
 							) : (
 								<Text
 									style={[
 										styles.submitText,
-										{ color: reviewRating === 0 ? mutedColor : "#fff" },
+										{ color: reviewRating === 0 ? mutedColor : "#ffffff" },
 									]}
 								>
 									{t("profile.publishReview")}
@@ -613,77 +671,88 @@ export default function PublicProfileScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	loader: { flex: 1, alignItems: "center", justifyContent: "center" },
 
 	/* Header */
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
+		paddingHorizontal: 8,
+		minHeight: 56,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	backBtn: {
-		width: 40,
-		height: 40,
+		width: 48,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	headerTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
+	headerSpacer: { width: 48 },
+	headerTitle: {
+		flex: 1,
+		textAlign: "center",
+		fontSize: 17,
+		fontFamily: Fonts.displayBold,
+	},
 
 	/* Profile card */
 	profileCard: {
 		margin: 16,
 		borderRadius: 16,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		padding: 20,
 		alignItems: "center",
 		gap: 8,
 	},
-	avatar: { width: 88, height: 88, borderRadius: 44 },
+	avatar: { width: 88, height: 88, borderRadius: 44, marginBottom: 4 },
 	avatarPlaceholder: {
 		width: 88,
 		height: 88,
 		borderRadius: 44,
 		alignItems: "center",
 		justifyContent: "center",
+		marginBottom: 4,
 	},
 	avatarLetter: { fontSize: 34, fontFamily: Fonts.displayExtrabold },
-	nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-	name: { fontSize: 20, fontFamily: Fonts.displayExtrabold },
-	verifiedBadge: {
+	nameRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 3,
-		borderRadius: 12,
-		paddingHorizontal: 8,
-		paddingVertical: 3,
+		flexWrap: "wrap",
+		justifyContent: "center",
+		gap: 8,
 	},
-	verifiedText: { color: "#fff", fontSize: 11, fontFamily: Fonts.displayBold },
-	metaRow: { gap: 4, alignItems: "center" },
-	metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-	metaText: { fontSize: 13, fontFamily: Fonts.body },
-	bio: {
-		fontSize: 14,
-		fontFamily: Fonts.body,
-		lineHeight: 20,
+	name: {
+		fontSize: 24,
+		lineHeight: 29,
+		letterSpacing: -0.5,
+		fontFamily: Fonts.displayExtrabold,
 		textAlign: "center",
 	},
-	actionRow: { flexDirection: "row", gap: 8, marginTop: 4, width: "100%" },
+	metaRow: { gap: 4, alignItems: "center", marginTop: 2 },
+	metaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+	metaText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	bio: {
+		fontSize: 15,
+		fontFamily: Fonts.body,
+		lineHeight: 22,
+		textAlign: "center",
+		marginTop: 4,
+	},
+	actionRow: { flexDirection: "row", gap: 10, marginTop: 10, width: "100%" },
 	msgBtn: {
 		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 6,
+		gap: 8,
 		borderRadius: 12,
-		paddingVertical: 12,
+		minHeight: 52,
+		paddingHorizontal: 12,
 	},
-	msgBtnText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 14 },
+	msgBtnText: { color: "#ffffff", fontFamily: Fonts.bodyBold, fontSize: 16 },
 	iconBtn: {
-		width: 46,
-		height: 46,
+		width: 52,
+		height: 52,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
@@ -691,18 +760,19 @@ const styles = StyleSheet.create({
 	},
 
 	/* Tabs */
-	tabs: { flexDirection: "row", borderBottomWidth: 1 },
+	tabs: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth },
 	tab: {
 		flex: 1,
-		paddingVertical: 12,
+		minHeight: 48,
 		alignItems: "center",
-		borderBottomWidth: 2,
+		justifyContent: "center",
+		borderBottomWidth: 3,
 		borderBottomColor: "transparent",
 	},
-	tabText: { fontSize: 14, fontFamily: Fonts.displayBold },
+	tabText: { fontSize: 15, fontFamily: Fonts.bodyBold },
 
 	/* Listings grid */
-	grid: { padding: 16, gap: 12 },
+	grid: { padding: 16, gap: 16 },
 	gridRow: { flexDirection: "row", gap: 12 },
 
 	/* Reviews */
@@ -713,16 +783,21 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 8,
 		borderRadius: 12,
-		paddingVertical: 13,
-		marginBottom: 4,
+		borderWidth: 1,
+		minHeight: 52,
+		marginBottom: 6,
 	},
-	addReviewText: { color: "#fff", fontFamily: Fonts.displayBold, fontSize: 14 },
-	reviewCard: { borderRadius: 12, borderWidth: 1, padding: 14 },
+	addReviewText: { fontFamily: Fonts.bodyBold, fontSize: 16 },
+	reviewCard: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 14,
+		gap: 10,
+	},
 	reviewHeader: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		marginBottom: 8,
 	},
 	reviewerAvatar: {
 		width: 36,
@@ -732,19 +807,14 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	reviewerLetter: { fontFamily: Fonts.displayBold, fontSize: 15 },
-	reviewerName: { fontSize: 14, fontFamily: Fonts.displayBold },
+	reviewerName: { fontSize: 15, fontFamily: Fonts.bodyBold },
 	reviewDate: { fontSize: 12, fontFamily: Fonts.body },
-	reviewComment: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
-
-	/* Empty state */
-	emptyBox: { alignItems: "center", paddingVertical: 40, gap: 8 },
-	emptyTitle: { fontSize: 16, fontFamily: Fonts.displayBold },
-	emptySub: { fontSize: 13, fontFamily: Fonts.body, textAlign: "center" },
+	reviewComment: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 
 	/* Review modal */
 	modalOverlay: {
 		flex: 1,
-		backgroundColor: "rgba(0,0,0,0.4)",
+		backgroundColor: "rgba(18, 22, 58, 0.5)",
 	},
 	modalSheet: {
 		borderTopLeftRadius: 20,
@@ -755,28 +825,42 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		padding: 16,
-		borderBottomWidth: 1,
+		paddingLeft: 20,
+		paddingRight: 8,
+		minHeight: 60,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	modalTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
-	modalBody: { padding: 20, gap: 12 },
-	fieldLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	starPicker: {
-		flexDirection: "row",
-		gap: 8,
+	modalClose: {
+		width: 48,
+		height: 48,
+		alignItems: "center",
 		justifyContent: "center",
-		paddingVertical: 8,
+	},
+	modalTitle: { fontSize: 20, fontFamily: Fonts.displayBold },
+	modalBody: { padding: 20, gap: 12 },
+	fieldLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	starPicker: {
+		alignItems: "center",
+		paddingVertical: 4,
 	},
 	textarea: {
 		borderRadius: 12,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		fontSize: 14,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		paddingTop: 12,
+		paddingBottom: 12,
+		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
-		minHeight: 100,
+		minHeight: 112,
 		textAlignVertical: "top",
 	},
-	submitBtn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
-	submitText: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	submitBtn: {
+		borderRadius: 12,
+		minHeight: 52,
+		alignItems: "center",
+		justifyContent: "center",
+		marginTop: 4,
+	},
+	submitText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

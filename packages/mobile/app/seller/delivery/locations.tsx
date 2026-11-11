@@ -1,17 +1,12 @@
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useDeliveryLocations } from "@/src/hooks/useDeliverySettings";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -22,7 +17,11 @@ function LocationsList({ shopId }: { shopId: string }) {
 	const { t } = useTranslation();
 	const locations = useDeliveryLocations(shopId);
 	if (locations.isPending)
-		return <ActivityIndicator style={styles.spinner} color={c.primary} />;
+		return (
+			<View style={{ paddingTop: 16 }}>
+				<ListSkeleton rows={3} />
+			</View>
+		);
 	if (locations.isError)
 		return (
 			<EmptyState
@@ -105,8 +104,7 @@ export default function LocationsScreen() {
 }
 
 const styles = StyleSheet.create({
-	spinner: { marginTop: 40 },
 	content: { padding: 16, paddingBottom: 48 },
-	row: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 4, minHeight: 44 },
+	row: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 4, minHeight: 48 },
 	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 });

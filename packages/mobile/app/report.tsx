@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -41,12 +41,20 @@ export default function ReportModal() {
 	const [reason, setReason] = useState("");
 	const [description, setDescription] = useState("");
 
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const c = isDark ? Colors.dark : Colors.light;
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const mutedColor = c.mutedForeground;
+	const primaryColor = c.primary;
+	const borderColor = c.border;
+	// The title names what is reported, when we know it.
+	const title =
+		targetType === "listing"
+			? t("report.listingTitle")
+			: targetType === "user"
+				? t("report.userTitle")
+				: t("report.title");
 
 	const { mutate: submit, isPending } = useMutation({
 		mutationFn: () =>
@@ -65,59 +73,91 @@ export default function ReportModal() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-					<Ionicons name="flag-outline" size={20} color={textColor} />
-					<Text style={[styles.title, { color: textColor }]}>
-						{t("report.title")}
-					</Text>
-				</View>
-				<Pressable onPress={() => router.dismiss()}>
+				<Text
+					style={[styles.title, { color: textColor }]}
+					accessibilityRole="header"
+					numberOfLines={1}
+				>
+					{title}
+				</Text>
+				<Pressable
+					onPress={() => router.dismiss()}
+					style={styles.closeBtn}
+					accessibilityRole="button"
+					accessibilityLabel={t("common.close")}
+				>
 					<Ionicons name="close" size={24} color={textColor} />
 				</Pressable>
 			</View>
 			<KeyboardAwareScrollView
-				contentContainerStyle={[{ padding: 20, gap: 12 }, centeredContent]}
+				contentContainerStyle={[styles.body, centeredContent]}
 				keyboardShouldPersistTaps="handled"
 				bottomOffset={24}
 			>
-				<Text style={[styles.label, { color: mutedColor }]}>
+				<Text
+					style={[styles.label, { color: textColor }]}
+					nativeID="report-reason-label"
+				>
 					{t("report.reasonLabel")}
 				</Text>
-				{REASON_KEYS.map((key) => (
-					<Pressable
-						key={key}
-						onPress={() => setReason(key)}
-						style={[
-							styles.reasonBtn,
-							{
-								backgroundColor:
-									reason === key ? (isDark ? "#2a3170" : "#e3e7f8") : cardBg,
-								borderColor: reason === key ? primaryColor : borderColor,
-								borderWidth: reason === key ? 2 : 1,
-							},
-						]}
-					>
-						<Text style={[styles.reasonText, { color: textColor }]}>
-							{t(`report.${key}Label` as any)}
-						</Text>
-						{reason === key && (
-							<Ionicons
-								name="checkmark-circle"
-								size={18}
-								color={primaryColor}
-							/>
-						)}
-					</Pressable>
-				))}
+				{/* One grouped list of radios, as a settings list reads. */}
+				<View
+					style={[styles.reasonList, { backgroundColor: cardBg, borderColor }]}
+					accessibilityRole="radiogroup"
+					accessibilityLabelledBy="report-reason-label"
+				>
+					{REASON_KEYS.map((key, i) => {
+						const on = reason === key;
+						return (
+							<Pressable
+								key={key}
+								onPress={() => setReason(key)}
+								accessibilityRole="radio"
+								accessibilityState={{ checked: on }}
+								style={({ pressed }) => [
+									styles.reasonBtn,
+									i > 0 && {
+										borderTopWidth: StyleSheet.hairlineWidth,
+										borderTopColor: borderColor,
+									},
+									{
+										backgroundColor: on
+											? c.primaryTint
+											: pressed
+												? c.well
+												: "transparent",
+									},
+								]}
+							>
+								<Text
+									style={[
+										styles.reasonText,
+										{
+											color: textColor,
+											fontFamily: on ? Fonts.bodySemibold : Fonts.body,
+										},
+									]}
+								>
+									{t(`report.${key}Label` as any)}
+								</Text>
+								<Ionicons
+									name={on ? "radio-button-on" : "radio-button-off"}
+									size={22}
+									color={on ? primaryColor : c.faint}
+								/>
+							</Pressable>
+						);
+					})}
+				</View>
 
-				<Text style={[styles.label, { color: mutedColor, marginTop: 8 }]}>
+				<Text style={[styles.label, styles.labelSpaced, { color: textColor }]}>
 					{t("report.descriptionLabel")}
 				</Text>
 				<TextInput
 					value={description}
 					onChangeText={setDescription}
 					placeholder={t("report.descriptionPlaceholder")}
-					placeholderTextColor={mutedColor}
+					placeholderTextColor={c.faint}
 					style={[
 						styles.textarea,
 						{ backgroundColor: cardBg, borderColor, color: textColor },
@@ -129,24 +169,28 @@ export default function ReportModal() {
 				<Pressable
 					onPress={() => reason && submit()}
 					disabled={!reason || isPending}
-					style={[
+					accessibilityRole="button"
+					accessibilityState={{
+						disabled: !reason || isPending,
+						busy: isPending,
+					}}
+					style={({ pressed }) => [
 						styles.submitBtn,
 						{
-							backgroundColor: !reason
-								? isDark
-									? "#1a1f4a"
-									: "#e1e3ee"
-								: "#d23a2e",
+							// The light destructive red in both themes: white on the
+							// dark-mode red falls under 4.5:1.
+							backgroundColor: !reason ? c.well : "#d23a2e",
+							opacity: pressed && reason ? 0.85 : 1,
 						},
 					]}
 				>
 					{isPending ? (
-						<ActivityIndicator color="#fff" />
+						<ActivityIndicator color="#ffffff" />
 					) : (
 						<Text
 							style={[
 								styles.submitText,
-								{ color: !reason ? mutedColor : "#fff" },
+								{ color: !reason ? mutedColor : "#ffffff" },
 							]}
 						>
 							{t("report.submit")}
@@ -164,29 +208,54 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		padding: 16,
-		borderBottomWidth: 1,
+		paddingLeft: 20,
+		paddingRight: 8,
+		minHeight: 60,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	title: { fontSize: 18, fontFamily: Fonts.displayBold },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	title: { flex: 1, fontSize: 20, fontFamily: Fonts.displayBold },
+	closeBtn: {
+		width: 48,
+		height: 48,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	body: { padding: 20, gap: 10, paddingBottom: 40 },
+	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	labelSpaced: { marginTop: 14 },
+	reasonList: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
+	},
 	reasonBtn: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		borderRadius: 12,
-		padding: 14,
+		gap: 12,
+		minHeight: 52,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
 	},
-	reasonText: { fontSize: 14, fontFamily: Fonts.body },
+	reasonText: { flex: 1, fontSize: 15, lineHeight: 20 },
 	textarea: {
 		borderRadius: 12,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		fontSize: 14,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		paddingTop: 12,
+		paddingBottom: 12,
+		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
-		minHeight: 100,
+		minHeight: 112,
 		textAlignVertical: "top",
 	},
-	submitBtn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
+	submitBtn: {
+		borderRadius: 12,
+		minHeight: 52,
+		alignItems: "center",
+		justifyContent: "center",
+		marginTop: 10,
+	},
 	submitText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

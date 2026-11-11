@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import {
 	useAcceptOrder,
@@ -70,7 +71,10 @@ export function ActionBar({
 		<View
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
-			<Text style={[styles.title, { color: c.text }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.title, { color: c.text }]}
+			>
 				{t("sellerOrders.actions")}
 			</Text>
 			{lockedHandoverNotice(order, items) ? (
@@ -111,7 +115,7 @@ export function ActionBar({
 			{failed ? (
 				<Text
 					accessibilityRole="alert"
-					style={[styles.hint, { color: c.danger }]}
+					style={[styles.hint, { color: dangerInk(c) }]}
 				>
 					{resolveErrorMessage(failed.error, t, t("sellerOrders.actionFailed"))}
 				</Text>
@@ -148,14 +152,19 @@ export function ActionBar({
 }
 
 const styles = StyleSheet.create({
-	card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
-	title: { fontSize: 16, fontFamily: Fonts.displayBold },
+	card: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 16,
+		gap: 10,
+	},
+	title: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	hint: { fontSize: 13, fontFamily: Fonts.body },
 	notice: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		minHeight: 44,
+		minHeight: 48,
 		padding: 12,
 		borderRadius: 12,
 	},

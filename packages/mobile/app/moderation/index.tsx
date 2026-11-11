@@ -2,22 +2,29 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
 	RefreshControl,
+	ScrollView,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import {
+	LoadError,
+	QueueSkeleton,
+} from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import {
+	type ModerationPalette,
 	type Translate,
 	useModerationTheme,
 } from "@/src/components/moderation/theme";
+import { tonesOf } from "@/src/components/moderation/tones";
 import { VerificationCard } from "@/src/components/moderation/VerificationCard";
 import {
 	useModerationSummary,
@@ -27,6 +34,7 @@ import {
 } from "@/src/hooks/useModeration";
 import { useVerificationQueue } from "@/src/hooks/useModerationVerification";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { capitalize, queueTabs } from "@/src/lib/moderationVerification";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
@@ -56,8 +64,26 @@ function nameOf(value: UserDoc | string | null | undefined): string | null {
 	return value.name || value.email || null;
 }
 
+function severityLabel(
+	severity: RiskFlagQueueItem["severity"],
+	t: Translate,
+): string {
+	return severity === "high"
+		? t("moderation.riskHigh")
+		: severity === "medium"
+			? t("moderation.riskMedium")
+			: t("moderation.riskLow");
+}
+
+function readableSignal(signal: string): string {
+	return signal.replaceAll(".", " · ").replaceAll("_", " ");
+}
+
+const Separator = () => <View style={styles.separator} />;
+
 export default function ModerationHubScreen() {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const [queue, setQueue] = useState<QueueKey>("listings");
@@ -72,14 +98,14 @@ export default function ModerationHubScreen() {
 	// for the fixed "to_review" queue and never reads the flag.
 	const verifications = useVerificationQueue("to_review");
 
-	const isLoading =
+	const active =
 		queue === "listings"
-			? listings.isLoading
+			? listings
 			: queue === "reports"
-				? reports.isLoading
+				? reports
 				: queue === "verification"
-					? verifications.isLoading
-					: riskFlags.isLoading;
+					? verifications
+					: riskFlags;
 
 	const items = useMemo<
 		(ListingDoc | ReportDoc | ModerationVerificationQueueItem)[]
@@ -98,8 +124,8 @@ export default function ModerationHubScreen() {
 	}, [queue, listings.data, reports.data, verifications.data]);
 
 	// `verifications` has no pagination — the reviewer queue is a flat,
-	// bounded list, never an infinite one — so only the other two tabs ever
-	// load a next page or show a footer spinner.
+	// bounded list, never an infinite one — so only the other tabs ever load a
+	// next page or show a footer spinner.
 	const infiniteActive =
 		queue === "listings"
 			? listings
@@ -111,22 +137,31 @@ export default function ModerationHubScreen() {
 
 	const onRefresh = useCallback(async () => {
 		setRefreshing(true);
-		const active =
-			queue === "listings"
-				? listings
-				: queue === "reports"
-					? reports
-					: queue === "verification"
-						? verifications
-						: riskFlags;
 		await Promise.all([active.refetch(), summary.refetch()]);
 		setRefreshing(false);
-	}, [queue, listings, reports, verifications, riskFlags, summary]);
+	}, [active, summary]);
 
 	const tabs = queueTabs(summary.data).map((tab) => ({
 		...tab,
 		label: t(`moderation.tab${capitalize(tab.key)}`),
 	}));
+
+	const contentStyle = {
+		padding: 16,
+		paddingBottom: 40,
+		...(centeredContent ? centeredContent : null),
+	};
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={onRefresh}
+			tintColor={c.primary}
+			colors={[k.primaryFill]}
+		/>
+	);
+	const footer = infiniteActive?.isFetchingNextPage ? (
+		<ActivityIndicator style={styles.footer} color={c.primary} />
+	) : null;
 
 	return (
 		<ModerationScreen
@@ -139,81 +174,117 @@ export default function ModerationHubScreen() {
 		>
 			<Pressable
 				accessibilityRole="button"
+				accessibilityLabel={t("moderation.disputesQueue")}
 				onPress={() => router.push("/moderation/disputes")}
-				style={[
+				style={({ pressed }) => [
 					styles.disputesLink,
-					{ borderColor: c.border, backgroundColor: c.card },
+					{
+						borderColor: c.border,
+						backgroundColor: c.card,
+						opacity: pressed ? 0.85 : 1,
+					},
 				]}
 			>
-				<Text style={[styles.tabLabel, { color: c.primary }]}>
+				<View
+					style={[styles.disputesIcon, { backgroundColor: k.selectedSoft }]}
+				>
+					<Ionicons name="scale-outline" size={20} color={k.linkText} />
+				</View>
+				<Text style={[styles.disputesLabel, { color: c.text }]}>
 					{t("moderation.disputesQueue")}
 				</Text>
+				<Ionicons name="chevron-forward" size={18} color={c.muted} />
 			</Pressable>
-			<View style={[styles.tabs, { borderBottomColor: c.border }]}>
-				{tabs.map((tab) => {
-					const selected = queue === tab.key;
-					return (
-						<Pressable
-							key={tab.key}
-							accessibilityRole="tab"
-							accessibilityState={{ selected }}
-							onPress={() => setQueue(tab.key)}
-							style={[
-								styles.tab,
-								selected && {
-									borderBottomColor: c.primary,
-									borderBottomWidth: 2,
-								},
-							]}
-						>
-							<Text
+
+			{/* Scrollable tabs: four labels and their counts do not fit a
+			    small phone at a readable size, and truncating "Signalements"
+			    hides which queue is which. */}
+			<View style={[styles.tabsWrap, { borderBottomColor: c.border }]}>
+				<ScrollView
+					horizontal
+					showsHorizontalScrollIndicator={false}
+					contentContainerStyle={styles.tabs}
+					accessibilityRole="tablist"
+				>
+					{tabs.map((tab) => {
+						const selected = queue === tab.key;
+						const count =
+							typeof tab.count === "number" && tab.count > 0 ? tab.count : null;
+						return (
+							<Pressable
+								key={tab.key}
+								accessibilityRole="tab"
+								accessibilityState={{ selected }}
+								accessibilityLabel={
+									count ? `${tab.label}, ${count}` : tab.label
+								}
+								onPress={() => setQueue(tab.key)}
 								style={[
-									styles.tabLabel,
-									{ color: selected ? c.primary : c.muted },
+									styles.tab,
+									{
+										borderBottomColor: selected ? k.linkText : "transparent",
+									},
 								]}
 							>
-								{tab.label}
-							</Text>
-							{typeof tab.count === "number" && tab.count > 0 ? (
-								<View
+								<Text
 									style={[
-										styles.tabBadge,
-										{ backgroundColor: selected ? c.primary : c.border },
+										styles.tabLabel,
+										{
+											color: selected ? k.linkText : c.muted,
+											fontFamily: selected
+												? Fonts.bodyBold
+												: Fonts.bodySemibold,
+										},
 									]}
 								>
-									<Text
+									{tab.label}
+								</Text>
+								{count ? (
+									<View
 										style={[
-											styles.tabBadgeText,
-											{ color: selected ? "#fff" : c.muted },
+											styles.tabBadge,
+											{
+												backgroundColor: selected
+													? k.primaryFill
+													: k.disabledFill,
+											},
 										]}
 									>
-										{tab.count}
-									</Text>
-								</View>
-							) : null}
-						</Pressable>
-					);
-				})}
+										<Text
+											style={[
+												styles.tabBadgeText,
+												{ color: selected ? "#ffffff" : c.text },
+											]}
+										>
+											{count}
+										</Text>
+									</View>
+								) : null}
+							</Pressable>
+						);
+					})}
+				</ScrollView>
 			</View>
 
-			{isLoading ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+			{active.isLoading ? (
+				<QueueSkeleton />
+			) : active.isError && !active.data ? (
+				<LoadError
+					title={
+						queue === "risk"
+							? t("moderation.riskQueueFailed")
+							: t("common.error")
+					}
+					message={resolveErrorMessage(active.error, t)}
+					onRetry={() => void active.refetch()}
+				/>
 			) : queue === "risk" ? (
 				<FlashList
 					data={(riskFlags.data?.pages ?? []).flatMap((page) => page.items)}
 					keyExtractor={(item) => item.id}
-					contentContainerStyle={{
-						padding: 16,
-						...(centeredContent ? centeredContent : null),
-					}}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-					refreshControl={
-						<RefreshControl
-							refreshing={refreshing}
-							onRefresh={onRefresh}
-							tintColor={c.primary}
-						/>
-					}
+					contentContainerStyle={contentStyle}
+					ItemSeparatorComponent={Separator}
+					refreshControl={refreshControl}
 					onEndReached={() => {
 						if (riskFlags.hasNextPage && !riskFlags.isFetchingNextPage) {
 							void riskFlags.fetchNextPage();
@@ -222,44 +293,22 @@ export default function ModerationHubScreen() {
 					onEndReachedThreshold={0.4}
 					ListEmptyComponent={
 						<EmptyState
-							illustration={riskFlags.isError ? "notFound" : "empty"}
-							title={
-								riskFlags.isError
-									? t("moderation.riskQueueFailed")
-									: t("moderation.emptyRiskTitle")
-							}
-							subtitle={
-								riskFlags.isError ? undefined : t("moderation.emptySubtitle")
-							}
-							ctaLabel={riskFlags.isError ? t("common.retry") : undefined}
-							onCta={
-								riskFlags.isError ? () => void riskFlags.refetch() : undefined
-							}
+							illustration="empty"
+							title={t("moderation.emptyRiskTitle")}
+							subtitle={t("moderation.emptySubtitle")}
 						/>
 					}
-					ListFooterComponent={
-						riskFlags.isFetchingNextPage ? (
-							<ActivityIndicator style={{ margin: 16 }} color={c.primary} />
-						) : null
-					}
+					ListFooterComponent={footer}
 					renderItem={({ item }) => <RiskFlagRow flag={item} t={t} c={c} />}
 				/>
 			) : (
 				<FlashList
 					data={items}
 					keyExtractor={(item) => item.id}
-					contentContainerStyle={{
-						padding: 16,
-						...(centeredContent ? centeredContent : null),
-					}}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-					refreshControl={
-						<RefreshControl
-							refreshing={refreshing}
-							onRefresh={onRefresh}
-							tintColor={c.primary}
-						/>
-					}
+					getItemType={() => queue}
+					contentContainerStyle={contentStyle}
+					ItemSeparatorComponent={Separator}
+					refreshControl={refreshControl}
 					onEndReached={() => {
 						if (
 							infiniteActive?.hasNextPage &&
@@ -282,11 +331,7 @@ export default function ModerationHubScreen() {
 							subtitle={t("moderation.emptySubtitle")}
 						/>
 					}
-					ListFooterComponent={
-						infiniteActive?.isFetchingNextPage ? (
-							<ActivityIndicator style={{ margin: 16 }} color={c.primary} />
-						) : null
-					}
+					ListFooterComponent={footer}
 					renderItem={({ item }) =>
 						queue === "listings" ? (
 							<ListingRow listing={item as ListingDoc} t={t} c={c} />
@@ -304,6 +349,55 @@ export default function ModerationHubScreen() {
 	);
 }
 
+/** One queue row: a leading tile, two lines of text, a chevron. */
+function QueueRow({
+	label,
+	onPress,
+	leading,
+	title,
+	meta,
+	titleLines = 1,
+	c,
+}: {
+	label: string;
+	onPress: () => void;
+	leading: ReactNode;
+	title: string;
+	meta: string;
+	titleLines?: number;
+	c: ModerationPalette;
+}) {
+	return (
+		<Pressable
+			accessibilityRole="button"
+			accessibilityLabel={label}
+			onPress={onPress}
+			style={({ pressed }) => [
+				styles.card,
+				{
+					backgroundColor: c.card,
+					borderColor: c.border,
+					opacity: pressed ? 0.85 : 1,
+				},
+			]}
+		>
+			{leading}
+			<View style={styles.cardBody}>
+				<Text
+					style={[styles.cardTitle, { color: c.text }]}
+					numberOfLines={titleLines}
+				>
+					{title}
+				</Text>
+				<Text style={[styles.cardMeta, { color: c.muted }]} numberOfLines={2}>
+					{meta}
+				</Text>
+			</View>
+			<Ionicons name="chevron-forward" size={18} color={c.muted} />
+		</Pressable>
+	);
+}
+
 function RiskFlagRow({
 	flag,
 	t,
@@ -311,42 +405,53 @@ function RiskFlagRow({
 }: {
 	flag: RiskFlagQueueItem;
 	t: Translate;
-	c: ReturnType<typeof useModerationTheme>;
+	c: ModerationPalette;
 }) {
+	const k = tonesOf(c);
+	const high = flag.severity === "high";
+	const medium = flag.severity === "medium";
+	const title = flag.subjectLabel ?? t("moderation.riskUnknownSubject");
+	const severity = severityLabel(flag.severity, t);
 	return (
-		<Pressable
-			accessibilityRole="button"
-			accessibilityLabel={`${flag.severity}: ${flag.signal}`}
+		<QueueRow
+			label={`${title}, ${severity}, ${flag.score}`}
 			onPress={() => router.push(`/moderation/risk/${flag.id}`)}
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-		>
-			<View
-				style={[
-					styles.riskBadge,
-					{
-						backgroundColor: flag.severity === "high" ? c.dangerSoft : c.bg,
-					},
-				]}
-			>
-				<Text
+			c={c}
+			title={title}
+			meta={`${severity} · ${readableSignal(flag.signal)} · ${t(
+				"moderation.riskOccurrences",
+				{ count: flag.occurrences ?? 1 },
+			)} · ${relativeAge(flag.lastSeenAt, t)}`}
+			leading={
+				<View
 					style={[
-						styles.riskScore,
-						{ color: flag.severity === "high" ? c.danger : c.primary },
+						styles.tile,
+						{
+							backgroundColor: high
+								? c.dangerSoft
+								: medium
+									? c.warningSoft
+									: k.selectedSoft,
+						},
 					]}
 				>
-					{flag.score}
-				</Text>
-			</View>
-			<View style={styles.cardBody}>
-				<Text style={[styles.cardTitle, { color: c.text }]} numberOfLines={1}>
-					{flag.subjectLabel ?? t("moderation.riskUnknownSubject")}
-				</Text>
-				<Text style={[styles.cardMeta, { color: c.muted }]} numberOfLines={2}>
-					{`${flag.severity === "high" ? t("moderation.riskHigh") : flag.severity === "medium" ? t("moderation.riskMedium") : t("moderation.riskLow")} · ${flag.signal.replaceAll(".", " · ").replaceAll("_", " ")} · ${t("moderation.riskOccurrences", { count: flag.occurrences ?? 1 })} · ${relativeAge(flag.lastSeenAt, t)}`}
-				</Text>
-			</View>
-			<Ionicons name="chevron-forward" size={18} color={c.muted} />
-		</Pressable>
+					<Text
+						style={[
+							styles.riskScore,
+							{
+								color: high
+									? k.dangerText
+									: medium
+										? k.warningText
+										: k.linkText,
+							},
+						]}
+					>
+						{flag.score}
+					</Text>
+				</View>
+			}
+		/>
 	);
 }
 
@@ -357,41 +462,39 @@ function ListingRow({
 }: {
 	listing: ListingDoc;
 	t: Translate;
-	c: ReturnType<typeof useModerationTheme>;
+	c: ModerationPalette;
 }) {
 	const thumb = resolveListingImageUrl(listing.images?.[0], "thumbnail");
 	const seller = nameOf(listing.seller);
 
 	return (
-		<Pressable
+		<QueueRow
+			label={listing.title}
 			onPress={() => router.push(`/moderation/listing/${listing.id}` as never)}
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-		>
-			{thumb ? (
-				<Image
-					source={{ uri: thumb }}
-					style={styles.thumb}
-					contentFit="cover"
-				/>
-			) : (
-				<View
-					style={[styles.thumb, styles.thumbEmpty, { backgroundColor: c.bg }]}
-				>
-					<Ionicons name="image-outline" size={22} color={c.muted} />
-				</View>
-			)}
-			<View style={styles.cardBody}>
-				<Text style={[styles.cardTitle, { color: c.text }]} numberOfLines={2}>
-					{listing.title}
-				</Text>
-				<Text style={[styles.cardMeta, { color: c.muted }]} numberOfLines={1}>
-					{[seller, relativeAge(listing.createdAt, t)]
-						.filter(Boolean)
-						.join(" · ")}
-				</Text>
-			</View>
-			<Ionicons name="chevron-forward" size={18} color={c.muted} />
-		</Pressable>
+			c={c}
+			title={listing.title}
+			titleLines={2}
+			meta={[seller, relativeAge(listing.createdAt, t)]
+				.filter(Boolean)
+				.join(" · ")}
+			leading={
+				thumb ? (
+					<Image
+						source={{ uri: thumb }}
+						style={[styles.thumb, { backgroundColor: c.bg }]}
+						contentFit="cover"
+						transition={150}
+						recyclingKey={listing.id}
+					/>
+				) : (
+					<View
+						style={[styles.thumb, styles.center, { backgroundColor: c.bg }]}
+					>
+						<Ionicons name="image-outline" size={22} color={c.muted} />
+					</View>
+				)
+			}
+		/>
 	);
 }
 
@@ -402,92 +505,103 @@ function ReportRow({
 }: {
 	report: ReportDoc;
 	t: Translate;
-	c: ReturnType<typeof useModerationTheme>;
+	c: ModerationPalette;
 }) {
+	const k = tonesOf(c);
 	const reporter = nameOf(report.reporter);
+	const title = t(`report.${report.reason}`);
 
 	return (
-		<Pressable
+		<QueueRow
+			label={title}
 			onPress={() => router.push(`/moderation/report/${report.id}` as never)}
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-		>
-			<View style={[styles.reportIcon, { backgroundColor: c.dangerSoft }]}>
-				<Ionicons name="flag" size={18} color={c.danger} />
-			</View>
-			<View style={styles.cardBody}>
-				<Text style={[styles.cardTitle, { color: c.text }]} numberOfLines={1}>
-					{t(`report.${report.reason}`)}
-				</Text>
-				<Text style={[styles.cardMeta, { color: c.muted }]} numberOfLines={1}>
-					{[
-						t(`moderation.target_${report.targetType}`),
-						reporter,
-						relativeAge(report.createdAt, t),
-					]
-						.filter(Boolean)
-						.join(" · ")}
-				</Text>
-			</View>
-			<Ionicons name="chevron-forward" size={18} color={c.muted} />
-		</Pressable>
+			c={c}
+			title={title}
+			meta={[
+				t(`moderation.target_${report.targetType}`),
+				reporter,
+				relativeAge(report.createdAt, t),
+			]
+				.filter(Boolean)
+				.join(" · ")}
+			leading={
+				<View style={[styles.tile, { backgroundColor: c.dangerSoft }]}>
+					<Ionicons name="flag" size={18} color={k.dangerText} />
+				</View>
+			}
+		/>
 	);
 }
 
 const styles = StyleSheet.create({
+	separator: { height: 10 },
+	footer: { margin: 16 },
 	disputesLink: {
-		alignSelf: "stretch",
-		borderRadius: 10,
-		borderWidth: 1,
-		margin: 12,
-		padding: 12,
-	},
-	tabs: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth },
-	tab: {
-		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
-		justifyContent: "center",
-		gap: 6,
-		paddingVertical: 14,
-		borderBottomWidth: 2,
-		borderBottomColor: "transparent",
+		gap: 12,
+		minHeight: 60,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		marginHorizontal: 16,
+		marginTop: 12,
+		marginBottom: 4,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
 	},
-	tabLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	tabBadge: {
-		minWidth: 20,
-		paddingHorizontal: 6,
-		height: 20,
+	disputesIcon: {
+		width: 40,
+		height: 40,
 		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	tabBadgeText: { fontSize: 11, fontFamily: Fonts.displayBold },
+	disputesLabel: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 20,
+		fontFamily: Fonts.bodySemibold,
+	},
+	tabsWrap: { borderBottomWidth: StyleSheet.hairlineWidth },
+	tabs: { paddingHorizontal: 8 },
+	tab: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		minHeight: 48,
+		paddingHorizontal: 12,
+		borderBottomWidth: 2.5,
+	},
+	tabLabel: { fontSize: 15, lineHeight: 20 },
+	tabBadge: {
+		minWidth: 22,
+		height: 22,
+		paddingHorizontal: 6,
+		borderRadius: 11,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	tabBadgeText: { fontSize: 12, fontFamily: Fonts.displayBold },
 	card: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
+		minHeight: 72,
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
 		padding: 12,
 	},
 	thumb: { width: 56, height: 56, borderRadius: 10 },
-	thumbEmpty: { alignItems: "center", justifyContent: "center" },
-	reportIcon: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
+	center: { alignItems: "center", justifyContent: "center" },
+	tile: {
+		width: 44,
+		height: 44,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	riskBadge: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	riskScore: { fontSize: 14, fontFamily: Fonts.displayBold },
+	riskScore: { fontSize: 16, fontFamily: Fonts.displayExtrabold },
 	cardBody: { flex: 1, gap: 3 },
-	cardTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	cardMeta: { fontSize: 12, fontFamily: Fonts.body },
+	cardTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	cardMeta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

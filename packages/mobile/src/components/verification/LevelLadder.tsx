@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -49,7 +50,7 @@ export function LevelLadder({
 								style={[
 									styles.dot,
 									held
-										? { backgroundColor: c.primary, borderColor: c.primary }
+										? { backgroundColor: fillOf(c), borderColor: fillOf(c) }
 										: {
 												backgroundColor: c.card,
 												borderColor: isNext ? c.primary : c.border,

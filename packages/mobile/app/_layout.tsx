@@ -1,17 +1,17 @@
 import "../src/lib/i18n";
 import { Ionicons } from "@expo/vector-icons";
 import {
-	BricolageGrotesque_500Medium,
-	BricolageGrotesque_600SemiBold,
-	BricolageGrotesque_700Bold,
-	BricolageGrotesque_800ExtraBold,
-} from "@expo-google-fonts/bricolage-grotesque";
+	DMSans_400Regular,
+	DMSans_500Medium,
+	DMSans_600SemiBold,
+	DMSans_700Bold,
+} from "@expo-google-fonts/dm-sans";
 import {
-	Figtree_400Regular,
-	Figtree_500Medium,
-	Figtree_600SemiBold,
-	Figtree_700Bold,
-} from "@expo-google-fonts/figtree";
+	Outfit_500Medium,
+	Outfit_600SemiBold,
+	Outfit_700Bold,
+	Outfit_800ExtraBold,
+} from "@expo-google-fonts/outfit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -222,14 +222,14 @@ export default function RootLayout() {
 
 	const [fontsLoaded, fontError] = useFonts({
 		...Ionicons.font,
-		Figtree_400Regular,
-		Figtree_500Medium,
-		Figtree_600SemiBold,
-		Figtree_700Bold,
-		BricolageGrotesque_500Medium,
-		BricolageGrotesque_600SemiBold,
-		BricolageGrotesque_700Bold,
-		BricolageGrotesque_800ExtraBold,
+		DMSans_400Regular,
+		DMSans_500Medium,
+		DMSans_600SemiBold,
+		DMSans_700Bold,
+		Outfit_500Medium,
+		Outfit_600SemiBold,
+		Outfit_700Bold,
+		Outfit_800ExtraBold,
 	});
 
 	// A font that fails to resolve must not strand the user on the splash

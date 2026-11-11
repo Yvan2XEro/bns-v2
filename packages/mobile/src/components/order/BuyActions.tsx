@@ -3,6 +3,7 @@ import { router, usePathname } from "expo-router";
 import { useReducer } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf, inkOf } from "@/src/components/checkout/fill";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -133,12 +134,16 @@ export function BuyActions({
 					accessibilityState={{ disabled }}
 					disabled={disabled}
 					onPress={() => submit(false)}
-					style={[
+					style={({ pressed }) => [
 						styles.button,
-						{ borderColor: c.primary, opacity: disabled ? 0.5 : 1 },
+						{
+							borderColor: c.border,
+							backgroundColor: c.card,
+							opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
+						},
 					]}
 				>
-					<Text style={[styles.buttonText, { color: c.primary }]}>
+					<Text style={[styles.buttonText, { color: inkOf(c) }]}>
 						{t("buyBox.addToCart")}
 					</Text>
 				</Pressable>
@@ -147,17 +152,17 @@ export function BuyActions({
 					accessibilityState={{ disabled }}
 					disabled={disabled}
 					onPress={() => submit(true)}
-					style={[
+					style={({ pressed }) => [
 						styles.button,
 						{
-							backgroundColor: c.primary,
-							borderColor: c.primary,
-							opacity: disabled ? 0.5 : 1,
+							backgroundColor: fillOf(c).bg,
+							borderColor: fillOf(c).bg,
+							opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
 						},
 					]}
 				>
-					<Ionicons name="bag-handle-outline" size={18} color="#ffffff" />
-					<Text style={[styles.buttonText, { color: "#ffffff" }]}>
+					<Ionicons name="bag-handle-outline" size={18} color={fillOf(c).fg} />
+					<Text style={[styles.buttonText, { color: fillOf(c).fg }]}>
 						{t("buyBox.buyNow")}
 					</Text>
 				</Pressable>
@@ -171,7 +176,7 @@ export function BuyActions({
 				>
 					<Text style={[styles.small, { color: c.successText }]}>
 						{t("buyBox.added")}{" "}
-						<Text style={{ color: c.primary, fontFamily: Fonts.bodySemibold }}>
+						<Text style={{ color: inkOf(c), fontFamily: Fonts.bodySemibold }}>
 							{t("buyBox.viewCart")}
 						</Text>
 					</Text>
@@ -190,7 +195,7 @@ export function BuyActions({
 				<Text
 					style={[
 						styles.badge,
-						{ backgroundColor: c.primarySoft, color: c.primary },
+						{ backgroundColor: c.primarySoft, color: inkOf(c) },
 					]}
 				>
 					{t("buyBox.returnBadge", { days: withdrawalDays })}
@@ -203,7 +208,7 @@ export function BuyActions({
 const styles = StyleSheet.create({
 	wrap: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 14, gap: 12 },
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold, flex: 1 },
+	label: { fontSize: 14, fontFamily: Fonts.bodySemibold, flex: 1 },
 	step: {
 		width: 44,
 		height: 44,
@@ -222,14 +227,14 @@ const styles = StyleSheet.create({
 		flex: 1,
 		flexDirection: "row",
 		gap: 6,
-		minHeight: 50,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	buttonText: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	buttonText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 	added: { minHeight: 44, justifyContent: "center" },
 	small: { fontSize: 13, fontFamily: Fonts.body },
 	badges: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

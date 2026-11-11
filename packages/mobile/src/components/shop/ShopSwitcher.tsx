@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 10,
 		paddingVertical: 6,
-		minHeight: 44,
+		minHeight: 48,
 		maxWidth: 220,
 	},
 	triggerLabel: { flex: 1, fontSize: 13, fontFamily: Fonts.bodySemibold },
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 	},
 	menuTitle: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
 		textTransform: "uppercase",
 		letterSpacing: 0.5,

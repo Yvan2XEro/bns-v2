@@ -1,15 +1,18 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { CHECKLIST_ITEMS, type ChecklistItem } from "@/src/lib/verification";
+import { ModerationCard } from "./ModerationKit";
 import { useModerationTheme } from "./theme";
+import { tonesOf } from "./tones";
 
 export type ChecklistState = Partial<Record<ChecklistItem, boolean>>;
 
 /**
- * The five checks a level-3 reviewer confirms before approving. Real
- * switches (`accessibilityRole="switch"`), not a bare styled `View`, so each
- * item is reachable and labelled with its current state.
+ * The five checks a level-3 reviewer confirms before approving. The row is
+ * the switch (`accessibilityRole="switch"`): the whole line toggles, and the
+ * platform's own Switch shows the state, so each item is reachable and
+ * labelled with its current state.
  */
 export function ChecklistSwitches({
 	value,
@@ -19,77 +22,72 @@ export function ChecklistSwitches({
 	onChange: (next: ChecklistState) => void;
 }) {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
+	const done = CHECKLIST_ITEMS.filter((item) => value[item] === true).length;
 
 	return (
-		<View
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+		<ModerationCard
+			title={t("moderation.verifChecklistTitle")}
+			right={
+				<Text
+					style={[
+						styles.count,
+						{
+							color: done === CHECKLIST_ITEMS.length ? k.successText : c.muted,
+						},
+					]}
+				>
+					{done}/{CHECKLIST_ITEMS.length}
+				</Text>
+			}
 		>
-			<Text style={[styles.title, { color: c.text }]}>
-				{t("moderation.verifChecklistTitle")}
-			</Text>
 			{CHECKLIST_ITEMS.map((item) => {
 				const checked = value[item] === true;
 				const label = t(`moderation.verifChecklist_${item}`);
+				const toggle = () => onChange({ ...value, [item]: !checked });
 				return (
 					<Pressable
 						key={item}
 						accessibilityRole="switch"
 						accessibilityState={{ checked }}
 						accessibilityLabel={label}
-						onPress={() => onChange({ ...value, [item]: !checked })}
-						style={[styles.itemRow, { borderColor: c.border }]}
+						onPress={toggle}
+						style={[styles.itemRow, { borderTopColor: c.border }]}
 					>
 						<Text style={[styles.itemLabel, { color: c.text }]}>{label}</Text>
 						<View
-							style={[
-								styles.track,
-								{ backgroundColor: checked ? c.primary : c.border },
-							]}
+							importantForAccessibility="no-hide-descendants"
+							accessibilityElementsHidden
 						>
-							<View
-								style={[
-									styles.thumb,
-									{ transform: [{ translateX: checked ? 16 : 0 }] },
-								]}
+							<Switch
+								value={checked}
+								onValueChange={toggle}
+								trackColor={{
+									false: c.isDark ? "#3a4290" : "#c9cce0",
+									true: k.successFill,
+								}}
+								thumbColor="#ffffff"
+								ios_backgroundColor={c.isDark ? "#3a4290" : "#c9cce0"}
 							/>
 						</View>
 					</Pressable>
 				);
 			})}
-		</View>
+		</ModerationCard>
 	);
 }
 
 const styles = StyleSheet.create({
-	card: {
-		borderRadius: 14,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 14,
-		gap: 8,
-	},
-	title: { fontSize: 15, fontFamily: Fonts.displayBold, marginBottom: 2 },
+	count: { fontSize: 15, fontFamily: Fonts.displayBold },
 	itemRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		gap: 10,
-		minHeight: 44,
+		gap: 12,
+		minHeight: 52,
 		paddingVertical: 6,
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
-	itemLabel: { fontSize: 13, fontFamily: Fonts.body, flex: 1 },
-	track: {
-		width: 36,
-		height: 20,
-		borderRadius: 10,
-		padding: 2,
-		justifyContent: "center",
-	},
-	thumb: {
-		width: 16,
-		height: 16,
-		borderRadius: 8,
-		backgroundColor: "#fff",
-	},
+	itemLabel: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body, flex: 1 },
 });

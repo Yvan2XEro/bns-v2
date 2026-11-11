@@ -12,6 +12,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { ApiError, api } from "@/src/lib/api";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
@@ -174,7 +175,7 @@ export function PhoneGate({ onVerified }: { onVerified: () => void }) {
 				style={[
 					styles.button,
 					{
-						backgroundColor: c.primary,
+						backgroundColor: fillOf(c),
 						opacity: busy ? 0.7 : pending && codeValue.length !== 6 ? 0.5 : 1,
 					},
 				]}

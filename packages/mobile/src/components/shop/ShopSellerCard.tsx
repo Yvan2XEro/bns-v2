@@ -43,9 +43,6 @@ export function ShopSellerCard({
 			? owner.rating.toFixed(1).replace(".", ",")
 			: null;
 	const meta = [
-		rating
-			? `${rating} · ${t("shop.reviewsCount", { count: owner?.totalReviews ?? 0 })}`
-			: null,
 		shop.publishedListingCount !== undefined
 			? `${shop.publishedListingCount} ${t("shop.productsLabel")}`
 			: null,
@@ -63,7 +60,6 @@ export function ShopSellerCard({
 				{
 					backgroundColor: c.card,
 					borderColor: c.border,
-					borderLeftColor: brand.accent,
 				},
 			]}
 		>
@@ -73,6 +69,15 @@ export function ShopSellerCard({
 					{shop.name}
 				</Text>
 				<LevelBadge badge={badge} size="sm" />
+				{rating ? (
+					<View style={styles.ratingRow}>
+						<Ionicons name="star" size={14} color={c.sell} />
+						<Text style={[styles.rating, { color: c.text }]}>{rating}</Text>
+						<Text style={[styles.meta, { color: c.muted }]}>
+							{t("shop.reviewsCount", { count: owner?.totalReviews ?? 0 })}
+						</Text>
+					</View>
+				) : null}
 				{meta ? (
 					<Text style={[styles.meta, { color: c.muted }]}>{meta}</Text>
 				) : null}
@@ -82,7 +87,7 @@ export function ShopSellerCard({
 					</Text>
 				) : null}
 			</View>
-			<Ionicons name="chevron-forward" size={16} color={brand.accentText} />
+			<Ionicons name="chevron-forward" size={20} color={brand.accentText} />
 		</Pressable>
 	);
 }
@@ -94,11 +99,16 @@ const styles = StyleSheet.create({
 		gap: 12,
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
-		borderLeftWidth: 4,
 		padding: 14,
 		marginBottom: 12,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	name: { fontSize: 16, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	meta: { fontSize: 13, fontFamily: Fonts.body },
+	ratingRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+	rating: {
+		fontSize: 14,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
 });

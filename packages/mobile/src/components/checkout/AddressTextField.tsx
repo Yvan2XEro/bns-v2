@@ -8,6 +8,7 @@ import type {
 } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
 import { phoneExample } from "@/src/lib/market";
+import { FormError } from "./FormError";
 
 /** One text field of the address form; the error is a translation key. */
 export function AddressTextField({
@@ -34,7 +35,9 @@ export function AddressTextField({
 
 	return (
 		<View style={{ gap: 6 }}>
-			<Text style={[formStyles.label, { color: c.body }]}>{label}</Text>
+			<Text style={[formStyles.label, { color: c.body, fontSize: 14 }]}>
+				{label}
+			</Text>
 			<Controller
 				control={control}
 				name={name}
@@ -56,19 +59,26 @@ export function AddressTextField({
 								color: c.text,
 								backgroundColor: c.input,
 								borderColor: error ? c.danger : c.border,
+								minHeight: 48,
+								fontSize: 16,
 							},
 						]}
 					/>
 				)}
 			/>
 			{hint ? (
-				<Text style={[formStyles.hint, { color: c.muted }]}>{hint}</Text>
-			) : null}
-			{error ? (
-				<Text style={formStyles.error} accessibilityLiveRegion="polite">
-					{t(error, { example: phoneExample() })}
+				<Text
+					style={[
+						formStyles.hint,
+						{ color: c.muted, fontSize: 13, lineHeight: 18 },
+					]}
+				>
+					{hint}
 				</Text>
 			) : null}
+			<FormError
+				message={error ? t(error, { example: phoneExample() }) : null}
+			/>
 		</View>
 	);
 }

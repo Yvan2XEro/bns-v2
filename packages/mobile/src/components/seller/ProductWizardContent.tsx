@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import type { FieldIssue } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
@@ -66,7 +67,10 @@ export function ProductWizardContent({
 				/>
 			) : null}
 			{stepIssues.length > 0 ? (
-				<Text style={f.error} accessibilityRole="alert">
+				<Text
+					style={[f.error, { color: dangerInk(c) }]}
+					accessibilityRole="alert"
+				>
 					{t("formIssues.fixStep")}
 				</Text>
 			) : null}

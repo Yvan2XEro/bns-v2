@@ -19,6 +19,7 @@ import {
 } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
 import { coordinatesText } from "@/src/lib/savedAddresses";
+import { inkOf } from "./fill";
 
 type Status = "idle" | "locating" | "denied" | "unavailable";
 
@@ -70,9 +71,9 @@ export function LocationField({
 				{status === "locating" ? (
 					<ActivityIndicator color={c.primary} />
 				) : (
-					<Ionicons name="locate" size={18} color={c.primary} />
+					<Ionicons name="locate" size={18} color={inkOf(c)} />
 				)}
-				<Text style={[styles.buttonText, { color: c.primary }]}>
+				<Text style={[styles.buttonText, { color: inkOf(c) }]}>
 					{status === "locating"
 						? t("checkout.locating")
 						: t("checkout.useMyLocation")}
@@ -105,7 +106,7 @@ export function LocationField({
 							accessibilityLabel={t("checkout.openInMaps")}
 							style={styles.link}
 						>
-							<Text style={[styles.linkText, { color: c.primary }]}>
+							<Text style={[styles.linkText, { color: inkOf(c) }]}>
 								{t("checkout.openInMaps")}
 							</Text>
 						</Pressable>
@@ -143,11 +144,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 	},
-	buttonText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	buttonText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	link: { minHeight: 44, justifyContent: "center" },
 	linkText: {
 		fontSize: 13,

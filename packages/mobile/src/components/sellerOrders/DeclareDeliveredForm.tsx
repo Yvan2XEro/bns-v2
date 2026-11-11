@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useDeclareDelivered } from "@/src/hooks/useOrderActions";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -110,7 +111,7 @@ export function DeclareDeliveredForm({
 						accessibilityRole="button"
 						accessibilityLabel={t("sellerOrders.photoRemove")}
 					>
-						<Ionicons name="trash-outline" size={20} color={c.danger} />
+						<Ionicons name="trash-outline" size={20} color={dangerInk(c)} />
 					</Pressable>
 				</View>
 			) : (
@@ -181,8 +182,8 @@ const styles = StyleSheet.create({
 	photo: { width: 56, height: 56, borderRadius: 10 },
 	photoText: { flex: 1, fontSize: 14, fontFamily: Fonts.bodyMedium },
 	iconButton: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},

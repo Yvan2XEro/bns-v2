@@ -1,11 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
-import {
-	ActivityIndicator,
-	RefreshControl,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
@@ -15,6 +10,7 @@ import { PaymentsOrderRow } from "@/src/components/payments/PaymentsOrderRow";
 import { PaymentsShell } from "@/src/components/payments/PaymentsShell";
 import { PayoutRow } from "@/src/components/payments/PayoutRow";
 import { StatusRow } from "@/src/components/payments/StatusRow";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { useShopTheme } from "@/src/components/shop/theme";
 import {
 	useSellerPaymentSetup,
@@ -36,8 +32,8 @@ function PaymentsContent({ shopId }: { shopId: string }) {
 
 	if (payments.isPending) {
 		return (
-			<View style={styles.center}>
-				<ActivityIndicator color={c.primary} />
+			<View style={styles.loading}>
+				<ListSkeleton rows={4} />
 			</View>
 		);
 	}
@@ -61,12 +57,18 @@ function PaymentsContent({ shopId }: { shopId: string }) {
 			<View
 				style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
 			>
-				<Text style={[s.cardTitle, { color: c.text }]}>
+				<Text
+					accessibilityRole="header"
+					style={[s.cardTitle, { color: c.text }]}
+				>
 					{t("payments.seller_statusHolds")}
 				</Text>
 				<HoldsList holds={view.holds} />
 			</View>
-			<Text style={[s.cardTitle, { color: c.text }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.sectionTitle, { color: c.text }]}
+			>
 				{t("payments.seller_payoutsTitle")}
 			</Text>
 			{view.payouts.length === 0 ? (
@@ -80,7 +82,10 @@ function PaymentsContent({ shopId }: { shopId: string }) {
 					))}
 				</View>
 			)}
-			<Text style={[s.cardTitle, { color: c.text, marginTop: 4 }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.sectionTitle, { color: c.text }]}
+			>
 				{t("payments.seller_ordersTitle")}
 			</Text>
 		</View>
@@ -99,6 +104,7 @@ function PaymentsContent({ shopId }: { shopId: string }) {
 					<RefreshControl
 						refreshing={payments.isRefetching}
 						onRefresh={refresh}
+						tintColor={c.primary}
 					/>
 				}
 			/>
@@ -116,7 +122,14 @@ export default function SellerPaymentsScreen() {
 }
 
 const styles = StyleSheet.create({
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
+	loading: { flex: 1, paddingTop: 16 },
+	sectionTitle: {
+		fontSize: 19,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.3,
+		marginTop: 8,
+	},
 	list: { padding: 16, paddingBottom: 32 },
 	header: { gap: 12, marginBottom: 12 },
 	payouts: { gap: 10 },

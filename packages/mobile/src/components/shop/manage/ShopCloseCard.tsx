@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formStyles as f } from "@/src/components/seller/formStyles";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCloseShopForm } from "@/src/hooks/useCloseShopForm";
 import { useTranslation } from "@/src/lib/i18n";
@@ -33,9 +34,9 @@ export function ShopCloseCard({ shop }: { shop: MyShop }) {
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.danger }]}>
 			<View style={f.row}>
-				<Ionicons name="lock-closed-outline" size={18} color={c.danger} />
+				<Ionicons name="lock-closed-outline" size={18} color={dangerInk(c)} />
 				<View style={{ flex: 1 }}>
-					<Text style={[f.label, { color: c.danger }]}>
+					<Text style={[f.label, { color: dangerInk(c) }]}>
 						{t("shop.closeTitle")}
 					</Text>
 					<Text style={[f.hint, { color: c.muted }]}>
@@ -66,7 +67,9 @@ export function ShopCloseCard({ shop }: { shop: MyShop }) {
 				)}
 			/>
 			{form.formState.errors.root?.message ? (
-				<Text style={f.error}>{form.formState.errors.root.message}</Text>
+				<Text style={[f.error, { color: dangerInk(c) }]}>
+					{form.formState.errors.root.message}
+				</Text>
 			) : null}
 			<Pressable
 				disabled={!confirmation || !form.formState.isValid || isPending}
@@ -98,5 +101,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	dangerText: { color: "#fff", fontSize: 15, fontFamily: Fonts.bodyBold },
+	dangerText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

@@ -8,6 +8,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
 import { assignableMembers } from "@/src/lib/activeShop";
@@ -46,6 +47,10 @@ export function AssigneeSheet({
 	const { t } = useTranslation();
 	const members = assignableMembers(team, callerRole, callerId);
 	const sheet = useSheetPresentation();
+	const insets = useSafeAreaInsets();
+	// The dark primary drops under 4.5:1 on the night card; its lighter
+	// tone does not.
+	const accent = c.link;
 
 	return (
 		<Modal
@@ -72,14 +77,23 @@ export function AssigneeSheet({
 				<View
 					style={[
 						styles.sheet,
-						{ backgroundColor: c.card, borderColor: c.border },
+						{
+							backgroundColor: c.card,
+							borderColor: c.border,
+							// A bottom sheet clears the home indicator; a centred dialog
+							// keeps its own padding.
+							paddingBottom: sheet.panel ? 16 : Math.max(16, insets.bottom + 8),
+						},
 						sheet.panel,
 					]}
 				>
 					<View style={styles.grabber}>
 						<View style={[styles.grabberBar, { backgroundColor: c.border }]} />
 					</View>
-					<Text style={[styles.title, { color: c.text }]}>
+					<Text
+						style={[styles.title, { color: c.text }]}
+						accessibilityRole="header"
+					>
 						{t("inbox.assigneeSheetTitle")}
 					</Text>
 
@@ -106,14 +120,23 @@ export function AssigneeSheet({
 									accessibilityLabel={label}
 									accessibilityState={{ selected, disabled: pending }}
 								>
-									<Text style={[styles.rowLabel, { color: c.text }]}>
+									<Text
+										style={[
+											styles.rowLabel,
+											{
+												color: c.text,
+												fontFamily: selected ? Fonts.bodySemibold : Fonts.body,
+											},
+										]}
+										numberOfLines={1}
+									>
 										{label}
 									</Text>
 									{selected ? (
 										<Ionicons
 											name="checkmark-circle"
-											size={18}
-											color={c.primary}
+											size={22}
+											color={accent}
 										/>
 									) : null}
 								</Pressable>
@@ -129,7 +152,17 @@ export function AssigneeSheet({
 								accessibilityLabel={t("inbox.unassign")}
 								accessibilityState={{ disabled: pending }}
 							>
-								<Text style={[styles.rowLabel, { color: c.danger }]}>
+								<Ionicons
+									name="person-remove-outline"
+									size={18}
+									color={c.dangerText}
+								/>
+								<Text
+									style={[
+										styles.rowLabel,
+										{ color: c.dangerText, fontFamily: Fonts.bodySemibold },
+									]}
+								>
 									{t("inbox.unassign")}
 								</Text>
 							</Pressable>
@@ -137,16 +170,19 @@ export function AssigneeSheet({
 					</ScrollView>
 
 					{pending ? (
-						<ActivityIndicator style={styles.spinner} color={c.primary} />
+						<ActivityIndicator style={styles.spinner} color={accent} />
 					) : null}
 
 					<Pressable
 						onPress={onClose}
-						style={styles.closeBtn}
+						style={({ pressed }) => [
+							styles.closeBtn,
+							{ opacity: pressed ? 0.6 : 1 },
+						]}
 						accessibilityRole="button"
 						accessibilityLabel={t("common.close")}
 					>
-						<Text style={{ color: c.muted, fontFamily: Fonts.bodySemibold }}>
+						<Text style={[styles.closeText, { color: c.body }]}>
 							{t("common.close")}
 						</Text>
 					</Pressable>
@@ -162,35 +198,38 @@ const styles = StyleSheet.create({
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,
 		borderWidth: StyleSheet.hairlineWidth,
-		paddingBottom: 24,
 	},
 	grabber: { alignItems: "center", paddingTop: 8 },
 	grabberBar: { width: 40, height: 4, borderRadius: 2 },
 	title: {
-		fontSize: 17,
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 		paddingHorizontal: 20,
-		paddingTop: 12,
-		paddingBottom: 8,
+		paddingTop: 14,
+		paddingBottom: 12,
 	},
 	list: { maxHeight: 360, paddingHorizontal: 20 },
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		minHeight: 48,
-		paddingHorizontal: 12,
+		gap: 10,
+		minHeight: 52,
+		paddingHorizontal: 14,
 		borderRadius: 12,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		marginBottom: 8,
 	},
-	rowLabel: { fontSize: 14, fontFamily: Fonts.body },
+	rowLabel: { flex: 1, fontSize: 16, lineHeight: 21 },
 	spinner: { marginTop: 8 },
 	closeBtn: {
 		alignSelf: "center",
-		marginTop: 10,
-		minHeight: 44,
+		marginTop: 8,
+		minHeight: 48,
 		justifyContent: "center",
 		paddingHorizontal: 20,
 	},
+	closeText: { fontSize: 16, fontFamily: Fonts.bodySemibold },
 });

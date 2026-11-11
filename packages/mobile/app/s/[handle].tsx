@@ -25,6 +25,11 @@ import { scheduleOnRN } from "react-native-worklets";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import {
+	ListingGridSkeleton,
+	ShopSkeleton,
+	SkeletonBox,
+} from "@/src/components/listing/Skeletons";
 import { ShareSheet } from "@/src/components/share/ShareSheet";
 import { ShopBrandProvider, useBrandFor } from "@/src/components/shop/brand";
 import { DeliveryCities } from "@/src/components/shop/DeliveryCities";
@@ -340,8 +345,17 @@ export default function ShopScreen() {
 
 	if (isLoading || redirectTo) {
 		return (
-			<View style={[styles.center, { backgroundColor: c.bg }]}>
-				<ActivityIndicator color={c.primary} />
+			<View style={[styles.root, { backgroundColor: c.bg }]}>
+				<StatusBar style={c.isDark ? "light" : "dark"} />
+				<ShopSkeleton cardWidth={cardWidth} columns={columns} gap={gutter} />
+				<Pressable
+					onPress={back}
+					style={[styles.floatBack, { top: insets.top + 8 }]}
+					accessibilityRole="button"
+					accessibilityLabel={t("common.back")}
+				>
+					<Ionicons name="chevron-back" size={22} color="#12163a" />
+				</Pressable>
 			</View>
 		);
 	}
@@ -356,19 +370,29 @@ export default function ShopScreen() {
 				<Pressable
 					onPress={back}
 					style={styles.plainBack}
-					hitSlop={8}
 					accessibilityRole="button"
 					accessibilityLabel={t("common.back")}
 				>
-					<Ionicons name="arrow-back" size={22} color={c.text} />
+					<Ionicons name="chevron-back" size={24} color={c.text} />
 				</Pressable>
-				<EmptyState
-					illustration="notFound"
-					title={notFound ? t("shop.notFoundTitle") : t("home.errorTitle")}
-					subtitle={t("shop.notFoundSubtitle")}
-					ctaLabel={t("common.retry")}
-					onCta={() => refetch()}
-				/>
+				{/* A gone shop offers the way back; a failed load offers a retry. */}
+				{notFound ? (
+					<EmptyState
+						illustration="notFound"
+						title={t("shop.notFoundTitle")}
+						subtitle={t("shop.notFoundSubtitle")}
+						ctaLabel={t("common.back")}
+						onCta={back}
+					/>
+				) : (
+					<EmptyState
+						illustration="notFound"
+						title={t("home.errorTitle")}
+						subtitle={resolveErrorMessage(error, t)}
+						ctaLabel={t("common.retry")}
+						onCta={() => refetch()}
+					/>
+				)}
 			</View>
 		);
 	}
@@ -389,23 +413,47 @@ export default function ShopScreen() {
 		if (item.kind === "reviewsIntro") {
 			return (
 				<View style={styles.reviewsIntro}>
-					<Text style={[styles.section, { color: c.text }]}>
-						{t("shop.reviewsTitle")}
-					</Text>
+					<View style={styles.reviewsHead}>
+						<Ionicons
+							name="shield-checkmark"
+							size={18}
+							color={c.isDark ? "#34b26a" : "#1e8a4f"}
+						/>
+						<Text
+							style={[styles.section, { color: c.text }]}
+							accessibilityRole="header"
+						>
+							{t("shop.reviewsTitle")}
+						</Text>
+					</View>
 					<Text style={[styles.hint, { color: c.muted }]}>
 						{t("shop.reviewsHint")}
 					</Text>
 					{reviewList.length === 0 ? (
 						reviews.isLoading ? (
-							<ActivityIndicator
-								color={brand.accentText}
-								style={{ margin: 24 }}
-							/>
+							<View style={styles.reviewSkeletons}>
+								<SkeletonBox width="100%" height={88} radius={14} />
+								<SkeletonBox width="100%" height={88} radius={14} />
+							</View>
+						) : reviews.isError ? (
+							<View style={styles.inlineState}>
+								<Text style={[styles.empty, { color: c.body }]}>
+									{t("shop.reviewsUnavailable")}
+								</Text>
+								<Pressable
+									onPress={() => reviews.refetch()}
+									style={[styles.retryBtn, { borderColor: c.border }]}
+									accessibilityRole="button"
+								>
+									<Ionicons name="refresh" size={17} color={c.text} />
+									<Text style={[styles.retryText, { color: c.text }]}>
+										{t("common.retry")}
+									</Text>
+								</Pressable>
+							</View>
 						) : (
 							<Text style={[styles.empty, { color: c.muted }]}>
-								{reviews.isError
-									? t("shop.reviewsUnavailable")
-									: t("shop.noReviews")}
+								{t("shop.noReviews")}
 							</Text>
 						)
 					) : null}
@@ -419,8 +467,11 @@ export default function ShopScreen() {
 			return (
 				<View style={styles.about}>
 					{loadedShop.description ? (
-						<View style={{ gap: 4 }}>
-							<Text style={[styles.section, { color: c.text }]}>
+						<View style={styles.aboutBlock}>
+							<Text
+								style={[styles.section, { color: c.text }]}
+								accessibilityRole="header"
+							>
 								{t("shop.aboutDescription")}
 							</Text>
 							<Text style={[styles.body, { color: c.body }]}>
@@ -429,8 +480,11 @@ export default function ShopScreen() {
 						</View>
 					) : null}
 					{loadedShop.returnPolicy ? (
-						<View style={{ gap: 4 }}>
-							<Text style={[styles.section, { color: c.text }]}>
+						<View style={styles.aboutBlock}>
+							<Text
+								style={[styles.section, { color: c.text }]}
+								accessibilityRole="header"
+							>
 								{t("shop.aboutReturnPolicy")}
 							</Text>
 							<Text style={[styles.body, { color: c.body }]}>
@@ -604,7 +658,7 @@ export default function ShopScreen() {
 											>
 												<Ionicons
 													name="call-outline"
-													size={19}
+													size={20}
 													color={c.text}
 												/>
 											</Pressable>
@@ -618,8 +672,8 @@ export default function ShopScreen() {
 											>
 												<Ionicons
 													name="logo-whatsapp"
-													size={19}
-													color="#1e8a4f"
+													size={21}
+													color={c.isDark ? "#34b26a" : "#1e8a4f"}
 												/>
 											</Pressable>
 										) : null}
@@ -637,16 +691,34 @@ export default function ShopScreen() {
 					)}
 					ListEmptyComponent={
 						active.isLoading ? (
-							<ActivityIndicator
-								color={brand.accentText}
-								style={{ margin: 24 }}
+							<View style={{ paddingHorizontal: PAGE_GUTTER }}>
+								<ListingGridSkeleton
+									cardWidth={cardWidth}
+									columns={columns}
+									gap={gutter}
+								/>
+							</View>
+						) : active.isError ? (
+							<EmptyState
+								illustration="notFound"
+								title={t("home.errorTitle")}
+								subtitle={resolveErrorMessage(active.error, t)}
+								ctaLabel={t("common.retry")}
+								onCta={() => active.refetch()}
+								size={140}
 							/>
 						) : (
-							<Text style={[styles.empty, { color: c.muted }]}>
-								{activeQuery || category
-									? t("shop.noListingsFiltered")
-									: t("shop.noListings")}
-							</Text>
+							<EmptyState
+								illustration={
+									activeQuery || category ? "searching" : "listings"
+								}
+								title={
+									activeQuery || category
+										? t("shop.noListingsFiltered")
+										: t("shop.noListings")
+								}
+								size={140}
+							/>
 						)
 					}
 					ListFooterComponent={
@@ -668,7 +740,7 @@ export default function ShopScreen() {
 								accessibilityRole="button"
 								accessibilityLabel={t("shop.report")}
 							>
-								<Ionicons name="flag-outline" size={14} color={c.muted} />
+								<Ionicons name="flag-outline" size={15} color={c.muted} />
 								<Text style={[styles.reportText, { color: c.muted }]}>
 									{t("shop.report")}
 								</Text>
@@ -747,28 +819,69 @@ const PAGE_GUTTER = 16;
 
 const styles = StyleSheet.create({
 	root: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
-	plainBack: { padding: 16 },
+	plainBack: {
+		width: 48,
+		height: 48,
+		marginLeft: 4,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	// Over the banner skeleton: a white disc, as on the listing photo.
+	floatBack: {
+		position: "absolute",
+		left: 16,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: "#ffffff",
+		alignItems: "center",
+		justifyContent: "center",
+	},
 	hero: { gap: 16, paddingBottom: 16 },
 	sticky: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 },
 	section: {
-		fontSize: 17,
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},
-	reviewsIntro: { gap: 4, marginBottom: 12 },
-	about: { gap: 16 },
-	row: { flexDirection: "row", marginBottom: 12 },
-	empty: { textAlign: "center", fontFamily: Fonts.body, margin: 24 },
+	reviewsIntro: { gap: 6, marginBottom: 14 },
+	reviewsHead: { flexDirection: "row", alignItems: "center", gap: 8 },
+	reviewSkeletons: { gap: 10, marginTop: 10 },
+	inlineState: { alignItems: "center", gap: 4, paddingVertical: 12 },
+	retryBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		minHeight: 48,
+		paddingHorizontal: 18,
+		borderRadius: 12,
+		borderWidth: 1,
+	},
+	retryText: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	about: { gap: 20 },
+	aboutBlock: { gap: 6 },
+	row: { flexDirection: "row", marginBottom: 16 },
+	empty: {
+		textAlign: "center",
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+		margin: 20,
+	},
 	report: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
+		alignSelf: "center",
 		gap: 6,
-		paddingVertical: 20,
+		minHeight: 48,
+		paddingHorizontal: 16,
+		marginVertical: 12,
 	},
-	reportText: { fontSize: 13, fontFamily: Fonts.body },
-	hint: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
-	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 21 },
+	reportText: { fontSize: 14, fontFamily: Fonts.bodyMedium },
+	hint: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 19 },
+	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	contactRow: { flexDirection: "row", gap: 10, paddingHorizontal: PAGE_GUTTER },
 	primaryBtn: {
 		flex: 1,
@@ -776,15 +889,16 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		height: 46,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
+		paddingHorizontal: 12,
 	},
-	primaryText: { color: "#fff", fontSize: 15, fontFamily: Fonts.displayBold },
+	primaryText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 	iconBtn: {
-		width: 46,
-		height: 46,
-		borderRadius: 14,
-		borderWidth: 1.5,
+		width: 52,
+		height: 52,
+		borderRadius: 12,
+		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
 	},

@@ -15,6 +15,7 @@ import {
 	BRAND_SWATCHES,
 	parseBrandColorInput,
 } from "@/src/components/shop/brandTones";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useUpdateShop } from "@/src/hooks/useShops";
@@ -112,7 +113,9 @@ export function ShopBrandColorCard({
 				]}
 			/>
 			{parsed.ok ? null : (
-				<Text style={f.error}>{t("shop.brandColorInvalid")}</Text>
+				<Text style={[f.error, { color: dangerInk(c) }]}>
+					{t("shop.brandColorInvalid")}
+				</Text>
 			)}
 
 			<Text style={[f.label, { color: c.body }]}>
@@ -164,7 +167,7 @@ export function ShopBrandColorCard({
 					style={[
 						styles.action,
 						{
-							backgroundColor: c.primary,
+							backgroundColor: fillOf(c),
 							borderColor: c.primary,
 							opacity: disabled || !dirty ? 0.5 : 1,
 						},
@@ -209,7 +212,7 @@ const styles = StyleSheet.create({
 	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	action: {
 		flex: 1,
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",

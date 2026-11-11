@@ -99,8 +99,8 @@ const styles = StyleSheet.create({
 	title: { fontSize: 18, fontFamily: Fonts.displayBold },
 	subtitle: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	close: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},

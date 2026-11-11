@@ -5,7 +5,9 @@ import { formatPrice } from "@/src/lib/market";
 import { PAYOUT_ORIGIN_LABELS } from "@/src/lib/moderationPayments";
 import { PAYOUT_STATUSES } from "@/src/lib/paymentStatus";
 import type { ShopPaymentsSheet } from "@/src/types/api";
+import { SectionTitle } from "./ModerationKit";
 import type { ModerationPalette, Translate } from "./theme";
+import { tonesOf } from "./tones";
 
 interface ShopPaymentsStatsCardProps {
 	lastPayouts: ShopPaymentsSheet["lastPayouts"];
@@ -26,8 +28,9 @@ export function ShopPaymentsStatsCard({
 	c,
 	t,
 }: ShopPaymentsStatsCardProps) {
+	const k = tonesOf(c);
 	return (
-		<View style={{ gap: 10 }}>
+		<>
 			<View style={styles.statsRow}>
 				<Stat
 					label={t("moderation.paymentsOpenExposureLabel")}
@@ -46,35 +49,53 @@ export function ShopPaymentsStatsCard({
 				/>
 			</View>
 
-			<Text style={[styles.sectionLabel, { color: c.muted }]}>
-				{t("moderation.paymentsRecentPayoutsTitle")}
-			</Text>
-			{lastPayouts.length === 0 ? (
-				<Text style={[styles.meta, { color: c.muted }]}>
-					{t("moderation.paymentsRecentPayoutsEmpty")}
-				</Text>
-			) : (
-				lastPayouts.map((payout) => (
-					<View key={payout.id} style={[styles.row, { borderColor: c.border }]}>
-						<View style={{ flex: 1, gap: 2 }}>
-							<Text style={[styles.body, { color: c.text }]}>
-								{formatPrice(payout.amount, locale)} ·{" "}
-								{t(PAYOUT_STATUSES[payout.status])}
-							</Text>
-							<Text style={[styles.meta, { color: c.muted }]}>
-								{t(PAYOUT_ORIGIN_LABELS[payout.origin])} ·{" "}
-								{formatDate(payout.createdAt)}
-							</Text>
-							{payout.failureReason ? (
-								<Text style={[styles.meta, { color: c.danger }]}>
-									{payout.failureReason}
+			<View style={styles.section}>
+				<SectionTitle>
+					{t("moderation.paymentsRecentPayoutsTitle")}
+				</SectionTitle>
+				{lastPayouts.length === 0 ? (
+					<Text style={[styles.empty, { color: c.muted }]}>
+						{t("moderation.paymentsRecentPayoutsEmpty")}
+					</Text>
+				) : (
+					<View
+						style={[
+							styles.group,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						{lastPayouts.map((payout, index) => (
+							<View
+								key={payout.id}
+								style={[
+									styles.row,
+									index > 0 && styles.divided,
+									{ borderTopColor: c.border },
+								]}
+							>
+								<View style={styles.rowHead}>
+									<Text style={[styles.amount, { color: c.text }]}>
+										{formatPrice(payout.amount, locale)}
+									</Text>
+									<Text style={[styles.status, { color: c.text }]}>
+										{t(PAYOUT_STATUSES[payout.status])}
+									</Text>
+								</View>
+								<Text style={[styles.meta, { color: c.muted }]}>
+									{t(PAYOUT_ORIGIN_LABELS[payout.origin])} ·{" "}
+									{formatDate(payout.createdAt)}
 								</Text>
-							) : null}
-						</View>
+								{payout.failureReason ? (
+									<Text style={[styles.meta, { color: k.dangerText }]}>
+										{payout.failureReason}
+									</Text>
+								) : null}
+							</View>
+						))}
 					</View>
-				))
-			)}
-		</View>
+				)}
+			</View>
+		</>
 	);
 }
 
@@ -88,36 +109,49 @@ function Stat({
 	c: ModerationPalette;
 }) {
 	return (
-		<View style={[styles.stat, { borderColor: c.border }]}>
-			<Text style={[styles.meta, { color: c.muted }]}>{label}</Text>
-			<Text style={[styles.body, { color: c.text }]}>{value}</Text>
+		<View
+			style={[styles.stat, { backgroundColor: c.card, borderColor: c.border }]}
+			accessible
+			accessibilityLabel={`${label}: ${value}`}
+		>
+			<Text style={[styles.statLabel, { color: c.muted }]}>{label}</Text>
+			<Text style={[styles.statValue, { color: c.text }]}>{value}</Text>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
-	sectionLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
-	},
-	body: { fontSize: 14, fontFamily: Fonts.body },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
-	statsRow: { flexDirection: "row", gap: 10 },
+	section: { gap: 8 },
+	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	statsRow: { flexDirection: "row", gap: 10, marginTop: 4 },
 	stat: {
 		flex: 1,
 		borderWidth: StyleSheet.hairlineWidth,
-		borderRadius: 12,
-		padding: 10,
-		gap: 2,
+		borderRadius: 14,
+		padding: 14,
+		gap: 4,
 	},
-	row: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
+	statLabel: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	statValue: {
+		fontSize: 18,
+		lineHeight: 23,
+		letterSpacing: -0.2,
+		fontFamily: Fonts.displayBold,
+	},
+	group: {
+		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
-		borderRadius: 12,
-		padding: 10,
+		paddingHorizontal: 14,
 	},
+	row: { paddingVertical: 12, gap: 2 },
+	divided: { borderTopWidth: StyleSheet.hairlineWidth },
+	rowHead: {
+		flexDirection: "row",
+		alignItems: "baseline",
+		justifyContent: "space-between",
+		gap: 12,
+	},
+	amount: { fontSize: 16, fontFamily: Fonts.displayBold },
+	status: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

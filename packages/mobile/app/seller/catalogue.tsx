@@ -15,6 +15,8 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { CatalogueRowItem } from "@/src/components/seller/CatalogueRowItem";
+import { fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCatalogueStepper } from "@/src/hooks/useCatalogueStepper";
@@ -122,8 +124,8 @@ export default function CatalogueScreen() {
 							style={[
 								styles.filter,
 								{
-									backgroundColor: active ? c.primary : c.card,
-									borderColor: active ? c.primary : c.border,
+									backgroundColor: active ? fillOf(c) : c.card,
+									borderColor: active ? fillOf(c) : c.border,
 								},
 							]}
 							accessibilityRole="button"
@@ -166,12 +168,7 @@ export default function CatalogueScreen() {
 			) : null}
 
 			{catalogue.isLoading || mine.isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-					<Text style={[styles.meta, { color: c.muted }]}>
-						{t("catalogue.loading")}
-					</Text>
-				</View>
+				<ListSkeleton />
 			) : catalogue.isError && !catalogue.data ? (
 				<EmptyState
 					illustration="notFound"
@@ -263,12 +260,11 @@ export default function CatalogueScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
 	meta: { fontSize: 13, fontFamily: Fonts.body },
 	headerActions: { flexDirection: "row", gap: 8 },
 	addBtn: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
@@ -279,7 +275,7 @@ const styles = StyleSheet.create({
 		borderRadius: 999,
 		borderWidth: 1,
 		paddingHorizontal: 14,
-		minHeight: 44,
+		minHeight: 48,
 		justifyContent: "center",
 	},
 	filterText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
@@ -296,7 +292,7 @@ const styles = StyleSheet.create({
 		alignSelf: "center",
 		padding: 12,
 		marginBottom: 40,
-		minHeight: 44,
+		minHeight: 48,
 		justifyContent: "center",
 	},
 	secondaryText: { fontSize: 14, fontFamily: Fonts.bodySemibold },

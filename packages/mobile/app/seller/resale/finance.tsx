@@ -285,7 +285,13 @@ const styles = StyleSheet.create({
 	},
 	noticeText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
 	summary: { flexDirection: "row", gap: 10 },
-	card: { borderRadius: 14, borderWidth: 1, flex: 1, gap: 8, padding: 14 },
+	card: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		flex: 1,
+		gap: 8,
+		padding: 14,
+	},
 	cardTitle: { fontFamily: Fonts.bodyMedium, fontSize: 12 },
 	cardValue: { fontFamily: Fonts.displayBold, fontSize: 17 },
 	section: {

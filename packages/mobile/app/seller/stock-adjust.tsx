@@ -16,6 +16,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { MovementTypePicker } from "@/src/components/seller/MovementTypePicker";
 import { VariantSummaryCard } from "@/src/components/seller/VariantSummaryCard";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useStockAdjustForm } from "@/src/hooks/useStockAdjustForm";
@@ -128,7 +129,7 @@ export default function StockAdjustSheet() {
 												style={[
 													styles.stepButton,
 													{
-														backgroundColor: c.primary,
+														backgroundColor: fillOf(c),
 														borderColor: c.primary,
 													},
 												]}
@@ -141,7 +142,7 @@ export default function StockAdjustSheet() {
 							/>
 						</View>
 						{amountError ? (
-							<Text style={[styles.meta, { color: c.danger }]}>
+							<Text style={[styles.meta, { color: dangerInk(c) }]}>
 								{t(amountError, { reserved, count: current })}
 							</Text>
 						) : null}
@@ -206,7 +207,7 @@ export default function StockAdjustSheet() {
 							</View>
 						</View>
 						{unitCostError ? (
-							<Text style={[styles.meta, { color: c.danger }]}>
+							<Text style={[styles.meta, { color: dangerInk(c) }]}>
 								{t(unitCostError)}
 							</Text>
 						) : null}
@@ -228,7 +229,7 @@ export default function StockAdjustSheet() {
 							style={[
 								styles.submit,
 								{
-									backgroundColor: c.primary,
+									backgroundColor: fillOf(c),
 									opacity: result && !unitCostError ? 1 : 0.5,
 								},
 							]}
@@ -283,7 +284,7 @@ const styles = StyleSheet.create({
 	box: {
 		flex: 1,
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 		gap: 2,

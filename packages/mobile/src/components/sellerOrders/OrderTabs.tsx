@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { SHOP_ORDER_TABS, type ShopOrderTab } from "@/src/lib/orderStatus";
@@ -51,8 +52,8 @@ export function OrderTabs({
 						style={[
 							styles.tab,
 							{
-								backgroundColor: selected ? c.primary : c.card,
-								borderColor: selected ? c.primary : c.border,
+								backgroundColor: selected ? fillOf(c) : c.card,
+								borderColor: selected ? fillOf(c) : c.border,
 							},
 						]}
 					>
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
 		borderRadius: 999,
 		borderWidth: 1,
 		paddingHorizontal: 14,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	count: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 },

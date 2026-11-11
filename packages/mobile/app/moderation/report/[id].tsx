@@ -2,18 +2,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { DecisionSheet } from "@/src/components/moderation/DecisionSheet";
+import {
+	DecisionBar,
+	DecisionButton,
+	DetailSkeleton,
+	LoadError,
+	ModerationCard,
+} from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
+import { tonesOf } from "@/src/components/moderation/tones";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useReportDecision } from "@/src/hooks/useModeration";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -40,9 +41,20 @@ function targetRoute(report: ReportDoc): string | null {
 	return null;
 }
 
+function targetIcon(type: ReportDoc["targetType"]) {
+	return type === "user"
+		? "person"
+		: type === "listing"
+			? "pricetag"
+			: type === "shop"
+				? "storefront"
+				: "chatbubble";
+}
+
 export default function ModerateReportScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const { showError, showSuccess } = useAlert();
@@ -50,7 +62,7 @@ export default function ModerateReportScreen() {
 		null,
 	);
 
-	const { data, isLoading } = useQuery({
+	const { data, isLoading, isError, error, refetch } = useQuery({
 		queryKey: ["moderation", "report", id],
 		queryFn: () => api.get<ReportDoc>(`/api/reports/${id}?depth=1`),
 		enabled: Boolean(id),
@@ -90,81 +102,83 @@ export default function ModerateReportScreen() {
 			title={t("moderation.reviewReport")}
 			subtitle={data ? t(`report.${data.reason}`) : undefined}
 		>
-			{isLoading || !data ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+			{isLoading ? (
+				<DetailSkeleton />
+			) : isError || !data ? (
+				<LoadError
+					title={t("common.error")}
+					message={error ? resolveErrorMessage(error, t) : undefined}
+					onRetry={() => void refetch()}
+				/>
 			) : (
 				<>
-					<ScrollView
-						contentContainerStyle={[
-							{ padding: 16, gap: 14, paddingBottom: 24 },
-							centeredContent,
-						]}
-					>
-						<View
-							style={[
-								styles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
+					<ScrollView contentContainerStyle={[styles.content, centeredContent]}>
+						<ModerationCard>
 							<View style={styles.reasonRow}>
 								<View
 									style={[styles.reasonIcon, { backgroundColor: c.dangerSoft }]}
 								>
-									<Ionicons name="flag" size={16} color={c.danger} />
+									<Ionicons name="flag" size={18} color={k.dangerText} />
 								</View>
-								<Text style={[styles.reason, { color: c.text }]}>
+								<Text
+									accessibilityRole="header"
+									style={[styles.reason, { color: c.text }]}
+								>
 									{t(`report.${data.reason}`)}
 								</Text>
 							</View>
-							{data.description ? (
-								<Text style={[styles.description, { color: c.text }]}>
-									{data.description}
-								</Text>
-							) : (
-								<Text style={[styles.description, { color: c.muted }]}>
-									{t("moderation.noDescription")}
-								</Text>
-							)}
+							<Text
+								style={[
+									styles.description,
+									{ color: data.description ? c.text : c.muted },
+								]}
+							>
+								{data.description || t("moderation.noDescription")}
+							</Text>
 							<Text style={[styles.meta, { color: c.muted }]}>
 								{t("moderation.reportedBy", {
 									name: reporter?.name || reporter?.email || "—",
 								})}
 							</Text>
-						</View>
+						</ModerationCard>
 
+						{/* The target is where a sanction is taken: it reads as a link,
+						    and as plain text when the app has no screen for it. */}
 						<Pressable
+							accessibilityRole={route ? "button" : "text"}
+							accessibilityLabel={`${t(`moderation.target_${data.targetType}`)}, ${
+								route
+									? t("moderation.openTarget")
+									: t("moderation.targetNotOpenable")
+							}`}
 							onPress={() => route && router.push(route as never)}
 							disabled={!route}
-							style={[
-								styles.card,
+							style={({ pressed }) => [
 								styles.targetCard,
 								{
 									backgroundColor: c.card,
 									borderColor: c.border,
-									opacity: route ? 1 : 0.6,
+									opacity: pressed ? 0.85 : 1,
 								},
 							]}
 						>
 							<View style={[styles.targetIcon, { backgroundColor: c.bg }]}>
 								<Ionicons
-									name={
-										data.targetType === "user"
-											? "person"
-											: data.targetType === "listing"
-												? "pricetag"
-												: data.targetType === "shop"
-													? "storefront"
-													: "chatbubble"
-									}
+									name={targetIcon(data.targetType)}
 									size={18}
 									color={c.muted}
 								/>
 							</View>
-							<View style={{ flex: 1 }}>
+							<View style={styles.flex}>
 								<Text style={[styles.targetTitle, { color: c.text }]}>
 									{t(`moderation.target_${data.targetType}`)}
 								</Text>
-								<Text style={[styles.meta, { color: c.muted }]}>
+								<Text
+									style={[
+										styles.targetMeta,
+										{ color: route ? k.linkText : c.muted },
+									]}
+								>
 									{route
 										? t("moderation.openTarget")
 										: t("moderation.targetNotOpenable")}
@@ -176,29 +190,24 @@ export default function ModerateReportScreen() {
 						</Pressable>
 					</ScrollView>
 
-					<View
-						style={[
-							styles.actions,
-							{ backgroundColor: c.card, borderTopColor: c.border },
-						]}
-					>
-						<Pressable
+					{/* Both outcomes close the report and both go through the note
+					    sheet; "dismiss" is the quieter of the two. */}
+					<DecisionBar>
+						<DecisionButton
+							variant="secondary"
+							label={t("moderation.dismiss")}
 							onPress={() => setDeciding("dismissed")}
 							disabled={isPending}
-							style={[styles.dismissBtn, { borderColor: c.border }]}
-						>
-							<Text style={[styles.dismissText, { color: c.text }]}>
-								{t("moderation.dismiss")}
-							</Text>
-						</Pressable>
-						<Pressable
+						/>
+						<DecisionButton
+							variant="primary"
+							icon="checkmark-done"
+							label={t("moderation.resolve")}
 							onPress={() => setDeciding("resolved")}
 							disabled={isPending}
-							style={[styles.resolveBtn, { backgroundColor: c.primary }]}
-						>
-							<Text style={styles.resolveText}>{t("moderation.resolve")}</Text>
-						</Pressable>
-					</View>
+							grow={1.4}
+						/>
+					</DecisionBar>
 
 					<DecisionSheet
 						visible={deciding !== null}
@@ -234,52 +243,41 @@ export default function ModerateReportScreen() {
 }
 
 const styles = StyleSheet.create({
-	card: {
+	flex: { flex: 1 },
+	content: { padding: 16, gap: 14, paddingBottom: 24 },
+	reasonRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+	reasonIcon: {
+		width: 40,
+		height: 40,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	reason: {
+		flex: 1,
+		fontSize: 18,
+		lineHeight: 23,
+		letterSpacing: -0.2,
+		fontFamily: Fonts.displayBold,
+	},
+	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	targetCard: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		minHeight: 64,
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
 		padding: 14,
-		gap: 10,
 	},
-	reasonRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-	reasonIcon: {
-		width: 30,
-		height: 30,
-		borderRadius: 15,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	reason: { fontSize: 15, fontFamily: Fonts.displayBold, flex: 1 },
-	description: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 21 },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
-	targetCard: { flexDirection: "row", alignItems: "center", gap: 12 },
 	targetIcon: {
-		width: 38,
-		height: 38,
-		borderRadius: 19,
+		width: 40,
+		height: 40,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	targetTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	actions: {
-		flexDirection: "row",
-		gap: 10,
-		padding: 16,
-		paddingBottom: 28,
-		borderTopWidth: StyleSheet.hairlineWidth,
-	},
-	dismissBtn: {
-		flex: 1,
-		alignItems: "center",
-		borderRadius: 14,
-		borderWidth: 1.5,
-		paddingVertical: 14,
-	},
-	dismissText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	resolveBtn: {
-		flex: 1.4,
-		alignItems: "center",
-		borderRadius: 14,
-		paddingVertical: 14,
-	},
-	resolveText: { fontSize: 15, fontFamily: Fonts.displayBold, color: "#fff" },
+	targetTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	targetMeta: { fontSize: 13, fontFamily: Fonts.bodySemibold, marginTop: 1 },
 });

@@ -22,7 +22,7 @@ function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
 			onPress={onPress}
 			accessibilityRole="link"
 			accessibilityLabel={label}
-			style={{ minHeight: 44, justifyContent: "center" }}
+			style={{ minHeight: 48, justifyContent: "center" }}
 		>
 			<Text style={{ color: c.primary, fontFamily: Fonts.bodySemibold }}>
 				{label}

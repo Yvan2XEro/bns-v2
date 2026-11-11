@@ -2,17 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { MemberRow } from "@/src/components/shop/team/MemberRow";
 import { PendingInvitationRow } from "@/src/components/shop/team/PendingInvitationRow";
@@ -97,9 +93,7 @@ export default function TeamScreen() {
 			<SellerHeader title={t("team.title")} />
 
 			{isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<ListSkeleton />
 			) : isError ? (
 				<EmptyState
 					illustration="notFound"
@@ -184,8 +178,10 @@ function PendingSection({
 
 	return (
 		<View style={styles.footer}>
-			<RoleMatrix />
-			<Text style={[styles.sectionTitle, { color: c.text }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.sectionTitle, { color: c.text }]}
+			>
 				{t("team.pending")}
 			</Text>
 			{view.invitations.length === 0 ? (
@@ -215,9 +211,10 @@ function PendingSection({
 						disabled={isFull}
 						accessibilityRole="button"
 						accessibilityLabel={t("team.invite")}
+						accessibilityState={{ disabled: isFull }}
 						style={[
 							styles.inviteBtn,
-							{ backgroundColor: c.primary, opacity: isFull ? 0.5 : 1 },
+							{ backgroundColor: fillOf(c), opacity: isFull ? 0.5 : 1 },
 						]}
 					>
 						<Ionicons name="person-add-outline" size={18} color="#fff" />
@@ -230,25 +227,34 @@ function PendingSection({
 					) : null}
 				</View>
 			) : null}
+			{/* What each role may do: reference, so it comes after the actions. */}
+			<View style={styles.matrix}>
+				<RoleMatrix />
+			</View>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	list: { padding: 16, paddingBottom: 40, gap: 0 },
 	footer: { marginTop: 20, gap: 8 },
-	sectionTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	sectionTitle: {
+		fontSize: 19,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.3,
+	},
+	matrix: { marginTop: 24 },
 	meta: { fontSize: 13, fontFamily: Fonts.body },
 	inviteWrap: { marginTop: 12, gap: 6 },
 	inviteBtn: {
 		flexDirection: "row",
 		gap: 8,
-		minHeight: 50,
+		minHeight: 52,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	inviteText: { color: "#fff", fontSize: 15, fontFamily: Fonts.bodySemibold },
+	inviteText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

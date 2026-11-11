@@ -12,6 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -35,7 +37,7 @@ export default function ResaleOfferedScreen() {
 	if (shopLoading || !shop) {
 		return (
 			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<ListSkeleton />
 			</SafeAreaView>
 		);
 	}
@@ -139,7 +141,7 @@ function OfferedProductCard({ product }: { product: SupplierResaleProduct }) {
 							params: { id: product.productId },
 						})
 					}
-					style={[styles.edit, { backgroundColor: c.primary }]}
+					style={[styles.edit, { backgroundColor: fillOf(c) }]}
 				>
 					<Text style={styles.editText}>{t("common.edit")}</Text>
 				</Pressable>
@@ -199,7 +201,7 @@ const styles = StyleSheet.create({
 	nav: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 8 },
 	navButton: {
 		flex: 1,
-		minHeight: 44,
+		minHeight: 48,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
@@ -209,13 +211,18 @@ const styles = StyleSheet.create({
 	},
 	navText: { flexShrink: 1, fontFamily: Fonts.bodyMedium, fontSize: 12 },
 	list: { padding: 16 },
-	card: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 12 },
+	card: {
+		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 16,
+		padding: 16,
+		gap: 12,
+	},
 	heading: { flexDirection: "row", alignItems: "center", gap: 12 },
 	flex: { flex: 1 },
 	title: { fontFamily: Fonts.displaySemibold, fontSize: 17 },
 	meta: { fontFamily: Fonts.body, fontSize: 12, marginTop: 4 },
 	edit: {
-		minHeight: 44,
+		minHeight: 48,
 		justifyContent: "center",
 		borderRadius: 10,
 		paddingHorizontal: 14,

@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router, usePathname } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,7 +13,7 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CallSellerButton } from "@/src/components/CallSellerButton";
 import { CartHeaderButton } from "@/src/components/CartHeaderButton";
@@ -22,6 +21,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ImageViewer } from "@/src/components/ImageViewer";
 import { ListingCard } from "@/src/components/ListingCard";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { ListingDetailSkeleton } from "@/src/components/listing/Skeletons";
 import { BuyBox } from "@/src/components/order/BuyBox";
 import { DeliveryEstimates } from "@/src/components/order/DeliveryEstimates";
 import { ReviewStars } from "@/src/components/ReviewStars";
@@ -35,13 +35,14 @@ import { useMyShops } from "@/src/hooks/useMyShops";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useStartConversation } from "@/src/hooks/useShopInbox";
 import { usePublicShop } from "@/src/hooks/useShops";
-import { api, getInstallationId } from "@/src/lib/api";
+import { ApiError, api, getInstallationId } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { isOwnShop } from "@/src/lib/buyBox";
 import { findCachedListing } from "@/src/lib/cachedListing";
 import { withContentLocale } from "@/src/lib/contentLocale";
+import { feedback } from "@/src/lib/feedback";
 import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
@@ -154,14 +155,26 @@ export function ListingDetail({ id }: { id: string }) {
 	const startConversation = useStartConversation();
 	const { webUrl, shareCardsEnabled } = useAppConfig();
 
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const c = isDark ? Colors.dark : Colors.light;
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const bodyColor = c.body;
+	const mutedColor = c.mutedForeground;
+	const primaryColor = c.primary;
+	const borderColor = c.border;
+	// A filled button keeps white legible in both themes: the dark-mode
+	// primary is a light periwinkle that fails 4.5:1 under a white label.
+	const filledColor = c.primaryFill;
 
-	const { data: listingData, isLoading } = useQuery({
+	const {
+		data: listingData,
+		isLoading,
+		isError,
+		error: listingError,
+		refetch: refetchListing,
+		isRefetching: refetchingListing,
+	} = useQuery({
 		queryKey: ["listing", id],
 		queryFn: () =>
 			api.get<ListingResponse>(
@@ -290,7 +303,8 @@ export function ListingDetail({ id }: { id: string }) {
 				? api.delete(`/api/favorites/${favDoc.id}`)
 				: api.post("/api/favorites", { listing: id }),
 		onMutate: async () => {
-			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+			// Saving is the moment worth a sound; removing only ticks.
+			feedback(isFavorite ? "tap" : "pop");
 			await queryClient.cancelQueries({ queryKey: ["favorite", id] });
 		},
 		onSettled: async () => {
@@ -359,11 +373,29 @@ export function ListingDetail({ id }: { id: string }) {
 
 	if (isLoading) {
 		return (
-			<View style={[styles.loader, { backgroundColor: bg }]}>
-				<ActivityIndicator size="large" color={primaryColor} />
+			<View style={[styles.root, { backgroundColor: bg }]}>
+				<HeaderBackButton
+					color={primaryColor}
+					fallback="/(tabs)/home"
+					style={[
+						styles.backBtn,
+						{
+							top: safeTop + 12,
+							backgroundColor: cardBg,
+							borderWidth: StyleSheet.hairlineWidth,
+							borderColor,
+						},
+					]}
+				/>
+				<ListingDetailSkeleton galleryHeight={galleryHeight} />
 			</View>
 		);
 	}
+
+	// A 404 is a gone listing; anything else (offline, 500) can be retried.
+	const missing =
+		!isError ||
+		(listingError instanceof ApiError && listingError.status === 404);
 
 	if (!listing) {
 		return (
@@ -375,20 +407,31 @@ export function ListingDetail({ id }: { id: string }) {
 						styles.backBtn,
 						{
 							top: safeTop + 12,
-							backgroundColor: isDark ? "#1a1f4a" : "#ffffff",
-							borderWidth: 1,
+							backgroundColor: cardBg,
+							borderWidth: StyleSheet.hairlineWidth,
 							borderColor,
 						},
 					]}
 				/>
-				<EmptyState
-					illustration="notFound"
-					title={t("listing.notFound")}
-					subtitle={t("listing.notFoundSubtitle")}
-					ctaLabel={inPane ? undefined : t("listing.back")}
-					onCta={() => router.back()}
-					size={240}
-				/>
+				{missing ? (
+					<EmptyState
+						illustration="notFound"
+						title={t("listing.notFound")}
+						subtitle={t("listing.notFoundSubtitle")}
+						ctaLabel={inPane ? undefined : t("listing.back")}
+						onCta={() => router.back()}
+						size={240}
+					/>
+				) : (
+					<EmptyState
+						illustration="notFound"
+						title={t("home.errorTitle")}
+						subtitle={resolveErrorMessage(listingError, t)}
+						ctaLabel={refetchingListing ? undefined : t("common.retry")}
+						onCta={() => refetchListing()}
+						size={200}
+					/>
+				)}
 			</View>
 		);
 	}
@@ -405,10 +448,11 @@ export function ListingDetail({ id }: { id: string }) {
 		return t("listing.daysAgo", { count: days });
 	})();
 
-	const sellerMemberSince = formatDate(
-		typeof seller === "object" ? seller?.createdAt : undefined,
-		{ year: "numeric", month: "long" },
-	);
+	const sellerDoc = seller && typeof seller === "object" ? seller : null;
+	const sellerMemberSince = formatDate(sellerDoc?.createdAt, {
+		year: "numeric",
+		month: "long",
+	});
 
 	const actionBarInset = safeBottom + 120;
 
@@ -445,6 +489,11 @@ export function ListingDetail({ id }: { id: string }) {
 								setLightboxIdx(i);
 								setLightboxVisible(true);
 							}}
+							accessibilityRole="imagebutton"
+							accessibilityLabel={t("shop.openPhoto", {
+								index: i + 1,
+								count: images.length,
+							})}
 						>
 							<Image
 								source={{
@@ -463,18 +512,22 @@ export function ListingDetail({ id }: { id: string }) {
 							{
 								width: galleryWidth,
 								height: galleryHeight,
-								backgroundColor: isDark ? "#1a1f4a" : "#e1e3ee",
+								backgroundColor: c.well,
 							},
 						]}
 					>
-						<Ionicons name="image-outline" size={60} color={mutedColor} />
+						<Ionicons name="image-outline" size={56} color={c.faint} />
 					</View>
 				)}
 			</ScrollView>
 
 			{/* Image indicators */}
-			{images.length > 1 && (
-				<View style={styles.indicators}>
+			{images.length > 1 ? (
+				<View
+					style={styles.indicators}
+					accessibilityElementsHidden
+					importantForAccessibility="no-hide-descendants"
+				>
 					{images.map((_, i: number) => (
 						<View
 							key={i}
@@ -489,25 +542,31 @@ export function ListingDetail({ id }: { id: string }) {
 						/>
 					))}
 				</View>
-			)}
+			) : null}
 
-			{images.length > 1 && (
+			{images.length > 1 ? (
 				<View
-					style={[styles.photoCount, { backgroundColor: "rgba(0,0,0,0.5)" }]}
+					style={styles.photoCount}
+					accessible
+					accessibilityLabel={t("shop.photoViewer", {
+						index: imageIndex + 1,
+						count: images.length,
+					})}
 				>
-					<Ionicons name="camera-outline" size={12} color="#fff" />
+					<Ionicons name="images-outline" size={13} color="#ffffff" />
 					<Text style={styles.photoCountText}>
 						{imageIndex + 1}/{images.length}
 					</Text>
 				</View>
-			)}
+			) : null}
 
-			{listing.isBoosted && (
+			{/* Boosted: a signage-yellow plaque on the photo, ink on yellow. */}
+			{listing.isBoosted ? (
 				<View style={styles.boostedBadge}>
-					<Ionicons name="flash" size={12} color="#ffb81c" />
+					<Ionicons name="flash" size={13} color="#12163a" />
 					<Text style={styles.boostedText}>{t("listing.featured")}</Text>
 				</View>
-			)}
+			) : null}
 		</View>
 	);
 
@@ -534,7 +593,7 @@ export function ListingDetail({ id }: { id: string }) {
 					>
 						<Ionicons name="share-outline" size={20} color="#12163a" />
 					</Pressable>
-					{!isOwner && (
+					{!isOwner ? (
 						<Pressable
 							onPress={() => toggleFav()}
 							style={styles.floatBtn}
@@ -547,10 +606,10 @@ export function ListingDetail({ id }: { id: string }) {
 							<Ionicons
 								name={isFavorite ? "heart" : "heart-outline"}
 								size={20}
-								color={isFavorite ? "#e5574b" : "#12163a"}
+								color={isFavorite ? "#d23a2e" : "#12163a"}
 							/>
 						</Pressable>
-					)}
+					) : null}
 				</View>
 			</View>
 
@@ -579,88 +638,93 @@ export function ListingDetail({ id }: { id: string }) {
 							contentY.current = e.nativeEvent.layout.y;
 						}}
 					>
-						{/* Price, title, chips, meta — straight on the sheet, no card */}
+						{/* Price, title, meta — straight on the sheet, no card. The
+						    price tag is the largest thing on the screen. */}
 						<View style={styles.hero}>
-							<View
-								style={[
-									styles.priceTag,
-									listing.status === "sold" && styles.priceTagSold,
-								]}
-							>
-								<Text style={styles.price}>
-									{kindPriceText(priceLabel, listing, (key) =>
-										t(`listingKind.${key}`),
-									)}
-								</Text>
-							</View>
-							{listing.status === "sold" && (
-								<Text
-									style={[styles.title, { color: mutedColor, fontSize: 14 }]}
+							<View style={styles.priceRow}>
+								<View
+									style={[
+										styles.priceTag,
+										listing.status === "sold" && {
+											backgroundColor: c.well,
+										},
+									]}
 								>
-									{t(
-										`listingKind.closedAs.${listingKindRules(listing.kind).closedAs}`,
-									)}
-								</Text>
-							)}
-							<Text style={[styles.title, { color: textColor }]}>
+									<Text
+										style={[
+											styles.price,
+											listing.status === "sold" && { color: mutedColor },
+										]}
+									>
+										{kindPriceText(priceLabel, listing, (key) =>
+											t(`listingKind.${key}`),
+										)}
+									</Text>
+								</View>
+								{listing.status === "sold" ? (
+									<View
+										style={[
+											styles.closedPill,
+											{ backgroundColor: c.dangerTint },
+										]}
+									>
+										<Text style={[styles.closedText, { color: c.dangerText }]}>
+											{t(
+												`listingKind.closedAs.${listingKindRules(listing.kind).closedAs}`,
+											)}
+										</Text>
+									</View>
+								) : null}
+							</View>
+							<Text
+								style={[styles.title, { color: textColor }]}
+								accessibilityRole="header"
+							>
 								{listing.title}
 							</Text>
 							<View style={styles.metaRow2}>
-								<View style={styles.metaItem}>
-									<Ionicons
-										name="location-outline"
-										size={14}
-										color={mutedColor}
-									/>
-									<Text style={[styles.metaText, { color: mutedColor }]}>
-										{listing.location ?? "—"}
-									</Text>
-								</View>
-								{timeAgo && (
+								{listing.location ? (
+									<View style={styles.metaItem}>
+										<Ionicons
+											name="location-outline"
+											size={15}
+											color={mutedColor}
+										/>
+										<Text style={[styles.metaText, { color: bodyColor }]}>
+											{listing.location}
+										</Text>
+									</View>
+								) : null}
+								{timeAgo ? (
 									<View style={styles.metaItem}>
 										<Ionicons
 											name="time-outline"
-											size={14}
+											size={15}
 											color={mutedColor}
 										/>
 										<Text style={[styles.metaText, { color: mutedColor }]}>
 											{timeAgo}
 										</Text>
 									</View>
-								)}
-								{listing.viewCount > 0 && (
+								) : null}
+								{(listing.viewCount ?? 0) > 0 ? (
 									<View style={styles.metaItem}>
-										<Ionicons name="eye-outline" size={14} color={mutedColor} />
+										<Ionicons name="eye-outline" size={15} color={mutedColor} />
 										<Text style={[styles.metaText, { color: mutedColor }]}>
 											{listing.viewCount}
 										</Text>
 									</View>
-								)}
+								) : null}
 							</View>
-							{(categoryName || listing.isBoosted) && (
+							{categoryName ? (
 								<View style={styles.chips}>
-									{categoryName && (
-										<View
-											style={[
-												styles.chip,
-												{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
-											]}
-										>
-											<Text style={[styles.chipText, { color: textColor }]}>
-												{categoryName}
-											</Text>
-										</View>
-									)}
-									{listing.isBoosted && (
-										<View style={[styles.chip, styles.chipFeatured]}>
-											<Ionicons name="flash" size={12} color="#8a5a00" />
-											<Text style={[styles.chipText, { color: "#6e4700" }]}>
-												{t("listing.featured")}
-											</Text>
-										</View>
-									)}
+									<View style={[styles.chip, { backgroundColor: c.well }]}>
+										<Text style={[styles.chipText, { color: bodyColor }]}>
+											{categoryName}
+										</Text>
+									</View>
 								</View>
-							)}
+							) : null}
 						</View>
 
 						{/* Buying sits right under the price, as in the design. */}
@@ -694,50 +758,186 @@ export function ListingDetail({ id }: { id: string }) {
 								signedIn={Boolean(user)}
 							/>
 						</View>
-						{/* Description */}
+
+						{/* Trust comes before the description: who sells, how they
+						    are rated, and how the money is protected. */}
+						{listingShop ? (
+							<ShopSellerCard
+								shop={listingShop}
+								badge={shopBadge}
+								brandColor={
+									shopBadgeData && "shop" in shopBadgeData
+										? shopBadgeData.shop.brandColor
+										: null
+								}
+								owner={seller && typeof seller === "object" ? seller : null}
+							/>
+						) : null}
+
+						{sellerDoc && !listingShop ? (
+							<Pressable
+								onPress={() => router.push(`/profile/${sellerDoc.id}`)}
+								accessibilityRole="button"
+								accessibilityLabel={`${t("listing.seller")} ${sellerDoc.name ?? ""}`}
+								style={({ pressed }) => [
+									styles.card,
+									styles.sellerCard,
+									{
+										backgroundColor: pressed ? c.well : cardBg,
+										borderColor,
+									},
+								]}
+							>
+								{sellerDoc.avatar?.url ? (
+									<Image
+										source={{ uri: sellerDoc.avatar.url }}
+										style={styles.sellerAvatar}
+										contentFit="cover"
+									/>
+								) : (
+									<View
+										style={[
+											styles.sellerAvatarPlaceholder,
+											{ backgroundColor: c.primaryTint },
+										]}
+									>
+										<Text
+											style={[styles.sellerLetter, { color: primaryColor }]}
+										>
+											{sellerDoc.name?.[0]?.toUpperCase() ?? "?"}
+										</Text>
+									</View>
+								)}
+								<View style={styles.sellerInfo}>
+									<Text style={[styles.sellerRole, { color: mutedColor }]}>
+										{t("listing.seller")}
+									</Text>
+									<Text
+										style={[styles.sellerName, { color: textColor }]}
+										numberOfLines={1}
+									>
+										{sellerDoc.name}
+									</Text>
+									<ReviewStars
+										rating={sellerDoc.rating ?? 0}
+										showCount
+										count={sellerDoc.totalReviews}
+										size={14}
+									/>
+									{sellerMemberSince ? (
+										<Text style={[styles.memberSince, { color: mutedColor }]}>
+											{t("listing.memberSinceLabel")} {sellerMemberSince}
+										</Text>
+									) : null}
+								</View>
+								<Ionicons name="chevron-forward" size={18} color={mutedColor} />
+							</Pressable>
+						) : null}
+
+						{/* Safety: a shop product is paid through the platform, so the
+						    strip reads as a protection; a classified reads as advice.
+						    "No advance" would contradict a shop product's pay button. */}
 						<View
-							style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+							style={[
+								styles.safetyStrip,
+								{
+									backgroundColor: productId ? c.successTint : c.well,
+								},
+							]}
 						>
-							<Text style={[styles.sectionTitle, { color: textColor }]}>
-								{t("listing.description")}
-							</Text>
+							<Ionicons
+								name={
+									productId ? "shield-checkmark" : "shield-checkmark-outline"
+								}
+								size={18}
+								color={productId ? c.success : primaryColor}
+							/>
 							<Text
 								style={[
-									styles.description,
-									{ color: isDark ? "#c9cce0" : "#3a3f66" },
+									styles.safetyStripText,
+									{
+										color: productId ? c.successText : bodyColor,
+									},
 								]}
-								numberOfLines={descExpanded ? undefined : 4}
 							>
-								{listing.description}
+								{productId
+									? t("listing.safetyTips.stripShop")
+									: tipsKind
+										? t(`listingKind.safety.${tipsKind}.tip1`)
+										: t("listing.safetyTips.strip")}
 							</Text>
-							{listing.description?.length > 150 && (
-								<Pressable onPress={() => setDescExpanded(!descExpanded)}>
-									<Text style={[styles.readMore, { color: primaryColor }]}>
-										{descExpanded
-											? t("listing.readLess")
-											: t("listing.readMore")}
-									</Text>
-								</Pressable>
-							)}
 						</View>
 
-						{/* Attributes */}
-						{attributeGroups.length > 0 && (
+						{/* Description */}
+						{listing.description ? (
 							<View
 								style={[styles.card, { backgroundColor: cardBg, borderColor }]}
 							>
-								<Text style={[styles.sectionTitle, { color: textColor }]}>
+								<Text
+									style={[styles.sectionTitle, { color: textColor }]}
+									accessibilityRole="header"
+								>
+									{t("listing.description")}
+								</Text>
+								<Text
+									style={[styles.description, { color: bodyColor }]}
+									numberOfLines={descExpanded ? undefined : 5}
+								>
+									{listing.description}
+								</Text>
+								{listing.description.length > 200 ? (
+									<Pressable
+										onPress={() => setDescExpanded(!descExpanded)}
+										accessibilityRole="button"
+										accessibilityState={{ expanded: descExpanded }}
+										hitSlop={8}
+										style={styles.readMoreBtn}
+									>
+										<Text style={[styles.readMore, { color: primaryColor }]}>
+											{descExpanded
+												? t("listing.readLess")
+												: t("listing.readMore")}
+										</Text>
+										<Ionicons
+											name={descExpanded ? "chevron-up" : "chevron-down"}
+											size={16}
+											color={primaryColor}
+										/>
+									</Pressable>
+								) : null}
+							</View>
+						) : null}
+
+						{/* Attributes */}
+						{attributeGroups.length > 0 ? (
+							<View
+								style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+							>
+								<Text
+									style={[styles.sectionTitle, { color: textColor }]}
+									accessibilityRole="header"
+								>
 									{t("listing.characteristics")}
 								</Text>
-								{attributeGroups.map((group) => (
-									<View key={group.key} style={styles.attrGroup}>
-										{group.title && (
+								{attributeGroups.map((group, gi) => (
+									<View
+										key={group.key}
+										style={[
+											styles.attrGroup,
+											gi > 0 && {
+												borderTopWidth: StyleSheet.hairlineWidth,
+												borderTopColor: borderColor,
+												paddingTop: 14,
+											},
+										]}
+									>
+										{group.title ? (
 											<Text
-												style={[styles.attrGroupTitle, { color: mutedColor }]}
+												style={[styles.attrGroupTitle, { color: textColor }]}
 											>
 												{group.title}
 											</Text>
-										)}
+										) : null}
 										<View style={styles.attrsGrid}>
 											{group.items.map((attr) => (
 												<View key={attr.slug} style={styles.attrItem}>
@@ -753,19 +953,20 @@ export function ListingDetail({ id }: { id: string }) {
 									</View>
 								))}
 							</View>
-						)}
+						) : null}
 
 						{/* Tags */}
-						{listingTags.length > 0 && (
+						{listingTags.length > 0 ? (
 							<View
 								style={[styles.card, { backgroundColor: cardBg, borderColor }]}
 							>
-								<Text style={[styles.sectionTitle, { color: textColor }]}>
-									Tags
-								</Text>
-								<View
-									style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
+								<Text
+									style={[styles.sectionTitle, { color: textColor }]}
+									accessibilityRole="header"
 								>
+									{t("create.tagsFieldLabel")}
+								</Text>
+								<View style={styles.tagWrap}>
 									{listingTags.map((tag) => (
 										<Pressable
 											key={String(tag.id)}
@@ -775,136 +976,32 @@ export function ListingDetail({ id }: { id: string }) {
 													params: { tags: tag.slug },
 												})
 											}
-											style={{
-												flexDirection: "row",
-												alignItems: "center",
-												gap: 4,
-												borderRadius: 20,
-												borderWidth: 1,
-												borderColor: isDark ? "#2a3170" : "#c5ccf0",
-												backgroundColor: isDark ? "#0f2544" : "#eff1fb",
-												paddingHorizontal: 10,
-												paddingVertical: 4,
-											}}
+											accessibilityRole="link"
+											accessibilityLabel={tag.name}
+											hitSlop={{ top: 6, bottom: 6 }}
+											style={({ pressed }) => [
+												styles.tag,
+												{
+													backgroundColor: c.primaryTint,
+													opacity: pressed ? 0.7 : 1,
+												},
+											]}
 										>
-											{tag.emoji ? (
-												<Text style={{ fontSize: 12 }}>{tag.emoji}</Text>
-											) : null}
-											<Text
-												style={{
-													fontSize: 12,
-													color: primaryColor,
-													fontFamily: Fonts.bodySemibold,
-												}}
-											>
+											<Text style={[styles.tagText, { color: primaryColor }]}>
 												{tag.name}
 											</Text>
 										</Pressable>
 									))}
 								</View>
 							</View>
-						)}
-
-						{listingShop ? (
-							<ShopSellerCard
-								shop={listingShop}
-								badge={shopBadge}
-								brandColor={
-									shopBadgeData && "shop" in shopBadgeData
-										? shopBadgeData.shop.brandColor
-										: null
-								}
-								owner={seller && typeof seller === "object" ? seller : null}
-							/>
 						) : null}
 
-						{/* Seller Card */}
-						{seller && !listingShop && (
-							<Pressable
-								onPress={() => router.push(`/profile/${seller.id}`)}
-								style={[styles.card, { backgroundColor: cardBg, borderColor }]}
-							>
-								<Text style={[styles.sectionTitle, { color: textColor }]}>
-									{t("listing.seller")}
-								</Text>
-								<View style={styles.sellerRow}>
-									{seller.avatar?.url ? (
-										<Image
-											source={{ uri: seller.avatar.url }}
-											style={styles.sellerAvatar}
-											contentFit="cover"
-										/>
-									) : (
-										<View
-											style={[
-												styles.sellerAvatarPlaceholder,
-												{ backgroundColor: isDark ? "#2a3170" : "#e3e7f8" },
-											]}
-										>
-											<Text
-												style={[styles.sellerLetter, { color: primaryColor }]}
-											>
-												{seller.name?.[0]?.toUpperCase()}
-											</Text>
-										</View>
-									)}
-									<View style={styles.sellerInfo}>
-										<View style={styles.sellerNameRow}>
-											<Text style={[styles.sellerName, { color: textColor }]}>
-												{seller.name}
-											</Text>
-										</View>
-										<ReviewStars
-											rating={seller.rating ?? 0}
-											showCount
-											count={seller.totalReviews}
-										/>
-										{sellerMemberSince && (
-											<Text style={[styles.memberSince, { color: mutedColor }]}>
-												{t("listing.memberSinceLabel")} {sellerMemberSince}
-											</Text>
-										)}
-									</View>
-									<Ionicons
-										name="chevron-forward"
-										size={16}
-										color={mutedColor}
-									/>
-								</View>
-							</Pressable>
-						)}
-
-						{/* Safety Tips — discreet */}
-						<View
-							style={[
-								styles.safetyStrip,
-								{ borderColor: isDark ? "#2a3170" : "#e1e3ee" },
-							]}
-						>
-							<Ionicons
-								name="shield-checkmark-outline"
-								size={13}
-								color={mutedColor}
-							/>
-							{/* A shop product is paid through the platform: "no advance"
-						    would contradict its own pay button. */}
-							<Text style={[styles.safetyStripText, { color: mutedColor }]}>
-								{productId
-									? t("listing.safetyTips.stripShop")
-									: tipsKind
-										? t(`listingKind.safety.${tipsKind}.tip1`)
-										: t("listing.safetyTips.strip")}
-							</Text>
-						</View>
-
 						{/* Similar Listings */}
-						{(similarData?.hits?.length ?? 0) > 0 && (
-							<View style={{ marginBottom: 100 }}>
+						{(similarData?.hits?.length ?? 0) > 0 ? (
+							<View style={styles.similar}>
 								<Text
-									style={[
-										styles.sectionTitle,
-										{ color: textColor, paddingHorizontal: 0 },
-									]}
+									style={[styles.sectionTitle, { color: textColor }]}
+									accessibilityRole="header"
 								>
 									{t("listing.similarListings")}
 								</Text>
@@ -934,7 +1031,7 @@ export function ListingDetail({ id }: { id: string }) {
 										))}
 								</ScrollView>
 							</View>
-						)}
+						) : null}
 
 						{/* Report link */}
 						<Pressable
@@ -944,9 +1041,10 @@ export function ListingDetail({ id }: { id: string }) {
 									params: { targetType: "listing", targetId: id },
 								})
 							}
+							accessibilityRole="button"
 							style={styles.reportLink}
 						>
-							<Ionicons name="flag-outline" size={14} color={mutedColor} />
+							<Ionicons name="flag-outline" size={15} color={mutedColor} />
 							<Text style={[styles.reportText, { color: mutedColor }]}>
 								{t("listing.reportListing")}
 							</Text>
@@ -962,7 +1060,7 @@ export function ListingDetail({ id }: { id: string }) {
 					{
 						backgroundColor: cardBg,
 						borderTopColor: borderColor,
-						paddingBottom: safeBottom + 16,
+						paddingBottom: Math.max(safeBottom, 12) + 8,
 					},
 					twoColumns && { left: galleryWidth },
 				]}
@@ -977,9 +1075,12 @@ export function ListingDetail({ id }: { id: string }) {
 								})
 							}
 							accessibilityRole="button"
-							style={[styles.msgBtn, { backgroundColor: primaryColor }]}
+							style={({ pressed }) => [
+								styles.msgBtn,
+								{ backgroundColor: filledColor, opacity: pressed ? 0.85 : 1 },
+							]}
 						>
-							<Ionicons name="bag-handle-outline" size={18} color="#fff" />
+							<Ionicons name="bag-handle-outline" size={19} color="#ffffff" />
 							<Text style={styles.msgBtnText} numberOfLines={1}>
 								{priceLabel
 									? t("listing.orderAction", { price: priceLabel })
@@ -996,13 +1097,13 @@ export function ListingDetail({ id }: { id: string }) {
 							})}
 							style={[
 								styles.callBtn,
-								{ backgroundColor: cardBg, borderColor, borderWidth: 1.5 },
+								{ backgroundColor: cardBg, borderColor: c.borderStrong },
 							]}
 							textStyle={styles.editBtnText}
 							color={textColor}
 						/>
 					) : null}
-					{!isOwner && (
+					{!isOwner ? (
 						<Pressable
 							onPress={handleMessage}
 							disabled={startConversation.isPending}
@@ -1013,8 +1114,8 @@ export function ListingDetail({ id }: { id: string }) {
 								// a square secondary action.
 								canOrder ? styles.callBtnSquare : styles.msgBtn,
 								canOrder
-									? { backgroundColor: cardBg, borderColor, borderWidth: 1.5 }
-									: { backgroundColor: primaryColor },
+									? { backgroundColor: cardBg, borderColor: c.borderStrong }
+									: { backgroundColor: filledColor },
 								{ opacity: startConversation.isPending ? 0.7 : 1 },
 							]}
 						>
@@ -1034,29 +1135,32 @@ export function ListingDetail({ id }: { id: string }) {
 									color={canOrder ? textColor : "#fff"}
 								/>
 							)}
-							{!canOrder && (
-								<Text style={styles.msgBtnText}>{messageLabel}</Text>
-							)}
+							{!canOrder ? (
+								<Text style={styles.msgBtnText} numberOfLines={1}>
+									{messageLabel}
+								</Text>
+							) : null}
 						</Pressable>
-					)}
-					{isOwner && (
+					) : null}
+					{isOwner ? (
 						<Pressable
 							onPress={() =>
 								productId
 									? router.push(`/seller/product/${productId}` as never)
 									: router.push(`/listing/${id}/edit`)
 							}
+							accessibilityRole="button"
 							style={[
 								styles.editBtn,
-								{ backgroundColor: cardBg, borderColor, borderWidth: 1.5 },
+								{ backgroundColor: cardBg, borderColor: c.borderStrong },
 							]}
 						>
-							<Ionicons name="pencil" size={16} color={primaryColor} />
+							<Ionicons name="pencil" size={17} color={primaryColor} />
 							<Text style={[styles.editBtnText, { color: primaryColor }]}>
 								{t("listing.edit")}
 							</Text>
 						</Pressable>
-					)}
+					) : null}
 				</View>
 			</View>
 			<ImageViewer
@@ -1082,16 +1186,15 @@ const styles = StyleSheet.create({
 		borderTopLeftRadius: 0,
 		borderTopRightRadius: 0,
 	},
-	loader: { flex: 1, alignItems: "center", justifyContent: "center" },
 
 	// ── Fixed back button ──
 	backBtn: {
 		position: "absolute",
 		left: 16,
 		zIndex: 20,
-		width: 40,
-		height: 40,
-		borderRadius: 20,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -1101,41 +1204,48 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	// Sits above the sheet's rounded lip, which overlaps the photo by 20.
 	indicators: {
 		position: "absolute",
-		bottom: 12,
+		bottom: 34,
 		left: 0,
 		right: 0,
 		flexDirection: "row",
 		justifyContent: "center",
 		gap: 4,
 	},
-	dot: { height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.8)" },
+	dot: { height: 6, borderRadius: 3 },
 	photoCount: {
 		position: "absolute",
-		bottom: 12,
-		right: 12,
-		borderRadius: 12,
+		bottom: 30,
+		right: 16,
+		borderRadius: 8,
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
+		gap: 5,
+		backgroundColor: "rgba(18, 22, 58, 0.72)",
 	},
-	photoCountText: { color: "#fff", fontSize: 12 },
+	photoCountText: {
+		color: "#ffffff",
+		fontSize: 12,
+		fontFamily: Fonts.bodySemibold,
+		fontVariant: ["tabular-nums"],
+	},
 	boostedBadge: {
 		position: "absolute",
-		top: 12,
-		left: 12,
-		backgroundColor: "#12163a",
+		bottom: 30,
+		left: 16,
+		backgroundColor: "#ffb81c",
 		borderRadius: 8,
-		paddingHorizontal: 10,
+		paddingHorizontal: 9,
 		paddingVertical: 4,
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
 	},
-	boostedText: { color: "#fff", fontSize: 12, fontFamily: Fonts.bodyBold },
+	boostedText: { color: "#12163a", fontSize: 12, fontFamily: Fonts.bodyBold },
 
 	// ── Content ──
 	// Rises over the gallery's bottom edge like a sheet.
@@ -1148,7 +1258,11 @@ const styles = StyleSheet.create({
 		paddingBottom: 16,
 		gap: 12,
 	},
-	card: { borderRadius: 14, borderWidth: 1, padding: 16 },
+	card: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 16,
+	},
 
 	topBar: {
 		position: "absolute",
@@ -1169,22 +1283,17 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.15,
+		shadowOpacity: 0.14,
 		shadowRadius: 6,
 		elevation: 3,
 	},
-	hero: { gap: 10, marginBottom: 4 },
-	chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-	chip: {
+	hero: { gap: 10, marginBottom: 8 },
+	priceRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
-		borderRadius: 8,
-		paddingHorizontal: 10,
-		paddingVertical: 4,
+		flexWrap: "wrap",
+		gap: 10,
 	},
-	chipFeatured: { backgroundColor: "#fff1c7" },
-	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	// The price is painted on a sign, as at the market.
 	priceTag: {
 		alignSelf: "flex-start",
@@ -1194,50 +1303,81 @@ const styles = StyleSheet.create({
 		paddingTop: 4,
 		paddingBottom: 6,
 	},
-	priceTagSold: { backgroundColor: "#c9cce0" },
 	price: {
 		fontSize: 30,
 		lineHeight: 36,
 		color: "#12163a",
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.8,
+		fontVariant: ["tabular-nums"],
 	},
-	priceSuffix: { fontSize: 16, fontFamily: Fonts.body },
+	closedPill: {
+		borderRadius: 8,
+		paddingHorizontal: 10,
+		paddingVertical: 5,
+	},
+	closedText: { fontSize: 13, fontFamily: Fonts.bodyBold },
 	title: {
-		fontSize: 22,
+		fontSize: 24,
+		lineHeight: 29,
 		fontFamily: Fonts.displayBold,
-		lineHeight: 27,
-		letterSpacing: -0.4,
+		letterSpacing: -0.5,
 	},
-	metaRow2: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
-	metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-	metaText: { fontSize: 13, fontFamily: Fonts.body },
+	metaRow2: {
+		flexDirection: "row",
+		columnGap: 14,
+		rowGap: 6,
+		flexWrap: "wrap",
+	},
+	metaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+	metaText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+	chip: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		borderRadius: 8,
+		paddingHorizontal: 10,
+		paddingVertical: 5,
+	},
+	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	sectionTitle: {
-		fontSize: 18,
+		fontSize: 19,
+		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
-		letterSpacing: -0.2,
-		marginBottom: 12,
+		letterSpacing: -0.3,
+		marginBottom: 10,
 	},
 	description: { fontSize: 15, lineHeight: 23, fontFamily: Fonts.body },
-	readMore: { marginTop: 8, fontSize: 14, fontFamily: Fonts.bodySemibold },
-	attrGroup: { marginBottom: 12 },
+	readMoreBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		alignSelf: "flex-start",
+		gap: 4,
+		minHeight: 44,
+	},
+	readMore: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	attrGroup: { marginBottom: 14 },
 	attrGroupTitle: {
-		fontSize: 11,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.6,
-		marginBottom: 6,
+		fontSize: 14,
+		fontFamily: Fonts.bodyBold,
+		marginBottom: 10,
 	},
 	attrsGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 14 },
 	attrItem: { width: "50%", paddingRight: 12 },
-	attrKey: { fontSize: 12, fontFamily: Fonts.body, marginBottom: 2 },
-	attrVal: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	sellerRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 12,
-		marginBottom: 12,
+	attrKey: { fontSize: 13, fontFamily: Fonts.body, marginBottom: 2 },
+	attrVal: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	tagWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+	tag: {
+		minHeight: 36,
+		justifyContent: "center",
+		borderRadius: 8,
+		paddingHorizontal: 12,
 	},
+	tagText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+
+	// ── Seller ──
+	sellerCard: { flexDirection: "row", alignItems: "center", gap: 14 },
 	sellerAvatar: { width: 56, height: 56, borderRadius: 28 },
 	sellerAvatarPlaceholder: {
 		width: 56,
@@ -1248,37 +1388,46 @@ const styles = StyleSheet.create({
 	},
 	sellerLetter: { fontSize: 22, fontFamily: Fonts.displayBold },
 	sellerInfo: { flex: 1, gap: 3 },
-	sellerNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-	sellerName: { fontSize: 16, fontFamily: Fonts.displayBold },
-	memberSince: { fontSize: 12, fontFamily: Fonts.body },
+	sellerRole: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
+	sellerName: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	memberSince: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
+
 	safetyStrip: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 6,
-		borderWidth: 1,
-		borderRadius: 10,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
+		gap: 10,
+		borderRadius: 12,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
 	},
-	safetyStripText: { fontSize: 12, fontFamily: Fonts.body, flex: 1 },
+	safetyStripText: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodyMedium,
+		flex: 1,
+	},
+	similar: { marginTop: 8 },
 	reportLink: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
+		alignSelf: "center",
 		gap: 6,
-		padding: 8,
-		marginBottom: 16,
+		minHeight: 48,
+		paddingHorizontal: 16,
+		marginTop: 4,
 	},
-	reportText: { fontSize: 13 },
+	reportText: { fontSize: 14, fontFamily: Fonts.bodyMedium },
+
+	// ── Action bar ──
 	actionBar: {
 		position: "absolute",
 		bottom: 0,
 		left: 0,
 		right: 0,
-		borderTopWidth: 1,
+		borderTopWidth: StyleSheet.hairlineWidth,
 		paddingHorizontal: 16,
 		paddingTop: 12,
-		paddingBottom: 24,
 	},
 	actionButtons: { flexDirection: "row", gap: 10 },
 	msgBtn: {
@@ -1289,55 +1438,42 @@ const styles = StyleSheet.create({
 		gap: 8,
 		borderRadius: 12,
 		minHeight: 52,
-		paddingVertical: 14,
+		paddingHorizontal: 12,
 	},
-	msgBtnText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
-	boostBtn: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 8,
-		borderRadius: 12,
-		minHeight: 52,
-		paddingVertical: 14,
-		backgroundColor: "#ffb81c",
-	},
-	boostIconBtn: {
-		width: 52,
-		height: 52,
-		borderRadius: 14,
-		alignItems: "center",
-		justifyContent: "center",
-		backgroundColor: "#ffb81c",
+	msgBtnText: {
+		color: "#ffffff",
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
+		flexShrink: 1,
 	},
 	editBtn: {
 		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 6,
+		gap: 8,
 		borderRadius: 12,
+		borderWidth: 1,
 		minHeight: 52,
-		paddingVertical: 14,
 	},
-	editBtnText: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	editBtnText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 	callBtnSquare: {
 		width: 52,
+		height: 52,
 		alignItems: "center",
 		justifyContent: "center",
 		borderRadius: 12,
-		minHeight: 52,
-		paddingVertical: 14,
+		borderWidth: 1,
 	},
 	callBtn: {
-		width: 118,
+		minWidth: 118,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 6,
 		borderRadius: 12,
+		borderWidth: 1,
 		minHeight: 52,
-		paddingVertical: 14,
+		paddingHorizontal: 14,
 	},
 });

@@ -10,19 +10,23 @@ import {
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
+import { FormError } from "../checkout/FormError";
+import { fillOf, inkOf } from "../checkout/fill";
 import { type ShopPalette, useShopTheme } from "../shop/theme";
 
 export type ButtonTone = "primary" | "outline" | "danger";
 
 function toneColors(c: ShopPalette, tone: ButtonTone) {
-	if (tone === "primary")
-		return { bg: c.primary, fg: "#ffffff", border: c.primary };
+	if (tone === "primary") {
+		const fill = fillOf(c);
+		return { bg: fill.bg, fg: fill.fg, border: fill.bg };
+	}
 	if (tone === "danger")
 		return { bg: c.dangerSoft, fg: c.dangerText, border: c.dangerSoft };
-	return { bg: "transparent", fg: c.primary, border: c.border };
+	return { bg: c.card, fg: inkOf(c), border: c.border };
 }
 
-/** A 44px-minimum button; `label` doubles as its accessibility label. */
+/** A 52pt button; `label` doubles as its accessibility label. */
 export function PurchaseButton({
 	label,
 	onPress,
@@ -46,12 +50,12 @@ export function PurchaseButton({
 			accessibilityRole="button"
 			accessibilityLabel={label}
 			accessibilityState={{ disabled: off, busy: pending }}
-			style={[
+			style={({ pressed }) => [
 				styles.button,
 				{
 					backgroundColor: colors.bg,
 					borderColor: colors.border,
-					opacity: off ? 0.6 : 1,
+					opacity: off ? 0.5 : pressed ? 0.85 : 1,
 				},
 			]}
 		>
@@ -86,7 +90,12 @@ export function Card({
 			]}
 		>
 			{title ? (
-				<Text style={[styles.cardTitle, { color: c.text }]}>{title}</Text>
+				<Text
+					style={[styles.cardTitle, { color: c.text }]}
+					accessibilityRole="header"
+				>
+					{title}
+				</Text>
 			) : null}
 			{children}
 		</View>
@@ -94,13 +103,7 @@ export function Card({
 }
 
 export function FieldError({ message }: { message?: string | null }) {
-	const c = useShopTheme();
-	if (!message) return null;
-	return (
-		<Text accessibilityRole="alert" style={[styles.error, { color: c.danger }]}>
-			{message}
-		</Text>
-	);
+	return <FormError message={message} />;
 }
 
 /** A bottom sheet: the dialogs of the action bar. */
@@ -156,7 +159,13 @@ export function Sheet({
 						contentContainerStyle={styles.sheetContent}
 						keyboardShouldPersistTaps="handled"
 					>
-						<Text style={[styles.sheetTitle, { color: c.text }]}>{title}</Text>
+						<View style={[styles.grabber, { backgroundColor: c.border }]} />
+						<Text
+							style={[styles.sheetTitle, { color: c.text }]}
+							accessibilityRole="header"
+						>
+							{title}
+						</Text>
 						{body ? (
 							<Text style={[styles.body, { color: c.body }]}>{body}</Text>
 						) : null}
@@ -174,26 +183,26 @@ export function Sheet({
 }
 
 export const purchaseText = StyleSheet.create({
-	body: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
-	muted: { fontSize: 13, fontFamily: Fonts.body },
+	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
+	muted: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 19 },
 	strong: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });
 
 const styles = StyleSheet.create({
 	button: {
-		minHeight: 44,
+		minHeight: 52,
 		borderRadius: 12,
 		borderWidth: 1,
 		paddingHorizontal: 16,
+		paddingVertical: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	buttonText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	card: { borderRadius: 16, padding: 16, gap: 10 },
-	cardTitle: { fontSize: 16, fontFamily: Fonts.displayBold },
-	error: { fontSize: 13, fontFamily: Fonts.body },
-	body: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
+	buttonText: { fontSize: 16, fontFamily: Fonts.bodyBold, textAlign: "center" },
+	card: { borderRadius: 16, padding: 16, gap: 12 },
+	cardTitle: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
 	sheet: {
 		maxHeight: "85%",
@@ -201,6 +210,13 @@ const styles = StyleSheet.create({
 		borderTopRightRadius: 20,
 		borderWidth: StyleSheet.hairlineWidth,
 	},
-	sheetContent: { padding: 20, gap: 12, paddingBottom: 32 },
-	sheetTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
+	sheetContent: { padding: 20, paddingTop: 10, gap: 12, paddingBottom: 32 },
+	grabber: {
+		alignSelf: "center",
+		width: 36,
+		height: 4,
+		borderRadius: 2,
+		marginBottom: 6,
+	},
+	sheetTitle: { fontSize: 20, lineHeight: 25, fontFamily: Fonts.displayBold },
 });

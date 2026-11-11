@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formStyles as f } from "@/src/components/seller/formStyles";
+import { fillOf } from "@/src/components/shop/ink";
 import { ShopProfilePicker } from "@/src/components/shop/ShopProfilePicker";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -70,7 +71,7 @@ export function ShopKindCard({
 					style={[
 						styles.action,
 						{
-							backgroundColor: c.primary,
+							backgroundColor: fillOf(c),
 							borderColor: c.primary,
 							opacity: disabled || draft === saved ? 0.5 : 1,
 						},
@@ -91,7 +92,7 @@ export function ShopKindCard({
 
 const styles = StyleSheet.create({
 	action: {
-		minHeight: 44,
+		minHeight: 48,
 		marginTop: 12,
 		borderRadius: 12,
 		borderWidth: 1,

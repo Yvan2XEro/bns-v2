@@ -41,6 +41,7 @@ export function PriceUnitChips({
 						<Pressable
 							key={unit}
 							onPress={() => onChange(unit)}
+							hitSlop={{ top: 6, bottom: 6 }}
 							accessibilityRole="radio"
 							accessibilityState={{ checked: on }}
 							style={[
@@ -83,8 +84,8 @@ const styles = StyleSheet.create({
 	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	chip: {
-		minHeight: 36,
-		paddingHorizontal: 12,
+		minHeight: 38,
+		paddingHorizontal: 14,
 		borderRadius: 18,
 		borderWidth: 1.5,
 		justifyContent: "center",

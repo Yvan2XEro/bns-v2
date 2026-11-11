@@ -17,6 +17,8 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
+import { fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -54,7 +56,7 @@ export default function ResalePurchaseOrdersScreen() {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<ListSkeleton />
 			</SafeAreaView>
 		);
 	}
@@ -105,7 +107,7 @@ export default function ResalePurchaseOrdersScreen() {
 							styles.tab,
 							{
 								borderColor: state.side === side ? c.primary : c.border,
-								backgroundColor: state.side === side ? c.primary : c.card,
+								backgroundColor: state.side === side ? fillOf(c) : c.card,
 							},
 						]}
 					>
@@ -265,14 +267,14 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		marginHorizontal: 16,
 		marginTop: 12,
-		minHeight: 46,
+		minHeight: 48,
 		paddingHorizontal: 14,
 	},
 	financeLinkText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
 	tabs: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 12 },
 	tab: {
 		flex: 1,
-		minHeight: 44,
+		minHeight: 48,
 		borderWidth: 1,
 		borderRadius: 12,
 		alignItems: "center",
@@ -293,16 +295,16 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		borderRadius: 12,
 		borderWidth: 1,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	input: { flex: 1, fontSize: 15, fontFamily: Fonts.body },
 	list: { paddingHorizontal: 16, paddingVertical: 14 },
 	card: {
 		padding: 14,
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		gap: 8,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	line: {
 		flexDirection: "row",

@@ -14,6 +14,15 @@ export interface ShopPalette {
 	border: string;
 	primary: string;
 	primarySoft: string;
+	/**
+	 * Behind a white label: filled buttons, selected chips, ticked boxes. The
+	 * platform's night primary gives white only 3.8:1, so it steps down to
+	 * `#2f43b5`; a shop's own colour is already darkened by its brand palette.
+	 * Bars, dots and rails with nothing on top keep `primary`.
+	 */
+	fill: string;
+	/** Brand-coloured words on a card: links, selected labels, inline actions. */
+	link: string;
 	sell: string;
 	success: string;
 	successSoft: string;
@@ -50,7 +59,9 @@ export function useShopTheme(): ShopPalette {
 		border: isDark ? "#2a3170" : "#e1e3ee",
 		primary: isDark ? "#6878ea" : "#23338f",
 		primarySoft: isDark ? "#1d2568" : "#e3e7f8",
-		...branded,
+		fill: isDark ? "#2f43b5" : "#23338f",
+		link: isDark ? "#9aa8f5" : "#23338f",
+		...(branded ? { ...branded, link: branded.primary } : null),
 		sell: "#ffb81c",
 		success: "#1e8a4f",
 		successSoft: isDark ? "#0b2a18" : "#ddf3e5",

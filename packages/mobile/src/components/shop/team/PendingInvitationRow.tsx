@@ -6,6 +6,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import type { PendingInvitationView } from "@/src/types/api";
@@ -97,9 +98,9 @@ export function PendingInvitationRow({
 						]}
 					>
 						{revoking ? (
-							<ActivityIndicator color={c.danger} size="small" />
+							<ActivityIndicator color={dangerInk(c)} size="small" />
 						) : (
-							<Text style={[styles.actionText, { color: c.danger }]}>
+							<Text style={[styles.actionText, { color: dangerInk(c) }]}>
 								{t("team.revoke")}
 							</Text>
 						)}
@@ -117,7 +118,7 @@ export function PendingInvitationRow({
 
 const styles = StyleSheet.create({
 	row: {
-		minHeight: 44,
+		minHeight: 48,
 		padding: 12,
 		borderRadius: 14,
 		borderWidth: 1,
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
 	meta: { fontSize: 12, fontFamily: Fonts.body },
 	actions: { flexDirection: "row", gap: 8 },
 	actionBtn: {
-		minHeight: 36,
+		minHeight: 48,
 		minWidth: 44,
 		paddingHorizontal: 12,
 		borderRadius: 10,

@@ -1,17 +1,14 @@
+import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
+import { AmountTag, StatusTag } from "@/src/components/shop/Tags";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useDeliveryZones } from "@/src/hooks/useDeliverySettings";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -40,32 +37,56 @@ function ZoneRow({ zone }: { zone: DeliveryZone }) {
 			}
 			accessibilityRole="button"
 			accessibilityLabel={zone.name}
-			style={[styles.row, { borderColor: c.border, backgroundColor: c.card }]}
+			style={({ pressed }) => [
+				styles.row,
+				{ borderColor: c.border, backgroundColor: c.card },
+				pressed && styles.pressed,
+			]}
 		>
-			<Text style={[styles.rowTitle, { color: c.text }]}>{zone.name}</Text>
-			<Text style={{ color: c.body, fontFamily: Fonts.body }}>
-				{districts.length
-					? districts.join(", ")
-					: t("deliverySettings.wholeCity")}
-			</Text>
-			<Text style={{ color: c.muted, fontFamily: Fonts.body, fontSize: 13 }}>
-				{[
-					t("deliverySettings.zoneFee", {
-						fee: formatPrice(zone.fee, i18n.language),
-					}),
-					t("deliverySettings.zoneEta", {
-						min: zone.etaMinHours,
-						max: zone.etaMaxHours,
-					}),
-					zone.method === "courier"
-						? t("deliverySettings.methodCourier")
-						: t("deliverySettings.methodSeller"),
-					zone.codAllowed === false ? t("deliverySettings.codOff") : null,
-					zone.active === false ? t("deliverySettings.inactive") : null,
-				]
-					.filter(Boolean)
-					.join(" · ")}
-			</Text>
+			<View style={styles.rowBody}>
+				<View style={styles.rowHead}>
+					<Text
+						style={[
+							styles.rowTitle,
+							{ color: zone.active === false ? c.muted : c.text },
+						]}
+						numberOfLines={1}
+					>
+						{zone.name}
+					</Text>
+					{zone.active === false ? (
+						<StatusTag label={t("deliverySettings.inactive")} tone="neutral" />
+					) : null}
+				</View>
+				<Text style={[styles.rowText, { color: c.body }]} numberOfLines={2}>
+					{districts.length
+						? districts.join(", ")
+						: t("deliverySettings.wholeCity")}
+				</Text>
+				<View style={styles.rowFoot}>
+					<AmountTag
+						label={t("deliverySettings.zoneFee", {
+							fee: formatPrice(zone.fee, i18n.language),
+						})}
+						size="sm"
+					/>
+					<Text style={[styles.rowMeta, { color: c.muted }]} numberOfLines={2}>
+						{[
+							t("deliverySettings.zoneEta", {
+								min: zone.etaMinHours,
+								max: zone.etaMaxHours,
+							}),
+							zone.method === "courier"
+								? t("deliverySettings.methodCourier")
+								: t("deliverySettings.methodSeller"),
+							zone.codAllowed === false ? t("deliverySettings.codOff") : null,
+						]
+							.filter(Boolean)
+							.join(" · ")}
+					</Text>
+				</View>
+			</View>
+			<Ionicons name="chevron-forward" size={18} color={c.muted} />
 		</Pressable>
 	);
 }
@@ -75,7 +96,11 @@ function ZonesList({ shopId }: { shopId: string }) {
 	const { t } = useTranslation();
 	const zones = useDeliveryZones(shopId);
 	if (zones.isPending)
-		return <ActivityIndicator style={styles.spinner} color={c.primary} />;
+		return (
+			<View style={styles.loading}>
+				<ListSkeleton rows={4} />
+			</View>
+		);
 	if (zones.isError)
 		return (
 			<EmptyState
@@ -103,13 +128,24 @@ function ZonesList({ shopId }: { shopId: string }) {
 				contentContainerStyle={styles.content}
 				ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
 				ListEmptyComponent={
-					<Text style={{ color: c.muted, fontFamily: Fonts.body }}>
-						{t("deliverySettings.zonesEmpty")}
-					</Text>
+					<View
+						style={[
+							styles.empty,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Ionicons name="bicycle-outline" size={28} color={c.primary} />
+						<Text style={[styles.rowText, { color: c.body }]}>
+							{t("deliverySettings.zonesEmpty")}
+						</Text>
+					</View>
 				}
 				renderItem={({ item }) =>
 					item.kind === "city" ? (
-						<Text style={[styles.city, { color: c.text }]}>
+						<Text
+							accessibilityRole="header"
+							style={[styles.city, { color: c.text }]}
+						>
 							{item.city === "douala" ? "Douala" : "Yaoundé"}
 						</Text>
 					) : (
@@ -149,14 +185,37 @@ export default function DeliveryZonesScreen() {
 }
 
 const styles = StyleSheet.create({
-	spinner: { marginTop: 40 },
+	loading: { paddingTop: 16 },
 	content: { padding: 16, paddingBottom: 48 },
 	city: {
-		fontSize: 17,
+		fontSize: 19,
+		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
-		marginTop: 8,
+		letterSpacing: -0.3,
+		marginTop: 12,
 		marginBottom: 4,
 	},
-	row: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 4, minHeight: 44 },
-	rowTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	row: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 14,
+		minHeight: 48,
+	},
+	pressed: { opacity: 0.85 },
+	rowBody: { flex: 1, gap: 6 },
+	rowHead: { flexDirection: "row", alignItems: "center", gap: 8 },
+	rowTitle: { flexShrink: 1, fontSize: 16, fontFamily: Fonts.displayBold },
+	rowText: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
+	rowFoot: { flexDirection: "row", alignItems: "center", gap: 10 },
+	rowMeta: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	empty: {
+		alignItems: "center",
+		gap: 10,
+		padding: 24,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
 });

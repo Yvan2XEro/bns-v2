@@ -1,28 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ModerationVerificationDetail } from "@/src/types/api";
+import { FactRow, ModerationCard } from "./ModerationKit";
 import { useModerationTheme } from "./theme";
+import { tonesOf } from "./tones";
 
 type Kyc = NonNullable<ModerationVerificationDetail["request"]["kyc"]>;
-
-function Row({ label, value }: { label: string; value: string | null }) {
-	const c = useModerationTheme();
-	return (
-		<View style={styles.row}>
-			<Text style={[styles.label, { color: c.muted }]}>{label}</Text>
-			<Text style={[styles.value, { color: c.text }]} numberOfLines={2}>
-				{value ?? "—"}
-			</Text>
-		</View>
-	);
-}
 
 /** The seller's identity-check outcome, level 2 only. Never the document bytes — those live in `DocumentList`. */
 export function KycSummaryCard({ kyc }: { kyc: Kyc | null | undefined }) {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t, i18n } = useTranslation();
 	const locale = i18n.language?.startsWith("en") ? "en-US" : "fr-FR";
 
@@ -30,19 +21,18 @@ export function KycSummaryCard({ kyc }: { kyc: Kyc | null | undefined }) {
 
 	const expiresOn = formatDate(kyc.documentExpiresAt, undefined, locale);
 	const fullName = [kyc.givenNames, kyc.familyName].filter(Boolean).join(" ");
+	const liveness =
+		kyc.livenessPassed === null || kyc.livenessPassed === undefined
+			? null
+			: kyc.livenessPassed;
 
 	return (
-		<View
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-		>
-			<Text style={[styles.title, { color: c.text }]}>
-				{t("moderation.verifKycTitle")}
-			</Text>
-			<Row
+		<ModerationCard title={t("moderation.verifKycTitle")}>
+			<FactRow
 				label={t("moderation.verifKycOutcome")}
 				value={t(`moderation.verifKycStatus_${kyc.status ?? "not_started"}`)}
 			/>
-			<Row
+			<FactRow
 				label={t("moderation.verifKycDocument")}
 				value={
 					kyc.documentType
@@ -50,25 +40,32 @@ export function KycSummaryCard({ kyc }: { kyc: Kyc | null | undefined }) {
 						: null
 				}
 			/>
-			<Row
+			<FactRow
 				label={t("moderation.verifKycLast4")}
 				value={kyc.documentNumberLast4}
 			/>
-			<Row label={t("moderation.verifKycExpiry")} value={expiresOn} />
-			<Row label={t("moderation.verifKycName")} value={fullName || null} />
-			<Row
+			<FactRow label={t("moderation.verifKycExpiry")} value={expiresOn} />
+			<FactRow label={t("moderation.verifKycName")} value={fullName || null} />
+			<FactRow
 				label={t("moderation.verifKycLiveness")}
 				value={
-					kyc.livenessPassed === null || kyc.livenessPassed === undefined
+					liveness === null
 						? null
 						: t(
-								kyc.livenessPassed
+								liveness
 									? "moderation.verifCommonPassed"
 									: "moderation.verifCommonFailed",
 							)
 				}
+				valueColor={
+					liveness === null
+						? undefined
+						: liveness
+							? k.successText
+							: k.dangerText
+				}
 			/>
-			<Row
+			<FactRow
 				label={t("moderation.verifKycFaceMatch")}
 				value={
 					typeof kyc.faceMatchScore === "number"
@@ -81,45 +78,29 @@ export function KycSummaryCard({ kyc }: { kyc: Kyc | null | undefined }) {
 					accessibilityRole="link"
 					accessibilityLabel={t("moderation.verifKycVendorConsole")}
 					onPress={() => Linking.openURL(kyc.vendorReviewUrl as string)}
-					style={styles.vendorLink}
-					hitSlop={8}
+					style={({ pressed }) => [
+						styles.vendorLink,
+						{ borderTopColor: c.border, opacity: pressed ? 0.7 : 1 },
+					]}
 				>
-					<Text style={[styles.link, { color: c.primary }]}>
+					<Text style={[styles.link, { color: k.linkText }]}>
 						{t("moderation.verifKycVendorConsole")}
 					</Text>
-					<Ionicons name="open-outline" size={14} color={c.primary} />
+					<Ionicons name="open-outline" size={16} color={k.linkText} />
 				</Pressable>
 			) : null}
-		</View>
+		</ModerationCard>
 	);
 }
 
 const styles = StyleSheet.create({
-	card: {
-		borderRadius: 14,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 14,
-		gap: 8,
-	},
-	title: { fontSize: 15, fontFamily: Fonts.displayBold, marginBottom: 2 },
-	row: {
-		flexDirection: "row",
-		alignItems: "flex-start",
-		justifyContent: "space-between",
-		gap: 12,
-	},
-	label: { fontSize: 13, fontFamily: Fonts.body },
-	value: {
-		fontSize: 13,
-		fontFamily: Fonts.bodySemibold,
-		flexShrink: 1,
-		textAlign: "right",
-	},
 	vendorLink: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
-		minHeight: 44,
+		gap: 6,
+		minHeight: 48,
+		borderTopWidth: StyleSheet.hairlineWidth,
+		marginTop: 2,
 	},
-	link: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	link: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 });

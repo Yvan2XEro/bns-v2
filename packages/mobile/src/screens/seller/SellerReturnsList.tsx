@@ -1,7 +1,7 @@
 import { FlashList } from "@shopify/flash-list";
 import {
-	ActivityIndicator,
 	Pressable,
+	RefreshControl,
 	StyleSheet,
 	Text,
 	View,
@@ -12,7 +12,9 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
 import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { StatusTag } from "@/src/components/shop/Tags";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useShopReturns } from "@/src/hooks/useReturns";
@@ -34,7 +36,7 @@ export function SellerReturnsList({ selectedId, onOpen }: SplitListProps) {
 		return (
 			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
 				<SellerHeader title={t("sellerReturns.title")} />
-				<ActivityIndicator style={styles.loading} color={c.primary} />
+				<ListSkeleton />
 			</SafeAreaView>
 		);
 	}
@@ -73,8 +75,13 @@ export function SellerReturnsList({ selectedId, onOpen }: SplitListProps) {
 								onPress={() => onOpen(item.id)}
 							/>
 						)}
-						refreshing={returns.isRefetching}
-						onRefresh={() => void returns.refetch()}
+						refreshControl={
+							<RefreshControl
+								refreshing={returns.isRefetching}
+								onRefresh={() => void returns.refetch()}
+								tintColor={c.primary}
+							/>
+						}
 					/>
 				</ScreenColumn>
 			)}
@@ -109,12 +116,14 @@ function ReturnRow({
 			]}
 		>
 			<View style={styles.row}>
-				<Text style={[styles.number, { color: c.text }]}>{item.number}</Text>
+				<Text style={[styles.number, { color: c.text }]} numberOfLines={1}>
+					{item.number}
+				</Text>
 				{item.overdue ? (
-					<Text style={styles.overdue}>{t("returns.overdue")}</Text>
+					<StatusTag label={t("returns.overdue")} tone="danger" />
 				) : null}
 			</View>
-			<Text style={[styles.body, { color: c.muted }]}>
+			<Text style={[styles.body, { color: c.body }]}>
 				{t("returns.order", { number: item.orderNumber })} ·{" "}
 				{t(RETURN_BASIS_LABELS[item.basis])}
 			</Text>
@@ -137,16 +146,20 @@ function ReturnRow({
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	loading: { marginTop: 40 },
 	list: { padding: 16 },
 	gap: { height: 10 },
-	card: { borderRadius: 14, borderWidth: 1, gap: 7, padding: 15 },
+	card: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		gap: 7,
+		padding: 15,
+	},
 	row: {
 		alignItems: "center",
 		flexDirection: "row",
 		justifyContent: "space-between",
+		gap: 8,
 	},
-	number: { fontFamily: Fonts.displaySemibold, fontSize: 16 },
-	body: { fontFamily: Fonts.body, fontSize: 13 },
-	overdue: { color: "#d23a2e", fontFamily: Fonts.bodySemibold, fontSize: 12 },
+	number: { flexShrink: 1, fontFamily: Fonts.displayBold, fontSize: 16 },
+	body: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 });

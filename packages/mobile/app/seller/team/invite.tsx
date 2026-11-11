@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { RoleCard } from "@/src/components/shop/team/RoleMatrix";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -67,7 +68,7 @@ export default function InviteMemberScreen() {
 								onPress={close}
 								accessibilityRole="button"
 								accessibilityLabel={t("common.close")}
-								style={[styles.submit, { backgroundColor: c.primary }]}
+								style={[styles.submit, { backgroundColor: fillOf(c) }]}
 							>
 								<Text style={styles.submitText}>{t("common.close")}</Text>
 							</Pressable>
@@ -145,7 +146,7 @@ export default function InviteMemberScreen() {
 										)}
 									/>
 									{form.formState.errors.phone ? (
-										<Text style={[styles.hint, { color: c.danger }]}>
+										<Text style={[styles.hint, { color: dangerInk(c) }]}>
 											{fieldMessage(form.formState.errors.phone, t, {
 												required: "team.phoneRequired",
 												invalid: "team.phoneInvalid",
@@ -183,7 +184,7 @@ export default function InviteMemberScreen() {
 										)}
 									/>
 									{form.formState.errors.email ? (
-										<Text style={[styles.hint, { color: c.danger }]}>
+										<Text style={[styles.hint, { color: dangerInk(c) }]}>
 											{fieldMessage(form.formState.errors.email, t, {
 												required: "team.emailRequired",
 												invalid: "team.emailInvalid",
@@ -219,7 +220,7 @@ export default function InviteMemberScreen() {
 								style={[
 									styles.submit,
 									{
-										backgroundColor: c.primary,
+										backgroundColor: fillOf(c),
 										opacity: !form.formState.isValid || isPending ? 0.5 : 1,
 									},
 								]}
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
 	segmentText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	label: { fontSize: 13, fontFamily: Fonts.bodySemibold, marginBottom: 6 },
 	input: {
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		paddingHorizontal: 14,
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 15, fontFamily: Fonts.bodySemibold },
+	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 	notice: { borderRadius: 14, padding: 16, gap: 12 },
 	noticeText: { fontSize: 14, fontFamily: Fonts.body },
 });

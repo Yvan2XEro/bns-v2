@@ -144,6 +144,7 @@ export function SellerInboxConversation({
 				renderHeader={(conv) => (
 					<ConversationHeader
 						buyerName={cached?.buyer?.name ?? buyerNameOf(conv)}
+						buyerAvatarUrl={cached?.buyer?.avatarUrl ?? null}
 						listingTitle={cached?.listing?.title ?? listingTitleOf(conv)}
 						assignee={assignee}
 						status={status}

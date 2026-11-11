@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useTranslation } from "@/src/lib/i18n";
 import type { BadgeLevel } from "@/src/types/api";
 import {
@@ -146,7 +147,7 @@ export function SellerChecklistCard({
 					</Text>
 				</View>
 				{inline ? (
-					<View style={[styles.inline, { backgroundColor: c.primary }]}>
+					<View style={[styles.inline, { backgroundColor: fillOf(c) }]}>
 						<Ionicons name="add" size={16} color="#fff" />
 						<Text style={styles.inlineText}>{t("sellerHome.add")}</Text>
 					</View>
@@ -173,7 +174,10 @@ export function SellerChecklistCard({
 							</View>
 						) : null}
 					</View>
-					<Text style={[styles.hello, { color: c.text }]}>
+					<Text
+						accessibilityRole="header"
+						style={[styles.hello, { color: c.text }]}
+					>
 						{t("seller.welcome", { name: welcome.firstName })}
 					</Text>
 					<Text style={[styles.body, { color: c.body }]}>
@@ -183,7 +187,10 @@ export function SellerChecklistCard({
 			) : null}
 
 			<View style={styles.head}>
-				<Text style={[styles.section, { color: c.text }]}>
+				<Text
+					accessibilityRole="header"
+					style={[styles.section, { color: c.text }]}
+				>
 					{mode === "complete"
 						? t("sellerHome.readyTitle")
 						: t("sellerHome.checklistTitle")}
@@ -206,7 +213,7 @@ export function SellerChecklistCard({
 					style={[
 						styles.fill,
 						{
-							backgroundColor: c.primary,
+							backgroundColor: fillOf(c),
 							width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%`,
 						},
 					]}
@@ -258,13 +265,11 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		alignItems: "center",
 	},
-	section: { fontSize: 16, fontFamily: Fonts.displayBold },
+	section: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	subhead: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		marginTop: 8,
-		textTransform: "uppercase",
-		letterSpacing: 0.4,
+		fontSize: 13,
+		fontFamily: Fonts.bodyBold,
+		marginTop: 10,
 	},
 	counter: { fontSize: 15, fontFamily: Fonts.displayBold },
 	track: { height: 6, borderRadius: 3, overflow: "hidden", marginBottom: 4 },
@@ -293,7 +298,7 @@ const styles = StyleSheet.create({
 		gap: 4,
 		borderRadius: 12,
 		paddingHorizontal: 12,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	inlineText: { color: "#fff", fontSize: 13, fontFamily: Fonts.bodyBold },
 	collapsed: {
@@ -315,7 +320,7 @@ const styles = StyleSheet.create({
 	},
 	dismiss: {
 		marginTop: 6,
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
