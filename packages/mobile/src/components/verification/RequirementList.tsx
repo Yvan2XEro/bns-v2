@@ -35,14 +35,17 @@ export function RequirementList({
 
 	const palette: Record<Tone, { fg: string; bg: string }> = {
 		positive: { fg: c.successText, bg: c.successSoft },
-		progress: { fg: c.primary, bg: c.primarySoft },
+		progress: { fg: c.link, bg: c.primarySoft },
 		negative: { fg: c.dangerText, bg: c.dangerSoft },
 		pending: { fg: c.neutralText, bg: c.neutralSoft },
 	};
 
 	return (
 		<View style={styles.wrap}>
-			<Text style={[styles.title, { color: c.muted }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.title, { color: c.muted }]}
+			>
 				{t("verification.requirements.title")}
 			</Text>
 			<View accessibilityRole="list" style={styles.list}>
@@ -77,10 +80,9 @@ export function RequirementList({
 const styles = StyleSheet.create({
 	wrap: { marginTop: 10, gap: 8 },
 	title: {
-		fontSize: 12,
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.6,
 	},
 	list: { gap: 8 },
 	row: { flexDirection: "row", alignItems: "center", gap: 8 },

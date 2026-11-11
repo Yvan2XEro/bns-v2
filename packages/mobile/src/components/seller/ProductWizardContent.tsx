@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { TextStyles } from "@/constants/theme";
 import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import type { FieldIssue } from "@/src/lib/formIssues";
@@ -38,12 +38,17 @@ export function ProductWizardContent({
 
 	return (
 		<>
-			<View>
+			{/* The screen draws the step bar under its header; here the step's
+			    question is the title, with "step n of 3" under it, not above. */}
+			<View style={styles.head}>
+				<Text
+					style={[styles.stepTitle, { color: c.text }]}
+					accessibilityRole="header"
+				>
+					{t(`product.step${step}Title`)}
+				</Text>
 				<Text style={[f.hint, { color: c.muted }]}>
 					{t("product.stepOf", { step })}
-				</Text>
-				<Text style={[styles.stepTitle, { color: c.text }]}>
-					{t(`product.step${step}Title`)}
 				</Text>
 			</View>
 			{step === 1 ? (
@@ -79,5 +84,6 @@ export function ProductWizardContent({
 }
 
 const styles = StyleSheet.create({
-	stepTitle: { fontSize: 22, fontFamily: Fonts.displayExtrabold },
+	head: { gap: 4 },
+	stepTitle: { ...TextStyles.h2 },
 });

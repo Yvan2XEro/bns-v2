@@ -80,7 +80,7 @@ export function SellerChecklistCard({
 				]}
 			>
 				<View style={[styles.icon, { backgroundColor: c.primarySoft }]}>
-					<Ionicons name="list-outline" size={18} color={c.primary} />
+					<Ionicons name="list-outline" size={18} color={c.link} />
 				</View>
 				<Text style={[styles.collapsedText, { color: c.text }]}>
 					{t("sellerHome.collapsed", { count: left })}
@@ -195,7 +195,7 @@ export function SellerChecklistCard({
 						? t("sellerHome.readyTitle")
 						: t("sellerHome.checklistTitle")}
 				</Text>
-				<Text style={[styles.counter, { color: c.primary }]}>
+				<Text style={[styles.counter, { color: c.link }]}>
 					{progress.done} / {progress.total}
 				</Text>
 			</View>

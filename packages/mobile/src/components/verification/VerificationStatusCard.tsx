@@ -47,7 +47,7 @@ export function VerificationStatusCard({
 						<LevelBadge badge={view.capabilities.badge} />
 					)}
 				</View>
-				<Text style={[styles.level, { color: c.primary }]}>
+				<Text style={[styles.level, { color: c.link }]}>
 					{level}
 					<Text style={[styles.of, { color: c.muted }]}> / {TOP_LEVEL}</Text>
 				</Text>

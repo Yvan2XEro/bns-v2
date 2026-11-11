@@ -67,7 +67,7 @@ export default function VerificationReturnScreen() {
 							onPress={onBackToHub}
 							style={styles.linkButton}
 						>
-							<Text style={[styles.linkLabel, { color: c.primary }]}>
+							<Text style={[styles.linkLabel, { color: c.link }]}>
 								{t("verification.return.backToHub")}
 							</Text>
 						</Pressable>

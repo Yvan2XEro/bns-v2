@@ -82,7 +82,7 @@ export function PendingInvitationRow({
 						{resending ? (
 							<ActivityIndicator color={c.primary} size="small" />
 						) : (
-							<Text style={[styles.actionText, { color: c.primary }]}>
+							<Text style={[styles.actionText, { color: c.link }]}>
 								{t("team.resend")}
 							</Text>
 						)}

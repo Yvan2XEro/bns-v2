@@ -42,7 +42,15 @@ export function SellerInboxList({ selectedId, onOpen }: SplitListProps) {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
-				<ActivityIndicator style={{ marginTop: 60 }} color={c.primary} />
+				<SellerHeader title={t("inbox.title")} />
+				<View
+					accessibilityLabel={t("common.loading")}
+					accessibilityState={{ busy: true }}
+				>
+					{[0, 1, 2, 3, 4, 5].map((i) => (
+						<SkeletonConversationRow key={i} />
+					))}
+				</View>
 			</SafeAreaView>
 		);
 	}

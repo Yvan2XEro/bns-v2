@@ -13,15 +13,15 @@ export const Colors = {
 		/** Raised field inside a card: inputs, segmented tracks, image wells */
 		well: "#eceef5",
 
-		// Brand — ndop indigo
-		primary: "#23338f",
+		// Brand — ndop indigo, lifted to a brighter blue
+		primary: "#2f5bd4",
 		primaryForeground: "#ffffff",
-		primaryPressed: "#1a2672",
-		primaryTint: "#e3e7f8",
+		primaryPressed: "#2448ab",
+		primaryTint: "#e3e9fb",
 		/** Behind a white label: filled buttons, selected chips, ticked boxes */
-		primaryFill: "#23338f",
+		primaryFill: "#2f5bd4",
 		/** Brand-coloured words on a card: links, selected labels, inline actions */
-		link: "#23338f",
+		link: "#2f5bd4",
 
 		// Signage yellow — sell CTA, price tags, boosted
 		sun: "#ffb81c",
@@ -49,14 +49,14 @@ export const Colors = {
 		border: "#e1e3ee",
 		borderStrong: "#c9cce0",
 		input: "#e1e3ee",
-		ring: "#23338f",
+		ring: "#2f5bd4",
 
 		// Convenience aliases used by navigation / tab bars
 		text: "#12163a",
-		tint: "#23338f",
+		tint: "#2f5bd4",
 		icon: "#5b6088",
 		tabIconDefault: "#777ca3",
-		tabIconSelected: "#23338f",
+		tabIconSelected: "#2f5bd4",
 
 		// Status colours
 		success: "#1e8a4f",
@@ -71,10 +71,15 @@ export const Colors = {
 		warningText: "#6e4700",
 		dangerText: "#8e2219",
 
-		/** Ndop shell: the indigo header field and its ink */
-		shell: "#1d2a7a",
+		/** Ndop shell: the blue header field and its ink. Kin to `primary`,
+		 *  one step down so white sits at 6.9:1 rather than 5.9:1. */
+		shell: "#2a51c0",
 		shellForeground: "#ffffff",
-		shellMuted: "#b8c0ec",
+		shellMuted: "#c7d3f7",
+
+		/** Own chat bubbles, sheet actions, unread badges: white at 8:1, the
+		 *  same deep blue in both themes. */
+		ownBubble: "#2448ab",
 	},
 	dark: {
 		// Surfaces
@@ -84,15 +89,16 @@ export const Colors = {
 		cardForeground: "#e1e3ee",
 		well: "#13183e",
 
-		// Brand
-		primary: "#6878ea",
+		// Brand — the web's blue (#3b82f6, see packages/web globals.css)
+		primary: "#3b82f6",
 		primaryForeground: "#0c1030",
-		primaryPressed: "#9aa8f5",
-		primaryTint: "#1d2568",
-		/** White on #6878ea is 3.8:1; filled actions step down to 8:1 */
-		primaryFill: "#2f43b5",
-		/** #6878ea on a night card is ~4.3:1; words lift to 7:1 */
-		link: "#9aa8f5",
+		primaryPressed: "#7dade9",
+		/** A surface, not a text ground: `primary` on it is 3.9:1 — use `link` */
+		primaryTint: "#16265c",
+		/** White on #3b82f6 is 3.7:1; filled actions step down to 8:1 */
+		primaryFill: "#2448ab",
+		/** #3b82f6 on a night card is ~4.3:1; words lift to 7:1 */
+		link: "#9ec5fe",
 
 		sun: "#ffc94a",
 		sunForeground: "#12163a",
@@ -118,11 +124,11 @@ export const Colors = {
 		border: "#2a3170",
 		borderStrong: "#3a4290",
 		input: "#2a3170",
-		ring: "#6878ea",
+		ring: "#3b82f6",
 
 		// Convenience aliases
 		text: "#e1e3ee",
-		tint: "#6878ea",
+		tint: "#3b82f6",
 		icon: "#a3a7c8",
 		tabIconDefault: "#777ca3",
 		tabIconSelected: "#ffc94a",
@@ -132,7 +138,7 @@ export const Colors = {
 		successTint: "#0b2a18",
 		warning: "#ffc94a",
 		warningTint: "#3a2a00",
-		info: "#9aa8f5",
+		info: "#9ec5fe",
 		dangerTint: "#3d0f0b",
 		successText: "#8fddb0",
 		warningText: "#ffd25a",
@@ -141,6 +147,8 @@ export const Colors = {
 		shell: "#13183e",
 		shellForeground: "#ffffff",
 		shellMuted: "#a3a7c8",
+
+		ownBubble: "#2448ab",
 	},
 } as const;
 

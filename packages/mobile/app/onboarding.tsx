@@ -15,6 +15,7 @@ import Animated, {
 	Easing,
 	useAnimatedProps,
 	useAnimatedStyle,
+	useReducedMotion,
 	useSharedValue,
 	withDelay,
 	withRepeat,
@@ -22,7 +23,10 @@ import Animated, {
 	withSpring,
 	withTiming,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import Svg, {
 	Circle,
 	Ellipse,
@@ -34,7 +38,7 @@ import Svg, {
 } from "react-native-svg";
 import { Colors, Fonts, shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { NdopPattern } from "@/src/components/brand/NdopPattern";
+import { ShellPattern } from "@/src/components/brand/BackgroundPattern";
 import { useOnboarding } from "@/src/contexts/OnboardingContext";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -48,11 +52,11 @@ const _AnimatedLine = Animated.createAnimatedComponent(Line);
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const P = {
-	blueDark: "#1a2672",
-	blue: "#23338f",
-	blueMid: "#6878ea",
+	blueDark: "#2448ab",
+	blue: "#2f5bd4",
+	blueMid: "#3b82f6",
 	blueLight: "#a9b4f0",
-	bluePale: "#e3e7f8",
+	bluePale: "#e3e9fb",
 	yellowDark: "#8a5a00",
 	yellow: "#9a6a00",
 	yellowMid: "#ffb81c",
@@ -1380,11 +1384,16 @@ const ILLUSTRATIONS = [
 // ─── Dot indicator ────────────────────────────────────────────────────────────
 function Dot({ index, currentIndex }: { index: number; currentIndex: number }) {
 	const isActive = index === currentIndex;
+	const reduceMotion = useReducedMotion();
 	const w = useSharedValue(isActive ? 28 : 8);
 
 	useEffect(() => {
-		w.value = withSpring(isActive ? 28 : 8, { damping: 14, stiffness: 280 });
-	}, [isActive, w]);
+		const target = isActive ? 28 : 8;
+		// Reduce Motion: the active dot changes width at once.
+		w.value = reduceMotion
+			? target
+			: withSpring(target, { damping: 14, stiffness: 280 });
+	}, [isActive, w, reduceMotion]);
 
 	const style = useAnimatedStyle(() => ({ width: w.value }));
 
@@ -1414,6 +1423,7 @@ export default function OnboardingScreen() {
 	// Live width — the pager measures each slide against it, so a stale
 	// module-scope value breaks paging after rotation / Stage Manager resize.
 	const { width: SW } = useWindowDimensions();
+	const insets = useSafeAreaInsets();
 	const SLIDES = getSlides(t);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const flatListRef = useRef<FlatList>(null);
@@ -1477,7 +1487,9 @@ export default function OnboardingScreen() {
 							/>
 						</View>
 					)}
-					<Text style={styles.slideTitle}>{item.title}</Text>
+					<Text accessibilityRole="header" style={styles.slideTitle}>
+						{item.title}
+					</Text>
 					<Text style={styles.slideDesc}>{item.description}</Text>
 				</View>
 			</View>
@@ -1487,11 +1499,16 @@ export default function OnboardingScreen() {
 	return (
 		<SafeAreaView style={[styles.container, { backgroundColor: shell }]}>
 			<StatusBar style="light" />
-			<NdopPattern opacity={0.04} />
+			<ShellPattern />
 
 			{/* Skip */}
 			{!isLast && (
-				<Pressable style={styles.skipBtn} onPress={handleComplete} hitSlop={12}>
+				<Pressable
+					style={[styles.skipBtn, { top: insets.top + 4 }]}
+					onPress={handleComplete}
+					hitSlop={8}
+					accessibilityRole="button"
+				>
 					<Text style={styles.skipText}>{t("onboarding.skip")}</Text>
 				</Pressable>
 			)}
@@ -1517,7 +1534,12 @@ export default function OnboardingScreen() {
 					SW >= 768 && { alignSelf: "center", width: "100%", maxWidth: 520 },
 				]}
 			>
-				<View style={styles.dotsRow}>
+				<View
+					style={styles.dotsRow}
+					accessible
+					accessibilityRole="progressbar"
+					accessibilityLabel={`${currentIndex + 1} / ${SLIDES.length}`}
+				>
 					{SLIDES.map((_, i) => (
 						<Dot key={i} index={i} currentIndex={currentIndex} />
 					))}
@@ -1541,17 +1563,24 @@ export default function OnboardingScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+/** Quiet words on the shell: 4.6:1 on the day blue, 11:1 on the night one. */
+const SHELL_MUTED = Colors.light.shellMuted;
+
 const styles = StyleSheet.create({
 	container: { flex: 1 },
 	skipBtn: {
 		position: "absolute",
-		top: 56,
-		right: 24,
+		right: 12,
 		zIndex: 10,
-		paddingVertical: 6,
+		minHeight: 44,
+		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	skipText: { fontFamily: Fonts.bodySemibold, fontSize: 15, color: "#c5ccf0" },
+	skipText: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		color: SHELL_MUTED,
+	},
 	slide: {
 		flex: 1,
 		alignItems: "center",
@@ -1584,7 +1613,7 @@ const styles = StyleSheet.create({
 		lineHeight: 24,
 		textAlign: "center",
 		maxWidth: 320,
-		color: "#c5ccf0",
+		color: SHELL_MUTED,
 	},
 	bottomBar: {
 		paddingHorizontal: 24,
@@ -1598,18 +1627,19 @@ const styles = StyleSheet.create({
 		gap: 6,
 	},
 	// The sign-plaque button: yellow, ink letters, a darker foot.
+	// The sell plaque's yellow and foot: the one action on the shell.
 	nextBtn: {
-		height: 56,
-		borderRadius: 14,
+		minHeight: 56,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#ffb81c",
+		backgroundColor: Colors.light.sun,
 		borderBottomWidth: 3,
-		borderBottomColor: "#9a6a00",
+		borderBottomColor: Colors.light.warning,
 	},
 	nextBtnText: {
 		fontFamily: Fonts.bodyBold,
-		fontSize: 17,
-		color: "#12163a",
+		fontSize: 16,
+		color: Colors.light.sunForeground,
 	},
 });

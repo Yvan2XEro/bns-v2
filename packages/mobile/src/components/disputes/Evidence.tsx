@@ -20,7 +20,8 @@ import {
 import type { EvidenceAttachment } from "@/src/lib/disputeEvidence";
 import { useTranslation } from "@/src/lib/i18n";
 
-const SIZE = 48;
+/** Big enough to tell one photo from another before opening it. */
+const SIZE = 64;
 
 function KindIcon({
 	kind,
@@ -174,12 +175,12 @@ export function EvidenceViewer({
 }
 
 const styles = StyleSheet.create({
-	strip: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+	strip: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	thumb: {
 		width: SIZE,
 		height: SIZE,
 		borderRadius: 10,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		overflow: "hidden",
 		alignItems: "center",
 		justifyContent: "center",
@@ -187,8 +188,8 @@ const styles = StyleSheet.create({
 	viewer: { flex: 1, backgroundColor: "rgba(0,0,0,0.94)" },
 	viewerBar: { flexDirection: "row", justifyContent: "flex-end", padding: 8 },
 	viewerClose: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -197,7 +198,8 @@ const styles = StyleSheet.create({
 	viewerError: {
 		color: "#fff",
 		fontFamily: Fonts.body,
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		textAlign: "center",
 		paddingHorizontal: 24,
 	},

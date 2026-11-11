@@ -286,7 +286,7 @@ export function DocumentSlot({
 									scannerAvailable ? "scan-outline" : "cloud-upload-outline"
 								}
 								size={20}
-								color={c.primary}
+								color={c.link}
 							/>
 							<Text style={[styles.hint, { color: c.muted }]}>
 								{documents.length === 0

@@ -48,7 +48,7 @@ export default function BoostModal() {
 						accessibilityElementsHidden
 						importantForAccessibility="no-hide-descendants"
 					>
-						<Ionicons name="flash" size={36} color="#12163a" />
+						<Ionicons name="flash" size={36} color={c.sunForeground} />
 					</View>
 					<Text
 						style={[styles.title, { color: textColor }]}
@@ -76,8 +76,10 @@ export default function BoostModal() {
 							{ backgroundColor: c.warningTint },
 						]}
 					>
-						<Ionicons name="time-outline" size={16} color={c.warning} />
-						<Text style={[styles.unavailableBadgeText, { color: c.warning }]}>
+						<Ionicons name="time-outline" size={16} color={c.warningText} />
+						<Text
+							style={[styles.unavailableBadgeText, { color: c.warningText }]}
+						>
 							{t("boost.mobileUnavailableBadge")}
 						</Text>
 					</View>

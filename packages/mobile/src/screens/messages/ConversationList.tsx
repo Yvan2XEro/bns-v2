@@ -55,7 +55,12 @@ interface ConversationListRow {
 		| { id: string; name?: string | null; avatar?: { url?: string } | null }
 		| string
 	>;
-	lastMessage?: { content?: string | null } | null;
+	lastMessage?: {
+		content?: string | null;
+		/** An id, or the user at depth 2. */
+		sender?: { id: string } | string | null;
+		kind?: string | null;
+	} | null;
 	listing?: { title?: string | null; images?: unknown[] | null } | null;
 	order?: { orderNumber?: string | null } | string | null;
 	updatedAt?: string;
@@ -105,7 +110,9 @@ function formatTime(dateStr: string): string {
 }
 
 /** Own bubbles, the send button and the unread badge share one deep indigo: white stays legible on it in both themes. */
-const FILLED = "#2f43b5";
+const FILLED = Colors.light.ownBubble;
+/** The swipe-to-delete fill: the light red in both themes, since white on the night red falls to 3.6:1. */
+const DELETE_FILL = Colors.light.destructive;
 /** Avatar 52 + its 12pt gap + the row's 16pt inset: hairlines start under the name, as in a native inbox. */
 const SEPARATOR_INSET = 80;
 
@@ -183,9 +190,8 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 		setRefreshing(false);
 	};
 
-	// The unread time and count read in the brand indigo; in dark mode the
-	// lighter info tone keeps 4.5:1 on the night card.
-	const unreadAccent = isDark ? C.info : C.primary;
+	// The unread time and "mark all read" in the contrast-safe brand tone.
+	const unreadAccent = C.link;
 	// DESIGN.md's "body" tone: secondary text with more weight than meta.
 	const bodyText = C.body;
 
@@ -251,7 +257,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 
 			queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		} catch {
-			// silently fail
+			showError(t("common.error"), t("messages.markAllReadError"));
 		} finally {
 			setMarkingAllRead(false);
 		}
@@ -340,7 +346,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 			onPress={() => handleDelete(convId)}
 			accessibilityRole="button"
 			accessibilityLabel={t("messages.deleteConversation")}
-			style={[styles.deleteAction, { backgroundColor: C.destructive }]}
+			style={[styles.deleteAction, { backgroundColor: DELETE_FILL }]}
 		>
 			<Ionicons name="trash-outline" size={22} color="#ffffff" />
 			<Text style={styles.deleteActionText}>{t("common.delete")}</Text>
@@ -380,7 +386,20 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 			"thumbnail",
 		);
 		const time = item.updatedAt ? formatTime(item.updatedAt) : "";
-		const preview = lastMsg?.content ?? t("messages.noMessages");
+		const senderId =
+			typeof lastMsg?.sender === "string"
+				? lastMsg.sender
+				: (lastMsg?.sender?.id ?? null);
+		// Whose turn it is, at a glance: your own last word carries "You:".
+		const mine =
+			Boolean(lastMsg?.content) &&
+			lastMsg?.kind !== "system" &&
+			senderId === user.id;
+		const preview = lastMsg?.content
+			? mine
+				? t("messages.you", { text: lastMsg.content })
+				: lastMsg.content
+			: t("messages.noMessages");
 		const a11yLabel = [
 			title,
 			chip ? t("messages.shopChip") : null,
@@ -553,10 +572,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 							: tab === "orders"
 								? t("messages.filterOrders")
 								: unreadCount > 0
-									? t("messages.unreadWithCount").replace(
-											"{{count}}",
-											String(unreadCount),
-										)
+									? t("messages.unreadWithCount", { count: unreadCount })
 									: t("messages.unread");
 					return (
 						<Pressable
@@ -621,10 +637,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 					}
 					subtitle={
 						search
-							? t("messages.noConversationsForSearch").replace(
-									"{{query}}",
-									search,
-								)
+							? t("messages.noConversationsForSearch", { query: search })
 							: filter === "unread"
 								? t("messages.allRead")
 								: t("messages.contactSeller")
@@ -682,9 +695,9 @@ const styles = StyleSheet.create({
 	},
 	headerTitle: {
 		flex: 1,
-		fontSize: 28,
-		lineHeight: 33,
-		letterSpacing: -0.6,
+		fontSize: 30,
+		lineHeight: 34,
+		letterSpacing: -0.8,
 		fontFamily: Fonts.displayExtrabold,
 	},
 	markReadBtn: {

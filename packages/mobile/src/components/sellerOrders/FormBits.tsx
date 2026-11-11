@@ -7,7 +7,7 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
@@ -110,6 +110,7 @@ export function SheetButton({
 	pending,
 	disabled,
 	outline,
+	expanded,
 }: {
 	label: string;
 	onPress: () => void;
@@ -118,18 +119,24 @@ export function SheetButton({
 	disabled?: boolean;
 	/** A destructive action shown beside the main one: red text, no fill. */
 	outline?: boolean;
+	/** For a button that opens a panel in place: read out as open or closed. */
+	expanded?: boolean;
 }) {
 	const c = useShopTheme();
 	const filled = tone !== "secondary" && !(outline && tone === "danger");
 	const bg = !filled ? c.card : tone === "danger" ? c.danger : fillOf(c);
-	const fg = filled ? "#fff" : tone === "danger" ? dangerInk(c) : c.link;
+	const fg = filled ? ON_FILL : tone === "danger" ? dangerInk(c) : c.link;
 	return (
 		<Pressable
 			onPress={onPress}
 			disabled={disabled || pending}
 			accessibilityRole="button"
 			accessibilityLabel={label}
-			accessibilityState={{ disabled: Boolean(disabled || pending) }}
+			accessibilityState={{
+				disabled: Boolean(disabled || pending),
+				busy: Boolean(pending),
+				...(expanded === undefined ? null : { expanded }),
+			}}
 			style={[
 				styles.button,
 				{
@@ -147,6 +154,9 @@ export function SheetButton({
 		</Pressable>
 	);
 }
+
+/** The label on a filled button: every fill above holds 4.5:1 against it. */
+const ON_FILL = Colors.light.primaryForeground;
 
 const styles = StyleSheet.create({
 	reasons: { gap: 8 },

@@ -61,7 +61,7 @@ export function SellerInsightsSummary({
 		>
 			<View style={styles.top}>
 				<View style={styles.heading}>
-					<Ionicons name="analytics-outline" size={20} color={c.primary} />
+					<Ionicons name="analytics-outline" size={20} color={c.link} />
 					<Text
 						accessibilityRole="header"
 						style={[styles.title, { color: c.text }]}
@@ -75,7 +75,7 @@ export function SellerInsightsSummary({
 					style={[styles.openButton, { backgroundColor: c.primarySoft }]}
 					onPress={() => router.push("./insights")}
 				>
-					<Text style={[styles.openText, { color: c.primary }]}>
+					<Text style={[styles.openText, { color: c.link }]}>
 						{t("sellerInsights.open")}
 					</Text>
 				</Pressable>

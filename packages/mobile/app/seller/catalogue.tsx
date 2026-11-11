@@ -193,7 +193,7 @@ export default function CatalogueScreen() {
 							accessibilityRole="button"
 							accessibilityLabel={t("catalogue.moveListings")}
 						>
-							<Text style={[styles.secondaryText, { color: c.primary }]}>
+							<Text style={[styles.secondaryText, { color: c.link }]}>
 								{t("catalogue.moveListings")}
 							</Text>
 						</Pressable>

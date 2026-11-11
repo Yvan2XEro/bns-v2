@@ -69,7 +69,7 @@ export function ShopCard({
 				) : null}
 			</View>
 			<View style={[styles.view, { borderColor: c.primary }]}>
-				<Text style={[styles.viewText, { color: c.primary }]}>
+				<Text style={[styles.viewText, { color: c.link }]}>
 					{t("shop.view")}
 				</Text>
 			</View>

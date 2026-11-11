@@ -8,8 +8,9 @@ import {
 	View,
 	type ViewStyle,
 } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/src/lib/i18n";
 
 interface SearchFieldProps {
 	value: string;
@@ -22,6 +23,10 @@ interface SearchFieldProps {
 	onClear?: () => void;
 	/** Highlighted state; defaults to "the input has focus". */
 	active?: boolean;
+	/** Return key on the keyboard. */
+	onSubmitEditing?: () => void;
+	/** Screen-reader name; defaults to the placeholder. */
+	accessibilityLabel?: string;
 	style?: StyleProp<ViewStyle>;
 	ref?: Ref<TextInput>;
 }
@@ -40,27 +45,29 @@ export function SearchField({
 	onBlur,
 	onClear,
 	active,
+	onSubmitEditing,
+	accessibilityLabel,
 	style,
 	ref,
 }: SearchFieldProps) {
-	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
+	const c = Colors[useColorScheme() === "dark" ? "dark" : "light"];
 	const [focused, setFocused] = useState(false);
 	const highlighted = active ?? focused;
-	const primary = isDark ? "#6878ea" : "#23338f";
-	const muted = isDark ? "#a3a7c8" : "#5b6088";
+	const muted = c.mutedForeground;
 
 	return (
 		<View
 			style={[
 				styles.field,
 				{
-					backgroundColor: isDark ? "#1a1f4a" : "#ffffff",
-					borderColor: highlighted ? primary : isDark ? "#2a3170" : "#d6d9e8",
+					backgroundColor: c.card,
+					borderColor: highlighted ? c.primary : c.borderStrong,
 				},
 				style,
 			]}
 		>
-			<Ionicons name="search" size={19} color={highlighted ? primary : muted} />
+			<Ionicons name="search" size={19} color={highlighted ? c.link : muted} />
 			<TextInput
 				ref={ref}
 				value={value}
@@ -75,17 +82,21 @@ export function SearchField({
 				}}
 				placeholder={placeholder}
 				placeholderTextColor={muted}
-				style={[styles.input, { color: isDark ? "#e1e3ee" : "#12163a" }]}
+				selectionColor={c.link}
+				style={[styles.input, { color: c.foreground }]}
 				autoFocus={autoFocus}
+				onSubmitEditing={onSubmitEditing}
+				accessibilityLabel={accessibilityLabel ?? placeholder}
 				returnKeyType="search"
 			/>
 			{value.length > 0 && (
 				<Pressable
 					onPress={onClear ?? (() => onChangeText(""))}
-					hitSlop={10}
 					accessibilityRole="button"
+					accessibilityLabel={t("search.clearSearch")}
+					style={styles.clear}
 				>
-					<Ionicons name="close-circle" size={18} color={muted} />
+					<Ionicons name="close-circle" size={20} color={muted} />
 				</Pressable>
 			)}
 		</View>
@@ -111,6 +122,14 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		borderWidth: 1.5,
 		paddingHorizontal: 14,
+	},
+	// A 44pt target for a 20pt glyph, tucked inside the field's right edge.
+	clear: {
+		marginRight: -12,
+		width: 44,
+		height: 44,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	// Android's TextInput carries its own vertical padding; without this the
 	// field grows past its 48pt.

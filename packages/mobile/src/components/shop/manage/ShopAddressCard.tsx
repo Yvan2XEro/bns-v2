@@ -118,7 +118,7 @@ function OwnerHandleForm({
 					{isPending ? (
 						<ActivityIndicator color={c.primary} />
 					) : (
-						<Text style={[f.label, { color: c.primary }]}>
+						<Text style={[f.label, { color: c.link }]}>
 							{t("shop.changeHandle")}
 						</Text>
 					)}

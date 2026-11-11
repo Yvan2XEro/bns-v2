@@ -1,8 +1,10 @@
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -40,7 +42,7 @@ export default function SellerInsightsScreen() {
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
 				<SellerHeader title={t("sellerInsights.title")} />
-				<ActivityIndicator color={c.primary} style={styles.spinner} />
+				<DetailSkeleton cards={3} />
 			</SafeAreaView>
 		);
 	}
@@ -131,5 +133,11 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	spinner: { marginTop: 48 },
 	list: { paddingBottom: 20 },
-	emptyProducts: { paddingHorizontal: 16, paddingVertical: 12, fontSize: 12 },
+	emptyProducts: {
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		fontSize: 14,
+		lineHeight: 20,
+		fontFamily: Fonts.body,
+	},
 });

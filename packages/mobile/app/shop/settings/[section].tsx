@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { ShopAddressCard } from "@/src/components/shop/manage/ShopAddressCard";
@@ -13,6 +14,7 @@ import { ShopProfileCard } from "@/src/components/shop/manage/ShopProfileCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useMyShop } from "@/src/hooks/useShops";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	isShopSettingsSection,
@@ -43,17 +45,33 @@ export default function ShopSettingsSectionScreen() {
 	const { t } = useTranslation();
 	const params = useLocalSearchParams<{ section?: string }>();
 	const section = isShopSettingsSection(params.section) ? params.section : null;
-	const { data, isLoading } = useMyShop();
+	const { data, isLoading, isError, error, refetch } = useMyShop();
 	const shop = data?.shop;
 	const owner = isShopOwner(data?.role);
 
 	const title = section ? t(TITLE_KEYS[section]) : t("shop.settingsTitle");
 
+	// A failed read must not hold the skeleton forever: it gets its own retry.
+	if (isError && !data) {
+		return (
+			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
+				<SellerHeader title={title} />
+				<EmptyState
+					illustration="notFound"
+					title={title}
+					subtitle={resolveErrorMessage(error, t)}
+					ctaLabel={t("common.retry")}
+					onCta={() => refetch()}
+				/>
+			</SafeAreaView>
+		);
+	}
+
 	if (isLoading || (!shop && !data)) {
 		return (
 			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
 				<SellerHeader title={title} />
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<DetailSkeleton cards={2} />
 			</SafeAreaView>
 		);
 	}

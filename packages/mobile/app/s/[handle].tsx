@@ -22,7 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import {
@@ -417,7 +417,7 @@ export default function ShopScreen() {
 						<Ionicons
 							name="shield-checkmark"
 							size={18}
-							color={c.isDark ? "#34b26a" : "#1e8a4f"}
+							color={(c.isDark ? Colors.dark : Colors.light).success}
 						/>
 						<Text
 							style={[styles.section, { color: c.text }]}
@@ -618,11 +618,15 @@ export default function ShopScreen() {
 											<Pressable
 												onPress={contact}
 												disabled={contactShop.isPending}
-												style={[
+												style={({ pressed }) => [
 													styles.primaryBtn,
 													{
 														backgroundColor: brand.accent,
-														opacity: contactShop.isPending ? 0.7 : 1,
+														opacity: contactShop.isPending
+															? 0.7
+															: pressed
+																? 0.85
+																: 1,
 													},
 												]}
 												accessibilityRole="button"
@@ -652,7 +656,11 @@ export default function ShopScreen() {
 										{phone ? (
 											<Pressable
 												onPress={() => Linking.openURL(phone)}
-												style={[styles.iconBtn, { borderColor: c.border }]}
+												style={({ pressed }) => [
+													styles.iconBtn,
+													{ borderColor: c.border },
+													pressed && styles.pressed,
+												]}
 												accessibilityRole="button"
 												accessibilityLabel={t("shop.call")}
 											>
@@ -666,14 +674,20 @@ export default function ShopScreen() {
 										{whatsapp ? (
 											<Pressable
 												onPress={() => Linking.openURL(whatsapp)}
-												style={[styles.iconBtn, { borderColor: c.border }]}
+												style={({ pressed }) => [
+													styles.iconBtn,
+													{ borderColor: c.border },
+													pressed && styles.pressed,
+												]}
 												accessibilityRole="button"
 												accessibilityLabel={t("shop.whatsapp")}
 											>
 												<Ionicons
 													name="logo-whatsapp"
 													size={21}
-													color={c.isDark ? "#34b26a" : "#1e8a4f"}
+													color={
+														(c.isDark ? Colors.dark : Colors.light).success
+													}
 												/>
 											</Pressable>
 										) : null}
@@ -736,7 +750,10 @@ export default function ShopScreen() {
 										params: { targetType: "shop", targetId: shop.id },
 									})
 								}
-								style={styles.report}
+								style={({ pressed }) => [
+									styles.report,
+									pressed && styles.pressed,
+								]}
 								accessibilityRole="button"
 								accessibilityLabel={t("shop.report")}
 							>
@@ -880,6 +897,7 @@ const styles = StyleSheet.create({
 		marginVertical: 12,
 	},
 	reportText: { fontSize: 14, fontFamily: Fonts.bodyMedium },
+	pressed: { opacity: 0.6 },
 	hint: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 19 },
 	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	contactRow: { flexDirection: "row", gap: 10, paddingHorizontal: PAGE_GUTTER },

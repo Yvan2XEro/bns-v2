@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import Animated, {
@@ -9,11 +8,9 @@ import Animated, {
 	withSpring,
 } from "react-native-reanimated";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useDiscoveryPalette } from "@/src/components/search/palette";
+import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
-
-const TINT_LIGHT = { bg: "#ffffff", icon: "#23338f", border: "#e1e3ee" };
-const TINT_DARK = { bg: "#1a1f4a", icon: "#a9b4f0", border: "#2a3170" };
 
 interface Category {
 	id: string;
@@ -33,23 +30,27 @@ export function CategoryIcon({
 	onPress,
 	size = 56,
 }: CategoryIconProps) {
-	const isDark = useColorScheme() === "dark";
+	const c = useDiscoveryPalette();
+	const reducedMotion = useReducedMotion();
 	const scale = useSharedValue(1);
 
 	const animStyle = useAnimatedStyle(() => ({
 		transform: [{ scale: scale.value }],
 	}));
 
+	// A tap opens a screen: the press confirms with a small dip, no haptic
+	// (feedback is kept for meaningful moments, never per tap).
 	const handlePress = () => {
-		scale.value = withSequence(
-			withSpring(0.92, { damping: 14, stiffness: 500 }),
-			withSpring(1, { damping: 14, stiffness: 300 }),
-		);
-		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		if (!reducedMotion) {
+			scale.value = withSequence(
+				withSpring(0.95, { damping: 14, stiffness: 500 }),
+				withSpring(1, { damping: 14, stiffness: 300 }),
+			);
+		}
 		onPress(category.id);
 	};
 
-	const tint = isDark ? TINT_DARK : TINT_LIGHT;
+	const tint = { bg: c.card, icon: c.link, border: c.border };
 
 	return (
 		<TouchableOpacity
@@ -88,7 +89,7 @@ export function CategoryIcon({
 				)}
 			</Animated.View>
 			<Text
-				style={[styles.label, { color: isDark ? "#a3a7c8" : "#3a3f66" }]}
+				style={[styles.label, { color: c.body }]}
 				numberOfLines={2}
 				// Android otherwise breaks a long word anywhere ("par / apharmacie").
 				android_hyphenationFrequency="normal"
@@ -101,7 +102,12 @@ export function CategoryIcon({
 }
 
 const styles = StyleSheet.create({
-	container: { alignItems: "center", width: "100%", paddingHorizontal: 4 },
+	container: {
+		alignItems: "center",
+		width: "100%",
+		minHeight: 48,
+		paddingHorizontal: 4,
+	},
 	circle: {
 		overflow: "hidden",
 		alignItems: "center",

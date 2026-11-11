@@ -21,10 +21,12 @@ import Svg, {
 	Rect,
 	Stop,
 } from "react-native-svg";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { StatusTag, type StatusTone } from "@/src/components/shop/Tags";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
@@ -37,7 +39,7 @@ const CHART_H = 72;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-type TFunction = (key: string) => string;
+type TFunction = (key: string, options?: Record<string, unknown>) => string;
 
 function formatDuration(days: number | undefined | null, t: TFunction): string {
 	if (!days && days !== 0) return "—";
@@ -46,7 +48,7 @@ function formatDuration(days: number | undefined | null, t: TFunction): string {
 	if (days === 30) return t("boostHistory.month1");
 	if (days === 60) return t("boostHistory.month2");
 	if (days === 90) return t("boostHistory.month3");
-	return t("boostHistory.days", { count: days } as any);
+	return t("boostHistory.days", { count: days });
 }
 
 function formatDateRange(
@@ -63,34 +65,15 @@ function formatDateRange(
 	return durationDays ? `${fmt(start)} → ${fmt(end)}` : fmt(start);
 }
 
+/** Each payment status's words and tone; the pill draws them in both themes. */
 function getStatusConfig(
 	t: TFunction,
-): Record<string, { label: string; color: string; bg: string; icon: string }> {
+): Record<string, { label: string; tone: StatusTone }> {
 	return {
-		completed: {
-			label: t("boostHistory.statusCompleted"),
-			color: "#1e8a4f",
-			bg: "#ddf3e5",
-			icon: "checkmark-circle",
-		},
-		pending: {
-			label: t("boostHistory.statusActive"),
-			color: "#2f43b5",
-			bg: "#e3e7f8",
-			icon: "time",
-		},
-		failed: {
-			label: t("boostHistory.statusFailed"),
-			color: "#d23a2e",
-			bg: "#fbe3e0",
-			icon: "close-circle",
-		},
-		refunded: {
-			label: t("boostHistory.statusRefunded"),
-			color: "#5b6088",
-			bg: "#eceef5",
-			icon: "refresh-circle",
-		},
+		completed: { label: t("boostHistory.statusCompleted"), tone: "success" },
+		pending: { label: t("boostHistory.statusActive"), tone: "info" },
+		failed: { label: t("boostHistory.statusFailed"), tone: "danger" },
+		refunded: { label: t("boostHistory.statusRefunded"), tone: "neutral" },
 	};
 }
 
@@ -135,9 +118,6 @@ function BoostCard({
 			}
 			style={[styles.card, { backgroundColor: cardBg, borderColor }]}
 		>
-			{/* Status accent bar */}
-			<View style={[styles.cardAccent, { backgroundColor: cfg.color }]} />
-
 			<View style={styles.cardInner}>
 				{/* Left: image or rocket */}
 				<View style={styles.thumbWrap}>
@@ -151,10 +131,20 @@ function BoostCard({
 						<View
 							style={[
 								styles.thumbFallback,
-								{ backgroundColor: isDark ? "#1a1400" : "#fff1c7" },
+								{
+									backgroundColor: isDark
+										? Colors.dark.sunTint
+										: Colors.light.sunTint,
+								},
 							]}
 						>
-							<Ionicons name="rocket" size={22} color="#ffb81c" />
+							<Ionicons
+								name="rocket"
+								size={22}
+								color={
+									isDark ? Colors.dark.warningText : Colors.light.warningText
+								}
+							/>
 						</View>
 					)}
 					{isActive && <View style={styles.activeDot} />}
@@ -174,11 +164,32 @@ function BoostCard({
 						<View
 							style={[
 								styles.durationPill,
-								{ backgroundColor: isDark ? "#1a1400" : "#fff1c7" },
+								{
+									backgroundColor: isDark
+										? Colors.dark.sunTint
+										: Colors.light.sunTint,
+								},
 							]}
 						>
-							<Ionicons name="flash" size={10} color="#ffb81c" />
-							<Text style={styles.durationPillText}>{durationLabel}</Text>
+							<Ionicons
+								name="flash"
+								size={11}
+								color={
+									isDark ? Colors.dark.warningText : Colors.light.warningText
+								}
+							/>
+							<Text
+								style={[
+									styles.durationPillText,
+									{
+										color: isDark
+											? Colors.dark.warningText
+											: Colors.light.warningText,
+									},
+								]}
+							>
+								{durationLabel}
+							</Text>
 						</View>
 						<Text style={[styles.cardDate, { color: mutedColor }]}>
 							{dateRange}
@@ -208,17 +219,13 @@ function BoostCard({
 
 				{/* Right: amount + status */}
 				<View style={styles.cardRight}>
-					<Text style={styles.cardAmount}>
+					{/* A fee paid, not a price: plain ink, the yellow stays for prices. */}
+					<Text style={[styles.cardAmount, { color: textColor }]}>
 						{item.amount != null
 							? formatPrice(item.amount, i18n.language)
 							: "—"}
 					</Text>
-					<View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
-						<Ionicons name={cfg.icon as any} size={11} color={cfg.color} />
-						<Text style={[styles.statusText, { color: cfg.color }]}>
-							{cfg.label}
-						</Text>
-					</View>
+					<StatusTag label={cfg.label} tone={cfg.tone} />
 				</View>
 			</View>
 		</Pressable>
@@ -235,12 +242,14 @@ export function BoostHistoryScreen() {
 	// Sparkline follows the real card width (list column is capped on tablets).
 	const CHART_W = Math.min(width, contentMaxWidth) - 64;
 
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const c = Colors[isDark ? "dark" : "light"];
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const mutedColor = c.mutedForeground;
+	/** Brand words and icons, legible in both themes. */
+	const primaryColor = c.link;
+	const borderColor = c.border;
 
 	const PAGE_SIZE = 15;
 
@@ -332,13 +341,16 @@ export function BoostHistoryScreen() {
 					fallback="/(tabs)/account"
 					style={styles.backBtn}
 				/>
-				<View>
-					<Text style={[styles.headerTitle, { color: textColor }]}>
+				<View style={{ flex: 1, alignItems: "center" }}>
+					<Text
+						accessibilityRole="header"
+						style={[styles.headerTitle, { color: textColor }]}
+					>
 						{t("boostHistory.title")}
 					</Text>
 					<Text style={[styles.headerSub, { color: mutedColor }]}>
 						{payments.length > 0
-							? t("boostHistory.subtitle", { count: payments.length } as any)
+							? t("boostHistory.subtitle", { count: payments.length })
 							: t("boostHistory.noBoosts")}
 					</Text>
 				</View>
@@ -346,7 +358,7 @@ export function BoostHistoryScreen() {
 			</View>
 
 			{isLoading ? (
-				<ActivityIndicator style={{ margin: 32 }} color={primaryColor} />
+				<OrderListSkeleton rows={5} />
 			) : payments.length === 0 ? (
 				<EmptyState
 					icon="rocket-outline"
@@ -363,7 +375,8 @@ export function BoostHistoryScreen() {
 						<RefreshControl
 							refreshing={refreshing}
 							onRefresh={onRefresh}
-							tintColor={primaryColor}
+							tintColor={c.primary}
+							colors={[c.primary]}
 						/>
 					}
 					ListHeaderComponent={
@@ -376,21 +389,21 @@ export function BoostHistoryScreen() {
 										value: String(payments.length),
 										icon: "rocket-outline",
 										color: primaryColor,
-										iconBg: isDark ? "#2a3170" : "#e3e7f8",
+										iconBg: c.primaryTint,
 									},
 									{
 										label: t("boostHistory.active"),
 										value: String(active),
 										icon: "flash",
-										color: "#2f43b5",
-										iconBg: isDark ? "#2a3170" : "#e3e7f8",
+										color: primaryColor,
+										iconBg: c.primaryTint,
 									},
 									{
 										label: t("boostHistory.completed"),
 										value: String(completed),
 										icon: "checkmark-circle",
-										color: "#1e8a4f",
-										iconBg: isDark ? "#0f2a1a" : "#ddf3e5",
+										color: c.successText,
+										iconBg: c.successTint,
 									},
 								].map(({ label, value, icon, color, iconBg }) => (
 									<View
@@ -418,18 +431,26 @@ export function BoostHistoryScreen() {
 								style={[
 									styles.spentBanner,
 									{
-										backgroundColor: isDark ? "#1a1400" : "#fff9e8",
-										borderColor: isDark ? "#3a2a00" : "#ffe08a",
+										backgroundColor: c.card,
+										borderColor: c.sunTint,
 									},
 								]}
 							>
 								<View
 									style={[
 										styles.spentIconBox,
-										{ backgroundColor: isDark ? "#3a2a00" : "#fff1c7" },
+										{
+											backgroundColor: isDark
+												? Colors.dark.sunTint
+												: Colors.light.sunTint,
+										},
 									]}
 								>
-									<Ionicons name="wallet-outline" size={18} color="#ffb81c" />
+									<Ionicons
+										name="wallet-outline"
+										size={18}
+										color={c.warningText}
+									/>
 								</View>
 								<View style={{ flex: 1 }}>
 									<Text style={[styles.spentLabel, { color: mutedColor }]}>
@@ -587,7 +608,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	headerTitle: {
-		fontSize: 17,
+		fontSize: 18,
 		fontFamily: Fonts.displayBold,
 		textAlign: "center",
 	},
@@ -611,7 +632,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	statVal: { fontSize: 18, fontFamily: Fonts.displayExtrabold, lineHeight: 22 },
-	statLabel: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	statLabel: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 
 	/* Spent banner */
 	spentBanner: {
@@ -647,7 +668,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	chartTitle: { fontSize: 13, fontFamily: Fonts.displayBold },
-	chartSub: { fontSize: 11, fontFamily: Fonts.body },
+	chartSub: { fontSize: 12, fontFamily: Fonts.body },
 	chartLabels: { flexDirection: "row", justifyContent: "space-between" },
 	chartLabel: { fontSize: 11, fontFamily: Fonts.body },
 
@@ -680,7 +701,6 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 		flexDirection: "row",
 	},
-	cardAccent: { width: 3 },
 	cardInner: {
 		flex: 1,
 		flexDirection: "row",
@@ -720,28 +740,17 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 	},
 	durationPillText: {
-		fontSize: 11,
-		fontFamily: Fonts.displayBold,
-		color: "#ffb81c",
+		fontSize: 12,
+		fontFamily: Fonts.bodySemibold,
 	},
-	cardDate: { fontSize: 11, fontFamily: Fonts.body },
+	cardDate: { fontSize: 12, fontFamily: Fonts.body },
 	progressTrack: { height: 4, borderRadius: 2, overflow: "hidden" },
 	progressFill: { height: 4, borderRadius: 2 },
 	cardRight: { alignItems: "flex-end", gap: 6 },
 	cardAmount: {
-		fontSize: 14,
-		fontFamily: Fonts.displayExtrabold,
-		color: "#ffb81c",
+		fontSize: 15,
+		fontFamily: Fonts.displayBold,
 		textAlign: "right",
-		lineHeight: 18,
+		lineHeight: 19,
 	},
-	statusBadge: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 3,
-		borderRadius: 20,
-		paddingHorizontal: 7,
-		paddingVertical: 3,
-	},
-	statusText: { fontSize: 11, fontFamily: Fonts.displayBold },
 });

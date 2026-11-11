@@ -1,7 +1,7 @@
 import type { Ionicons } from "@expo/vector-icons";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
@@ -9,8 +9,9 @@ import Animated, {
 	withSpring,
 	withTiming,
 } from "react-native-reanimated";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { AnimatedPressable } from "./AnimatedPressable";
 import {
 	Auth,
@@ -73,6 +74,9 @@ interface EmptyStateProps {
 	subtitle?: string;
 	ctaLabel?: string;
 	onCta?: () => void;
+	/** A quieter way out beside the CTA, e.g. "Back" under "Retry". */
+	secondaryLabel?: string;
+	onSecondary?: () => void;
 	size?: number;
 }
 
@@ -84,26 +88,34 @@ export function EmptyState({
 	subtitle,
 	ctaLabel,
 	onCta,
+	secondaryLabel,
+	onSecondary,
 	size = 220,
 }: EmptyStateProps) {
 	// Resolve illustration: explicit > icon mapping > default
 	const resolvedIllustration: EmptyStateIllustration =
 		illustration ?? (icon ? (ICON_TO_ILLUSTRATION[icon] ?? "empty") : "empty");
-	const isDark = useColorScheme() === "dark";
-	const color = isDark ? "#6878ea" : "#23338f";
+	const c = Colors[useColorScheme() === "dark" ? "dark" : "light"];
+	const reducedMotion = useReducedMotion();
+	const color = c.primary;
 
 	const opacity = useSharedValue(0);
-	const translateY = useSharedValue(20);
-	const illustrationScale = useSharedValue(0.7);
+	const translateY = useSharedValue(reducedMotion ? 0 : 20);
+	const illustrationScale = useSharedValue(reducedMotion ? 1 : 0.7);
 
 	useEffect(() => {
-		opacity.value = withTiming(1, { duration: 400 });
+		opacity.value = withTiming(1, { duration: reducedMotion ? 200 : 400 });
+		if (reducedMotion) {
+			translateY.value = 0;
+			illustrationScale.value = 1;
+			return;
+		}
 		translateY.value = withSpring(0, { damping: 16, stiffness: 160 });
 		illustrationScale.value = withDelay(
 			80,
 			withSpring(1, { damping: 10, stiffness: 200 }),
 		);
-	}, [illustrationScale, opacity, translateY]);
+	}, [illustrationScale, opacity, translateY, reducedMotion]);
 
 	const containerStyle = useAnimatedStyle(() => ({
 		opacity: opacity.value,
@@ -124,30 +136,43 @@ export function EmptyState({
 				)}
 			</Animated.View>
 
-			<Text style={[styles.title, { color: isDark ? "#e1e3ee" : "#12163a" }]}>
+			<Text
+				style={[styles.title, { color: c.foreground }]}
+				accessibilityRole="header"
+			>
 				{title}
 			</Text>
 
 			{subtitle && (
-				<Text
-					style={[styles.subtitle, { color: isDark ? "#a3a7c8" : "#5b6088" }]}
-				>
-					{subtitle}
-				</Text>
+				<Text style={[styles.subtitle, { color: c.body }]}>{subtitle}</Text>
 			)}
 
 			{ctaLabel && onCta && (
 				<AnimatedPressable
 					onPress={onCta}
-					animationType="lift"
-					haptic="light"
-					style={[
-						styles.cta,
-						{ backgroundColor: isDark ? "#6878ea" : "#23338f" },
-					]}
+					animationType="scale"
+					accessibilityRole="button"
+					accessibilityLabel={ctaLabel}
+					style={[styles.cta, { backgroundColor: c.primaryFill }]}
 				>
 					<Text style={styles.ctaText}>{ctaLabel}</Text>
 				</AnimatedPressable>
+			)}
+
+			{secondaryLabel && onSecondary && (
+				<Pressable
+					onPress={onSecondary}
+					accessibilityRole="button"
+					accessibilityLabel={secondaryLabel}
+					style={({ pressed }) => [
+						styles.secondary,
+						pressed && { opacity: 0.6 },
+					]}
+				>
+					<Text style={[styles.secondaryText, { color: c.link }]}>
+						{secondaryLabel}
+					</Text>
+				</Pressable>
 			)}
 		</Animated.View>
 	);
@@ -174,20 +199,30 @@ const styles = StyleSheet.create({
 	},
 	subtitle: {
 		fontFamily: Fonts.body,
-		fontSize: 14,
+		fontSize: 15,
 		textAlign: "center",
 		marginBottom: 24,
-		lineHeight: 20,
+		lineHeight: 22,
 		maxWidth: 420,
 	},
 	cta: {
+		minHeight: 52,
 		borderRadius: 12,
 		paddingHorizontal: 28,
-		paddingVertical: 13,
+		alignItems: "center",
+		justifyContent: "center",
 	},
+	secondary: {
+		minHeight: 48,
+		marginTop: 4,
+		paddingHorizontal: 20,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	secondaryText: { fontFamily: Fonts.bodyBold, fontSize: 16 },
 	ctaText: {
-		color: "#fff",
+		color: "#ffffff",
 		fontFamily: Fonts.bodyBold,
-		fontSize: 15,
+		fontSize: 16,
 	},
 });

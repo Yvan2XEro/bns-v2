@@ -46,7 +46,7 @@ export function ConfirmCodeCard({
 	const codeError = formState.errors.code?.message;
 
 	return (
-		<Card title={t("purchases.confirmCodeTitle")} accent={c.sell}>
+		<Card title={t("purchases.confirmCodeTitle")} accent={c.primary}>
 			<Text style={[purchaseText.body, { color: c.body }]}>
 				{t("purchases.confirmCodeBody")}
 			</Text>
@@ -96,7 +96,10 @@ export function ConfirmCodeCard({
 				/>
 			) : null}
 			{resend.isSuccess ? (
-				<Text style={[purchaseText.muted, { color: c.successText }]}>
+				<Text
+					style={[purchaseText.muted, { color: c.successText }]}
+					accessibilityLiveRegion="polite"
+				>
 					{t("purchases.resendCodeSent")}
 				</Text>
 			) : null}
@@ -109,12 +112,14 @@ export function ConfirmCodeCard({
 
 const styles = StyleSheet.create({
 	input: {
-		minHeight: 48,
+		minHeight: 56,
 		borderWidth: 1,
 		borderRadius: 12,
 		paddingHorizontal: 14,
-		fontSize: 22,
-		letterSpacing: 6,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 24,
+		letterSpacing: 8,
+		textAlign: "center",
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
 	},
 });

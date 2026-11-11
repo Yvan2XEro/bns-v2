@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 2,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	link: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	chip: {

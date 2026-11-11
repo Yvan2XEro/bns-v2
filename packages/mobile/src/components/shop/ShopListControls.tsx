@@ -159,6 +159,7 @@ function Chip({
 	return (
 		<Pressable
 			onPress={onPress}
+			hitSlop={{ top: 7, bottom: 7 }}
 			accessibilityRole="button"
 			accessibilityState={{ selected }}
 			accessibilityLabel={t("shop.categoryChipLabel", { name: label, count })}
@@ -205,7 +206,11 @@ const styles = StyleSheet.create({
 	},
 	chipText: { fontSize: 13, fontFamily: Fonts.body },
 	chipSelected: { fontFamily: Fonts.bodySemibold },
-	chipCount: { fontSize: 12, fontFamily: Fonts.body },
+	chipCount: {
+		fontSize: 12,
+		fontFamily: Fonts.displaySemibold,
+		fontVariant: ["tabular-nums"],
+	},
 	countRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -214,7 +219,7 @@ const styles = StyleSheet.create({
 		height: 40,
 	},
 	count: { flex: 1, fontSize: 13, fontFamily: Fonts.body },
-	sort: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32 },
+	sort: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 40 },
 	sortText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	everywhere: {
 		flexDirection: "row",

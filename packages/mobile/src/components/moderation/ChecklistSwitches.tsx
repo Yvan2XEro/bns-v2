@@ -64,11 +64,11 @@ export function ChecklistSwitches({
 								value={checked}
 								onValueChange={toggle}
 								trackColor={{
-									false: c.isDark ? "#3a4290" : "#c9cce0",
+									false: k.strongBorder,
 									true: k.successFill,
 								}}
-								thumbColor="#ffffff"
-								ios_backgroundColor={c.isDark ? "#3a4290" : "#c9cce0"}
+								thumbColor={k.onFill}
+								ios_backgroundColor={k.strongBorder}
 							/>
 						</View>
 					</Pressable>

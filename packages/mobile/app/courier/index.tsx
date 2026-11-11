@@ -1,6 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import {
@@ -35,6 +35,23 @@ function AssignRider({ row }: { row: CourierShipmentRow }) {
 	const assign = useAssignCourierRider(row.id);
 	return (
 		<View style={styles.assign}>
+			{riders.isLoading ? (
+				<ActivityIndicator
+					color={c.muted}
+					style={styles.loading}
+					accessibilityLabel={t("shipmentPanel.assignRider")}
+				/>
+			) : null}
+			{riders.error ? (
+				<View
+					accessibilityRole="alert"
+					style={[styles.error, { backgroundColor: c.dangerSoft }]}
+				>
+					<Text style={[styles.note, { color: c.dangerText }]}>
+						{resolveErrorMessage(riders.error, t)}
+					</Text>
+				</View>
+			) : null}
 			{riders.data?.length === 0 ? (
 				<Text style={[styles.note, { color: c.muted }]}>
 					{t("shipmentPanel.noRiders")}
@@ -93,6 +110,7 @@ function DispatcherRow({ row }: { row: CourierShipmentRow }) {
 						<SheetButton
 							tone="secondary"
 							label={t("shipmentPanel.assignRider")}
+							expanded={assigning}
 							onPress={() => setAssigning(!assigning)}
 						/>
 					) : null}
@@ -224,5 +242,6 @@ const styles = StyleSheet.create({
 	actions: { gap: 8, marginTop: 8 },
 	assign: { gap: 8 },
 	note: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
-	error: { borderRadius: 10, padding: 12 },
+	error: { borderRadius: 12, padding: 12 },
+	loading: { minHeight: 48 },
 });

@@ -64,7 +64,7 @@ export function CaptureReview({
 						accessibilityLabel={t("common.cancel")}
 						style={styles.headerButton}
 					>
-						<Text style={[styles.cancel, { color: c.primary }]}>
+						<Text style={[styles.cancel, { color: c.link }]}>
 							{t("common.cancel")}
 						</Text>
 					</Pressable>
@@ -118,9 +118,9 @@ export function CaptureReview({
 									<Ionicons
 										name="camera-reverse-outline"
 										size={16}
-										color={c.primary}
+										color={c.link}
 									/>
-									<Text style={[styles.pageActionText, { color: c.primary }]}>
+									<Text style={[styles.pageActionText, { color: c.link }]}>
 										{t("verification.capture.retake")}
 									</Text>
 								</Pressable>
@@ -164,8 +164,8 @@ export function CaptureReview({
 								{ borderColor: c.border, backgroundColor: c.input },
 							]}
 						>
-							<Ionicons name="add" size={20} color={c.primary} />
-							<Text style={[styles.addPageText, { color: c.primary }]}>
+							<Ionicons name="add" size={20} color={c.link} />
+							<Text style={[styles.addPageText, { color: c.link }]}>
 								{t("verification.capture.addPage")}
 							</Text>
 						</Pressable>

@@ -25,6 +25,10 @@ export interface ModerationTones {
 	disabledText: string;
 	/** Soft fill behind a selected option. */
 	selectedSoft: string;
+	/** Outline of a control that must read as tappable: tiles, switch tracks. */
+	strongBorder: string;
+	/** Label and icon on any of the fills above. */
+	onFill: string;
 }
 
 export function moderationTones(isDark: boolean): ModerationTones {
@@ -40,6 +44,8 @@ export function moderationTones(isDark: boolean): ModerationTones {
 		disabledFill: k.border,
 		disabledText: k.mutedForeground,
 		selectedSoft: k.primaryTint,
+		strongBorder: k.borderStrong,
+		onFill: Colors.light.primaryForeground,
 	};
 }
 

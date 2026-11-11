@@ -266,7 +266,7 @@ function Review() {
 					<Ionicons
 						name={state.accepted ? "checkbox" : "square-outline"}
 						size={24}
-						color={state.accepted ? c.primary : c.muted}
+						color={state.accepted ? c.link : c.muted}
 					/>
 					<Text style={[styles.acceptText, { color: c.text }]}>
 						{t("checkout.acceptTerms")}

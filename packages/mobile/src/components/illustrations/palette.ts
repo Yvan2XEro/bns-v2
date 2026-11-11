@@ -47,8 +47,8 @@ export type IllustrationPalette = {
 const LIGHT: IllustrationPalette = {
 	i: {
 		deep: "#141d58",
-		dark: "#1a2672",
-		base: "#23338f",
+		dark: "#2448ab",
+		base: "#2f5bd4",
 		mid: "#5a64ab",
 		light: "#aeb7e2",
 		pale: "#e8ebf7",
@@ -64,7 +64,7 @@ const LIGHT: IllustrationPalette = {
 	edge: "#5a64ab",
 	edgeSoft: "#141d58",
 	spec: "#ffffff",
-	shadow: "#1a2672",
+	shadow: "#2448ab",
 	weave: { strong: 0.1, soft: 0.065 },
 	isDark: false,
 };
@@ -74,7 +74,7 @@ const DARK: IllustrationPalette = {
 		deep: "#070a24",
 		dark: "#0e1442",
 		base: "#3d4aa0",
-		mid: "#6878ea",
+		mid: "#3b82f6",
 		light: "#8f9ad4",
 		pale: "#2b3375",
 		lit: "#3e4894",
@@ -86,7 +86,7 @@ const DARK: IllustrationPalette = {
 		light: "#ffdd8a",
 		pale: "#3a2a00",
 	},
-	edge: "#6878ea",
+	edge: "#3b82f6",
 	edgeSoft: "#070a24",
 	// Pure white blows out on the dark ground; the highlight is a cool blue-white.
 	spec: "#d8ddf7",

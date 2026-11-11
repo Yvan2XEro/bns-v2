@@ -92,8 +92,8 @@ export function SellerLaunchCard({
 					accessibilityRole="button"
 					style={styles.more}
 				>
-					<Ionicons name="share-outline" size={15} color={c.primary} />
-					<Text style={[styles.moreText, { color: c.primary }]}>
+					<Ionicons name="share-outline" size={15} color={c.link} />
+					<Text style={[styles.moreText, { color: c.link }]}>
 						{t("sellerHome.moreShare")}
 					</Text>
 				</Pressable>
@@ -129,7 +129,7 @@ export function SellerTipCard({
 				accessibilityRole="header"
 				accessibilityLabel={`${t("sellerHome.tipLabel")} ${t(`sellerHome.tip.${tip}.title`)}`}
 			>
-				<Ionicons name="bulb-outline" size={20} color={c.primary} />
+				<Ionicons name="bulb-outline" size={20} color={c.link} />
 				<Text style={[styles.tipTitle, { color: c.text }]}>
 					{t(`sellerHome.tip.${tip}.title`)}
 				</Text>

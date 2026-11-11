@@ -2,7 +2,7 @@ import type { ShopPalette } from "./theme";
 
 /**
  * The fill behind a white label (filled buttons, selected chips, ticked
- * boxes). Reads `c.fill`: `#2f43b5` in dark mode for the platform colour, and
+ * boxes). Reads `c.fill`: `#2448ab` in dark mode for the platform colour, and
  * a shop's own colour darkened to 4.5:1 against white.
  *
  * Not for bars, dots or rails with nothing on top: those keep `c.primary`,

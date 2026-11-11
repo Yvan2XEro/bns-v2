@@ -6,10 +6,10 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formStyles as f } from "./formStyles";
 
 /** Wizard back + primary action, or the editor's single save button. */
 export function ProductFooter({
@@ -29,6 +29,11 @@ export function ProductFooter({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
+	// Publishing is the sell action, so the last step wears signage yellow
+	// with ink on it; the steps before it are ordinary indigo actions.
+	const selling = creating && step === 3;
+	const ink = selling ? "#12163a" : "#ffffff";
 	const label = creating
 		? step < 3
 			? t("product.continue")
@@ -39,39 +44,57 @@ export function ProductFooter({
 		<View
 			style={[
 				styles.footer,
-				{ backgroundColor: c.card, borderTopColor: c.border },
+				{
+					backgroundColor: c.card,
+					borderTopColor: c.border,
+					paddingBottom: Math.max(16, insets.bottom + 8),
+				},
 			]}
 		>
 			{creating && step > 1 ? (
 				<Pressable
 					onPress={onBack}
-					style={[styles.back, { borderColor: c.border }]}
+					style={({ pressed }) => [
+						styles.back,
+						{
+							borderColor: c.border,
+							backgroundColor: pressed ? c.primarySoft : "transparent",
+						},
+					]}
 					accessibilityRole="button"
 					accessibilityLabel={t("product.back")}
 				>
-					<Text style={[f.label, { color: c.text }]}>{t("product.back")}</Text>
+					<Text style={[styles.backText, { color: c.text }]}>
+						{t("product.back")}
+					</Text>
 				</Pressable>
 			) : null}
 			<Pressable
 				onPress={onPrimary}
 				disabled={pending || readOnly}
-				style={[
+				style={({ pressed }) => [
 					styles.primary,
+					selling && styles.plaque,
 					{
-						backgroundColor: creating && step === 3 ? c.sell : c.primary,
+						backgroundColor: selling ? c.sell : c.fill,
 						opacity: readOnly ? 0.5 : 1,
+						transform: [{ scale: pressed && !pending ? 0.98 : 1 }],
 					},
 				]}
 				accessibilityRole="button"
 				accessibilityLabel={label}
+				accessibilityState={{
+					busy: pending,
+					disabled: pending || readOnly,
+				}}
 			>
 				{pending ? (
-					<ActivityIndicator color="#fff" />
+					<ActivityIndicator color={ink} />
 				) : (
 					<>
-						<Text style={styles.primaryText}>{label}</Text>
+						<Text style={[styles.primaryText, { color: ink }]}>{label}</Text>
 						{creating && step < 3 ? (
-							<Ionicons name="arrow-forward" size={18} color="#fff" />
+							<Ionicons name="arrow-forward" size={18} color={ink} />
 						) : null}
 					</>
 				)}
@@ -84,14 +107,14 @@ const styles = StyleSheet.create({
 	footer: {
 		flexDirection: "row",
 		gap: 10,
-		padding: 16,
-		paddingBottom: 28,
+		paddingHorizontal: 16,
+		paddingTop: 12,
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
 	back: {
-		height: 52,
-		paddingHorizontal: 18,
-		borderRadius: 14,
+		minHeight: 52,
+		paddingHorizontal: 20,
+		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
@@ -100,10 +123,13 @@ const styles = StyleSheet.create({
 		flex: 1,
 		flexDirection: "row",
 		gap: 8,
-		height: 52,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	primaryText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	// The sell plaque's darker foot, as on the tab bar. No glow.
+	plaque: { borderBottomWidth: 3, borderBottomColor: "#9a6a00" },
+	backText: { fontSize: 16, fontFamily: Fonts.bodySemibold },
+	primaryText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

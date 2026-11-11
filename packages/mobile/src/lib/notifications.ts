@@ -37,7 +37,7 @@ export async function registerForPushNotificationsAsync({
 				name: i18n.t("notifications.channelDefault"),
 				importance: Notifications.AndroidImportance.MAX,
 				vibrationPattern: [0, 250, 250, 250],
-				lightColor: "#23338f",
+				lightColor: "#2f5bd4",
 			});
 			// Its own channel, so a seller can give new orders a distinct sound
 			// in Android's settings without hearing it for every message.

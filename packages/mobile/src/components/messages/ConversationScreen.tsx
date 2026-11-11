@@ -136,9 +136,8 @@ export function ConversationScreen({
 	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const C = Colors[isDark ? "dark" : "light"];
-	// Links and initials: the dark primary drops under 4.5:1 on the night
-	// card, its lighter info tone does not.
-	const link = isDark ? C.info : C.primary;
+	// Links and initials: the contrast-safe brand word tone in both themes.
+	const link = C.link;
 
 	const { data: convData } = useQuery({
 		queryKey: ["conversation", conversationId],
@@ -678,6 +677,14 @@ export function ConversationScreen({
 							>
 								{formatTime(item.createdAt)}
 							</Text>
+							{isMe && item.failed ? (
+								<Ionicons
+									name="alert-circle"
+									size={15}
+									color="#ffffff"
+									accessibilityLabel={t("messages.notSent")}
+								/>
+							) : null}
 							{isMe && !item.failed ? (
 								<Ionicons
 									name={
@@ -712,8 +719,8 @@ export function ConversationScreen({
 							{ opacity: pressed ? 0.6 : 1 },
 						]}
 					>
-						<Ionicons name="refresh" size={15} color={C.destructive} />
-						<Text style={[styles.failedText, { color: C.destructive }]}>
+						<Ionicons name="refresh" size={15} color={C.dangerText} />
+						<Text style={[styles.failedText, { color: C.dangerText }]}>
 							{t("messages.notSent")}
 						</Text>
 					</Pressable>
@@ -912,6 +919,12 @@ export function ConversationScreen({
 											styles.typingBubble,
 											{ backgroundColor: C.card, borderColor: C.border },
 										]}
+										// The dots say it to the eye; this says it aloud, once.
+										accessible
+										accessibilityLabel={t("messages.typing", {
+											name: peerName,
+										})}
+										accessibilityLiveRegion="polite"
 									>
 										<TypingIndicator color={C.mutedForeground} />
 									</View>
@@ -989,7 +1002,7 @@ export function ConversationScreen({
 										value={text}
 										onChangeText={handleTextChange}
 										placeholder={t("messages.writePlaceholder")}
-										placeholderTextColor={C.faint}
+										placeholderTextColor={C.mutedForeground}
 										accessibilityLabel={t("messages.writePlaceholder")}
 										selectionColor={link}
 										cursorColor={link}
@@ -1062,7 +1075,7 @@ interface PeerAvatar {
 }
 
 /** Own bubbles and the send button: deep indigo in both themes, so white stays legible. */
-const FILLED = "#2f43b5";
+const FILLED = Colors.light.ownBubble;
 /** Time and ticks on an own bubble: white at 80% keeps 4.5:1 on `FILLED`. */
 const OWN_META = "rgba(255,255,255,0.8)";
 const MAX_LENGTH = 1000;

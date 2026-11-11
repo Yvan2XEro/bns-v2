@@ -116,10 +116,18 @@ export default function SellerTabLayout() {
 	}, [lostMembership]);
 
 	const activeColor = brand
-		? sellerBrandPalette(brand, isDark ? "dark" : "light").primary
+		? isDark
+			? // The seller palette's dark primary is darkened for a white label,
+				// which can sink below 3:1 on the night bar; the shop's text tone
+				// is built to read on the night ground.
+				brand.dark.accentText
+			: sellerBrandPalette(brand, "light").primary
 		: // The buyer tabs' own selection colour, so switching mode keeps the bar.
 			Colors[isDark ? "dark" : "light"].tabIconSelected;
 	const tabOptions = useTabNavigatorOptions(activeColor);
+	// The counts are drawn inside the icons; screen readers get them here.
+	const ordersBadge = useOrdersBadge();
+	const inboxBadge = useInboxBadge();
 
 	if (resolved === "pending") return <LoadingScreen />;
 	if (resolved === "buyer") return <Redirect href="/(tabs)/home" />;
@@ -141,8 +149,17 @@ export default function SellerTabLayout() {
 					options={{
 						href: retail ? undefined : null,
 						title: t("sellerMode.tabs.orders"),
+						tabBarAccessibilityLabel:
+							ordersBadge > 0
+								? t("sellerMode.tabs.ordersWithCount", { count: ordersBadge })
+								: undefined,
 						tabBarIcon: ({ color, focused }) => (
-							<OrdersTabIcon color={color} focused={focused} />
+							<TabIcon
+								name="receipt"
+								color={color}
+								focused={focused}
+								badge={ordersBadge}
+							/>
 						),
 					}}
 				/>
@@ -165,8 +182,17 @@ export default function SellerTabLayout() {
 					name="sell/inbox"
 					options={{
 						title: t("sellerMode.tabs.messages"),
+						tabBarAccessibilityLabel:
+							inboxBadge > 0
+								? t("sellerMode.tabs.messagesWithCount", { count: inboxBadge })
+								: undefined,
 						tabBarIcon: ({ color, focused }) => (
-							<InboxTabIcon color={color} focused={focused} />
+							<TabIcon
+								name="chatbubbles"
+								color={color}
+								focused={focused}
+								badge={inboxBadge}
+							/>
 						),
 					}}
 				/>
@@ -185,37 +211,18 @@ export default function SellerTabLayout() {
 }
 
 /** Same query (and cache entry) as the orders list's "to accept" tab. */
-function OrdersTabIcon({
-	color,
-	focused,
-}: {
-	color: ColorValue;
-	focused: boolean;
-}) {
+function useOrdersBadge(): number {
 	const { ordersEnabled } = useAppConfig();
 	const { shop } = useActiveShop();
 	const reads = showsOrdersTile(shop?.role, ordersEnabled);
 	const list = useSellerOrders(reads ? shop?.shopId : undefined, {
 		tab: "to_accept",
 	});
-	return (
-		<TabIcon
-			name="receipt"
-			color={color}
-			focused={focused}
-			badge={ordersToHandle(list.data?.pages[0]?.counts)}
-		/>
-	);
+	return ordersToHandle(list.data?.pages[0]?.counts);
 }
 
 /** `inboxUnread` rides on the shop list; a new message refreshes it. */
-function InboxTabIcon({
-	color,
-	focused,
-}: {
-	color: ColorValue;
-	focused: boolean;
-}) {
+function useInboxBadge(): number {
 	const { shop } = useActiveShop();
 	const { chatClient } = useChatClient();
 	const queryClient = useQueryClient();
@@ -230,15 +237,7 @@ function InboxTabIcon({
 		};
 	}, [chatClient, queryClient]);
 
-	const unread = can(shop?.role, "inbox.reply") ? (shop?.inboxUnread ?? 0) : 0;
-	return (
-		<TabIcon
-			name="chatbubbles"
-			color={color}
-			focused={focused}
-			badge={unread}
-		/>
-	);
+	return can(shop?.role, "inbox.reply") ? (shop?.inboxUnread ?? 0) : 0;
 }
 
 const styles = StyleSheet.create({

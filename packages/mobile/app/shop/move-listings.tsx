@@ -15,6 +15,7 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -94,7 +95,7 @@ export default function MoveListingsScreen() {
 				subtitle={shop?.name}
 			/>
 			{listings.isLoading ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<ListSkeleton />
 			) : docs.length === 0 ? (
 				<EmptyState
 					illustration="listings"
@@ -178,7 +179,7 @@ export default function MoveListingsScreen() {
 											<Ionicons
 												name="pricetag-outline"
 												size={20}
-												color={c.primary}
+												color={c.link}
 											/>
 										</View>
 									)}
@@ -324,8 +325,8 @@ const styles = StyleSheet.create({
 	submit: {
 		flexDirection: "row",
 		gap: 8,
-		height: 52,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 		marginTop: 6,

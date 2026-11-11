@@ -161,10 +161,17 @@ export function SkeletonMessageBubbles() {
 					{!b.isMe && (
 						<SkeletonBlock width={28} height={28} borderRadius={14} />
 					)}
+					{/* The thread's own geometry: radius 20, the tail corner squared
+					    toward the sender, so the swap to real messages holds still. */}
 					<SkeletonBlock
 						width={b.widthPct as DimensionValue}
 						height={b.height}
-						borderRadius={18}
+						borderRadius={20}
+						style={
+							b.isMe
+								? { borderBottomRightRadius: 6 }
+								: { borderBottomLeftRadius: 6 }
+						}
 					/>
 				</View>
 			))}

@@ -134,7 +134,7 @@ function ZonesList({ shopId }: { shopId: string }) {
 							{ backgroundColor: c.card, borderColor: c.border },
 						]}
 					>
-						<Ionicons name="bicycle-outline" size={28} color={c.primary} />
+						<Ionicons name="bicycle-outline" size={28} color={c.link} />
 						<Text style={[styles.rowText, { color: c.body }]}>
 							{t("deliverySettings.zonesEmpty")}
 						</Text>

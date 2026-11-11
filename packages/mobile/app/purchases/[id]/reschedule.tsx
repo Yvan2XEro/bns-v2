@@ -1,12 +1,18 @@
 import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
+import { FormError } from "@/src/components/checkout/FormError";
 import { ChoiceField, TextField } from "@/src/components/delivery/FormFields";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
-import { Card, PurchaseButton } from "@/src/components/purchases/ui";
+import {
+	Card,
+	PurchaseButton,
+	purchaseText,
+} from "@/src/components/purchases/ui";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useNow } from "@/src/hooks/useNow";
@@ -94,15 +100,15 @@ function RescheduleForm({ shipmentId }: { shipmentId: string }) {
 						onPress={() => void locate()}
 					/>
 					{denied ? (
-						<Text style={{ color: c.muted }}>
+						<Text style={[purchaseText.muted, { color: c.muted }]}>
 							{t("tracking.positionDenied")}
 						</Text>
 					) : null}
-					{reschedule.error ? (
-						<Text accessibilityRole="alert" style={{ color: c.danger }}>
-							{resolveErrorMessage(reschedule.error, t)}
-						</Text>
-					) : null}
+					<FormError
+						message={
+							reschedule.error ? resolveErrorMessage(reschedule.error, t) : null
+						}
+					/>
 					<PurchaseButton
 						label={t("tracking.rescheduleSubmit")}
 						pending={reschedule.isPending}
@@ -139,7 +145,7 @@ export default function RescheduleScreen() {
 		>
 			<SellerHeader title={t("tracking.rescheduleTitle")} />
 			{shipments.isPending ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<DetailSkeleton cards={1} />
 			) : target ? (
 				<RescheduleForm shipmentId={target.id} />
 			) : (
@@ -156,6 +162,5 @@ export default function RescheduleScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 40 },
-	content: { padding: 16, paddingBottom: 48 },
+	content: { padding: 16, gap: 14, paddingBottom: 48 },
 });

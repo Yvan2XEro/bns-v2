@@ -255,7 +255,7 @@ export default function InviteScreen() {
 								onPress={goRegister}
 								style={styles.linkButton}
 							>
-								<Text style={[styles.linkLabel, { color: c.primary }]}>
+								<Text style={[styles.linkLabel, { color: c.link }]}>
 									{t("invite.register")}
 								</Text>
 							</Pressable>
@@ -372,12 +372,17 @@ const styles = StyleSheet.create({
 	roleBody: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	actions: { gap: 12 },
 	primaryButton: {
-		height: 52,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	primaryLabel: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
-	linkButton: { alignItems: "center", padding: 8 },
-	linkLabel: { fontSize: 14, fontFamily: Fonts.displaySemibold },
+	linkButton: {
+		alignItems: "center",
+		justifyContent: "center",
+		minHeight: 48,
+		paddingHorizontal: 12,
+	},
+	linkLabel: { fontSize: 15, fontFamily: Fonts.bodyBold },
 });

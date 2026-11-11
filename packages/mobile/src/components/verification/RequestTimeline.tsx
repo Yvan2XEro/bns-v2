@@ -51,7 +51,7 @@ export function RequestTimeline({ entries }: { entries: TimelineEntry[] }) {
 						style={[
 							styles.row,
 							{
-								borderColor: entry.current ? c.primary : c.border,
+								borderColor: entry.current ? c.link : c.border,
 								backgroundColor: entry.current ? c.primarySoft : c.card,
 							},
 						]}
@@ -88,6 +88,6 @@ const styles = StyleSheet.create({
 	},
 	dot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
 	body: { flex: 1, gap: 2 },
-	status: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	date: { fontSize: 11, fontFamily: Fonts.body },
+	status: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
+	date: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 });

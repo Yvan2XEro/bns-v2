@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { acceptCountdown } from "@/src/lib/sellerOrders";
@@ -13,7 +14,7 @@ export function AcceptCountdown({ acceptBy }: { acceptBy: string | null }) {
 	if (!countdown) return null;
 
 	const color = countdown.expired
-		? c.danger
+		? dangerInk(c)
 		: countdown.urgent
 			? c.warningText
 			: c.muted;
@@ -34,5 +35,5 @@ export function AcceptCountdown({ acceptBy }: { acceptBy: string | null }) {
 
 const styles = StyleSheet.create({
 	row: { flexDirection: "row", alignItems: "center", gap: 4 },
-	text: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	text: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

@@ -36,10 +36,7 @@ export function SectionHeader({ section }: { section: SectionKey }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	return (
-		<Text
-			style={[styles.header, { color: c.muted }]}
-			accessibilityRole="header"
-		>
+		<Text style={[styles.header, { color: c.text }]} accessibilityRole="header">
 			{t(SECTION_LABEL[section])}
 		</Text>
 	);
@@ -64,11 +61,7 @@ export function ActionRow({
 }) {
 	const c = useShopTheme();
 	const color =
-		tone === "primary"
-			? c.primary
-			: tone === "warning"
-				? c.warningText
-				: c.text;
+		tone === "primary" ? c.link : tone === "warning" ? c.warningText : c.text;
 	const soft =
 		tone === "primary"
 			? c.primarySoft
@@ -106,7 +99,7 @@ export function ActionRow({
 				) : null}
 			</View>
 			{selected ? (
-				<Ionicons name="checkmark-circle" size={22} color={c.primary} />
+				<Ionicons name="checkmark-circle" size={22} color={c.link} />
 			) : null}
 		</Pressable>
 	);
@@ -161,7 +154,7 @@ export function PlaceRow({
 				) : null}
 			</View>
 			{selected ? (
-				<Ionicons name="checkmark-circle" size={22} color={c.primary} />
+				<Ionicons name="checkmark-circle" size={22} color={c.link} />
 			) : null}
 		</Pressable>
 	);
@@ -169,12 +162,11 @@ export function PlaceRow({
 
 const styles = StyleSheet.create({
 	header: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.6,
+		fontSize: 15,
+		lineHeight: 20,
+		fontFamily: Fonts.displayBold,
 		paddingHorizontal: 8,
-		paddingTop: 18,
+		paddingTop: 20,
 		paddingBottom: 6,
 	},
 	row: {

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { useTranslation } from "@/src/lib/i18n";
@@ -24,10 +24,22 @@ const TONES: Record<
 	PurchaseStatusTone,
 	{ light: [string, string]; dark: [string, string] }
 > = {
-	neutral: { light: ["#eceef5", "#4a4f78"], dark: ["#1a1f4a", "#c9cce0"] },
-	progress: { light: ["#e3e7f8", "#23338f"], dark: ["#1d2568", "#a9b4f0"] },
-	success: { light: ["#ddf3e5", "#155c35"], dark: ["#0b2a18", "#8fddb0"] },
-	danger: { light: ["#fbe3e0", "#8e2219"], dark: ["#3d0f0b", "#f2a79f"] },
+	neutral: {
+		light: [Colors.light.well, Colors.light.body],
+		dark: [Colors.dark.card, Colors.dark.body],
+	},
+	progress: {
+		light: [Colors.light.primaryTint, Colors.light.link],
+		dark: [Colors.dark.primaryTint, Colors.dark.link],
+	},
+	success: {
+		light: [Colors.light.successTint, Colors.light.successText],
+		dark: [Colors.dark.successTint, Colors.dark.successText],
+	},
+	danger: {
+		light: [Colors.light.dangerTint, Colors.light.dangerText],
+		dark: [Colors.dark.dangerTint, Colors.dark.dangerText],
+	},
 };
 
 /** The buyer-facing status as a tinted pill with a dot. */

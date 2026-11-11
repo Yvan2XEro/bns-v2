@@ -1,10 +1,6 @@
-import {
-	ActivityIndicator,
-	RefreshControl,
-	ScrollView,
-	StyleSheet,
-} from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { OrderShipmentsLinks } from "@/src/components/delivery/OrderShipmentsLinks";
 import { EmptyState } from "@/src/components/EmptyState";
 import { OrderProgress } from "@/src/components/purchases/OrderProgress";
@@ -55,7 +51,7 @@ export function SellerOrderDetail({ id }: { id: string }) {
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
 				{header}
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<DetailSkeleton cards={2} />
 			</SafeAreaView>
 		);
 	}
@@ -112,6 +108,5 @@ export function SellerOrderDetail({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 40 },
 	content: { padding: 16, paddingBottom: 40, gap: 14 },
 });

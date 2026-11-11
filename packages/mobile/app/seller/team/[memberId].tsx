@@ -1,14 +1,8 @@
 import { router, useLocalSearchParams } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { dangerInk } from "@/src/components/shop/ink";
@@ -111,9 +105,7 @@ export default function MemberDetailScreen() {
 			<SellerHeader title={t("team.memberDetail")} />
 
 			{isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<DetailSkeleton cards={2} />
 			) : isError || !member ? (
 				<EmptyState
 					illustration="notFound"

@@ -15,14 +15,19 @@ import {
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
+import { FormError } from "@/src/components/checkout/FormError";
 import { fillOf, inkOf } from "@/src/components/checkout/fill";
+import { TotalTag } from "@/src/components/checkout/TotalTag";
 import {
 	EvidenceStrip,
 	EvidenceViewer,
 	useOpenEvidenceFile,
 } from "@/src/components/disputes/Evidence";
+import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { PurchaseButton } from "@/src/components/purchases/ui";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { type ShopPalette, useShopTheme } from "@/src/components/shop/theme";
@@ -82,23 +87,23 @@ export function DisputeThread({ id }: { id: string }) {
 	const [staged, setStaged] = useState<string[]>([]);
 	const openFile = useOpenEvidenceFile(id ?? "");
 
-	if (view.isPending)
+	if (view.isPending || view.isError || !view.data)
 		return (
-			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
-				<ActivityIndicator style={styles.loading} color={c.primary} />
-			</SafeAreaView>
-		);
-	if (view.isError || !view.data)
-		return (
-			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
-				<Text style={[styles.error, { color: c.text }]}>
-					{t("disputes.detailLoadError")}
-				</Text>
-				<Pressable onPress={() => void view.refetch()}>
-					<Text style={{ color: c.primary, textAlign: "center" }}>
-						{t("common.retry")}
-					</Text>
-				</Pressable>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("disputes.title")} />
+				{view.isPending ? (
+					<DetailSkeleton cards={2} />
+				) : (
+					<EmptyState
+						illustration="notFound"
+						title={t("disputes.detailLoadError")}
+						ctaLabel={t("common.retry")}
+						onCta={() => void view.refetch()}
+					/>
+				)}
 			</SafeAreaView>
 		);
 	const dispute = view.data;
@@ -253,11 +258,26 @@ export function DisputeThread({ id }: { id: string }) {
 								<View style={styles.evidence}>
 									<Pressable
 										accessibilityRole="button"
+										accessibilityLabel={t("disputes.addEvidence")}
+										accessibilityState={{
+											disabled:
+												upload.isPending || dispute.evidence.length >= 10,
+											busy: upload.isPending,
+										}}
 										disabled={upload.isPending || dispute.evidence.length >= 10}
 										onPress={() => void addEvidence().catch(() => undefined)}
-										style={[
+										style={({ pressed }) => [
 											styles.chipButton,
-											{ backgroundColor: c.card, borderColor: c.border },
+											{
+												backgroundColor: c.card,
+												borderColor: c.border,
+												opacity:
+													dispute.evidence.length >= 10
+														? 0.5
+														: pressed
+															? 0.85
+															: 1,
+											},
 										]}
 									>
 										{upload.isPending ? (
@@ -308,7 +328,10 @@ export function DisputeThread({ id }: { id: string }) {
 									{ backgroundColor: c.card, borderColor: c.border },
 								]}
 							>
-								<Text style={[styles.title, { color: c.text }]}>
+								<Text
+									style={[styles.title, { color: c.text }]}
+									accessibilityRole="header"
+								>
 									{t("disputes.resolution")}
 								</Text>
 								<Text style={[styles.body, { color: c.muted }]}>
@@ -330,12 +353,15 @@ export function DisputeThread({ id }: { id: string }) {
 									{ backgroundColor: c.card, borderColor: c.primary },
 								]}
 							>
-								<Text style={[styles.title, { color: c.text }]}>
+								<Text
+									style={[styles.title, { color: c.text }]}
+									accessibilityRole="header"
+								>
 									{t("disputes.proposal")}
 								</Text>
-								<Text style={[styles.amount, { color: c.text }]}>
-									{formatPrice(dispute.proposal.amount, locale)}
-								</Text>
+								<TotalTag
+									amount={formatPrice(dispute.proposal.amount, locale)}
+								/>
 							</View>
 						) : null}
 
@@ -358,7 +384,7 @@ export function DisputeThread({ id }: { id: string }) {
 													{ backgroundColor: OWN_BUBBLE },
 												]}
 											>
-												<Text style={[styles.body, { color: "#fff" }]}>
+												<Text style={[styles.body, { color: ON_FILL }]}>
 													{text}
 												</Text>
 												<EvidenceStrip
@@ -387,7 +413,7 @@ export function DisputeThread({ id }: { id: string }) {
 												<Ionicons
 													name="shield-checkmark"
 													size={16}
-													color="#fff"
+													color={ON_FILL}
 												/>
 											</View>
 										) : (
@@ -452,62 +478,33 @@ export function DisputeThread({ id }: { id: string }) {
 
 						{visibleButtons.length ? (
 							<View style={styles.actions}>
-								{visibleButtons.map((name) => {
-									const primary = name === "submit" || name.endsWith("accept");
-									const danger =
-										name === "withdraw" || name === "proposal_reject";
-									return (
-										<Pressable
-											key={name}
-											accessibilityRole="button"
-											disabled={
-												action.isPending ||
-												(name === "submit" && !evidenceStatus.canSubmit)
-											}
-											onPress={() => void perform(name)}
-											style={[
-												styles.actionButton,
-												primary
-													? {
-															backgroundColor: fill.bg,
-															borderColor: fill.bg,
-														}
-													: {
-															backgroundColor: c.card,
-															borderColor: danger ? c.danger : c.border,
-														},
-												name === "submit" && !evidenceStatus.canSubmit
-													? styles.disabled
-													: null,
-											]}
-										>
-											<Text
-												style={[
-													styles.actionText,
-													{
-														color: primary
-															? fill.fg
-															: danger
-																? c.dangerText
-																: c.text,
-													},
-												]}
-											>
-												{t(DISPUTE_ACTION_LABELS[name])}
-											</Text>
-										</Pressable>
-									);
-								})}
+								{visibleButtons.map((name) => (
+									<PurchaseButton
+										key={name}
+										label={t(DISPUTE_ACTION_LABELS[name])}
+										tone={
+											name === "submit" || name.endsWith("accept")
+												? "primary"
+												: name === "withdraw" || name === "proposal_reject"
+													? "danger"
+													: "outline"
+										}
+										disabled={
+											action.isPending ||
+											(name === "submit" && !evidenceStatus.canSubmit)
+										}
+										onPress={() => void perform(name).catch(() => undefined)}
+									/>
+								))}
 							</View>
 						) : null}
-						{action.isError || upload.isError ? (
-							<Text
-								accessibilityRole="alert"
-								style={[styles.error, { color: c.dangerText }]}
-							>
-								{t("disputes.actionError")}
-							</Text>
-						) : null}
+						<FormError
+							message={
+								action.isError || upload.isError
+									? t("disputes.actionError")
+									: null
+							}
+						/>
 					</ScrollView>
 				</ScreenColumn>
 
@@ -568,6 +565,10 @@ export function DisputeThread({ id }: { id: string }) {
 						<Pressable
 							accessibilityRole="button"
 							accessibilityLabel={t("disputes.sendMessage")}
+							accessibilityState={{
+								disabled: action.isPending,
+								busy: action.isPending,
+							}}
 							disabled={action.isPending}
 							onPress={() => void send()}
 							style={[styles.roundButton, { backgroundColor: fill.bg }]}
@@ -595,8 +596,9 @@ function toneColors(c: ShopPalette, tone: DisputeTone) {
 		case "warning":
 			return {
 				soft: c.warningSoft,
-				border: c.isDark ? c.warningSoft : "#ffe08a",
-				strong: "#9a6a00",
+				border: c.warningSoft,
+				// The warning fill under a white glyph, the same in both themes.
+				strong: Colors.light.warning,
 				text: c.warningText,
 				icon: "hourglass-outline" as const,
 			};
@@ -630,9 +632,13 @@ function toneColors(c: ShopPalette, tone: DisputeTone) {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	flex: { flex: 1 },
-	loading: { marginTop: 48 },
 	content: { gap: 14, padding: 16, paddingBottom: 24 },
-	banner: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 12 },
+	banner: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 16,
+		gap: 12,
+	},
 	bannerRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
 	bannerIcon: {
 		width: 40,
@@ -641,7 +647,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	bannerTitle: { fontFamily: Fonts.displayBold, fontSize: 16 },
+	bannerTitle: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
 	bannerBody: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 	evidence: { gap: 6 },
 	chipButton: {
@@ -649,17 +655,28 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 6,
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 12,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 	},
-	chipText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
-	evidenceText: { fontFamily: Fonts.body, fontSize: 13 },
-	card: { borderRadius: 16, borderWidth: 1, gap: 8, padding: 16 },
-	title: { fontFamily: Fonts.displayBold, fontSize: 16 },
-	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
-	amount: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
-	empty: { fontFamily: Fonts.body, fontSize: 14, textAlign: "center" },
+	chipText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	evidenceText: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
+	card: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		gap: 10,
+		padding: 16,
+	},
+	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
+	amount: { fontFamily: Fonts.displayBold, fontSize: 17, lineHeight: 22 },
+	empty: {
+		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 22,
+		textAlign: "center",
+		paddingVertical: 16,
+	},
 	mineWrap: { alignItems: "flex-end", gap: 4, paddingLeft: 48 },
 	bubble: { borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
 	mine: { borderBottomRightRadius: 4 },
@@ -684,18 +701,9 @@ const styles = StyleSheet.create({
 	badgeText: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
 	time: { fontFamily: Fonts.body, fontSize: 12 },
 	actions: { gap: 10, marginTop: 6 },
-	actionButton: {
-		alignItems: "center",
-		justifyContent: "center",
-		minHeight: 48,
-		borderRadius: 14,
-		borderWidth: 1,
-	},
-	actionText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
-	disabled: { opacity: 0.5 },
 	menuButton: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -732,13 +740,9 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.body,
 		fontSize: 16,
 	},
-	error: {
-		fontFamily: Fonts.bodyMedium,
-		fontSize: 14,
-		margin: 16,
-		textAlign: "center",
-	},
 });
 
-/** DESIGN.md: own bubbles are #2f43b5 in both themes, so white stays legible. */
-const OWN_BUBBLE = "#2f43b5";
+/** DESIGN.md: own bubbles are one deep blue in both themes, so white stays legible. */
+const OWN_BUBBLE = Colors.light.ownBubble;
+/** White on `OWN_BUBBLE` and on the staff fill: 4.5:1 or better on both. */
+const ON_FILL = Colors.light.primaryForeground;

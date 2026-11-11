@@ -49,7 +49,12 @@ export function BuyBox(props: BuyBoxProps) {
 					accessibilityRole="alert"
 					style={[styles.notice, { backgroundColor: c.warningSoft }]}
 				>
-					<Ionicons name="time-outline" size={18} color={c.warningText} />
+					<Ionicons
+						name="time-outline"
+						size={18}
+						color={c.warningText}
+						style={{ marginTop: 2 }}
+					/>
 					<View style={{ flex: 1 }}>
 						<Text style={[styles.noticeTitle, { color: c.warningText }]}>
 							{t("buyBox.restrictedTitle")}
@@ -86,6 +91,11 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		marginBottom: 12,
 	},
-	noticeTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	noticeBody: { fontSize: 13, fontFamily: Fonts.body, marginTop: 2 },
+	noticeTitle: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodySemibold },
+	noticeBody: {
+		fontSize: 13,
+		lineHeight: 19,
+		fontFamily: Fonts.body,
+		marginTop: 2,
+	},
 });

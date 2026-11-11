@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { fillOf } from "@/src/components/shop/ink";
@@ -47,11 +48,7 @@ export default function IdentityConsentScreen() {
 				onBack={() => router.back()}
 			/>
 
-			{isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
-			) : null}
+			{isLoading ? <DetailSkeleton cards={2} /> : null}
 
 			{!isLoading && isError ? (
 				<View style={styles.center}>
@@ -186,6 +183,6 @@ const styles = StyleSheet.create({
 	submitLabel: {
 		color: "#ffffff",
 		fontSize: 16,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 });

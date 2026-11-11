@@ -317,7 +317,7 @@ export function DecisionSheet({
 														<Text
 															style={[
 																styles.durationText,
-																{ color: selected ? "#ffffff" : c.text },
+																{ color: selected ? k.onFill : c.text },
 															]}
 														>
 															{option.label}
@@ -382,7 +382,7 @@ export function DecisionSheet({
 							style={({ pressed }) => [
 								styles.secondaryBtn,
 								{
-									borderColor: c.isDark ? "#3a4290" : "#c9cce0",
+									borderColor: k.strongBorder,
 									opacity: pressed ? 0.8 : 1,
 								},
 							]}
@@ -409,12 +409,12 @@ export function DecisionSheet({
 							]}
 						>
 							{pending ? (
-								<ActivityIndicator color="#ffffff" />
+								<ActivityIndicator color={k.onFill} />
 							) : (
 								<Text
 									style={[
 										styles.btnText,
-										{ color: ready ? "#ffffff" : k.disabledText },
+										{ color: ready ? k.onFill : k.disabledText },
 									]}
 									numberOfLines={2}
 								>

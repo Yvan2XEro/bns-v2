@@ -111,6 +111,8 @@ export default function PublicProfileScreen() {
 	const bodyColor = c.body;
 	const mutedColor = c.mutedForeground;
 	const primaryColor = c.primary;
+	// Brand-coloured words and initials: 7:1 on a night card, not 4.3.
+	const linkColor = c.link;
 	const borderColor = c.border;
 	// White on the dark-mode primary fails contrast: filled buttons take the
 	// deeper indigo in dark mode.
@@ -257,7 +259,7 @@ export default function PublicProfileScreen() {
 								{ backgroundColor: c.primaryTint },
 							]}
 						>
-							<Text style={[styles.avatarLetter, { color: primaryColor }]}>
+							<Text style={[styles.avatarLetter, { color: linkColor }]}>
 								{profile?.name?.[0]?.toUpperCase() ?? "?"}
 							</Text>
 						</View>
@@ -345,9 +347,12 @@ export default function PublicProfileScreen() {
 								}
 								accessibilityRole="button"
 								accessibilityLabel={t("profile.reportProfile")}
-								style={[
+								style={({ pressed }) => [
 									styles.iconBtn,
-									{ borderColor, backgroundColor: cardBg },
+									{
+										borderColor: c.borderStrong,
+										backgroundColor: pressed ? c.well : cardBg,
+									},
 								]}
 							>
 								<Ionicons name="flag-outline" size={19} color={bodyColor} />
@@ -358,9 +363,12 @@ export default function PublicProfileScreen() {
 									isBlocked ? t("profile.unblock") : t("profile.block")
 								}
 								onPress={confirmToggleBlock}
-								style={[
+								style={({ pressed }) => [
 									styles.iconBtn,
-									{ borderColor, backgroundColor: cardBg },
+									{
+										borderColor: c.borderStrong,
+										backgroundColor: pressed ? c.well : cardBg,
+									},
 								]}
 							>
 								<Ionicons
@@ -403,14 +411,8 @@ export default function PublicProfileScreen() {
 								]}
 							>
 								{tab === "listings"
-									? t("profile.listingsTab").replace(
-											"{{count}}",
-											String(listings.length),
-										)
-									: t("profile.reviewsTab").replace(
-											"{{count}}",
-											String(reviews.length),
-										)}
+									? t("profile.listingsTab", { count: listings.length })
+									: t("profile.reviewsTab", { count: reviews.length })}
 							</Text>
 						</Pressable>
 					))}
@@ -467,8 +469,8 @@ export default function PublicProfileScreen() {
 									},
 								]}
 							>
-								<Ionicons name="star-outline" size={18} color={primaryColor} />
-								<Text style={[styles.addReviewText, { color: primaryColor }]}>
+								<Ionicons name="star-outline" size={18} color={linkColor} />
+								<Text style={[styles.addReviewText, { color: linkColor }]}>
 									{t("profile.leaveReview")}
 								</Text>
 							</Pressable>
@@ -510,7 +512,7 @@ export default function PublicProfileScreen() {
 											]}
 										>
 											<Text
-												style={[styles.reviewerLetter, { color: primaryColor }]}
+												style={[styles.reviewerLetter, { color: linkColor }]}
 											>
 												{review.reviewer?.name?.[0]?.toUpperCase() ?? "?"}
 											</Text>
@@ -563,6 +565,8 @@ export default function PublicProfileScreen() {
 				<Pressable
 					style={styles.modalOverlay}
 					onPress={() => setReviewModal(false)}
+					accessibilityRole="button"
+					accessibilityLabel={t("common.close")}
 				/>
 				<View
 					style={[
@@ -625,12 +629,12 @@ export default function PublicProfileScreen() {
 							value={reviewComment}
 							onChangeText={setReviewComment}
 							placeholder={t("profile.commentPlaceholder")}
-							placeholderTextColor={c.faint}
+							placeholderTextColor={c.mutedForeground}
 							multiline
 							numberOfLines={4}
 							style={[
 								styles.textarea,
-								{ backgroundColor: bg, borderColor, color: textColor },
+								{ backgroundColor: c.well, borderColor, color: textColor },
 							]}
 						/>
 
@@ -691,7 +695,7 @@ const styles = StyleSheet.create({
 	headerTitle: {
 		flex: 1,
 		textAlign: "center",
-		fontSize: 17,
+		fontSize: 18,
 		fontFamily: Fonts.displayBold,
 	},
 

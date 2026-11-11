@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-	ActivityIndicator,
 	Pressable,
 	RefreshControl,
 	ScrollView,
@@ -10,9 +9,10 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Fonts, TextStyles } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import {
@@ -21,8 +21,8 @@ import {
 	SellerTipCard,
 } from "@/src/components/shop/SellerHomeCards";
 import {
-	HUB_HEADER_BG,
 	SellerHubBar,
+	useHubHeaderBg,
 } from "@/src/components/shop/SellerHubHeader";
 import { SellerInsightsSummary } from "@/src/components/shop/SellerInsightsSummary";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -58,6 +58,7 @@ function SellerDashboard() {
 	const { user } = useAuth();
 	const { ordersEnabled, insightsEnabled } = useAppConfig();
 	const mine = useMyShop();
+	const hubBg = useHubHeaderBg();
 	const { shop: active } = useActiveShop();
 	const shop = mine.data?.shop;
 	const counts = mine.data?.counts;
@@ -79,11 +80,19 @@ function SellerDashboard() {
 		handle: shop?.handle ?? "",
 	});
 
+	// The first load keeps the workspace's frame: its title and rows in the
+	// shape of the task list, rather than a lone spinner on a blank ground.
 	if (mine.isLoading) {
 		return (
-			<View style={[styles.center, { backgroundColor: c.bg }]}>
-				<ActivityIndicator color={c.primary} />
-			</View>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("sellerMode.tabs.dashboard")} />
+				<View style={styles.skeleton}>
+					<ListSkeleton rows={4} />
+				</View>
+			</SafeAreaView>
 		);
 	}
 
@@ -195,7 +204,7 @@ function SellerDashboard() {
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: HUB_HEADER_BG }]}
+			style={[styles.safe, { backgroundColor: hubBg }]}
 		>
 			<SellerHubBar shop={shop} />
 			<ScreenColumn width="wide">
@@ -215,11 +224,14 @@ function SellerDashboard() {
 						/>
 					}
 				>
-					<View>
-						<Text style={[styles.hello, { color: c.text }]}>
+					<View style={styles.intro}>
+						<Text
+							style={[styles.hello, { color: c.text }]}
+							accessibilityRole="header"
+						>
 							{t("sellerMode.greeting", { name: firstName })}
 						</Text>
-						<Text style={[styles.meta, { color: c.muted }]}>{meta}</Text>
+						<Text style={[styles.meta, { color: c.body }]}>{meta}</Text>
 					</View>
 
 					{tasks.length > 0 ? (
@@ -236,17 +248,19 @@ function SellerDashboard() {
 										key={task.key}
 										onPress={meta.onPress}
 										accessibilityRole="button"
+										accessibilityLabel={meta.label(task.count)}
 										style={({ pressed }) => [
 											styles.task,
 											index > 0 && {
 												borderTopWidth: StyleSheet.hairlineWidth,
 												borderTopColor: c.border,
 											},
-											pressed && { opacity: 0.85 },
+											pressed && { backgroundColor: c.primarySoft },
 										]}
 									>
 										<View
 											style={[styles.taskIcon, { backgroundColor: meta.soft }]}
+											importantForAccessibility="no-hide-descendants"
 										>
 											<Ionicons name={meta.icon} size={18} color={meta.tint} />
 										</View>
@@ -315,22 +329,28 @@ function SellerDashboard() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
+	skeleton: { paddingTop: 16 },
 	content: { padding: 16, gap: 14, paddingBottom: 40 },
-	hello: { fontSize: 22, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 13, fontFamily: Fonts.body, marginTop: 2 },
-	panel: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
+	intro: { paddingTop: 4, paddingBottom: 2 },
+	hello: { ...TextStyles.h2 },
+	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body, marginTop: 2 },
+	panel: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
+	},
 	task: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
+		minHeight: 60,
 		paddingHorizontal: 14,
 		paddingVertical: 12,
 	},
 	taskIcon: {
 		width: 36,
 		height: 36,
-		borderRadius: 11,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},

@@ -66,9 +66,7 @@ export function ProductAttributeInput({
 								accessibilityLabel={choice.label}
 								accessibilityState={{ selected: active }}
 							>
-								<Text
-									style={[f.chipText, { color: active ? c.primary : c.body }]}
-								>
+								<Text style={[f.chipText, { color: active ? c.link : c.body }]}>
 									{choice.label}
 								</Text>
 							</Pressable>

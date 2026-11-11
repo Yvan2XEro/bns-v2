@@ -127,7 +127,7 @@ export function LocationForm({
 				accessibilityLabel={t("deliverySettings.useMyPosition")}
 				style={{ minHeight: 48, justifyContent: "center" }}
 			>
-				<Text style={{ color: c.primary }}>
+				<Text style={{ color: c.link }}>
 					{t("deliverySettings.useMyPosition")}
 				</Text>
 			</Pressable>
@@ -174,7 +174,7 @@ export function LocationForm({
 					accessibilityLabel={t("deliverySettings.openInMaps")}
 					style={{ minHeight: 48, justifyContent: "center" }}
 				>
-					<Text style={{ color: c.primary }}>
+					<Text style={{ color: c.link }}>
 						{t("deliverySettings.openInMaps")}
 					</Text>
 				</Pressable>
@@ -263,7 +263,7 @@ export function LocationForm({
 								borderColor: c.border,
 							}}
 						>
-							<Text style={{ color: c.primary }}>
+							<Text style={{ color: c.link }}>
 								+ {t(`deliverySettings.days.${day}`)}
 							</Text>
 						</Pressable>

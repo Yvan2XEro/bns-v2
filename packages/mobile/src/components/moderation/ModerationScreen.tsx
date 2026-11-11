@@ -90,16 +90,17 @@ const styles = StyleSheet.create({
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	backBtn: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	headerText: { flex: 1 },
+	// The bar title every shell shares: Outfit Bold 18/23.
 	title: {
-		fontSize: 20,
-		lineHeight: 25,
-		letterSpacing: -0.4,
+		fontSize: 18,
+		lineHeight: 23,
+		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
 	subtitle: {

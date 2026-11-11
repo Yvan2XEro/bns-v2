@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import {
 	HANDOVER_CODE_LENGTH,
@@ -41,7 +42,7 @@ export function HandoverKeypad({
 							styles.slot,
 							{
 								borderColor: error
-									? c.danger
+									? dangerInk(c)
 									: i === code.length
 										? c.primary
 										: c.border,
@@ -66,6 +67,7 @@ export function HandoverKeypad({
 								onPress={() => onKey(key)}
 								disabled={disabled}
 								accessibilityRole="button"
+								accessibilityState={{ disabled }}
 								accessibilityLabel={
 									key === "delete" ? t("sellerOrders.keypadDelete") : key
 								}
@@ -74,7 +76,8 @@ export function HandoverKeypad({
 									{
 										backgroundColor: pressed ? c.primarySoft : c.card,
 										borderColor: c.border,
-										borderWidth: 1,
+										borderWidth: StyleSheet.hairlineWidth,
+										opacity: disabled ? 0.5 : 1,
 									},
 								]}
 							>
@@ -103,7 +106,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	digit: { fontSize: 28, fontFamily: Fonts.displayBold },
+	digit: {
+		fontSize: 28,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
 	row: { flexDirection: "row", gap: 16 },
 	key: {
 		width: 76,

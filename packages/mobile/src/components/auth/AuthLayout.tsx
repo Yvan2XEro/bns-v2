@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, type Ref, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -16,9 +16,11 @@ import {
 	SafeAreaView,
 	useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
-import { NdopPattern } from "@/src/components/brand/NdopPattern";
+import { ShellPattern } from "@/src/components/brand/BackgroundPattern";
+import { FormError } from "@/src/components/checkout/FormError";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -56,7 +58,7 @@ export function AuthScreen({
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const insets = useSafeAreaInsets();
-	const shell = c.isDark ? "#13183e" : "#1d2a7a";
+	const shell = c.isDark ? "#13183e" : "#2a51c0";
 
 	return (
 		<SafeAreaView
@@ -76,7 +78,7 @@ export function AuthScreen({
 						{ backgroundColor: shell, paddingTop: insets.top + 8 },
 					]}
 				>
-					<NdopPattern />
+					<ShellPattern />
 					<View style={centeredContent}>
 						<Pressable
 							onPress={onClose}
@@ -91,7 +93,9 @@ export function AuthScreen({
 						</Pressable>
 						<View style={styles.shellBody}>
 							<BrandRow />
-							<Text style={styles.title}>{title}</Text>
+							<Text accessibilityRole="header" style={styles.title}>
+								{title}
+							</Text>
 							{subtitle ? (
 								<Text style={styles.subtitle}>{subtitle}</Text>
 							) : null}
@@ -116,7 +120,7 @@ function BrandRow() {
 				style={styles.brandIcon}
 				contentFit="contain"
 			/>
-			<Text style={styles.brandText}>
+			<Text style={styles.brandText} accessibilityLabel="Buy'N'Sellem">
 				Buy<Text style={{ color: c.sell }}>'N'</Text>Sellem
 			</Text>
 		</View>
@@ -125,7 +129,11 @@ function BrandRow() {
 
 type FieldIcon = "mail-outline" | "lock-closed-outline" | "person-outline";
 
-/** Label + input in the app's form style; the password variant can reveal. */
+/**
+ * Label + input in the app's form style; the password variant can reveal.
+ * `error` marks the field: a string is said under it, `true` only colours
+ * the border (the message sits elsewhere, under the form).
+ */
 export function AuthField({
 	label,
 	icon,
@@ -133,6 +141,8 @@ export function AuthField({
 	onChangeText,
 	password,
 	trailingLabel,
+	error,
+	inputRef,
 	...input
 }: {
 	label: string;
@@ -142,6 +152,9 @@ export function AuthField({
 	password?: boolean;
 	/** Right of the label, e.g. "Forgot password?". */
 	trailingLabel?: ReactNode;
+	error?: string | boolean | null;
+	/** To move focus here from the field before it. */
+	inputRef?: Ref<TextInput>;
 } & Pick<
 	TextInputProps,
 	| "placeholder"
@@ -150,11 +163,15 @@ export function AuthField({
 	| "autoCapitalize"
 	| "returnKeyType"
 	| "onSubmitEditing"
+	| "submitBehavior"
 >) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const [focused, setFocused] = useState(false);
 	const [revealed, setRevealed] = useState(false);
+	const danger = dangerInk(c);
+	const tokens = Colors[c.isDark ? "dark" : "light"];
+	const message = typeof error === "string" ? error : null;
 
 	return (
 		<View style={styles.field}>
@@ -167,26 +184,35 @@ export function AuthField({
 					styles.inputRow,
 					{
 						backgroundColor: c.card,
-						borderColor: focused ? c.primary : c.border,
+						borderColor: error
+							? danger
+							: focused
+								? c.primary
+								: tokens.borderStrong,
+						borderWidth: focused || error ? 1.5 : 1,
 					},
 				]}
 			>
-				<Ionicons name={icon} size={18} color={focused ? c.primary : c.muted} />
+				<Ionicons name={icon} size={18} color={focused ? c.link : c.muted} />
 				<TextInput
 					{...input}
+					ref={inputRef}
 					value={value}
 					onChangeText={onChangeText}
 					onFocus={() => setFocused(true)}
 					onBlur={() => setFocused(false)}
 					secureTextEntry={password && !revealed}
 					accessibilityLabel={label}
+					accessibilityHint={message ?? undefined}
+					aria-invalid={Boolean(error)}
 					placeholderTextColor={c.muted}
+					selectionColor={c.primary}
 					style={[styles.input, { color: c.text }]}
 				/>
 				{password ? (
 					<Pressable
 						onPress={() => setRevealed((on) => !on)}
-						hitSlop={10}
+						hitSlop={14}
 						accessibilityRole="button"
 						accessibilityLabel={t(
 							revealed ? "auth.hidePassword" : "auth.showPassword",
@@ -200,40 +226,127 @@ export function AuthField({
 					</Pressable>
 				) : null}
 			</View>
+			<FormError message={message} />
 		</View>
 	);
 }
 
+/**
+ * The form's one action, filled. `secondary` is the quieter way out beside
+ * it (back to sign-in): a card button in brand words.
+ */
 export function AuthSubmit({
 	label,
 	onPress,
 	loading,
 	disabled,
+	variant = "primary",
 }: {
 	label: string;
 	onPress: () => void;
 	loading?: boolean;
 	disabled?: boolean;
+	variant?: "primary" | "secondary";
 }) {
 	const c = useShopTheme();
 	const off = loading || disabled;
+	const secondary = variant === "secondary";
 	return (
 		<AnimatedPressable
 			onPress={onPress}
 			disabled={off}
 			scaleTo={0.98}
 			accessibilityRole="button"
+			accessibilityLabel={label}
+			accessibilityState={{ disabled: Boolean(off), busy: Boolean(loading) }}
 			style={[
 				styles.submit,
-				{ backgroundColor: c.primary, opacity: off ? 0.6 : 1 },
+				secondary
+					? {
+							backgroundColor: c.card,
+							borderColor: c.border,
+							borderWidth: 1,
+						}
+					: { backgroundColor: c.fill },
+				{ opacity: off ? 0.6 : 1 },
 			]}
 		>
 			{loading ? (
-				<ActivityIndicator color="#fff" />
+				<ActivityIndicator color={secondary ? c.link : "#fff"} />
 			) : (
-				<Text style={styles.submitText}>{label}</Text>
+				<Text style={[styles.submitText, secondary && { color: c.link }]}>
+					{label}
+				</Text>
 			)}
 		</AnimatedPressable>
+	);
+}
+
+/**
+ * A page of the sign-in flow that waits on the inbox: the mail tile, the
+ * title and what to do, then its actions. Same ground and type as the forms.
+ */
+export function AuthNotice({
+	icon,
+	title,
+	children,
+	actions,
+}: {
+	icon: "mail-outline" | "mail-unread-outline";
+	title: string;
+	children: ReactNode;
+	actions: ReactNode;
+}) {
+	const c = useShopTheme();
+	const { centeredContent } = useResponsive();
+	return (
+		<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
+			<View style={[styles.notice, centeredContent]}>
+				<View style={[styles.noticeTile, { backgroundColor: c.primarySoft }]}>
+					<Ionicons name={icon} size={30} color={c.link} />
+				</View>
+				<Text
+					accessibilityRole="header"
+					style={[styles.noticeTitle, { color: c.text }]}
+				>
+					{title}
+				</Text>
+				{children}
+				<View style={styles.noticeActions}>{actions}</View>
+			</View>
+		</SafeAreaView>
+	);
+}
+
+/** Running text on a notice page. */
+export function AuthNoticeText({
+	children,
+	tone = "body",
+}: {
+	children: ReactNode;
+	tone?: "body" | "hint" | "success" | "danger";
+}) {
+	const c = useShopTheme();
+	const color =
+		tone === "success"
+			? c.successText
+			: tone === "danger"
+				? c.dangerText
+				: tone === "hint"
+					? c.muted
+					: c.body;
+	return (
+		<Text
+			style={[
+				tone === "body" ? styles.noticeBody : styles.noticeHint,
+				{ color },
+			]}
+			accessibilityLiveRegion={
+				tone === "success" || tone === "danger" ? "polite" : undefined
+			}
+		>
+			{children}
+		</Text>
 	);
 }
 
@@ -251,12 +364,15 @@ export function AuthSwitchLink({
 	return (
 		<View style={styles.switchRow}>
 			<Text style={[styles.switchText, { color: c.muted }]}>{prompt} </Text>
-			<Pressable onPress={onPress} hitSlop={8} accessibilityRole="link">
-				<Text style={[styles.switchLink, { color: c.primary }]}>{action}</Text>
+			<Pressable onPress={onPress} hitSlop={12} accessibilityRole="link">
+				<Text style={[styles.switchLink, { color: c.link }]}>{action}</Text>
 			</Pressable>
 		</View>
 	);
 }
+
+/** Quiet words on the shell: 4.6:1 on the day blue, 11:1 on the night one. */
+const SHELL_MUTED = Colors.light.shellMuted;
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
@@ -269,9 +385,9 @@ const styles = StyleSheet.create({
 	},
 	shellBody: { marginTop: 20 },
 	roundBtn: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
 		borderWidth: 1,
 		borderColor: "rgba(255,255,255,0.16)",
 		backgroundColor: "rgba(255,255,255,0.12)",
@@ -297,7 +413,7 @@ const styles = StyleSheet.create({
 		marginTop: 24,
 	},
 	subtitle: {
-		color: "#c5ccf0",
+		color: SHELL_MUTED,
 		fontSize: 15,
 		fontFamily: Fonts.body,
 		lineHeight: 22,
@@ -311,14 +427,13 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		alignItems: "center",
 	},
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
 	inputRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		minHeight: 48,
+		minHeight: 52,
 		borderRadius: 12,
-		borderWidth: 1,
 		paddingHorizontal: 14,
 	},
 	// Android's TextInput carries its own vertical padding.
@@ -341,6 +456,36 @@ const styles = StyleSheet.create({
 		flexWrap: "wrap",
 		justifyContent: "center",
 	},
-	switchText: { fontSize: 14, fontFamily: Fonts.body },
-	switchLink: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	notice: { flex: 1, justifyContent: "center", padding: 24 },
+	noticeTile: {
+		width: 64,
+		height: 64,
+		borderRadius: 18,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	noticeTitle: {
+		fontSize: 28,
+		lineHeight: 33,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.6,
+		marginTop: 20,
+	},
+	noticeBody: {
+		fontSize: 16,
+		fontFamily: Fonts.body,
+		lineHeight: 24,
+		marginTop: 10,
+		maxWidth: 520,
+	},
+	noticeHint: {
+		fontSize: 14,
+		fontFamily: Fonts.body,
+		lineHeight: 20,
+		marginTop: 12,
+		maxWidth: 520,
+	},
+	noticeActions: { marginTop: 28, gap: 12 },
+	switchText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	switchLink: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

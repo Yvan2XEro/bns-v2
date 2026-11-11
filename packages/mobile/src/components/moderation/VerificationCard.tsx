@@ -117,10 +117,10 @@ export function VerificationCard({
 					]}
 				>
 					{claim.isPending ? (
-						<ActivityIndicator color="#ffffff" />
+						<ActivityIndicator color={k.onFill} />
 					) : (
 						<>
-							<Ionicons name="hand-left-outline" size={18} color="#ffffff" />
+							<Ionicons name="hand-left-outline" size={18} color={k.onFill} />
 							<Text style={styles.claimText}>
 								{t("moderation.verifRowClaim")}
 							</Text>

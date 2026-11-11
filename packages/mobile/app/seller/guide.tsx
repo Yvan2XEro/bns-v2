@@ -62,11 +62,7 @@ export default function SellerGuideScreen() {
 									<View
 										style={[styles.icon, { backgroundColor: c.primarySoft }]}
 									>
-										<Ionicons
-											name={ICONS[section]}
-											size={19}
-											color={c.primary}
-										/>
+										<Ionicons name={ICONS[section]} size={19} color={c.link} />
 									</View>
 									<Text
 										style={[styles.title, { color: c.text }]}
@@ -84,14 +80,10 @@ export default function SellerGuideScreen() {
 										accessibilityRole="link"
 										style={styles.link}
 									>
-										<Text style={[styles.linkText, { color: c.primary }]}>
+										<Text style={[styles.linkText, { color: c.link }]}>
 											{t(`sellerGuide.sections.${section}.action`)}
 										</Text>
-										<Ionicons
-											name="arrow-forward"
-											size={15}
-											color={c.primary}
-										/>
+										<Ionicons name="arrow-forward" size={15} color={c.link} />
 									</Pressable>
 								) : null}
 							</View>
@@ -102,8 +94,8 @@ export default function SellerGuideScreen() {
 						accessibilityRole="link"
 						style={styles.link}
 					>
-						<Ionicons name="help-circle-outline" size={17} color={c.primary} />
-						<Text style={[styles.linkText, { color: c.primary }]}>
+						<Ionicons name="help-circle-outline" size={17} color={c.link} />
+						<Text style={[styles.linkText, { color: c.link }]}>
 							{t("sellerGuide.helpCenter")}
 						</Text>
 					</Pressable>

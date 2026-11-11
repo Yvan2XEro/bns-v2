@@ -26,7 +26,7 @@ import Animated, {
 	withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -58,11 +58,26 @@ const TONE: Record<
 	AlertType,
 	{ light: [string, string]; dark: [string, string] }
 > = {
-	success: { light: ["#1e8a4f", "#ddf3e5"], dark: ["#34b26a", "#0b2a18"] },
-	error: { light: ["#d23a2e", "#fbe3e0"], dark: ["#ee7d72", "#3d0f0b"] },
-	warning: { light: ["#9a6a00", "#fff1c7"], dark: ["#ffc94a", "#3a2a00"] },
-	info: { light: ["#23338f", "#e3e7f8"], dark: ["#a9b4f0", "#1d2568"] },
-	confirm: { light: ["#23338f", "#e3e7f8"], dark: ["#a9b4f0", "#1d2568"] },
+	success: {
+		light: [Colors.light.success, Colors.light.successTint],
+		dark: [Colors.dark.success, Colors.dark.successTint],
+	},
+	error: {
+		light: [Colors.light.destructive, Colors.light.dangerTint],
+		dark: [Colors.dark.dangerText, Colors.dark.dangerTint],
+	},
+	warning: {
+		light: [Colors.light.warning, Colors.light.warningTint],
+		dark: [Colors.dark.warning, Colors.dark.warningTint],
+	},
+	info: {
+		light: [Colors.light.primary, Colors.light.primaryTint],
+		dark: [Colors.dark.link, Colors.dark.primaryTint],
+	},
+	confirm: {
+		light: [Colors.light.primary, Colors.light.primaryTint],
+		dark: [Colors.dark.link, Colors.dark.primaryTint],
+	},
 };
 
 const ICON: Record<AlertType, keyof typeof Ionicons.glyphMap> = {
@@ -74,7 +89,7 @@ const ICON: Record<AlertType, keyof typeof Ionicons.glyphMap> = {
 };
 
 /** Deep indigo in both themes, so white labels keep their contrast. */
-const ACTION_BG = "#2f43b5";
+const ACTION_BG = Colors.light.ownBubble;
 const DESTRUCTIVE_BG = "#d23a2e";
 
 // ─── Animation constants ──────────────────────────────────────────────────────

@@ -23,7 +23,7 @@ export function brandTones(
 }
 
 export const BRAND_SWATCHES = [
-	"#23338f",
+	"#2f5bd4",
 	"#0E7490",
 	"#0F766E",
 	"#19733f",

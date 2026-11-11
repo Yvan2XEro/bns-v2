@@ -73,10 +73,10 @@ export function CartSummary({
 				<Ionicons
 					name="cash-outline"
 					size={18}
-					color={c.primary}
+					color={c.link}
 					style={styles.noteIcon}
 				/>
-				<Text style={[styles.noteText, { color: c.primary }]}>
+				<Text style={[styles.noteText, { color: c.link }]}>
 					{t("cart.codNote", { days: withdrawalDays })}
 				</Text>
 			</View>

@@ -21,7 +21,7 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
-import { fillOf } from "@/src/components/shop/ink";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -163,10 +163,10 @@ export default function ResaleCatalogueScreen() {
 					{ borderColor: c.border, backgroundColor: c.card },
 				]}
 			>
-				<Text style={[styles.ordersText, { color: c.primary }]}>
+				<Text style={[styles.ordersText, { color: c.link }]}>
 					{t("sellerResale.purchaseOrdersLink")}
 				</Text>
-				<Ionicons name="chevron-forward" size={17} color={c.primary} />
+				<Ionicons name="chevron-forward" size={17} color={c.link} />
 			</Pressable>
 			{needsTerms ? (
 				<TermsCard
@@ -188,9 +188,7 @@ export default function ResaleCatalogueScreen() {
 					}}
 				/>
 			) : null}
-			{catalogue.isLoading ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
-			) : null}
+			{catalogue.isLoading ? <ListSkeleton /> : null}
 			{catalogue.isError && !needsTerms ? (
 				hasErrorCode(catalogue.error, ERROR_CODES.resaleDisabled) ? (
 					<EmptyState
@@ -298,7 +296,7 @@ function TermsCard({
 				<Ionicons
 					name={accepted ? "checkbox" : "square-outline"}
 					size={21}
-					color={c.primary}
+					color={c.link}
 				/>
 				<Text style={[styles.body, { color: c.text }]}>{acceptLabel}</Text>
 			</Pressable>
@@ -526,13 +524,15 @@ function VariantPrice({
 								styles.priceInput,
 								{
 									backgroundColor: c.input,
-									borderColor: fieldState.error ? "#d23a2e" : c.border,
+									borderColor: fieldState.error ? c.danger : c.border,
 									color: c.text,
 								},
 							]}
 						/>
 						{fieldState.error ? (
-							<Text style={styles.fieldError}>{fieldState.error.message}</Text>
+							<Text style={[styles.fieldError, { color: dangerInk(c) }]}>
+								{fieldState.error.message}
+							</Text>
 						) : null}
 					</View>
 				)}
@@ -551,7 +551,6 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 	},
 	safe: { flex: 1 },
-	spinner: { marginTop: 28 },
 	search: {
 		alignItems: "center",
 		borderRadius: 12,
@@ -615,13 +614,13 @@ const styles = StyleSheet.create({
 		width: "100%",
 	},
 	fieldError: {
-		color: "#d23a2e",
 		fontFamily: Fonts.body,
-		fontSize: 11,
+		fontSize: 12,
+		lineHeight: 16,
 	},
 	primaryButton: {
 		alignItems: "center",
-		borderRadius: 10,
+		borderRadius: 12,
 		justifyContent: "center",
 		minHeight: 48,
 		paddingHorizontal: 14,

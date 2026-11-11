@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts, TextStyles } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
@@ -24,8 +24,10 @@ import {
 	PriceUnitChips,
 	priceUnitToSend,
 } from "@/src/components/listing/PriceUnitChips";
+import { SkeletonBox } from "@/src/components/listing/Skeletons";
 import { FieldIssueText } from "@/src/components/seller/FieldIssueText";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
+import { StatusTag, type StatusTone } from "@/src/components/shop/Tags";
 import { TagPicker } from "@/src/components/TagPicker";
 import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
 import { PhotoLimitNote } from "@/src/components/ui/PhotoLimitNote";
@@ -71,6 +73,21 @@ const DURATIONS = [30, 60, 90];
 
 type ImageItem = { id: string; uri: string };
 
+/** The Ndop tokens for the current appearance. */
+function usePalette() {
+	return Colors[useColorScheme() === "dark" ? "dark" : "light"];
+}
+
+/** How the listing's current state reads, by what it asks of the seller. */
+const STATUS_TONE: Record<string, StatusTone> = {
+	draft: "neutral",
+	pending: "warning",
+	published: "success",
+	rejected: "danger",
+	sold: "info",
+	expired: "neutral",
+};
+
 function SectionCard({
 	icon,
 	title,
@@ -78,39 +95,37 @@ function SectionCard({
 	cardBg,
 	borderColor,
 	textColor,
-	mutedColor,
-	primaryColor,
-	isDark,
 }: any) {
+	const C = usePalette();
 	return (
 		<View
 			style={[styles.sectionCard, { backgroundColor: cardBg, borderColor }]}
 		>
 			<View style={styles.sectionHeader}>
 				<View
-					style={[
-						styles.sectionIconBox,
-						{ backgroundColor: isDark ? "#12163a" : "#eceef5" },
-					]}
+					style={[styles.sectionIconBox, { backgroundColor: C.primaryTint }]}
+					importantForAccessibility="no-hide-descendants"
 				>
-					<Ionicons
-						name={icon}
-						size={16}
-						color={isDark ? "#a3a7c8" : "#4a4f78"}
-					/>
+					<Ionicons name={icon} size={16} color={C.link} />
 				</View>
-				<Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
+				<Text
+					style={[styles.sectionTitle, { color: textColor }]}
+					accessibilityRole="header"
+				>
+					{title}
+				</Text>
 			</View>
 			<View style={styles.sectionBody}>{children}</View>
 		</View>
 	);
 }
 
-function FieldLabel({ label, required, mutedColor }: any) {
+function FieldLabel({ label, required }: any) {
+	const C = usePalette();
 	return (
-		<Text style={[styles.fieldLabel, { color: mutedColor }]}>
+		<Text style={[styles.fieldLabel, { color: C.foreground }]}>
 			{label}
-			{required && <Text style={{ color: "#e5574b" }}> *</Text>}
+			{required && <Text style={{ color: C.dangerText }}> *</Text>}
 		</Text>
 	);
 }
@@ -169,6 +184,7 @@ function EditAttributeField({
 	inputBg: string;
 }) {
 	const { t } = useTranslation();
+	const C = usePalette();
 	const issue = getAttributeIssue(attribute, value);
 	// A field left empty is not an error the user made yet; bad input is.
 	const showIssue = issue !== null && issue.code !== "required";
@@ -193,13 +209,15 @@ function EditAttributeField({
 			/>
 
 			{attribute.type === "select" && attribute.options.length > 0 ? (
-				<View style={styles.pillRow}>
+				<View style={styles.pillRow} accessibilityRole="radiogroup">
 					{attribute.options.map((opt) => {
 						const active = value === opt.value;
 						return (
 							<Pressable
 								key={opt.value}
 								onPress={() => onChange(active ? "" : opt.value)}
+								accessibilityRole="radio"
+								accessibilityState={{ checked: active }}
 								style={[
 									styles.pill,
 									{
@@ -208,11 +226,13 @@ function EditAttributeField({
 									},
 								]}
 							>
-								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								{active && (
+									<Ionicons name="checkmark" size={14} color="#ffffff" />
+								)}
 								<Text
 									style={[
 										styles.pillText,
-										{ color: active ? "#fff" : mutedColor },
+										{ color: active ? "#ffffff" : textColor },
 									]}
 								>
 									{opt.label}
@@ -222,7 +242,7 @@ function EditAttributeField({
 					})}
 				</View>
 			) : attribute.type === "boolean" ? (
-				<View style={styles.pillRow}>
+				<View style={styles.pillRow} accessibilityRole="radiogroup">
 					{[
 						{ label: t("common.yes"), value: "true" },
 						{ label: t("common.no"), value: "false" },
@@ -232,6 +252,8 @@ function EditAttributeField({
 							<Pressable
 								key={opt.value}
 								onPress={() => onChange(active ? "" : opt.value)}
+								accessibilityRole="radio"
+								accessibilityState={{ checked: active }}
 								style={[
 									styles.pill,
 									{
@@ -240,11 +262,13 @@ function EditAttributeField({
 									},
 								]}
 							>
-								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								{active && (
+									<Ionicons name="checkmark" size={14} color="#ffffff" />
+								)}
 								<Text
 									style={[
 										styles.pillText,
-										{ color: active ? "#fff" : mutedColor },
+										{ color: active ? "#ffffff" : textColor },
 									]}
 								>
 									{opt.label}
@@ -259,7 +283,7 @@ function EditAttributeField({
 						styles.inputRow,
 						{
 							backgroundColor: inputBg,
-							borderColor: showIssue ? "#e5574b" : borderColor,
+							borderColor: showIssue ? C.destructive : borderColor,
 						},
 					]}
 				>
@@ -290,6 +314,7 @@ function EditAttributeField({
 									: "default"
 						}
 						maxLength={attribute.type === "date" ? 10 : undefined}
+						accessibilityLabel={attribute.name}
 						style={[styles.rowInput, { color: textColor }]}
 					/>
 					{/* The unit sits with the value, e.g. "120 km". */}
@@ -302,7 +327,10 @@ function EditAttributeField({
 			)}
 
 			{showIssue ? (
-				<Text style={[styles.attrError, { color: "#e5574b" }]}>
+				<Text
+					style={[styles.attrError, { color: C.dangerText }]}
+					accessibilityRole="alert"
+				>
 					{attributeIssueMessage(issue, t)}
 				</Text>
 			) : bounds ? (
@@ -321,13 +349,17 @@ export default function EditListingScreen() {
 	const { t } = useTranslation();
 	const { photosIncluded } = useAppConfig();
 
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
-	const inputBg = isDark ? "#0c1030" : "#f4f5f9";
+	// Ndop tokens. `primaryColor` is for brand words, rings and icons; `fill`
+	// sits behind white labels (white on the night primary falls under 4.5:1).
+	const C = Colors[isDark ? "dark" : "light"];
+	const bg = C.background;
+	const cardBg = C.card;
+	const textColor = C.foreground;
+	const mutedColor = C.mutedForeground;
+	const primaryColor = C.link;
+	const fill = C.primaryFill;
+	const borderColor = C.border;
+	const inputBg = C.well;
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["listing", id],
@@ -675,11 +707,39 @@ export default function EditListingScreen() {
 		save();
 	};
 
+	// The form's own frame while the ad loads: header, then cards in the shape
+	// of the photo strip and the fields, instead of a lone spinner.
 	if (isLoading) {
 		return (
-			<View style={[styles.loader, { backgroundColor: bg }]}>
-				<ActivityIndicator color={primaryColor} size="large" />
-			</View>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: bg }]}
+			>
+				<View style={[styles.header, { borderBottomColor: borderColor }]}>
+					<HeaderBackButton
+						color={textColor}
+						fallback="/(tabs)/account"
+						style={styles.backBtn}
+					/>
+					<Text
+						style={[styles.headerTitle, { color: textColor }]}
+						accessibilityRole="header"
+					>
+						{t("edit.title")}
+					</Text>
+					<View style={styles.backBtn} />
+				</View>
+				<View
+					style={[styles.scroll, centeredContent]}
+					accessible
+					accessibilityRole="progressbar"
+					accessibilityLabel={t("common.loading")}
+				>
+					<SkeletonBox width="100%" height={150} radius={16} />
+					<SkeletonBox width="100%" height={230} radius={16} />
+					<SkeletonBox width="100%" height={180} radius={16} />
+				</View>
+			</SafeAreaView>
 		);
 	}
 
@@ -704,19 +764,29 @@ export default function EditListingScreen() {
 					fallback="/(tabs)/account"
 					style={styles.backBtn}
 				/>
-				<Text style={[styles.headerTitle, { color: textColor }]}>
+				<Text
+					style={[styles.headerTitle, { color: textColor }]}
+					accessibilityRole="header"
+				>
 					{t("edit.title")}
 				</Text>
 				<Pressable
 					onPress={handleSavePress}
 					disabled={isPending}
-					style={[
+					hitSlop={6}
+					accessibilityRole="button"
+					accessibilityLabel={t("edit.save")}
+					accessibilityState={{ busy: isPending, disabled: isPending }}
+					style={({ pressed }) => [
 						styles.saveBtn,
-						{ backgroundColor: primaryColor, opacity: isPending ? 0.7 : 1 },
+						{
+							backgroundColor: fill,
+							opacity: isPending ? 0.7 : pressed ? 0.85 : 1,
+						},
 					]}
 				>
 					{isPending ? (
-						<ActivityIndicator size="small" color="#fff" />
+						<ActivityIndicator size="small" color="#ffffff" />
 					) : (
 						<Text style={styles.saveBtnText}>{t("edit.save")}</Text>
 					)}
@@ -771,6 +841,7 @@ export default function EditListingScreen() {
 									source={{ uri: img.uri }}
 									style={styles.imageThumb}
 									contentFit="cover"
+									accessibilityIgnoresInvertColors
 								/>
 								{index === 0 && (
 									<View style={styles.mainBadge}>
@@ -783,19 +854,30 @@ export default function EditListingScreen() {
 									onPress={() =>
 										setImages((prev) => prev.filter((_, i) => i !== index))
 									}
+									hitSlop={10}
+									accessibilityRole="button"
+									accessibilityLabel={t("create.removePhoto")}
 									style={styles.removeImageBtn}
 								>
-									<Ionicons name="close" size={12} color="#fff" />
+									<Ionicons name="close" size={16} color="#ffffff" />
 								</Pressable>
 							</View>
 						))}
 						<Pressable
 							onPress={showImagePicker}
 							disabled={uploading || photosFull}
-							accessibilityState={{ disabled: uploading || photosFull }}
-							style={[
+							accessibilityRole="button"
+							accessibilityLabel={t("edit.addPhoto")}
+							accessibilityState={{
+								disabled: uploading || photosFull,
+								busy: uploading,
+							}}
+							style={({ pressed }) => [
 								styles.addImageBtn,
-								{ backgroundColor: inputBg, borderColor },
+								{
+									backgroundColor: pressed ? C.primaryTint : cardBg,
+									borderColor: primaryColor,
+								},
 								photosFull && { opacity: 0.4 },
 							]}
 						>
@@ -805,10 +887,13 @@ export default function EditListingScreen() {
 								<>
 									<Ionicons
 										name="camera-outline"
-										size={24}
-										color={mutedColor}
+										size={22}
+										color={primaryColor}
 									/>
-									<Text style={[styles.addImageText, { color: mutedColor }]}>
+									<Text
+										style={[styles.addImageText, { color: primaryColor }]}
+										numberOfLines={2}
+									>
 										{t("edit.addPhoto")}
 									</Text>
 								</>
@@ -850,8 +935,12 @@ export default function EditListingScreen() {
 								{ backgroundColor: inputBg, borderColor, color: textColor },
 							]}
 							maxLength={100}
+							accessibilityLabel={t("edit.titleLabel")}
 						/>
-						<Text style={[styles.charCount, { color: mutedColor }]}>
+						<Text
+							style={[styles.charCount, { color: mutedColor }]}
+							importantForAccessibility="no"
+						>
 							{title.length}/100
 						</Text>
 					</View>
@@ -879,6 +968,7 @@ export default function EditListingScreen() {
 							]}
 							multiline
 							numberOfLines={5}
+							accessibilityLabel={t("edit.descriptionLabel")}
 						/>
 					</View>
 				</SectionCard>
@@ -893,7 +983,10 @@ export default function EditListingScreen() {
 						{attributeSections.map((section) => (
 							<View key={section.key} style={styles.attrSection}>
 								{section.title ? (
-									<Text style={[styles.groupHeading, { color: textColor }]}>
+									<Text
+										style={[styles.groupHeading, { color: textColor }]}
+										accessibilityRole="header"
+									>
 										{section.title}
 									</Text>
 								) : null}
@@ -905,7 +998,8 @@ export default function EditListingScreen() {
 										onChange={(v: string) => updateAttr(attr.slug, v)}
 										textColor={textColor}
 										mutedColor={mutedColor}
-										primaryColor={primaryColor}
+										// Behind the selected pill's white label.
+										primaryColor={fill}
 										borderColor={borderColor}
 										inputBg={inputBg}
 									/>
@@ -934,9 +1028,6 @@ export default function EditListingScreen() {
 									{ backgroundColor: inputBg, borderColor },
 								]}
 							>
-								<Text style={[styles.currency, { color: mutedColor }]}>
-									{t("common.currency", { defaultValue: "XAF" })}
-								</Text>
 								<TextInput
 									value={price}
 									// Whole XAF amounts only: a separator typed on the numeric
@@ -946,7 +1037,17 @@ export default function EditListingScreen() {
 									placeholderTextColor={mutedColor}
 									style={[styles.priceInput, { color: textColor }]}
 									keyboardType="number-pad"
+									accessibilityLabel={priceLabel}
 								/>
+								{/* The currency on the yellow tag every price wears. */}
+								<View
+									style={[styles.currencyTag, { backgroundColor: C.sun }]}
+									importantForAccessibility="no-hide-descendants"
+								>
+									<Text style={[styles.currency, { color: C.sunForeground }]}>
+										{t("common.currency", { defaultValue: "XAF" })}
+									</Text>
+								</View>
 							</View>
 							<PriceUnitChips
 								kind={categoryPreset.categoryType}
@@ -1016,25 +1117,28 @@ export default function EditListingScreen() {
 							label={t("edit.durationLabel")}
 							mutedColor={mutedColor}
 						/>
-						<View style={styles.pillRow}>
+						<View style={styles.pillRow} accessibilityRole="radiogroup">
 							{DURATIONS.map((d) => {
 								const active = duration === d;
 								return (
 									<Pressable
 										key={d}
 										onPress={() => setDuration(d)}
+										accessibilityRole="radio"
+										accessibilityState={{ checked: active }}
+										accessibilityLabel={`${d} ${t("edit.days")}`}
 										style={[
 											styles.durationPill,
 											{
-												backgroundColor: active ? primaryColor : inputBg,
-												borderColor: active ? primaryColor : borderColor,
+												backgroundColor: active ? fill : inputBg,
+												borderColor: active ? fill : borderColor,
 											},
 										]}
 									>
 										<Text
 											style={[
 												styles.durationNum,
-												{ color: active ? "#fff" : textColor },
+												{ color: active ? "#ffffff" : textColor },
 											]}
 										>
 											{d}
@@ -1042,9 +1146,7 @@ export default function EditListingScreen() {
 										<Text
 											style={[
 												styles.durationUnit,
-												{
-													color: active ? "rgba(255,255,255,0.75)" : mutedColor,
-												},
+												{ color: active ? "#ffffff" : mutedColor },
 											]}
 										>
 											{t("edit.days")}
@@ -1066,42 +1168,6 @@ export default function EditListingScreen() {
 					{listing?.status &&
 						(() => {
 							const s = listing.status as string;
-							const statusColors: Record<
-								string,
-								{ bg: string; text: string; border: string }
-							> = {
-								draft: {
-									bg: isDark ? "#1a1f4a" : "#eceef5",
-									text: isDark ? "#a3a7c8" : "#5b6088",
-									border: isDark ? "#3a3f66" : "#c9cce0",
-								},
-								pending: {
-									bg: isDark ? "#2a2000" : "#fff9e8",
-									text: isDark ? "#ffc94a" : "#6e4700",
-									border: isDark ? "#6e4d00" : "#ffe08a",
-								},
-								published: {
-									bg: isDark ? "#0b2a18" : "#effaf3",
-									text: isDark ? "#4ade80" : "#19733f",
-									border: isDark ? "#155c35" : "#bbf7d0",
-								},
-								rejected: {
-									bg: isDark ? "#2b0b09" : "#fdf1ef",
-									text: isDark ? "#ee7d72" : "#b02c22",
-									border: isDark ? "#8e2219" : "#f7cbc6",
-								},
-								sold: {
-									bg: isDark ? "#1e1440" : "#faf5ff",
-									text: isDark ? "#c084fc" : "#7e22ce",
-									border: isDark ? "#6b21a8" : "#e9d5ff",
-								},
-								expired: {
-									bg: isDark ? "#2c1000" : "#fff7ed",
-									text: isDark ? "#fb923c" : "#c2410c",
-									border: isDark ? "#9a3412" : "#fed7aa",
-								},
-							};
-							const colors = statusColors[s] ?? statusColors.draft;
 							// Sniffing the French translation to pick a language was both a
 							// t() bypass and wrong for every other status, which stayed
 							// French in English.
@@ -1119,60 +1185,32 @@ export default function EditListingScreen() {
 								expired: t("listings.statusExpired"),
 							};
 							return (
-								<View style={{ gap: 8 }}>
-									<View
-										style={{
-											flexDirection: "row",
-											alignItems: "center",
-											gap: 8,
-										}}
-									>
+								<View style={styles.statusBlock}>
+									<View style={styles.statusRow}>
 										<Text style={[styles.fieldLabel, { color: mutedColor }]}>
 											{t("edit.statusCurrentLabel")}
 										</Text>
-										<View
-											style={{
-												borderRadius: 20,
-												borderWidth: 1,
-												borderColor: colors.border,
-												backgroundColor: colors.bg,
-												paddingHorizontal: 10,
-												paddingVertical: 3,
-											}}
-										>
-											<Text
-												style={{
-													fontSize: 12,
-													fontFamily: Fonts.bodySemibold,
-													color: colors.text,
-												}}
-											>
-												{statusLabel[s] ?? s}
-											</Text>
-										</View>
+										<StatusTag
+											label={statusLabel[s] ?? s}
+											tone={STATUS_TONE[s] ?? "neutral"}
+										/>
 									</View>
 
 									{s === "published" && (
 										<View
-											style={{
-												borderRadius: 10,
-												borderWidth: 1,
-												borderColor: isDark ? "#6e4d00" : "#ffe08a",
-												backgroundColor: isDark ? "#2a2000" : "#fff9e8",
-												padding: 10,
-												flexDirection: "row",
-												gap: 8,
-												alignItems: "flex-start",
-											}}
+											style={[
+												styles.notice,
+												{ backgroundColor: C.warningTint },
+											]}
 										>
-											<Text style={{ fontSize: 14 }}>\u26a0\ufe0f</Text>
+											<Ionicons
+												name="warning-outline"
+												size={18}
+												color={C.warningText}
+												importantForAccessibility="no"
+											/>
 											<Text
-												style={{
-													flex: 1,
-													fontSize: 12,
-													fontFamily: Fonts.body,
-													color: isDark ? "#ffc94a" : "#6e4700",
-												}}
+												style={[styles.noticeText, { color: C.warningText }]}
 											>
 												{t("edit.statusPublishedNotice")}
 											</Text>
@@ -1181,37 +1219,30 @@ export default function EditListingScreen() {
 
 									{s === "rejected" && (
 										<View
-											style={{
-												borderRadius: 10,
-												borderWidth: 1,
-												borderColor: isDark ? "#8e2219" : "#f7cbc6",
-												backgroundColor: isDark ? "#2b0b09" : "#fdf1ef",
-												padding: 10,
-												gap: 4,
-											}}
+											style={[styles.notice, { backgroundColor: C.dangerTint }]}
 										>
-											<Text
-												style={{
-													fontSize: 12,
-													fontFamily: Fonts.bodySemibold,
-													color: isDark ? "#ee7d72" : "#b02c22",
-												}}
-											>
-												{t("edit.statusRejectedNotice")}
-											</Text>
-											{rejection ? (
+											<Ionicons
+												name="alert-circle-outline"
+												size={18}
+												color={C.dangerText}
+												importantForAccessibility="no"
+											/>
+											<View style={styles.noticeBody}>
 												<Text
-													style={{
-														fontSize: 12,
-														fontFamily: Fonts.body,
-														color: isDark ? "#ee7d72" : "#b02c22",
-													}}
+													style={[styles.noticeTitle, { color: C.dangerText }]}
 												>
-													{t("edit.statusRejectionReason", {
-														reason: rejection,
-													})}
+													{t("edit.statusRejectedNotice")}
 												</Text>
-											) : null}
+												{rejection ? (
+													<Text
+														style={[styles.noticeText, { color: C.dangerText }]}
+													>
+														{t("edit.statusRejectionReason", {
+															reason: rejection,
+														})}
+													</Text>
+												) : null}
+											</View>
 										</View>
 									)}
 								</View>
@@ -1219,7 +1250,7 @@ export default function EditListingScreen() {
 						})()}
 
 					{/* Status options */}
-					<View style={{ gap: 10 }}>
+					<View style={styles.statusOptions} accessibilityRole="radiogroup">
 						{(
 							[
 								{
@@ -1246,60 +1277,40 @@ export default function EditListingScreen() {
 								<Pressable
 									key={opt.value}
 									onPress={() => setNextStatus(opt.value)}
-									style={{
-										borderRadius: 12,
-										borderWidth: 2,
-										borderColor: active ? primaryColor : borderColor,
-										backgroundColor: active
-											? isDark
-												? "rgba(104, 120, 234,0.1)"
-												: "rgba(35, 51, 143,0.05)"
-											: cardBg,
-										padding: 14,
-										flexDirection: "row",
-										alignItems: "center",
-										gap: 12,
-									}}
+									accessibilityRole="radio"
+									accessibilityState={{ checked: active }}
+									accessibilityLabel={`${opt.label}. ${opt.desc}`}
+									style={[
+										styles.statusOption,
+										{
+											borderColor: active ? primaryColor : borderColor,
+											backgroundColor: active ? C.primaryTint : cardBg,
+										},
+									]}
 								>
 									<View
-										style={{
-											width: 20,
-											height: 20,
-											borderRadius: 10,
-											borderWidth: 2,
-											borderColor: active ? primaryColor : mutedColor,
-											alignItems: "center",
-											justifyContent: "center",
-										}}
+										style={[
+											styles.radio,
+											{ borderColor: active ? primaryColor : mutedColor },
+										]}
 									>
 										{active && (
 											<View
-												style={{
-													width: 10,
-													height: 10,
-													borderRadius: 5,
-													backgroundColor: primaryColor,
-												}}
+												style={[
+													styles.radioDot,
+													{ backgroundColor: primaryColor },
+												]}
 											/>
 										)}
 									</View>
-									<View style={{ flex: 1 }}>
+									<View style={styles.statusOptionText}>
 										<Text
-											style={{
-												fontSize: 14,
-												fontFamily: Fonts.bodySemibold,
-												color: textColor,
-											}}
+											style={[styles.statusOptionLabel, { color: textColor }]}
 										>
 											{opt.label}
 										</Text>
 										<Text
-											style={{
-												fontSize: 12,
-												fontFamily: Fonts.body,
-												color: mutedColor,
-												marginTop: 2,
-											}}
+											style={[styles.statusOptionDesc, { color: mutedColor }]}
 										>
 											{opt.desc}
 										</Text>
@@ -1308,6 +1319,7 @@ export default function EditListingScreen() {
 										name={opt.icon}
 										size={18}
 										color={active ? primaryColor : mutedColor}
+										importantForAccessibility="no"
 									/>
 								</Pressable>
 							);
@@ -1326,19 +1338,22 @@ export default function EditListingScreen() {
 					onPress={handleSavePress}
 					disabled={isPending}
 					scaleTo={0.97}
+					accessibilityRole="button"
+					accessibilityLabel={t("edit.saveChanges")}
+					accessibilityState={{ busy: isPending, disabled: isPending }}
 					style={[
 						styles.submitBtn,
-						{ backgroundColor: primaryColor, opacity: isPending ? 0.7 : 1 },
+						{ backgroundColor: fill, opacity: isPending ? 0.7 : 1 },
 					]}
 				>
 					{isPending ? (
-						<ActivityIndicator color="#fff" />
+						<ActivityIndicator color="#ffffff" />
 					) : (
 						<>
 							<Ionicons
 								name="checkmark-circle-outline"
 								size={20}
-								color="#fff"
+								color="#ffffff"
 							/>
 							<Text style={styles.submitText}>{t("edit.saveChanges")}</Text>
 						</>
@@ -1351,19 +1366,18 @@ export default function EditListingScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	loader: { flex: 1, alignItems: "center", justifyContent: "center" },
 
 	/* Header */
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
+		paddingVertical: 8,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	backBtn: {
-		width: 40,
-		height: 40,
+		width: 44,
+		height: 44,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -1374,15 +1388,16 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	saveBtn: {
+		minHeight: 38,
+		minWidth: 44,
 		borderRadius: 10,
 		paddingHorizontal: 14,
-		paddingVertical: 7,
-		minWidth: 40,
 		alignItems: "center",
+		justifyContent: "center",
 	},
 	saveBtnText: {
-		color: "#fff",
-		fontSize: 13,
+		color: "#ffffff",
+		fontSize: 15,
 		fontFamily: Fonts.bodyBold,
 	},
 
@@ -1391,7 +1406,7 @@ const styles = StyleSheet.create({
 	/* Section card */
 	sectionCard: {
 		borderRadius: 16,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		overflow: "hidden",
 	},
 	sectionHeader: {
@@ -1403,15 +1418,15 @@ const styles = StyleSheet.create({
 		paddingBottom: 10,
 	},
 	sectionIconBox: {
-		width: 30,
-		height: 30,
-		borderRadius: 8,
+		width: 32,
+		height: 32,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	sectionTitle: {
-		fontSize: 15,
-		fontFamily: Fonts.displayBold,
+		...TextStyles.h3,
+		flexShrink: 1,
 	},
 	sectionBody: {
 		paddingHorizontal: 16,
@@ -1423,74 +1438,121 @@ const styles = StyleSheet.create({
 	fieldGroup: { gap: 6 },
 	attrSection: { gap: 14 },
 	groupHeading: {
-		fontSize: 12,
-		fontFamily: Fonts.displayBold,
-		letterSpacing: 0.4,
-		textTransform: "uppercase",
+		...TextStyles.h4,
 	},
 	attrUnit: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 		marginLeft: 8,
 	},
 	attrError: {
-		fontSize: 12,
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 	},
 	attrHint: {
-		fontSize: 11,
+		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.body,
 	},
 	fieldLabel: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 	hint: {
-		fontSize: 12,
+		fontSize: 13,
 		fontFamily: Fonts.body,
-		lineHeight: 18,
+		lineHeight: 19,
 	},
 	input: {
-		borderRadius: 10,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
-		fontSize: 15,
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
+		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
 	multiline: {
 		minHeight: 120,
 		textAlignVertical: "top",
-		paddingTop: 11,
+		lineHeight: 22,
 	},
 	charCount: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.body,
+		fontVariant: ["tabular-nums"],
 		alignSelf: "flex-end",
 	},
 	inputRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		borderRadius: 10,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		paddingVertical: 6,
 	},
 	rowInput: {
 		flex: 1,
-		fontSize: 15,
+		fontSize: 16,
 		fontFamily: Fonts.body,
+		paddingVertical: 6,
+	},
+	currencyTag: {
+		borderRadius: 7,
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+		marginLeft: 8,
 	},
 	currency: {
-		fontSize: 13,
-		fontFamily: Fonts.displayBold,
-		marginRight: 8,
+		fontSize: 14,
+		fontFamily: Fonts.displayExtrabold,
 	},
 	priceInput: {
 		flex: 1,
-		fontSize: 16,
-		fontFamily: Fonts.displayBold,
+		fontSize: 22,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.4,
+		fontVariant: ["tabular-nums"],
+		paddingVertical: 6,
 	},
+
+	/* Status */
+	statusBlock: { gap: 10 },
+	statusRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+	notice: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		gap: 10,
+		borderRadius: 12,
+		padding: 12,
+	},
+	noticeBody: { flex: 1, gap: 4 },
+	noticeTitle: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	noticeText: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	statusOptions: { gap: 10 },
+	statusOption: {
+		minHeight: 64,
+		borderRadius: 12,
+		borderWidth: 1.5,
+		padding: 14,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+	},
+	radio: {
+		width: 22,
+		height: 22,
+		borderRadius: 11,
+		borderWidth: 2,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	radioDot: { width: 10, height: 10, borderRadius: 5 },
+	statusOptionText: { flex: 1, gap: 2 },
+	statusOptionLabel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	statusOptionDesc: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 
 	/* Pills */
 	pillRow: {
@@ -1501,33 +1563,36 @@ const styles = StyleSheet.create({
 	pill: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 5,
-		borderRadius: 20,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 7,
+		gap: 6,
+		minHeight: 44,
+		borderRadius: 22,
+		borderWidth: 1,
+		paddingHorizontal: 16,
 	},
 	pillText: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 
 	/* Duration */
 	durationPill: {
 		flex: 1,
+		minHeight: 56,
 		alignItems: "center",
+		justifyContent: "center",
 		borderRadius: 12,
-		borderWidth: 1.5,
-		paddingVertical: 10,
+		borderWidth: 1,
+		paddingVertical: 8,
 	},
 	durationNum: {
-		fontSize: 18,
-		fontFamily: Fonts.displayExtrabold,
-		lineHeight: 22,
+		fontSize: 20,
+		fontFamily: Fonts.displayBold,
+		lineHeight: 24,
+		fontVariant: ["tabular-nums"],
 	},
 	durationUnit: {
-		fontSize: 11,
-		fontFamily: Fonts.body,
+		fontSize: 12,
+		fontFamily: Fonts.bodyMedium,
 	},
 
 	/* Images */
@@ -1543,46 +1608,49 @@ const styles = StyleSheet.create({
 	imageThumb: {
 		width: 90,
 		height: 90,
-		borderRadius: 10,
+		borderRadius: 12,
 	},
 	mainBadge: {
 		position: "absolute",
-		bottom: 4,
-		left: 4,
-		backgroundColor: "rgba(0,0,0,0.55)",
+		bottom: 6,
+		left: 6,
+		backgroundColor: "rgba(18, 22, 58, 0.75)",
 		borderRadius: 6,
-		paddingHorizontal: 5,
+		paddingHorizontal: 6,
 		paddingVertical: 2,
 	},
 	mainBadgeText: {
-		color: "#fff",
-		fontSize: 11,
-		fontFamily: Fonts.displayBold,
+		color: "#ffffff",
+		fontSize: 12,
+		fontFamily: Fonts.bodyBold,
 	},
+	// The same ink disc as on the create form and an uploading photo.
 	removeImageBtn: {
 		position: "absolute",
-		top: 4,
-		right: 4,
-		backgroundColor: "rgba(0,0,0,0.6)",
-		borderRadius: 10,
-		width: 20,
-		height: 20,
+		top: 6,
+		right: 6,
+		backgroundColor: "rgba(18, 22, 58, 0.7)",
+		borderRadius: 14,
+		width: 28,
+		height: 28,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	addImageBtn: {
 		width: 90,
 		height: 90,
-		borderRadius: 10,
+		borderRadius: 12,
 		borderWidth: 1.5,
 		borderStyle: "dashed",
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 4,
+		padding: 4,
 	},
 	addImageText: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
+		textAlign: "center",
 	},
 
 	/* Submit */
@@ -1591,12 +1659,13 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		borderRadius: 14,
-		paddingVertical: 15,
+		minHeight: 52,
+		borderRadius: 12,
+		paddingVertical: 14,
 		marginTop: 4,
 	},
 	submitText: {
-		color: "#fff",
+		color: "#ffffff",
 		fontSize: 16,
 		fontFamily: Fonts.bodyBold,
 	},

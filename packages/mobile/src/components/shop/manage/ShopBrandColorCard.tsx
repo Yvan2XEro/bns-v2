@@ -100,7 +100,7 @@ export function ShopBrandColorCard({
 				autoCapitalize="characters"
 				autoCorrect={false}
 				maxLength={7}
-				placeholder="#23338f"
+				placeholder="#2f5bd4"
 				placeholderTextColor={c.muted}
 				accessibilityLabel={t("shop.brandColorCustom")}
 				style={[

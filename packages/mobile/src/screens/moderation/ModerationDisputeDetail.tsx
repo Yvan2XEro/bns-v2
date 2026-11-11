@@ -504,7 +504,6 @@ function Choice<T extends string>({
 								styles.choice,
 								{
 									borderColor: on ? k.linkText : c.border,
-									borderWidth: on ? 2 : 1,
 									backgroundColor: on ? k.selectedSoft : c.card,
 								},
 							]}
@@ -560,11 +559,11 @@ function Toggle({
 					value={enabled}
 					onValueChange={onPress}
 					trackColor={{
-						false: c.isDark ? "#3a4290" : "#c9cce0",
+						false: k.strongBorder,
 						true: k.primaryFill,
 					}}
-					thumbColor="#ffffff"
-					ios_backgroundColor={c.isDark ? "#3a4290" : "#c9cce0"}
+					thumbColor={k.onFill}
+					ios_backgroundColor={k.strongBorder}
 				/>
 			</View>
 		</Pressable>
@@ -612,8 +611,9 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 6,
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 12,
+		borderWidth: 1.5,
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},

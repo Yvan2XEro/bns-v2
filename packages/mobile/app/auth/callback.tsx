@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/src/lib/auth";
 import { getSafeAuthRedirect } from "@/src/lib/authRedirect";
@@ -20,10 +20,11 @@ export default function AuthCallbackScreen() {
 	const exchangeFailed = useRef(false);
 	const redirectTo = getSafeAuthRedirect(params.redirect);
 
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
+	const c = Colors[isDark ? "dark" : "light"];
+	const bg = c.background;
+	const textColor = c.foreground;
+	const mutedColor = c.mutedForeground;
+	const primaryColor = c.link;
 
 	// The deep link carries the transfer token. The login screen normally
 	// exchanges it, but after a relaunch nobody else will: exchange it here
@@ -62,7 +63,10 @@ export default function AuthCallbackScreen() {
 		<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
 			<View style={styles.content}>
 				<ActivityIndicator size="large" color={primaryColor} />
-				<Text style={[styles.title, { color: textColor }]}>
+				<Text
+					accessibilityRole="header"
+					style={[styles.title, { color: textColor }]}
+				>
 					{t("auth.callbackTitle")}
 				</Text>
 				<Text style={[styles.subtitle, { color: mutedColor }]}>
@@ -88,7 +92,9 @@ const styles = StyleSheet.create({
 	},
 	subtitle: {
 		fontFamily: Fonts.body,
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		marginTop: 8,
+		textAlign: "center",
 	},
 });

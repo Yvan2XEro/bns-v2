@@ -29,7 +29,7 @@ export function LevelBadge({
 		badge === "identity"
 			? { bg: c.successSoft, fg: c.successText }
 			: badge === "business"
-				? { bg: c.primarySoft, fg: c.primary }
+				? { bg: c.primarySoft, fg: c.link }
 				: { bg: c.neutralSoft, fg: c.body };
 
 	return (

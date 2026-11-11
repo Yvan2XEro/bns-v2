@@ -91,10 +91,10 @@ export default function ResalePurchaseOrdersScreen() {
 					{ borderColor: c.border, backgroundColor: c.card },
 				]}
 			>
-				<Text style={[styles.financeLinkText, { color: c.primary }]}>
+				<Text style={[styles.financeLinkText, { color: c.link }]}>
 					{t("sellerResale.financeLink")}
 				</Text>
-				<Ionicons name="chevron-forward" size={18} color={c.primary} />
+				<Ionicons name="chevron-forward" size={18} color={c.link} />
 			</Pressable>
 			<View style={styles.tabs}>
 				{(["supplier", "reseller"] as const).map((side) => (
@@ -141,7 +141,7 @@ export default function ResalePurchaseOrdersScreen() {
 				/>
 			</View>
 			{orders.isLoading ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<ListSkeleton />
 			) : orders.isError ? (
 				<EmptyState
 					illustration="notFound"
@@ -249,7 +249,7 @@ function PurchaseOrderRow({
 				</Text>
 			</View>
 			<View style={styles.line}>
-				<Text style={[styles.meta, { color: c.primary }]}>{status}</Text>
+				<Text style={[styles.meta, { color: c.link }]}>{status}</Text>
 				<Ionicons name="chevron-forward" size={18} color={c.muted} />
 			</View>
 		</Pressable>

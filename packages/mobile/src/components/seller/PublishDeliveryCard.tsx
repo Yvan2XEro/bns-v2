@@ -30,7 +30,10 @@ export function PublishDeliveryCard({
 
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}>
-			<Text style={[f.sectionTitle, { color: c.text }]}>
+			<Text
+				style={[f.sectionTitle, { color: c.text }]}
+				accessibilityRole="header"
+			>
 				{t("product.saleTitle")}
 			</Text>
 			<ToggleRow

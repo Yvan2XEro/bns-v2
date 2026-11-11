@@ -51,12 +51,23 @@ export function CatalogueRowItem({
 	return (
 		<Pressable
 			onPress={onPress}
-			style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}
+			style={({ pressed }) => [
+				styles.row,
+				{
+					backgroundColor: pressed ? c.primarySoft : c.card,
+					borderColor: c.border,
+				},
+			]}
 			accessibilityRole="button"
 			accessibilityLabel={row.title}
 		>
 			{uri ? (
-				<Image source={{ uri }} style={styles.thumb} contentFit="cover" />
+				<Image
+					source={{ uri }}
+					style={styles.thumb}
+					contentFit="cover"
+					accessibilityIgnoresInvertColors
+				/>
 			) : (
 				<View
 					style={[
@@ -72,7 +83,7 @@ export function CatalogueRowItem({
 				<Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
 					{row.title}
 				</Text>
-				<Text style={[styles.meta, { color: c.muted }]} numberOfLines={1}>
+				<Text style={[styles.price, { color: c.text }]} numberOfLines={1}>
 					{subtitle}
 				</Text>
 				<View style={styles.chips}>
@@ -157,6 +168,12 @@ const styles = StyleSheet.create({
 	thumbEmpty: { alignItems: "center", justifyContent: "center" },
 	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	meta: { fontSize: 12, fontFamily: Fonts.body },
+	// The amount is what a seller scans the catalogue for: display face, ink.
+	price: {
+		fontSize: 14,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
 	chips: { flexDirection: "row", alignItems: "center", gap: 8 },
 	status: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
 	statusText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
@@ -178,7 +195,8 @@ const styles = StyleSheet.create({
 	stepValue: {
 		minWidth: 22,
 		textAlign: "center",
-		fontSize: 14,
-		fontFamily: Fonts.bodyBold,
+		fontSize: 15,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
 	},
 });

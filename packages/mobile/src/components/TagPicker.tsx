@@ -13,7 +13,7 @@ import {
 	useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useDiscoveryPalette } from "@/src/components/search/palette";
 import { useTranslation } from "@/src/lib/i18n";
 
 const MAX_TAGS = 5;
@@ -37,7 +37,8 @@ interface TagPickerProps {
 	borderColor: string;
 	textColor: string;
 	mutedColor: string;
-	primaryColor: string;
+	/** Kept for callers; the picker reads the theme's contrast-safe brand inks. */
+	primaryColor?: string;
 }
 
 export function TagPicker({
@@ -50,16 +51,15 @@ export function TagPicker({
 	borderColor,
 	textColor,
 	mutedColor,
-	primaryColor,
 }: TagPickerProps) {
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
-	const isDark = useColorScheme() === "dark";
+	const c = useDiscoveryPalette();
 	const [visible, setVisible] = useState(false);
 
-	const modalBg = isDark ? "#0c1030" : "#f4f5f9";
-	const separatorColor = isDark ? "#2a3170" : "#e1e3ee";
-	const chipBg = isDark ? "#1a1f4a" : "#eceef5";
+	const modalBg = c.background;
+	const separatorColor = c.border;
+	const chipBg = c.card;
 
 	const useSlugMode =
 		selectedSlugs !== undefined && onChangeSlugs !== undefined;
@@ -99,16 +99,22 @@ export function TagPicker({
 			{/* Trigger */}
 			<Pressable
 				onPress={() => setVisible(true)}
+				accessibilityRole="button"
+				accessibilityLabel={
+					selectedCount > 0
+						? `${t("tagPicker.title")}, ${selectedTags.map((tag) => tag.name).join(", ")}`
+						: t("tagPicker.placeholder")
+				}
 				style={[styles.trigger, { backgroundColor: inputBg, borderColor }]}
 			>
 				{selectedCount === 0 ? (
-					<>
-						<Ionicons name="pricetag-outline" size={16} color={mutedColor} />
+					<View style={styles.placeholderRow}>
+						<Ionicons name="pricetag-outline" size={18} color={mutedColor} />
 						<Text style={[styles.placeholder, { color: mutedColor }]}>
-							Ajouter des tags…
+							{t("tagPicker.placeholder")}
 						</Text>
-						<Ionicons name="chevron-down" size={16} color={mutedColor} />
-					</>
+						<Ionicons name="chevron-down" size={18} color={mutedColor} />
+					</View>
 				) : (
 					<View style={styles.badgeWrap}>
 						{selectedTags.map((tag) => (
@@ -116,16 +122,13 @@ export function TagPicker({
 								key={tag.id}
 								style={[
 									styles.badge,
-									{
-										backgroundColor: `${primaryColor}18`,
-										borderColor: `${primaryColor}55`,
-									},
+									{ backgroundColor: c.primaryTint, borderColor: c.primary },
 								]}
 							>
 								{tag.emoji ? (
 									<Text style={styles.badgeEmoji}>{tag.emoji}</Text>
 								) : null}
-								<Text style={[styles.badgeText, { color: primaryColor }]}>
+								<Text style={[styles.badgeText, { color: c.link }]}>
 									{tag.name}
 								</Text>
 								<Pressable
@@ -133,23 +136,28 @@ export function TagPicker({
 										e.stopPropagation?.();
 										remove(tag);
 									}}
-									hitSlop={6}
+									hitSlop={10}
+									accessibilityRole="button"
+									accessibilityLabel={`${tag.name}, ${t("common.delete")}`}
 								>
-									<Ionicons name="close" size={12} color={primaryColor} />
+									<Ionicons name="close" size={14} color={c.link} />
 								</Pressable>
 							</View>
 						))}
 						<Pressable
 							onPress={() => setVisible(true)}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel={t("tagPicker.title")}
 							style={[
 								styles.addBtn,
-								{ borderColor: atMax ? separatorColor : primaryColor },
+								{ borderColor: atMax ? separatorColor : c.primary },
 							]}
 						>
 							<Ionicons
 								name="add"
-								size={14}
-								color={atMax ? mutedColor : primaryColor}
+								size={16}
+								color={atMax ? mutedColor : c.link}
 							/>
 						</Pressable>
 					</View>
@@ -189,8 +197,13 @@ export function TagPicker({
 								})}
 							</Text>
 						</View>
-						<Pressable onPress={() => setVisible(false)} hitSlop={8}>
-							<Ionicons name="close" size={24} color={textColor} />
+						<Pressable
+							onPress={() => setVisible(false)}
+							accessibilityRole="button"
+							accessibilityLabel={t("common.close")}
+							style={[styles.closeBtn, { backgroundColor: c.well }]}
+						>
+							<Ionicons name="close" size={20} color={textColor} />
 						</Pressable>
 					</View>
 
@@ -212,11 +225,14 @@ export function TagPicker({
 										key={tag.id}
 										onPress={() => toggle(tag)}
 										disabled={disabled}
+										accessibilityRole="button"
+										accessibilityState={{ selected: active, disabled }}
+										accessibilityLabel={tag.name}
 										style={[
 											styles.chip,
 											{
-												backgroundColor: active ? `${primaryColor}20` : chipBg,
-												borderColor: active ? primaryColor : separatorColor,
+												backgroundColor: active ? c.primaryTint : chipBg,
+												borderColor: active ? c.primary : separatorColor,
 												opacity: disabled ? 0.4 : 1,
 											},
 										]}
@@ -225,16 +241,12 @@ export function TagPicker({
 											<Text style={styles.chipEmoji}>{tag.emoji}</Text>
 										) : null}
 										{active && !tag.emoji ? (
-											<Ionicons
-												name="checkmark"
-												size={13}
-												color={primaryColor}
-											/>
+											<Ionicons name="checkmark" size={15} color={c.link} />
 										) : null}
 										<Text
 											style={[
 												styles.chipText,
-												{ color: active ? primaryColor : textColor },
+												{ color: active ? c.link : textColor },
 											]}
 										>
 											{tag.name}
@@ -257,7 +269,12 @@ export function TagPicker({
 					>
 						<Pressable
 							onPress={() => setVisible(false)}
-							style={[styles.doneBtn, { backgroundColor: primaryColor }]}
+							accessibilityRole="button"
+							style={({ pressed }) => [
+								styles.doneBtn,
+								{ backgroundColor: c.primaryFill },
+								pressed && { opacity: 0.85 },
+							]}
 						>
 							<Text style={styles.doneBtnText}>
 								{selectedCount > 0
@@ -281,9 +298,10 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		justifyContent: "center",
 	},
+	placeholderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
 	placeholder: {
 		flex: 1,
-		fontSize: 14,
+		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
 	badgeWrap: {
@@ -298,18 +316,18 @@ const styles = StyleSheet.create({
 		gap: 4,
 		borderRadius: 20,
 		borderWidth: 1,
-		paddingHorizontal: 9,
-		paddingVertical: 4,
+		paddingHorizontal: 10,
+		minHeight: 30,
 	},
-	badgeEmoji: { fontSize: 11 },
+	badgeEmoji: { fontSize: 12 },
 	badgeText: {
-		fontSize: 12,
+		fontSize: 13,
 		fontFamily: Fonts.bodySemibold,
 	},
 	addBtn: {
-		width: 26,
-		height: 26,
-		borderRadius: 13,
+		width: 30,
+		height: 30,
+		borderRadius: 15,
 		borderWidth: 1.5,
 		borderStyle: "dashed",
 		alignItems: "center",
@@ -325,13 +343,22 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 	},
 	modalTitle: {
-		fontSize: 18,
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},
 	modalSub: {
-		fontSize: 12,
+		fontSize: 13,
 		fontFamily: Fonts.body,
 		marginTop: 2,
+	},
+	closeBtn: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	chipsContainer: {
 		flexDirection: "row",
@@ -344,9 +371,9 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 5,
 		borderRadius: 20,
-		borderWidth: 1.5,
+		borderWidth: 1,
 		paddingHorizontal: 14,
-		paddingVertical: 8,
+		minHeight: 40,
 	},
 	chipEmoji: { fontSize: 13 },
 	chipText: {
@@ -363,12 +390,13 @@ const styles = StyleSheet.create({
 		borderTopWidth: 1,
 	},
 	doneBtn: {
+		minHeight: 52,
 		borderRadius: 12,
-		paddingVertical: 14,
 		alignItems: "center",
+		justifyContent: "center",
 	},
 	doneBtnText: {
-		fontSize: 15,
+		fontSize: 16,
 		fontFamily: Fonts.bodyBold,
 		color: "#fff",
 	},

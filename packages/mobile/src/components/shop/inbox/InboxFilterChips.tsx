@@ -17,9 +17,9 @@ export function InboxFilterChips({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	// White on the light dark-mode primary falls under 4.5:1: a selected
-	// chip in dark mode carries night ink instead.
-	const onSelected = c.isDark ? "#0c1030" : "#ffffff";
+	// A selected chip sits on the contrast-safe fill with a white label, as
+	// the buyer inbox's filters do.
+	const onSelected = "#ffffff";
 
 	return (
 		<ScrollView
@@ -48,8 +48,8 @@ export function InboxFilterChips({
 						style={[
 							styles.chip,
 							{
-								backgroundColor: selected ? c.primary : c.card,
-								borderColor: selected ? c.primary : c.border,
+								backgroundColor: selected ? c.fill : c.card,
+								borderColor: selected ? c.fill : c.border,
 							},
 						]}
 					>
@@ -68,9 +68,7 @@ export function InboxFilterChips({
 									styles.badge,
 									{
 										backgroundColor: selected
-											? c.isDark
-												? "rgba(12,16,48,0.18)"
-												: "rgba(255,255,255,0.22)"
+											? "rgba(255,255,255,0.2)"
 											: c.neutralSoft,
 									},
 								]}

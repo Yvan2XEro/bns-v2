@@ -1,10 +1,11 @@
 import { FlashList } from "@shopify/flash-list";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { useShopSearch } from "@/src/hooks/useShops";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ShopSearchHit } from "@/src/types/api";
+import { ListSkeleton } from "./ListSkeleton";
 import { ShopCard } from "./ShopCard";
 import { useShopTheme } from "./theme";
 
@@ -24,7 +25,7 @@ export function ShopResults({
 	const total = search.data?.pages[0]?.total ?? 0;
 
 	if (search.isLoading) {
-		return <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />;
+		return <ListSkeleton />;
 	}
 	if (search.isError) {
 		// The shop index being down must never look like "no shop matches" —

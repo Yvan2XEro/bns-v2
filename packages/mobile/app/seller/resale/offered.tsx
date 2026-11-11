@@ -1,13 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -57,10 +51,10 @@ export default function ResaleOfferedScreen() {
 						{ borderColor: c.border, backgroundColor: c.card },
 					]}
 				>
-					<Text style={[styles.navText, { color: c.primary }]}>
+					<Text style={[styles.navText, { color: c.link }]}>
 						{t("sellerResale.catalogueTitle")}
 					</Text>
-					<Ionicons name="chevron-forward" size={16} color={c.primary} />
+					<Ionicons name="chevron-forward" size={16} color={c.link} />
 				</Pressable>
 				<Pressable
 					accessibilityRole="button"
@@ -71,15 +65,13 @@ export default function ResaleOfferedScreen() {
 						{ borderColor: c.border, backgroundColor: c.card },
 					]}
 				>
-					<Text style={[styles.navText, { color: c.primary }]}>
+					<Text style={[styles.navText, { color: c.link }]}>
 						{t("sellerResale.purchaseOrdersLink")}
 					</Text>
-					<Ionicons name="chevron-forward" size={16} color={c.primary} />
+					<Ionicons name="chevron-forward" size={16} color={c.link} />
 				</Pressable>
 			</View>
-			{offered.isPending ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
-			) : null}
+			{offered.isPending ? <ListSkeleton /> : null}
 			{offered.isError ? (
 				hasErrorCode(offered.error, ERROR_CODES.resaleDisabled) ? (
 					<EmptyState
@@ -147,7 +139,7 @@ function OfferedProductCard({ product }: { product: SupplierResaleProduct }) {
 				</Pressable>
 			</View>
 			{product.pendingEffectiveAt ? (
-				<Text style={[styles.pending, { color: c.primary }]}>
+				<Text style={[styles.pending, { color: c.link }]}>
 					{t("sellerResale.offeredPending", {
 						date: new Intl.DateTimeFormat(undefined, {
 							dateStyle: "medium",

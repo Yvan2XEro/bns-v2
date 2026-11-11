@@ -3,7 +3,7 @@
  *
  * Usage:
  *   import { Empty, Searching, Favorites } from '@/src/components/illustrations';
- *   <Empty color="#23338f" size={180} />
+ *   <Empty color="#2f5bd4" size={180} />
  *
  * Each component accepts: color (accent), size (width & height).
  * All illustrations are animated (reduced-motion safe).

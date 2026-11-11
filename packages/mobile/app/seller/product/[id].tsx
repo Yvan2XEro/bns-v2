@@ -9,10 +9,11 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { formStyles as f } from "@/src/components/seller/formStyles";
@@ -228,7 +229,7 @@ export default function ProductScreen() {
 						onCta={() => detail.refetch()}
 					/>
 				) : (
-					<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+					<DetailSkeleton cards={3} />
 				)}
 			</SafeAreaView>
 		);

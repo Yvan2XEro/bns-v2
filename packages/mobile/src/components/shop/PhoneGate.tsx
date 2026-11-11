@@ -134,7 +134,7 @@ export function PhoneGate({ onVerified }: { onVerified: () => void }) {
 	return (
 		<View style={styles.wrap}>
 			<View style={[styles.icon, { backgroundColor: c.primarySoft }]}>
-				<Ionicons name="phone-portrait-outline" size={26} color={c.primary} />
+				<Ionicons name="phone-portrait-outline" size={26} color={c.link} />
 			</View>
 			<Text style={[styles.title, { color: c.text }]}>
 				{t("shop.gateTitle")}
@@ -213,8 +213,8 @@ const styles = StyleSheet.create({
 	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 21 },
 	note: { fontSize: 12, fontFamily: Fonts.body, marginTop: 6 },
 	button: {
-		height: 52,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 		marginTop: 10,

@@ -40,7 +40,7 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { Colors } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import {
 	AppConfigProvider,
 	useAppConfig,
@@ -108,20 +108,32 @@ export function ErrorBoundary({
 	retry: () => Promise<void>;
 }) {
 	useEffect(() => reportError(error), [error]);
+	// Outside every provider: the scheme comes from the OS, the words straight
+	// from i18n, and a missing font falls back to the system face.
+	const c = Colors[Appearance.getColorScheme() === "dark" ? "dark" : "light"];
 	return (
-		<View style={errorStyles.container}>
-			<Text style={errorStyles.title}>Une erreur est survenue</Text>
-			<Text style={errorStyles.message}>
-				{error?.message ?? "Erreur inconnue"}
+		<View style={[errorStyles.container, { backgroundColor: c.background }]}>
+			<Text
+				style={[errorStyles.title, { color: c.foreground }]}
+				accessibilityRole="header"
+			>
+				{i18n.t("common.error")}
+			</Text>
+			<Text style={[errorStyles.message, { color: c.body }]}>
+				{error?.message ?? i18n.t("home.errorSub")}
 			</Text>
 			<Pressable
 				accessibilityRole="button"
 				onPress={() => {
 					void retry();
 				}}
-				style={errorStyles.button}
+				style={({ pressed }) => [
+					errorStyles.button,
+					{ backgroundColor: c.primaryFill },
+					pressed && { opacity: 0.85 },
+				]}
 			>
-				<Text style={errorStyles.buttonLabel}>Réessayer</Text>
+				<Text style={errorStyles.buttonLabel}>{i18n.t("common.retry")}</Text>
 			</Pressable>
 		</View>
 	);
@@ -130,27 +142,37 @@ export function ErrorBoundary({
 const errorStyles = StyleSheet.create({
 	container: {
 		alignItems: "center",
-		backgroundColor: "#ffffff",
 		flex: 1,
 		gap: 12,
 		justifyContent: "center",
 		padding: 32,
 	},
-	title: { fontSize: 20, fontWeight: "700", textAlign: "center" },
+	title: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 20,
+		lineHeight: 25,
+		textAlign: "center",
+	},
 	message: {
-		color: "#6b7280",
-		fontSize: 14,
+		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 22,
 		maxWidth: 420,
 		textAlign: "center",
 	},
 	button: {
-		backgroundColor: "#23338f",
+		alignItems: "center",
 		borderRadius: 12,
+		justifyContent: "center",
 		marginTop: 12,
+		minHeight: 52,
 		paddingHorizontal: 24,
-		paddingVertical: 12,
 	},
-	buttonLabel: { color: "#ffffff", fontSize: 15, fontWeight: "600" },
+	buttonLabel: {
+		color: Colors.light.primaryForeground,
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
+	},
 });
 
 const queryClient = new QueryClient({

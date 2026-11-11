@@ -12,6 +12,7 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { MovementTypePicker } from "@/src/components/seller/MovementTypePicker";
@@ -61,7 +62,7 @@ export default function StockAdjustSheet() {
 					onCta={() => router.back()}
 				/>
 			) : variant.isLoading || !v ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<DetailSkeleton cards={1} />
 			) : (
 				<ScreenColumn width="reading">
 					<KeyboardAwareScrollView
@@ -216,7 +217,7 @@ export default function StockAdjustSheet() {
 							<Text style={[styles.afterLabel, { color: c.body }]}>
 								{t("stock.after")}
 							</Text>
-							<Text style={[styles.afterValue, { color: c.primary }]}>
+							<Text style={[styles.afterValue, { color: c.link }]}>
 								{current} → {result ? result.stockAfter : "—"}
 							</Text>
 						</View>
@@ -296,8 +297,8 @@ const styles = StyleSheet.create({
 		paddingVertical: 2,
 	},
 	submit: {
-		height: 52,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},

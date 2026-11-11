@@ -2,7 +2,8 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import type React from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import type { SocialAuthProvider } from "@/src/lib/auth";
@@ -65,18 +66,21 @@ const ALL_PROVIDERS: Array<{
 	},
 ];
 
+/**
+ * The other ways in, under the form: neutral card buttons in ink, each
+ * provider's own mark, and Apple's own button on iOS. `disabled` holds them
+ * while a sign-in is already under way.
+ */
 export function SocialAuthButtons({
-	borderColor,
-	mutedColor,
 	onPress,
-	primaryColor,
+	disabled,
 }: {
-	borderColor: string;
-	mutedColor: string;
 	onPress: (provider: SocialAuthProvider) => void;
-	primaryColor: string;
+	disabled?: boolean;
 }) {
 	const { t } = useTranslation();
+	const isDark = useColorScheme() === "dark";
+	const c = Colors[isDark ? "dark" : "light"];
 	const { enabledAuthProviders } = useAppConfig();
 
 	const visible = ALL_PROVIDERS.filter((p) =>
@@ -96,11 +100,11 @@ export function SocialAuthButtons({
 	return (
 		<View style={styles.container}>
 			<View style={styles.dividerRow}>
-				<View style={[styles.divider, { backgroundColor: borderColor }]} />
-				<Text style={[styles.dividerText, { color: mutedColor }]}>
+				<View style={[styles.divider, { backgroundColor: c.border }]} />
+				<Text style={[styles.dividerText, { color: c.mutedForeground }]}>
 					{t("auth.orContinueWith")}
 				</Text>
-				<View style={[styles.divider, { backgroundColor: borderColor }]} />
+				<View style={[styles.divider, { backgroundColor: c.border }]} />
 			</View>
 
 			<View style={styles.buttons}>
@@ -113,22 +117,38 @@ export function SocialAuthButtons({
 							buttonType={
 								AppleAuthentication.AppleAuthenticationButtonType.CONTINUE
 							}
+							// Black on the light ground, white on the night one, as
+							// Apple's guidelines ask.
 							buttonStyle={
-								AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+								isDark
+									? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+									: AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
 							}
 							cornerRadius={12}
-							onPress={() => onPress(value)}
+							onPress={() => {
+								if (!disabled) onPress(value);
+							}}
 							style={styles.appleButton}
 						/>
 					) : (
 						<AnimatedPressable
 							key={value}
 							onPress={() => onPress(value)}
+							disabled={disabled}
 							scaleTo={0.98}
-							style={[styles.button, { borderColor }]}
+							accessibilityLabel={t(labelKey)}
+							accessibilityState={{ disabled: Boolean(disabled) }}
+							style={[
+								styles.button,
+								{
+									backgroundColor: c.card,
+									borderColor: c.borderStrong,
+									opacity: disabled ? 0.6 : 1,
+								},
+							]}
 						>
-							<Icon color={primaryColor} />
-							<Text style={[styles.buttonText, { color: primaryColor }]}>
+							<Icon color={c.foreground} />
+							<Text style={[styles.buttonText, { color: c.foreground }]}>
 								{t(labelKey)}
 							</Text>
 						</AnimatedPressable>
@@ -147,26 +167,27 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		gap: 10,
 		justifyContent: "center",
-		minHeight: 48,
+		minHeight: 52,
 		paddingHorizontal: 14,
 	},
 	buttonText: {
 		fontFamily: Fonts.bodySemibold,
-		fontSize: 14,
+		fontSize: 16,
 	},
 	buttons: {
 		gap: 10,
 	},
 	appleButton: {
-		height: 48,
+		height: 52,
 		width: "100%",
 	},
 	container: {
-		gap: 12,
+		gap: 16,
+		marginTop: 8,
 	},
 	divider: {
 		flex: 1,
-		height: 1,
+		height: StyleSheet.hairlineWidth,
 	},
 	dividerRow: {
 		alignItems: "center",
@@ -174,8 +195,7 @@ const styles = StyleSheet.create({
 		gap: 12,
 	},
 	dividerText: {
-		fontFamily: Fonts.bodySemibold,
-		fontSize: 12,
-		textTransform: "uppercase",
+		fontFamily: Fonts.body,
+		fontSize: 13,
 	},
 });

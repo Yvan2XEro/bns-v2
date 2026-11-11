@@ -2,14 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import {
-	ActivityIndicator,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TextInput,
-	View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
@@ -17,6 +10,7 @@ import {
 	CaseStatusPill,
 	returnTone,
 } from "@/src/components/checkout/CaseStatusPill";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { FormError } from "@/src/components/checkout/FormError";
 import { fillOf } from "@/src/components/checkout/fill";
 import { TotalTag } from "@/src/components/checkout/TotalTag";
@@ -77,11 +71,7 @@ export function ReturnCase({ id }: { id: string }) {
 				}
 			/>
 			{query.isPending ? (
-				<ActivityIndicator
-					style={styles.loading}
-					color={c.primary}
-					accessibilityLabel={t("common.loading")}
-				/>
+				<DetailSkeleton cards={2} />
 			) : query.isError || !query.data ? (
 				<EmptyState
 					illustration="notFound"
@@ -341,7 +331,6 @@ function CaseTimeline({
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	flex: { flex: 1 },
-	loading: { marginTop: 40 },
 	content: { padding: 16, paddingBottom: 40, gap: 16 },
 	card: {
 		borderRadius: 16,

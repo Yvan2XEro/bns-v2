@@ -1,13 +1,12 @@
 import { Redirect, router } from "expo-router";
 import type { ReactNode } from "react";
-import { ActivityIndicator, View } from "react-native";
 import { EmptyState } from "@/src/components/EmptyState";
-import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useCart } from "@/src/hooks/useCart";
 import { cartIsEmpty, isSplitCart } from "@/src/lib/checkoutGroupFlow";
 import { useTranslation } from "@/src/lib/i18n";
 import { useCheckoutFlow } from "./CheckoutProvider";
+import { DetailSkeleton } from "./DetailSkeleton";
 
 /**
  * What every step checks before rendering: ordering is open, there is a cart
@@ -21,7 +20,6 @@ export function CheckoutGate({
 	needs?: "nothing" | "address" | "option";
 	children: ReactNode;
 }) {
-	const c = useShopTheme();
 	const { t } = useTranslation();
 	const { ordersEnabled } = useAppConfig();
 	const cart = useCart();
@@ -29,11 +27,7 @@ export function CheckoutGate({
 
 	// Placement empties the cart before the confirmation screen has loaded.
 	if (cart.isPending || place.isSuccess) {
-		return (
-			<View style={{ flex: 1, justifyContent: "center" }}>
-				<ActivityIndicator color={c.primary} />
-			</View>
-		);
+		return <DetailSkeleton cards={1} />;
 	}
 	if (!ordersEnabled) {
 		return (

@@ -1,7 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-	ActivityIndicator,
 	RefreshControl,
 	ScrollView,
 	StyleSheet,
@@ -10,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { TrackingBlock } from "@/src/components/delivery/TrackingBlock";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
@@ -89,12 +89,7 @@ export function PurchaseDetail({ id }: { id: string }) {
 			/>
 
 			{purchase.isPending ? (
-				<View style={styles.center}>
-					<ActivityIndicator
-						color={c.primary}
-						accessibilityLabel={t("common.loading")}
-					/>
-				</View>
+				<DetailSkeleton cards={3} />
 			) : purchase.isError || !order ? (
 				<EmptyState
 					illustration="notFound"
@@ -199,7 +194,6 @@ export function PurchaseDetail({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	content: { padding: 16, gap: 16, paddingBottom: 48 },
 	heading: { flexDirection: "row", alignItems: "center", gap: 8 },
 	pill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },

@@ -70,7 +70,10 @@ export function ShopSwitcher() {
 						{ backgroundColor: c.card, borderColor: c.border },
 					]}
 				>
-					<Text style={[styles.menuTitle, { color: c.muted }]}>
+					<Text
+						accessibilityRole="header"
+						style={[styles.menuTitle, { color: c.muted }]}
+					>
 						{t("inbox.switchShop")}
 					</Text>
 					<ScrollView style={styles.menuList}>
@@ -111,7 +114,7 @@ export function ShopSwitcher() {
 										) : null}
 									</View>
 									{selected ? (
-										<Ionicons name="checkmark" size={18} color={c.primary} />
+										<Ionicons name="checkmark" size={18} color={c.link} />
 									) : null}
 								</Pressable>
 							);
@@ -147,10 +150,9 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 	},
 	menuTitle: {
-		fontSize: 12,
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
 		paddingHorizontal: 16,
 		paddingBottom: 6,
 	},

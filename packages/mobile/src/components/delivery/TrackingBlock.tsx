@@ -97,7 +97,7 @@ function RiderCard({
 				{subtitle}
 			</Text>
 			{clock ? (
-				<Text style={{ color: c.primary, fontFamily: Fonts.bodySemibold }}>
+				<Text style={{ color: c.link, fontFamily: Fonts.bodySemibold }}>
 					{t("tracking.eta", { time: clock })}
 				</Text>
 			) : null}
@@ -185,7 +185,7 @@ export function TrackingBlock({
 			{showRiderCard(view) && view.rider ? (
 				<RiderCard shipmentId={view.id} rider={view.rider} eta={view.eta} />
 			) : etaClock ? (
-				<Text style={{ color: c.primary, fontFamily: Fonts.bodySemibold }}>
+				<Text style={{ color: c.link, fontFamily: Fonts.bodySemibold }}>
 					{t("tracking.eta", { time: etaClock })}
 				</Text>
 			) : null}

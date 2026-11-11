@@ -4,7 +4,6 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-	ActivityIndicator,
 	FlatList,
 	Pressable,
 	RefreshControl,
@@ -13,11 +12,17 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import {
+	AmountTag,
+	StatusTag,
+	type StatusTone,
+} from "@/src/components/shop/Tags";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
@@ -31,48 +36,16 @@ import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 type FilterKey = "all" | "published" | "pending" | "sold" | "expired";
 
+/** Each status's words and tone: success live, info moving, danger refused. */
 function getStatusConfig(t: (key: string) => string) {
 	return {
-		published: {
-			label: t("listings.statusPublished"),
-			bg: "#ddf3e5",
-			text: "#155c35",
-			dotColor: "#34b26a",
-		},
-		pending: {
-			label: t("listings.statusPending"),
-			bg: "#e3e7f8",
-			text: "#23338f",
-			dotColor: "#6878ea",
-		},
-		review: {
-			label: t("listings.statusReview"),
-			bg: "#e3e7f8",
-			text: "#23338f",
-			dotColor: "#6878ea",
-		},
-		rejected: {
-			label: t("listings.statusRejected"),
-			bg: "#fbe3e0",
-			text: "#8e2219",
-			dotColor: "#e5574b",
-		},
-		sold: {
-			label: t("listings.statusSold"),
-			bg: "#eceef5",
-			text: "#3a3f66",
-			dotColor: "#777ca3",
-		},
-		expired: {
-			label: t("listings.statusExpired"),
-			bg: "#fff7ed",
-			text: "#9a3412",
-			dotColor: "#f97316",
-		},
-	} as Record<
-		string,
-		{ label: string; bg: string; text: string; dotColor: string }
-	>;
+		published: { label: t("listings.statusPublished"), tone: "success" },
+		pending: { label: t("listings.statusPending"), tone: "info" },
+		review: { label: t("listings.statusReview"), tone: "info" },
+		rejected: { label: t("listings.statusRejected"), tone: "danger" },
+		sold: { label: t("listings.statusSold"), tone: "neutral" },
+		expired: { label: t("listings.statusExpired"), tone: "warning" },
+	} as Record<string, { label: string; tone: StatusTone }>;
 }
 
 function StatusBadge({
@@ -91,18 +64,8 @@ function StatusBadge({
 				...known,
 				label: t(`listingKind.closedAs.${listingKindRules(kind).closedAs}`),
 			}
-		: known) ?? {
-		label: status,
-		bg: "#eceef5",
-		text: "#3a3f66",
-		dotColor: "#777ca3",
-	};
-	return (
-		<View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
-			<View style={[styles.statusDot, { backgroundColor: cfg.dotColor }]} />
-			<Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
-		</View>
-	);
+		: known) ?? { label: status, tone: "neutral" as const };
+	return <StatusTag label={cfg.label} tone={cfg.tone} />;
 }
 
 function formatDate(dateStr: string) {
@@ -122,12 +85,15 @@ export function MyListingsScreen() {
 	const { t } = useTranslation();
 	const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
 
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const c = Colors[isDark ? "dark" : "light"];
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const mutedColor = c.mutedForeground;
+	/** Brand words and outlines. */
+	const primaryColor = c.link;
+	const borderColor = c.border;
+	const danger = isDark ? c.dangerText : c.destructive;
 
 	const FILTERS: { key: FilterKey; label: string }[] = [
 		{ key: "all", label: t("listings.filterAll") },
@@ -208,19 +174,19 @@ export function MyListingsScreen() {
 		{
 			key: "published" as const,
 			label: t("listings.published"),
-			color: "#34b26a",
+			color: c.successText,
 			icon: "checkmark-circle-outline" as const,
 		},
 		{
 			key: "pending" as const,
 			label: t("listings.pending"),
-			color: "#6878ea",
+			color: c.link,
 			icon: "time-outline" as const,
 		},
 		{
 			key: "sold" as const,
 			label: t("listings.sold"),
-			color: "#777ca3",
+			color: c.body,
 			icon: "bag-check-outline" as const,
 		},
 	];
@@ -247,17 +213,14 @@ export function MyListingsScreen() {
 						/>
 					) : (
 						<View
-							style={[
-								styles.imagePlaceholder,
-								{ backgroundColor: isDark ? "#13183e" : "#e1e3ee" },
-							]}
+							style={[styles.imagePlaceholder, { backgroundColor: c.well }]}
 						>
 							<Ionicons name="image-outline" size={24} color={mutedColor} />
 						</View>
 					)}
 					{isBoosted && (
 						<View style={styles.boostBadge}>
-							<Ionicons name="flash" size={10} color="#fff" />
+							<Ionicons name="flash" size={11} color={c.sunForeground} />
 						</View>
 					)}
 				</View>
@@ -267,13 +230,14 @@ export function MyListingsScreen() {
 					<Text style={[styles.title, { color: textColor }]} numberOfLines={2}>
 						{item.title}
 					</Text>
-					<Text style={[styles.price, { color: primaryColor }]}>
-						{kindPriceText(
+					<AmountTag
+						size="sm"
+						label={kindPriceText(
 							item.price ? formatPrice(item.price, i18n.language) : null,
 							item,
 							(key) => i18n.t(`listingKind.${key}`),
 						)}
-					</Text>
+					/>
 					<View style={styles.metaRow}>
 						<StatusBadge
 							status={item.status ?? "pending"}
@@ -292,13 +256,12 @@ export function MyListingsScreen() {
 				<View style={styles.actions}>
 					<Pressable
 						onPress={() => router.push(`/listing/${item.id}/edit`)}
-						style={[
-							styles.actionBtn,
-							{ backgroundColor: isDark ? "#12163a" : "#eceef5" },
-						]}
+						accessibilityRole="button"
+						accessibilityLabel={`${t("common.edit")}, ${item.title}`}
+						style={[styles.actionBtn, { backgroundColor: c.well }]}
 						hitSlop={4}
 					>
-						<Ionicons name="pencil-outline" size={15} color={primaryColor} />
+						<Ionicons name="pencil-outline" size={18} color={primaryColor} />
 					</Pressable>
 					{item.status === "published" && (
 						<Pressable
@@ -311,13 +274,18 @@ export function MyListingsScreen() {
 									() => markSold(item.id),
 								)
 							}
-							style={[
-								styles.actionBtn,
-								{ backgroundColor: isDark ? "#12163a" : "#effaf3" },
-							]}
+							accessibilityRole="button"
+							accessibilityLabel={`${t(
+								`listingKind.markClosed.${listingKindRules(item.kind).closedAs}`,
+							)}, ${item.title}`}
+							style={[styles.actionBtn, { backgroundColor: c.successTint }]}
 							hitSlop={4}
 						>
-							<Ionicons name="bag-check-outline" size={15} color="#34b26a" />
+							<Ionicons
+								name="bag-check-outline"
+								size={18}
+								color={c.successText}
+							/>
 						</Pressable>
 					)}
 					<Pressable
@@ -326,13 +294,12 @@ export function MyListingsScreen() {
 								deleteListing(item.id),
 							)
 						}
-						style={[
-							styles.actionBtn,
-							{ backgroundColor: isDark ? "#12163a" : "#fbe3e0" },
-						]}
+						accessibilityRole="button"
+						accessibilityLabel={`${t("common.delete")}, ${item.title}`}
+						style={[styles.actionBtn, { backgroundColor: c.dangerTint }]}
 						hitSlop={4}
 					>
-						<Ionicons name="trash-outline" size={15} color="#d23a2e" />
+						<Ionicons name="trash-outline" size={18} color={danger} />
 					</Pressable>
 				</View>
 			</AnimatedPressable>
@@ -351,20 +318,26 @@ export function MyListingsScreen() {
 					fallback="/(tabs)/account"
 					style={styles.backBtn}
 				/>
-				<Text style={[styles.headerTitle, { color: textColor }]}>
+				<Text
+					accessibilityRole="header"
+					style={[styles.headerTitle, { color: textColor }]}
+				>
 					{t("listings.myListings")}
 				</Text>
+				{/* The sell action wears the signage yellow, ink on it. */}
 				<Pressable
 					onPress={() => router.push("/(tabs)/create")}
-					style={[styles.newBtn, { backgroundColor: primaryColor }]}
+					accessibilityRole="button"
+					hitSlop={4}
+					style={[styles.newBtn, { backgroundColor: c.sun }]}
 				>
-					<Ionicons name="add" size={18} color="#fff" />
+					<Ionicons name="add" size={18} color={c.sunForeground} />
 					<Text style={styles.newBtnText}>{t("listings.publish")}</Text>
 				</Pressable>
 			</View>
 
 			{isLoading ? (
-				<ActivityIndicator style={{ margin: 32 }} color={primaryColor} />
+				<OrderListSkeleton rows={5} />
 			) : (
 				<FlatList
 					data={filtered}
@@ -373,7 +346,8 @@ export function MyListingsScreen() {
 						<RefreshControl
 							refreshing={refreshing}
 							onRefresh={onRefresh}
-							tintColor={primaryColor}
+							tintColor={c.primary}
+							colors={[c.primary]}
 						/>
 					}
 					ListHeaderComponent={
@@ -386,6 +360,12 @@ export function MyListingsScreen() {
 										onPress={() =>
 											setActiveFilter(key === "total" ? "all" : key)
 										}
+										accessibilityRole="button"
+										accessibilityLabel={`${label}: ${stats[key]}`}
+										accessibilityState={{
+											selected:
+												activeFilter === (key === "total" ? "all" : key),
+										}}
 										style={[
 											styles.statCard,
 											{
@@ -433,6 +413,8 @@ export function MyListingsScreen() {
 										<Pressable
 											key={f.key}
 											onPress={() => setActiveFilter(f.key)}
+											accessibilityRole="tab"
+											accessibilityState={{ selected: active }}
 											style={[
 												styles.filterTab,
 												active && {
@@ -446,7 +428,9 @@ export function MyListingsScreen() {
 													styles.filterTabText,
 													{
 														color: active ? primaryColor : mutedColor,
-														fontFamily: active ? Fonts.displayBold : Fonts.body,
+														fontFamily: active
+															? Fonts.bodyBold
+															: Fonts.bodyMedium,
 													},
 												]}
 											>
@@ -509,7 +493,7 @@ const styles = StyleSheet.create({
 	},
 	headerTitle: {
 		flex: 1,
-		fontSize: 20,
+		fontSize: 18,
 		fontFamily: Fonts.displayBold,
 		textAlign: "center",
 	},
@@ -517,13 +501,13 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
-		borderRadius: 10,
+		minHeight: 40,
+		borderRadius: 12,
 		paddingHorizontal: 12,
-		paddingVertical: 7,
 	},
 	newBtnText: {
-		color: "#fff",
-		fontSize: 13,
+		color: "#12163a",
+		fontSize: 14,
 		fontFamily: Fonts.bodyBold,
 	},
 
@@ -557,7 +541,7 @@ const styles = StyleSheet.create({
 		lineHeight: 24,
 	},
 	statLabel: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
@@ -569,11 +553,12 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	filterTab: {
-		paddingVertical: 10,
+		minHeight: 44,
+		justifyContent: "center",
 		paddingHorizontal: 4,
 		marginRight: 16,
 	},
-	filterTabText: { fontSize: 13 },
+	filterTabText: { fontSize: 14 },
 
 	/* List */
 	listContent: {
@@ -587,7 +572,7 @@ const styles = StyleSheet.create({
 	card: {
 		flexDirection: "row",
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		overflow: "hidden",
 	},
 	imageWrap: { position: "relative" },
@@ -604,8 +589,8 @@ const styles = StyleSheet.create({
 		left: 6,
 		backgroundColor: "#ffb81c",
 		borderRadius: 6,
-		width: 18,
-		height: 18,
+		width: 20,
+		height: 20,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -618,13 +603,9 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	title: {
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
-		lineHeight: 19,
-	},
-	price: {
 		fontSize: 15,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodySemibold,
+		lineHeight: 20,
 	},
 	metaRow: {
 		flexDirection: "row",
@@ -633,28 +614,8 @@ const styles = StyleSheet.create({
 		flexWrap: "wrap",
 	},
 	date: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.body,
-	},
-
-	/* Status badge */
-	statusBadge: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		borderRadius: 20,
-		paddingHorizontal: 8,
-		paddingVertical: 3,
-		alignSelf: "flex-start",
-	},
-	statusDot: {
-		width: 6,
-		height: 6,
-		borderRadius: 3,
-	},
-	statusText: {
-		fontSize: 11,
-		fontFamily: Fonts.bodySemibold,
 	},
 
 	/* Actions */
@@ -664,8 +625,8 @@ const styles = StyleSheet.create({
 		gap: 6,
 	},
 	actionBtn: {
-		width: 34,
-		height: 34,
+		width: 40,
+		height: 40,
 		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",

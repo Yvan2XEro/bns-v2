@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { useTranslation } from "@/src/lib/i18n";
 import { relativeAge } from "@/src/lib/moderationVerification";
@@ -20,7 +20,7 @@ function relativeLabel(
 }
 
 /** The unread badge: the same deep indigo as own bubbles, white stays legible on it in both themes. */
-const FILLED = "#2f43b5";
+const FILLED = Colors.light.ownBubble;
 
 /** One row of the shared shop inbox. Purely presentational: filtering, paging and navigation live in the screen. */
 export function InboxRow({
@@ -77,10 +77,7 @@ export function InboxRow({
 			onPress={onPress}
 			style={({ pressed }) => [
 				styles.row,
-				{
-					backgroundColor: pressed ? c.neutralSoft : c.card,
-					borderColor: c.border,
-				},
+				{ backgroundColor: pressed ? c.neutralSoft : c.card },
 				selectedStyle,
 			]}
 			accessibilityRole="button"
@@ -196,6 +193,12 @@ export function InboxRow({
 				</View>
 			</View>
 
+			{/* The hairline starts under the name, as in the buyer inbox. */}
+			<View
+				style={[styles.separator, { backgroundColor: c.border }]}
+				pointerEvents="none"
+			/>
+
 			{item.listing ? (
 				listingUri ? (
 					<Image
@@ -229,7 +232,14 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 		minHeight: 76,
-		borderBottomWidth: StyleSheet.hairlineWidth,
+	},
+	// Avatar 52 + its 12pt gap + the row's 16pt inset.
+	separator: {
+		position: "absolute",
+		left: 80,
+		right: 0,
+		bottom: 0,
+		height: StyleSheet.hairlineWidth,
 	},
 	avatar: {
 		width: 52,

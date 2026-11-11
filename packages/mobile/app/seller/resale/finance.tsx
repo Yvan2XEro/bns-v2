@@ -1,15 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -74,7 +69,7 @@ export default function ResellerFinanceScreen() {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<DetailSkeleton cards={2} />
 			</SafeAreaView>
 		);
 	}
@@ -149,7 +144,7 @@ export default function ResellerFinanceScreen() {
 										{ backgroundColor: c.card, borderColor: c.border },
 									]}
 								>
-									<Ionicons name="card-outline" size={20} color={c.primary} />
+									<Ionicons name="card-outline" size={20} color={c.link} />
 									<Text style={[styles.noticeText, { color: c.text }]}>
 										{t("sellerResale.finance.accountRequired")}
 									</Text>
@@ -272,7 +267,6 @@ function payoutStatus(
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 32 },
 	list: { paddingHorizontal: 16, paddingBottom: 28 },
 	headerContent: { gap: 12, paddingVertical: 14 },
 	notice: {

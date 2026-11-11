@@ -70,7 +70,7 @@ function BillingContent({ shopId }: { shopId: string }) {
 					{ backgroundColor: c.card, borderColor: c.border },
 				]}
 			>
-				<Ionicons name="options-outline" size={20} color={c.primary} />
+				<Ionicons name="options-outline" size={20} color={c.link} />
 				<Text style={[s.cardTitle, { color: c.text, flex: 1 }]}>
 					{t("billing.orderSettingsTitle")}
 				</Text>

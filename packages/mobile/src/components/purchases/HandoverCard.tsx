@@ -139,7 +139,7 @@ export function HandoverCard({
 const INK = "#12163a";
 const AMBER = "#ffc94a";
 /** The shell's muted ink: 9:1 on the ink card, where the faint grey was 4.2:1. */
-const INK_MUTED = "#b8c0ec";
+const INK_MUTED = "#c7d3f7";
 
 const styles = StyleSheet.create({
 	card: {

@@ -81,7 +81,7 @@ export function PickupPoints({ handle }: { handle: string }) {
 							Linking.openURL(googleMapsUrl(point.gps.lat, point.gps.lng))
 						}
 					>
-						<Text style={[styles.copy, { color: c.primary }]}>
+						<Text style={[styles.copy, { color: c.link }]}>
 							{t("shop.pickupMaps", { name: point.name })}
 						</Text>
 					</Pressable>

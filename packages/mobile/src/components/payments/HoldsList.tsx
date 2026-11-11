@@ -36,7 +36,7 @@ export function HoldsList({ holds }: { holds: PaymentHoldView[] }) {
 					key={`${hold.scope}-${hold.reasonCategory}-${index}`}
 					style={[
 						styles.row,
-						{ backgroundColor: c.warningSoft, borderColor: c.border },
+						{ backgroundColor: c.warningSoft, borderColor: c.warningSoft },
 					]}
 				>
 					<Text style={[s.cardTitle, { color: c.warningText, fontSize: 13 }]}>
@@ -65,5 +65,10 @@ export function HoldsList({ holds }: { holds: PaymentHoldView[] }) {
 
 const styles = StyleSheet.create({
 	list: { gap: 8 },
-	row: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 4 },
+	row: {
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 12,
+		gap: 4,
+	},
 });

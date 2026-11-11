@@ -251,10 +251,10 @@ export default function RiderShipmentScreen() {
 								]}
 							>
 								{pickUp.isPending ? (
-									<ActivityIndicator color="#ffffff" />
+									<ActivityIndicator color={k.onFill} />
 								) : (
 									<>
-										<Ionicons name="cube" size={24} color="#ffffff" />
+										<Ionicons name="cube" size={24} color={k.onFill} />
 										<Text style={styles.primaryText}>
 											{t("shipmentPanel.pickUp")}
 										</Text>
@@ -290,7 +290,7 @@ function Tile({
 				styles.tile,
 				{
 					backgroundColor: c.card,
-					borderColor: c.isDark ? "#3a4290" : "#c9cce0",
+					borderColor: k.strongBorder,
 					opacity: pressed ? 0.85 : 1,
 					transform: [{ scale: pressed ? 0.98 : 1 }],
 				},

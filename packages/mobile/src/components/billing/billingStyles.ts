@@ -21,9 +21,10 @@ export const billingStyles = StyleSheet.create({
 		lineHeight: 29,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
+		fontVariant: ["tabular-nums"],
 	},
 	button: {
-		minHeight: 48,
+		minHeight: 52,
 		borderRadius: 12,
 		paddingHorizontal: 16,
 		alignItems: "center",

@@ -31,11 +31,12 @@ export function PendingPhotoTile({
 	const { t } = useTranslation();
 	const failed = photo.status === "failed";
 	return (
-		<View style={style}>
+		<View style={[styles.tile, style]}>
 			<Image
 				source={{ uri: photo.uri }}
 				style={StyleSheet.absoluteFill}
 				contentFit="cover"
+				accessibilityIgnoresInvertColors
 			/>
 			<Pressable
 				onPress={failed ? onRetry : undefined}
@@ -50,29 +51,31 @@ export function PendingPhotoTile({
 			>
 				{failed ? (
 					<>
-						<Ionicons name="refresh" size={20} color="#fff" />
+						<Ionicons name="refresh" size={20} color="#ffffff" />
 						<Text style={styles.label} numberOfLines={2}>
 							{t("create.photoRetry")}
 						</Text>
 					</>
 				) : (
-					<ActivityIndicator color="#fff" />
+					<ActivityIndicator color="#ffffff" />
 				)}
 			</Pressable>
 			<Pressable
 				onPress={onRemove}
-				hitSlop={10}
+				hitSlop={12}
 				accessibilityRole="button"
 				accessibilityLabel={t("create.removePhoto")}
 				style={styles.remove}
 			>
-				<Ionicons name="close" size={16} color="#fff" />
+				<Ionicons name="close" size={16} color="#ffffff" />
 			</Pressable>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
+	// Clips the picture and its veil to whatever radius the caller gives.
+	tile: { overflow: "hidden" },
 	overlay: {
 		position: "absolute",
 		top: 0,
@@ -83,24 +86,24 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 4,
 		padding: 6,
-		backgroundColor: "rgba(18, 22, 58,0.45)",
-		borderRadius: 12,
+		backgroundColor: "rgba(18, 22, 58, 0.45)",
 	},
-	failed: { backgroundColor: "rgba(185,28,28,0.7)" },
+	// The danger ink (#8e2219) under white words: 8:1 even over a bright photo.
+	failed: { backgroundColor: "rgba(142, 34, 25, 0.82)" },
 	label: {
-		color: "#fff",
-		fontSize: 11,
+		color: "#ffffff",
+		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
 	remove: {
 		position: "absolute",
-		top: 4,
-		right: 4,
+		top: 6,
+		right: 6,
 		width: 28,
 		height: 28,
 		borderRadius: 14,
-		backgroundColor: "rgba(18, 22, 58,0.7)",
+		backgroundColor: "rgba(18, 22, 58, 0.7)",
 		alignItems: "center",
 		justifyContent: "center",
 	},

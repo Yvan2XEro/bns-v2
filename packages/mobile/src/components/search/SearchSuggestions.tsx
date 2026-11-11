@@ -1,18 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/src/lib/i18n";
+import { useDiscoveryPalette } from "./palette";
 
 function usePalette() {
-	const isDark = useColorScheme() === "dark";
+	const c = useDiscoveryPalette();
 	return {
-		card: isDark ? "#1a1f4a" : "#ffffff",
-		text: isDark ? "#e1e3ee" : "#12163a",
-		muted: isDark ? "#a3a7c8" : "#5b6088",
-		primary: isDark ? "#6878ea" : "#23338f",
-		border: isDark ? "#2a3170" : "#e1e3ee",
-		chip: isDark ? "#1d2568" : "#eff1fb",
+		card: c.card,
+		text: c.foreground,
+		muted: c.mutedForeground,
+		link: c.link,
+		border: c.border,
+		chip: c.primaryTint,
+		pressed: c.well,
 	};
 }
 
@@ -37,20 +38,18 @@ export function RecentSearches({
 		<View style={styles.recentWrap}>
 			<View style={styles.recentHead}>
 				<Text
-					style={[
-						styles.recentTitle,
-						{ color: c.muted, fontFamily: Fonts.bodySemibold },
-					]}
+					style={[styles.recentTitle, { color: c.text }]}
+					accessibilityRole="header"
 				>
 					{t("search.recentTitle")}
 				</Text>
-				<Pressable onPress={onClear} hitSlop={10} accessibilityRole="button">
-					<Text
-						style={[
-							styles.clear,
-							{ color: c.primary, fontFamily: Fonts.bodySemibold },
-						]}
-					>
+				<Pressable
+					onPress={onClear}
+					accessibilityRole="button"
+					accessibilityLabel={t("search.clearHistory")}
+					style={styles.clearBtn}
+				>
+					<Text style={[styles.clear, { color: c.link }]}>
 						{t("search.clearRecent")}
 					</Text>
 				</Pressable>
@@ -72,26 +71,23 @@ export function RecentSearches({
 								borderTopWidth: StyleSheet.hairlineWidth,
 								borderTopColor: c.border,
 							},
-							pressed && { opacity: 0.6 },
+							pressed && { backgroundColor: c.pressed },
 						]}
 					>
 						<Ionicons name="time-outline" size={17} color={c.muted} />
 						<Text
 							numberOfLines={1}
-							style={[
-								styles.recentText,
-								{ color: c.text, fontFamily: Fonts.body },
-							]}
+							style={[styles.recentText, { color: c.text }]}
 						>
 							{query}
 						</Text>
 						<Pressable
 							onPress={() => onRemove(query)}
-							hitSlop={10}
 							accessibilityRole="button"
 							accessibilityLabel={t("search.removeRecent", { query })}
+							style={styles.removeBtn}
 						>
-							<Ionicons name="close" size={16} color={c.muted} />
+							<Ionicons name="close" size={18} color={c.muted} />
 						</Pressable>
 					</Pressable>
 				))}
@@ -135,13 +131,10 @@ export function CategorySuggestions({
 							pressed && { opacity: 0.7 },
 						]}
 					>
-						<Ionicons name="grid-outline" size={13} color={c.primary} />
+						<Ionicons name="grid-outline" size={15} color={c.link} />
 						<Text
 							numberOfLines={1}
-							style={[
-								styles.chipText,
-								{ color: c.primary, fontFamily: Fonts.bodySemibold },
-							]}
+							style={[styles.chipText, { color: c.link }]}
 						>
 							{t("search.inCategory", { name: category.name })}
 						</Text>
@@ -153,19 +146,21 @@ export function CategorySuggestions({
 }
 
 const styles = StyleSheet.create({
-	recentWrap: { paddingHorizontal: 16, paddingTop: 16 },
+	recentWrap: { paddingHorizontal: 16, paddingTop: 8 },
 	recentHead: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		marginBottom: 8,
+		marginBottom: 4,
 	},
 	recentTitle: {
-		fontSize: 12,
-		textTransform: "uppercase",
-		letterSpacing: 0.6,
+		fontSize: 17,
+		lineHeight: 22,
+		letterSpacing: -0.2,
+		fontFamily: Fonts.displayBold,
 	},
-	clear: { fontSize: 13 },
+	clearBtn: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },
+	clear: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	recentCard: {
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -175,20 +170,26 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
-		paddingHorizontal: 14,
-		minHeight: 48,
+		paddingLeft: 14,
+		minHeight: 52,
 	},
-	recentText: { flex: 1, fontSize: 15 },
+	recentText: { flex: 1, fontSize: 16, fontFamily: Fonts.body },
+	removeBtn: {
+		width: 48,
+		height: 48,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 	chips: { gap: 8, paddingHorizontal: 16, paddingVertical: 10 },
 	chip: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 6,
 		paddingHorizontal: 12,
-		height: 32,
-		borderRadius: 16,
+		minHeight: 40,
+		borderRadius: 20,
 		borderWidth: StyleSheet.hairlineWidth,
 		maxWidth: 260,
 	},
-	chipText: { fontSize: 13 },
+	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { dangerInk } from "@/src/components/shop/ink";
@@ -98,7 +99,7 @@ export default function ResalePurchaseOrderDetailScreen() {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<DetailSkeleton cards={2} />
 			</SafeAreaView>
 		);
 	if (query.isError || !query.data)
@@ -588,11 +589,12 @@ function ActionButton({
 			onPress={onPress}
 			disabled={disabled}
 			accessibilityRole="button"
+			accessibilityState={{ disabled }}
 			style={[
 				styles.button,
 				{
-					backgroundColor: secondary ? c.card : c.primary,
-					borderColor: c.primary,
+					backgroundColor: secondary ? c.card : c.fill,
+					borderColor: secondary ? c.link : c.fill,
 					opacity: disabled ? 0.55 : 1,
 				},
 			]}
@@ -600,13 +602,10 @@ function ActionButton({
 			<Ionicons
 				name="checkmark"
 				size={18}
-				color={secondary ? c.primary : "#ffffff"}
+				color={secondary ? c.link : "#ffffff"}
 			/>
 			<Text
-				style={[
-					styles.buttonText,
-					{ color: secondary ? c.primary : "#ffffff" },
-				]}
+				style={[styles.buttonText, { color: secondary ? c.link : "#ffffff" }]}
 			>
 				{label}
 			</Text>
@@ -627,7 +626,6 @@ const styles = StyleSheet.create({
 	},
 	writeText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
 	safe: { flex: 1 },
-	spinner: { marginTop: 40 },
 	content: { padding: 16, gap: 12, paddingBottom: 36 },
 	card: {
 		borderWidth: StyleSheet.hairlineWidth,
@@ -649,8 +647,8 @@ const styles = StyleSheet.create({
 	carriers: { flexDirection: "row", gap: 6 },
 	carrier: { borderWidth: 1, borderRadius: 8, padding: 8 },
 	button: {
-		minHeight: 48,
-		borderRadius: 10,
+		minHeight: 52,
+		borderRadius: 12,
 		borderWidth: 1,
 		flexDirection: "row",
 		gap: 8,
@@ -658,6 +656,6 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	buttonText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	buttonText: { fontFamily: Fonts.bodyBold, fontSize: 16 },
 	error: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });

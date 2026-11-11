@@ -6,6 +6,7 @@ import {
 	FlatList,
 	Pressable,
 	RefreshControl,
+	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
@@ -19,7 +20,7 @@ import Animated, {
 	useSharedValue,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
@@ -64,14 +65,17 @@ export default function FavoritesScreen() {
 	const [refreshing, setRefreshing] = React.useState(false);
 
 	// ── Colors ──────────────────────────────────────────────────────
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
-	const accentBg = isDark ? "#12163a" : "#e9ecfa";
-	const inputBg = isDark ? "#13183e" : "#eceef5";
+	const c = Colors[isDark ? "dark" : "light"];
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const mutedColor = c.mutedForeground;
+	/** Brand words and outlines; fills behind white use `c.primaryFill`. */
+	const primaryColor = c.link;
+	const borderColor = c.border;
+	const accentBg = bg;
+	const heartTile = c.dangerTint;
+	const heart = isDark ? c.dangerText : c.destructive;
 
 	// ── Scroll ──────────────────────────────────────────────────────
 	const scrollY = useSharedValue(0);
@@ -160,10 +164,13 @@ export default function FavoritesScreen() {
 				style={[styles.safe, { backgroundColor: accentBg }]}
 			>
 				<View style={[styles.noUserHeader, { backgroundColor: accentBg }]}>
-					<View style={[styles.heartIconWrap, { backgroundColor: "#fbe3e0" }]}>
-						<Ionicons name="heart" size={22} color="#e5574b" />
+					<View style={[styles.heartIconWrap, { backgroundColor: heartTile }]}>
+						<Ionicons name="heart" size={22} color={heart} />
 					</View>
-					<Text style={[styles.pageTitle, { color: textColor }]}>
+					<Text
+						accessibilityRole="header"
+						style={[styles.pageTitle, { color: textColor }]}
+					>
 						{t("favorites.title")}
 					</Text>
 				</View>
@@ -196,12 +203,15 @@ export default function FavoritesScreen() {
 			<View style={[styles.headerWrap, { backgroundColor: accentBg }]}>
 				{/* Expanded row — collapses on scroll */}
 				<Animated.View style={[styles.expandedRow, expandedRowStyle]}>
-					<View style={[styles.heartIconWrap, { backgroundColor: "#fbe3e0" }]}>
-						<Ionicons name="heart" size={22} color="#e5574b" />
+					<View style={[styles.heartIconWrap, { backgroundColor: heartTile }]}>
+						<Ionicons name="heart" size={22} color={heart} />
 					</View>
 					<View style={{ flex: 1 }}>
-						<Text style={[styles.pageTitle, { color: textColor }]}>
-							Favoris
+						<Text
+							accessibilityRole="header"
+							style={[styles.pageTitle, { color: textColor }]}
+						>
+							{t("favorites.title")}
 						</Text>
 						{favorites.length > 0 && (
 							<Text style={[styles.expandedCount, { color: mutedColor }]}>
@@ -213,6 +223,9 @@ export default function FavoritesScreen() {
 					</View>
 					<Pressable
 						onPress={() => router.push("/(tabs)/account")}
+						accessibilityRole="button"
+						accessibilityLabel={t("account.myAccount")}
+						hitSlop={4}
 						style={[styles.avatarBtn, { backgroundColor: cardBg, borderColor }]}
 					>
 						{(user as any)?.avatar?.url ? (
@@ -232,13 +245,13 @@ export default function FavoritesScreen() {
 					style={[styles.compactBar, compactStyle]}
 					pointerEvents="none"
 				>
-					<Ionicons name="heart" size={14} color="#e5574b" />
+					<Ionicons name="heart" size={14} color={heart} />
 					<Text style={[styles.compactTitle, { color: textColor }]}>
-						Favoris
+						{t("favorites.title")}
 					</Text>
 					{favorites.length > 0 && (
 						<View
-							style={[styles.compactBadge, { backgroundColor: primaryColor }]}
+							style={[styles.compactBadge, { backgroundColor: c.primaryFill }]}
 						>
 							<Text style={styles.compactBadgeText}>{filtered.length}</Text>
 						</View>
@@ -252,47 +265,35 @@ export default function FavoritesScreen() {
 							styles.searchBar,
 							{
 								backgroundColor: cardBg,
-								borderColor: query.length > 0 ? primaryColor : borderColor,
-								shadowColor: primaryColor,
-								shadowOpacity: query.length > 0 ? 0.18 : 0,
+								borderColor: query.length > 0 ? c.primary : c.borderStrong,
 							},
 						]}
 					>
-						<View
-							style={[
-								styles.searchIconBubble,
-								{
-									backgroundColor:
-										query.length > 0
-											? primaryColor
-											: isDark
-												? "#2a3170"
-												: "#e3e7f8",
-								},
-							]}
-						>
-							<Ionicons
-								name="search"
-								size={14}
-								color={query.length > 0 ? "#fff" : primaryColor}
-							/>
-						</View>
+						<Ionicons name="search" size={18} color={mutedColor} />
 						<TextInput
 							value={query}
 							onChangeText={setQuery}
 							placeholder={t("favorites.searchPlaceholder")}
 							placeholderTextColor={mutedColor}
+							accessibilityLabel={t("favorites.searchPlaceholder")}
+							selectionColor={c.primary}
+							returnKeyType="search"
 							style={[styles.searchInput, { color: textColor }]}
 						/>
 						{query.length > 0 && (
-							<Pressable onPress={() => setQuery("")} hitSlop={10}>
+							<Pressable
+								onPress={() => setQuery("")}
+								hitSlop={14}
+								accessibilityRole="button"
+								accessibilityLabel={t("favorites.clear")}
+							>
 								<View
 									style={[
 										styles.clearBubble,
-										{ backgroundColor: isDark ? "#3a3f66" : "#e1e3ee" },
+										{ backgroundColor: c.borderStrong },
 									]}
 								>
-									<Ionicons name="close" size={11} color={mutedColor} />
+									<Ionicons name="close" size={12} color={textColor} />
 								</View>
 							</Pressable>
 						)}
@@ -304,30 +305,39 @@ export default function FavoritesScreen() {
 			<View style={[styles.contentWrap, { backgroundColor: bg }]}>
 				{/* Sort pills */}
 				{hasToolbar && (
-					<View style={[styles.sortRow, { borderBottomColor: borderColor }]}>
+					<ScrollView
+						horizontal
+						showsHorizontalScrollIndicator={false}
+						style={[styles.sortScroll, { borderBottomColor: borderColor }]}
+						contentContainerStyle={styles.sortRow}
+						accessibilityRole="radiogroup"
+					>
 						{SORTS.map((s) => {
 							const active = sortKey === s.key;
 							return (
 								<Pressable
 									key={s.key}
 									onPress={() => setSortKey(s.key)}
+									accessibilityRole="radio"
+									accessibilityState={{ checked: active }}
+									hitSlop={{ top: 6, bottom: 6 }}
 									style={[
 										styles.sortPill,
 										{
-											backgroundColor: active ? primaryColor : inputBg,
-											borderColor: active ? primaryColor : borderColor,
+											backgroundColor: active ? c.primaryTint : cardBg,
+											borderColor: active ? c.primary : borderColor,
 										},
 									]}
 								>
 									<Ionicons
 										name={s.icon as any}
-										size={11}
-										color={active ? "#fff" : mutedColor}
+										size={14}
+										color={active ? primaryColor : mutedColor}
 									/>
 									<Text
 										style={[
 											styles.sortPillText,
-											{ color: active ? "#fff" : mutedColor },
+											{ color: active ? primaryColor : textColor },
 										]}
 									>
 										{t(s.labelKey)}
@@ -335,7 +345,7 @@ export default function FavoritesScreen() {
 								</Pressable>
 							);
 						})}
-					</View>
+					</ScrollView>
 				)}
 
 				{/* List */}
@@ -361,7 +371,10 @@ export default function FavoritesScreen() {
 							color={mutedColor}
 							style={{ marginBottom: 12 }}
 						/>
-						<Text style={[styles.noResultTitle, { color: textColor }]}>
+						<Text
+							accessibilityRole="header"
+							style={[styles.noResultTitle, { color: textColor }]}
+						>
 							{t("favorites.noResults")}
 						</Text>
 						<Text style={[styles.noResultSub, { color: mutedColor }]}>
@@ -369,7 +382,11 @@ export default function FavoritesScreen() {
 						</Text>
 						<Pressable
 							onPress={() => setQuery("")}
-							style={[styles.clearBtn, { borderColor: primaryColor }]}
+							accessibilityRole="button"
+							style={[
+								styles.clearBtn,
+								{ borderColor: c.borderStrong, backgroundColor: cardBg },
+							]}
 						>
 							<Text style={[styles.clearBtnText, { color: primaryColor }]}>
 								{t("favorites.clear")}
@@ -402,7 +419,8 @@ export default function FavoritesScreen() {
 							<RefreshControl
 								refreshing={refreshing}
 								onRefresh={onRefresh}
-								tintColor={primaryColor}
+								tintColor={c.primary}
+								colors={[c.primary]}
 							/>
 						}
 					/>
@@ -447,27 +465,28 @@ const styles = StyleSheet.create({
 		flexShrink: 0,
 	},
 	pageTitle: {
-		fontSize: 24,
+		fontSize: 30,
+		lineHeight: 34,
+		letterSpacing: -0.8,
 		fontFamily: Fonts.displayExtrabold,
-		letterSpacing: -0.4,
-		lineHeight: 28,
 	},
 	expandedCount: {
-		fontSize: 12,
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.body,
-		marginTop: 1,
+		marginTop: 2,
 	},
 	avatarBtn: {
-		width: 38,
-		height: 38,
-		borderRadius: 19,
+		width: 40,
+		height: 40,
+		borderRadius: 20,
 		alignItems: "center",
 		justifyContent: "center",
 		borderWidth: 1,
 		overflow: "hidden",
 		flexShrink: 0,
 	},
-	avatar: { width: 38, height: 38 },
+	avatar: { width: 40, height: 40 },
 
 	/* Compact bar */
 	compactBar: {
@@ -504,31 +523,23 @@ const styles = StyleSheet.create({
 	searchBar: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 9,
-		borderRadius: 16,
-		borderWidth: 1.5,
-		paddingHorizontal: 10,
-		paddingVertical: 9,
-		shadowOffset: { width: 0, height: 3 },
-		shadowRadius: 8,
-		elevation: 0,
+		gap: 10,
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 14,
 	},
-	searchIconBubble: {
-		width: 28,
-		height: 28,
-		borderRadius: 9,
-		alignItems: "center",
-		justifyContent: "center",
-	},
+	// Android's TextInput carries its own vertical padding.
 	searchInput: {
 		flex: 1,
-		fontSize: 14,
+		fontSize: 16,
 		fontFamily: Fonts.body,
+		paddingVertical: 10,
 	},
 	clearBubble: {
-		width: 20,
-		height: 20,
-		borderRadius: 10,
+		width: 22,
+		height: 22,
+		borderRadius: 11,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -542,24 +553,24 @@ const styles = StyleSheet.create({
 	},
 
 	/* Sort row */
+	sortScroll: { flexGrow: 0, borderBottomWidth: StyleSheet.hairlineWidth },
 	sortRow: {
 		flexDirection: "row",
-		gap: 7,
-		paddingHorizontal: 14,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
+		gap: 8,
+		paddingHorizontal: 16,
+		paddingVertical: 10,
 	},
 	sortPill: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
-		borderRadius: 20,
-		borderWidth: 1.5,
-		paddingHorizontal: 10,
-		paddingVertical: 5,
+		gap: 6,
+		minHeight: 36,
+		borderRadius: 999,
+		borderWidth: 1,
+		paddingHorizontal: 14,
 	},
 	sortPillText: {
-		fontSize: 12,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -576,25 +587,26 @@ const styles = StyleSheet.create({
 		marginBottom: 6,
 	},
 	noResultSub: {
-		fontSize: 13,
+		fontSize: 15,
 		fontFamily: Fonts.body,
 		textAlign: "center",
 		lineHeight: 20,
 		marginBottom: 20,
 	},
 	clearBtn: {
-		borderRadius: 20,
-		borderWidth: 1.5,
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
 		paddingHorizontal: 20,
-		paddingVertical: 8,
+		justifyContent: "center",
 	},
 	clearBtnText: {
-		fontSize: 13,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 
 	/* List */
-	list: { padding: 16, gap: 12, paddingBottom: 40 },
+	list: { padding: 16, gap: 16, paddingBottom: 40 },
 	row: { flexDirection: "row", gap: 12 },
 	skeletonGrid: {
 		flexDirection: "row",

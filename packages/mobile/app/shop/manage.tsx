@@ -1,15 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
+import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { dangerInk } from "@/src/components/shop/ink";
 import { ShopBrandingCard } from "@/src/components/shop/manage/ShopBrandingCard";
@@ -17,6 +12,7 @@ import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useMyShop } from "@/src/hooks/useShops";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	type RowValue,
@@ -28,15 +24,37 @@ import { isShopOwner } from "@/src/lib/variants";
 export default function ShopSettingsScreen() {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const { data, isLoading } = useMyShop();
+	const { data, isLoading, isError, error, refetch } = useMyShop();
 	const { webUrl } = useAppConfig();
 	const shop = data?.shop;
 
-	if (isLoading || !shop) {
+	if (isLoading) {
 		return (
 			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
 				<SellerHeader title={t("shop.settingsTitle")} />
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<DetailSkeleton cards={3} />
+			</SafeAreaView>
+		);
+	}
+
+	// A failed read retries; no shop at all (closed, or the role was removed)
+	// sends the seller back instead of holding a skeleton forever.
+	if (!shop) {
+		return (
+			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
+				<SellerHeader title={t("shop.settingsTitle")} />
+				<EmptyState
+					illustration="notFound"
+					title={t("shop.settingsTitle")}
+					subtitle={isError ? resolveErrorMessage(error, t) : undefined}
+					ctaLabel={isError ? t("common.retry") : t("common.back")}
+					onCta={
+						isError
+							? () => refetch()
+							: () =>
+									router.canGoBack() ? router.back() : router.replace("/seller")
+					}
+				/>
 			</SafeAreaView>
 		);
 	}
@@ -172,10 +190,9 @@ const styles = StyleSheet.create({
 	content: { padding: 16, gap: 18, paddingBottom: 40 },
 	group: { gap: 8 },
 	groupTitle: {
-		fontSize: 12,
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
-		letterSpacing: 0.6,
-		textTransform: "uppercase",
 		paddingHorizontal: 4,
 	},
 	panel: {

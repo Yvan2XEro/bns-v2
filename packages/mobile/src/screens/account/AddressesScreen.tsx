@@ -1,12 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
@@ -16,6 +10,8 @@ import {
 	SavedAddressCard,
 } from "@/src/components/address/SavedAddressCard";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
+import { FormError } from "@/src/components/checkout/FormError";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
@@ -89,7 +85,10 @@ export function AddressesScreen() {
 						style={styles.back}
 					/>
 				)}
-				<Text style={[styles.title, { color: c.text }]}>
+				<Text
+					accessibilityRole="header"
+					style={[styles.title, { color: c.text }]}
+				>
 					{editing
 						? editingAddress
 							? t("addresses.editTitle")
@@ -102,14 +101,10 @@ export function AddressesScreen() {
 					contentContainerStyle={{ padding: 16, gap: 12 }}
 					keyboardShouldPersistTaps="handled"
 				>
-					{list.isPending ? (
-						<ActivityIndicator style={{ marginTop: 32 }} color={c.primary} />
-					) : null}
+					{list.isPending && !editing ? <OrderListSkeleton rows={3} /> : null}
 					{list.isError ? (
 						<View style={{ gap: 12 }}>
-							<Text style={{ color: c.dangerText }}>
-								{t("addresses.loadError")}
-							</Text>
+							<FormError message={t("addresses.loadError")} />
 							<CheckoutButton
 								label={t("common.retry")}
 								variant="outline"
@@ -167,11 +162,11 @@ export function AddressesScreen() {
 									})}
 								</Text>
 							)}
-							{actionError ? (
-								<Text style={{ color: c.dangerText }}>
-									{resolveErrorMessage(actionError, t)}
-								</Text>
-							) : null}
+							<FormError
+								message={
+									actionError ? resolveErrorMessage(actionError, t) : null
+								}
+							/>
 							{addresses.map((address) => (
 								<SavedAddressCard
 									key={address.id}
@@ -232,9 +227,9 @@ const styles = StyleSheet.create({
 		gap: 12,
 		paddingHorizontal: 16,
 		paddingVertical: 12,
-		borderBottomWidth: 1,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	back: { minWidth: 44, minHeight: 44, justifyContent: "center" },
-	title: { fontSize: 18, fontFamily: Fonts.displayBold },
-	subtitle: { fontSize: 13, fontFamily: Fonts.body },
+	title: { fontSize: 17, lineHeight: 22, fontFamily: Fonts.displayBold },
+	subtitle: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
 });

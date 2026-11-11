@@ -77,7 +77,7 @@ function SellerTabRow({
 			]}
 		>
 			<View style={[styles.icon, { backgroundColor: c.primarySoft }]}>
-				<Ionicons name={icon} size={18} color={c.primary} />
+				<Ionicons name={icon} size={18} color={c.link} />
 			</View>
 			<View style={{ flex: 1 }}>
 				<Text style={[styles.label, { color: c.text }]}>{label}</Text>

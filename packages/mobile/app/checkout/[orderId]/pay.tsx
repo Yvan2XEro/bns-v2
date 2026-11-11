@@ -3,7 +3,6 @@ import { Redirect, router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { type ComponentProps, useEffect, useState } from "react";
 import {
-	ActivityIndicator,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -15,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { FormError } from "@/src/components/checkout/FormError";
 import { inkOf } from "@/src/components/checkout/fill";
 import { OperatorMark } from "@/src/components/checkout/OperatorMark";
@@ -134,7 +134,7 @@ export default function CheckoutPayScreen() {
 		return (
 			<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
 				<SellerHeader title={t("payments.pay_title")} onBack={leave} />
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<DetailSkeleton cards={1} />
 			</SafeAreaView>
 		);
 	}

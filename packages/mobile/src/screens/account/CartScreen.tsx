@@ -188,7 +188,8 @@ export function CartScreen() {
 					<Pressable
 						onPress={undoRemove}
 						accessibilityRole="button"
-						hitSlop={8}
+						accessibilityLabel={t("cart.undo")}
+						style={styles.undoButton}
 					>
 						<Text style={[styles.undoAction, { color: c.bg }]}>
 							{t("cart.undo")}
@@ -241,12 +242,21 @@ const styles = StyleSheet.create({
 		gap: 12,
 		marginHorizontal: 16,
 		marginBottom: 8,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingLeft: 16,
+		paddingRight: 4,
+		paddingVertical: 4,
 		borderRadius: 12,
 	},
-	undoText: { flex: 1, fontSize: 14, fontFamily: Fonts.body },
-	undoAction: { fontSize: 14, fontFamily: Fonts.bodyBold },
+	undoText: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	// A 48pt target for the one action in the bar.
+	undoButton: {
+		minHeight: 48,
+		minWidth: 48,
+		paddingHorizontal: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	undoAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
 	safe: { flex: 1 },
 	body: { flex: 1 },
 	list: { padding: 16 },
@@ -260,5 +270,5 @@ const styles = StyleSheet.create({
 		marginBottom: 10,
 	},
 	shopName: { fontSize: 15, fontFamily: Fonts.displayBold },
-	shopMeta: { fontSize: 13, fontFamily: Fonts.body },
+	shopMeta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 });

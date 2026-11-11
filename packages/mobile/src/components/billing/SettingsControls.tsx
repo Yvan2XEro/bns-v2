@@ -19,7 +19,9 @@ export function SettingsSection({
 				{ backgroundColor: c.card, borderColor: c.border, gap: 12 },
 			]}
 		>
-			<Text style={[s.cardTitle, { color: c.text }]}>{title}</Text>
+			<Text accessibilityRole="header" style={[s.cardTitle, { color: c.text }]}>
+				{title}
+			</Text>
 			{children}
 		</View>
 	);

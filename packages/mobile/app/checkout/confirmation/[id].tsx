@@ -14,6 +14,7 @@ import { Fonts } from "@/constants/theme";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
 import { CodeEntry } from "@/src/components/checkout/CodeEntry";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { fillOf, inkOf } from "@/src/components/checkout/fill";
 import { TotalTag } from "@/src/components/checkout/TotalTag";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -70,11 +71,7 @@ export default function CheckoutConfirmationScreen() {
 		>
 			<SellerHeader title={t("checkout.title")} icon="close" onBack={leave} />
 			{purchase.isPending ? (
-				<ActivityIndicator
-					style={{ marginTop: 40 }}
-					color={c.primary}
-					accessibilityLabel={t("common.loading")}
-				/>
+				<DetailSkeleton cards={2} />
 			) : !order ? (
 				<EmptyState
 					illustration="notFound"

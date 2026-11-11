@@ -47,7 +47,7 @@ const GLYPH: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
 };
 const GLYPH_BG: Record<ToastType, string> = {
 	success: "#34b26a",
-	info: "#6878ea",
+	info: "#3b82f6",
 };
 const SOUND: Record<ToastType, FeedbackKind> = {
 	success: "success",

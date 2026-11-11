@@ -118,7 +118,7 @@ export function LevelSection({
 						{ borderColor: c.primary, backgroundColor: c.primarySoft },
 					]}
 				>
-					<Text style={[styles.continueLabel, { color: c.primary }]}>
+					<Text style={[styles.continueLabel, { color: c.link }]}>
 						{t("verification.requestCard.continue")}
 					</Text>
 				</Pressable>
@@ -204,20 +204,25 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		minWidth: 44,
 		paddingHorizontal: 16,
-		borderRadius: 10,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaLabel: { color: "#ffffff", fontSize: 13, fontFamily: Fonts.bodySemibold },
+	ctaLabel: { color: "#ffffff", fontSize: 15, fontFamily: Fonts.bodyBold },
 	reasonWrap: { alignItems: "flex-end", gap: 6 },
-	reason: { fontSize: 11, fontFamily: Fonts.body, textAlign: "right" },
+	reason: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.body,
+		textAlign: "right",
+	},
 	ctaDisabled: {
 		minHeight: 48,
 		minWidth: 44,
 		paddingHorizontal: 16,
-		borderRadius: 10,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaDisabledLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	ctaDisabledLabel: { fontSize: 15, fontFamily: Fonts.bodyBold },
 });

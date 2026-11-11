@@ -97,7 +97,7 @@ function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
 		return value.doc;
 	}
 
-	return value;
+	return value as T;
 }
 
 function isListingTag(value: unknown): value is ListingTag {
@@ -112,6 +112,10 @@ function isListingTag(value: unknown): value is ListingTag {
 		typeof value.name === "string"
 	);
 }
+
+/** Signage yellow and the ink that always sits on it, in both themes. */
+const SUN = Colors.light.sun;
+const INK = Colors.light.sunForeground;
 
 /** The gallery's share of the width when it sits beside the details. */
 const GALLERY_SHARE = 0.5;
@@ -162,6 +166,8 @@ export function ListingDetail({ id }: { id: string }) {
 	const bodyColor = c.body;
 	const mutedColor = c.mutedForeground;
 	const primaryColor = c.primary;
+	// Brand words on the sheet: the dark primary sits near 4.3:1 on a card.
+	const linkColor = c.link;
 	const borderColor = c.border;
 	// A filled button keeps white legible in both themes: the dark-mode
 	// primary is a light periwinkle that fails 4.5:1 under a white label.
@@ -220,7 +226,8 @@ export function ListingDetail({ id }: { id: string }) {
 	const listing = listingData ? unwrapDoc(listingData) : undefined;
 	const images: ListingImageItem[] = listing?.images ?? [];
 	const seller = listing?.seller;
-	const isOwner = user?.id === seller?.id;
+	const isOwner =
+		user?.id === (typeof seller === "string" ? seller : seller?.id);
 	const favDoc = favData?.docs?.[0];
 	const isFavorite = !!favDoc;
 
@@ -321,11 +328,11 @@ export function ListingDetail({ id }: { id: string }) {
 			return;
 		}
 		const url = `${webUrl ?? ""}/listing/${id}`;
-		Share.share({
-			title: listing?.title,
-			url,
-			message: `${listing?.title} — ${formatPrice(listing?.price ?? 0, i18n.language)}\n${url}`,
-		});
+		// No price, no "0 FCFA": the title alone carries a free or on-quote listing.
+		const heading = priceLabel
+			? `${listing?.title} — ${priceLabel}`
+			: (listing?.title ?? "");
+		Share.share({ title: listing?.title, url, message: `${heading}\n${url}` });
 	};
 
 	const messageLabel = draftAction
@@ -563,7 +570,7 @@ export function ListingDetail({ id }: { id: string }) {
 			{/* Boosted: a signage-yellow plaque on the photo, ink on yellow. */}
 			{listing.isBoosted ? (
 				<View style={styles.boostedBadge}>
-					<Ionicons name="flash" size={13} color="#12163a" />
+					<Ionicons name="flash" size={13} color={INK} />
 					<Text style={styles.boostedText}>{t("listing.featured")}</Text>
 				</View>
 			) : null}
@@ -578,25 +585,31 @@ export function ListingDetail({ id }: { id: string }) {
 				pointerEvents="box-none"
 			>
 				<HeaderBackButton
-					color="#12163a"
+					color={INK}
 					fallback="/(tabs)/home"
 					icon="chevron-back"
 					style={styles.floatBtn}
 				/>
 				<View style={styles.topBarEnd}>
-					<CartHeaderButton style={styles.floatBtn} color="#12163a" />
+					<CartHeaderButton style={styles.floatBtn} color={INK} />
 					<Pressable
 						onPress={handleShare}
-						style={styles.floatBtn}
+						style={({ pressed }) => [
+							styles.floatBtn,
+							pressed && styles.floatBtnPressed,
+						]}
 						accessibilityRole="button"
 						accessibilityLabel={t("listing.share")}
 					>
-						<Ionicons name="share-outline" size={20} color="#12163a" />
+						<Ionicons name="share-outline" size={20} color={INK} />
 					</Pressable>
 					{!isOwner ? (
 						<Pressable
 							onPress={() => toggleFav()}
-							style={styles.floatBtn}
+							style={({ pressed }) => [
+								styles.floatBtn,
+								pressed && styles.floatBtnPressed,
+							]}
 							accessibilityRole="button"
 							accessibilityLabel={
 								isFavorite ? t("listing.saved") : t("listing.save")
@@ -606,7 +619,7 @@ export function ListingDetail({ id }: { id: string }) {
 							<Ionicons
 								name={isFavorite ? "heart" : "heart-outline"}
 								size={20}
-								color={isFavorite ? "#d23a2e" : "#12163a"}
+								color={isFavorite ? Colors.light.destructive : INK}
 							/>
 						</Pressable>
 					) : null}
@@ -801,9 +814,7 @@ export function ListingDetail({ id }: { id: string }) {
 											{ backgroundColor: c.primaryTint },
 										]}
 									>
-										<Text
-											style={[styles.sellerLetter, { color: primaryColor }]}
-										>
+										<Text style={[styles.sellerLetter, { color: linkColor }]}>
 											{sellerDoc.name?.[0]?.toUpperCase() ?? "?"}
 										</Text>
 									</View>
@@ -893,7 +904,7 @@ export function ListingDetail({ id }: { id: string }) {
 										hitSlop={8}
 										style={styles.readMoreBtn}
 									>
-										<Text style={[styles.readMore, { color: primaryColor }]}>
+										<Text style={[styles.readMore, { color: linkColor }]}>
 											{descExpanded
 												? t("listing.readLess")
 												: t("listing.readMore")}
@@ -901,7 +912,7 @@ export function ListingDetail({ id }: { id: string }) {
 										<Ionicons
 											name={descExpanded ? "chevron-up" : "chevron-down"}
 											size={16}
-											color={primaryColor}
+											color={linkColor}
 										/>
 									</Pressable>
 								) : null}
@@ -987,7 +998,7 @@ export function ListingDetail({ id }: { id: string }) {
 												},
 											]}
 										>
-											<Text style={[styles.tagText, { color: primaryColor }]}>
+											<Text style={[styles.tagText, { color: linkColor }]}>
 												{tag.name}
 											</Text>
 										</Pressable>
@@ -1008,7 +1019,9 @@ export function ListingDetail({ id }: { id: string }) {
 								<ScrollView
 									horizontal
 									showsHorizontalScrollIndicator={false}
-									contentContainerStyle={{ gap: 12 }}
+									// Runs to the screen edge so the next card peeks in.
+									style={styles.similarRail}
+									contentContainerStyle={styles.similarRailContent}
 								>
 									{(similarData?.hits ?? [])
 										.filter((l) => l.id !== id)
@@ -1025,7 +1038,7 @@ export function ListingDetail({ id }: { id: string }) {
 												}}
 												width={isTablet ? 220 : 180}
 												isFavorite={favoriteIds.has(l.id)}
-												onToggleFavorite={() => toggleFavorite(l)}
+												onToggleFavorite={() => toggleFavorite({ ...l })}
 												onPress={(lid) => router.push(`/listing/${lid}`)}
 											/>
 										))}
@@ -1042,7 +1055,10 @@ export function ListingDetail({ id }: { id: string }) {
 								})
 							}
 							accessibilityRole="button"
-							style={styles.reportLink}
+							style={({ pressed }) => [
+								styles.reportLink,
+								pressed && { opacity: 0.6 },
+							]}
 						>
 							<Ionicons name="flag-outline" size={15} color={mutedColor} />
 							<Text style={[styles.reportText, { color: mutedColor }]}>
@@ -1155,8 +1171,8 @@ export function ListingDetail({ id }: { id: string }) {
 								{ backgroundColor: cardBg, borderColor: c.borderStrong },
 							]}
 						>
-							<Ionicons name="pencil" size={17} color={primaryColor} />
-							<Text style={[styles.editBtnText, { color: primaryColor }]}>
+							<Ionicons name="pencil" size={17} color={linkColor} />
+							<Text style={[styles.editBtnText, { color: linkColor }]}>
 								{t("listing.edit")}
 							</Text>
 						</Pressable>
@@ -1237,7 +1253,7 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		bottom: 30,
 		left: 16,
-		backgroundColor: "#ffb81c",
+		backgroundColor: SUN,
 		borderRadius: 8,
 		paddingHorizontal: 9,
 		paddingVertical: 4,
@@ -1245,7 +1261,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 4,
 	},
-	boostedText: { color: "#12163a", fontSize: 12, fontFamily: Fonts.bodyBold },
+	boostedText: { color: INK, fontSize: 12, fontFamily: Fonts.bodyBold },
 
 	// ── Content ──
 	// Rises over the gallery's bottom edge like a sheet.
@@ -1287,6 +1303,7 @@ const styles = StyleSheet.create({
 		shadowRadius: 6,
 		elevation: 3,
 	},
+	floatBtnPressed: { opacity: 0.8, transform: [{ scale: 0.96 }] },
 	hero: { gap: 10, marginBottom: 8 },
 	priceRow: {
 		flexDirection: "row",
@@ -1297,7 +1314,7 @@ const styles = StyleSheet.create({
 	// The price is painted on a sign, as at the market.
 	priceTag: {
 		alignSelf: "flex-start",
-		backgroundColor: "#ffb81c",
+		backgroundColor: SUN,
 		borderRadius: 10,
 		paddingHorizontal: 12,
 		paddingTop: 4,
@@ -1306,7 +1323,7 @@ const styles = StyleSheet.create({
 	price: {
 		fontSize: 30,
 		lineHeight: 36,
-		color: "#12163a",
+		color: INK,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.8,
 		fontVariant: ["tabular-nums"],
@@ -1407,6 +1424,8 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	similar: { marginTop: 8 },
+	similarRail: { marginHorizontal: -16 },
+	similarRailContent: { gap: 12, paddingHorizontal: 16 },
 	reportLink: {
 		flexDirection: "row",
 		alignItems: "center",

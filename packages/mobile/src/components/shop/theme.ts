@@ -1,3 +1,4 @@
+import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { sellerBrandPalette } from "./brandTones";
 import { useSellerBrandTheme } from "./sellerBrand";
@@ -17,7 +18,7 @@ export interface ShopPalette {
 	/**
 	 * Behind a white label: filled buttons, selected chips, ticked boxes. The
 	 * platform's night primary gives white only 3.8:1, so it steps down to
-	 * `#2f43b5`; a shop's own colour is already darkened by its brand palette.
+	 * `#2448ab`; a shop's own colour is already darkened by its brand palette.
 	 * Bars, dots and rails with nothing on top keep `primary`.
 	 */
 	fill: string;
@@ -47,31 +48,33 @@ export function useShopTheme(): ShopPalette {
 	const branded = brand
 		? sellerBrandPalette(brand, isDark ? "dark" : "light")
 		: null;
+	const c = Colors[isDark ? "dark" : "light"];
 	return {
 		isDark,
-		bg: isDark ? "#0c1030" : "#f4f5f9",
+		bg: c.background,
 		header: isDark ? "#12163a" : "#e9ecfa",
-		card: isDark ? "#1a1f4a" : "#ffffff",
-		input: isDark ? "#12163a" : "#f4f5f9",
-		text: isDark ? "#e1e3ee" : "#12163a",
-		body: isDark ? "#c9cce0" : "#3a3f66",
-		muted: isDark ? "#a3a7c8" : "#5b6088",
-		border: isDark ? "#2a3170" : "#e1e3ee",
-		primary: isDark ? "#6878ea" : "#23338f",
-		primarySoft: isDark ? "#1d2568" : "#e3e7f8",
-		fill: isDark ? "#2f43b5" : "#23338f",
-		link: isDark ? "#9aa8f5" : "#23338f",
+		card: c.card,
+		input: isDark ? c.well : c.background,
+		text: c.foreground,
+		body: c.body,
+		muted: c.mutedForeground,
+		border: c.border,
+		primary: c.primary,
+		primarySoft: c.primaryTint,
+		fill: c.primaryFill,
+		link: c.link,
 		...(branded ? { ...branded, link: branded.primary } : null),
-		sell: "#ffb81c",
-		success: "#1e8a4f",
-		successSoft: isDark ? "#0b2a18" : "#ddf3e5",
-		successText: isDark ? "#8fddb0" : "#155c35",
-		warningSoft: isDark ? "#3a2a00" : "#fff1c7",
-		warningText: isDark ? "#ffd25a" : "#6e4700",
-		danger: "#d23a2e",
-		dangerSoft: isDark ? "#3d0f0b" : "#fbe3e0",
-		dangerText: isDark ? "#f2a79f" : "#8e2219",
-		neutralSoft: isDark ? "#1a1f4a" : "#eceef5",
-		neutralText: isDark ? "#c9cce0" : "#4a4f78",
+		// Signage yellow and the fills keep their day value in both themes.
+		sell: Colors.light.sun,
+		success: Colors.light.success,
+		successSoft: c.successTint,
+		successText: c.successText,
+		warningSoft: c.warningTint,
+		warningText: c.warningText,
+		danger: Colors.light.destructive,
+		dangerSoft: c.dangerTint,
+		dangerText: c.dangerText,
+		neutralSoft: isDark ? c.card : c.well,
+		neutralText: isDark ? c.body : "#4a4f78",
 	};
 }

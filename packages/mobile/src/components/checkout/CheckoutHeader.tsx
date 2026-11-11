@@ -41,7 +41,7 @@ export function CheckoutHeader({ current }: { current: 1 | 2 | 3 }) {
 							style={[
 								styles.label,
 								{
-									color: step <= current ? c.primary : c.muted,
+									color: step <= current ? c.link : c.muted,
 									fontFamily:
 										step === current ? Fonts.bodySemibold : Fonts.body,
 								},

@@ -208,7 +208,7 @@ export default function ShopAdsScreen() {
 												<Ionicons
 													name="checkmark-circle-outline"
 													size={22}
-													color={c.primary}
+													color={c.link}
 												/>
 											</Pressable>
 										) : null}
@@ -223,7 +223,7 @@ export default function ShopAdsScreen() {
 												<Ionicons
 													name="pencil-outline"
 													size={20}
-													color={c.primary}
+													color={c.link}
 												/>
 											</Pressable>
 										) : null}
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
 	texts: { flex: 1, gap: 2 },
 	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	price: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	meta: { fontSize: 12 },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	action: { padding: 6 },
 	add: {
 		position: "absolute",

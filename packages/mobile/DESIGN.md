@@ -6,7 +6,7 @@ Product context lives in [PRODUCT.md](PRODUCT.md). Tokens live in [constants/the
 Ndop is the indigo resist-dyed cloth of the Grassfields: white lozenges and dots reserved out of deep blue. Market signage is the other half: prices and shop names painted in yellow, in fat letters you can read from across the road.
 
 The app takes four things from that world and nothing else:
-- **Palette.** Ndop indigo carries the shell, signage yellow marks prices and the sell action, and the neutrals are tinted indigo instead of grey.
+- **Palette.** Ndop blue carries the shell (`#2a51c0` by day, night indigo `#13183e` in dark mode), signage yellow marks prices and the sell action, and the neutrals are tinted indigo instead of grey.
 - **Type.** Outfit is the painted-sign voice, and DM Sans is the working face.
 - **Density.** Photo-led feeds, large prices, generous touch targets of 48–56pt.
 - **One signature move: the price tag.** Every price is set in Outfit ExtraBold, ink on a yellow tag. On a card it sits on the photo; on a listing it is the largest thing on screen.
@@ -23,20 +23,24 @@ Navigation, controls, sheets and gestures stay native. The world never supplies 
 | foreground | `#12163a` | `#e1e3ee` | text |
 | body | `#3a3f66` | `#c9cce0` | secondary text |
 | mutedForeground | `#5b6088` | `#a3a7c8` | labels, meta |
-| faint | `#777ca3` | `#777ca3` | placeholders, disabled |
+| faint | `#777ca3` | `#777ca3` | disabled, inactive tab icons (about 4.2:1: never for text that must be read; placeholders use mutedForeground) |
 | border | `#e1e3ee` | `#2a3170` | hairlines |
-| primary | `#23338f` | `#6878ea` | buttons, links, selection |
-| primaryTint | `#e3e7f8` | `#1d2568` | selected chip, soft fills |
-| shell | `#1d2a7a` | `#13183e` | home header, auth band, guest card |
+| primary | `#2f5bd4` | `#3b82f6` | rails, rings, focus, icons with nothing on top |
+| primaryFill | `#2f5bd4` | `#2448ab` | behind a white label: buttons, selected chips |
+| link | `#2f5bd4` | `#9ec5fe` | brand-coloured words on a card |
+| primaryTint | `#e3e9fb` | `#16265c` | selected chip, soft fills (a surface: words on it use link) |
+| shell | `#2a51c0` | `#13183e` | home header, auth band, guest card |
+| ownBubble | `#2448ab` | `#2448ab` | own chat bubbles, sheet actions, unread badges |
 | sun | `#ffb81c` | `#ffc94a` | price tags, sell plaque, boosted frame |
 | success | `#1e8a4f` | `#34b26a` | |
-| warning text | `#9a6a00` | `#ffd25a` | |
+| warningText | `#6e4700` | `#ffd25a` | status words (successText, dangerText likewise) |
 | destructive | `#d23a2e` | `#e5574b` | |
 
 Rules:
+- The brand blue is the web's: `primary` is `#2f5bd4` by day and `#3b82f6` by night. The night value is too light behind a white label (3.7:1) and too dark for words on a night card (4.3:1), so filled actions use `primaryFill` and brand words use `link`. Never use `primary` for either job.
 - Text on yellow is always ink `#12163a`, never white.
 - The shell indigo appears only on the home header, the auth band and the guest invitation. Everywhere else the ground is light (or night-indigo in dark mode).
-- Own chat bubbles use `#2f43b5` in both themes, so white text stays legible.
+- Own chat bubbles use `ownBubble` (`#2448ab`) in both themes, so white text stays legible.
 - No coloured glows. A shadow is an ink shadow with an offset.
 
 ## Type
@@ -70,7 +74,7 @@ Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.
 
 ## Alerts
 - **Toast:** news that needs no answer ("Saved", "Link copied"). It is an ink card at the top that leaves after 3–5 s and is announced to screen readers. `showSuccess` always routes here.
-- **Sheet:** only decisions and errors. One tinted tile names the kind, the title is set in Outfit, and the actions are 52pt high. In a row, cancel sits left and the action right. Action buttons are `#2f43b5` in both themes. Never white on yellow.
+- **Sheet:** only decisions and errors. One tinted tile names the kind, the title is set in Outfit, and the actions are 52pt high. In a row, cancel sits left and the action right. Action buttons are `ownBubble` in both themes. Never white on yellow.
 
 ## Sound and haptics
 `src/lib/feedback.ts`, one call per meaningful moment, never per tap.

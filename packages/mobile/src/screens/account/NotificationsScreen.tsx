@@ -22,9 +22,10 @@ import Reanimated, {
 	useAnimatedStyle,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
@@ -48,39 +49,53 @@ function timeAgo(date: string, locale: string): string {
 	return compactTimeAgo(parsed) ?? "";
 }
 
-function notificationIcon(tags: string[]): {
+type Palette = (typeof Colors)["light" | "dark"];
+type Tone = "success" | "danger" | "brand" | "sun";
+
+/** The tile's tint and ink for a tone, legible in both themes. */
+function toneOf(tone: Tone, c: Palette, isDark: boolean) {
+	switch (tone) {
+		case "success":
+			return { bg: c.successTint, color: c.successText };
+		case "danger":
+			return {
+				bg: c.dangerTint,
+				color: isDark ? c.dangerText : c.destructive,
+			};
+		case "sun":
+			return { bg: c.sunTint, color: c.warningText };
+		default:
+			return { bg: c.primaryTint, color: c.link };
+	}
+}
+
+function notificationIcon(
+	tags: string[],
+	isDark: boolean,
+): {
 	name: keyof typeof Ionicons.glyphMap;
 	color: string;
 	bg: string;
 } {
+	const c = Colors[isDark ? "dark" : "light"];
 	const tag = tags.join(" ");
+	const pick = (name: keyof typeof Ionicons.glyphMap, tone: Tone) => ({
+		name,
+		...toneOf(tone, c, isDark),
+	});
 	if (tag.includes("approved") || tag.includes("published"))
-		return {
-			name: "checkmark-circle-outline",
-			color: "#1e8a4f",
-			bg: "#ddf3e5",
-		};
-	if (tag.includes("rejected"))
-		return { name: "close-circle-outline", color: "#d23a2e", bg: "#fbe3e0" };
-	if (tag.includes("message"))
-		return { name: "chatbubble-outline", color: "#23338f", bg: "#e3e7f8" };
-	if (tag.includes("boost"))
-		return { name: "rocket-outline", color: "#9a6a00", bg: "#fff1c7" };
+		return pick("checkmark-circle-outline", "success");
+	if (tag.includes("rejected")) return pick("close-circle-outline", "danger");
+	if (tag.includes("message")) return pick("chatbubble-outline", "brand");
+	if (tag.includes("boost")) return pick("rocket-outline", "sun");
 	if (tag.includes("alert") || tag.includes("search"))
-		return { name: "bookmark-outline", color: "#7c3aed", bg: "#ede9fe" };
-	if (tag.includes("sold"))
-		return { name: "cash-outline", color: "#1e8a4f", bg: "#ddf3e5" };
-	if (tag.includes("expired"))
-		return { name: "time-outline", color: "#d23a2e", bg: "#fbe3e0" };
+		return pick("bookmark-outline", "brand");
+	if (tag.includes("sold")) return pick("cash-outline", "success");
+	if (tag.includes("expired")) return pick("time-outline", "danger");
 	if (tag.includes("verified"))
-		return {
-			name: "shield-checkmark-outline",
-			color: "#1e8a4f",
-			bg: "#ddf3e5",
-		};
-	if (tag.includes("review"))
-		return { name: "star-outline", color: "#9a6a00", bg: "#fff1c7" };
-	return { name: "notifications-outline", color: "#23338f", bg: "#e3e7f8" };
+		return pick("shield-checkmark-outline", "success");
+	if (tag.includes("review")) return pick("star-outline", "sun");
+	return pick("notifications-outline", "brand");
 }
 
 function navigate(url: string) {
@@ -102,6 +117,7 @@ function SwipeActionButton({
 	label,
 	icon,
 	color,
+	ink,
 	onPress,
 	progress,
 	index,
@@ -110,6 +126,8 @@ function SwipeActionButton({
 	label: string;
 	icon: keyof typeof Ionicons.glyphMap;
 	color: string;
+	/** The label's colour on `color`: ink on the yellow, white on indigo. */
+	ink: string;
 	onPress: () => void;
 	progress: SharedValue<number>;
 	index: number;
@@ -131,10 +149,12 @@ function SwipeActionButton({
 		<Reanimated.View style={[{ width: SWIPE_BTN_WIDTH }, animStyle]}>
 			<Pressable
 				onPress={onPress}
+				accessibilityRole="button"
+				accessibilityLabel={label}
 				style={[styles.swipeBtn, { backgroundColor: color }]}
 			>
-				<Ionicons name={icon} size={20} color="#fff" />
-				<Text style={styles.swipeBtnLabel}>{label}</Text>
+				<Ionicons name={icon} size={20} color={ink} />
+				<Text style={[styles.swipeBtnLabel, { color: ink }]}>{label}</Text>
 			</Pressable>
 		</Reanimated.View>
 	);
@@ -160,8 +180,10 @@ function NotificationRow({
 	cardBg: string;
 }) {
 	const { t, i18n } = useTranslation();
-	const icon = notificationIcon(item.tags ?? []);
-	const unreadBg = isDark ? "rgba(30,58,95,0.4)" : "#eff1fb";
+	const icon = notificationIcon(item.tags ?? [], isDark);
+	const tokens = Colors[isDark ? "dark" : "light"];
+	// Unread rows sit on the soft brand tint, with a dot; no side stripe.
+	const unreadBg = tokens.primaryTint;
 	const rowBg = item.isRead ? cardBg : unreadBg;
 	const data = item.data as Record<string, unknown> | undefined;
 	const listingId = data?.listingId as string | undefined;
@@ -207,6 +229,7 @@ function NotificationRow({
 			label: string;
 			icon: keyof typeof Ionicons.glyphMap;
 			color: string;
+			ink: string;
 			onPress: () => void;
 		}[] = [
 			{
@@ -214,7 +237,8 @@ function NotificationRow({
 					? t("notifications.unread")
 					: t("notifications.read"),
 				icon: item.isRead ? "mail-unread-outline" : "mail-open-outline",
-				color: "#6878ea",
+				color: tokens.primaryFill,
+				ink: "#ffffff",
 				onPress: async () => {
 					methods.close();
 					if (item.isRead) await item.unread();
@@ -226,7 +250,8 @@ function NotificationRow({
 					? t("notifications.restore")
 					: t("notifications.archive"),
 				icon: item.isArchived ? "arrow-undo-outline" : "archive-outline",
-				color: "#ffb81c",
+				color: tokens.sun,
+				ink: tokens.sunForeground,
 				onPress: async () => {
 					methods.close();
 					if (item.isArchived) await item.unarchive();
@@ -243,6 +268,7 @@ function NotificationRow({
 						label={action.label}
 						icon={action.icon}
 						color={action.color}
+						ink={action.ink}
 						onPress={action.onPress}
 						progress={progress}
 						index={i}
@@ -264,17 +290,19 @@ function NotificationRow({
 			<AnimatedPressable
 				onPress={handleRowPress}
 				scaleTo={0.985}
+				accessibilityLabel={[
+					item.isRead ? null : t("notifications.unread"),
+					item.subject,
+					item.body,
+					timeAgo(item.createdAt, i18n.language),
+				]
+					.filter(Boolean)
+					.join(", ")}
 				style={[
 					styles.item,
 					{ borderBottomColor: borderColor, backgroundColor: rowBg },
-					!item.isRead && styles.itemUnread,
 				]}
 			>
-				{/* Unread indicator bar */}
-				{!item.isRead && (
-					<View style={[styles.unreadBar, { backgroundColor: primaryColor }]} />
-				)}
-
 				<View style={[styles.iconBox, { backgroundColor: icon.bg }]}>
 					<Ionicons name={icon.name} size={18} color={icon.color} />
 				</View>
@@ -312,6 +340,8 @@ function NotificationRow({
 							{item.primaryAction && (
 								<Pressable
 									onPress={handlePrimaryAction}
+									accessibilityRole="button"
+									hitSlop={6}
 									style={[
 										styles.actionBtn,
 										item.primaryAction.isCompleted
@@ -342,6 +372,8 @@ function NotificationRow({
 							{item.secondaryAction && (
 								<Pressable
 									onPress={handleSecondaryAction}
+									accessibilityRole="button"
+									hitSlop={6}
 									style={[
 										styles.actionBtn,
 										item.secondaryAction.isCompleted
@@ -361,7 +393,11 @@ function NotificationRow({
 					)}
 				</View>
 
-				{!item.isRead && <View style={styles.unreadDot} />}
+				{!item.isRead && (
+					<View
+						style={[styles.unreadDot, { backgroundColor: tokens.primary }]}
+					/>
+				)}
 			</AnimatedPressable>
 		</ReanimatedSwipeable>
 	);
@@ -372,8 +408,9 @@ function NotificationRow({
 export function NotificationsScreen() {
 	const notificationReady = useNotificationReady();
 	const isDark = useColorScheme() === "dark";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const accentBg = isDark ? "#12163a" : "#e9ecfa";
+	// Brand words: the contrast-safe link colour in both themes.
+	const primaryColor = Colors[isDark ? "dark" : "light"].link;
+	const accentBg = Colors[isDark ? "dark" : "light"].background;
 
 	if (!notificationReady) {
 		return (
@@ -381,9 +418,7 @@ export function NotificationsScreen() {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: accentBg }]}
 			>
-				<View style={styles.center}>
-					<ActivityIndicator color={primaryColor} />
-				</View>
+				<OrderListSkeleton rows={6} />
 			</SafeAreaView>
 		);
 	}
@@ -408,11 +443,12 @@ function NotificationsContent({
 }) {
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const borderColor = isDark ? "#1a1f4a" : "#eceef5";
+	const c = Colors[isDark ? "dark" : "light"];
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const mutedColor = c.mutedForeground;
+	const borderColor = c.border;
 
 	const { notifications, isLoading, hasMore, fetchMore, readAll, refetch } =
 		useNotifications();
@@ -469,19 +505,19 @@ function NotificationsContent({
 		>
 			{/* Header */}
 			<View style={[styles.header, { backgroundColor: accentBg }]}>
-				<HeaderBackButton
-					color={isDark ? "#e1e3ee" : "#12163a"}
-					fallback="/(tabs)/account"
-					inline
-					style={styles.backBtn}
-				/>
-				<Text style={[styles.title, { color: textColor }]}>
+				<HeaderBackButton color={textColor} fallback="/(tabs)/account" />
+				<Text
+					accessibilityRole="header"
+					style={[styles.title, { color: textColor }]}
+				>
 					{t("notifications.title")}
 				</Text>
 				{unreadCount > 0 && (
 					<AnimatedPressable
 						onPress={handleMarkAllRead}
 						scaleTo={0.95}
+						disabled={isMarkingRead}
+						accessibilityLabel={t("notifications.markAllRead")}
 						style={styles.markAllBtn}
 					>
 						{isMarkingRead ? (
@@ -497,19 +533,17 @@ function NotificationsContent({
 
 			{/* Push permission banners */}
 			{permissionStatus === "denied" && (
-				<View
-					style={[
-						styles.permBanner,
-						{ backgroundColor: isDark ? "#1a1f4a" : "#fefce8" },
-					]}
-				>
-					<Ionicons name="warning-outline" size={18} color="#9a6a00" />
-					<Text
-						style={[styles.permText, { color: isDark ? "#ffc94a" : "#6e4700" }]}
-					>
+				<View style={[styles.permBanner, { backgroundColor: c.warningTint }]}>
+					<Ionicons name="warning-outline" size={18} color={c.warningText} />
+					<Text style={[styles.permText, { color: c.warningText }]}>
 						{t("notifications.deniedBannerText")}
 					</Text>
-					<Pressable onPress={handleEnablePush}>
+					<Pressable
+						onPress={handleEnablePush}
+						accessibilityRole="button"
+						hitSlop={12}
+						style={styles.permAction}
+					>
 						<Text style={[styles.permLink, { color: primaryColor }]}>
 							{t("notifications.enablePush")}
 						</Text>
@@ -517,23 +551,21 @@ function NotificationsContent({
 				</View>
 			)}
 			{permissionStatus === "undetermined" && (
-				<View
-					style={[
-						styles.permBanner,
-						{ backgroundColor: isDark ? "#2a3170" : "#eff1fb" },
-					]}
-				>
+				<View style={[styles.permBanner, { backgroundColor: c.primaryTint }]}>
 					<Ionicons
 						name="notifications-outline"
 						size={18}
 						color={primaryColor}
 					/>
-					<Text
-						style={[styles.permText, { color: isDark ? "#a9b4f0" : "#23338f" }]}
-					>
+					<Text style={[styles.permText, { color: c.foreground }]}>
 						{t("notifications.undeterminedBannerText")}
 					</Text>
-					<Pressable onPress={handleEnablePush}>
+					<Pressable
+						onPress={handleEnablePush}
+						accessibilityRole="button"
+						hitSlop={12}
+						style={styles.permAction}
+					>
 						<Text style={[styles.permLink, { color: primaryColor }]}>
 							{t("notifications.enablePush")}
 						</Text>
@@ -544,9 +576,7 @@ function NotificationsContent({
 			{/* Content */}
 			<View style={[styles.body, { backgroundColor: bg }]}>
 				{isLoading ? (
-					<View style={styles.center}>
-						<ActivityIndicator color={primaryColor} />
-					</View>
+					<OrderListSkeleton rows={6} />
 				) : items.length === 0 ? (
 					<EmptyState
 						icon="notifications-outline"
@@ -602,10 +632,19 @@ const styles = StyleSheet.create({
 		paddingBottom: 14,
 		gap: 12,
 	},
-	backBtn: { padding: 4 },
-	title: { flex: 1, fontSize: 20, fontFamily: Fonts.displayBold },
-	markAllBtn: { paddingHorizontal: 10, paddingVertical: 6 },
-	markAllText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	title: {
+		flex: 1,
+		fontSize: 23,
+		lineHeight: 28,
+		letterSpacing: -0.5,
+		fontFamily: Fonts.displayBold,
+	},
+	markAllBtn: {
+		minHeight: 44,
+		paddingHorizontal: 8,
+		justifyContent: "center",
+	},
+	markAllText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 
 	permBanner: {
 		flexDirection: "row",
@@ -616,8 +655,9 @@ const styles = StyleSheet.create({
 		padding: 12,
 		borderRadius: 12,
 	},
-	permText: { flex: 1, fontSize: 13, fontFamily: Fonts.body },
-	permLink: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	permText: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	permAction: { minHeight: 36, justifyContent: "center" },
+	permLink: { fontSize: 14, fontFamily: Fonts.bodyBold },
 
 	body: {
 		flex: 1,
@@ -640,20 +680,8 @@ const styles = StyleSheet.create({
 		alignItems: "flex-start",
 		paddingHorizontal: 16,
 		paddingVertical: 14,
-		borderBottomWidth: 1,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 		gap: 12,
-	},
-	itemUnread: {
-		paddingLeft: 12, // compensate for the 4px unread bar
-	},
-	unreadBar: {
-		position: "absolute",
-		left: 0,
-		top: 0,
-		bottom: 0,
-		width: 4,
-		borderTopRightRadius: 2,
-		borderBottomRightRadius: 2,
 	},
 	iconBox: {
 		width: 38,
@@ -664,22 +692,21 @@ const styles = StyleSheet.create({
 		marginTop: 1,
 	},
 	itemSubject: {
-		fontSize: 14,
+		fontSize: 15,
 		fontFamily: Fonts.bodySemibold,
-		lineHeight: 20,
+		lineHeight: 21,
 	},
 	itemBody: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.body,
-		lineHeight: 18,
+		lineHeight: 20,
 	},
 	itemTime: { fontSize: 12, fontFamily: Fonts.body },
 	unreadDot: {
 		width: 8,
 		height: 8,
 		borderRadius: 4,
-		backgroundColor: "#6878ea",
-		marginTop: 6,
+		marginTop: 7,
 	},
 
 	// ── Swipe actions ─────────────────────────────────────────────
@@ -690,9 +717,8 @@ const styles = StyleSheet.create({
 		gap: 4,
 	},
 	swipeBtnLabel: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
-		color: "#fff",
 	},
 
 	// ── Inline Novu actions (primary / secondary) ─────────────────
@@ -705,16 +731,16 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
-		paddingHorizontal: 12,
-		paddingVertical: 5,
-		borderRadius: 20,
+		paddingHorizontal: 14,
+		minHeight: 36,
+		borderRadius: 10,
 		borderWidth: 1,
 	},
 	actionBtnPrimary: { backgroundColor: "transparent" },
 	actionBtnSecondary: { backgroundColor: "transparent" },
 	actionBtnDone: { backgroundColor: "transparent", opacity: 0.5 },
 	actionBtnText: {
-		fontSize: 12,
+		fontSize: 13,
 		fontFamily: Fonts.bodySemibold,
 	},
 });

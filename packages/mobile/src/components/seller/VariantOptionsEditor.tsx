@@ -135,8 +135,8 @@ export function VariantOptionsEditor({
 					accessibilityRole="button"
 					accessibilityLabel={t("product.addOption")}
 				>
-					<Ionicons name="add-circle-outline" size={18} color={c.primary} />
-					<Text style={[f.label, { color: c.primary }]}>
+					<Ionicons name="add-circle-outline" size={18} color={c.link} />
+					<Text style={[f.label, { color: c.link }]}>
 						{t("product.addOption")}
 					</Text>
 				</Pressable>

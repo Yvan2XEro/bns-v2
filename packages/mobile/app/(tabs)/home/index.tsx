@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCounts } from "@novu/react-native";
 import {
 	useInfiniteQuery,
-	useMutation,
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
@@ -13,15 +12,12 @@ import React, { useCallback, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
-	KeyboardAvoidingView,
-	Modal,
-	Platform,
 	Pressable,
 	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
-	TextInput,
+	type TextInput,
 	View,
 } from "react-native";
 import Animated, {
@@ -32,20 +28,27 @@ import Animated, {
 	useSharedValue,
 	withTiming,
 } from "react-native-reanimated";
-import {
-	SafeAreaView,
-	useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { NdopPattern } from "@/src/components/brand/NdopPattern";
+import { ShellPattern } from "@/src/components/brand/BackgroundPattern";
 import { CartHeaderButton } from "@/src/components/CartHeaderButton";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { ListingGridSkeleton } from "@/src/components/listing/Skeletons";
 import { LocationCard } from "@/src/components/location/LocationCard";
 import { SearchField } from "@/src/components/SearchBar";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
+import { useDiscoveryPalette } from "@/src/components/search/palette";
+import {
+	SaveSearchButton,
+	SaveSearchDialog,
+} from "@/src/components/search/SaveSearch";
+import {
+	FiltersChip,
+	SortBar,
+	type SortKey,
+} from "@/src/components/search/SortBar";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useApplyLaunchMode } from "@/src/hooks/useAppMode";
 import { useCategoryCounts } from "@/src/hooks/useCategoryCounts";
@@ -54,6 +57,7 @@ import {
 	CATEGORIES_QUERY_KEY,
 	CATEGORIES_STALE_TIME_MS,
 } from "@/src/hooks/useListings";
+import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
@@ -79,10 +83,12 @@ function NotificationBell({
 	cardBg,
 	borderColor,
 	mutedColor,
+	shellColor,
 }: {
 	cardBg: string;
 	borderColor: string;
 	mutedColor: string;
+	shellColor: string;
 }) {
 	const { t } = useTranslation();
 	const { counts } = useCounts({ filters: [{ read: false }] });
@@ -96,49 +102,32 @@ function NotificationBell({
 			accessibilityLabel={t("notifications.title")}
 			style={[styles.bellBtn, { backgroundColor: cardBg, borderColor }]}
 		>
-			<Ionicons name="notifications-outline" size={19} color={mutedColor} />
-			{unseenCount > 0 && <View style={styles.bellBadge} />}
+			<Ionicons name="notifications-outline" size={20} color={mutedColor} />
+			{unseenCount > 0 && (
+				<View style={[styles.bellBadge, { borderColor: shellColor }]} />
+			)}
 		</Pressable>
 	);
 }
 const darkIcon = require("@/assets/icon2-dark.png");
 export default function HomeScreen() {
 	useApplyLaunchMode();
-	const isDark = useColorScheme() === "dark";
+	const c = useDiscoveryPalette();
+	const reducedMotion = useReducedMotion();
 	const { t } = useTranslation();
-	const insets = useSafeAreaInsets();
 	const { user } = useAuth();
 	const novuReady = useNotificationReady();
 	const queryClient = useQueryClient();
 	const filterParams = useLocalSearchParams();
-	const { width, isTablet, columns, cardWidth, dialogMaxWidth } =
-		useResponsive();
+	const { width, isTablet, columns, cardWidth } = useResponsive();
 	// Hero cards stay readable instead of becoming a 970pt letterbox on iPad.
 	const featuredWidth = isTablet ? Math.min(520, width - 48) : width - 48;
 	const featuredHeight = isTablet ? 260 : 190;
 
-	const SORTS = [
-		{
-			key: "newest",
-			label: t("search.sortNewest"),
-			icon: "time-outline" as const,
-		},
-		{
-			key: "price_asc",
-			label: t("search.sortPriceAsc"),
-			icon: "trending-up-outline" as const,
-		},
-		{
-			key: "price_desc",
-			label: t("search.sortPriceDesc"),
-			icon: "trending-down-outline" as const,
-		},
-	];
-
 	// ── Search state ──────────────────────────────────────────────
 	const [query, setQuery] = useState("");
 	const [debouncedQuery, setDebouncedQuery] = useState("");
-	const [sort, setSort] = useState("newest");
+	const [sort, setSort] = useState<SortKey>("newest");
 	const [searchFocused, setSearchFocused] = useState(false);
 	const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 	const inputRef = useRef<TextInput>(null);
@@ -213,14 +202,18 @@ export default function HomeScreen() {
 
 	const onSearchFocus = () => {
 		setSearchFocused(true);
-		searchActive.value = withTiming(1, { duration: 250 });
+		searchActive.value = withTiming(1, {
+			duration: reducedMotion ? 0 : 250,
+		});
 	};
 
 	const onSearchCancel = () => {
 		setSearchFocused(false);
 		setQuery("");
 		setDebouncedQuery("");
-		searchActive.value = withTiming(0, { duration: 200 });
+		searchActive.value = withTiming(0, {
+			duration: reducedMotion ? 0 : 200,
+		});
 		inputRef.current?.blur();
 		// Efface aussi les filtres URL si présents
 		if (activeFilterCount > 0) {
@@ -239,15 +232,15 @@ export default function HomeScreen() {
 	};
 
 	// ── Colors ────────────────────────────────────────────────────
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const mutedColor = c.mutedForeground;
+	const primaryColor = c.primary;
+	const borderColor = c.border;
 	// The ndop shell: the home header is the one indigo field in the app.
-	const accentBg = isDark ? "#13183e" : "#1d2a7a";
-	const shellIcon = "#ffffff";
+	const accentBg = c.shell;
+	const shellIcon = c.shellForeground;
 	const shellBtnBg = "rgba(255,255,255,0.12)";
 	const shellBtnBorder = "rgba(255,255,255,0.16)";
 
@@ -287,48 +280,6 @@ export default function HomeScreen() {
 
 	// ── Save search dialog ─────────────────────────────────────────
 	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-	const [saveName, setSaveName] = useState("");
-	const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
-		"idle",
-	);
-
-	const { mutate: saveSearch } = useMutation({
-		mutationFn: () => {
-			const urlParams = new URLSearchParams();
-			if (debouncedQuery) urlParams.set("q", debouncedQuery);
-			for (const [k, v] of Object.entries(searchParams)) {
-				if (v && k !== "sort") urlParams.set(k, v);
-			}
-			return api.post("/api/saved-searches", {
-				name: saveName.trim() || debouncedQuery || t("search.saveSearch"),
-				query: debouncedQuery,
-				filters: {
-					category: filterParams.category,
-					minPrice: filterParams.minPrice,
-					maxPrice: filterParams.maxPrice,
-					location: filterParams.location,
-					sort,
-					...attrParams,
-				},
-				url: `/search?${urlParams.toString()}`,
-			});
-		},
-		onSuccess: () => {
-			setSaveStatus("saved");
-			setTimeout(() => {
-				setSaveDialogOpen(false);
-				setSaveStatus("idle");
-				setSaveName("");
-			}, 1200);
-		},
-		onError: () => setSaveStatus("idle"),
-	});
-
-	const openSaveDialog = () => {
-		setSaveName(debouncedQuery || "");
-		setSaveStatus("idle");
-		setSaveDialogOpen(true);
-	};
 
 	// ── Queries (home) ────────────────────────────────────────────
 	const { data: categoriesData } = useQuery({
@@ -523,6 +474,27 @@ export default function HomeScreen() {
 	const totalDocs = searchData?.pages[0]?.total ?? 0;
 
 	const searchPairs = chunkIntoRows(searchListings, columns);
+	const canSave = !!(debouncedQuery || activeFilterCount > 0) && !!user;
+
+	const clearSearch = () => {
+		clearTimeout(debounceRef.current || undefined);
+		setQuery("");
+		setDebouncedQuery("");
+	};
+	// The empty state's "Clear filters" clears the query too: clearing the
+	// text alone left a filtered search that still matched nothing.
+	const clearFilters = () => {
+		clearSearch();
+		const reset: Record<string, undefined> = {
+			category: undefined,
+			minPrice: undefined,
+			maxPrice: undefined,
+			location: undefined,
+			radius: undefined,
+		};
+		for (const key of Object.keys(attrParams)) reset[key] = undefined;
+		router.setParams(reset);
+	};
 
 	// ── Render ────────────────────────────────────────────────────
 	return (
@@ -532,7 +504,7 @@ export default function HomeScreen() {
 		>
 			{/* ══ Header ══ */}
 			<View style={[styles.header, { backgroundColor: accentBg }]}>
-				<NdopPattern />
+				<ShellPattern />
 				{/* ── Ligne 1 : Logo  |  Nom  |  spacer  |  Avatar ── */}
 				<Animated.View style={[styles.topRow, topRowStyle]}>
 					<Animated.View style={[styles.logoImgWrap, logoAnimStyle]}>
@@ -546,7 +518,7 @@ export default function HomeScreen() {
 						style={[styles.appName, { color: "#ffffff" }, appNameAnimStyle]}
 					>
 						{"Buy"}
-						<Text style={{ color: "#ffb81c" }}>'N'</Text>
+						<Text style={{ color: c.sun }}>'N'</Text>
 						{"Sellem"}
 					</Animated.Text>
 
@@ -558,7 +530,7 @@ export default function HomeScreen() {
 							{ backgroundColor: shellBtnBg, borderColor: shellBtnBorder },
 						]}
 						color={shellIcon}
-						size={19}
+						size={20}
 					/>
 
 					{/* Bell icon — only rendered after NovuProvider context is established */}
@@ -567,6 +539,7 @@ export default function HomeScreen() {
 							cardBg={shellBtnBg}
 							borderColor={shellBtnBorder}
 							mutedColor={shellIcon}
+							shellColor={accentBg}
 						/>
 					)}
 
@@ -591,7 +564,7 @@ export default function HomeScreen() {
 								contentFit="cover"
 							/>
 						) : (
-							<Ionicons name="person-outline" size={19} color={shellIcon} />
+							<Ionicons name="person-outline" size={20} color={shellIcon} />
 						)}
 					</Pressable>
 				</Animated.View>
@@ -611,10 +584,7 @@ export default function HomeScreen() {
 								params: { focus: "1" },
 							});
 						}}
-						onClear={() => {
-							setQuery("");
-							setDebouncedQuery("");
-						}}
+						onClear={clearSearch}
 						active={isSearchMode}
 						placeholder={t("home.searchPlaceholderDetailed")}
 						style={styles.searchField}
@@ -622,8 +592,12 @@ export default function HomeScreen() {
 
 					{/* Bouton Annuler animé */}
 					<Animated.View style={cancelStyle}>
-						<Pressable onPress={onSearchCancel} style={styles.cancelBtn}>
-							<Text style={[styles.cancelText, { color: "#ffffff" }]}>
+						<Pressable
+							onPress={onSearchCancel}
+							style={styles.cancelBtn}
+							accessibilityRole="button"
+						>
+							<Text style={[styles.cancelText, { color: shellIcon }]}>
 								{t("common.cancel")}
 							</Text>
 						</Pressable>
@@ -636,110 +610,36 @@ export default function HomeScreen() {
 				/* ── MODE RECHERCHE ── */
 				<>
 					<View style={[styles.content, { backgroundColor: bg }]}>
-						<View style={[styles.sortBar, { borderBottomColor: borderColor }]}>
-							<View style={styles.sortPills}>
-								{SORTS.map((s) => {
-									const active = sort === s.key;
-									return (
-										<Pressable
-											key={s.key}
-											onPress={() => setSort(s.key)}
-											style={[
-												styles.sortPill,
-												{
-													backgroundColor: active
-														? primaryColor
-														: isDark
-															? "#1a1f4a"
-															: "#eceef5",
-												},
-											]}
-										>
-											<Ionicons
-												name={s.icon}
-												size={12}
-												color={active ? "#fff" : mutedColor}
-											/>
-											<Text
-												style={[
-													styles.sortText,
-													{
-														color: active ? "#fff" : mutedColor,
-														fontFamily: Fonts.bodySemibold,
-													},
-												]}
-											>
-												{s.label}
-											</Text>
-										</Pressable>
-									);
-								})}
-							</View>
-							<View
-								style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-							>
-								{debouncedQuery && totalDocs > 0 && !searchLoading && (
-									<View
-										style={[
-											styles.countBadge,
-											{ backgroundColor: primaryColor },
-										]}
-									>
-										<Text style={styles.countText}>{totalDocs}</Text>
-									</View>
-								)}
-								<Pressable
-									onPress={openFilters}
-									style={[
-										styles.sortPill,
-										{
-											backgroundColor:
-												activeFilterCount > 0
-													? primaryColor
-													: isDark
-														? "#1a1f4a"
-														: "#eceef5",
-										},
-									]}
-								>
-									<Ionicons
-										name="options"
-										size={12}
-										color={activeFilterCount > 0 ? "#fff" : mutedColor}
-									/>
-									<Text
-										style={[
-											styles.sortText,
-											{
-												color: activeFilterCount > 0 ? "#fff" : mutedColor,
-												fontFamily: Fonts.bodySemibold,
-											},
-										]}
-									>
-										{activeFilterCount > 0
-											? t("search.filtersCount", { count: activeFilterCount })
-											: t("search.filters")}
-									</Text>
-								</Pressable>
-							</View>
-						</View>
+						<SortBar
+							sort={sort}
+							onChange={setSort}
+							trailing={
+								<FiltersChip count={activeFilterCount} onPress={openFilters} />
+							}
+						/>
 
 						{searchLoading ? (
 							<View style={styles.skeletonGrid}>
-								{Array.from({ length: columns * 3 }).map((_, i) => (
-									<SkeletonCard key={i} cardWidth={cardWidth} />
-								))}
+								<ListingGridSkeleton
+									cardWidth={cardWidth}
+									columns={columns}
+									rows={3}
+								/>
 							</View>
 						) : searchListings.length === 0 ? (
 							<EmptyState
 								icon="search-outline"
 								title={t("search.noResults")}
-								subtitle={t("search.noResultsHintShort")}
-								ctaLabel={t("search.clearSearch")}
-								onCta={() => {
-									setQuery("");
-									setDebouncedQuery("");
-								}}
+								subtitle={
+									activeFilterCount > 0
+										? t("search.noResultsHint")
+										: t("search.noResultsHintShort")
+								}
+								{...(activeFilterCount > 0
+									? { ctaLabel: t("search.clearFilters"), onCta: clearFilters }
+									: query
+										? { ctaLabel: t("search.clearSearch"), onCta: clearSearch }
+										: {})}
 							/>
 						) : (
 							<FlatList
@@ -758,8 +658,25 @@ export default function HomeScreen() {
 										))}
 									</View>
 								)}
-								keyExtractor={(_, i) => String(i)}
-								contentContainerStyle={styles.list}
+								keyExtractor={(row: any[]) =>
+									row.map((listing) => listing.id).join("|")
+								}
+								contentContainerStyle={[
+									styles.list,
+									// The save button floats over the grid: the last row clears it.
+									{ paddingBottom: canSave ? 96 : 40 },
+								]}
+								ListHeaderComponent={
+									totalDocs > 0 ? (
+										<Text
+											style={[styles.resultCount, { color: mutedColor }]}
+											accessibilityLiveRegion="polite"
+										>
+											{t("search.resultsCount", { count: totalDocs })}
+										</Text>
+									) : null
+								}
+								keyboardDismissMode="on-drag"
 								onEndReached={() =>
 									hasNextPage && !isFetchingNextPage && fetchNextPage()
 								}
@@ -777,17 +694,8 @@ export default function HomeScreen() {
 						)}
 					</View>
 
-					{/* Save Search FAB */}
-					{(debouncedQuery || activeFilterCount > 0) && user && (
-						<Pressable
-							style={[styles.fab, { backgroundColor: primaryColor }]}
-							onPress={openSaveDialog}
-						>
-							<Ionicons name="bookmark" size={18} color="#fff" />
-							<Text style={[styles.fabText, { fontFamily: Fonts.displayBold }]}>
-								{t("search.save")}
-							</Text>
-						</Pressable>
+					{canSave && (
+						<SaveSearchButton onPress={() => setSaveDialogOpen(true)} />
 					)}
 				</>
 			) : (
@@ -811,14 +719,19 @@ export default function HomeScreen() {
 						{rubrics.length > 0 && (
 							<View style={styles.section}>
 								<View style={styles.sectionHeader}>
-									<Text style={[styles.sectionTitle, { color: textColor }]}>
+									<Text
+										style={[styles.sectionTitle, { color: textColor }]}
+										accessibilityRole="header"
+									>
 										{t("home.categories")}
 									</Text>
 									<Pressable
 										onPress={() => router.push("/categories")}
-										hitSlop={8}
+										style={styles.seeAllBtn}
+										accessibilityRole="button"
+										accessibilityLabel={t("categories.title")}
 									>
-										<Text style={[styles.seeAll, { color: primaryColor }]}>
+										<Text style={[styles.seeAll, { color: c.link }]}>
 											{t("home.seeAll")}
 										</Text>
 									</Pressable>
@@ -860,24 +773,19 @@ export default function HomeScreen() {
 											<Pressable
 												onPress={() => router.push("/categories")}
 												style={styles.catMore}
+												accessibilityRole="button"
+												accessibilityLabel={t("categories.title")}
 											>
 												<View
 													style={[
 														styles.catMoreIcon,
-														{
-															backgroundColor: isDark ? "#1a1f4a" : "#ffffff",
-															borderColor: isDark ? "#2a3170" : "#e1e3ee",
-														},
+														{ backgroundColor: c.primaryTint, borderColor },
 													]}
 												>
-													<Ionicons
-														name="grid"
-														size={22}
-														color={primaryColor}
-													/>
+													<Ionicons name="grid" size={22} color={c.link} />
 												</View>
 												<Text
-													style={[styles.catMoreLabel, { color: primaryColor }]}
+													style={[styles.catMoreLabel, { color: c.link }]}
 													numberOfLines={2}
 												>
 													{t("categories.more")}
@@ -899,8 +807,10 @@ export default function HomeScreen() {
 							<View style={styles.section}>
 								<View style={styles.sectionHeader}>
 									<View style={styles.sectionTitleRow}>
-										<Ionicons name="flash" size={16} color="#ffb81c" />
-										<Text style={[styles.sectionTitle, { color: textColor }]}>
+										<Text
+											style={[styles.sectionTitle, { color: textColor }]}
+											accessibilityRole="header"
+										>
 											{t("home.featured")}
 										</Text>
 									</View>
@@ -915,9 +825,21 @@ export default function HomeScreen() {
 										<Pressable
 											key={listing.id}
 											onPress={() => router.push(`/listing/${listing.id}`)}
-											style={[
+											accessibilityRole="button"
+											accessibilityLabel={[
+												listing.title,
+												listing.price
+													? formatPrice(listing.price, i18n.language)
+													: t("listing.priceOnRequest"),
+												listing.location,
+												t("home.featuredBadge"),
+											]
+												.filter(Boolean)
+												.join(", ")}
+											style={({ pressed }) => [
 												styles.featuredCard,
 												{ backgroundColor: cardBg, width: featuredWidth },
+												pressed && styles.pressed,
 											]}
 										>
 											<Image
@@ -938,7 +860,7 @@ export default function HomeScreen() {
 												}}
 											/>
 											<View style={styles.featuredBadge}>
-												<Ionicons name="flash" size={11} color="#ffb81c" />
+												<Ionicons name="flash" size={12} color={c.sun} />
 												<Text style={styles.featuredBadgeText}>
 													{t("home.featuredBadge")}
 												</Text>
@@ -957,10 +879,13 @@ export default function HomeScreen() {
 												<View style={styles.featuredMeta}>
 													<Ionicons
 														name="location-outline"
-														size={12}
-														color="rgba(255,255,255,0.8)"
+														size={13}
+														color="rgba(255,255,255,0.86)"
 													/>
-													<Text style={styles.featuredMetaText}>
+													<Text
+														style={styles.featuredMetaText}
+														numberOfLines={1}
+													>
 														{listing.location}
 													</Text>
 												</View>
@@ -981,22 +906,29 @@ export default function HomeScreen() {
 										{ color: textColor },
 									]}
 									numberOfLines={1}
+									accessibilityRole="header"
 								>
 									{browseCity
 										? t("home.recentListingsIn", { city: browseCity })
 										: t("home.recentListings")}
 								</Text>
-								<Pressable onPress={onSearchFocus}>
-									<Text style={[styles.seeAll, { color: primaryColor }]}>
+								<Pressable
+									onPress={onSearchFocus}
+									style={styles.seeAllBtn}
+									accessibilityRole="button"
+								>
+									<Text style={[styles.seeAll, { color: c.link }]}>
 										{t("home.seeAll")}
 									</Text>
 								</Pressable>
 							</View>
 							{recentLoading ? (
-								<View style={styles.grid}>
-									{Array.from({ length: columns * 3 }).map((_, i) => (
-										<SkeletonCard key={i} cardWidth={cardWidth} />
-									))}
+								<View style={styles.gridSkeleton}>
+									<ListingGridSkeleton
+										cardWidth={cardWidth}
+										columns={columns}
+										rows={3}
+									/>
 								</View>
 							) : recentError ? (
 								<EmptyState
@@ -1045,15 +977,17 @@ export default function HomeScreen() {
 									onPress={() => void fetchMoreRecent()}
 									disabled={loadingMoreRecent}
 									accessibilityRole="button"
-									style={[
+									accessibilityState={{ busy: loadingMoreRecent }}
+									style={({ pressed }) => [
 										styles.moreBtn,
 										{ backgroundColor: cardBg, borderColor },
+										pressed && styles.pressed,
 									]}
 								>
 									{loadingMoreRecent ? (
 										<ActivityIndicator color={primaryColor} />
 									) : (
-										<Text style={[styles.seeAll, { color: primaryColor }]}>
+										<Text style={[styles.moreText, { color: c.link }]}>
 											{t("home.showMore")}
 										</Text>
 									)}
@@ -1065,8 +999,11 @@ export default function HomeScreen() {
 						<View style={styles.section}>
 							<View style={styles.sectionHeader}>
 								<View style={styles.sectionTitleRow}>
-									<Ionicons name="navigate" size={16} color={primaryColor} />
-									<Text style={[styles.sectionTitle, { color: textColor }]}>
+									<Ionicons name="navigate" size={16} color={c.link} />
+									<Text
+										style={[styles.sectionTitle, { color: textColor }]}
+										accessibilityRole="header"
+									>
 										{t("home.nearbySection")}
 									</Text>
 								</View>
@@ -1080,28 +1017,39 @@ export default function HomeScreen() {
 									onPress={() => {
 										void requestDetection();
 									}}
-									style={[
+									accessibilityRole="button"
+									accessibilityState={{ busy: locationDetecting }}
+									accessibilityLabel={t("home.enableLocation")}
+									accessibilityHint={
+										locationRefused
+											? t("errors.locationPermission")
+											: t("home.enableLocationSub")
+									}
+									style={({ pressed }) => [
 										styles.locationPrompt,
-										{
-											backgroundColor: isDark ? "#1a1f4a" : "#e9ecfa",
-											borderColor: isDark ? "#2a3170" : "#c5ccf0",
-										},
+										{ backgroundColor: cardBg, borderColor },
+										pressed && styles.pressed,
 									]}
 								>
-									<Ionicons
-										name="location-outline"
-										size={20}
-										color={primaryColor}
-									/>
+									<View
+										style={[
+											styles.locationIcon,
+											{ backgroundColor: c.primaryTint },
+										]}
+									>
+										<Ionicons
+											name="location-outline"
+											size={20}
+											color={c.link}
+										/>
+									</View>
 									<View style={{ flex: 1 }}>
 										<Text
 											style={[styles.locationPromptTitle, { color: textColor }]}
 										>
 											{t("home.enableLocation")}
 										</Text>
-										<Text
-											style={[styles.locationPromptSub, { color: mutedColor }]}
-										>
+										<Text style={[styles.locationPromptSub, { color: c.body }]}>
 											{locationRefused
 												? t("errors.locationPermission")
 												: t("home.enableLocationSub")}
@@ -1131,15 +1079,20 @@ export default function HomeScreen() {
 								<View
 									style={[
 										styles.locationPrompt,
-										{
-											backgroundColor: isDark ? "#1a1f4a" : "#f4f5f9",
-											borderColor,
-										},
+										{ backgroundColor: cardBg, borderColor },
 									]}
 								>
-									<Ionicons name="map-outline" size={20} color={mutedColor} />
+									<View
+										style={[styles.locationIcon, { backgroundColor: c.well }]}
+									>
+										<Ionicons name="map-outline" size={20} color={mutedColor} />
+									</View>
 									<Text
-										style={[styles.locationPromptSub, { color: mutedColor }]}
+										style={[
+											styles.locationPromptSub,
+											styles.locationEmpty,
+											{ color: c.body },
+										]}
 									>
 										{t("home.noNearby")}
 									</Text>
@@ -1167,110 +1120,20 @@ export default function HomeScreen() {
 				</AnimatedScrollView>
 			)}
 
-			{/* Save dialog */}
-			<Modal
+			<SaveSearchDialog
 				visible={saveDialogOpen}
-				transparent
-				animationType="fade"
-				onRequestClose={() => setSaveDialogOpen(false)}
-			>
-				<KeyboardAvoidingView
-					behavior={Platform.OS === "ios" ? "padding" : "height"}
-					style={[
-						styles.modalOverlay,
-						// On iPad a full-bleed bottom sheet reads as broken — centre it.
-						isTablet && { justifyContent: "center", alignItems: "center" },
-					]}
-				>
-					<Pressable
-						style={StyleSheet.absoluteFill}
-						onPress={() => setSaveDialogOpen(false)}
-					/>
-					<View
-						style={[
-							styles.modalCard,
-							{ backgroundColor: cardBg, borderColor },
-							// Static padding is wrong on both gesture nav (~16dp) and
-							// 3-button nav (~48dp); derive it from the insets.
-							{ paddingBottom: insets.bottom + 24 },
-							isTablet && {
-								width: "100%",
-								maxWidth: dialogMaxWidth,
-								borderRadius: 20,
-								borderWidth: 1,
-							},
-						]}
-					>
-						<Text style={[styles.modalTitle, { color: textColor }]}>
-							{t("search.saveSearchTitle")}
-						</Text>
-						<Text style={[styles.modalSub, { color: mutedColor }]}>
-							{t("search.saveSearchSub")}
-						</Text>
-						<TextInput
-							value={saveName}
-							onChangeText={setSaveName}
-							placeholder={
-								debouncedQuery || t("search.saveSearchPlaceholderFallback")
-							}
-							placeholderTextColor={mutedColor}
-							autoFocus
-							style={[
-								styles.modalInput,
-								{
-									color: textColor,
-									borderColor: primaryColor,
-									backgroundColor: isDark ? "#0c1030" : "#f4f5f9",
-								},
-							]}
-							returnKeyType="done"
-							onSubmitEditing={() => saveStatus === "idle" && saveSearch()}
-						/>
-						<View style={styles.modalActions}>
-							<Pressable
-								onPress={() => setSaveDialogOpen(false)}
-								style={[
-									styles.modalBtn,
-									{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
-								]}
-							>
-								<Text style={[styles.modalBtnText, { color: mutedColor }]}>
-									{t("common.cancel")}
-								</Text>
-							</Pressable>
-							<Pressable
-								onPress={() => saveStatus === "idle" && saveSearch()}
-								disabled={saveStatus !== "idle"}
-								style={[
-									styles.modalBtn,
-									{
-										backgroundColor:
-											saveStatus === "saved" ? "#1e8a4f" : primaryColor,
-									},
-								]}
-							>
-								{saveStatus === "saving" ? (
-									<ActivityIndicator size="small" color="#fff" />
-								) : saveStatus === "saved" ? (
-									<>
-										<Ionicons name="checkmark" size={15} color="#fff" />
-										<Text style={styles.modalBtnTextPrimary}>
-											{t("search.saved")}
-										</Text>
-									</>
-								) : (
-									<>
-										<Ionicons name="bookmark" size={15} color="#fff" />
-										<Text style={styles.modalBtnTextPrimary}>
-											{t("search.save")}
-										</Text>
-									</>
-								)}
-							</Pressable>
-						</View>
-					</View>
-				</KeyboardAvoidingView>
-			</Modal>
+				onClose={() => setSaveDialogOpen(false)}
+				query={debouncedQuery}
+				searchParams={searchParams}
+				filters={{
+					category: filterParams.category,
+					minPrice: filterParams.minPrice,
+					maxPrice: filterParams.maxPrice,
+					location: filterParams.location,
+					sort,
+					...attrParams,
+				}}
+			/>
 		</SafeAreaView>
 	);
 }
@@ -1305,16 +1168,18 @@ const styles = StyleSheet.create({
 	moreBtn: {
 		marginTop: 4,
 		marginHorizontal: 16,
-		minHeight: 48,
+		minHeight: 52,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	moreText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	pressed: { opacity: 0.85 },
 	bellBtn: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
 		alignItems: "center",
 		justifyContent: "center",
 		borderWidth: 1,
@@ -1322,25 +1187,24 @@ const styles = StyleSheet.create({
 	},
 	bellBadge: {
 		position: "absolute",
-		top: 6,
-		right: 6,
-		width: 8,
-		height: 8,
-		borderRadius: 4,
+		top: 8,
+		right: 8,
+		width: 10,
+		height: 10,
+		borderRadius: 5,
 		backgroundColor: "#ffb81c",
-		borderWidth: 1.5,
-		borderColor: "#1d2a7a",
+		borderWidth: 2,
 	},
 	avatarBtn: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
 		alignItems: "center",
 		justifyContent: "center",
 		borderWidth: 1,
 		overflow: "hidden",
 	},
-	avatar: { width: 40, height: 40 },
+	avatar: { width: 44, height: 44 },
 
 	/* Ligne 2 : search + annuler */
 	searchRow: {
@@ -1350,13 +1214,13 @@ const styles = StyleSheet.create({
 	},
 	searchField: { flex: 1 },
 	cancelBtn: {
-		paddingHorizontal: 2,
+		paddingHorizontal: 4,
 		alignItems: "center",
 		justifyContent: "center",
-		height: 44,
+		height: 48,
 	},
 	cancelText: {
-		fontSize: 14,
+		fontSize: 16,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -1385,7 +1249,8 @@ const styles = StyleSheet.create({
 	},
 	sectionTitleShrink: { flexShrink: 1 },
 	locationSection: { marginTop: 20 },
-	seeAll: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	seeAllBtn: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },
+	seeAll: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	catGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
@@ -1404,7 +1269,8 @@ const styles = StyleSheet.create({
 		marginBottom: 6,
 	},
 	catMoreLabel: {
-		fontSize: 11,
+		fontSize: 12,
+		lineHeight: 15,
 		textAlign: "center",
 		fontFamily: Fonts.bodySemibold,
 	},
@@ -1438,7 +1304,7 @@ const styles = StyleSheet.create({
 	},
 	featuredBadgeText: {
 		color: "#fff",
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.bodyBold,
 	},
 	featuredPriceTag: {
@@ -1471,8 +1337,9 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	featuredMetaText: {
-		color: "rgba(255,255,255,0.8)",
-		fontSize: 12,
+		flexShrink: 1,
+		color: "rgba(255,255,255,0.86)",
+		fontSize: 13,
 		fontFamily: Fonts.body,
 	},
 
@@ -1484,6 +1351,7 @@ const styles = StyleSheet.create({
 		gap: 12,
 		paddingBottom: 20,
 	},
+	gridSkeleton: { paddingHorizontal: 16, paddingBottom: 20 },
 
 	/* ── Search mode ── */
 	content: {
@@ -1492,99 +1360,14 @@ const styles = StyleSheet.create({
 		borderTopRightRadius: 22,
 		overflow: "hidden",
 	},
-	sortBar: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 10,
-		borderBottomWidth: 1,
+	list: { paddingHorizontal: 16, paddingTop: 12, gap: 16 },
+	row: { flexDirection: "row", gap: 12 },
+	resultCount: {
+		fontSize: 13,
+		fontFamily: Fonts.bodyMedium,
+		marginBottom: -4,
 	},
-	sortPills: { flexDirection: "row", gap: 6 },
-	sortPill: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		borderRadius: 10,
-		paddingHorizontal: 12,
-		minHeight: 36,
-	},
-	sortText: { fontSize: 13 },
-	countBadge: {
-		borderRadius: 10,
-		paddingHorizontal: 8,
-		paddingVertical: 2,
-		minWidth: 28,
-		alignItems: "center",
-	},
-	countText: { color: "#fff", fontSize: 12, fontFamily: Fonts.displayBold },
-	list: { padding: 16, gap: 12, paddingBottom: 40 },
-	row: { flexDirection: "row", gap: 12, marginBottom: 0 },
-	skeletonGrid: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		padding: 16,
-		gap: 12,
-	},
-
-	/* ── Save Search FAB ── */
-	fab: {
-		position: "absolute",
-		bottom: 16,
-		alignSelf: "center",
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 6,
-		paddingHorizontal: 18,
-		paddingVertical: 13,
-		borderRadius: 14,
-		shadowColor: "#12163a",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.2,
-		shadowRadius: 8,
-		elevation: 6,
-	},
-	fabText: { color: "#fff", fontSize: 14 },
-
-	/* ── Save Search Modal ── */
-	modalOverlay: {
-		flex: 1,
-		backgroundColor: "rgba(0,0,0,0.5)",
-		justifyContent: "flex-end",
-	},
-	modalCard: {
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		padding: 24,
-		borderTopWidth: 1,
-		gap: 12,
-	},
-	modalTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
-	modalSub: { fontSize: 13, fontFamily: Fonts.body },
-	modalInput: {
-		borderWidth: 1.5,
-		borderRadius: 10,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
-		fontSize: 15,
-		fontFamily: Fonts.body,
-	},
-	modalActions: { flexDirection: "row", gap: 10, marginTop: 4 },
-	modalBtn: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 6,
-		borderRadius: 12,
-		paddingVertical: 13,
-	},
-	modalBtnText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	modalBtnTextPrimary: {
-		color: "#fff",
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
-	},
+	skeletonGrid: { padding: 16 },
 
 	/* ── Nearby / Location prompt ── */
 	locationPrompt: {
@@ -1593,10 +1376,24 @@ const styles = StyleSheet.create({
 		gap: 12,
 		marginHorizontal: 16,
 		padding: 14,
-		borderRadius: 12,
+		minHeight: 72,
+		borderRadius: 16,
 		borderWidth: 1,
 	},
-	locationPromptTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	locationPromptSub: { fontSize: 12, fontFamily: Fonts.body, marginTop: 2 },
+	locationIcon: {
+		width: 44,
+		height: 44,
+		borderRadius: 14,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	locationPromptTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	locationPromptSub: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+		marginTop: 2,
+	},
+	locationEmpty: { flex: 1, marginTop: 0 },
 	nearbyList: { paddingHorizontal: 16, gap: 12 },
 });

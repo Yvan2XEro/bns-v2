@@ -157,7 +157,7 @@ export default function ReportModal() {
 					value={description}
 					onChangeText={setDescription}
 					placeholder={t("report.descriptionPlaceholder")}
-					placeholderTextColor={c.faint}
+					placeholderTextColor={c.mutedForeground}
 					style={[
 						styles.textarea,
 						{ backgroundColor: cardBg, borderColor, color: textColor },
@@ -179,7 +179,7 @@ export default function ReportModal() {
 						{
 							// The light destructive red in both themes: white on the
 							// dark-mode red falls under 4.5:1.
-							backgroundColor: !reason ? c.well : "#d23a2e",
+							backgroundColor: !reason ? c.well : Colors.light.destructive,
 							opacity: pressed && reason ? 0.85 : 1,
 						},
 					]}

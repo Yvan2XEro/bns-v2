@@ -84,8 +84,8 @@ export function BuyerCard({ order }: { order: OrderView }) {
 						accessibilityLabel={t("sellerOrders.openInMaps")}
 						style={[styles.button, { borderColor: c.border, borderWidth: 1 }]}
 					>
-						<Ionicons name="map-outline" size={18} color={c.primary} />
-						<Text style={[styles.buttonText, { color: c.primary }]}>
+						<Ionicons name="map-outline" size={18} color={c.link} />
+						<Text style={[styles.buttonText, { color: c.link }]}>
 							{t("sellerOrders.openInMaps")}
 						</Text>
 					</Pressable>

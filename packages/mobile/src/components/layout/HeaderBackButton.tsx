@@ -31,7 +31,7 @@ export function HeaderBackButton({
 	hidden?: boolean;
 	/**
 	 * Sized to its icon, for headers laid out around a bare icon; the hit
-	 * slop keeps it as easy to reach.
+	 * slop brings the 22pt glyph to a 48pt target.
 	 */
 	inline?: boolean;
 	style?: StyleProp<ViewStyle>;
@@ -46,7 +46,7 @@ export function HeaderBackButton({
 		<Pressable
 			onPress={goBack}
 			style={[inline ? styles.inline : styles.button, style]}
-			hitSlop={inline ? 12 : 4}
+			hitSlop={inline ? 13 : 4}
 			accessibilityRole="button"
 			accessibilityLabel={
 				icon === "close" ? t("common.close") : t("common.back")

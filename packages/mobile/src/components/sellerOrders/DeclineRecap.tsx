@@ -105,7 +105,11 @@ const styles = StyleSheet.create({
 	},
 	itemRow: { flexDirection: "row", alignItems: "center", gap: 8 },
 	itemTitle: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
-	itemQty: { fontSize: 13, fontFamily: Fonts.body },
+	itemQty: {
+		fontSize: 14,
+		fontFamily: Fonts.displaySemibold,
+		fontVariant: ["tabular-nums"],
+	},
 	metaRow: {
 		flexDirection: "row",
 		alignItems: "flex-end",
@@ -113,7 +117,11 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	meta: { flex: 1, fontSize: 12, fontFamily: Fonts.body },
-	total: { fontSize: 14, fontFamily: Fonts.displayBold },
+	total: {
+		fontSize: 15,
+		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
+	},
 	effects: { gap: 8 },
 	effectRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
 	effectText: { flex: 1, fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },

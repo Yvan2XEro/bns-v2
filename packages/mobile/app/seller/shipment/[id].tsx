@@ -1,11 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
-import {
-	ActivityIndicator,
-	RefreshControl,
-	ScrollView,
-	StyleSheet,
-} from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { SellerShipmentActions } from "@/src/components/delivery/SellerShipmentActions";
 import { ShipmentSummary } from "@/src/components/delivery/ShipmentSummary";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -38,7 +34,7 @@ export default function SellerShipmentScreen() {
 				}
 			/>
 			{query.isPending ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<DetailSkeleton cards={2} />
 			) : !view ? (
 				<EmptyState
 					illustration="notFound"
@@ -58,6 +54,7 @@ export default function SellerShipmentScreen() {
 								refreshing={query.isRefetching}
 								onRefresh={() => void query.refetch()}
 								tintColor={c.primary}
+								colors={[c.primary]}
 							/>
 						}
 					>
@@ -76,6 +73,5 @@ export default function SellerShipmentScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 40 },
 	content: { padding: 16, gap: 16, paddingBottom: 48 },
 });

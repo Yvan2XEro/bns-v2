@@ -1,14 +1,17 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { Fonts } from "@/constants/theme";
-import { HUB_HEADER_BG } from "@/src/components/shop/SellerHubHeader";
+import { Colors, Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 
-/** Text colours on the ink card, the same in both themes. */
+/** The card's ground: ink, the same in both themes. */
+const INK = Colors.light.foreground;
+
+/** Text colours on the ink card, the same in both themes. Each holds
+ *  4.5:1 or better on `INK` (muted 11:1, faint 7.4:1). */
 export const ON_INK = {
 	text: "#ffffff",
-	muted: "#777ca3",
-	faint: "#5b6088",
+	muted: Colors.dark.body,
+	faint: Colors.dark.mutedForeground,
 	amber: "#ffd25a",
 	green: "#8fddb0",
 	rule: "#3a3f66",
@@ -18,12 +21,7 @@ export const ON_INK = {
 export function InkCard({ children }: { children: ReactNode }) {
 	const c = useShopTheme();
 	return (
-		<View
-			style={[
-				styles.card,
-				{ borderColor: c.isDark ? c.border : HUB_HEADER_BG },
-			]}
-		>
+		<View style={[styles.card, { borderColor: c.isDark ? c.border : INK }]}>
 			{children}
 		</View>
 	);
@@ -37,7 +35,12 @@ export const inkText = StyleSheet.create({
 		fontFamily: Fonts.displayExtrabold,
 	},
 	value: { fontSize: 17, fontFamily: Fonts.displayBold },
-	footnote: { color: ON_INK.faint, fontSize: 11, fontFamily: Fonts.body },
+	footnote: {
+		color: ON_INK.faint,
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.body,
+	},
 	rule: {
 		height: StyleSheet.hairlineWidth,
 		backgroundColor: ON_INK.rule,
@@ -47,7 +50,7 @@ export const inkText = StyleSheet.create({
 
 const styles = StyleSheet.create({
 	card: {
-		backgroundColor: HUB_HEADER_BG,
+		backgroundColor: INK,
 		borderRadius: 18,
 		borderWidth: 1,
 		padding: 16,

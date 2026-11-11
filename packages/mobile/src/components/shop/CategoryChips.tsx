@@ -38,10 +38,8 @@ export function CategoryChips({
 					hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
 					style={[styles.chip, { backgroundColor: c.primarySoft }]}
 				>
-					<Text style={[styles.chipText, { color: c.primary }]}>
-						{cat.name}
-					</Text>
-					<Ionicons name="close" size={13} color={c.primary} />
+					<Text style={[styles.chipText, { color: c.link }]}>{cat.name}</Text>
+					<Ionicons name="close" size={13} color={c.link} />
 				</Pressable>
 			))}
 			{value.length < max ? (
@@ -76,6 +74,8 @@ export function CategoryChips({
 					textColor: c.text,
 					mutedColor: c.muted,
 					primary: c.primary,
+					fill: c.fill,
+					link: c.link,
 					border: c.border,
 					isDark: c.isDark,
 					inputBg: c.input,

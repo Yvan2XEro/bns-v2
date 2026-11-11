@@ -253,7 +253,7 @@ export default function ModerationHubScreen() {
 										<Text
 											style={[
 												styles.tabBadgeText,
-												{ color: selected ? "#ffffff" : c.text },
+												{ color: selected ? k.onFill : c.text },
 											]}
 										>
 											{count}

@@ -86,7 +86,7 @@ export function DecisionButton({
 	const ink = filled
 		? disabled
 			? k.disabledText
-			: "#ffffff"
+			: k.onFill
 		: variant === "dangerOutline"
 			? k.dangerText
 			: variant === "secondary"
@@ -96,9 +96,7 @@ export function DecisionButton({
 		? fill
 		: variant === "dangerOutline"
 			? k.dangerText
-			: c.isDark
-				? "#3a4290"
-				: "#c9cce0";
+			: k.strongBorder;
 
 	return (
 		<Pressable
@@ -342,7 +340,7 @@ function Bone({
 				width,
 				height,
 				borderRadius: radius,
-				backgroundColor: c.isDark ? "#2a3170" : "#e1e3ee",
+				backgroundColor: c.border,
 			}}
 		/>
 	);

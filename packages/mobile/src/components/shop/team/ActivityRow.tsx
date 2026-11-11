@@ -92,8 +92,8 @@ export function ActivityRow({
 					style={styles.target}
 					hitSlop={8}
 				>
-					<Ionicons name="open-outline" size={14} color={c.primary} />
-					<Text style={[styles.targetText, { color: c.primary }]}>
+					<Ionicons name="open-outline" size={14} color={c.link} />
+					<Text style={[styles.targetText, { color: c.link }]}>
 						{targetLabel}
 					</Text>
 				</Pressable>

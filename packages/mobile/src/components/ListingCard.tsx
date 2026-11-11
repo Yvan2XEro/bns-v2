@@ -13,7 +13,7 @@ import Animated, {
 	withSequence,
 	withSpring,
 } from "react-native-reanimated";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { useShopBrandIfAny } from "@/src/components/shop/brand";
@@ -111,7 +111,7 @@ export function ListingCard({
 	const shopName = listingShopName(listing);
 	// On a shop's page the card takes the shop's colour, as on web.
 	const shopAccent =
-		useShopBrandIfAny()?.accentText ?? (isDark ? "#9aa8f5" : "#23338f");
+		useShopBrandIfAny()?.accentText ?? (isDark ? "#9ec5fe" : "#2f5bd4");
 
 	const textPrimary = isDark ? "#e1e3ee" : "#12163a";
 	const textMuted = isDark ? "#a3a7c8" : "#5b6088";
@@ -193,8 +193,14 @@ export function ListingCard({
 						{listing.orderable && (
 							// Bought on the platform, not arranged with a stranger.
 							<View style={styles.chip}>
-								<Ionicons name="shield-checkmark" size={11} color="#19733f" />
-								<Text style={[styles.chipText, { color: "#155c35" }]}>
+								<Ionicons
+									name="shield-checkmark"
+									size={11}
+									color={Colors.light.success}
+								/>
+								<Text
+									style={[styles.chipText, { color: Colors.light.successText }]}
+								>
 									{i18n.t("listing.orderableBadge")}
 								</Text>
 							</View>

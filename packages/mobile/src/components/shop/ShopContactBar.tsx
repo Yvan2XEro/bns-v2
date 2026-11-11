@@ -12,6 +12,7 @@ import Animated, {
 	withTiming,
 } from "react-native-reanimated";
 import { Fonts } from "@/constants/theme";
+import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { useTranslation } from "@/src/lib/i18n";
 import { useShopBrand } from "./brand";
 import { useShopTheme } from "./theme";
@@ -43,11 +44,15 @@ export function ShopContactBar({
 	const brand = useShopBrand();
 	const { t } = useTranslation();
 	const height = CONTACT_BAR_HEIGHT + insetBottom;
+	// Under Reduce Motion the bar appears and leaves in place instead of sliding.
+	const reduced = useReducedMotion();
 
 	const style = useAnimatedStyle(() => ({
 		transform: [
 			{
-				translateY: withTiming(visible.value ? 0 : height, { duration: 180 }),
+				translateY: withTiming(visible.value ? 0 : height, {
+					duration: reduced ? 0 : 180,
+				}),
 			},
 		],
 	}));
@@ -78,6 +83,7 @@ export function ShopContactBar({
 					]}
 					accessibilityRole="button"
 					accessibilityLabel={t("shop.contactShop")}
+					accessibilityState={{ busy: pending, disabled: pending }}
 				>
 					{pending ? (
 						<ActivityIndicator color={brand.onAccent} />
@@ -130,15 +136,15 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		height: 46,
-		borderRadius: 14,
+		height: 48,
+		borderRadius: 12,
 	},
-	primaryText: { fontSize: 15, fontFamily: Fonts.displayBold },
+	primaryText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 	icon: {
-		width: 46,
-		height: 46,
-		borderRadius: 14,
-		borderWidth: 1.5,
+		width: 48,
+		height: 48,
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth,
 		alignItems: "center",
 		justifyContent: "center",
 	},

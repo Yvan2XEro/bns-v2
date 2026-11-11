@@ -32,7 +32,7 @@ export function useModerationTheme(): ModerationPalette {
 		text: isDark ? "#e1e3ee" : "#12163a",
 		muted: isDark ? "#a3a7c8" : "#5b6088",
 		border: isDark ? "#2a3170" : "#e1e3ee",
-		primary: isDark ? "#6878ea" : "#23338f",
+		primary: isDark ? "#3b82f6" : "#2f5bd4",
 		danger: "#d23a2e",
 		dangerSoft: isDark ? "#3d0f0b" : "#fbe3e0",
 		success: "#1e8a4f",

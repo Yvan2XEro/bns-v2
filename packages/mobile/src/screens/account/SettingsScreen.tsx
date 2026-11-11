@@ -2,27 +2,22 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Appearance,
-	Modal,
-	Pressable,
 	ScrollView,
 	StyleSheet,
-	Switch,
-	Text,
-	View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
-	SafeAreaView,
-	useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
-import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
+	GroupedRow,
+	GroupedSection,
+	GroupedSwitchRow,
+	useGroupedColors,
+} from "@/src/components/settings/Grouped";
 import { PermissionList } from "@/src/components/settings/PermissionList";
+import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { areSoundsEnabled, setSoundsEnabled } from "@/src/lib/feedback";
 import i18n, { useTranslation } from "@/src/lib/i18n";
@@ -31,64 +26,43 @@ export const LANG_STORAGE_KEY = "app_language";
 export const THEME_STORAGE_KEY = "app_theme";
 
 type Locale = "fr" | "en";
+type ThemeChoice = "system" | "light" | "dark";
 
-const LANGUAGES: { code: Locale; label: string; flag: string }[] = [
-	{ code: "fr", label: "Français", flag: "🇫🇷" },
-	{ code: "en", label: "English", flag: "🇬🇧" },
+// Each language is named in itself, so it can be found whatever the app is
+// set to.
+const LANGUAGES: { code: Locale; label: string }[] = [
+	{ code: "fr", label: "Français" },
+	{ code: "en", label: "English" },
 ];
 
-interface SectionProps {
-	title: string;
-	icon: keyof typeof Ionicons.glyphMap;
-	children: React.ReactNode;
-	cardBg: string;
-	borderColor: string;
-	textColor: string;
-	isDark: boolean;
-}
-
-function Section({
-	title,
-	icon,
-	children,
-	cardBg,
-	borderColor,
-	textColor,
-	isDark,
-}: SectionProps) {
-	return (
-		<View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
-			<View style={styles.sectionHeader}>
-				<View
-					style={[
-						styles.sectionIconBox,
-						{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
-					]}
-				>
-					<Ionicons
-						name={icon}
-						size={15}
-						color={isDark ? "#a3a7c8" : "#4a4f78"}
-					/>
-				</View>
-				<Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
-			</View>
-			<View style={styles.sectionBody}>{children}</View>
-		</View>
-	);
-}
-
 export function SettingsScreen() {
-	const colorScheme = useColorScheme();
+	const c = useGroupedColors();
 	const { centeredContent } = useResponsive();
-	const [isDark, setIsDark] = useState(colorScheme === "dark");
 	const { t } = useTranslation();
-	const insets = useSafeAreaInsets();
-	const sheet = useSheetPresentation();
-	const [langPickerOpen, setLangPickerOpen] = useState(false);
 	const [updateChecked, setUpdateChecked] = useState(false);
 	const [checkError, setCheckError] = useState(false);
 	const [soundsOn, setSoundsOn] = useState(areSoundsEnabled());
+	// "system" until a stored choice says otherwise; the root layout only
+	// restores "light" and "dark", so "system" leaves the device in charge.
+	const [themeChoice, setThemeChoice] = useState<ThemeChoice>("system");
+	const [locale, setLocale] = useState<Locale>(
+		i18n.language?.slice(0, 2) === "en" ? "en" : "fr",
+	);
+
+	useEffect(() => {
+		let alive = true;
+		AsyncStorage.getItem(THEME_STORAGE_KEY)
+			.then((saved) => {
+				if (!alive) return;
+				if (saved === "light" || saved === "dark") setThemeChoice(saved);
+			})
+			.catch(() => {
+				// No stored choice: the device decides.
+			});
+		return () => {
+			alive = false;
+		};
+	}, []);
 
 	const { isChecking, isDownloading, isUpdateAvailable, isUpdatePending } =
 		Updates.useUpdates();
@@ -116,576 +90,162 @@ export function SettingsScreen() {
 		await Updates.reloadAsync();
 	};
 
-	const currentLang =
-		(i18n.language?.slice(0, 2) as Locale | undefined) ?? "fr";
 	const version = Constants.expoConfig?.version ?? "1.0.0";
 
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
-	const inputBg = isDark ? "#0c1030" : "#f4f5f9";
-
-	const sectionColors = { cardBg, borderColor, textColor, isDark };
-
-	const changeLanguage = async (locale: Locale) => {
-		await i18n.changeLanguage(locale);
-		await AsyncStorage.setItem(LANG_STORAGE_KEY, locale);
-		setLangPickerOpen(false);
+	const changeLanguage = async (next: Locale) => {
+		setLocale(next);
+		await i18n.changeLanguage(next);
+		await AsyncStorage.setItem(LANG_STORAGE_KEY, next);
 	};
 
-	const toggleDarkMode = (value: boolean) => {
-		setIsDark(value); // update immediately — don't wait for Appearance event
-		const scheme = value ? "dark" : "light";
-		Appearance.setColorScheme(scheme);
-		AsyncStorage.setItem(THEME_STORAGE_KEY, scheme);
+	const changeTheme = (next: ThemeChoice) => {
+		setThemeChoice(next); // update immediately — don't wait for Appearance event
+		Appearance.setColorScheme(next === "system" ? "unspecified" : next);
+		void AsyncStorage.setItem(THEME_STORAGE_KEY, next);
 	};
 
-	const currentLangLabel =
-		LANGUAGES.find((l) => l.code === currentLang)?.label ?? "Français";
+	const themes: { value: ThemeChoice; label: string }[] = [
+		{ value: "system", label: t("settings.themeSystem") },
+		{ value: "light", label: t("settings.themeLight") },
+		{ value: "dark", label: t("settings.themeDark") },
+	];
+
+	// The update row: what is true now, and the one thing to do next.
+	const busy = isChecking || isDownloading;
+	const update = isUpdatePending
+		? {
+				action: t("settings.restartNow"),
+				onPress: handleRestart,
+				status: t("settings.readyToInstall"),
+				tone: "success" as const,
+			}
+		: isUpdateAvailable
+			? {
+					action: t("settings.download"),
+					onPress: handleDownloadUpdate,
+					status: t("settings.updateAvailable"),
+					tone: "info" as const,
+				}
+			: {
+					action: t("settings.checkForUpdates"),
+					onPress: handleCheckUpdate,
+					status: checkError
+						? t("settings.checkFailed")
+						: updateChecked
+							? t("settings.upToDate")
+							: null,
+					tone: checkError
+						? ("danger" as const)
+						: updateChecked
+							? ("success" as const)
+							: ("info" as const),
+				};
+	const statusText = busy
+		? isDownloading
+			? t("settings.downloading")
+			: t("settings.checking")
+		: update.status;
+	const statusColor =
+		update.tone === "success"
+			? c.successText
+			: update.tone === "danger"
+				? c.dangerText
+				: c.link;
 
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<HeaderBackButton
-					color={textColor}
-					fallback="/(tabs)/account"
-					style={styles.backBtn}
-				/>
-				<Text style={[styles.headerTitle, { color: textColor }]}>
-					{t("settings.title")}
-				</Text>
-				<View style={{ width: 40 }} />
-			</View>
+			<SettingsHeader title={t("settings.title")} />
 
 			<ScrollView
-				contentContainerStyle={[
-					styles.scroll,
-					{ backgroundColor: bg },
-					centeredContent,
-				]}
+				contentContainerStyle={[styles.scroll, centeredContent]}
 				showsVerticalScrollIndicator={false}
 			>
-				{/* Language */}
-				<Section
-					title={t("settings.language")}
-					icon="globe-outline"
-					{...sectionColors}
-				>
-					<Pressable
-						onPress={() => setLangPickerOpen(true)}
-						style={[
-							styles.selectRow,
-							{ backgroundColor: inputBg, borderColor },
-						]}
-					>
-						<Ionicons
-							name="language-outline"
-							size={17}
-							color={mutedColor}
-							style={{ marginRight: 10 }}
+				<GroupedSection title={t("settings.language")}>
+					{LANGUAGES.map((lang) => (
+						<GroupedRow
+							key={lang.code}
+							label={lang.label}
+							onPress={() => void changeLanguage(lang.code)}
+							accessibilityRole="radio"
+							accessory={locale === lang.code ? "check" : "none"}
 						/>
-						<Text style={[styles.selectValue, { color: textColor }]}>
-							{currentLangLabel}
-						</Text>
-						<Ionicons name="chevron-down" size={16} color={mutedColor} />
-					</Pressable>
-				</Section>
+					))}
+				</GroupedSection>
 
-				{/* Appearance */}
-				<Section
-					title={t("settings.theme")}
-					icon="moon-outline"
-					{...sectionColors}
-				>
-					<View style={[styles.switchRow, { borderColor }]}>
-						<Ionicons
-							name={isDark ? "moon" : "sunny-outline"}
-							size={17}
-							color={isDark ? "#a3a7c8" : "#4a4f78"}
-							style={{ marginRight: 10 }}
+				<GroupedSection title={t("settings.theme")}>
+					{themes.map((option) => (
+						<GroupedRow
+							key={option.value}
+							label={option.label}
+							onPress={() => changeTheme(option.value)}
+							accessibilityRole="radio"
+							accessory={themeChoice === option.value ? "check" : "none"}
 						/>
-						<Text style={[styles.switchLabel, { color: textColor, flex: 1 }]}>
-							{t("settings.themeDark")}
-						</Text>
-						<Switch
-							value={isDark}
-							onValueChange={toggleDarkMode}
-							trackColor={{ false: "#c9cce0", true: primaryColor }}
-							thumbColor="#fff"
-							ios_backgroundColor="#c9cce0"
-						/>
-					</View>
-				</Section>
+					))}
+				</GroupedSection>
 
-				{/* Sounds */}
-				<Section
+				<GroupedSection
 					title={t("settings.soundsSection")}
-					icon="musical-notes-outline"
-					{...sectionColors}
+					footer={t("settings.soundsHint")}
 				>
-					<View style={[styles.switchRow, { borderColor }]}>
-						<Ionicons
-							name={soundsOn ? "volume-medium-outline" : "volume-mute-outline"}
-							size={17}
-							color={isDark ? "#a3a7c8" : "#4a4f78"}
-							style={{ marginRight: 10 }}
+					<GroupedSwitchRow
+						icon={soundsOn ? "volume-medium-outline" : "volume-mute-outline"}
+						label={t("settings.soundsLabel")}
+						value={soundsOn}
+						onValueChange={(on) => {
+							setSoundsOn(on);
+							void setSoundsEnabled(on);
+						}}
+					/>
+				</GroupedSection>
+
+				<PermissionList title={t("settings.permissions.title")} />
+
+				<GroupedSection title={t("settings.updatesSection")}>
+					<GroupedRow
+						icon="cloud-download-outline"
+						iconTone="brand"
+						label={update.action}
+						onPress={() => void update.onPress()}
+						disabled={busy}
+						accessory="none"
+						accessibilityHint={statusText ?? undefined}
+						trailing={
+							busy ? <ActivityIndicator size="small" color={c.link} /> : null
+						}
+					/>
+					{statusText && !busy ? (
+						<GroupedRow
+							label={statusText}
+							trailing={
+								<Ionicons
+									name={
+										update.tone === "success"
+											? "checkmark-circle"
+											: update.tone === "danger"
+												? "alert-circle"
+												: "arrow-up-circle"
+									}
+									size={20}
+									color={statusColor}
+								/>
+							}
 						/>
-						<Text style={[styles.switchLabel, { color: textColor, flex: 1 }]}>
-							{t("settings.soundsLabel")}
-						</Text>
-						<Switch
-							value={soundsOn}
-							onValueChange={(on) => {
-								setSoundsOn(on);
-								void setSoundsEnabled(on);
-							}}
-							accessibilityLabel={t("settings.soundsLabel")}
-							trackColor={{ false: "#c9cce0", true: primaryColor }}
-							thumbColor="#fff"
-							ios_backgroundColor="#c9cce0"
-						/>
-					</View>
-					<Text style={[styles.soundsHint, { color: mutedColor }]}>
-						{t("settings.soundsHint")}
-					</Text>
-				</Section>
+					) : null}
+				</GroupedSection>
 
-				{/* Updates */}
-				<Section
-					title={t("settings.updatesSection")}
-					icon="cloud-download-outline"
-					{...sectionColors}
-				>
-					<View style={[styles.updateRow, { borderColor }]}>
-						{/* Status line */}
-						<View style={styles.updateStatus}>
-							{isChecking || isDownloading ? (
-								<>
-									<ActivityIndicator
-										size="small"
-										color={primaryColor}
-										style={{ marginRight: 8 }}
-									/>
-									<Text
-										style={[styles.updateStatusText, { color: mutedColor }]}
-									>
-										{isDownloading
-											? t("settings.downloading")
-											: t("settings.checking")}
-									</Text>
-								</>
-							) : isUpdatePending ? (
-								<>
-									<Ionicons
-										name="checkmark-circle"
-										size={17}
-										color="#34b26a"
-										style={{ marginRight: 6 }}
-									/>
-									<Text style={[styles.updateStatusText, { color: "#34b26a" }]}>
-										{t("settings.readyToInstall")}
-									</Text>
-								</>
-							) : updateChecked && isUpdateAvailable ? (
-								<>
-									<Ionicons
-										name="arrow-up-circle-outline"
-										size={17}
-										color={primaryColor}
-										style={{ marginRight: 6 }}
-									/>
-									<Text
-										style={[styles.updateStatusText, { color: primaryColor }]}
-									>
-										{t("settings.updateAvailable")}
-									</Text>
-								</>
-							) : updateChecked && !checkError ? (
-								<>
-									<Ionicons
-										name="checkmark-circle-outline"
-										size={17}
-										color="#34b26a"
-										style={{ marginRight: 6 }}
-									/>
-									<Text style={[styles.updateStatusText, { color: "#34b26a" }]}>
-										{t("settings.upToDate")}
-									</Text>
-								</>
-							) : checkError ? (
-								<>
-									<Ionicons
-										name="alert-circle-outline"
-										size={17}
-										color="#e5574b"
-										style={{ marginRight: 6 }}
-									/>
-									<Text style={[styles.updateStatusText, { color: "#e5574b" }]}>
-										{t("settings.checkFailed")}
-									</Text>
-								</>
-							) : (
-								<Text style={[styles.updateStatusText, { color: mutedColor }]}>
-									v{version}
-								</Text>
-							)}
-						</View>
-
-						{/* Action button */}
-						{isUpdatePending ? (
-							<Pressable
-								onPress={handleRestart}
-								style={[styles.updateBtn, { backgroundColor: "#34b26a" }]}
-							>
-								<Text style={styles.updateBtnText}>
-									{t("settings.restartNow")}
-								</Text>
-							</Pressable>
-						) : isUpdateAvailable ? (
-							<Pressable
-								onPress={handleDownloadUpdate}
-								disabled={isDownloading}
-								style={[
-									styles.updateBtn,
-									{
-										backgroundColor: primaryColor,
-										opacity: isDownloading ? 0.6 : 1,
-									},
-								]}
-							>
-								<Text style={styles.updateBtnText}>
-									{t("settings.download")}
-								</Text>
-							</Pressable>
-						) : (
-							<Pressable
-								onPress={handleCheckUpdate}
-								disabled={isChecking}
-								style={[
-									styles.updateBtn,
-									{
-										backgroundColor: isDark ? "#2a3170" : "#e1e3ee",
-										opacity: isChecking ? 0.6 : 1,
-									},
-								]}
-							>
-								<Text
-									style={[
-										styles.updateBtnText,
-										{ color: isDark ? "#a9b4f0" : "#4a4f78" },
-									]}
-								>
-									{t("settings.checkForUpdates")}
-								</Text>
-							</Pressable>
-						)}
-					</View>
-				</Section>
-
-				{/* Device permissions */}
-				<Section
-					title={t("settings.permissions.title")}
-					icon="shield-checkmark-outline"
-					{...sectionColors}
-				>
-					<PermissionList />
-				</Section>
-
-				{/* App version */}
-				<Section
-					title={t("settings.aboutSection")}
-					icon="information-circle-outline"
-					{...sectionColors}
-				>
-					<View style={[styles.infoRow, { borderColor }]}>
-						<Text style={[styles.infoLabel, { color: mutedColor }]}>
-							{t("settings.appVersion")}
-						</Text>
-						<View
-							style={[
-								styles.versionBadge,
-								{ backgroundColor: isDark ? "#1a1f4a" : "#eceef5" },
-							]}
-						>
-							<Text style={[styles.versionText, { color: primaryColor }]}>
-								v{version}
-							</Text>
-						</View>
-					</View>
-				</Section>
+				<GroupedSection title={t("settings.aboutSection")}>
+					<GroupedRow label={t("settings.appVersion")} value={`v${version}`} />
+				</GroupedSection>
 			</ScrollView>
-
-			{/* Language picker modal */}
-			<Modal
-				visible={langPickerOpen}
-				transparent
-				animationType={sheet.animationType}
-				onRequestClose={() => setLangPickerOpen(false)}
-			>
-				<Pressable
-					style={styles.modalOverlay}
-					onPress={() => setLangPickerOpen(false)}
-				/>
-				<View
-					style={[StyleSheet.absoluteFill, sheet.wrap]}
-					pointerEvents="box-none"
-				>
-					<View
-						style={[
-							styles.modalSheet,
-							{ backgroundColor: cardBg },
-							// The language rows are the confirm control here; without this
-							// the last one sits under the system navigation.
-							{ paddingBottom: insets.bottom + 16 },
-							sheet.panel,
-						]}
-					>
-						<View
-							style={[styles.modalHandle, { backgroundColor: borderColor }]}
-						/>
-						<Text style={[styles.modalTitle, { color: textColor }]}>
-							{t("settings.language")}
-						</Text>
-						{LANGUAGES.map((lang, i) => (
-							<Pressable
-								key={lang.code}
-								onPress={() => changeLanguage(lang.code)}
-								style={[
-									styles.langOption,
-									{
-										borderBottomColor:
-											i < LANGUAGES.length - 1 ? borderColor : "transparent",
-									},
-								]}
-							>
-								<Text style={styles.langFlag}>{lang.flag}</Text>
-								<Text style={[styles.langLabel, { color: textColor, flex: 1 }]}>
-									{lang.label}
-								</Text>
-								<View
-									style={[
-										styles.radioOuter,
-										{
-											borderColor:
-												currentLang === lang.code ? primaryColor : mutedColor,
-										},
-									]}
-								>
-									{currentLang === lang.code && (
-										<View
-											style={[
-												styles.radioInner,
-												{ backgroundColor: primaryColor },
-											]}
-										/>
-									)}
-								</View>
-							</Pressable>
-						))}
-						<View style={{ height: 24 }} />
-					</View>
-				</View>
-			</Modal>
 		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
-	soundsHint: {
-		fontSize: 13,
-		lineHeight: 18,
-		fontFamily: Fonts.body,
-		marginTop: 8,
-	},
 	safe: { flex: 1 },
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
-	},
-	backBtn: {
-		width: 40,
-		height: 40,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	headerTitle: {
-		flex: 1,
-		fontSize: 20,
-		fontFamily: Fonts.displayBold,
-		textAlign: "center",
-	},
-	scroll: { padding: 16, gap: 12, paddingBottom: 48 },
-	section: {
-		borderRadius: 16,
-		borderWidth: 1,
-		overflow: "hidden",
-	},
-	sectionHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		paddingHorizontal: 16,
-		paddingTop: 14,
-		paddingBottom: 12,
-	},
-	sectionIconBox: {
-		width: 30,
-		height: 30,
-		borderRadius: 8,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	sectionTitle: {
-		fontSize: 15,
-		fontFamily: Fonts.displayBold,
-	},
-	sectionBody: {
-		paddingHorizontal: 16,
-		paddingBottom: 16,
-		gap: 12,
-	},
-	selectRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		borderRadius: 10,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 13,
-	},
-	selectValue: {
-		flex: 1,
-		fontSize: 15,
-		fontFamily: Fonts.body,
-	},
-	switchRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		borderWidth: 1,
-		borderRadius: 10,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
-	},
-	switchLabel: {
-		fontSize: 15,
-		fontFamily: Fonts.body,
-	},
-	infoRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		borderWidth: 1,
-		borderRadius: 10,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
-	},
-	updateRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		borderWidth: 1,
-		borderRadius: 10,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		gap: 10,
-	},
-	updateStatus: {
-		flexDirection: "row",
-		alignItems: "center",
-		flex: 1,
-	},
-	updateStatusText: {
-		fontSize: 13,
-		fontFamily: Fonts.body,
-	},
-	updateBtn: {
-		borderRadius: 8,
-		paddingHorizontal: 12,
-		paddingVertical: 7,
-	},
-	updateBtnText: {
-		fontSize: 13,
-		fontFamily: Fonts.bodyBold,
-		color: "#ffffff",
-	},
-	infoLabel: {
-		fontSize: 14,
-		fontFamily: Fonts.body,
-	},
-	versionBadge: {
-		borderRadius: 8,
-		paddingHorizontal: 10,
-		paddingVertical: 4,
-	},
-	versionText: {
-		fontSize: 13,
-		fontFamily: Fonts.displayBold,
-	},
-	/* Modal */
-	modalOverlay: {
-		position: "absolute",
-		top: 0,
-		right: 0,
-		bottom: 0,
-		left: 0,
-		backgroundColor: "rgba(0,0,0,0.4)",
-	},
-	modalSheet: {
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		paddingHorizontal: 20,
-		paddingTop: 12,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: -4 },
-		shadowOpacity: 0.12,
-		shadowRadius: 12,
-		elevation: 16,
-	},
-	modalHandle: {
-		width: 36,
-		height: 4,
-		borderRadius: 2,
-		alignSelf: "center",
-		marginBottom: 16,
-	},
-	modalTitle: {
-		fontSize: 17,
-		fontFamily: Fonts.displayBold,
-		marginBottom: 12,
-	},
-	langOption: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingVertical: 16,
-		borderBottomWidth: 1,
-		gap: 14,
-	},
-	langFlag: {
-		fontSize: 22,
-	},
-	langLabel: {
-		fontSize: 16,
-		fontFamily: Fonts.body,
-	},
-	radioOuter: {
-		width: 20,
-		height: 20,
-		borderRadius: 10,
-		borderWidth: 2,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	radioInner: {
-		width: 10,
-		height: 10,
-		borderRadius: 5,
-	},
+	scroll: { padding: 16, paddingTop: 20, gap: 24, paddingBottom: 48 },
 });

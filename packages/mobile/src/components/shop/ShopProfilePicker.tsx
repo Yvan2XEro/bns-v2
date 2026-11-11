@@ -42,7 +42,7 @@ export function ShopProfilePicker({
 						style={[
 							styles.row,
 							{
-								borderColor: on ? c.primary : c.border,
+								borderColor: on ? c.link : c.border,
 								backgroundColor: on ? c.primarySoft : c.card,
 								opacity: disabled ? 0.6 : 1,
 							},
@@ -51,7 +51,7 @@ export function ShopProfilePicker({
 						<Ionicons
 							name={ICONS[profile]}
 							size={22}
-							color={on ? c.primary : c.muted}
+							color={on ? c.link : c.muted}
 						/>
 						<View style={styles.texts}>
 							<Text style={[styles.name, { color: c.text }]}>
@@ -80,5 +80,5 @@ const styles = StyleSheet.create({
 	},
 	texts: { flex: 1, gap: 2 },
 	name: { fontSize: 15, fontFamily: Fonts.bodyBold },
-	description: { fontSize: 13, lineHeight: 18 },
+	description: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

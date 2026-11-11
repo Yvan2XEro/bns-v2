@@ -1,31 +1,20 @@
 import { router } from "expo-router";
 import React from "react";
-import {
-	ActivityIndicator,
-	FlatList,
-	RefreshControl,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
-import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { ListingGridSkeleton } from "@/src/components/listing/Skeletons";
+import { useGroupedColors } from "@/src/components/settings/Grouped";
+import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
 
 export function FavoritesScreen() {
-	const isDark = useColorScheme() === "dark";
+	const c = useGroupedColors();
 	const { columns, cardWidth } = useResponsive();
 	const { t } = useTranslation();
-	const bg = isDark ? "#0c1030" : "#f4f5f9";
-	const textColor = isDark ? "#e1e3ee" : "#12163a";
-	const borderColor = isDark ? "#2a3170" : "#e1e3ee";
-	const primaryColor = isDark ? "#6878ea" : "#23338f";
 
 	const { favorites, isLoading, isError, refetch, toggleFavorite } =
 		useFavoriteActions();
@@ -41,21 +30,24 @@ export function FavoritesScreen() {
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<HeaderBackButton color={textColor} fallback="/(tabs)/account" inline />
-				<Text style={[styles.title, { color: textColor }]}>
-					{t("favorites.title")}
-				</Text>
-				<View style={{ width: 40 }} />
-			</View>
+			<SettingsHeader title={t("favorites.title")} />
 
 			{isLoading ? (
 				// This screen previously showed "no favorites" on every cold load
 				// and on any API failure.
-				<View style={styles.loader}>
-					<ActivityIndicator color={primaryColor} />
+				<View
+					style={styles.list}
+					accessible
+					accessibilityRole="progressbar"
+					accessibilityLabel={t("common.loading")}
+				>
+					<ListingGridSkeleton
+						cardWidth={cardWidth}
+						columns={columns}
+						rows={3}
+					/>
 				</View>
 			) : isError ? (
 				<EmptyState
@@ -91,12 +83,13 @@ export function FavoritesScreen() {
 						</View>
 					)}
 					keyExtractor={(_, i) => String(i)}
-					contentContainerStyle={{ padding: 16 }}
+					contentContainerStyle={styles.list}
 					refreshControl={
 						<RefreshControl
 							refreshing={refreshing}
 							onRefresh={onRefresh}
-							tintColor={primaryColor}
+							tintColor={c.primary}
+							colors={[c.primary]}
 						/>
 					}
 				/>
@@ -107,15 +100,6 @@ export function FavoritesScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
-	},
-	title: { fontSize: 18, fontFamily: Fonts.displayBold },
-	loader: { flex: 1, alignItems: "center", justifyContent: "center" },
-	row: { flexDirection: "row", gap: 12, marginBottom: 12 },
+	list: { padding: 16 },
+	row: { flexDirection: "row", gap: 12, marginBottom: 16 },
 });

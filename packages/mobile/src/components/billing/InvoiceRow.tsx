@@ -40,7 +40,7 @@ export function InvoiceRow({
 				style={styles.main}
 			>
 				<View style={styles.head}>
-					<Text style={[s.cardTitle, { color: c.primary }]}>{number}</Text>
+					<Text style={[s.cardTitle, { color: c.link }]}>{number}</Text>
 					<InvoiceStatusBadge status={invoice.status} />
 				</View>
 				<Text style={[s.meta, { color: c.muted }]}>
