@@ -18,7 +18,6 @@ import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import {
-	Redirect,
 	router,
 	Stack,
 	usePathname,
@@ -445,30 +444,33 @@ function RootLayoutNav() {
 	const { isLoading: authLoading } = useAuth();
 	const { hasSeenOnboarding, isLoading: onboardingLoading } = useOnboarding();
 	const pathname = usePathname();
+	const navigationReady = Boolean(useRootNavigationState()?.key);
 	const showLoader = authLoading || onboardingLoading;
 	const isOnboardingRoute = pathname === "/onboarding";
+	const launchTarget = showLoader
+		? null
+		: !hasSeenOnboarding && !isOnboardingRoute
+			? "/onboarding"
+			: hasSeenOnboarding && isOnboardingRoute
+				? "/(tabs)/home"
+				: null;
 
-	if (showLoader) {
-		return <LoadingScreen />;
-	}
-
-	if (!hasSeenOnboarding && !isOnboardingRoute) {
-		return (
-			<>
-				<LoadingScreen />
-				<Redirect href="/onboarding" />
-			</>
-		);
-	}
-
-	if (hasSeenOnboarding && isOnboardingRoute) {
-		return (
-			<>
-				<LoadingScreen />
-				<Redirect href="/(tabs)/home" />
-			</>
-		);
-	}
+	// The navigator stays mounted and the launch redirect is an effect, sent
+	// once per destination when the navigator is ready. A <Redirect> rendered
+	// in its place had no navigator to land in: the path never changed, the
+	// layout rendered the redirect again, and React stopped the loop with
+	// "Maximum update depth exceeded".
+	const redirected = useRef<string | null>(null);
+	useEffect(() => {
+		if (!launchTarget) {
+			redirected.current = null;
+			return;
+		}
+		if (!navigationReady || redirected.current === launchTarget) return;
+		redirected.current = launchTarget;
+		router.replace(launchTarget);
+	}, [launchTarget, navigationReady]);
+	const covered = showLoader || launchTarget !== null;
 
 	return (
 		<ThemeProvider value={colorScheme === "dark" ? NdopDark : NdopLight}>
@@ -825,6 +827,11 @@ function RootLayoutNav() {
 				</Stack>
 				<PushTapNavigator />
 			</SellerBrandProvider>
+			{covered ? (
+				<View style={StyleSheet.absoluteFill}>
+					<LoadingScreen />
+				</View>
+			) : null}
 
 			<StatusBar style="auto" />
 		</ThemeProvider>

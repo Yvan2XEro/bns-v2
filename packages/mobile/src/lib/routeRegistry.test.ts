@@ -13,7 +13,8 @@ const UNUSED = new Set(["modal"]);
 function routes(): string[] {
 	const found: string[] = [];
 	for (const rel of new Glob("**/*.tsx").scanSync({ cwd: APP })) {
-		const name = rel.replace(/\.tsx$/, "");
+		// Bun's Glob answers with the OS separator; routes are always "/".
+		const name = rel.replaceAll("\\", "/").replace(/\.tsx$/, "");
 		if (name.endsWith("_layout") || name.startsWith("+")) continue;
 		if (OWN_LAYOUT.some((prefix) => name.startsWith(prefix))) continue;
 		if (UNUSED.has(name)) continue;

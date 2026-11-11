@@ -109,13 +109,18 @@ export default function ShopScreen() {
 
 	// A previous handle answers with the current one; replace so "back" does
 	// not bounce through the old address.
+	// Never to the handle already on show: an answer that points back at
+	// itself would replace the screen with itself, forever.
+	const redirectsElsewhere =
+		!!redirectTo &&
+		redirectTo.toLowerCase() !== String(handle ?? "").toLowerCase();
 	useEffect(() => {
-		if (redirectTo)
+		if (redirectsElsewhere && redirectTo)
 			router.replace({
 				pathname: "/s/[handle]",
 				params: { handle: redirectTo },
 			});
-	}, [redirectTo]);
+	}, [redirectTo, redirectsElsewhere]);
 
 	const [tab, setTab] = useState<ShopTab>("listings");
 	const [category, setCategory] = useState<string | null>(null);
@@ -343,7 +348,7 @@ export default function ShopScreen() {
 	const back = () =>
 		router.canGoBack() ? router.back() : router.replace("/(tabs)/home");
 
-	if (isLoading || redirectTo) {
+	if (isLoading || redirectsElsewhere) {
 		return (
 			<View style={[styles.root, { backgroundColor: c.bg }]}>
 				<StatusBar style={c.isDark ? "light" : "dark"} />
