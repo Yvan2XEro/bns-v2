@@ -8,7 +8,7 @@ import Svg, { Circle, Defs, Path, Pattern, Rect } from "react-native-svg";
  */
 export function NdopPattern({
 	color = "#ffffff",
-	opacity = 0.09,
+	opacity = 0.05,
 }: {
 	color?: string;
 	opacity?: number;

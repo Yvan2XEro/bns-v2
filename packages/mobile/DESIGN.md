@@ -91,4 +91,4 @@ Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.
 - **Robustness:** a build without the audio module keeps its haptics.
 
 ## The ndop pattern
-`src/components/brand/NdopPattern.tsx` draws lozenges strung on a line, with dots, in white at 9% opacity. Use it only on shell surfaces. It is decorative, hidden from screen readers, and never sits behind body text smaller than 15pt.
+`src/components/brand/NdopPattern.tsx` draws lozenges strung on a line, with dots, in white at 5% opacity (4% on the full-screen onboarding). Use it only on shell surfaces. It is decorative, hidden from screen readers, and never sits behind body text smaller than 15pt.

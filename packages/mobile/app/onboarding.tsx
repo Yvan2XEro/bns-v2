@@ -1487,7 +1487,7 @@ export default function OnboardingScreen() {
 	return (
 		<SafeAreaView style={[styles.container, { backgroundColor: shell }]}>
 			<StatusBar style="light" />
-			<NdopPattern opacity={0.07} />
+			<NdopPattern opacity={0.04} />
 
 			{/* Skip */}
 			{!isLast && (
