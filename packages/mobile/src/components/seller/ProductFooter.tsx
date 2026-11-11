@@ -7,7 +7,7 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -33,7 +33,9 @@ export function ProductFooter({
 	// Publishing is the sell action, so the last step wears signage yellow
 	// with ink on it; the steps before it are ordinary indigo actions.
 	const selling = creating && step === 3;
-	const ink = selling ? "#12163a" : "#ffffff";
+	const ink = selling
+		? Colors.light.sunForeground
+		: Colors.light.primaryForeground;
 	const label = creating
 		? step < 3
 			? t("product.continue")
@@ -129,7 +131,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	// The sell plaque's darker foot, as on the tab bar. No glow.
-	plaque: { borderBottomWidth: 3, borderBottomColor: "#9a6a00" },
+	plaque: { borderBottomWidth: 3, borderBottomColor: Colors.light.warning },
 	backText: { fontSize: 16, fontFamily: Fonts.bodySemibold },
 	primaryText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

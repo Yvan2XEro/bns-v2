@@ -51,7 +51,10 @@ export function ShopKindCard({
 
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}>
-			<Text style={[f.sectionTitle, { color: c.text }]}>
+			<Text
+				style={[f.sectionTitle, { color: c.text }]}
+				accessibilityRole="header"
+			>
 				{t("shopProfile.settingsTitle")}
 			</Text>
 			<Text style={[f.hint, { color: c.muted }]}>

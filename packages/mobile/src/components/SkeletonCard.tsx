@@ -146,8 +146,20 @@ export function SkeletonMessageBubbles() {
 		{ isMe: false, widthPct: "40%", height: 40 },
 		{ isMe: true, widthPct: "62%", height: 58 },
 	];
+	// Anchored to the composer, as the thread itself opens on its latest
+	// message: the swap to real bubbles happens where the eye already is.
 	return (
-		<View style={{ paddingHorizontal: 12, paddingVertical: 16, gap: 8 }}>
+		<View
+			style={{
+				flex: 1,
+				justifyContent: "flex-end",
+				paddingHorizontal: 12,
+				paddingVertical: 16,
+				gap: 8,
+			}}
+			accessibilityElementsHidden
+			importantForAccessibility="no-hide-descendants"
+		>
 			{bubbles.map((b, i) => (
 				<View
 					key={i}

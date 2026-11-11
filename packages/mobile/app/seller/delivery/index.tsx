@@ -15,6 +15,7 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { districtLabel, groupZonesByCity } from "@/src/lib/deliveryZoneForm";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
+import { cityLabel } from "@/src/lib/sellerOrders";
 import type { DeliveryZone } from "../../../../api/src/payload-types";
 
 type Row =
@@ -146,14 +147,14 @@ function ZonesList({ shopId }: { shopId: string }) {
 							accessibilityRole="header"
 							style={[styles.city, { color: c.text }]}
 						>
-							{item.city === "douala" ? "Douala" : "Yaoundé"}
+							{cityLabel(item.city)}
 						</Text>
 					) : (
 						<ZoneRow zone={item.zone} />
 					)
 				}
 				ListFooterComponent={
-					<View style={{ gap: 10, marginTop: 16 }}>
+					<View style={styles.footer}>
 						<SheetButton
 							label={t("deliverySettings.addZone")}
 							onPress={() =>
@@ -192,8 +193,8 @@ const styles = StyleSheet.create({
 		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
-		marginTop: 12,
-		marginBottom: 4,
+		marginTop: 16,
+		marginBottom: 2,
 	},
 	row: {
 		flexDirection: "row",
@@ -201,16 +202,17 @@ const styles = StyleSheet.create({
 		gap: 12,
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
-		padding: 14,
+		padding: 16,
 		minHeight: 48,
 	},
-	pressed: { opacity: 0.85 },
+	pressed: { opacity: 0.7 },
 	rowBody: { flex: 1, gap: 6 },
 	rowHead: { flexDirection: "row", alignItems: "center", gap: 8 },
 	rowTitle: { flexShrink: 1, fontSize: 16, fontFamily: Fonts.displayBold },
 	rowText: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
 	rowFoot: { flexDirection: "row", alignItems: "center", gap: 10 },
 	rowMeta: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	footer: { gap: 10, marginTop: 24 },
 	empty: {
 		alignItems: "center",
 		gap: 10,

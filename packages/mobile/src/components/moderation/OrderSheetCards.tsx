@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formatPrice } from "@/src/lib/market";
 import { formatOrderDate } from "@/src/lib/orderMoney";
@@ -9,7 +9,12 @@ import {
 	STAFF_STATUS_KEYS,
 } from "@/src/lib/staffOrderSheet";
 import type { OrderView } from "@/src/types/order";
-import { FactRow, ModerationCard, TonePill } from "./ModerationKit";
+import {
+	CardDivider,
+	FactRow,
+	ModerationCard,
+	TonePill,
+} from "./ModerationKit";
 import type { ModerationPalette, Translate } from "./theme";
 
 interface CardProps {
@@ -43,11 +48,14 @@ export function OrderSummaryCard({ order, locale, c, t }: CardProps) {
 				label={t("moderationOrder.total")}
 				value={formatPrice(order.amounts.total, locale)}
 			/>
-			<Text style={[styles.meta, { color: c.muted }]}>
+			{/* The date qualifies the status and total above it, so it hangs
+			    off them; the parties start a new group under the hairline. */}
+			<Text style={[styles.meta, styles.hang, { color: c.muted }]}>
 				{t("moderationOrder.placedAt", {
 					date: formatOrderDate(order.timestamps.placedAt, locale),
 				})}
 			</Text>
+			<CardDivider />
 			<FactRow label={t("moderationOrder.shop")} value={order.shop.name} />
 			<FactRow
 				label={t("moderationOrder.buyer")}
@@ -99,19 +107,29 @@ export function OrderDeliveryCard({ order, c, t }: Omit<CardProps, "locale">) {
 	const district = d.districtOther ?? d.district;
 	return (
 		<OrderSheetCard title={t("moderationOrder.deliveryTitle")}>
-			<Text style={[styles.strong, { color: c.text }]}>{d.recipientName}</Text>
-			<Text style={[styles.body, { color: c.text }]}>{d.phone}</Text>
-			{d.phoneMasked ? (
-				<Text style={[styles.meta, { color: c.muted }]}>
-					{t("moderationOrder.phoneMasked")}
+			{/* Who, then where: two tight blocks read like an address label,
+			    not five loose lines. */}
+			<View style={styles.block}>
+				<Text style={[styles.strong, { color: c.text }]}>
+					{d.recipientName}
 				</Text>
-			) : null}
-			<Text style={[styles.body, { color: c.text }]}>
-				{[district, d.city].filter(Boolean).join(", ")}
-			</Text>
-			{d.landmark ? (
-				<Text style={[styles.meta, { color: c.muted }]}>{d.landmark}</Text>
-			) : null}
+				<Text style={[styles.body, { color: c.text }]} selectable>
+					{d.phone}
+				</Text>
+				{d.phoneMasked ? (
+					<Text style={[styles.meta, { color: c.muted }]}>
+						{t("moderationOrder.phoneMasked")}
+					</Text>
+				) : null}
+			</View>
+			<View style={styles.block}>
+				<Text style={[styles.body, { color: c.text }]}>
+					{[district, d.city].filter(Boolean).join(", ")}
+				</Text>
+				{d.landmark ? (
+					<Text style={[styles.meta, { color: c.muted }]}>{d.landmark}</Text>
+				) : null}
+			</View>
 		</OrderSheetCard>
 	);
 }
@@ -120,4 +138,6 @@ const styles = StyleSheet.create({
 	strong: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodySemibold },
 	body: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	hang: { marginTop: -4 },
+	block: { gap: 2 },
 });

@@ -844,7 +844,7 @@ function DescribeStep({
 	gate,
 	colors,
 }: any) {
-	const { bg, cardBg, textColor, mutedColor, border, inputBg } = colors;
+	const { bg, cardBg, textColor, mutedColor, border, inputBg, C } = colors;
 	const { t } = useTranslation();
 	const isProductCategory = isProductListingCategory(form.category);
 
@@ -964,7 +964,7 @@ function DescribeStep({
 							: null
 					}
 					// White glyphs sit on the fill; the ring and check take the link.
-					colors={{ ...colors, link: colors.C.link }}
+					colors={{ ...colors, link: C.link }}
 				/>
 			</View>
 

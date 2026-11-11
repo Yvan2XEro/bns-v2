@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ModerationVerificationDetail } from "@/src/types/api";
-import { FactRow, ModerationCard } from "./ModerationKit";
+import { CardDivider, FactRow, ModerationCard } from "./ModerationKit";
 import { useModerationTheme } from "./theme";
 import { tonesOf } from "./tones";
 
@@ -29,6 +29,8 @@ export function BusinessSummaryCard({
 	const niuFlagged = signals.some((signal) => signal.code === "niu_format");
 
 	return (
+		// Four groups, in the order a registry extract is checked: who the
+		// business is, its numbers, where it sits, who answers for it.
 		<ModerationCard title={t("moderation.verifBusinessTitle")}>
 			<FactRow
 				label={t("moderation.verifBusinessType")}
@@ -46,6 +48,7 @@ export function BusinessSummaryCard({
 				label={t("moderation.verifBusinessTradeName")}
 				value={business.tradeName}
 			/>
+			<CardDivider />
 			<FactRow
 				label={t("moderation.verifBusinessRccm")}
 				value={business.rccmNumber}
@@ -70,6 +73,7 @@ export function BusinessSummaryCard({
 					</View>
 				) : null}
 			</View>
+			<CardDivider />
 			<FactRow
 				label={t("moderation.verifBusinessAddress")}
 				value={business.registeredAddress}
@@ -78,6 +82,7 @@ export function BusinessSummaryCard({
 				label={t("moderation.verifBusinessCity")}
 				value={business.city}
 			/>
+			<CardDivider />
 			<FactRow
 				label={t("moderation.verifBusinessRepresentative")}
 				value={business.legalRepresentativeName}

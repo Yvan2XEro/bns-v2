@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { useShopTheme } from "./theme";
 
@@ -76,7 +76,7 @@ function Tile({
 					<Ionicons
 						name={icon}
 						size={20}
-						color={alert ? c.warningText : c.primary}
+						color={alert ? c.warningText : c.link}
 					/>
 				</View>
 				{badge ? (
@@ -131,15 +131,20 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	tileTitle: { fontSize: 15, fontFamily: Fonts.displayBold },
+	tileTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.displayBold },
 	tileBody: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	badge: {
-		minWidth: 20,
-		height: 20,
-		borderRadius: 10,
+		minWidth: 22,
+		height: 22,
+		borderRadius: 11,
 		alignItems: "center",
 		justifyContent: "center",
-		paddingHorizontal: 5,
+		paddingHorizontal: 6,
 	},
-	badgeText: { color: "#12163a", fontSize: 11, fontFamily: Fonts.displayBold },
+	badgeText: {
+		color: Colors.light.sunForeground,
+		fontSize: 12,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
 });

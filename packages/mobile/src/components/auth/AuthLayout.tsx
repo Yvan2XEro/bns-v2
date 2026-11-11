@@ -58,7 +58,7 @@ export function AuthScreen({
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const insets = useSafeAreaInsets();
-	const shell = c.isDark ? "#13183e" : "#2a51c0";
+	const shell = Colors[c.isDark ? "dark" : "light"].shell;
 
 	return (
 		<SafeAreaView

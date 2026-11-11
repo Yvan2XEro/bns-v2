@@ -120,7 +120,9 @@ export default function TeamScreen() {
 						data={view.members}
 						keyExtractor={(member) => member.id}
 						contentContainerStyle={styles.list}
-						ListHeaderComponent={<TeamLimitMeter team={view} />}
+						ListHeaderComponent={
+							<TeamHeader view={view} canInvite={canInvite} isFull={isFull} />
+						}
 						renderItem={({ item }) => (
 							<MemberRow
 								member={item}
@@ -132,8 +134,6 @@ export default function TeamScreen() {
 							<PendingSection
 								view={view}
 								role={role}
-								canInvite={canInvite}
-								isFull={isFull}
 								resendingId={resendingId}
 								revokingId={revokingId}
 								onResend={handleResend}
@@ -148,6 +148,54 @@ export default function TeamScreen() {
 }
 
 /**
+ * The seats, then the screen's one primary action: inviting sits above the
+ * roster so it is reachable without scrolling past every member.
+ */
+function TeamHeader({
+	view,
+	canInvite,
+	isFull,
+}: {
+	view: TeamView;
+	canInvite: boolean;
+	isFull: boolean;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	return (
+		<View style={styles.header}>
+			<TeamLimitMeter team={view} />
+			{canInvite ? (
+				<View style={styles.inviteWrap}>
+					<Pressable
+						onPress={() => router.push("/seller/team/invite" as never)}
+						disabled={isFull}
+						accessibilityRole="button"
+						accessibilityLabel={t("team.invite")}
+						accessibilityState={{ disabled: isFull }}
+						style={({ pressed }) => [
+							styles.inviteBtn,
+							{
+								backgroundColor: fillOf(c),
+								opacity: isFull ? 0.5 : pressed ? 0.85 : 1,
+							},
+						]}
+					>
+						<Ionicons name="person-add-outline" size={18} color="#fff" />
+						<Text style={styles.inviteText}>{t("team.invite")}</Text>
+					</Pressable>
+					{isFull ? (
+						<Text style={[styles.meta, { color: c.warningText }]}>
+							{t("team.inviteFull")}
+						</Text>
+					) : null}
+				</View>
+			) : null}
+		</View>
+	);
+}
+
+/**
  * Pending invitations never reach the dozens this screen's roster could, so
  * they render through a plain map in the member `FlashList`'s footer rather
  * than a second, nested `FlashList` — React Native does not virtualize a
@@ -156,8 +204,6 @@ export default function TeamScreen() {
 function PendingSection({
 	view,
 	role,
-	canInvite,
-	isFull,
 	resendingId,
 	revokingId,
 	onResend,
@@ -165,8 +211,6 @@ function PendingSection({
 }: {
 	view: TeamView;
 	role: ShopRole | null;
-	canInvite: boolean;
-	isFull: boolean;
 	resendingId: string | null;
 	revokingId: string | null;
 	onResend: (invitation: PendingInvitationView) => void;
@@ -204,29 +248,6 @@ function PendingSection({
 				</View>
 			)}
 
-			{canInvite ? (
-				<View style={styles.inviteWrap}>
-					<Pressable
-						onPress={() => router.push("/seller/team/invite" as never)}
-						disabled={isFull}
-						accessibilityRole="button"
-						accessibilityLabel={t("team.invite")}
-						accessibilityState={{ disabled: isFull }}
-						style={[
-							styles.inviteBtn,
-							{ backgroundColor: fillOf(c), opacity: isFull ? 0.5 : 1 },
-						]}
-					>
-						<Ionicons name="person-add-outline" size={18} color="#fff" />
-						<Text style={styles.inviteText}>{t("team.invite")}</Text>
-					</Pressable>
-					{isFull ? (
-						<Text style={[styles.meta, { color: c.warningText }]}>
-							{t("team.inviteFull")}
-						</Text>
-					) : null}
-				</View>
-			) : null}
 			{/* What each role may do: reference, so it comes after the actions. */}
 			<View style={styles.matrix}>
 				<RoleMatrix />
@@ -238,16 +259,17 @@ function PendingSection({
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	list: { padding: 16, paddingBottom: 40, gap: 0 },
-	footer: { marginTop: 20, gap: 8 },
+	header: { gap: 12, marginBottom: 16 },
+	footer: { marginTop: 28, gap: 10 },
 	sectionTitle: {
 		fontSize: 19,
 		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 	},
-	matrix: { marginTop: 24 },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
-	inviteWrap: { marginTop: 12, gap: 6 },
+	matrix: { marginTop: 28 },
+	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	inviteWrap: { gap: 8 },
 	inviteBtn: {
 		flexDirection: "row",
 		gap: 8,

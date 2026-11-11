@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
+	Platform,
 	Pressable,
 	StyleSheet,
 	Text,
@@ -47,15 +48,24 @@ export function ShopSortSheet({
 			heightRatio={Math.min(0.7, wanted / height)}
 		>
 			<View accessibilityRole="radiogroup" style={styles.list}>
-				{SHOP_SORTS.map((sort) => {
+				{SHOP_SORTS.map((sort, index) => {
 					const selected = sort === value;
+					const last = index === SHOP_SORTS.length - 1;
 					return (
 						<Pressable
 							key={sort}
 							onPress={() => onChange(sort)}
 							accessibilityRole="radio"
-							accessibilityState={{ selected }}
-							style={[styles.row, { borderBottomColor: c.border }]}
+							accessibilityState={{ checked: selected }}
+							android_ripple={{ color: c.border }}
+							style={({ pressed }) => [
+								styles.row,
+								{
+									borderBottomColor: c.border,
+									borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
+								},
+								pressed && Platform.OS === "ios" && styles.pressed,
+							]}
 						>
 							<Text
 								style={[
@@ -84,8 +94,9 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		borderBottomWidth: StyleSheet.hairlineWidth,
+		gap: 12,
 	},
+	pressed: { opacity: 0.6 },
 	label: { fontSize: 16, fontFamily: Fonts.body },
 	selected: { fontFamily: Fonts.bodySemibold },
 });

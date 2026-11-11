@@ -1,8 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
+import { useCallback, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+	Platform,
+	RefreshControl,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
@@ -20,7 +29,9 @@ import { PurchaseButton } from "@/src/components/purchases/ui";
 import { SellerReturnActions } from "@/src/components/returns/SellerReturnActions";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useReturnAction, useReturnCase } from "@/src/hooks/useReturns";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import {
 	RETURN_ACTION_LABELS,
 	RETURN_BASIS_LABELS,
@@ -30,6 +41,21 @@ import {
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import type { ReturnAction } from "../../../../api/src/contracts/returns";
+
+/** Actions answered by a form or by the shop's panel, not by a lone button. */
+const CASE_FORM_ACTIONS = new Set<ReturnAction>([
+	"ship",
+	"pickup",
+	"upload_evidence",
+	"refund_proof",
+	"inspect",
+	"receive",
+]);
+const DANGER_ACTIONS = new Set<ReturnAction>([
+	"cancel",
+	"contest_refund",
+	"contest_deduction",
+]);
 
 const shipSchema = z.object({ tracking: z.string().trim().max(200) });
 type ShipForm = z.infer<typeof shipSchema>;
@@ -43,6 +69,15 @@ export function ReturnCase({ id }: { id: string }) {
 		resolver: zodResolver(shipSchema),
 		defaultValues: { tracking: "" },
 	});
+	const { confirm, showSuccess } = useAlert();
+	// Only the button that was pressed spins; the others wait, dimmed.
+	const [running, setRunning] = useState<ReturnAction | null>(null);
+	const [pulling, setPulling] = useState(false);
+	const { refetch } = query;
+	const onRefresh = useCallback(() => {
+		setPulling(true);
+		void refetch().finally(() => setPulling(false));
+	}, [refetch]);
 	const runAction = (action: ReturnAction, suppliedBody?: unknown) => {
 		const body =
 			action === "ship"
@@ -50,8 +85,30 @@ export function ReturnCase({ id }: { id: string }) {
 				: action === "accept_deduction" || action === "contest_deduction"
 					? { action: action === "accept_deduction" ? "accept" : "contest" }
 					: (suppliedBody ?? {});
-		mutation.mutate({ action, body });
+		setRunning(action);
+		mutation.mutate(
+			{ action, body },
+			{
+				onSuccess: () => showSuccess(t("returns.actionSuccess")),
+				onSettled: () => setRunning(null),
+			},
+		);
 	};
+	// Cancelling or contesting cannot be taken back: asked first.
+	const confirmThen = async (action: ReturnAction) => {
+		const ok = await confirm(
+			t(RETURN_ACTION_LABELS[action]),
+			action === "cancel" ? t("returns.confirmCancelBody") : undefined,
+			{
+				confirmText: t(RETURN_ACTION_LABELS[action]),
+				destructive: true,
+			},
+		);
+		if (ok) runAction(action);
+	};
+	const buyerActions = (query.data?.allowedActions ?? []).filter(
+		(item) => !CASE_FORM_ACTIONS.has(item),
+	);
 	const card = [
 		styles.card,
 		{ backgroundColor: c.card, borderColor: c.border },
@@ -81,7 +138,20 @@ export function ReturnCase({ id }: { id: string }) {
 				/>
 			) : (
 				<ScreenColumn width="reading">
-					<ScrollView contentContainerStyle={styles.content}>
+					<ScrollView
+						contentContainerStyle={styles.content}
+						keyboardShouldPersistTaps="handled"
+						keyboardDismissMode="interactive"
+						automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+						refreshControl={
+							<RefreshControl
+								refreshing={pulling}
+								onRefresh={onRefresh}
+								tintColor={c.primary}
+								colors={[c.primary]}
+							/>
+						}
+					>
 						<View style={card}>
 							<View style={styles.headRow}>
 								<Text
@@ -105,6 +175,9 @@ export function ReturnCase({ id }: { id: string }) {
 									amount: formatPrice(query.data.refund.amount, i18n.language),
 								})}
 							>
+								<Text style={[styles.label, { color: c.body }]}>
+									{t("returns.refundTotal")}
+								</Text>
 								<TotalTag
 									amount={formatPrice(query.data.refund.amount, i18n.language)}
 								/>
@@ -198,7 +271,8 @@ export function ReturnCase({ id }: { id: string }) {
 								/>
 								<PurchaseButton
 									label={t("returns.action.ship")}
-									pending={mutation.isPending}
+									pending={running === "ship"}
+									disabled={mutation.isPending}
 									onPress={() =>
 										shipForm.handleSubmit(({ tracking }) =>
 											runAction("ship", {
@@ -249,35 +323,41 @@ export function ReturnCase({ id }: { id: string }) {
 							/>
 						</View>
 						<FormError
-							message={mutation.isError ? t("returns.actionError") : null}
+							message={
+								mutation.isError
+									? resolveErrorMessage(
+											mutation.error,
+											t,
+											t("returns.actionError"),
+										)
+									: null
+							}
 						/>
-						<View style={styles.actions}>
-							{query.data.allowedActions
-								.filter(
-									(item) =>
-										item !== "ship" &&
-										item !== "pickup" &&
-										item !== "upload_evidence" &&
-										item !== "refund_proof" &&
-										item !== "inspect" &&
-										item !== "receive",
-								)
-								.map((item) => (
-									<PurchaseButton
-										key={item}
-										label={t(RETURN_ACTION_LABELS[item])}
-										pending={mutation.isPending}
-										tone={
-											item === "cancel" ||
-											item === "contest_refund" ||
-											item === "contest_deduction"
-												? "danger"
-												: "primary"
-										}
-										onPress={() => runAction(item)}
-									/>
-								))}
-						</View>
+						{buyerActions.length > 0 ? (
+							<View style={styles.actions}>
+								<Text
+									style={[styles.title, { color: c.text }]}
+									accessibilityRole="header"
+								>
+									{t("returns.actionsTitle")}
+								</Text>
+								{buyerActions.map((item) => {
+									const danger = DANGER_ACTIONS.has(item);
+									return (
+										<PurchaseButton
+											key={item}
+											label={t(RETURN_ACTION_LABELS[item])}
+											pending={running === item}
+											disabled={mutation.isPending}
+											tone={danger ? "danger" : "primary"}
+											onPress={() =>
+												danger ? void confirmThen(item) : runAction(item)
+											}
+										/>
+									);
+								})}
+							</View>
+						) : null}
 						<SellerReturnActions view={query.data} />
 					</ScrollView>
 				</ScreenColumn>
@@ -348,7 +428,7 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		fontVariant: ["tabular-nums"],
 	},
-	refund: { paddingVertical: 2 },
+	refund: { gap: 6, paddingVertical: 2 },
 	notice: {
 		flexDirection: "row",
 		gap: 8,

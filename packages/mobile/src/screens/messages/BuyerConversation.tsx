@@ -1,10 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import { ConversationScreen } from "@/src/components/messages/ConversationScreen";
+import {
+	fetchLatestMessages,
+	messagesKey,
+} from "@/src/components/messages/messageHistory";
 import { useMarkConversationRead } from "@/src/hooks/useShopInbox";
 import { api } from "@/src/lib/api";
-import type { Conversation, Message, PayloadDoc } from "@/src/types/api";
+import type { Conversation, PayloadDoc } from "@/src/types/api";
 
 function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
 	return value && typeof value === "object" && "doc" in value
@@ -41,12 +45,11 @@ export function BuyerConversation({
 			),
 		enabled: !!conversationId,
 	});
+	const queryClient = useQueryClient();
+	// Same key and same fetcher as the thread itself: one request, one shape.
 	const latest = useQuery({
-		queryKey: ["messages", conversationId],
-		queryFn: () =>
-			api.get<{ docs: Message[] }>(
-				`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&limit=100&depth=1`,
-			),
+		queryKey: messagesKey(conversationId),
+		queryFn: () => fetchLatestMessages(queryClient, conversationId),
 		enabled: !!conversationId,
 	});
 

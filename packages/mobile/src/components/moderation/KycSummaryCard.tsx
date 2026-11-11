@@ -4,7 +4,7 @@ import { Fonts } from "@/constants/theme";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ModerationVerificationDetail } from "@/src/types/api";
-import { FactRow, ModerationCard } from "./ModerationKit";
+import { CardDivider, FactRow, ModerationCard } from "./ModerationKit";
 import { useModerationTheme } from "./theme";
 import { tonesOf } from "./tones";
 
@@ -27,25 +27,20 @@ export function KycSummaryCard({ kyc }: { kyc: Kyc | null | undefined }) {
 			: kyc.livenessPassed;
 
 	return (
+		// The checks the vendor ran first (outcome, liveness, face match),
+		// then what the document says, under a hairline.
 		<ModerationCard title={t("moderation.verifKycTitle")}>
 			<FactRow
 				label={t("moderation.verifKycOutcome")}
 				value={t(`moderation.verifKycStatus_${kyc.status ?? "not_started"}`)}
-			/>
-			<FactRow
-				label={t("moderation.verifKycDocument")}
-				value={
-					kyc.documentType
-						? `${t(`moderation.verifDocumentType_${kyc.documentType}`)} · ${kyc.documentCountry ?? "—"}`
-						: null
+				valueColor={
+					kyc.status === "approved"
+						? k.successText
+						: kyc.status === "declined"
+							? k.dangerText
+							: undefined
 				}
 			/>
-			<FactRow
-				label={t("moderation.verifKycLast4")}
-				value={kyc.documentNumberLast4}
-			/>
-			<FactRow label={t("moderation.verifKycExpiry")} value={expiresOn} />
-			<FactRow label={t("moderation.verifKycName")} value={fullName || null} />
 			<FactRow
 				label={t("moderation.verifKycLiveness")}
 				value={
@@ -73,6 +68,21 @@ export function KycSummaryCard({ kyc }: { kyc: Kyc | null | undefined }) {
 						: null
 				}
 			/>
+			<CardDivider />
+			<FactRow label={t("moderation.verifKycName")} value={fullName || null} />
+			<FactRow
+				label={t("moderation.verifKycDocument")}
+				value={
+					kyc.documentType
+						? `${t(`moderation.verifDocumentType_${kyc.documentType}`)} · ${kyc.documentCountry ?? "—"}`
+						: null
+				}
+			/>
+			<FactRow
+				label={t("moderation.verifKycLast4")}
+				value={kyc.documentNumberLast4}
+			/>
+			<FactRow label={t("moderation.verifKycExpiry")} value={expiresOn} />
 			{kyc.vendorReviewUrl ? (
 				<Pressable
 					accessibilityRole="link"

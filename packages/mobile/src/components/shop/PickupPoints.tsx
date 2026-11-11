@@ -1,12 +1,12 @@
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { pickupHours } from "../../../../api/src/contracts/publicPickupPoint";
-import { LAUNCH_CITIES } from "../../../../api/src/lib/launchCities";
 import { useAppConfig } from "../../contexts/AppConfigContext";
 import { usePickupPoints } from "../../hooks/usePickupPoints";
 import { googleMapsUrl } from "../../lib/checkoutForm";
 import { useTranslation } from "../../lib/i18n";
 import { formatPrice } from "../../lib/market";
+import { cityLabel } from "../../lib/sellerOrders";
 import { SkeletonRow } from "../SkeletonCard";
 import { useShopTheme } from "./theme";
 
@@ -41,7 +41,7 @@ export function PickupPoints({ handle }: { handle: string }) {
 				<View key={point.id} style={[styles.point, { borderColor: c.border }]}>
 					<Text style={[styles.title, { color: c.text }]}>{point.name}</Text>
 					<Text style={[styles.copy, { color: c.body }]}>
-						{LAUNCH_CITIES[point.city].label} · {point.district}
+						{cityLabel(point.city)} · {point.district}
 					</Text>
 					{point.address && (
 						<Text style={[styles.copy, { color: c.body }]}>

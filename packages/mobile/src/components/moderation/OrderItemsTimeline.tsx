@@ -22,33 +22,38 @@ interface Props {
 export function OrderItemsCard({ order, locale, c, t }: Props) {
 	return (
 		<OrderSheetCard title={t("moderationOrder.itemsTitle")}>
-			{order.items.map((item, index) => (
-				<View
-					key={item.id}
-					style={[
-						styles.row,
-						index > 0 && styles.divided,
-						{ borderTopColor: c.border },
-					]}
-				>
-					<View style={styles.flex}>
-						<Text style={[styles.text, { color: c.text }]}>
-							{t("moderationOrder.itemLine", {
-								quantity: item.quantity,
-								title: item.title,
-							})}
-						</Text>
-						{item.variantLabel ? (
-							<Text style={[styles.meta, { color: c.muted }]}>
-								{item.variantLabel}
+			{/* One block, so the card's gap does not stack on the row padding. */}
+			<View>
+				{order.items.map((item, index) => (
+					<View
+						key={item.id}
+						style={[
+							styles.row,
+							index > 0 && styles.divided,
+							index === 0 && styles.rowFirst,
+							index === order.items.length - 1 && styles.rowLast,
+							{ borderTopColor: c.border },
+						]}
+					>
+						<View style={styles.flex}>
+							<Text style={[styles.text, { color: c.text }]}>
+								{t("moderationOrder.itemLine", {
+									quantity: item.quantity,
+									title: item.title,
+								})}
 							</Text>
-						) : null}
+							{item.variantLabel ? (
+								<Text style={[styles.meta, { color: c.muted }]}>
+									{item.variantLabel}
+								</Text>
+							) : null}
+						</View>
+						<Text style={[styles.amount, { color: c.text }]}>
+							{formatPrice(item.lineSubtotal, locale)}
+						</Text>
 					</View>
-					<Text style={[styles.amount, { color: c.text }]}>
-						{formatPrice(item.lineSubtotal, locale)}
-					</Text>
-				</View>
-			))}
+				))}
+			</View>
 		</OrderSheetCard>
 	);
 }
@@ -62,43 +67,51 @@ export function OrderTimelineCard({ order, locale, c, t }: Props) {
 	const last = order.timeline.length - 1;
 	return (
 		<OrderSheetCard title={t("moderationOrder.timelineTitle")}>
-			{order.timeline.map((entry, index) => (
-				<View key={entry.id} style={styles.entry}>
-					<View style={styles.rail}>
+			{/* The rail runs unbroken from dot to dot: the entries sit in one
+			    block, out of reach of the card's gap. */}
+			<View>
+				{order.timeline.map((entry, index) => (
+					<View key={entry.id} style={styles.entry}>
+						<View style={styles.rail}>
+							<View
+								style={[
+									styles.dot,
+									{
+										backgroundColor: index === last ? k.linkText : c.card,
+										borderColor: index === last ? k.linkText : c.muted,
+									},
+								]}
+							/>
+							{index < last ? (
+								<View style={[styles.line, { backgroundColor: c.border }]} />
+							) : null}
+						</View>
 						<View
-							style={[
-								styles.dot,
-								{
-									backgroundColor: index === last ? k.linkText : c.card,
-									borderColor: index === last ? k.linkText : c.muted,
-								},
-							]}
-						/>
-						{index < last ? (
-							<View style={[styles.line, { backgroundColor: c.border }]} />
-						) : null}
-					</View>
-					<View style={styles.entryBody}>
-						<Text style={[styles.text, { color: c.text }]}>
-							{t(timelineEventKey(entry.type))}
-						</Text>
-						<Text style={[styles.meta, { color: c.muted }]}>
-							{[
-								formatOrderDate(entry.at, locale),
-								entry.actorName ?? t(ACTOR_KEYS[entry.actorType]),
-							].join(" · ")}
-						</Text>
-						{entry.reason ? (
-							<Text style={[styles.meta, { color: c.text }]}>
-								{t(reasonKey(entry.reason))}
+							style={[styles.entryBody, index === last && styles.entryLast]}
+						>
+							<Text style={[styles.text, { color: c.text }]}>
+								{t(timelineEventKey(entry.type))}
 							</Text>
-						) : null}
-						{entry.note ? (
-							<Text style={[styles.meta, { color: c.text }]}>{entry.note}</Text>
-						) : null}
+							<Text style={[styles.meta, { color: c.muted }]}>
+								{[
+									formatOrderDate(entry.at, locale),
+									entry.actorName ?? t(ACTOR_KEYS[entry.actorType]),
+								].join(" · ")}
+							</Text>
+							{entry.reason ? (
+								<Text style={[styles.meta, { color: c.text }]}>
+									{t(reasonKey(entry.reason))}
+								</Text>
+							) : null}
+							{entry.note ? (
+								<Text style={[styles.meta, { color: c.text }]}>
+									{entry.note}
+								</Text>
+							) : null}
+						</View>
 					</View>
-				</View>
-			))}
+				))}
+			</View>
 		</OrderSheetCard>
 	);
 }
@@ -109,8 +122,10 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		gap: 12,
-		paddingVertical: 8,
+		paddingVertical: 10,
 	},
+	rowFirst: { paddingTop: 0 },
+	rowLast: { paddingBottom: 0 },
 	divided: { borderTopWidth: StyleSheet.hairlineWidth },
 	text: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
 	amount: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.displayBold },
@@ -125,5 +140,6 @@ const styles = StyleSheet.create({
 		marginTop: 5,
 	},
 	line: { width: StyleSheet.hairlineWidth * 2, flex: 1, marginTop: 2 },
-	entryBody: { flex: 1, gap: 2, paddingBottom: 14 },
+	entryBody: { flex: 1, gap: 2, paddingBottom: 16 },
+	entryLast: { paddingBottom: 0 },
 });

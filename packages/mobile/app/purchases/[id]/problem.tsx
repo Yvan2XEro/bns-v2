@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
 	ActivityIndicator,
+	Platform,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -18,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { fillOf, inkOf } from "@/src/components/checkout/fill";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
@@ -48,6 +50,7 @@ import {
 	withUploadStatus,
 } from "@/src/lib/disputeOpenForm";
 import { requestedDisputeAmount } from "@/src/lib/disputeReport";
+import { hapticOutcome } from "@/src/lib/haptics";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import {
@@ -128,8 +131,23 @@ export default function ReportOrderProblemScreen() {
 			/>
 		);
 	}
+	// The first load keeps the screen's frame: the header the buyer tapped
+	// into, and cards in the shape of the form that is coming.
 	if (order.isPending)
-		return <SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]} />;
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader
+					title={t("disputes.reportTitle")}
+					onBack={() => router.back()}
+				/>
+				<ScreenColumn width="reading">
+					<DetailSkeleton cards={3} />
+				</ScreenColumn>
+			</SafeAreaView>
+		);
 	if (order.isError || !order.data)
 		return (
 			<EmptyState
@@ -143,13 +161,18 @@ export default function ReportOrderProblemScreen() {
 	const locked = caseId !== null;
 	const reason = form.watch("reason");
 	const outcome = form.watch("requestedOutcome");
+	const descriptionLength = form.watch("description").trim().length;
 	const needed = evidenceStillNeeded(reason, evidence.length);
 	const failed = failedUploads(evidence);
 
 	const pickEvidence = async () => {
 		setEvidenceError(null);
 		const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-		if (permission.status !== "granted") return;
+		if (permission.status !== "granted") {
+			// Said where the buyer is looking, rather than a tap that does nothing.
+			setEvidenceError(t("errors.photoPermission"));
+			return;
+		}
 		const result = await ImagePicker.launchImageLibraryAsync({
 			mediaTypes: ["images", "videos"],
 			allowsMultipleSelection: true,
@@ -245,6 +268,8 @@ export default function ReportOrderProblemScreen() {
 			return;
 		}
 		await submitCase.mutateAsync(disputeId);
+		// The case is filed: the one moment of this screen worth feeling.
+		hapticOutcome("success");
 		router.replace({ pathname: "/disputes/[id]", params: { id: disputeId } });
 	};
 
@@ -279,6 +304,8 @@ export default function ReportOrderProblemScreen() {
 				<ScrollView
 					contentContainerStyle={styles.content}
 					keyboardShouldPersistTaps="handled"
+					keyboardDismissMode="interactive"
+					automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
 				>
 					<View
 						style={[
@@ -291,7 +318,7 @@ export default function ReportOrderProblemScreen() {
 						>
 							<Ionicons name="bag-handle-outline" size={20} color={inkOf(c)} />
 						</View>
-						<View style={{ flex: 1, minWidth: 0 }}>
+						<View style={styles.flexMin}>
 							<Text
 								style={[styles.orderTitle, { color: c.text }]}
 								numberOfLines={1}
@@ -299,10 +326,14 @@ export default function ReportOrderProblemScreen() {
 								{data.items[0]?.title ?? data.orderNumber}
 							</Text>
 							<Text
-								style={[styles.orderMeta, { color: c.muted }]}
+								style={[styles.orderMeta, { color: c.body }]}
 								numberOfLines={1}
 							>
-								{data.shop.name} · {formatPrice(data.amounts.total, lang)}
+								{data.shop.name}
+							</Text>
+							{/* The ceiling of any refund asked below, set as a figure. */}
+							<Text style={[styles.orderTotal, { color: c.text }]}>
+								{formatPrice(data.amounts.total, lang)}
 							</Text>
 						</View>
 						<PurchaseStatusPill status={data.status} />
@@ -355,7 +386,10 @@ export default function ReportOrderProblemScreen() {
 							{ backgroundColor: c.card, borderColor: c.border },
 						]}
 					>
-						<Text style={[styles.title, { color: c.text }]}>
+						<Text
+							style={[styles.title, { color: c.text }]}
+							accessibilityRole="header"
+						>
 							{t("disputes.reportReason")}
 						</Text>
 						<Controller
@@ -376,9 +410,29 @@ export default function ReportOrderProblemScreen() {
 							)}
 						/>
 
-						<Text style={[styles.title, { color: c.text }]}>
-							{t("disputes.reportDetails")}
-						</Text>
+						<View style={styles.rowBetween}>
+							<Text
+								style={[styles.title, { color: c.text }]}
+								accessibilityRole="header"
+							>
+								{t("disputes.reportDetails")}
+							</Text>
+							{/* Counts toward the minimum the server asks for. */}
+							<Text
+								style={[
+									styles.counter,
+									{
+										color:
+											descriptionLength >= DISPUTE_DESCRIPTION_MIN
+												? c.successText
+												: c.muted,
+									},
+								]}
+								accessibilityLabel={t("disputes.descriptionLabel")}
+							>
+								{`${Math.min(descriptionLength, DISPUTE_DESCRIPTION_MIN)} / ${DISPUTE_DESCRIPTION_MIN}`}
+							</Text>
+						</View>
 						<Controller
 							control={form.control}
 							name="description"
@@ -410,7 +464,10 @@ export default function ReportOrderProblemScreen() {
 						) : null}
 
 						<View style={styles.rowBetween}>
-							<Text style={[styles.title, { color: c.text }]}>
+							<Text
+								style={[styles.title, { color: c.text }]}
+								accessibilityRole="header"
+							>
 								{t("disputes.evidenceSection")}
 							</Text>
 							<Text style={[styles.counter, { color: c.muted }]}>
@@ -467,7 +524,10 @@ export default function ReportOrderProblemScreen() {
 							{ backgroundColor: c.card, borderColor: c.border },
 						]}
 					>
-						<Text style={[styles.title, { color: c.text }]}>
+						<Text
+							style={[styles.title, { color: c.text }]}
+							accessibilityRole="header"
+						>
 							{t("disputes.reportOutcome")}
 						</Text>
 						<Controller
@@ -498,6 +558,9 @@ export default function ReportOrderProblemScreen() {
 									render={({ field: { onBlur, onChange, value } }) => (
 										<TextInput
 											accessibilityLabel={t("disputes.requestedAmountOptional")}
+											accessibilityHint={t("disputes.requestedAmountMax", {
+												amount: formatPrice(data.amounts.total, lang),
+											})}
 											keyboardType="number-pad"
 											editable={!locked}
 											maxLength={12}
@@ -515,6 +578,17 @@ export default function ReportOrderProblemScreen() {
 										/>
 									)}
 								/>
+								{/* The total caps any refund: said under the field rather
+								    than as a placeholder that reads like a prefilled amount. */}
+								<Text
+									style={[styles.note, { color: c.body }]}
+									importantForAccessibility="no"
+									accessibilityElementsHidden
+								>
+									{t("disputes.requestedAmountMax", {
+										amount: formatPrice(data.amounts.total, lang),
+									})}
+								</Text>
 							</>
 						) : null}
 						{form.formState.errors.requestedAmount ? (
@@ -582,7 +656,10 @@ export default function ReportOrderProblemScreen() {
 							{ backgroundColor: c.card, borderColor: c.border },
 						]}
 					>
-						<Text style={[styles.title, { color: c.text }]}>
+						<Text
+							style={[styles.title, { color: c.text }]}
+							accessibilityRole="header"
+						>
 							{t("disputes.nextTitle")}
 						</Text>
 						{(
@@ -593,7 +670,7 @@ export default function ReportOrderProblemScreen() {
 							] as const
 						).map(([icon, key]) => (
 							<View key={key} style={styles.nextRow}>
-								<Ionicons name={icon} size={18} color={c.text} />
+								<Ionicons name={icon} size={18} color={c.muted} />
 								<Text style={[styles.nextText, { color: c.text }]}>
 									{t(key)}
 								</Text>
@@ -603,27 +680,33 @@ export default function ReportOrderProblemScreen() {
 							{t("disputes.reviewTerms")}
 						</Text>
 					</View>
-					{submitError ? (
-						<Text
-							accessibilityRole="alert"
-							style={[styles.error, { color: c.dangerText }]}
-						>
-							{submitError}
-						</Text>
-					) : null}
 				</ScrollView>
 			</ScreenColumn>
 			<View
 				style={[styles.bar, { backgroundColor: c.card, borderColor: c.border }]}
 			>
+				{submitError ? (
+					// Beside the button that failed, not lost at the foot of the form.
+					<View
+						accessibilityRole="alert"
+						accessibilityLiveRegion="polite"
+						style={[styles.barError, { backgroundColor: c.dangerSoft }]}
+					>
+						<Ionicons name="alert-circle" size={18} color={c.dangerText} />
+						<Text style={[styles.barErrorText, { color: c.dangerText }]}>
+							{submitError}
+						</Text>
+					</View>
+				) : null}
 				<Pressable
 					accessibilityRole="button"
-					accessibilityState={{ busy }}
+					accessibilityState={{ busy, disabled: busy }}
 					disabled={busy}
 					onPress={onSend}
 					style={({ pressed }) => [
 						styles.button,
 						{ backgroundColor: fill.bg, opacity: pressed ? 0.85 : 1 },
+						pressed && !busy ? styles.pressed : null,
 					]}
 				>
 					{busy ? (
@@ -689,7 +772,7 @@ function EvidenceTile({
 				</View>
 			) : entry.status === "done" ? (
 				<View style={styles.thumbDone}>
-					<Ionicons name="checkmark-circle" size={18} color="#1e8a4f" />
+					<Ionicons name="checkmark-circle" size={18} color={c.success} />
 				</View>
 			) : null}
 			{removable ? (
@@ -770,6 +853,14 @@ const styles = StyleSheet.create({
 	},
 	orderTitle: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
 	orderMeta: { fontFamily: Fonts.body, fontSize: 13, marginTop: 2 },
+	orderTotal: {
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 17,
+		lineHeight: 22,
+		marginTop: 2,
+		fontVariant: ["tabular-nums"],
+	},
+	flexMin: { flex: 1, minWidth: 0 },
 	card: {
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -797,7 +888,21 @@ const styles = StyleSheet.create({
 	nextRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 	nextText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 14 },
 	note: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
-	bar: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+	bar: { padding: 16, gap: 10, borderTopWidth: StyleSheet.hairlineWidth },
+	barError: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		gap: 8,
+		padding: 12,
+		borderRadius: 12,
+	},
+	barErrorText: {
+		flex: 1,
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 14,
+		lineHeight: 20,
+	},
+	pressed: { transform: [{ scale: 0.98 }] },
 	input: {
 		borderRadius: 12,
 		borderWidth: 1,
@@ -814,7 +919,11 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		gap: 8,
 	},
-	counter: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
+	counter: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 12,
+		fontVariant: ["tabular-nums"],
+	},
 	linkTarget: { minHeight: 44, justifyContent: "center" },
 	link: {
 		fontFamily: Fonts.bodySemibold,

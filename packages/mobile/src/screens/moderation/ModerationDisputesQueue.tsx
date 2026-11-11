@@ -20,6 +20,7 @@ import {
 	DISPUTE_REASON_LABELS,
 	DISPUTE_STATUS_LABELS,
 } from "@/src/lib/caseStatus";
+import { formatDate } from "@/src/lib/formatDate";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 
@@ -64,13 +65,24 @@ export function ModerationDisputesQueue({
 						renderItem={({ item }) => (
 							<Pressable
 								accessibilityRole="button"
-								accessibilityLabel={t("moderationDisputes.openCase", {
-									number: item.number,
-								})}
+								// The whole row in one phrase, in the order it is triaged:
+								// overdue first, then what is at stake and why.
+								accessibilityLabel={[
+									t("moderationDisputes.openCase", { number: item.number }),
+									item.overdue ? t("moderationDisputes.overdue") : null,
+									formatPrice(item.amountAtStake, i18n.language),
+									t(DISPUTE_REASON_LABELS[item.reason]),
+									t(DISPUTE_STATUS_LABELS[item.status]),
+								]
+									.filter(Boolean)
+									.join(", ")}
 								accessibilityState={{ selected: item.id === selectedId }}
 								onPress={() => onOpen(item.id)}
 								style={({ pressed }) => [
 									styles.card,
+									// A late case is outlined in full, never striped: the
+									// pill and the red deadline carry the rest.
+									item.overdue && styles.cardOverdue,
 									{
 										backgroundColor: c.card,
 										borderColor: item.overdue ? k.dangerText : c.border,
@@ -123,7 +135,12 @@ export function ModerationDisputesQueue({
 											]}
 										>
 											{t("moderationDisputes.deadline", {
-												date: new Date(item.deadline).toLocaleString(),
+												date: formatDate(item.deadline, {
+													day: "numeric",
+													month: "short",
+													hour: "2-digit",
+													minute: "2-digit",
+												}),
 											})}
 										</Text>
 									</View>
@@ -141,7 +158,13 @@ const styles = StyleSheet.create({
 	flex: { flex: 1 },
 	separator: { height: 10 },
 	list: { padding: 16, paddingBottom: 32 },
-	card: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 6 },
+	card: {
+		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 14,
+		padding: 14,
+		gap: 6,
+	},
+	cardOverdue: { borderWidth: 1.5 },
 	row: {
 		flexDirection: "row",
 		alignItems: "center",

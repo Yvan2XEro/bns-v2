@@ -48,6 +48,8 @@ import { matchCategories } from "../../../../api/src/contracts/searchSuggest";
  * Search: the query, its filters and the results. Inside the search tab's
  * split, a result opens beside the list on a tablet in landscape.
  */
+const RowGap = () => <View style={styles.rowGap} />;
+
 export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 	const c = useDiscoveryPalette();
 	const { t } = useTranslation();
@@ -384,6 +386,9 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 						renderItem={renderRow}
 						extraData={selectedId}
 						keyExtractor={(row) => row.map((listing) => listing.id).join("|")}
+						// FlashList positions rows itself and ignores `gap` on the
+						// container, so the 16pt between rows is a separator.
+						ItemSeparatorComponent={RowGap}
 						contentContainerStyle={{
 							...styles.list,
 							// The save button floats over the grid: the last row clears it.
@@ -444,7 +449,8 @@ const styles = StyleSheet.create({
 	},
 	fieldRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 	content: { flex: 1 },
-	list: { paddingHorizontal: 16, paddingTop: 12, gap: 16 },
+	list: { paddingHorizontal: 16, paddingTop: 12 },
+	rowGap: { height: 16 },
 	row: { flexDirection: "row", gap: 12 },
 	skeleton: { padding: 16 },
 	more: { margin: 16 },

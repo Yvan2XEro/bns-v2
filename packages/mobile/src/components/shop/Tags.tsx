@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import type { ShopPalette } from "./theme";
 import { useShopTheme } from "./theme";
 
 /** Signage yellow, ink text: the same in both themes (DESIGN.md, price tag). */
-const SUN = "#ffb81c";
-const INK = "#12163a";
+const SUN = Colors.light.sun;
+const INK = Colors.light.sunForeground;
 
 /**
  * An amount on the seller screens, set as the app's price tag: Outfit
@@ -44,7 +44,7 @@ function toneColors(c: ShopPalette, tone: StatusTone) {
 		case "warning":
 			return { bg: c.warningSoft, fg: c.warningText };
 		case "info":
-			return { bg: c.primarySoft, fg: c.isDark ? c.text : c.primary };
+			return { bg: c.primarySoft, fg: c.isDark ? c.text : c.link };
 		case "success":
 			return { bg: c.successSoft, fg: c.successText };
 		case "danger":

@@ -4,6 +4,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useReducer, useState } from "react";
 import {
 	ActivityIndicator,
+	Pressable,
 	RefreshControl,
 	StyleSheet,
 	TextInput,
@@ -132,8 +133,20 @@ export function SellerOrdersList({ selectedId, onOpen }: SplitListProps) {
 					maxLength={120}
 					returnKeyType="search"
 					autoCorrect={false}
+					clearButtonMode="never"
 					style={[styles.searchInput, { color: c.text }]}
 				/>
+				{state.search ? (
+					<Pressable
+						onPress={() => patch({ search: "" })}
+						hitSlop={8}
+						style={styles.clear}
+						accessibilityRole="button"
+						accessibilityLabel={t("search.clearSearch")}
+					>
+						<Ionicons name="close-circle" size={18} color={c.muted} />
+					</Pressable>
+				) : null}
 			</View>
 
 			<OrderTabs
@@ -188,6 +201,8 @@ export function SellerOrdersList({ selectedId, onOpen }: SplitListProps) {
 							refreshing={orders.isRefetching && !orders.isFetchingNextPage}
 							onRefresh={() => orders.refetch()}
 							tintColor={c.primary}
+							colors={[c.primary]}
+							progressBackgroundColor={c.card}
 						/>
 					}
 					onEndReached={() => {
@@ -227,8 +242,20 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		minHeight: 48,
 	},
-	searchInput: { flex: 1, fontSize: 15, fontFamily: Fonts.body },
-	list: { paddingHorizontal: 16, paddingBottom: 32 },
+	searchInput: {
+		flex: 1,
+		minHeight: 48,
+		fontSize: 16,
+		fontFamily: Fonts.body,
+	},
+	clear: {
+		width: 36,
+		height: 44,
+		alignItems: "center",
+		justifyContent: "center",
+		marginRight: -8,
+	},
+	list: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32 },
 	separator: { height: 10 },
 	footer: { marginVertical: 16 },
 });

@@ -21,6 +21,7 @@ import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	useCreatePaymentIntent,
 	usePaymentStatus,
@@ -75,6 +76,7 @@ export default function CheckoutPendingScreen() {
 	const createIntent = useCreatePaymentIntent(orderId);
 	const purchase = usePurchase(orderId);
 	const cancel = useCancelOrder(orderId);
+	const { confirm, showError } = useAlert();
 
 	const [now, setNow] = useState(() => new Date());
 	useEffect(() => {
@@ -175,9 +177,23 @@ export default function CheckoutPendingScreen() {
 	// stock this order held is freed by the cancellation itself, and the
 	// buyer re-places on their own from the purchases list — no separate
 	// COD-conversion transition.
+	// It cancels the order, so it is asked first, and a refusal is said.
 	const payOnDelivery = async () => {
-		await cancel.mutateAsync({ reason: "buyer_changed_mind" });
-		router.replace("/purchases");
+		const ok = await confirm(
+			t("purchases.cancelConfirm"),
+			t("purchases.payOnDeliveryConfirmBody"),
+			{
+				confirmText: t("purchases.cancelSubmit"),
+				destructive: true,
+			},
+		);
+		if (!ok) return;
+		try {
+			await cancel.mutateAsync({ reason: "buyer_changed_mind" });
+			router.replace("/purchases");
+		} catch (error) {
+			showError(t("payments.pay_payOnDelivery"), resolveErrorMessage(error, t));
+		}
 	};
 
 	const phase = status.data ? pendingPhaseOf(status.data, now) : "checking";
@@ -206,76 +222,82 @@ export default function CheckoutPendingScreen() {
 	const failedCardActions = intent
 		? failedActions(intent.attemptsLeft, offerCod)
 		: [];
+	const canRetry =
+		failedCardActions.includes("retry") && Boolean(channel && phone);
+	const secondsLeft = intent ? secondsUntil(intent.expiresAt, now) : 0;
+	// The last minute is said in the warning ink, not by motion.
+	const closing = secondsLeft > 0 && secondsLeft <= 60;
+	const total = order ? formatPrice(order.amounts.total, i18n.language) : null;
+
+	// The exact amount the operator's prompt will show, to check before typing
+	// the PIN. It stands from the first frame, while the status is still read.
+	const amountBlock = total ? (
+		<View
+			style={styles.amount}
+			accessible
+			accessibilityLabel={t("payments.pending_amount", { amount: total })}
+		>
+			<Text style={[styles.amountLabel, { color: c.body }]}>
+				{t("payments.summary_total")}
+			</Text>
+			<TotalTag size="xl" amount={total} />
+		</View>
+	) : null;
+	const card = [
+		formStyles.card,
+		{ backgroundColor: c.card, borderColor: c.border },
+	];
 
 	return (
-		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
+		<SafeAreaView
+			edges={["top", "bottom"]}
+			style={[styles.flex, { backgroundColor: c.bg }]}
+		>
 			<SellerHeader title={t("payments.pending_title")} onBack={goToOrder} />
 			<ScreenColumn width="reading">
-				<ScrollView
-					contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 32 }}
-				>
+				<ScrollView contentContainerStyle={styles.scroll}>
 					{phase === "checking" ? (
-						<View
-							style={styles.checking}
-							accessibilityLiveRegion="polite"
-							accessibilityLabel={t("payments.pending_checking")}
-						>
-							<ActivityIndicator color={c.primary} size="large" />
-							<Text style={[styles.body, { color: c.body }]}>
-								{t("payments.pending_checking")}
-							</Text>
+						<View style={card}>
+							{amountBlock}
+							<View
+								style={styles.checking}
+								accessibilityLiveRegion="polite"
+								accessibilityLabel={t("payments.pending_checking")}
+							>
+								<ActivityIndicator color={c.primary} />
+								<Text style={[styles.body, styles.flex, { color: c.body }]}>
+									{t("payments.pending_checking")}
+								</Text>
+							</View>
 						</View>
 					) : null}
 
 					{phase === "pending" && intent ? (
-						<View
-							style={[
-								formStyles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<View style={styles.lead}>
-								<View style={[styles.tile, { backgroundColor: c.primarySoft }]}>
-									<Ionicons
-										name="phone-portrait-outline"
-										size={22}
-										color={inkOf(c)}
-									/>
-								</View>
+						<View style={card}>
+							{amountBlock}
+							<View
+								style={[
+									styles.timer,
+									{ backgroundColor: closing ? c.warningSoft : c.primarySoft },
+								]}
+							>
+								<Ionicons
+									name="phone-portrait-outline"
+									size={20}
+									color={closing ? c.warningText : inkOf(c)}
+								/>
 								<Text
-									style={[styles.countdown, { color: c.text }]}
+									style={[
+										styles.countdown,
+										{ color: closing ? c.warningText : c.text },
+									]}
 									accessibilityRole="timer"
 								>
 									{t("payments.pending_expiresIn", {
-										time: formatCountdown(secondsUntil(intent.expiresAt, now)),
+										time: formatCountdown(secondsLeft),
 									})}
 								</Text>
 							</View>
-							{purchase.data ? (
-								// The exact amount the operator's prompt will show, to check
-								// before typing the PIN.
-								<View
-									style={styles.amount}
-									accessible
-									accessibilityLabel={t("payments.pending_amount", {
-										amount: formatPrice(
-											purchase.data.amounts.total,
-											i18n.language,
-										),
-									})}
-								>
-									<Text style={[styles.amountLabel, { color: c.body }]}>
-										{t("payments.summary_total")}
-									</Text>
-									<TotalTag
-										size="xl"
-										amount={formatPrice(
-											purchase.data.amounts.total,
-											i18n.language,
-										)}
-									/>
-								</View>
-							) : null}
 							<View style={[styles.divider, { backgroundColor: c.border }]} />
 							<Text
 								style={[styles.subhead, { color: c.text }]}
@@ -302,12 +324,18 @@ export default function CheckoutPendingScreen() {
 							{canResendNow ? (
 								<Pressable
 									onPress={() => void resend()}
+									disabled={createIntent.isPending}
 									accessibilityRole="button"
+									accessibilityState={{ busy: createIntent.isPending }}
 									style={styles.linkTarget}
 								>
-									<Text style={[styles.link, { color: inkOf(c) }]}>
-										{t("payments.pending_noPrompt")}
-									</Text>
+									{createIntent.isPending ? (
+										<ActivityIndicator color={c.primary} />
+									) : (
+										<Text style={[styles.link, { color: inkOf(c) }]}>
+											{t("payments.pending_noPrompt")}
+										</Text>
+									)}
 								</Pressable>
 							) : channel && phone ? (
 								<Text style={[styles.meta, { color: c.muted }]}>
@@ -320,12 +348,7 @@ export default function CheckoutPendingScreen() {
 					) : null}
 
 					{phase === "failed" && intent ? (
-						<View
-							style={[
-								formStyles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
+						<View style={card}>
 							<View style={styles.lead}>
 								<View style={[styles.tile, { backgroundColor: c.dangerSoft }]}>
 									<Ionicons
@@ -351,7 +374,7 @@ export default function CheckoutPendingScreen() {
 									attempts: intent.attemptsLeft,
 								})}
 							</Text>
-							{failedCardActions.includes("retry") && channel && phone ? (
+							{canRetry ? (
 								<CheckoutButton
 									label={t("payments.failed_retry")}
 									onPress={() => void resend()}
@@ -359,15 +382,24 @@ export default function CheckoutPendingScreen() {
 								/>
 							) : null}
 							{failedCardActions.includes("changeOperator") ? (
-								<Pressable
-									onPress={changeOperator}
-									accessibilityRole="button"
-									style={styles.linkTarget}
-								>
-									<Text style={[styles.link, { color: inkOf(c) }]}>
-										{t("payments.failed_changeNumber")}
-									</Text>
-								</Pressable>
+								canRetry ? (
+									<Pressable
+										onPress={changeOperator}
+										accessibilityRole="button"
+										style={styles.linkTarget}
+									>
+										<Text style={[styles.link, { color: inkOf(c) }]}>
+											{t("payments.failed_changeNumber")}
+										</Text>
+									</Pressable>
+								) : (
+									// Without the number to resend to, this is the way on:
+									// it takes the button, not a link.
+									<CheckoutButton
+										label={t("payments.failed_changeNumber")}
+										onPress={changeOperator}
+									/>
+								)
 							) : null}
 							{failedCardActions.includes("payOnDelivery") ? (
 								<CheckoutButton
@@ -381,12 +413,7 @@ export default function CheckoutPendingScreen() {
 					) : null}
 
 					{phase === "expired" || phase === "cancelled" ? (
-						<View
-							style={[
-								formStyles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
+						<View style={card}>
 							<View style={styles.lead}>
 								<View style={[styles.tile, { backgroundColor: c.warningSoft }]}>
 									<Ionicons
@@ -406,7 +433,6 @@ export default function CheckoutPendingScreen() {
 								{t("payments.expired_body")}
 							</Text>
 							<CheckoutButton
-								variant="outline"
 								label={t("checkout.viewOrder")}
 								onPress={goToOrder}
 							/>
@@ -414,13 +440,7 @@ export default function CheckoutPendingScreen() {
 					) : null}
 
 					{phase === "succeeded" ? (
-						<View
-							style={[
-								formStyles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-							accessibilityLiveRegion="polite"
-						>
+						<View style={card} accessibilityLiveRegion="polite">
 							<View style={styles.lead}>
 								<View style={[styles.tile, { backgroundColor: c.successSoft }]}>
 									<Ionicons
@@ -433,6 +453,18 @@ export default function CheckoutPendingScreen() {
 									{t("payments.success_banner")}
 								</Text>
 							</View>
+							{total ? (
+								<View
+									style={styles.paidRow}
+									accessible
+									accessibilityLabel={`${t("checkout.total")} ${total}`}
+								>
+									<Text style={[styles.amountLabel, { color: c.body }]}>
+										{t("checkout.total")}
+									</Text>
+									<Text style={[styles.paid, { color: c.text }]}>{total}</Text>
+								</View>
+							) : null}
 							<CheckoutButton
 								label={t("checkout.viewOrder")}
 								onPress={goToOrder}
@@ -455,7 +487,8 @@ export default function CheckoutPendingScreen() {
 
 const styles = StyleSheet.create({
 	flex: { flex: 1 },
-	checking: { alignItems: "center", gap: 14, paddingTop: 40 },
+	scroll: { padding: 16, gap: 16, paddingBottom: 32 },
+	checking: { flexDirection: "row", alignItems: "center", gap: 12 },
 	lead: { flexDirection: "row", alignItems: "center", gap: 12 },
 	tile: {
 		width: 44,
@@ -463,6 +496,15 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
+	},
+	timer: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		minHeight: 44,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		borderRadius: 12,
 	},
 	countdown: {
 		flex: 1,
@@ -479,6 +521,18 @@ const styles = StyleSheet.create({
 	},
 	amount: { gap: 6, paddingVertical: 4 },
 	amountLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	paidRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: 12,
+	},
+	paid: {
+		fontSize: 20,
+		lineHeight: 25,
+		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
+	},
 	divider: { height: StyleSheet.hairlineWidth },
 	subhead: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },

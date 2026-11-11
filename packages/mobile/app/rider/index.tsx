@@ -1,8 +1,7 @@
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
 import {
 	type CourierListItem,
 	CourierRow,
@@ -11,6 +10,7 @@ import {
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { QueueSkeleton } from "@/src/components/moderation/ModerationKit";
+import { OpsGroupHeader } from "@/src/components/moderation/OpsGroupHeader";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCourierShipments } from "@/src/hooks/useRiderShipments";
@@ -64,21 +64,10 @@ export default function RiderHomeScreen() {
 						}
 						renderItem={({ item }) =>
 							item.kind === "header" ? (
-								<View style={styles.headerRow}>
-									<Text
-										accessibilityRole="header"
-										style={[styles.header, { color: c.text }]}
-									>
-										{t(GROUP_LABEL[item.group])}
-									</Text>
-									<View
-										style={[styles.count, { backgroundColor: c.neutralSoft }]}
-									>
-										<Text style={[styles.countText, { color: c.text }]}>
-											{counts.get(item.group) ?? 0}
-										</Text>
-									</View>
-								</View>
+								<OpsGroupHeader
+									title={t(GROUP_LABEL[item.group])}
+									count={counts.get(item.group) ?? 0}
+								/>
 							) : (
 								<CourierRow
 									row={item.row}
@@ -102,25 +91,4 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	separator: { height: 10 },
 	content: { padding: 16, paddingBottom: 48 },
-	headerRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		marginTop: 12,
-	},
-	header: {
-		fontSize: 20,
-		lineHeight: 25,
-		letterSpacing: -0.4,
-		fontFamily: Fonts.displayBold,
-	},
-	count: {
-		minWidth: 26,
-		height: 26,
-		borderRadius: 13,
-		paddingHorizontal: 8,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	countText: { fontSize: 14, fontFamily: Fonts.displayBold },
 });

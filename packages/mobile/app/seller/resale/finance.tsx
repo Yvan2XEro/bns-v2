@@ -171,7 +171,10 @@ export default function ResellerFinanceScreen() {
 					}
 					renderItem={({ item }) =>
 						item.type === "heading" ? (
-							<Text style={[styles.section, { color: c.text }]}>
+							<Text
+								accessibilityRole="header"
+								style={[styles.section, { color: c.text }]}
+							>
 								{item.label}
 							</Text>
 						) : (
@@ -272,12 +275,12 @@ const styles = StyleSheet.create({
 	notice: {
 		alignItems: "center",
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		flexDirection: "row",
 		gap: 10,
 		padding: 14,
 	},
-	noticeText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
+	noticeText: { flex: 1, fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
 	summary: { flexDirection: "row", gap: 10 },
 	card: {
 		borderRadius: 14,
@@ -286,18 +289,24 @@ const styles = StyleSheet.create({
 		gap: 8,
 		padding: 14,
 	},
-	cardTitle: { fontFamily: Fonts.bodyMedium, fontSize: 12 },
-	cardValue: { fontFamily: Fonts.displayBold, fontSize: 17 },
+	cardTitle: { fontFamily: Fonts.bodyMedium, fontSize: 13, lineHeight: 18 },
+	cardValue: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 19,
+		lineHeight: 24,
+		fontVariant: ["tabular-nums"],
+	},
 	section: {
-		fontFamily: Fonts.displaySemibold,
-		fontSize: 16,
-		paddingBottom: 8,
-		paddingTop: 18,
+		fontFamily: Fonts.displayBold,
+		fontSize: 17,
+		lineHeight: 22,
+		paddingBottom: 10,
+		paddingTop: 24,
 	},
 	row: {
 		alignItems: "center",
 		borderRadius: 12,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		flexDirection: "row",
 		gap: 12,
 		justifyContent: "space-between",
@@ -306,7 +315,11 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 10,
 	},
-	rowLabel: { flex: 1, fontFamily: Fonts.body, fontSize: 13 },
-	amount: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
+	rowLabel: { flex: 1, fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
+	amount: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 15,
+		fontVariant: ["tabular-nums"],
+	},
 	empty: { paddingVertical: 24, textAlign: "center" },
 });

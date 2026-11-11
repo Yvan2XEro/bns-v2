@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import React from "react";
 import {
 	FlatList,
+	Platform,
 	Pressable,
 	RefreshControl,
 	StyleSheet,
@@ -105,13 +106,19 @@ export function SavedSearchesScreen() {
 						/>
 					}
 					contentContainerStyle={[styles.list, centeredContent]}
+					// The hairline between rows starts at the text, as in the grouped
+					// lists of Settings; the card's sides run past it.
 					ItemSeparatorComponent={() => (
 						<View
 							style={[
 								styles.separator,
-								{ backgroundColor: c.border, borderColor: c.border },
+								{ backgroundColor: c.card, borderColor: c.border },
 							]}
-						/>
+						>
+							<View
+								style={[styles.separatorLine, { backgroundColor: c.border }]}
+							/>
+						</View>
 					)}
 					renderItem={({ item, index }) => {
 						const date = formatDate(item.createdAt);
@@ -140,7 +147,9 @@ export function SavedSearchesScreen() {
 									android_ripple={{ color: c.well }}
 									style={({ pressed }) => [
 										styles.searchInfo,
-										pressed ? { opacity: 0.7 } : null,
+										pressed && Platform.OS === "ios"
+											? { backgroundColor: c.well }
+											: null,
 									]}
 								>
 									<Text
@@ -211,12 +220,10 @@ const styles = StyleSheet.create({
 	item: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
 		minHeight: 64,
-		paddingLeft: 16,
-		paddingRight: 6,
 		borderLeftWidth: StyleSheet.hairlineWidth,
 		borderRightWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
 	},
 	itemFirst: {
 		borderTopWidth: StyleSheet.hairlineWidth,
@@ -229,19 +236,30 @@ const styles = StyleSheet.create({
 		borderBottomRightRadius: 14,
 	},
 	separator: {
-		height: StyleSheet.hairlineWidth,
 		borderLeftWidth: StyleSheet.hairlineWidth,
 		borderRightWidth: StyleSheet.hairlineWidth,
 	},
-	searchInfo: { flex: 1, gap: 3, paddingVertical: 12 },
+	separatorLine: { height: StyleSheet.hairlineWidth, marginLeft: 16 },
+	// The pressable text fills the row's height, so the press highlight
+	// reaches the card's edges like a GroupedRow's.
+	searchInfo: {
+		flex: 1,
+		alignSelf: "stretch",
+		justifyContent: "center",
+		gap: 2,
+		paddingLeft: 16,
+		paddingRight: 8,
+		paddingVertical: 12,
+	},
 	searchName: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.bodyMedium },
 	searchDate: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
-	alert: { alignItems: "center", gap: 2 },
+	alert: { alignItems: "center", gap: 2, paddingHorizontal: 4 },
 	alertLabel: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 	deleteBtn: {
-		width: 44,
-		height: 44,
-		borderRadius: 10,
+		width: 48,
+		height: 48,
+		marginRight: 4,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},

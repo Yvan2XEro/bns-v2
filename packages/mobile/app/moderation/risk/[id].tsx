@@ -22,7 +22,10 @@ import {
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
 import { tonesOf } from "@/src/components/moderation/tones";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useRiskFlag, useRiskFlagDecision } from "@/src/hooks/useModeration";
+import { resolveErrorMessage } from "@/src/lib/apiError";
+import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	riskDismissalDecision,
@@ -37,10 +40,19 @@ function readableSignal(signal: string): string {
 	return signal.replaceAll(".", " · ").replaceAll("_", " ");
 }
 
+/** The moderation sheet a sanction would be taken from, when the app has one. */
+function subjectRoute(type: unknown, id: string | null): string | null {
+	if (!id) return null;
+	if (type === "user") return `/moderation/user/${id}`;
+	if (type === "shop") return `/moderation/shop/${id}`;
+	return null;
+}
+
 export default function RiskFlagScreen() {
 	const c = useModerationTheme();
 	const k = tonesOf(c);
 	const { t } = useTranslation();
+	const { showSuccess } = useAlert();
 	const params = useLocalSearchParams<{ id: string }>();
 	const flagId = Array.isArray(params.id) ? params.id[0] : params.id;
 	const detail = useRiskFlag(flagId);
@@ -89,13 +101,23 @@ export default function RiskFlagScreen() {
 		{ value: 30, label: t("moderation.riskThirtyDays") },
 	];
 	const targetId = textField(subject.id);
+	const targetRoute = subjectRoute(subject.type, targetId);
+	const subjectTitle = subjectName ?? flag.subjectLabel ?? flag.subjectType;
 	const decidable = flag.status === "open" || flag.status === "reviewed";
+	// Every outcome is confirmed with a toast; the query refresh alone
+	// would leave the moderator guessing whether the tap landed.
+	const done = () => showSuccess(t("moderation.riskDecisionSaved"));
 	const resolveDismissal = (note: string) => {
 		const payload = riskDismissalDecision(note);
 		if (!payload || !flagId) return;
 		decision.mutate(
 			{ id: flagId, ...payload },
-			{ onSuccess: () => setDismissVisible(false) },
+			{
+				onSuccess: () => {
+					setDismissVisible(false);
+					done();
+				},
+			},
 		);
 	};
 	const resolveSanction = (durationDays: number | null, note: string) => {
@@ -109,9 +131,27 @@ export default function RiskFlagScreen() {
 		if (!payload) return;
 		decision.mutate(
 			{ id: flagId, ...payload },
-			{ onSuccess: () => setSanctionType(null) },
+			{
+				onSuccess: () => {
+					setSanctionType(null);
+					done();
+				},
+			},
 		);
 	};
+	const markReviewed = () => {
+		if (flag.status !== "open" || !flagId) return;
+		decision.mutate(
+			{ id: flagId, outcome: "reviewed", resolution: "none" },
+			{ onSuccess: done },
+		);
+	};
+	const evidenceValue = (value: string | number | boolean | null) =>
+		value === null
+			? null
+			: typeof value === "boolean"
+				? t(value ? "moderation.verifCommonYes" : "moderation.verifCommonNo")
+				: String(value);
 
 	return (
 		<ModerationScreen
@@ -121,7 +161,9 @@ export default function RiskFlagScreen() {
 			<ScreenColumn width="reading">
 				<ScrollView contentContainerStyle={styles.content}>
 					{decision.isError ? (
-						<InlineNotice text={t("moderation.actionFailed")} />
+						<InlineNotice
+							text={`${t("moderation.actionFailed")} ${resolveErrorMessage(decision.error, t)}`}
+						/>
 					) : null}
 
 					<ModerationCard
@@ -129,11 +171,32 @@ export default function RiskFlagScreen() {
 						right={<TonePill tone={severityTone} label={severity} />}
 					>
 						<Text style={[styles.primaryText, { color: c.text }]}>
-							{subjectName ?? flag.subjectLabel ?? flag.subjectType}
+							{subjectTitle}
 						</Text>
 						<Text style={[styles.secondaryText, { color: c.muted }]}>
-							{flag.subjectType}
+							{t(`moderation.target_${flag.subjectType}`, {
+								defaultValue: flag.subjectType,
+							})}
 						</Text>
+						{/* A sanction is weighed against the whole account or shop,
+						    not the one signal: its sheet is one tap away. */}
+						{targetRoute ? (
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={`${subjectTitle}, ${t("moderation.openTarget")}`}
+								onPress={() => router.push(targetRoute as never)}
+								style={({ pressed }) => [
+									styles.relatedRow,
+									styles.divided,
+									{ borderTopColor: c.border, opacity: pressed ? 0.7 : 1 },
+								]}
+							>
+								<Text style={[styles.relatedText, { color: k.linkText }]}>
+									{t("moderation.openTarget")}
+								</Text>
+								<Ionicons name="chevron-forward" size={18} color={c.muted} />
+							</Pressable>
+						) : null}
 					</ModerationCard>
 
 					<ModerationCard title={t("moderation.riskSignal")}>
@@ -179,7 +242,13 @@ export default function RiskFlagScreen() {
 							})}
 							{" · "}
 							{t("moderation.riskLastSeen", {
-								date: new Date(flag.lastSeenAt).toLocaleString(),
+								date: formatDate(flag.lastSeenAt, {
+									day: "numeric",
+									month: "short",
+									year: "numeric",
+									hour: "2-digit",
+									minute: "2-digit",
+								}),
 							})}
 						</Text>
 					</ModerationCard>
@@ -194,7 +263,7 @@ export default function RiskFlagScreen() {
 								<FactRow
 									key={row.label}
 									label={row.label}
-									value={row.value === null ? "-" : String(row.value)}
+									value={evidenceValue(row.value)}
 								/>
 							))
 						)}
@@ -239,8 +308,10 @@ export default function RiskFlagScreen() {
 									key={entry.id}
 									style={[styles.secondaryText, { color: c.text }]}
 								>
-									{entry.action} ·{" "}
-									{new Date(entry.createdAt).toLocaleDateString()}
+									{t(`moderation.action_${entry.action.replace(".", "_")}`, {
+										defaultValue: entry.action,
+									})}{" "}
+									· {formatDate(entry.createdAt)}
 								</Text>
 							))}
 						</ModerationCard>
@@ -270,15 +341,7 @@ export default function RiskFlagScreen() {
 								decision.isPending && !dismissVisible && sanctionType === null
 							}
 							disabled={decision.isPending}
-							onPress={() =>
-								flag.status === "open" && flagId
-									? decision.mutate({
-											id: flagId,
-											outcome: "reviewed",
-											resolution: "none",
-										})
-									: undefined
-							}
+							onPress={markReviewed}
 						/>
 					) : null}
 					{targetId && subject.type === "user" ? (
@@ -310,11 +373,20 @@ export default function RiskFlagScreen() {
 						</>
 					) : null}
 				</DecisionBar>
-			) : null}
+			) : (
+				// Dismissed or actioned: say so, so an empty bar is not read as
+				// a screen that failed to load its actions.
+				<DecisionBar
+					note={{
+						text: t("moderation.riskAlreadyClosed"),
+					}}
+				/>
+			)}
 
 			<DecisionSheet
 				visible={dismissVisible}
 				title={t("moderation.riskDismissTitle")}
+				subtitle={subjectTitle}
 				choices={dismissChoices}
 				choicesLabel={t("moderation.riskResolution")}
 				textLabel={t("moderation.riskDecisionNote")}
@@ -333,6 +405,8 @@ export default function RiskFlagScreen() {
 							? "moderation.riskSuspendShop"
 							: "moderation.riskSuspendUser",
 				)}
+				// Names who the sanction falls on, right above the red confirm.
+				subtitle={subjectTitle}
 				durations={durations}
 				durationsLabel={t("moderation.riskDuration")}
 				textLabel={t("moderation.riskDecisionNote")}

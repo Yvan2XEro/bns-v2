@@ -489,7 +489,8 @@
 		"statusPublishedNotice": "Modifier cette annonce la soumettra à nouveau pour révision.",
 		"statusRejectedNotice": "Votre annonce a été rejetée.",
 		"statusRejectionReason": "Raison : {{reason}}",
-		"saleSection": "Vente"
+		"saleSection": "Vente",
+		"photosFailedOnSave": "Certaines photos n'ont pas été envoyées. Réessayez ou retirez-les avant d'enregistrer."
 	},
 	"messages": {
 		"title": "Messages",
@@ -566,7 +567,11 @@
 		"notSent": "Non envoyé · toucher pour réessayer",
 		"queuedOffline": "Hors ligne · vos messages partiront au retour du réseau",
 		"typing": "{{name}} écrit…",
-		"you": "Vous : {{text}}"
+		"you": "Vous : {{text}}",
+		"copy": "Copier",
+		"copied": "Message copié",
+		"actions": "Options du message",
+		"actionsHint": "Appui long pour copier le message"
 	},
 	"account": {
 		"guestTitle": "Bienvenue sur Buy'N'Sellem",
@@ -903,8 +908,7 @@
 		"loginRequired": "Connexion requise pour booster une annonce.",
 		"mobileUnavailableBadge": "Temporairement indisponible",
 		"mobileUnavailableTitle": "Le boost n'est pas disponible dans l'application mobile pour le moment.",
-		"mobileUnavailableMessage": "Cette fonctionnalité est en cours d'adaptation pour la publication mobile. Vous pouvez toujours gérer votre annonce normalement depuis l'application.",
-		"listingReference": "Référence de l'annonce : {{listingId}}"
+		"mobileUnavailableMessage": "Cette fonctionnalité est en cours d'adaptation pour la publication mobile. Vous pouvez toujours gérer votre annonce normalement depuis l'application."
 	},
 	"report": {
 		"title": "Signaler",
@@ -1040,7 +1044,7 @@
 		"totalSpent": "Total dépensé en boosts",
 		"monthlySpend": "Dépenses mensuelles",
 		"last6Months": "6 derniers mois",
-		"history": "HISTORIQUE",
+		"history": "Historique",
 		"endOfHistory": "— Fin de l'historique —",
 		"statusCompleted": "Terminé",
 		"statusActive": "En cours",
@@ -1256,7 +1260,7 @@
 	},
 	"notifications": {
 		"title": "Notifications",
-		"markAllRead": "Tout lire",
+		"markAllRead": "Tout marquer comme lu",
 		"noNotifications": "Aucune notification",
 		"noNotificationsSub": "Vos alertes d'annonces et messages apparaîtront ici",
 		"enablePush": "Activer",
@@ -1977,7 +1981,15 @@
 		"paymentsOrigin_platformRelease": "Versé par Buy'N'Sellem",
 		"paymentsOrigin_providerSchedule": "Calendrier propre à NotchPay",
 		"rejectMessageLabel": "Message au vendeur",
-		"rejectMessageRequired": "Expliquez le motif au vendeur s'il s'agit de « Autre motif »."
+		"rejectMessageRequired": "Expliquez le motif au vendeur s'il s'agit de « Autre motif ».",
+		"listingStatusDeleted": "Supprimée",
+		"listingAlreadyPublished": "Déjà en ligne : seul un refus peut la retirer.",
+		"listingAlreadyRejected": "Déjà refusée : l'approuver la remet en ligne.",
+		"reportAlreadyClosed": "Ce signalement est déjà clos.",
+		"riskAlreadyClosed": "Ce signal de risque est déjà clos.",
+		"riskDecisionSaved": "Décision enregistrée",
+		"target_phone": "Téléphone",
+		"target_device": "Appareil"
 	},
 	"shop": {
 		"deliveryCities": "Livraison ou retrait disponible à : {{cities}}",
@@ -2287,7 +2299,8 @@
 		"action_seller_cancellation_rate": "Mettez le stock à jour pour éviter les annulations",
 		"action_low_conversion": "Vérifiez le prix et les photos d’un produit populaire",
 		"action_slow_response": "Activez les notifications pour répondre plus vite",
-		"insufficient": "Activité insuffisante"
+		"insufficient": "Activité insuffisante",
+		"noProductsHint": "Un produit apparaît ici dès sa première vue ou sa première commande sur la période."
 	},
 	"share": {
 		"title": "Partager",
@@ -3262,7 +3275,8 @@
 		"payPillMobileMoney": "Mobile money",
 		"handoverAlsoSms": "Aussi envoyé par SMS",
 		"deliveryInstructions": "Instructions de livraison",
-		"emptyCta": "Découvrir les annonces"
+		"emptyCta": "Découvrir les annonces",
+		"payOnDeliveryConfirmBody": "Cette commande sera annulée. Vous pourrez ensuite la repasser en choisissant le paiement à la livraison."
 	},
 	"sellerOrders": {
 		"title": "Commandes",
@@ -3659,7 +3673,8 @@
 		"threadTitle": "Litige · {{number}}",
 		"authorBuyer": "Acheteur",
 		"authorStaff": "Médiation Buy'N'Sellem",
-		"staffBadge": "Équipe"
+		"staffBadge": "Équipe",
+		"requestedAmountMax": "Au plus {{amount}}, le total de la commande"
 	},
 	"returns": {
 		"chooseInspection": "Choisissez un résultat d'inspection",
@@ -3786,7 +3801,8 @@
 		"actionSuccess": "Votre action a été envoyée.",
 		"viewPurchases": "Voir mes achats",
 		"viewCase": "Voir le dossier de retour",
-		"orderNumber": "Commande {{number}}"
+		"orderNumber": "Commande {{number}}",
+		"confirmCancelBody": "La demande de retour sera fermée et ne pourra pas être rouverte."
 	},
 	"sellerReturns": {
 		"title": "Retours clients",

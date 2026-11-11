@@ -246,12 +246,14 @@ export default function ResalePurchaseOrderDetailScreen() {
 										key={carrier}
 										onPress={() => patch({ carrier })}
 										accessibilityRole="radio"
-										accessibilityState={{ selected: form.carrier === carrier }}
+										accessibilityState={{ checked: form.carrier === carrier }}
 										style={[
 											styles.carrier,
 											{
 												borderColor:
 													form.carrier === carrier ? c.primary : c.border,
+												backgroundColor:
+													form.carrier === carrier ? c.primarySoft : c.card,
 											},
 										]}
 									>
@@ -362,7 +364,7 @@ export default function ResalePurchaseOrderDetailScreen() {
 									onPress={() => patch({ deliveryFailureReason: reason })}
 									accessibilityRole="radio"
 									accessibilityState={{
-										selected: form.deliveryFailureReason === reason,
+										checked: form.deliveryFailureReason === reason,
 									}}
 									style={[
 										styles.carrier,
@@ -371,6 +373,10 @@ export default function ResalePurchaseOrderDetailScreen() {
 												form.deliveryFailureReason === reason
 													? c.primary
 													: c.border,
+											backgroundColor:
+												form.deliveryFailureReason === reason
+													? c.primarySoft
+													: c.card,
 										},
 									]}
 								>
@@ -476,14 +482,14 @@ export default function ResalePurchaseOrderDetailScreen() {
 									key={reason}
 									onPress={() => patch({ cancelReason: reason })}
 									accessibilityRole="radio"
-									accessibilityState={{
-										selected: form.cancelReason === reason,
-									}}
+									accessibilityState={{ checked: form.cancelReason === reason }}
 									style={[
 										styles.carrier,
 										{
 											borderColor:
 												form.cancelReason === reason ? c.primary : c.border,
+											backgroundColor:
+												form.cancelReason === reason ? c.primarySoft : c.card,
 										},
 									]}
 								>
@@ -621,31 +627,42 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		gap: 8,
 		justifyContent: "center",
-		minHeight: 48,
+		minHeight: 52,
 		paddingHorizontal: 14,
 	},
-	writeText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	writeText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
 	safe: { flex: 1 },
-	content: { padding: 16, gap: 12, paddingBottom: 36 },
+	content: { padding: 16, gap: 16, paddingBottom: 40 },
 	card: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 14,
-		padding: 14,
+		padding: 16,
 		gap: 10,
 	},
-	heading: { fontSize: 15, fontFamily: Fonts.displayBold },
-	body: { fontSize: 14, fontFamily: Fonts.body },
-	amount: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	heading: { fontSize: 17, lineHeight: 22, fontFamily: Fonts.displayBold },
+	body: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	amount: {
+		fontSize: 16,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
 	input: {
 		minHeight: 48,
 		borderWidth: 1,
-		borderRadius: 10,
+		borderRadius: 12,
 		paddingHorizontal: 12,
+		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
 	note: { minHeight: 96, paddingTop: 12, textAlignVertical: "top" },
-	carriers: { flexDirection: "row", gap: 6 },
-	carrier: { borderWidth: 1, borderRadius: 8, padding: 8 },
+	carriers: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+	carrier: {
+		minHeight: 44,
+		justifyContent: "center",
+		borderWidth: 1,
+		borderRadius: 10,
+		paddingHorizontal: 14,
+	},
 	button: {
 		minHeight: 52,
 		borderRadius: 12,

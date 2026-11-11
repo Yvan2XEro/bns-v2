@@ -518,7 +518,11 @@
 		"notSent": "Not sent · tap to retry",
 		"queuedOffline": "Offline · your messages will go out when the network is back",
 		"typing": "{{name}} is typing…",
-		"you": "You: {{text}}"
+		"you": "You: {{text}}",
+		"copy": "Copy",
+		"copied": "Message copied",
+		"actions": "Message options",
+		"actionsHint": "Long-press to copy the message"
 	},
 	"account": {
 		"guestTitle": "Welcome to Buy'N'Sellem",
@@ -669,7 +673,8 @@
 		"statusPublishedNotice": "Editing this listing will re-submit it for review.",
 		"statusRejectedNotice": "Your listing was rejected.",
 		"statusRejectionReason": "Reason: {{reason}}",
-		"saleSection": "Sale"
+		"saleSection": "Sale",
+		"photosFailedOnSave": "Some photos were not sent. Retry or remove them before saving."
 	},
 	"profile": {
 		"bio": "Bio",
@@ -900,8 +905,7 @@
 		"successMessage": "Your listing is now featured.",
 		"mobileUnavailableBadge": "Temporarily unavailable",
 		"mobileUnavailableTitle": "Boosting is not available in the mobile app right now.",
-		"mobileUnavailableMessage": "This feature is being updated for the mobile release. You can still manage your listing normally from the app.",
-		"listingReference": "Listing reference: {{listingId}}"
+		"mobileUnavailableMessage": "This feature is being updated for the mobile release. You can still manage your listing normally from the app."
 	},
 	"report": {
 		"title": "Report",
@@ -1037,7 +1041,7 @@
 		"totalSpent": "Total spent on boosts",
 		"monthlySpend": "Monthly Spend",
 		"last6Months": "Last 6 months",
-		"history": "HISTORY",
+		"history": "History",
 		"endOfHistory": "— End of history —",
 		"statusCompleted": "Completed",
 		"statusActive": "Active",
@@ -1117,7 +1121,7 @@
 	},
 	"notifications": {
 		"title": "Notifications",
-		"markAllRead": "Mark all read",
+		"markAllRead": "Mark all as read",
 		"noNotifications": "No notifications",
 		"noNotificationsSub": "Your listing and message alerts will appear here",
 		"enablePush": "Enable",
@@ -1974,7 +1978,15 @@
 		"paymentsOrigin_platformRelease": "Released by Buy'N'Sellem",
 		"paymentsOrigin_providerSchedule": "NotchPay's own schedule",
 		"rejectMessageLabel": "Message to the seller",
-		"rejectMessageRequired": "Explain the reason to the seller when it is “Other reason”."
+		"rejectMessageRequired": "Explain the reason to the seller when it is “Other reason”.",
+		"listingStatusDeleted": "Deleted",
+		"listingAlreadyPublished": "Already live: only a rejection can take it down.",
+		"listingAlreadyRejected": "Already rejected: approving it puts it back online.",
+		"reportAlreadyClosed": "This report is already closed.",
+		"riskAlreadyClosed": "This risk flag is already closed.",
+		"riskDecisionSaved": "Decision saved",
+		"target_phone": "Phone",
+		"target_device": "Device"
 	},
 	"shop": {
 		"deliveryCities": "Delivery or pickup available in: {{cities}}",
@@ -2284,7 +2296,8 @@
 		"action_seller_cancellation_rate": "Update stock to prevent cancellations",
 		"action_low_conversion": "Review a popular product's price and photos",
 		"action_slow_response": "Turn on message notifications to reply sooner",
-		"insufficient": "Not enough activity"
+		"insufficient": "Not enough activity",
+		"noProductsHint": "A product shows up here once it gets a view or an order in this period."
 	},
 	"share": {
 		"title": "Share",
@@ -3259,7 +3272,8 @@
 		"payPillMobileMoney": "Mobile money",
 		"handoverAlsoSms": "Also sent by SMS",
 		"deliveryInstructions": "Delivery instructions",
-		"emptyCta": "Browse listings"
+		"emptyCta": "Browse listings",
+		"payOnDeliveryConfirmBody": "This order will be cancelled. You can then order again and choose pay on delivery."
 	},
 	"sellerOrders": {
 		"title": "Orders",
@@ -3656,7 +3670,8 @@
 		"threadTitle": "Dispute · {{number}}",
 		"authorBuyer": "Buyer",
 		"authorStaff": "Buy'N'Sellem mediation",
-		"staffBadge": "Team"
+		"staffBadge": "Team",
+		"requestedAmountMax": "Up to {{amount}}, the order total"
 	},
 	"returns": {
 		"chooseInspection": "Choose an inspection result",
@@ -3783,7 +3798,8 @@
 		"actionSuccess": "Your action was submitted.",
 		"viewPurchases": "View my purchases",
 		"viewCase": "View return case",
-		"orderNumber": "Order {{number}}"
+		"orderNumber": "Order {{number}}",
+		"confirmCancelBody": "The return request will be closed and cannot be reopened."
 	},
 	"sellerReturns": {
 		"title": "Customer returns",

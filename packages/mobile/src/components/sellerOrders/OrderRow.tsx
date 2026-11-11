@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
@@ -63,7 +64,7 @@ export function OrderRow({
 				accessibilityLabel={`${t("sellerOrders.orderTitle", {
 					number: order.orderNumber,
 				})}, ${status}`}
-				style={styles.main}
+				style={({ pressed }) => [styles.main, pressed && styles.pressed]}
 			>
 				{image ? (
 					<Image
@@ -72,7 +73,15 @@ export function OrderRow({
 						contentFit="cover"
 					/>
 				) : (
-					<View style={[styles.thumb, { backgroundColor: c.neutralSoft }]} />
+					<View
+						style={[
+							styles.thumb,
+							styles.thumbEmpty,
+							{ backgroundColor: c.neutralSoft },
+						]}
+					>
+						<Ionicons name="cube-outline" size={22} color={c.muted} />
+					</View>
 				)}
 				<View style={styles.body}>
 					<View style={styles.line}>
@@ -144,10 +153,12 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 	},
 	main: { flexDirection: "row", gap: 12, minHeight: 48 },
+	pressed: { opacity: 0.7 },
 	actions: { flexDirection: "row", gap: 10 },
 	action: { flex: 1 },
 	error: { fontSize: 13, fontFamily: Fonts.body },
-	thumb: { width: 56, height: 56, borderRadius: 10 },
+	thumb: { width: 60, height: 60, borderRadius: 10 },
+	thumbEmpty: { alignItems: "center", justifyContent: "center" },
 	body: { flex: 1, gap: 3 },
 	line: {
 		flexDirection: "row",
@@ -155,7 +166,12 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		gap: 8,
 	},
-	number: { flex: 1, fontSize: 16, fontFamily: Fonts.displayBold },
+	number: {
+		flex: 1,
+		fontSize: 16,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	statusLine: { justifyContent: "flex-start", marginTop: 3 },
 });

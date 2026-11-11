@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCounts } from "@novu/react-native";
+import { FlashList } from "@shopify/flash-list";
 import {
 	useInfiniteQuery,
 	useQuery,
@@ -8,10 +9,9 @@ import {
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { setStatusBarStyle } from "expo-status-bar";
-import React, { useCallback, useRef, useState } from "react";
+import React, { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	FlatList,
 	Pressable,
 	RefreshControl,
 	ScrollView,
@@ -64,15 +64,50 @@ import { useAuth } from "@/src/lib/auth";
 import { categoryTree } from "@/src/lib/categoryTree";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
-import {
-	resolveImageUrl,
-	resolveListingImageUrl,
-} from "@/src/lib/resolveImageUrl";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { useUserLocation } from "@/src/lib/useUserLocation";
 import { rankByCounts } from "../../../../api/src/contracts/categoryCounts";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const RECENT_PAGE = 20;
+// Header collapse on scroll: sizes at rest and fully scrolled.
+const LOGO_MAX = 44;
+const LOGO_MIN = 28;
+const NAME_MAX = 26;
+const NAME_MIN = 18;
+
+// One row of the search grid. Memoised so appending a page, or toggling one
+// favourite, only re-renders the rows whose listings actually changed.
+const SearchResultRow = memo(function SearchResultRow({
+	row,
+	cardWidth,
+	favoriteIds,
+	onToggleFavorite,
+}: {
+	row: any[];
+	cardWidth: number;
+	favoriteIds: Set<string>;
+	onToggleFavorite: (listing: any) => void;
+}) {
+	return (
+		<View style={styles.row}>
+			{row.map((listing) => (
+				<ListingCard
+					key={listing.id}
+					listing={listing}
+					width={cardWidth}
+					isFavorite={favoriteIds.has(listing.id)}
+					onToggleFavorite={() => onToggleFavorite(listing)}
+					onPress={openListing}
+				/>
+			))}
+		</View>
+	);
+});
+
+const SearchRowGap = () => <View style={styles.searchRowGap} />;
+const openListing = (id: string) => router.push(`/listing/${id}`);
+const searchRowKey = (row: any[]) => row.map((listing) => listing.id).join("|");
 
 // ─── Notification bell ────────────────────────────────────────────────────────
 // Isolated component so useCounts (from @novu/react-native) runs inside
@@ -165,25 +200,42 @@ export default function HomeScreen() {
 		),
 	}));
 
-	// Logo shrinks on scroll
-	const logoAnimStyle = useAnimatedStyle(() => {
-		const size = interpolate(
-			scrollY.value,
-			[0, 70],
-			[44, 28],
-			Extrapolation.CLAMP,
-		);
-		return { width: size, height: size, borderRadius: size * 0.2 };
-	});
+	// Logo and name shrink on scroll, by transform only: the 44pt logo scales
+	// to 28pt from its left edge, and the name (26pt → 18pt) scales from its own
+	// left edge while sliding left by the 16pt the logo gave up. Layout never
+	// changes, so nothing reflows on the JS or UI thread while scrolling.
+	const logoAnimStyle = useAnimatedStyle(() => ({
+		transform: [
+			{
+				scale: interpolate(
+					scrollY.value,
+					[0, 70],
+					[1, LOGO_MIN / LOGO_MAX],
+					Extrapolation.CLAMP,
+				),
+			},
+		],
+	}));
 
-	// AppName shrinks on scroll
 	const appNameAnimStyle = useAnimatedStyle(() => ({
-		fontSize: interpolate(
-			scrollY.value,
-			[0, 70],
-			[26, 18],
-			Extrapolation.CLAMP,
-		),
+		transform: [
+			{
+				translateX: interpolate(
+					scrollY.value,
+					[0, 70],
+					[0, LOGO_MIN - LOGO_MAX],
+					Extrapolation.CLAMP,
+				),
+			},
+			{
+				scale: interpolate(
+					scrollY.value,
+					[0, 70],
+					[1, NAME_MIN / NAME_MAX],
+					Extrapolation.CLAMP,
+				),
+			},
+		],
 	}));
 
 	// Bouton Annuler slide depuis la droite
@@ -461,19 +513,41 @@ export default function HomeScreen() {
 		enabled: isSearchMode,
 	});
 
-	const searchListings = (
-		searchData?.pages.flatMap((p: any) =>
-			Array.isArray(p) ? p : (p?.hits ?? []),
-		) ?? []
-	)
-		.filter(Boolean)
-		.map((l: any) => ({
-			...l,
-			isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
-		}));
+	// Memoised on the query data so the rows keep their identity between
+	// renders and the memoised SearchResultRow can skip the unchanged ones.
+	const searchListings = useMemo(
+		() =>
+			(
+				searchData?.pages.flatMap((p: any) =>
+					Array.isArray(p) ? p : (p?.hits ?? []),
+				) ?? []
+			)
+				.filter(Boolean)
+				.map((l: any) => ({
+					...l,
+					isBoosted: !!(
+						l.boostedUntil && new Date(l.boostedUntil) > new Date()
+					),
+				})),
+		[searchData],
+	);
 	const totalDocs = searchData?.pages[0]?.total ?? 0;
 
-	const searchPairs = chunkIntoRows(searchListings, columns);
+	const searchPairs = useMemo(
+		() => chunkIntoRows(searchListings, columns),
+		[searchListings, columns],
+	);
+	const renderSearchRow = useCallback(
+		({ item }: { item: any[] }) => (
+			<SearchResultRow
+				row={item}
+				cardWidth={cardWidth}
+				favoriteIds={favoriteIds}
+				onToggleFavorite={toggleFavorite}
+			/>
+		),
+		[cardWidth, favoriteIds, toggleFavorite],
+	);
 	const canSave = !!(debouncedQuery || activeFilterCount > 0) && !!user;
 
 	const clearSearch = () => {
@@ -642,30 +716,21 @@ export default function HomeScreen() {
 										: {})}
 							/>
 						) : (
-							<FlatList
+							// Recycled rows keyed by their listings, as in SearchResults: a
+							// page appended at the end never re-renders the ones above it.
+							<FlashList
 								data={searchPairs}
-								renderItem={({ item }) => (
-									<View style={styles.row}>
-										{item.map((listing: any) => (
-											<ListingCard
-												key={listing.id}
-												listing={listing}
-												width={cardWidth}
-												isFavorite={favoriteIds.has(listing.id)}
-												onToggleFavorite={() => toggleFavorite(listing)}
-												onPress={(id) => router.push(`/listing/${id}`)}
-											/>
-										))}
-									</View>
-								)}
-								keyExtractor={(row: any[]) =>
-									row.map((listing) => listing.id).join("|")
-								}
-								contentContainerStyle={[
-									styles.list,
+								renderItem={renderSearchRow}
+								extraData={favoriteIds}
+								keyExtractor={searchRowKey}
+								// FlashList lays rows out itself and ignores `gap` on the
+								// container, so the 16pt between rows is a separator.
+								ItemSeparatorComponent={SearchRowGap}
+								contentContainerStyle={{
+									...styles.searchList,
 									// The save button floats over the grid: the last row clears it.
-									{ paddingBottom: canSave ? 96 : 40 },
-								]}
+									paddingBottom: canSave ? 96 : 40,
+								}}
 								ListHeaderComponent={
 									totalDocs > 0 ? (
 										<Text
@@ -1159,9 +1224,16 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 		overflow: "hidden",
 	},
-	logoImgWrap: { width: 44, height: 44, borderRadius: 9, overflow: "hidden" },
+	logoImgWrap: {
+		width: LOGO_MAX,
+		height: LOGO_MAX,
+		borderRadius: 9,
+		overflow: "hidden",
+		transformOrigin: "left center",
+	},
 	appName: {
-		fontSize: 26,
+		fontSize: NAME_MAX,
+		transformOrigin: "left center",
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.8,
 	},
@@ -1360,12 +1432,14 @@ const styles = StyleSheet.create({
 		borderTopRightRadius: 22,
 		overflow: "hidden",
 	},
-	list: { paddingHorizontal: 16, paddingTop: 12, gap: 16 },
+	searchList: { paddingHorizontal: 16, paddingTop: 12 },
+	searchRowGap: { height: 16 },
 	row: { flexDirection: "row", gap: 12 },
 	resultCount: {
 		fontSize: 13,
 		fontFamily: Fonts.bodyMedium,
-		marginBottom: -4,
+		// 12pt above the first row (FlashList has no container gap).
+		marginBottom: 12,
 	},
 	skeletonGrid: { padding: 16 },
 

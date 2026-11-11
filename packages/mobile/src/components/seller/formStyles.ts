@@ -18,7 +18,8 @@ export const formStyles = StyleSheet.create({
 		borderRadius: 12,
 		borderWidth: 1,
 		paddingHorizontal: 12,
-		fontSize: 15,
+		// DESIGN.md: body copy is 16 inside inputs.
+		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
 	multiline: { minHeight: 110, paddingTop: 12, textAlignVertical: "top" },

@@ -100,6 +100,9 @@ export function SettingsScreen() {
 
 	const changeTheme = (next: ThemeChoice) => {
 		setThemeChoice(next); // update immediately — don't wait for Appearance event
+		// React Native 0.86 hands the device back with 'unspecified' (Android:
+		// MODE_NIGHT_FOLLOW_SYSTEM, iOS: UIUserInterfaceStyleUnspecified). The
+		// old `null` is not in the type and the Android module takes a string.
 		Appearance.setColorScheme(next === "system" ? "unspecified" : next);
 		void AsyncStorage.setItem(THEME_STORAGE_KEY, next);
 	};

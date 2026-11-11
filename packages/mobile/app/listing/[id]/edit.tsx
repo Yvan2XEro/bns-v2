@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -25,6 +24,7 @@ import {
 	priceUnitToSend,
 } from "@/src/components/listing/PriceUnitChips";
 import { SkeletonBox } from "@/src/components/listing/Skeletons";
+import { PendingPhotoTile } from "@/src/components/PendingPhotoTile";
 import { FieldIssueText } from "@/src/components/seller/FieldIssueText";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { StatusTag, type StatusTone } from "@/src/components/shop/Tags";
@@ -36,6 +36,7 @@ import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import { CATEGORIES_STALE_TIME_MS } from "@/src/hooks/useListings";
 import { usePhoneGate } from "@/src/hooks/usePhoneGate";
+import { usePhotoUploads } from "@/src/hooks/usePhotoUploads";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
@@ -63,8 +64,8 @@ import {
 	serializeAttributeValues,
 } from "@/src/lib/listingForm";
 import { listingKindRules } from "@/src/lib/listingKind";
-import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { canAddPhoto } from "@/src/lib/photoLimit";
+import { makeMain } from "@/src/lib/photoQueue";
 import type { Place } from "@/src/lib/places";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { rejectionText } from "../../../../api/src/contracts/listingRejection";
@@ -416,7 +417,6 @@ export default function EditListingScreen() {
 	const [duration, setDuration] = useState(30);
 	const [attributes, setAttributes] = useState<Record<string, any>>({});
 	const [images, setImages] = useState<ImageItem[]>([]);
-	const [uploading, setUploading] = useState(false);
 	const [nextStatus, setNextStatus] = useState<"draft" | "pending">("pending");
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 	const { data: myShop } = useMyShop();
@@ -499,7 +499,7 @@ export default function EditListingScreen() {
 	useEffect(() => {
 		if (!applicableTagIds) return;
 		setSelectedTagIds((ids) => pruneTagIds(ids, applicableTagIds));
-	}, [applicableTagIds, selectedTagIds]);
+	}, [applicableTagIds]);
 
 	const categoryAttributes = useMemo(
 		() => getCategoryAttributes(category),
@@ -529,7 +529,6 @@ export default function EditListingScreen() {
 		applicableTags: applicableTagIds,
 		photoLimit: photosIncluded,
 	});
-	const photosFull = !canAddPhoto(images.length, photosIncluded);
 	const draftKey = JSON.stringify(draft);
 	const [attempted, setAttempted] = useState(false);
 	const [refused, setRefused] = useState<{
@@ -561,64 +560,20 @@ export default function EditListingScreen() {
 		);
 	}, [listing, attributesKey, categoryAttributes]);
 
-	// ── Image picker ───────────────────────────────────────────────
-	const pickImage = async (fromCamera: boolean) => {
-		try {
-			if (fromCamera) {
-				const { status } = await ImagePicker.requestCameraPermissionsAsync();
-				if (status !== "granted") {
-					showError(t("edit.permissionDenied"), t("edit.cameraPermissionMsg"));
-					return;
-				}
-			} else {
-				const { status } =
-					await ImagePicker.requestMediaLibraryPermissionsAsync();
-				if (status !== "granted") {
-					showError(t("edit.permissionDenied"), t("edit.galleryPermissionMsg"));
-					return;
-				}
-			}
-
-			const result = fromCamera
-				? await ImagePicker.launchCameraAsync({
-						allowsEditing: true,
-						aspect: [4, 3],
-						quality: 0.85,
-					})
-				: await ImagePicker.launchImageLibraryAsync({
-						mediaTypes: ["images"],
-						allowsEditing: true,
-						aspect: [4, 3],
-						quality: 0.85,
-					});
-
-			if (result.canceled || !result.assets?.[0]) return;
-			const asset = result.assets[0];
-
-			setUploading(true);
-			const defaultBaseName = `photo_${Date.now()}`;
-			const formData = await createMediaUploadFormData(asset, {
-				defaultBaseName,
-				alt: asset.fileName?.replace(/\.[^.]+$/, "") || `${title} image`,
-			});
-			const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
-				"/api/media",
-				formData,
-			);
-			const mediaId = uploaded?.doc?.id;
-			const mediaUri = uploaded?.doc?.url ?? asset.uri;
-			if (!mediaId) throw new Error(t("edit.uploadError"));
-
-			setImages((prev) => [...prev, { id: mediaId, uri: mediaUri }]);
-		} catch (err: any) {
-			showError(
-				t("edit.errorTitle"),
-				resolveErrorMessage(err, t, t("edit.uploadError")),
-			);
-		} finally {
-			setUploading(false);
-		}
-	};
+	// ── Photos ─────────────────────────────────────────────────────
+	// The same pipeline as the create form: several at once, each uploading
+	// in the background with its own progress, failure and retry. A photo
+	// joins `images` only once the API has given it a media id, so what the
+	// PATCH sends is unchanged: the ids of the uploaded photos, in order.
+	const uploads = usePhotoUploads({
+		alt: title,
+		onUploaded: (photo) => setImages((prev) => [...prev, photo]),
+	});
+	const photosTaken = images.length + uploads.pending.length;
+	const photosFull = !canAddPhoto(photosTaken, photosIncluded);
+	const photosRemaining = Math.max(0, photosIncluded - photosTaken);
+	const pickImage = (fromCamera: boolean) =>
+		void uploads.pick(fromCamera, photosRemaining);
 
 	const showImagePicker = () => {
 		if (photosFull) {
@@ -628,7 +583,7 @@ export default function EditListingScreen() {
 		showAlert(t("edit.addPhotoTitle"), t("edit.addPhotoSource"), [
 			{ text: t("edit.camera"), onPress: () => pickImage(true) },
 			{ text: t("edit.gallery"), onPress: () => pickImage(false) },
-			{ text: t("edit.cancel"), style: "cancel" },
+			{ text: t("common.cancel"), style: "cancel" },
 		]);
 	};
 
@@ -697,6 +652,18 @@ export default function EditListingScreen() {
 			!requirePhone("publishListing")
 		)
 			return;
+		// A photo still on its way has no media id yet: saving now would drop it
+		// without a word.
+		if (uploads.uploading) {
+			showWarning(t("create.photosStillUploading"));
+			return;
+		}
+		// A photo that failed has no media id either: the seller retries or
+		// removes it, rather than losing it to a save that says nothing.
+		if (uploads.pending.some((photo) => photo.status === "failed")) {
+			showWarning(t("edit.photosFailedOnSave"));
+			return;
+		}
 		// Only a field the preset actually shows may block the save: a hidden
 		// price is never "required", which `listingDraftIssues` already knows.
 		if (draftIssues.length > 0) {
@@ -836,19 +803,37 @@ export default function EditListingScreen() {
 						contentContainerStyle={styles.imageList}
 					>
 						{images.map((img, index) => (
-							<View key={img.id} style={styles.imageWrap}>
+							<View
+								key={img.id}
+								style={[
+									styles.imageWrap,
+									{ backgroundColor: C.well, borderColor },
+								]}
+							>
 								<Image
 									source={{ uri: img.uri }}
-									style={styles.imageThumb}
+									style={StyleSheet.absoluteFill}
 									contentFit="cover"
 									accessibilityIgnoresInvertColors
 								/>
-								{index === 0 && (
-									<View style={styles.mainBadge}>
+								{index === 0 ? (
+									<View style={[styles.mainBadge, { backgroundColor: fill }]}>
 										<Text style={styles.mainBadgeText}>
 											{t("edit.mainPhoto")}
 										</Text>
 									</View>
+								) : (
+									// The first photo is the one on every card: any other can
+									// take its place, as on the create form.
+									<Pressable
+										onPress={() => setImages((prev) => makeMain(prev, index))}
+										hitSlop={8}
+										accessibilityRole="button"
+										accessibilityLabel={t("create.makeMain")}
+										style={styles.makeMainBtn}
+									>
+										<Ionicons name="star-outline" size={16} color="#ffffff" />
+									</Pressable>
 								)}
 								<Pressable
 									onPress={() =>
@@ -863,15 +848,24 @@ export default function EditListingScreen() {
 								</Pressable>
 							</View>
 						))}
+						{uploads.pending.map((photo) => (
+							<PendingPhotoTile
+								key={photo.key}
+								photo={photo}
+								onRetry={() => uploads.retry(photo.key)}
+								onRemove={() => uploads.remove(photo.key)}
+								style={[
+									styles.imageWrap,
+									{ backgroundColor: C.well, borderColor },
+								]}
+							/>
+						))}
 						<Pressable
 							onPress={showImagePicker}
-							disabled={uploading || photosFull}
+							disabled={photosFull}
 							accessibilityRole="button"
 							accessibilityLabel={t("edit.addPhoto")}
-							accessibilityState={{
-								disabled: uploading || photosFull,
-								busy: uploading,
-							}}
+							accessibilityState={{ disabled: photosFull }}
 							style={({ pressed }) => [
 								styles.addImageBtn,
 								{
@@ -881,23 +875,24 @@ export default function EditListingScreen() {
 								photosFull && { opacity: 0.4 },
 							]}
 						>
-							{uploading ? (
-								<ActivityIndicator color={primaryColor} />
-							) : (
-								<>
-									<Ionicons
-										name="camera-outline"
-										size={22}
-										color={primaryColor}
-									/>
-									<Text
-										style={[styles.addImageText, { color: primaryColor }]}
-										numberOfLines={2}
-									>
-										{t("edit.addPhoto")}
-									</Text>
-								</>
-							)}
+							<View
+								style={[
+									styles.addIconCircle,
+									{ backgroundColor: C.primaryTint },
+								]}
+							>
+								<Ionicons
+									name="camera-outline"
+									size={20}
+									color={primaryColor}
+								/>
+							</View>
+							<Text
+								style={[styles.addImageText, { color: primaryColor }]}
+								numberOfLines={2}
+							>
+								{t("edit.addPhoto")}
+							</Text>
 						</Pressable>
 					</ScrollView>
 					<PhotoLimitNote
@@ -906,6 +901,14 @@ export default function EditListingScreen() {
 						color={mutedColor}
 					/>
 					<FieldIssueText issue={issueAt(visibleIssues, "images")} />
+					{uploads.uploading && (
+						<Text
+							style={[styles.hint, styles.uploadingNote, { color: mutedColor }]}
+							accessibilityLiveRegion="polite"
+						>
+							{t("create.photosStillUploading")}
+						</Text>
+					)}
 				</SectionCard>
 
 				{/* ── Détails ── */}
@@ -1595,26 +1598,22 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.bodyMedium,
 	},
 
-	/* Images */
+	/* Images: the create form's tile, laid out as a strip. */
 	imageList: {
 		gap: 10,
 		paddingVertical: 4,
 	},
 	imageWrap: {
-		position: "relative",
-		width: 90,
-		height: 90,
-	},
-	imageThumb: {
-		width: 90,
-		height: 90,
-		borderRadius: 12,
+		width: 100,
+		height: 100,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
 	},
 	mainBadge: {
 		position: "absolute",
 		bottom: 6,
 		left: 6,
-		backgroundColor: "rgba(18, 22, 58, 0.75)",
 		borderRadius: 6,
 		paddingHorizontal: 6,
 		paddingVertical: 2,
@@ -1623,6 +1622,17 @@ const styles = StyleSheet.create({
 		color: "#ffffff",
 		fontSize: 12,
 		fontFamily: Fonts.bodyBold,
+	},
+	makeMainBtn: {
+		position: "absolute",
+		bottom: 6,
+		left: 6,
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		backgroundColor: "rgba(18, 22, 58, 0.7)",
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	// The same ink disc as on the create form and an uploading photo.
 	removeImageBtn: {
@@ -1637,21 +1647,29 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	addImageBtn: {
-		width: 90,
-		height: 90,
-		borderRadius: 12,
+		width: 100,
+		height: 100,
+		borderRadius: 14,
 		borderWidth: 1.5,
 		borderStyle: "dashed",
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 4,
-		padding: 4,
+		gap: 6,
+		padding: 6,
+	},
+	addIconCircle: {
+		width: 36,
+		height: 36,
+		borderRadius: 18,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	addImageText: {
 		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
+	uploadingNote: { marginTop: 4 },
 
 	/* Submit */
 	submitBtn: {

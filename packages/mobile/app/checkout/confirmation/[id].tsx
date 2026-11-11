@@ -200,6 +200,9 @@ export default function CheckoutConfirmationScreen() {
 					>
 						<CheckoutButton
 							icon="cube-outline"
+							// While a code is owed, confirming it is the screen's one
+							// filled action; tracking steps back to a quiet button.
+							variant={outcome === "code" ? "outline" : "primary"}
 							label={t("checkout.trackOrder")}
 							onPress={() =>
 								router.replace({
@@ -306,7 +309,7 @@ function InfoRow({
 			</View>
 			<View style={{ flex: 1, gap: 2 }}>
 				<Text style={[styles.infoTitle, { color: c.text }]}>{title}</Text>
-				<Text style={[styles.infoBody, { color: c.muted }]}>{body}</Text>
+				<Text style={[styles.infoBody, { color: c.body }]}>{body}</Text>
 			</View>
 		</View>
 	);
@@ -354,7 +357,7 @@ function NextSteps({ steps }: { steps: { title: string; body: string }[] }) {
 							>
 								{step.title}
 							</Text>
-							<Text style={[styles.infoBody, { color: c.muted }]}>
+							<Text style={[styles.infoBody, { color: c.body }]}>
 								{step.body}
 							</Text>
 						</View>

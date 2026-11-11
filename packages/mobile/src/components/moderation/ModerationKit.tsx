@@ -264,6 +264,21 @@ export function FactRow({
 	);
 }
 
+/**
+ * A hairline between groups of facts in one card: identity apart from
+ * registry numbers, money apart from parties. Groups, not every row.
+ */
+export function CardDivider() {
+	const c = useModerationTheme();
+	return (
+		<View
+			accessible={false}
+			importantForAccessibility="no"
+			style={[styles.divider, { backgroundColor: c.border }]}
+		/>
+	);
+}
+
 /** A small status label on its soft tint. */
 export function TonePill({ label, tone }: { label: string; tone: Tone }) {
 	const c = useModerationTheme();
@@ -504,6 +519,7 @@ const styles = StyleSheet.create({
 		flexShrink: 1,
 		textAlign: "right",
 	},
+	divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
 	pill: {
 		alignSelf: "flex-start",
 		borderRadius: 8,

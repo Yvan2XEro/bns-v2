@@ -103,26 +103,30 @@ export function ShopListControls({
 						</Text>
 						<Pressable
 							onPress={onOpenSort}
-							hitSlop={10}
-							style={styles.sort}
+							hitSlop={{ left: 8, right: 8 }}
+							style={({ pressed }) => [styles.sort, pressed && styles.pressed]}
 							accessibilityRole="button"
 							accessibilityLabel={t("shop.sortButtonLabel", {
 								sort: sortLabel,
 							})}
 						>
+							<Ionicons name="swap-vertical" size={16} color={c.text} />
 							<Text style={[styles.sortText, { color: c.text }]}>
 								{sort === "newest" ? t("shop.sortLabel") : sortLabel}
 							</Text>
-							<Ionicons name="chevron-down" size={14} color={c.text} />
 						</Pressable>
 					</View>
 					{query ? (
 						<Pressable
 							onPress={onSearchEverywhere}
-							style={[styles.everywhere, styles.inset]}
+							style={({ pressed }) => [
+								styles.everywhere,
+								styles.inset,
+								pressed && styles.pressed,
+							]}
 							accessibilityRole="link"
 						>
-							<Ionicons name="search" size={14} color={brand.accentText} />
+							<Ionicons name="search" size={16} color={brand.accentText} />
 							<Text
 								style={[styles.everywhereText, { color: brand.accentText }]}
 								numberOfLines={1}
@@ -159,15 +163,16 @@ function Chip({
 	return (
 		<Pressable
 			onPress={onPress}
-			hitSlop={{ top: 7, bottom: 7 }}
+			hitSlop={{ top: 4, bottom: 4 }}
 			accessibilityRole="button"
 			accessibilityState={{ selected }}
 			accessibilityLabel={t("shop.categoryChipLabel", { name: label, count })}
-			style={[
+			style={({ pressed }) => [
 				styles.chip,
 				selected
 					? { backgroundColor: brand.accentSoft, borderColor: brand.accentText }
 					: { backgroundColor: c.card, borderColor: c.border },
+				pressed && styles.pressed,
 			]}
 		>
 			<Text
@@ -201,10 +206,11 @@ const styles = StyleSheet.create({
 		gap: 6,
 		borderWidth: 1,
 		borderRadius: 999,
-		paddingHorizontal: 12,
-		height: 34,
+		paddingHorizontal: 14,
+		height: 40,
 	},
-	chipText: { fontSize: 13, fontFamily: Fonts.body },
+	pressed: { opacity: 0.7 },
+	chipText: { fontSize: 14, fontFamily: Fonts.body },
 	chipSelected: { fontFamily: Fonts.bodySemibold },
 	chipCount: {
 		fontSize: 12,
@@ -216,16 +222,17 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		gap: 12,
-		height: 40,
+		minHeight: 48,
 	},
 	count: { flex: 1, fontSize: 13, fontFamily: Fonts.body },
-	sort: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 40 },
-	sortText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	sort: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44 },
+	sortText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	everywhere: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 6,
-		paddingBottom: 10,
+		gap: 8,
+		minHeight: 44,
+		paddingBottom: 4,
 	},
 	everywhereText: {
 		flexShrink: 1,

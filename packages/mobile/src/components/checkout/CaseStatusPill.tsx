@@ -49,7 +49,9 @@ export function disputeTone(status: DisputeStatus): CaseTone {
 export function toneColors(c: ShopPalette, tone: CaseTone) {
 	switch (tone) {
 		case "progress":
-			return { bg: c.primarySoft, fg: c.isDark ? "#c9cce0" : c.primary };
+			// Words on the tint: `link` by day (the shop's colour when branded),
+			// running-text ink by night, where a brand link can sink on its tint.
+			return { bg: c.primarySoft, fg: c.isDark ? c.body : c.link };
 		case "warning":
 			return { bg: c.warningSoft, fg: c.warningText };
 		case "success":

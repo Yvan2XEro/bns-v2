@@ -131,6 +131,8 @@ export default function InviteMemberScreen() {
 												onChangeText={field.onChange}
 												onBlur={field.onBlur}
 												keyboardType="phone-pad"
+												autoComplete="off"
+												textContentType="none"
 												placeholder={phoneExample()}
 												placeholderTextColor={c.muted}
 												accessibilityLabel={t("team.phoneLabel")}
@@ -169,6 +171,9 @@ export default function InviteMemberScreen() {
 												onBlur={field.onBlur}
 												keyboardType="email-address"
 												autoCapitalize="none"
+												autoCorrect={false}
+												autoComplete="off"
+												textContentType="none"
 												placeholder="name@example.com"
 												placeholderTextColor={c.muted}
 												accessibilityLabel={t("team.emailLabel")}
@@ -250,30 +255,31 @@ const styles = StyleSheet.create({
 	},
 	segmentItem: {
 		flex: 1,
-		minHeight: 40,
+		minHeight: 44,
 		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	segmentText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold, marginBottom: 6 },
+	segmentText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 14, fontFamily: Fonts.bodySemibold, marginBottom: 8 },
 	input: {
 		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		paddingHorizontal: 14,
-		fontSize: 15,
+		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
-	hint: { fontSize: 12, fontFamily: Fonts.body, marginTop: 4 },
+	hint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body, marginTop: 6 },
 	roleList: { gap: 10, marginTop: 6 },
 	submit: {
-		minHeight: 48,
+		minHeight: 52,
+		marginTop: 8,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 	notice: { borderRadius: 14, padding: 16, gap: 12 },
-	noticeText: { fontSize: 14, fontFamily: Fonts.body },
+	noticeText: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
 });

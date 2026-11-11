@@ -6,7 +6,6 @@ import { useSellerBrandTheme } from "./sellerBrand";
 export interface ShopPalette {
 	isDark: boolean;
 	bg: string;
-	header: string;
 	card: string;
 	input: string;
 	text: string;
@@ -52,7 +51,6 @@ export function useShopTheme(): ShopPalette {
 	return {
 		isDark,
 		bg: c.background,
-		header: isDark ? "#12163a" : "#e9ecfa",
 		card: c.card,
 		input: isDark ? c.well : c.background,
 		text: c.foreground,
@@ -75,6 +73,7 @@ export function useShopTheme(): ShopPalette {
 		dangerSoft: c.dangerTint,
 		dangerText: c.dangerText,
 		neutralSoft: isDark ? c.card : c.well,
-		neutralText: isDark ? c.body : "#4a4f78",
+		/** Words on `neutralSoft`: running-text ink, 9:1 on the well by day. */
+		neutralText: c.body,
 	};
 }

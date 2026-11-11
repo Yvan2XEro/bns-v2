@@ -41,11 +41,13 @@ export function FormField({
 	| "keyboardType"
 	| "autoCapitalize"
 	| "autoComplete"
+	| "autoCorrect"
 	| "multiline"
 	| "maxLength"
 	| "returnKeyType"
 	| "onSubmitEditing"
 	| "textContentType"
+	| "onBlur"
 >) {
 	const c = useGroupedColors();
 	const { t } = useTranslation();
@@ -84,7 +86,10 @@ export function FormField({
 					accessibilityHint={message ?? hint}
 					aria-invalid={Boolean(error)}
 					onFocus={() => setFocused(true)}
-					onBlur={() => setFocused(false)}
+					onBlur={(event) => {
+						setFocused(false);
+						input.onBlur?.(event);
+					}}
 					placeholderTextColor={c.mutedForeground}
 					selectionColor={c.primary}
 					style={[

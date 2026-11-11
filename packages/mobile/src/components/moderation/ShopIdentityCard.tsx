@@ -153,8 +153,9 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 10,
 		borderTopWidth: StyleSheet.hairlineWidth,
-		paddingTop: 10,
-		minHeight: 52,
+		// Same step above the owner row as above the counts: two equal bands.
+		paddingTop: 12,
+		minHeight: 56,
 	},
 	ownerName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	link: { fontSize: 14, fontFamily: Fonts.bodySemibold },

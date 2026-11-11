@@ -333,13 +333,17 @@ function HistoryRow({
 			]}
 		>
 			<Text style={[styles.historyAction, { color: c.text }]}>
-				{t(`moderation.action_${entry.action.replace(".", "_")}`)}
+				{t(`moderation.action_${entry.action.replace(".", "_")}`, {
+					defaultValue: entry.action,
+				})}
 			</Text>
 			<Text style={[styles.meta, { color: c.muted }]}>
 				{actor} · {formatDate(entry.createdAt)}
 			</Text>
 			{entry.reason ? (
-				<Text style={[styles.meta, { color: c.text }]}>{entry.reason}</Text>
+				<Text style={[styles.meta, { color: c.text }]}>
+					{t(`report.${entry.reason}`, { defaultValue: entry.reason })}
+				</Text>
 			) : null}
 		</View>
 	);

@@ -1,7 +1,8 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useReducer } from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { BusinessSummaryCard } from "@/src/components/moderation/BusinessSummaryCard";
 import {
@@ -25,6 +26,7 @@ import {
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { SignalsPanel } from "@/src/components/moderation/SignalsPanel";
 import { useModerationTheme } from "@/src/components/moderation/theme";
+import { tonesOf } from "@/src/components/moderation/tones";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import {
 	moderationVerificationKeys,
@@ -95,6 +97,7 @@ export default function VerificationReviewScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const requestId = String(id);
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const queryClient = useQueryClient();
@@ -195,24 +198,54 @@ export default function VerificationReviewScreen() {
 			) : (
 				<>
 					<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
-						{detail.owner ? (
-							<Text style={[styles.owner, { color: c.muted }]}>
-								{detail.owner.name || detail.owner.email}
-							</Text>
-						) : null}
-
 						{decide.isError ? (
 							<InlineNotice text={resolveErrorMessage(decide.error, t)} />
 						) : null}
 
+						{/* Who is asking, one tap from their account sheet: a refusal
+						    is often decided by what else that account has done. */}
+						{detail.owner ? (
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={`${detail.owner.name || detail.owner.email}, ${t("moderation.openAccount")}`}
+								onPress={() =>
+									router.push(`/moderation/user/${detail.owner?.id}` as never)
+								}
+								style={({ pressed }) => [
+									styles.ownerRow,
+									{
+										backgroundColor: c.card,
+										borderColor: c.border,
+										opacity: pressed ? 0.85 : 1,
+									},
+								]}
+							>
+								<Ionicons
+									name="person-circle-outline"
+									size={24}
+									color={c.muted}
+								/>
+								<View style={styles.flex}>
+									<Text style={[styles.owner, { color: c.text }]}>
+										{detail.owner.name || detail.owner.email}
+									</Text>
+									<Text style={[styles.ownerLink, { color: k.linkText }]}>
+										{t("moderation.openAccount")}
+									</Text>
+								</View>
+								<Ionicons name="chevron-forward" size={18} color={c.muted} />
+							</Pressable>
+						) : null}
+
+						{/* Red flags before the facts they qualify. */}
+						<SignalsPanel
+							signals={request.reviewSignals}
+							otherRequests={detail.otherRequests}
+						/>
 						<KycSummaryCard kyc={request.kyc} />
 						<BusinessSummaryCard
 							business={request.business}
 							signals={request.reviewSignals}
-						/>
-						<SignalsPanel
-							signals={request.reviewSignals}
-							otherRequests={detail.otherRequests}
 						/>
 						{request.requestedLevel === 3 ? (
 							<ChecklistSwitches
@@ -310,5 +343,17 @@ export default function VerificationReviewScreen() {
 
 const styles = StyleSheet.create({
 	scroll: { padding: 16, gap: 14, paddingBottom: 24 },
-	owner: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.bodyMedium },
+	flex: { flex: 1 },
+	ownerRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		minHeight: 60,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingHorizontal: 14,
+		paddingVertical: 10,
+	},
+	owner: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	ownerLink: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 });

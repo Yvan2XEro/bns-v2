@@ -34,21 +34,37 @@ export function LegalBlock({
 			<View style={styles.header}>
 				<Ionicons
 					name={verified ? "checkmark-circle" : "document-text-outline"}
-					size={16}
+					size={18}
 					color={verified ? c.successText : c.muted}
 				/>
-				<Text style={[styles.title, { color: c.text }]}>
+				<Text
+					style={[styles.title, { color: c.text }]}
+					accessibilityRole="header"
+				>
 					{verified
 						? t("shop.legalVerifiedTitle")
 						: t("shop.legalDeclaredTitle")}
 				</Text>
 			</View>
-			{lines.map((line) => (
-				<View key={line.label} style={styles.row}>
+			{lines.map((line, index) => (
+				<View
+					key={line.label}
+					style={[
+						styles.row,
+						index > 0 && {
+							borderTopWidth: StyleSheet.hairlineWidth,
+							borderTopColor: c.border,
+						},
+					]}
+				>
 					<Text style={[styles.label, { color: c.muted }]}>
 						{t(`shop.${line.label}`)}
 					</Text>
-					<Text style={[styles.value, { color: c.text }]} numberOfLines={1}>
+					<Text
+						style={[styles.value, { color: c.text }]}
+						numberOfLines={2}
+						selectable
+					>
 						{line.label === "businessType" && isBusinessType(line.value)
 							? t(`shop.${businessTypeLabelKey(line.value)}`)
 							: line.value}
@@ -63,20 +79,33 @@ const styles = StyleSheet.create({
 	card: {
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
-		padding: 16,
-		gap: 10,
+		paddingHorizontal: 16,
+		paddingTop: 16,
+		paddingBottom: 6,
 	},
-	header: { flexDirection: "row", alignItems: "center", gap: 8 },
-	title: { fontSize: 15, fontFamily: Fonts.displayBold },
+	header: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		marginBottom: 6,
+	},
+	title: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.displayBold },
 	row: {
 		flexDirection: "row",
 		alignItems: "baseline",
 		justifyContent: "space-between",
 		gap: 12,
+		paddingVertical: 10,
 	},
-	label: { fontSize: 13, fontFamily: Fonts.body, flexShrink: 0 },
-	value: {
+	label: {
 		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+		flexShrink: 0,
+	},
+	value: {
+		fontSize: 14,
+		lineHeight: 19,
 		fontFamily: Fonts.bodySemibold,
 		flexShrink: 1,
 		textAlign: "right",

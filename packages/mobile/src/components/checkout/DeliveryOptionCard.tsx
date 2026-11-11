@@ -43,11 +43,14 @@ export function DeliveryOptionCard({
 				{
 					borderColor: checked ? c.primary : c.border,
 					backgroundColor: checked ? c.primarySoft : c.card,
-					opacity: selectable ? (pressed ? 0.85 : 1) : 0.6,
+					opacity: pressed ? 0.85 : 1,
 				},
+				pressed ? styles.pressed : null,
 			]}
 		>
-			<View style={styles.row}>
+			{/* An option the payment rules out is dimmed, but the reason under it
+			    keeps full ink: a faded explanation fails its contrast. */}
+			<View style={[styles.row, selectable ? null : styles.off]}>
 				<View
 					style={[
 						styles.tile,
@@ -137,6 +140,8 @@ export function DeliveryOptionCard({
 }
 
 const styles = StyleSheet.create({
+	pressed: { transform: [{ scale: 0.99 }] },
+	off: { opacity: 0.5 },
 	card: {
 		borderWidth: 1.5,
 		borderRadius: 16,

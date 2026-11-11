@@ -1,15 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { Switch, Text, TextInput, View } from "react-native";
-import { AddressTextField } from "@/src/components/checkout/AddressTextField";
-import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
+import { type Control, Controller, useForm } from "react-hook-form";
+import { StyleSheet, Text, type TextInputProps, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { ChoiceChips } from "@/src/components/checkout/ChoiceChips";
 import { LocationField } from "@/src/components/checkout/LocationField";
 import { FormRow } from "@/src/components/layout/FormRow";
-import { formStyles } from "@/src/components/seller/formStyles";
-import { dangerInk } from "@/src/components/shop/ink";
-import { useShopTheme } from "@/src/components/shop/theme";
+import { FormButton } from "@/src/components/settings/FormButton";
+import { FormField } from "@/src/components/settings/FormField";
+import {
+	GroupedSection,
+	GroupedSwitchRow,
+	useGroupedColors,
+} from "@/src/components/settings/Grouped";
 import { useAuth } from "@/src/lib/auth";
 import {
 	ADDRESS_ERROR_KEYS,
@@ -31,6 +34,51 @@ import {
 } from "@/src/lib/savedAddresses";
 import type { AddressInput, DeliveryMethod } from "@/src/types/order";
 import { PlaceSuggestField } from "./PlaceSuggestField";
+
+/**
+ * One text field of the address, drawn as the account forms draw theirs.
+ * The error is a translation key from the schema or the server.
+ */
+function AddressInputField({
+	control,
+	name,
+	label,
+	hint,
+	error,
+	transform,
+	...input
+}: {
+	control: Control<CheckoutAddressValues>;
+	name: AddressField;
+	label: string;
+	hint?: string;
+	error?: string;
+	transform?: (text: string) => string;
+} & Pick<
+	TextInputProps,
+	"keyboardType" | "autoComplete" | "multiline" | "placeholder" | "maxLength"
+>) {
+	const { t } = useTranslation();
+	return (
+		<Controller
+			control={control}
+			name={name}
+			render={({ field }) => (
+				<FormField
+					{...input}
+					label={label}
+					hint={hint}
+					value={field.value}
+					onChangeText={(text) =>
+						field.onChange(transform ? transform(text) : text)
+					}
+					onBlur={field.onBlur}
+					error={error ? t(error, { example: phoneExample() }) : null}
+				/>
+			)}
+		/>
+	);
+}
 
 export interface AddressMeta {
 	label: string;
@@ -73,7 +121,7 @@ export function AddressEditor({
 	onCancel?: () => void;
 	onSubmit: (address: AddressInput, meta: AddressMeta) => void;
 }) {
-	const c = useShopTheme();
+	const c = useGroupedColors();
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const [label, setLabel] = useState(initialLabel);
@@ -119,37 +167,28 @@ export function AddressEditor({
 	);
 
 	const labelInput = (
-		<View style={{ gap: 6 }}>
-			<Text style={[formStyles.label, { color: c.body }]}>
-				{`${t("addresses.label")} (${t("common.optional")})`}
-			</Text>
-			<TextInput
-				value={label}
-				onChangeText={setLabel}
-				maxLength={SAVED_ADDRESS_LABEL_MAX}
-				placeholder={t("addresses.labelHint")}
-				placeholderTextColor={c.muted}
-				accessibilityLabel={t("addresses.label")}
-				style={[
-					formStyles.input,
-					{ color: c.text, backgroundColor: c.input, borderColor: c.border },
-				]}
-			/>
-		</View>
+		<FormField
+			label={`${t("addresses.label")} (${t("common.optional")})`}
+			value={label}
+			onChangeText={setLabel}
+			maxLength={SAVED_ADDRESS_LABEL_MAX}
+			placeholder={t("addresses.labelHint")}
+			autoCapitalize="sentences"
+		/>
 	);
 
 	return (
-		<View style={{ gap: 16 }}>
+		<View style={styles.form}>
 			{extra === "book" ? labelInput : null}
 			<FormRow>
-				<AddressTextField
+				<AddressInputField
 					control={control}
 					name="recipientName"
 					label={t("checkout.recipientName")}
 					autoComplete="name"
 					error={error("recipientName")}
 				/>
-				<AddressTextField
+				<AddressInputField
 					control={control}
 					name="phone"
 					label={t("checkout.phone")}
@@ -179,7 +218,10 @@ export function AddressEditor({
 				}}
 			/>
 			{placeOutside ? (
-				<Text style={[formStyles.hint, { color: c.warningText }]}>
+				<Text
+					style={[styles.note, { color: c.warningText }]}
+					accessibilityLiveRegion="polite"
+				>
 					{t("addresses.placeOutside")}
 				</Text>
 			) : null}
@@ -226,14 +268,14 @@ export function AddressEditor({
 				/>
 			) : null}
 			{city && district === otherDistrictOf(city) ? (
-				<AddressTextField
+				<AddressInputField
 					control={control}
 					name="districtOther"
 					label={t("checkout.districtOther")}
 					error={error("districtOther")}
 				/>
 			) : null}
-			<AddressTextField
+			<AddressInputField
 				control={control}
 				name="landmark"
 				label={
@@ -252,7 +294,7 @@ export function AddressEditor({
 					<LocationField value={field.value} onChange={field.onChange} />
 				)}
 			/>
-			<AddressTextField
+			<AddressInputField
 				control={control}
 				name="instructions"
 				label={`${t("checkout.instructions")} (${t("common.optional")})`}
@@ -261,65 +303,66 @@ export function AddressEditor({
 				error={error("instructions")}
 			/>
 			{extra === "book" ? (
-				<View style={formStyles.row}>
-					<Switch
+				<GroupedSection>
+					<GroupedSwitchRow
+						icon="star-outline"
+						iconTone="brand"
+						label={t("addresses.makeDefault")}
 						value={isDefault}
 						onValueChange={setIsDefault}
 						disabled={initialDefault}
-						accessibilityLabel={t("addresses.makeDefault")}
 					/>
-					<Text style={[formStyles.label, { color: c.body, flex: 1 }]}>
-						{t("addresses.makeDefault")}
-					</Text>
-				</View>
+				</GroupedSection>
 			) : null}
 			{extra === "save" ? (
-				<View
-					style={{
-						gap: 12,
-						borderWidth: 1,
-						borderColor: c.border,
-						borderRadius: 14,
-						padding: 12,
-					}}
-				>
-					<View style={[formStyles.row, { minHeight: 44 }]}>
-						<Switch
+				<View style={styles.saveBlock}>
+					<GroupedSection>
+						<GroupedSwitchRow
+							icon="bookmark-outline"
+							iconTone="brand"
+							label={t("addresses.saveThisAddress")}
 							value={save}
 							onValueChange={setSave}
-							accessibilityLabel={t("addresses.saveThisAddress")}
 						/>
-						<Text style={[formStyles.label, { color: c.text, flex: 1 }]}>
-							{t("addresses.saveThisAddress")}
-						</Text>
-					</View>
+					</GroupedSection>
 					{save ? labelInput : null}
 				</View>
 			) : null}
 			{formError ? (
 				<Text
-					style={[formStyles.error, { color: dangerInk(c) }]}
+					style={[
+						styles.note,
+						{ color: c.isDark ? c.dangerText : c.destructive },
+					]}
 					accessibilityLiveRegion="polite"
 				>
 					{formError}
 				</Text>
 			) : null}
-			<View style={{ flexDirection: "row", gap: 12 }}>
+			<View style={styles.buttons}>
 				{onCancel ? (
-					<CheckoutButton
+					<FormButton
 						label={t("addresses.cancel")}
-						variant="outline"
+						variant="secondary"
 						onPress={onCancel}
-						style={{ flex: 1 }}
+						style={styles.button}
 					/>
 				) : null}
-				<CheckoutButton
+				<FormButton
 					label={submitLabel}
 					onPress={submit}
 					loading={pending}
-					style={{ flex: 1 }}
+					style={styles.button}
 				/>
 			</View>
 		</View>
 	);
 }
+
+const styles = StyleSheet.create({
+	form: { gap: 20 },
+	saveBlock: { gap: 16 },
+	note: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	buttons: { flexDirection: "row", gap: 12, marginTop: 4 },
+	button: { flex: 1 },
+});

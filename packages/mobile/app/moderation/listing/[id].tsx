@@ -5,17 +5,20 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Colors, Fonts } from "@/constants/theme";
+import { ImageViewer } from "@/src/components/ImageViewer";
 import { DecisionSheet } from "@/src/components/moderation/DecisionSheet";
 import {
 	DecisionBar,
 	DecisionButton,
 	DetailSkeleton,
+	InlineNotice,
 	LoadError,
 	ModerationCard,
+	TonePill,
 } from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
-import { tonesOf } from "@/src/components/moderation/tones";
+import { type Tone, tonesOf } from "@/src/components/moderation/tones";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useListingDecision } from "@/src/hooks/useModeration";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -24,12 +27,28 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
-import type { Category, ListingDoc, UserDoc } from "@/src/types/api";
+import type {
+	Category,
+	ListingDoc,
+	ListingStatus,
+	UserDoc,
+} from "@/src/types/api";
 import {
 	LISTING_REJECTION_REASONS,
 	type ListingRejectionReason,
 	rejectionNeedsMessage,
 } from "../../../../api/src/contracts/listingRejection";
+
+/** The listing's state as the seller reads it, so the decision is taken knowing it. */
+const STATUS_LOOK: Record<ListingStatus, { key: string; tone: Tone }> = {
+	draft: { key: "listings.statusDraft", tone: "neutral" },
+	pending: { key: "listings.statusPending", tone: "warning" },
+	published: { key: "listings.statusPublished", tone: "positive" },
+	rejected: { key: "listings.statusRejected", tone: "negative" },
+	sold: { key: "listings.statusSold", tone: "neutral" },
+	expired: { key: "listings.statusExpired", tone: "neutral" },
+	deleted: { key: "moderation.listingStatusDeleted", tone: "neutral" },
+};
 
 export default function ModerateListingScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,6 +58,7 @@ export default function ModerateListingScreen() {
 	const { centeredContent } = useResponsive();
 	const { showError, showSuccess } = useAlert();
 	const [rejecting, setRejecting] = useState(false);
+	const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
 	const { data, isLoading, isError, error, refetch } = useQuery({
 		queryKey: ["moderation", "listing", id],
@@ -88,6 +108,18 @@ export default function ModerateListingScreen() {
 		data?.category && typeof data.category === "object"
 			? (data.category as Category)
 			: null;
+	const ink = c.isDark ? Colors.dark : Colors.light;
+	// Thumbnails and the full-size originals, kept index for index.
+	const photos = (data?.images ?? []).flatMap((entry) => {
+		const thumb = resolveListingImageUrl(entry, "medium");
+		const full = resolveListingImageUrl(entry) ?? thumb;
+		return thumb && full ? [{ thumb, full }] : [];
+	});
+	const status = data ? STATUS_LOOK[data.status] : null;
+	// The server refuses both no-ops (409): approving what is already live,
+	// rejecting what is already rejected. The bar never offers them.
+	const canApprove = data?.status !== "published";
+	const canReject = data?.status !== "rejected";
 
 	return (
 		<ModerationScreen
@@ -105,32 +137,39 @@ export default function ModerateListingScreen() {
 			) : (
 				<>
 					<ScrollView contentContainerStyle={[styles.content, centeredContent]}>
-						{data.images?.length ? (
+						{photos.length ? (
+							// The photos are the evidence: each opens full screen, where a
+							// moderator can zoom on a logo, a label or a serial number.
 							<ScrollView
 								horizontal
 								showsHorizontalScrollIndicator={false}
 								contentContainerStyle={styles.photos}
 							>
-								{data.images.map((entry, index) => {
-									const uri = resolveListingImageUrl(entry, "medium");
-									if (!uri) return null;
-									return (
+								{photos.map((photo, index) => (
+									<Pressable
+										key={photo.thumb}
+										accessibilityRole="imagebutton"
+										accessibilityLabel={t("shop.openPhoto", {
+											index: index + 1,
+											count: photos.length,
+										})}
+										onPress={() => setViewerIndex(index)}
+										style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+									>
 										<Image
-											key={uri}
-											source={{ uri }}
-											style={[styles.photo, { backgroundColor: c.card }]}
+											source={{ uri: photo.thumb }}
+											style={[styles.photo, { backgroundColor: ink.well }]}
 											contentFit="cover"
 											transition={150}
-											accessibilityLabel={`${data.title} ${index + 1}/${data.images?.length ?? 0}`}
 										/>
-									);
-								})}
+									</Pressable>
+								))}
 							</ScrollView>
 						) : (
 							<View
 								style={[
 									styles.noPhoto,
-									{ backgroundColor: c.card, borderColor: c.border },
+									{ backgroundColor: ink.well, borderColor: c.border },
 								]}
 							>
 								<Ionicons name="image-outline" size={26} color={c.muted} />
@@ -177,12 +216,38 @@ export default function ModerateListingScreen() {
 									) : null}
 								</View>
 							) : null}
+							{status ? (
+								<TonePill
+									tone={status.tone}
+									label={t(status.key, { defaultValue: data.status })}
+								/>
+							) : null}
 							{data.description ? (
-								<Text style={[styles.description, { color: c.text }]}>
+								<Text style={[styles.description, { color: ink.body }]}>
 									{data.description}
 								</Text>
-							) : null}
+							) : (
+								<Text style={[styles.description, { color: c.muted }]}>
+									{t("moderation.noDescription")}
+								</Text>
+							)}
 						</ModerationCard>
+
+						{/* Refused before: the reason the seller was given, so a second
+						    look does not overturn the first without seeing it. */}
+						{data.status === "rejected" && data.rejectionCode ? (
+							<InlineNotice
+								tone="neutral"
+								text={[
+									t(`listingRejection.${data.rejectionCode}`, {
+										defaultValue: data.rejectionCode,
+									}),
+									data.rejectionReason,
+								]
+									.filter(Boolean)
+									.join(" — ")}
+							/>
+						) : null}
 
 						{seller ? (
 							<Pressable
@@ -216,23 +281,39 @@ export default function ModerateListingScreen() {
 
 					{/* Reject only opens the reason sheet, so it sits left and quiet;
 					    approve is the one-tap outcome and takes the wider slot. */}
-					<DecisionBar>
-						<DecisionButton
-							variant="dangerOutline"
-							icon="close"
-							label={t("moderation.reject")}
-							onPress={() => setRejecting(true)}
-							disabled={isPending}
-						/>
-						<DecisionButton
-							variant="approve"
-							icon="checkmark"
-							label={t("moderation.approve")}
-							onPress={() => run("approve")}
-							pending={isPending && !rejecting}
-							disabled={isPending}
-							grow={1.4}
-						/>
+					<DecisionBar
+						note={
+							!canApprove
+								? {
+										text: t("moderation.listingAlreadyPublished"),
+									}
+								: !canReject
+									? {
+											text: t("moderation.listingAlreadyRejected"),
+										}
+									: null
+						}
+					>
+						{canReject ? (
+							<DecisionButton
+								variant="dangerOutline"
+								icon="close"
+								label={t("moderation.reject")}
+								onPress={() => setRejecting(true)}
+								disabled={isPending}
+							/>
+						) : null}
+						{canApprove ? (
+							<DecisionButton
+								variant="approve"
+								icon="checkmark"
+								label={t("moderation.approve")}
+								onPress={() => run("approve")}
+								pending={isPending && !rejecting}
+								disabled={isPending}
+								grow={1.4}
+							/>
+						) : null}
 					</DecisionBar>
 
 					<DecisionSheet
@@ -265,6 +346,13 @@ export default function ModerateListingScreen() {
 							run("reject", code, text || undefined);
 						}}
 						onClose={() => setRejecting(false)}
+					/>
+
+					<ImageViewer
+						uris={photos.map((photo) => photo.full)}
+						index={viewerIndex ?? 0}
+						visible={viewerIndex !== null}
+						onClose={() => setViewerIndex(null)}
 					/>
 				</>
 			)}

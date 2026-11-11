@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -7,6 +8,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
+import { StatusTag } from "@/src/components/shop/Tags";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useDeliveryLocations } from "@/src/hooks/useDeliverySettings";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -40,44 +42,80 @@ function LocationsList({ shopId }: { shopId: string }) {
 				contentContainerStyle={styles.content}
 				ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
 				ListEmptyComponent={
-					<Text style={{ color: c.muted, fontFamily: Fonts.body }}>
-						{t("deliverySettings.locationsEmpty")}
-					</Text>
-				}
-				renderItem={({ item }) => (
-					<Pressable
-						onPress={() =>
-							router.push({
-								pathname: "/seller/delivery/location/[id]",
-								params: { id: String(item.id) },
-							})
-						}
-						accessibilityRole="button"
-						accessibilityLabel={item.name}
+					<View
 						style={[
-							styles.row,
-							{ borderColor: c.border, backgroundColor: c.card },
+							styles.empty,
+							{ backgroundColor: c.card, borderColor: c.border },
 						]}
 					>
-						<Text style={[styles.title, { color: c.text }]}>{item.name}</Text>
-						<Text style={{ color: c.body, fontFamily: Fonts.body }}>
-							{item.landmark}
+						<Ionicons name="storefront-outline" size={28} color={c.link} />
+						<Text style={[styles.body, styles.center, { color: c.body }]}>
+							{t("deliverySettings.locationsEmpty")}
 						</Text>
-						<Text
-							style={{ color: c.muted, fontFamily: Fonts.body, fontSize: 13 }}
+					</View>
+				}
+				renderItem={({ item }) => {
+					const inactive = item.active === false;
+					return (
+						<Pressable
+							onPress={() =>
+								router.push({
+									pathname: "/seller/delivery/location/[id]",
+									params: { id: String(item.id) },
+								})
+							}
+							accessibilityRole="button"
+							accessibilityLabel={item.name}
+							style={({ pressed }) => [
+								styles.row,
+								{ borderColor: c.border, backgroundColor: c.card },
+								pressed && styles.pressed,
+							]}
 						>
-							{[
-								item.pickupEnabled ? t("deliverySettings.pickupBadge") : null,
-								item.isDefaultOrigin ? t("deliverySettings.originBadge") : null,
-								item.active === false ? t("deliverySettings.inactive") : null,
-							]
-								.filter(Boolean)
-								.join(" · ")}
-						</Text>
-					</Pressable>
-				)}
+							<View style={styles.rowBody}>
+								<Text
+									style={[styles.title, { color: inactive ? c.muted : c.text }]}
+									numberOfLines={1}
+								>
+									{item.name}
+								</Text>
+								{item.landmark ? (
+									<Text
+										style={[styles.body, { color: c.body }]}
+										numberOfLines={2}
+									>
+										{item.landmark}
+									</Text>
+								) : null}
+								{item.pickupEnabled || item.isDefaultOrigin || inactive ? (
+									<View style={styles.tags}>
+										{item.isDefaultOrigin ? (
+											<StatusTag
+												label={t("deliverySettings.originBadge")}
+												tone="info"
+											/>
+										) : null}
+										{item.pickupEnabled ? (
+											<StatusTag
+												label={t("deliverySettings.pickupBadge")}
+												tone="success"
+											/>
+										) : null}
+										{inactive ? (
+											<StatusTag
+												label={t("deliverySettings.inactive")}
+												tone="neutral"
+											/>
+										) : null}
+									</View>
+								) : null}
+							</View>
+							<Ionicons name="chevron-forward" size={18} color={c.muted} />
+						</Pressable>
+					);
+				}}
 				ListFooterComponent={
-					<View style={{ marginTop: 16 }}>
+					<View style={styles.footer}>
 						<SheetButton
 							label={t("deliverySettings.addLocation")}
 							onPress={() =>
@@ -105,6 +143,27 @@ export default function LocationsScreen() {
 
 const styles = StyleSheet.create({
 	content: { padding: 16, paddingBottom: 48 },
-	row: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 4, minHeight: 48 },
-	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	row: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 16,
+		minHeight: 48,
+	},
+	pressed: { opacity: 0.7 },
+	rowBody: { flex: 1, gap: 6 },
+	title: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.displayBold },
+	body: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	center: { textAlign: "center" },
+	tags: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+	footer: { marginTop: 24 },
+	empty: {
+		alignItems: "center",
+		gap: 10,
+		padding: 24,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
 });

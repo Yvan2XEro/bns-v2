@@ -401,6 +401,8 @@ function SellerHubContent({
 								if (readsOrders) void toAcceptList.refetch();
 							}}
 							tintColor={c.primary}
+							colors={[c.primary]}
+							progressBackgroundColor={c.card}
 						/>
 					}
 				>
@@ -417,8 +419,8 @@ function SellerHubContent({
 									{ backgroundColor: c.dangerSoft, borderColor: c.danger },
 								]}
 							>
-								<Ionicons name="ban" size={18} color={dangerInk(c)} />
-								<View style={{ flex: 1 }}>
+								<Ionicons name="ban" size={20} color={dangerInk(c)} />
+								<View style={styles.bannerCopy}>
 									<Text style={[styles.bannerTitle, { color: dangerInk(c) }]}>
 										{shop.suspension.indefinite || !shop.suspension.until
 											? t("seller.suspendedIndefinitely")
@@ -431,7 +433,7 @@ function SellerHubContent({
 												})}
 									</Text>
 									{shop.suspension.reason ? (
-										<Text style={[styles.meta, { color: c.text }]}>
+										<Text style={[styles.meta, { color: c.body }]}>
 											{t(`report.${shop.suspension.reason}`)}
 										</Text>
 									) : null}
@@ -449,8 +451,8 @@ function SellerHubContent({
 									{ backgroundColor: c.neutralSoft, borderColor: c.border },
 								]}
 							>
-								<Ionicons name="lock-closed" size={18} color={c.muted} />
-								<View style={{ flex: 1 }}>
+								<Ionicons name="lock-closed" size={20} color={c.muted} />
+								<View style={styles.bannerCopy}>
 									<Text style={[styles.bannerTitle, { color: c.text }]}>
 										{roleReason === "dormant"
 											? t("seller.hubLocked.dormant")
@@ -487,10 +489,10 @@ function SellerHubContent({
 						) : null}
 
 						{tabRoot ? (
-							<>
+							<View style={styles.modeRows}>
 								<MyAccountButton />
 								<SwitchModeButton target="buyer" />
-							</>
+							</View>
 						) : null}
 					</View>
 				</ScrollView>
@@ -503,14 +505,18 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	loadingBand: { height: 136 },
 	switcher: { paddingHorizontal: 16 },
-	content: { padding: 16, gap: 14 },
+	content: { padding: 16, gap: 16 },
 	banner: {
 		flexDirection: "row",
-		gap: 10,
-		padding: 14,
+		alignItems: "flex-start",
+		gap: 12,
+		padding: 16,
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
 	},
-	bannerTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	bannerCopy: { flex: 1, gap: 4 },
+	bannerTitle: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.displayBold },
+	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	// The two mode rows leave the shop's work behind: set apart from the tiles.
+	modeRows: { gap: 10, marginTop: 12 },
 });

@@ -1,11 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useListing } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
+import type { ListingDoc } from "@/src/types/api";
 
 // Deliberately no link out to the web listing page: that page renders the paid
 // boost dialog, so sending the user there from inside the app is an App Review
@@ -16,13 +20,21 @@ export default function BoostModal() {
 	const isDark = useColorScheme() === "dark";
 	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
+	// The listing the seller came to boost, named by its title and photo. A raw
+	// id means nothing to them; until the listing loads (or if it fails) the
+	// card simply goes without it.
+	const { data } = useListing(listingId ?? "");
+	const listing = ((data as { doc?: ListingDoc } | undefined)?.doc ?? data) as
+		| ListingDoc
+		| undefined;
+	const listingTitle = listing?.title?.trim();
+	const thumbnail = resolveListingImageUrl(listing?.images?.[0], "thumbnail");
 
 	const c = isDark ? Colors.dark : Colors.light;
 	const bg = c.background;
 	const cardBg = c.card;
 	const textColor = c.foreground;
 	const bodyColor = c.body;
-	const mutedColor = c.mutedForeground;
 	const borderColor = c.border;
 	// White stays legible on the deeper indigo in dark mode.
 	const filledColor = c.primaryFill;
@@ -90,10 +102,23 @@ export default function BoostModal() {
 					<Text style={[styles.unavailableText, { color: bodyColor }]}>
 						{t("boost.mobileUnavailableMessage")}
 					</Text>
-					{listingId ? (
-						<Text style={[styles.unavailableMeta, { color: mutedColor }]}>
-							{t("boost.listingReference", { listingId })}
-						</Text>
+					{listingTitle ? (
+						<View style={[styles.listingRow, { borderColor }]}>
+							{thumbnail ? (
+								<Image
+									source={{ uri: thumbnail }}
+									style={[styles.listingThumb, { backgroundColor: c.well }]}
+									contentFit="cover"
+									accessibilityIgnoresInvertColors
+								/>
+							) : null}
+							<Text
+								style={[styles.listingTitle, { color: textColor }]}
+								numberOfLines={2}
+							>
+								{listingTitle}
+							</Text>
+						</View>
 					) : null}
 				</View>
 
@@ -184,10 +209,24 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		lineHeight: 22,
 	},
-	unavailableMeta: {
-		fontFamily: Fonts.body,
-		fontSize: 12,
-		lineHeight: 16,
+	listingRow: {
+		alignItems: "center",
+		borderTopWidth: StyleSheet.hairlineWidth,
+		flexDirection: "row",
+		gap: 12,
+		marginTop: 4,
+		paddingTop: 14,
+	},
+	listingThumb: {
+		borderRadius: 8,
+		height: 48,
+		width: 48,
+	},
+	listingTitle: {
+		flex: 1,
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 20,
 	},
 	closeAction: {
 		alignItems: "center",

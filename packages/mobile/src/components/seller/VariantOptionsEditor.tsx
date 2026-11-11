@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { Dispatch, SetStateAction } from "react";
-import { Pressable, Switch, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { type FieldIssue, issueAt } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
@@ -11,6 +11,7 @@ import {
 } from "@/src/lib/productForm";
 import { FieldIssueText } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
+import { SwitchRow } from "./SwitchRow";
 import { VariantOptionRow } from "./VariantOptionRow";
 
 /**
@@ -75,37 +76,31 @@ export function VariantOptionsEditor({
 			),
 		}));
 
+	const toggleVariants = (hasVariants: boolean) =>
+		update((s) => ({
+			...s,
+			hasVariants,
+			options:
+				hasVariants && s.options.length === 0
+					? [{ name: t("product.defaultOptionName"), values: [] }]
+					: s.options,
+		}));
+	const canAddOption =
+		form.hasVariants && form.options.length < MAX_OPTIONS && !readOnly;
+
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}>
-			<View style={f.row}>
-				<View style={{ flex: 1 }}>
-					<Text style={[f.label, { color: c.text }]}>
-						{t("product.hasVariants")}
-					</Text>
-					<Text style={[f.hint, { color: c.muted }]}>
-						{t("product.hasVariantsHint")}
-					</Text>
-				</View>
-				<Switch
-					value={form.hasVariants}
-					disabled={readOnly}
-					onValueChange={(hasVariants) =>
-						update((s) => ({
-							...s,
-							hasVariants,
-							options:
-								hasVariants && s.options.length === 0
-									? [{ name: t("product.defaultOptionName"), values: [] }]
-									: s.options,
-						}))
-					}
-					trackColor={{ true: c.primary, false: c.border }}
-					accessibilityLabel={t("product.hasVariants")}
-				/>
-			</View>
+			<SwitchRow
+				title={t("product.hasVariants")}
+				hint={t("product.hasVariantsHint")}
+				value={form.hasVariants}
+				disabled={readOnly}
+				onChange={toggleVariants}
+			/>
 
-			{form.hasVariants
-				? form.options.map((option, index) => (
+			{form.hasVariants ? (
+				<View style={styles.options}>
+					{form.options.map((option, index) => (
 						<VariantOptionRow
 							key={`option-${index}`}
 							option={option}
@@ -117,13 +112,14 @@ export function VariantOptionsEditor({
 							nameIssue={issueAt(issues, `options.${index}.name`)}
 							valuesIssue={issueAt(issues, `options.${index}.values`)}
 						/>
-					))
-				: null}
-			{form.hasVariants ? (
-				<FieldIssueText issue={issueAt(issues, "options")} />
+					))}
+					<FieldIssueText issue={issueAt(issues, "options")} />
+				</View>
 			) : null}
 
-			{form.hasVariants && form.options.length < MAX_OPTIONS && !readOnly ? (
+			{/* A secondary action, outlined in the link colour: it adds structure,
+			    it does not save anything. */}
+			{canAddOption ? (
 				<Pressable
 					onPress={() =>
 						update((s) => ({
@@ -131,11 +127,17 @@ export function VariantOptionsEditor({
 							options: [...s.options, { name: "", values: [] }],
 						}))
 					}
-					style={[f.row, { minHeight: 44 }]}
+					style={({ pressed }) => [
+						styles.addOption,
+						{
+							borderColor: c.border,
+							backgroundColor: pressed ? c.primarySoft : "transparent",
+						},
+					]}
 					accessibilityRole="button"
 					accessibilityLabel={t("product.addOption")}
 				>
-					<Ionicons name="add-circle-outline" size={18} color={c.link} />
+					<Ionicons name="add" size={20} color={c.link} />
 					<Text style={[f.label, { color: c.link }]}>
 						{t("product.addOption")}
 					</Text>
@@ -144,3 +146,18 @@ export function VariantOptionsEditor({
 		</View>
 	);
 }
+
+const styles = StyleSheet.create({
+	options: { gap: 12 },
+	addOption: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 8,
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		borderStyle: "dashed",
+		paddingHorizontal: 14,
+	},
+});

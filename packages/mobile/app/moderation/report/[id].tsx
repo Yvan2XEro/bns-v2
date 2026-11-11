@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { DecisionSheet } from "@/src/components/moderation/DecisionSheet";
 import {
 	DecisionBar,
@@ -11,6 +11,7 @@ import {
 	DetailSkeleton,
 	LoadError,
 	ModerationCard,
+	TonePill,
 } from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
@@ -20,6 +21,7 @@ import { useReportDecision } from "@/src/hooks/useModeration";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ReportDoc, UserDoc } from "@/src/types/api";
 
@@ -96,6 +98,8 @@ export default function ModerateReportScreen() {
 			? (data.reporter as UserDoc)
 			: null;
 	const route = data ? targetRoute(data) : null;
+	const closed = Boolean(data && data.status !== "pending");
+	const ink = c.isDark ? Colors.dark : Colors.light;
 
 	return (
 		<ModerationScreen
@@ -127,19 +131,37 @@ export default function ModerateReportScreen() {
 									{t(`report.${data.reason}`)}
 								</Text>
 							</View>
+							{/* The reporter's own words are the evidence: running-text ink,
+							    full length, never clipped. */}
 							<Text
 								style={[
 									styles.description,
-									{ color: data.description ? c.text : c.muted },
+									{ color: data.description ? ink.body : c.muted },
 								]}
 							>
 								{data.description || t("moderation.noDescription")}
 							</Text>
 							<Text style={[styles.meta, { color: c.muted }]}>
-								{t("moderation.reportedBy", {
-									name: reporter?.name || reporter?.email || "—",
-								})}
+								{[
+									t("moderation.reportedBy", {
+										name: reporter?.name || reporter?.email || "—",
+									}),
+									formatDate(data.createdAt),
+								]
+									.filter(Boolean)
+									.join(" · ")}
 							</Text>
+							{closed ? (
+								<TonePill
+									tone="neutral"
+									label={t(`moderation.reportStatus_${data.status}`)}
+								/>
+							) : null}
+							{closed && data.resolution ? (
+								<Text style={[styles.description, { color: ink.body }]}>
+									{data.resolution}
+								</Text>
+							) : null}
 						</ModerationCard>
 
 						{/* The target is where a sanction is taken: it reads as a link,
@@ -192,22 +214,32 @@ export default function ModerateReportScreen() {
 
 					{/* Both outcomes close the report and both go through the note
 					    sheet; "dismiss" is the quieter of the two. */}
-					<DecisionBar>
-						<DecisionButton
-							variant="secondary"
-							label={t("moderation.dismiss")}
-							onPress={() => setDeciding("dismissed")}
-							disabled={isPending}
+					{/* A closed report cannot be decided again (the server answers
+					    409), so the bar says it is closed instead of offering it. */}
+					{closed ? (
+						<DecisionBar
+							note={{
+								text: t("moderation.reportAlreadyClosed"),
+							}}
 						/>
-						<DecisionButton
-							variant="primary"
-							icon="checkmark-done"
-							label={t("moderation.resolve")}
-							onPress={() => setDeciding("resolved")}
-							disabled={isPending}
-							grow={1.4}
-						/>
-					</DecisionBar>
+					) : (
+						<DecisionBar>
+							<DecisionButton
+								variant="secondary"
+								label={t("moderation.dismiss")}
+								onPress={() => setDeciding("dismissed")}
+								disabled={isPending}
+							/>
+							<DecisionButton
+								variant="primary"
+								icon="checkmark-done"
+								label={t("moderation.resolve")}
+								onPress={() => setDeciding("resolved")}
+								disabled={isPending}
+								grow={1.4}
+							/>
+						</DecisionBar>
+					)}
 
 					<DecisionSheet
 						visible={deciding !== null}

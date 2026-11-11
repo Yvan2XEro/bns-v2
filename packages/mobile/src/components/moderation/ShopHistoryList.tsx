@@ -43,9 +43,24 @@ export function ShopHistoryList({
 						{t("moderation.historyEmpty")}
 					</Text>
 				) : (
-					history.map((entry) => (
-						<HistoryRow key={entry.id} entry={entry} c={c} t={t} />
-					))
+					// A log, not a list of things to open: one card, entries split
+					// by hairlines, so it never reads like the tappable reports.
+					<View
+						style={[
+							styles.log,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						{history.map((entry, index) => (
+							<HistoryRow
+								key={entry.id}
+								entry={entry}
+								first={index === 0}
+								c={c}
+								t={t}
+							/>
+						))}
+					</View>
 				)}
 			</View>
 		</>
@@ -104,10 +119,12 @@ function ReportRow({
 
 function HistoryRow({
 	entry,
+	first,
 	c,
 	t,
 }: {
 	entry: ModerationLogEntry;
+	first: boolean;
 	c: ModerationPalette;
 	t: Translate;
 }) {
@@ -121,11 +138,17 @@ function HistoryRow({
 		| undefined;
 	return (
 		<View
-			style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}
+			style={[
+				styles.logRow,
+				!first && styles.logDivided,
+				{ borderTopColor: c.border },
+			]}
 		>
 			<View style={styles.flex}>
 				<Text style={[styles.rowTitle, { color: c.text }]}>
-					{t(`moderation.action_${entry.action.replace(".", "_")}`)}
+					{t(`moderation.action_${entry.action.replace(".", "_")}`, {
+						defaultValue: entry.action,
+					})}
 				</Text>
 				<Text style={[styles.meta, { color: c.muted }]}>
 					{[
@@ -163,6 +186,13 @@ const styles = StyleSheet.create({
 		padding: 12,
 		minHeight: 56,
 	},
+	log: {
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingHorizontal: 12,
+	},
+	logRow: { flexDirection: "row", paddingVertical: 12 },
+	logDivided: { borderTopWidth: StyleSheet.hairlineWidth },
 	rowTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body, marginTop: 1 },
 });
