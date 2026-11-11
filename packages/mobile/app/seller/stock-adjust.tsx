@@ -12,10 +12,12 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { MovementTypePicker } from "@/src/components/seller/MovementTypePicker";
 import { VariantSummaryCard } from "@/src/components/seller/VariantSummaryCard";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useStockAdjustForm } from "@/src/hooks/useStockAdjustForm";
@@ -60,7 +62,7 @@ export default function StockAdjustSheet() {
 					onCta={() => router.back()}
 				/>
 			) : variant.isLoading || !v ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<DetailSkeleton cards={1} />
 			) : (
 				<ScreenColumn width="reading">
 					<KeyboardAwareScrollView
@@ -128,7 +130,7 @@ export default function StockAdjustSheet() {
 												style={[
 													styles.stepButton,
 													{
-														backgroundColor: c.primary,
+														backgroundColor: fillOf(c),
 														borderColor: c.primary,
 													},
 												]}
@@ -141,7 +143,7 @@ export default function StockAdjustSheet() {
 							/>
 						</View>
 						{amountError ? (
-							<Text style={[styles.meta, { color: c.danger }]}>
+							<Text style={[styles.meta, { color: dangerInk(c) }]}>
 								{t(amountError, { reserved, count: current })}
 							</Text>
 						) : null}
@@ -206,7 +208,7 @@ export default function StockAdjustSheet() {
 							</View>
 						</View>
 						{unitCostError ? (
-							<Text style={[styles.meta, { color: c.danger }]}>
+							<Text style={[styles.meta, { color: dangerInk(c) }]}>
 								{t(unitCostError)}
 							</Text>
 						) : null}
@@ -215,7 +217,7 @@ export default function StockAdjustSheet() {
 							<Text style={[styles.afterLabel, { color: c.body }]}>
 								{t("stock.after")}
 							</Text>
-							<Text style={[styles.afterValue, { color: c.primary }]}>
+							<Text style={[styles.afterValue, { color: c.link }]}>
 								{current} → {result ? result.stockAfter : "—"}
 							</Text>
 						</View>
@@ -228,7 +230,7 @@ export default function StockAdjustSheet() {
 							style={[
 								styles.submit,
 								{
-									backgroundColor: c.primary,
+									backgroundColor: fillOf(c),
 									opacity: result && !unitCostError ? 1 : 0.5,
 								},
 							]}
@@ -283,7 +285,7 @@ const styles = StyleSheet.create({
 	box: {
 		flex: 1,
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 		gap: 2,
@@ -295,10 +297,10 @@ const styles = StyleSheet.create({
 		paddingVertical: 2,
 	},
 	submit: {
-		height: 52,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

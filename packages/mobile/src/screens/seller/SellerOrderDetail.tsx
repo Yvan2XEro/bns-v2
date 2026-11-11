@@ -1,20 +1,15 @@
-import {
-	ActivityIndicator,
-	RefreshControl,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { OrderShipmentsLinks } from "@/src/components/delivery/OrderShipmentsLinks";
 import { EmptyState } from "@/src/components/EmptyState";
 import { OrderProgress } from "@/src/components/purchases/OrderProgress";
 import { ActionBar } from "@/src/components/sellerOrders/ActionBar";
 import { BuyerCard } from "@/src/components/sellerOrders/BuyerCard";
 import { OrderItemsCard } from "@/src/components/sellerOrders/OrderItemsCard";
+import { orderStatusTone } from "@/src/components/sellerOrders/statusTone";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { StatusTag } from "@/src/components/shop/Tags";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useSellerOrder } from "@/src/hooks/useSellerOrders";
@@ -56,7 +51,7 @@ export function SellerOrderDetail({ id }: { id: string }) {
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
 				{header}
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<DetailSkeleton cards={2} />
 			</SafeAreaView>
 		);
 	}
@@ -97,11 +92,10 @@ export function SellerOrderDetail({ id }: { id: string }) {
 					/>
 				}
 			>
-				<View style={[styles.status, { backgroundColor: c.primarySoft }]}>
-					<Text style={[styles.statusText, { color: c.primary }]}>
-						{t(`orderStatus.${statusLabelKey(order.status, "seller")}`)}
-					</Text>
-				</View>
+				<StatusTag
+					label={t(`orderStatus.${statusLabelKey(order.status, "seller")}`)}
+					tone={orderStatusTone(order.status)}
+				/>
 				<OrderProgress status={order.status} timestamps={order.timestamps} />
 				<ActionBar order={order} shopId={shop.shopId} role={shop.role} />
 				<OrderShipmentsLinks orderId={String(order.id)} />
@@ -114,13 +108,5 @@ export function SellerOrderDetail({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 40 },
 	content: { padding: 16, paddingBottom: 40, gap: 14 },
-	status: {
-		alignSelf: "flex-start",
-		borderRadius: 999,
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-	},
-	statusText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 });

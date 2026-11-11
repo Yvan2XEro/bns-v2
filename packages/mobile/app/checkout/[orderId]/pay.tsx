@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { type ComponentProps, useEffect, useState } from "react";
 import {
-	ActivityIndicator,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -15,7 +14,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
+import { FormError } from "@/src/components/checkout/FormError";
+import { inkOf } from "@/src/components/checkout/fill";
 import { OperatorMark } from "@/src/components/checkout/OperatorMark";
+import { TotalTag } from "@/src/components/checkout/TotalTag";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { Sheet } from "@/src/components/purchases/ui";
@@ -131,7 +134,7 @@ export default function CheckoutPayScreen() {
 		return (
 			<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
 				<SellerHeader title={t("payments.pay_title")} onBack={leave} />
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<DetailSkeleton cards={1} />
 			</SafeAreaView>
 		);
 	}
@@ -151,8 +154,11 @@ export default function CheckoutPayScreen() {
 	}
 
 	if (data.paymentStatus === "paid") {
-		router.replace({ pathname: "/purchases/[id]", params: { id: data.id } });
-		return null;
+		return (
+			<Redirect
+				href={{ pathname: "/purchases/[id]", params: { id: data.id } }}
+			/>
+		);
 	}
 
 	if (
@@ -160,11 +166,14 @@ export default function CheckoutPayScreen() {
 		(data.paymentStatus === "awaiting_payment" ||
 			data.paymentStatus === "failed")
 	) {
-		router.replace({
-			pathname: "/checkout/[orderId]/pending",
-			params: { orderId: data.id },
-		});
-		return null;
+		return (
+			<Redirect
+				href={{
+					pathname: "/checkout/[orderId]/pending",
+					params: { orderId: data.id },
+				}}
+			/>
+		);
 	}
 
 	if (
@@ -174,11 +183,12 @@ export default function CheckoutPayScreen() {
 		return (
 			<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
 				<SellerHeader title={t("payments.pay_title")} onBack={leave} />
-				<View style={{ padding: 16 }}>
-					<Text style={[formStyles.label, { color: c.text }]}>
-						{t("payments.pay_unavailable")}
-					</Text>
-				</View>
+				<EmptyState
+					illustration="notFound"
+					title={t("payments.pay_unavailable")}
+					ctaLabel={t("common.back")}
+					onCta={leave}
+				/>
 			</SafeAreaView>
 		);
 	}
@@ -210,10 +220,17 @@ export default function CheckoutPayScreen() {
 			/>
 			<ScreenColumn width="reading">
 				<ScrollView contentContainerStyle={styles.scroll}>
-					<Text style={[styles.section, { color: c.text }]}>
+					<Text
+						style={[styles.section, { color: c.text }]}
+						accessibilityRole="header"
+					>
 						{t("payments.pay_operator")}
 					</Text>
-					<View style={styles.operators}>
+					<View
+						style={styles.operators}
+						accessibilityRole="radiogroup"
+						accessibilityLabel={t("payments.pay_operator")}
+					>
 						{CHANNELS.map((option) => {
 							const selected = channel === option;
 							return (
@@ -223,12 +240,12 @@ export default function CheckoutPayScreen() {
 									accessibilityRole="radio"
 									accessibilityState={{ checked: selected }}
 									accessibilityLabel={t(PAYMENT_CHANNEL_LABELS[option])}
-									style={[
+									style={({ pressed }) => [
 										styles.operator,
 										{
 											borderColor: selected ? c.primary : c.border,
-											borderWidth: selected ? 2 : 1,
 											backgroundColor: selected ? c.primarySoft : c.card,
+											opacity: pressed ? 0.85 : 1,
 										},
 									]}
 								>
@@ -244,14 +261,11 @@ export default function CheckoutPayScreen() {
 											{t("payments.pay_mobileMoney")}
 										</Text>
 									</View>
-									{selected ? (
-										<Ionicons
-											name="checkmark-circle"
-											size={20}
-											color={c.primary}
-											style={styles.check}
-										/>
-									) : null}
+									<Ionicons
+										name={selected ? "radio-button-on" : "radio-button-off"}
+										size={20}
+										color={selected ? inkOf(c) : c.muted}
+									/>
 								</Pressable>
 							);
 						})}
@@ -275,6 +289,7 @@ export default function CheckoutPayScreen() {
 								autoComplete="tel"
 								placeholder={phoneExample()}
 								placeholderTextColor={c.muted}
+								selectionColor={c.primary}
 								accessibilityLabel={t("payments.pay_phone")}
 								accessibilityHint={t("payments.pay_phoneHint")}
 								style={[styles.phoneInput, { color: c.text }]}
@@ -301,13 +316,15 @@ export default function CheckoutPayScreen() {
 							value={money(data.amounts.buyerProtectionFee)}
 						/>
 						<View style={[styles.divider, { backgroundColor: c.border }]} />
-						<View style={formStyles.row}>
+						<View
+							style={formStyles.row}
+							accessible
+							accessibilityLabel={`${t("payments.summary_total")} ${money(data.amounts.total)}`}
+						>
 							<Text style={[styles.totalLabel, { color: c.text }]}>
 								{t("payments.summary_total")}
 							</Text>
-							<Text style={[styles.total, { color: c.primary }]}>
-								{money(data.amounts.total)}
-							</Text>
+							<TotalTag amount={money(data.amounts.total)} />
 						</View>
 					</View>
 
@@ -317,7 +334,10 @@ export default function CheckoutPayScreen() {
 							{ backgroundColor: c.card, borderColor: c.border },
 						]}
 					>
-						<Text style={[styles.cardTitle, { color: c.text }]}>
+						<Text
+							style={[styles.cardTitle, { color: c.text }]}
+							accessibilityRole="header"
+						>
 							{t("payments.money_title")}
 						</Text>
 						<MoneyStep
@@ -338,15 +358,15 @@ export default function CheckoutPayScreen() {
 						<Pressable
 							onPress={() => setSheetOpen(true)}
 							accessibilityRole="button"
-							hitSlop={8}
+							style={styles.linkTarget}
 						>
-							<Text style={[styles.link, { color: c.primary }]}>
+							<Text style={[styles.link, { color: inkOf(c) }]}>
 								{t("payments.summary_coverLink")}
 							</Text>
 						</Pressable>
 					</View>
 
-					{formError ? <Text style={formStyles.error}>{formError}</Text> : null}
+					<FormError message={formError} />
 				</ScrollView>
 			</ScreenColumn>
 			<View
@@ -406,7 +426,7 @@ function MoneyStep({
 	return (
 		<View style={styles.step}>
 			<View style={[styles.stepIcon, { backgroundColor: c.primarySoft }]}>
-				<Ionicons name={icon} size={16} color={c.primary} />
+				<Ionicons name={icon} size={18} color={inkOf(c)} />
 			</View>
 			<View style={styles.flex}>
 				<Text style={[styles.stepTitle, { color: c.text }]}>{title}</Text>
@@ -428,7 +448,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 4,
 	},
 	badgeText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	section: { fontSize: 15, fontFamily: Fonts.displayBold },
+	section: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	operators: { flexDirection: "row", gap: 10 },
 	operator: {
 		flex: 1,
@@ -436,42 +456,57 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 10,
 		borderRadius: 14,
+		borderWidth: 1.5,
 		padding: 12,
+		minHeight: 64,
 	},
-	operatorName: { fontSize: 14, fontFamily: Fonts.displayBold },
-	operatorSub: { fontSize: 12, fontFamily: Fonts.body },
-	check: { position: "absolute", top: -8, right: -8 },
+	operatorName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	operatorSub: { fontSize: 13, fontFamily: Fonts.body },
 	phoneBox: {
 		borderRadius: 14,
 		borderWidth: 1,
 		paddingHorizontal: 14,
 		paddingVertical: 10,
-		gap: 4,
+		gap: 2,
 	},
-	phoneLabel: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	phoneLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	phoneRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 	phoneInput: {
 		flex: 1,
-		fontSize: 16,
+		minHeight: 44,
+		fontSize: 18,
 		fontFamily: Fonts.bodySemibold,
+		fontVariant: ["tabular-nums"],
 		paddingVertical: 4,
 	},
 	amountLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.body },
-	amountValue: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
-	totalLabel: { flex: 1, fontSize: 16, fontFamily: Fonts.displayBold },
-	total: { fontSize: 20, fontFamily: Fonts.displayExtrabold },
-	cardTitle: { fontSize: 15, fontFamily: Fonts.displayBold },
+	amountValue: {
+		fontSize: 14,
+		fontFamily: Fonts.bodySemibold,
+		fontVariant: ["tabular-nums"],
+	},
+	divider: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
+	totalLabel: { flex: 1, fontSize: 17, fontFamily: Fonts.displayBold },
+	cardTitle: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	step: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
 	stepIcon: {
-		width: 30,
-		height: 30,
-		borderRadius: 9,
+		width: 36,
+		height: 36,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	stepTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	stepBody: { fontSize: 12, fontFamily: Fonts.body, lineHeight: 17 },
-	link: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	stepTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	stepBody: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 19 },
+	linkTarget: {
+		minHeight: 44,
+		justifyContent: "center",
+		alignSelf: "flex-start",
+	},
+	link: {
+		fontSize: 14,
+		fontFamily: Fonts.bodySemibold,
+		textDecorationLine: "underline",
+	},
 	bar: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
 });

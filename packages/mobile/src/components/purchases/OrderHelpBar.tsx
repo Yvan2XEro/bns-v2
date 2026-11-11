@@ -15,6 +15,7 @@ import { shopApi } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { orderHelpActions, shopMessageTarget } from "@/src/lib/orderHelpBar";
+import { fillOf } from "../checkout/fill";
 import { useShopTheme } from "../shop/theme";
 
 export function OrderHelpBar({
@@ -35,6 +36,7 @@ export function OrderHelpBar({
 	const start = useMutation({
 		mutationFn: (id: string) => shopApi.startShopConversation(id),
 	});
+	const fill = fillOf(c);
 	const actions = orderHelpActions({ canReportProblem, shopId });
 	if (actions.length === 0) return null;
 
@@ -67,7 +69,15 @@ export function OrderHelpBar({
 				<Pressable
 					accessibilityRole="button"
 					onPress={onReportProblem}
-					style={[styles.button, styles.outline, { borderColor: c.border }]}
+					style={({ pressed }) => [
+						styles.button,
+						styles.outline,
+						{
+							borderColor: c.border,
+							backgroundColor: c.card,
+							opacity: pressed ? 0.85 : 1,
+						},
+					]}
 				>
 					<Ionicons name="warning-outline" size={18} color={c.text} />
 					<Text style={[styles.text, { color: c.text }]} numberOfLines={1}>
@@ -81,14 +91,17 @@ export function OrderHelpBar({
 					accessibilityState={{ busy: start.isPending }}
 					disabled={start.isPending}
 					onPress={messageShop}
-					style={[styles.button, { backgroundColor: c.primary }]}
+					style={({ pressed }) => [
+						styles.button,
+						{ backgroundColor: fill.bg, opacity: pressed ? 0.85 : 1 },
+					]}
 				>
 					{start.isPending ? (
-						<ActivityIndicator color="#fff" />
+						<ActivityIndicator color={fill.fg} />
 					) : (
-						<Ionicons name="chatbubble-outline" size={18} color="#fff" />
+						<Ionicons name="chatbubble-outline" size={18} color={fill.fg} />
 					)}
-					<Text style={[styles.text, { color: "#fff" }]} numberOfLines={1}>
+					<Text style={[styles.text, { color: fill.fg }]} numberOfLines={1}>
 						{t("purchases.helpMessageShop")}
 					</Text>
 				</Pressable>
@@ -111,10 +124,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		minHeight: 48,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		paddingHorizontal: 12,
 	},
-	outline: { borderWidth: 1.5 },
-	text: { fontSize: 15, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	outline: { borderWidth: 1 },
+	text: { fontSize: 16, fontFamily: Fonts.bodyBold, flexShrink: 1 },
 });

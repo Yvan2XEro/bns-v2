@@ -26,14 +26,17 @@ export function SellerCard({
 		<View
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
-			<Text style={[styles.label, { color: c.muted }]}>
+			<Text
+				style={[styles.label, { color: c.text }]}
+				accessibilityRole="header"
+			>
 				{t("checkout.sellerLabel")}
 			</Text>
 			<View style={styles.row}>
 				<ShopAvatar
 					name={shop.name}
 					logo={shop.logoUrl}
-					size={40}
+					size={44}
 					radius={12}
 				/>
 				<View style={styles.main}>
@@ -52,7 +55,12 @@ export function SellerCard({
 			</View>
 			{address ? (
 				<View style={styles.line}>
-					<Ionicons name="location-outline" size={15} color={c.muted} />
+					<Ionicons
+						name="location-outline"
+						size={16}
+						color={c.muted}
+						style={styles.icon}
+					/>
 					<Text style={[styles.meta, styles.flex, { color: c.text }]}>
 						{address}
 					</Text>
@@ -60,7 +68,12 @@ export function SellerCard({
 			) : null}
 			{phone ? (
 				<View style={styles.line}>
-					<Ionicons name="call-outline" size={15} color={c.muted} />
+					<Ionicons
+						name="call-outline"
+						size={16}
+						color={c.muted}
+						style={styles.icon}
+					/>
 					<Text style={[styles.meta, styles.flex, { color: c.text }]}>
 						{phone}
 					</Text>
@@ -74,14 +87,10 @@ const styles = StyleSheet.create({
 	card: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 16,
-		padding: 14,
-		gap: 8,
+		padding: 16,
+		gap: 10,
 	},
-	label: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-	},
+	label: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
 	main: { flex: 1, minWidth: 0, gap: 2 },
 	nameRow: {
@@ -90,8 +99,9 @@ const styles = StyleSheet.create({
 		gap: 6,
 		flexWrap: "wrap",
 	},
-	name: { fontSize: 15, fontFamily: Fonts.displayBold, flexShrink: 1 },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	name: { fontSize: 16, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
 	line: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
 	flex: { flex: 1 },
+	icon: { marginTop: 2 },
 });

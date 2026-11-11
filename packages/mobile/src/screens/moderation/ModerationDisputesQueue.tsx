@@ -1,44 +1,50 @@
+import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Colors, Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
 import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
+import {
+	LoadError,
+	QueueSkeleton,
+	TonePill,
+} from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
+import { tonesOf } from "@/src/components/moderation/tones";
 import { useModerationDisputes } from "@/src/hooks/useModerationDisputes";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import {
 	DISPUTE_REASON_LABELS,
 	DISPUTE_STATUS_LABELS,
 } from "@/src/lib/caseStatus";
+import { formatDate } from "@/src/lib/formatDate";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
+
+const Separator = () => <View style={styles.separator} />;
 
 export function ModerationDisputesQueue({
 	selectedId,
 	onOpen,
 }: SplitListProps) {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
 	const query = useModerationDisputes();
 	const selectedStyle = useSelectedRowStyle();
+	const sun = c.isDark ? Colors.dark.sun : Colors.light.sun;
 	return (
 		<ModerationScreen title={t("moderationDisputes.title")}>
 			{query.isPending ? (
-				<ActivityIndicator style={styles.loading} color={c.primary} />
+				<QueueSkeleton />
 			) : query.isError ? (
-				<EmptyState
-					illustration="notFound"
+				<LoadError
 					title={t("moderationDisputes.loadError")}
-					ctaLabel={t("common.retry")}
-					onCta={() => void query.refetch()}
+					message={resolveErrorMessage(query.error, t)}
+					onRetry={() => void query.refetch()}
 				/>
 			) : (
 				<ScreenColumn width="wide">
@@ -47,7 +53,9 @@ export function ModerationDisputesQueue({
 						extraData={selectedId}
 						keyExtractor={(item) => item.id}
 						contentContainerStyle={styles.list}
-						ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+						ItemSeparatorComponent={Separator}
+						refreshing={query.isRefetching}
+						onRefresh={() => void query.refetch()}
 						ListEmptyComponent={
 							<EmptyState
 								illustration="empty"
@@ -57,14 +65,29 @@ export function ModerationDisputesQueue({
 						renderItem={({ item }) => (
 							<Pressable
 								accessibilityRole="button"
-								accessibilityLabel={t("moderationDisputes.openCase", {
-									number: item.number,
-								})}
+								// The whole row in one phrase, in the order it is triaged:
+								// overdue first, then what is at stake and why.
+								accessibilityLabel={[
+									t("moderationDisputes.openCase", { number: item.number }),
+									item.overdue ? t("moderationDisputes.overdue") : null,
+									formatPrice(item.amountAtStake, i18n.language),
+									t(DISPUTE_REASON_LABELS[item.reason]),
+									t(DISPUTE_STATUS_LABELS[item.status]),
+								]
+									.filter(Boolean)
+									.join(", ")}
 								accessibilityState={{ selected: item.id === selectedId }}
 								onPress={() => onOpen(item.id)}
-								style={[
+								style={({ pressed }) => [
 									styles.card,
-									{ backgroundColor: c.card, borderColor: c.border },
+									// A late case is outlined in full, never striped: the
+									// pill and the red deadline carry the rest.
+									item.overdue && styles.cardOverdue,
+									{
+										backgroundColor: c.card,
+										borderColor: item.overdue ? k.dangerText : c.border,
+										opacity: pressed ? 0.85 : 1,
+									},
 									selectedStyle(item.id === selectedId),
 								]}
 							>
@@ -73,30 +96,54 @@ export function ModerationDisputesQueue({
 										{item.number}
 									</Text>
 									{item.overdue ? (
-										<Text style={[styles.overdue, { color: c.danger }]}>
-											{t("moderationDisputes.overdue")}
-										</Text>
+										<TonePill
+											tone="negative"
+											label={t("moderationDisputes.overdue")}
+										/>
 									) : null}
+									<View style={styles.flex} />
+									{/* The amount at stake is a price: ink on the yellow tag. */}
+									<View style={[styles.priceTag, { backgroundColor: sun }]}>
+										<Text style={styles.priceText}>
+											{formatPrice(item.amountAtStake, i18n.language)}
+										</Text>
+									</View>
 								</View>
-								<Text style={[styles.body, { color: c.muted }]}>
+								<Text style={[styles.body, { color: c.text }]}>
+									{t(DISPUTE_REASON_LABELS[item.reason])}
+								</Text>
+								<Text style={[styles.meta, { color: c.muted }]}>
 									{t("disputes.order", { number: item.orderNumber })} ·{" "}
 									{t(DISPUTE_STATUS_LABELS[item.status])}
 								</Text>
-								<Text style={[styles.body, { color: c.muted }]}>
-									{t(DISPUTE_REASON_LABELS[item.reason])} ·{" "}
-									{formatPrice(item.amountAtStake, i18n.language)}
-								</Text>
 								{item.deadline ? (
-									<Text
-										style={[
-											styles.body,
-											{ color: item.overdue ? c.danger : c.muted },
-										]}
-									>
-										{t("moderationDisputes.deadline", {
-											date: new Date(item.deadline).toLocaleString(),
-										})}
-									</Text>
+									<View style={styles.deadline}>
+										<Ionicons
+											name="time-outline"
+											size={15}
+											color={item.overdue ? k.dangerText : c.muted}
+										/>
+										<Text
+											style={[
+												styles.meta,
+												{
+													color: item.overdue ? k.dangerText : c.muted,
+													fontFamily: item.overdue
+														? Fonts.bodySemibold
+														: Fonts.body,
+												},
+											]}
+										>
+											{t("moderationDisputes.deadline", {
+												date: formatDate(item.deadline, {
+													day: "numeric",
+													month: "short",
+													hour: "2-digit",
+													minute: "2-digit",
+												}),
+											})}
+										</Text>
+									</View>
 								) : null}
 							</Pressable>
 						)}
@@ -108,15 +155,31 @@ export function ModerationDisputesQueue({
 }
 
 const styles = StyleSheet.create({
-	loading: { marginTop: 40 },
+	flex: { flex: 1 },
+	separator: { height: 10 },
 	list: { padding: 16, paddingBottom: 32 },
-	card: { borderWidth: 1, borderRadius: 14, padding: 15, gap: 7 },
+	card: {
+		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 14,
+		padding: 14,
+		gap: 6,
+	},
+	cardOverdue: { borderWidth: 1.5 },
 	row: {
 		flexDirection: "row",
-		justifyContent: "space-between",
 		alignItems: "center",
+		gap: 8,
+		marginBottom: 2,
 	},
-	number: { fontFamily: Fonts.displaySemibold, fontSize: 16 },
-	overdue: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
-	body: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
+	number: { fontFamily: Fonts.displayBold, fontSize: 17, lineHeight: 22 },
+	priceTag: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
+	priceText: {
+		color: Colors.light.sunForeground,
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 15,
+		lineHeight: 19,
+	},
+	body: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 21 },
+	meta: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
+	deadline: { flexDirection: "row", alignItems: "center", gap: 6 },
 });

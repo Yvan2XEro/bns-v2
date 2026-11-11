@@ -179,7 +179,7 @@ export function BottomSheet({
 
 const styles = StyleSheet.create({
 	root: { flex: 1 },
-	backdrop: { backgroundColor: "rgba(15, 23, 42, 0.55)" },
+	backdrop: { backgroundColor: "rgba(18, 22, 58, 0.55)" },
 	sheet: {
 		borderTopLeftRadius: 24,
 		borderTopRightRadius: 24,

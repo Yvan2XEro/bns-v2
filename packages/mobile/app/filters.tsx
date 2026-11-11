@@ -1,11 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
 import {
+	type ComponentProps,
+	type ReactNode,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
+import {
+	ActivityIndicator,
 	Pressable,
 	ScrollView,
 	StyleSheet,
+	Switch,
 	Text,
 	TextInput,
 	View,
@@ -15,8 +23,10 @@ import {
 	useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { CategoryField } from "@/src/components/CategorySheet";
 import { CityPicker } from "@/src/components/CityPicker";
+import { Chip } from "@/src/components/search/Chip";
+import { useDiscoveryPalette } from "@/src/components/search/palette";
 import { TagPicker } from "@/src/components/TagPicker";
 import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import {
@@ -32,8 +42,68 @@ import type { Place } from "@/src/lib/places";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
 
+type IconName = ComponentProps<typeof Ionicons>["name"];
+
+/** A form section: its title, then its control. */
+function Section({ title, children }: { title: string; children: ReactNode }) {
+	const c = useDiscoveryPalette();
+	return (
+		<View style={styles.section}>
+			<Text
+				style={[styles.sectionTitle, { color: c.foreground }]}
+				accessibilityRole="header"
+			>
+				{title}
+			</Text>
+			{children}
+		</View>
+	);
+}
+
+/** An on/off filter as a native switch row: the whole row toggles it. */
+function ToggleRow({
+	icon,
+	label,
+	value,
+	onChange,
+}: {
+	icon: IconName;
+	label: string;
+	value: boolean;
+	onChange: (value: boolean) => void;
+}) {
+	const c = useDiscoveryPalette();
+	return (
+		<Pressable
+			onPress={() => onChange(!value)}
+			accessibilityRole="switch"
+			accessibilityState={{ checked: value }}
+			accessibilityLabel={label}
+			style={({ pressed }) => [
+				styles.toggleRow,
+				pressed && { backgroundColor: c.well },
+			]}
+		>
+			<View style={[styles.toggleIcon, { backgroundColor: c.primaryTint }]}>
+				<Ionicons name={icon} size={18} color={c.link} />
+			</View>
+			<Text style={[styles.toggleText, { color: c.foreground }]}>{label}</Text>
+			<Switch
+				value={value}
+				onValueChange={onChange}
+				trackColor={{ true: c.primaryFill, false: c.borderStrong }}
+				thumbColor="#ffffff"
+				ios_backgroundColor={c.borderStrong}
+				// The row carries the role and the label; the switch is its visual.
+				accessibilityElementsHidden
+				importantForAccessibility="no-hide-descendants"
+			/>
+		</Pressable>
+	);
+}
+
 export default function FiltersModal() {
-	const isDark = useColorScheme() === "dark";
+	const c = useDiscoveryPalette();
 	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
@@ -95,14 +165,6 @@ export default function FiltersModal() {
 		return initial;
 	});
 
-	// ── Couleurs ────────────────────────────────────────────────
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-
 	// ── Catégories + attributs ──────────────────────────────────
 	const { data: catsData } = useQuery({
 		queryKey: CATEGORIES_QUERY_KEY,
@@ -111,18 +173,28 @@ export default function FiltersModal() {
 	});
 	const categories = catsData?.categories ?? [];
 
-	const categoryAttributes = useMemo(() => {
-		if (!selectedCategory) return [];
-		const cat = categories.find((c: any) => String(c.id) === selectedCategory);
-		return ((cat?.attributes ?? []) as any[]).filter(
-			(a: any) => a.filterable !== false,
-		);
-	}, [selectedCategory, categories]);
+	const selectedCategoryObject = useMemo(
+		() =>
+			selectedCategory
+				? categories.find((cat: any) => String(cat.id) === selectedCategory)
+				: undefined,
+		[selectedCategory, categories],
+	);
 
-	const selectedCategoryName = useMemo(() => {
-		const cat = categories.find((c: any) => String(c.id) === selectedCategory);
-		return cat?.name ?? "";
-	}, [selectedCategory, categories]);
+	const categoryAttributes = useMemo(
+		() =>
+			((selectedCategoryObject?.attributes ?? []) as any[]).filter(
+				(a: any) => a.filterable !== false,
+			),
+		[selectedCategoryObject],
+	);
+
+	const selectedCategoryName = selectedCategoryObject?.name ?? "";
+
+	const chooseCategory = (id: string) => {
+		setSelectedCategory(id);
+		setAttributeFilters({});
+	};
 
 	// ── Handlers ────────────────────────────────────────────────
 	const buildFilterParams = () => {
@@ -159,12 +231,14 @@ export default function FiltersModal() {
 		const timer = setTimeout(() => setDebouncedCount(countParams), 300);
 		return () => clearTimeout(timer);
 	}, [countParams]);
-	const { data: countData } = useQuery({
+	const { data: countData, isFetching: countFetching } = useQuery({
 		queryKey: ["listings", "count", debouncedCount],
 		queryFn: () =>
 			api.get<{ total: number }>(`/api/public/search?${debouncedCount}`),
 		staleTime: 60_000,
 	});
+	const total = countData?.total;
+	const countPending = countFetching || debouncedCount !== countParams;
 
 	const handleApply = () => {
 		const filterParams = buildFilterParams();
@@ -181,6 +255,8 @@ export default function FiltersModal() {
 		setMaxPrice("");
 		setSelectedTags([]);
 		setLocation("");
+		setLocationLat(null);
+		setLocationLng(null);
 		setRadius(10);
 		setAttributeFilters({});
 		setVerifiedOnly(false);
@@ -198,329 +274,239 @@ export default function FiltersModal() {
 		...Object.values(attributeFilters).filter(Boolean),
 	].filter(Boolean).length;
 
+	const sheetColors = {
+		cardBg: c.card,
+		textColor: c.foreground,
+		mutedColor: c.mutedForeground,
+		primary: c.primary,
+		fill: c.primaryFill,
+		link: c.link,
+		border: c.border,
+		isDark: c.isDark,
+		inputBg: c.well,
+	};
+
+	const fieldStyle = [
+		styles.input,
+		{
+			backgroundColor: c.card,
+			borderColor: c.borderStrong,
+			color: c.foreground,
+		},
+	];
+
 	// ── Render ──────────────────────────────────────────────────
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.dismiss()}>
-					<Ionicons name="close" size={24} color={textColor} />
+			<View style={[styles.header, { borderBottomColor: c.border }]}>
+				<Pressable
+					onPress={() => router.dismiss()}
+					accessibilityRole="button"
+					accessibilityLabel={t("common.close")}
+					style={styles.headerBtn}
+				>
+					<Ionicons name="close" size={24} color={c.foreground} />
 				</Pressable>
-				<Text style={[styles.title, { color: textColor }]}>
+				<Text
+					style={[styles.title, { color: c.foreground }]}
+					accessibilityRole="header"
+					numberOfLines={1}
+				>
 					{t("filters.title")}
-					{activeCount > 0 ? ` (${activeCount})` : ""}
 				</Text>
-				<Pressable onPress={handleReset}>
-					<Text style={[styles.resetText, { color: primaryColor }]}>
+				<Pressable
+					onPress={handleReset}
+					disabled={activeCount === 0}
+					accessibilityRole="button"
+					accessibilityState={{ disabled: activeCount === 0 }}
+					style={[styles.resetBtn, activeCount === 0 && styles.disabled]}
+				>
+					<Text style={[styles.resetText, { color: c.link }]}>
 						{t("filters.reset")}
 					</Text>
 				</Pressable>
 			</View>
 
-			<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
+			<ScrollView
+				contentContainerStyle={[styles.scroll, centeredContent]}
+				keyboardShouldPersistTaps="handled"
+				keyboardDismissMode="on-drag"
+			>
 				{/* ── Catégorie ── */}
-				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-					{t("filters.category")}
-				</Text>
-				<ScrollView
-					horizontal
-					showsHorizontalScrollIndicator={false}
-					contentContainerStyle={styles.pillRow}
-				>
-					{categories.map((cat: any) => {
-						const active = selectedCategory === String(cat.id);
-						return (
-							<Pressable
-								key={cat.id}
-								onPress={() => {
-									setSelectedCategory(active ? "" : String(cat.id));
-									setAttributeFilters({});
-								}}
-								style={[
-									styles.pill,
-									{
-										backgroundColor: active ? primaryColor : cardBg,
-										borderColor: active ? primaryColor : borderColor,
-									},
-								]}
-							>
-								<Ionicons
-									name="cube-outline"
-									size={14}
-									color={active ? "#fff" : mutedColor}
-								/>
-								<Text
-									style={[
-										styles.pillText,
-										{ color: active ? "#fff" : textColor },
-									]}
-								>
-									{cat.name}
-								</Text>
-							</Pressable>
-						);
-					})}
-				</ScrollView>
+				<Section title={t("filters.category")}>
+					<CategoryField
+						categories={categories}
+						value={selectedCategoryObject}
+						onSelect={(cat: any) => chooseCategory(String(cat.id))}
+						onClear={() => chooseCategory("")}
+						colors={sheetColors}
+					/>
+				</Section>
 
 				{/* ── Prix ── */}
-				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-					{t("filters.price")}
-				</Text>
-				<View style={styles.priceRow}>
-					<TextInput
-						value={minPrice}
-						onChangeText={setMinPrice}
-						placeholder={t("filters.minPrice")}
-						placeholderTextColor={mutedColor}
-						style={[
-							styles.priceInput,
-							{ backgroundColor: cardBg, borderColor, color: textColor },
-						]}
-						keyboardType="numeric"
+				<Section title={t("filters.price")}>
+					<View style={styles.priceRow}>
+						<TextInput
+							value={minPrice}
+							onChangeText={(v) => setMinPrice(v.replace(/[^0-9]/g, ""))}
+							placeholder={t("filters.minPrice")}
+							placeholderTextColor={c.mutedForeground}
+							accessibilityLabel={t("filters.minPrice")}
+							style={fieldStyle}
+							keyboardType="number-pad"
+							returnKeyType="done"
+						/>
+						<Text style={[styles.priceSep, { color: c.mutedForeground }]}>
+							–
+						</Text>
+						<TextInput
+							value={maxPrice}
+							onChangeText={(v) => setMaxPrice(v.replace(/[^0-9]/g, ""))}
+							placeholder={t("filters.maxPrice")}
+							placeholderTextColor={c.mutedForeground}
+							accessibilityLabel={t("filters.maxPrice")}
+							style={fieldStyle}
+							keyboardType="number-pad"
+							returnKeyType="done"
+						/>
+					</View>
+				</Section>
+
+				{/* ── Vendeurs vérifiés, achat en ligne ── */}
+				<View
+					style={[
+						styles.toggleCard,
+						{ backgroundColor: c.card, borderColor: c.border },
+					]}
+				>
+					<ToggleRow
+						icon="shield-checkmark-outline"
+						label={t("filters.verified")}
+						value={verifiedOnly}
+						onChange={setVerifiedOnly}
 					/>
-					<Text style={[styles.priceSep, { color: mutedColor }]}>—</Text>
-					<TextInput
-						value={maxPrice}
-						onChangeText={setMaxPrice}
-						placeholder={t("filters.maxPrice")}
-						placeholderTextColor={mutedColor}
-						style={[
-							styles.priceInput,
-							{ backgroundColor: cardBg, borderColor, color: textColor },
-						]}
-						keyboardType="numeric"
+					<View style={[styles.divider, { backgroundColor: c.border }]} />
+					<ToggleRow
+						icon="bag-check-outline"
+						label={t("filters.orderable")}
+						value={orderableOnly}
+						onChange={setOrderableOnly}
 					/>
 				</View>
 
-				{/* ── Vendeurs vérifiés ── */}
-				<Pressable
-					onPress={() => setVerifiedOnly((prev) => !prev)}
-					accessibilityRole="switch"
-					accessibilityState={{ checked: verifiedOnly }}
-					accessibilityLabel={t("filters.verified")}
-					style={[
-						styles.verifiedRow,
-						{
-							backgroundColor: verifiedOnly ? primaryColor : cardBg,
-							borderColor: verifiedOnly ? primaryColor : borderColor,
-						},
-					]}
-				>
-					<Ionicons
-						name="shield-checkmark"
-						size={18}
-						color={verifiedOnly ? "#fff" : mutedColor}
-					/>
-					<Text
-						style={[
-							styles.verifiedText,
-							{ color: verifiedOnly ? "#fff" : textColor },
-						]}
-					>
-						{t("filters.verified")}
-					</Text>
-					{verifiedOnly && (
-						<Ionicons name="checkmark-circle" size={18} color="#fff" />
-					)}
-				</Pressable>
-
-				{/* ── Achat en ligne ── */}
-				<Pressable
-					onPress={() => setOrderableOnly((prev) => !prev)}
-					accessibilityRole="switch"
-					accessibilityState={{ checked: orderableOnly }}
-					accessibilityLabel={t("filters.orderable")}
-					style={[
-						styles.verifiedRow,
-						{
-							backgroundColor: orderableOnly ? primaryColor : cardBg,
-							borderColor: orderableOnly ? primaryColor : borderColor,
-						},
-					]}
-				>
-					<Ionicons
-						name="bag-check"
-						size={18}
-						color={orderableOnly ? "#fff" : mutedColor}
-					/>
-					<Text
-						style={[
-							styles.verifiedText,
-							{ color: orderableOnly ? "#fff" : textColor },
-						]}
-					>
-						{t("filters.orderable")}
-					</Text>
-					{orderableOnly && (
-						<Ionicons name="checkmark-circle" size={18} color="#fff" />
-					)}
-				</Pressable>
-
 				{/* ── Tags ── */}
 				{availableTags.length > 0 && (
-					<>
-						<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-							Tags
-						</Text>
+					<Section title={t("filters.tags")}>
 						<TagPicker
 							selectedSlugs={selectedTags}
 							onChangeSlugs={setSelectedTags}
 							availableTags={availableTags}
-							inputBg={cardBg}
-							borderColor={borderColor}
-							textColor={textColor}
-							mutedColor={mutedColor}
-							primaryColor={primaryColor}
+							inputBg={c.card}
+							borderColor={c.borderStrong}
+							textColor={c.foreground}
+							mutedColor={c.mutedForeground}
+							primaryColor={c.primary}
 						/>
-					</>
+					</Section>
 				)}
 
-				{/* ── Localisation ── */}
-				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-					{t("filters.location")}
-				</Text>
-				<CityPicker
-					value={location}
-					onSelect={(place: Place) => {
-						setLocation(place.name);
-						setLocationLat(place.lat ?? null);
-						setLocationLng(place.lng ?? null);
-					}}
-					onClear={() => {
-						setLocation("");
-						setLocationLat(null);
-						setLocationLng(null);
-					}}
-					inputBg={cardBg}
-					borderColor={borderColor}
-					textColor={textColor}
-					mutedColor={mutedColor}
-				/>
-
-				{/* ── Rayon ── */}
-				{location.length > 0 && (
-					<>
-						<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-							{t("filters.radius")}
-						</Text>
-						<View style={styles.pillRow}>
-							{RADIUS_OPTIONS.map((r) => {
-								const active = radius === r;
-								return (
-									<Pressable
+				{/* ── Localisation + rayon ── */}
+				<Section title={t("filters.location")}>
+					<CityPicker
+						value={location}
+						onSelect={(place: Place) => {
+							setLocation(place.name);
+							setLocationLat(place.lat ?? null);
+							setLocationLng(place.lng ?? null);
+						}}
+						onClear={() => {
+							setLocation("");
+							setLocationLat(null);
+							setLocationLng(null);
+						}}
+						inputBg={c.card}
+						borderColor={c.borderStrong}
+						textColor={c.foreground}
+						mutedColor={c.mutedForeground}
+					/>
+					{location.length > 0 && (
+						<>
+							<Text style={[styles.subLabel, { color: c.body }]}>
+								{t("filters.radius")}
+							</Text>
+							<View style={styles.chipRow}>
+								{RADIUS_OPTIONS.map((r) => (
+									<Chip
 										key={r}
+										label={`${r} km`}
+										selected={radius === r}
 										onPress={() => setRadius(r)}
-										style={[
-											styles.pill,
-											{
-												backgroundColor: active ? primaryColor : cardBg,
-												borderColor: active ? primaryColor : borderColor,
-											},
-										]}
-									>
-										<Text
-											style={[
-												styles.pillText,
-												{ color: active ? "#fff" : mutedColor },
-											]}
-										>
-											{r} km
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
-					</>
-				)}
+										accessibilityLabel={t(`filters.radius${r}`)}
+									/>
+								))}
+							</View>
+						</>
+					)}
+				</Section>
 
 				{/* ── Attributs dynamiques de la catégorie ── */}
 				{categoryAttributes.length > 0 && (
 					<>
-						<View
-							style={[styles.attrDivider, { borderTopColor: borderColor }]}
-						/>
-						<Text style={[styles.attrSectionHeader, { color: textColor }]}>
+						<View style={[styles.divider, { backgroundColor: c.border }]} />
+						<Text
+							style={[styles.attrSectionHeader, { color: c.foreground }]}
+							accessibilityRole="header"
+						>
 							{selectedCategoryName}
 						</Text>
 
 						{categoryAttributes.map((attr: any) => (
 							<View key={attr.slug} style={styles.attrBlock}>
-								<Text style={[styles.attrLabel, { color: mutedColor }]}>
+								<Text style={[styles.subLabel, { color: c.body }]}>
 									{attr.name}
 								</Text>
 
 								{attr.type === "select" && attr.options ? (
-									<ScrollView
-										horizontal
-										showsHorizontalScrollIndicator={false}
-										contentContainerStyle={styles.pillRow}
-									>
+									<View style={styles.chipRow}>
 										{attr.options.map((opt: any) => {
 											const active = attributeFilters[attr.slug] === opt.value;
 											return (
-												<Pressable
+												<Chip
 													key={opt.value}
+													label={formatAttributeOptionLabel(opt)}
+													selected={active}
 													onPress={() =>
 														setAttributeFilters((prev) => ({
 															...prev,
 															[attr.slug]: active ? "" : opt.value,
 														}))
 													}
-													style={[
-														styles.pill,
-														{
-															backgroundColor: active ? primaryColor : cardBg,
-															borderColor: active ? primaryColor : borderColor,
-														},
-													]}
-												>
-													<Text
-														style={[
-															styles.pillText,
-															{ color: active ? "#fff" : textColor },
-														]}
-													>
-														{formatAttributeOptionLabel(opt)}
-													</Text>
-												</Pressable>
+												/>
 											);
 										})}
-									</ScrollView>
+									</View>
 								) : attr.type === "boolean" ? (
-									<View style={styles.boolRow}>
+									<View style={styles.chipRow}>
 										{[
 											{ label: t("common.yes"), value: "true" },
 											{ label: t("common.no"), value: "false" },
 										].map((opt) => {
 											const active = attributeFilters[attr.slug] === opt.value;
 											return (
-												<Pressable
+												<Chip
 													key={opt.value}
+													label={opt.label}
+													selected={active}
 													onPress={() =>
 														setAttributeFilters((prev) => ({
 															...prev,
 															[attr.slug]: active ? "" : opt.value,
 														}))
 													}
-													style={[
-														styles.pill,
-														{
-															backgroundColor: active ? primaryColor : cardBg,
-															borderColor: active ? primaryColor : borderColor,
-														},
-													]}
-												>
-													<Text
-														style={[
-															styles.pillText,
-															{ color: active ? "#fff" : textColor },
-														]}
-													>
-														{opt.label}
-													</Text>
-												</Pressable>
+												/>
 											);
 										})}
 									</View>
@@ -534,18 +520,12 @@ export default function FiltersModal() {
 											}))
 										}
 										placeholder={attr.name}
-										placeholderTextColor={mutedColor}
+										placeholderTextColor={c.mutedForeground}
+										accessibilityLabel={attr.name}
 										keyboardType={
-											attr.type === "number" ? "numeric" : "default"
+											attr.type === "number" ? "number-pad" : "default"
 										}
-										style={[
-											styles.textInput,
-											{
-												backgroundColor: cardBg,
-												borderColor,
-												color: textColor,
-											},
-										]}
+										style={fieldStyle}
 									/>
 								)}
 							</View>
@@ -557,21 +537,31 @@ export default function FiltersModal() {
 			<View
 				style={[
 					styles.footer,
-					{ borderTopColor: borderColor, backgroundColor: cardBg },
+					{ borderTopColor: c.border, backgroundColor: c.card },
 					// Clears the Android navigation bar / iOS home indicator. Without
 					// this the Apply button sits under the system buttons.
-					{ paddingBottom: insets.bottom + 16 },
+					{ paddingBottom: insets.bottom + 12 },
 				]}
 			>
 				<Pressable
 					onPress={handleApply}
-					style={[styles.applyBtn, { backgroundColor: primaryColor }]}
+					accessibilityRole="button"
+					accessibilityState={{ busy: countPending }}
+					style={({ pressed }) => [
+						styles.applyBtn,
+						{ backgroundColor: c.primaryFill },
+						pressed && styles.pressed,
+					]}
 				>
-					<Text style={styles.applyText}>
-						{typeof countData?.total === "number"
-							? t("filters.showCount", { count: countData.total })
-							: t("filters.apply")}
-					</Text>
+					{countPending && typeof total !== "number" ? (
+						<ActivityIndicator color="#ffffff" />
+					) : (
+						<Text style={styles.applyText} numberOfLines={1}>
+							{typeof total === "number"
+								? t("filters.showCount", { count: total })
+								: t("filters.apply")}
+						</Text>
+					)}
 				</Pressable>
 			</View>
 		</SafeAreaView>
@@ -584,92 +574,114 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
+		gap: 8,
+		paddingHorizontal: 8,
+		minHeight: 56,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	title: { fontSize: 17, fontFamily: Fonts.displayBold },
-	resetText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	scroll: { padding: 20, paddingBottom: 80, gap: 14 },
-
-	sectionTitle: {
-		fontSize: 11,
-		fontFamily: Fonts.bodySemibold,
-		letterSpacing: 0.8,
-		textTransform: "uppercase",
-	},
-
-	// Pills
-	pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-	pill: {
-		flexDirection: "row",
+	headerBtn: {
+		width: 48,
+		height: 48,
 		alignItems: "center",
-		gap: 5,
-		borderRadius: 20,
-		borderWidth: 1,
-		paddingHorizontal: 12,
-		paddingVertical: 7,
+		justifyContent: "center",
 	},
-	pillText: { fontSize: 13, fontFamily: Fonts.bodyMedium },
+	title: {
+		flex: 1,
+		textAlign: "center",
+		fontSize: 18,
+		lineHeight: 23,
+		letterSpacing: -0.2,
+		fontFamily: Fonts.displayBold,
+	},
+	resetBtn: {
+		minHeight: 48,
+		justifyContent: "center",
+		paddingHorizontal: 8,
+	},
+	resetText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	disabled: { opacity: 0.4 },
+	scroll: { padding: 16, paddingBottom: 40, gap: 24 },
+
+	section: { gap: 10 },
+	sectionTitle: {
+		fontSize: 17,
+		lineHeight: 22,
+		letterSpacing: -0.2,
+		fontFamily: Fonts.displayBold,
+	},
+	subLabel: {
+		fontSize: 14,
+		fontFamily: Fonts.bodySemibold,
+		marginTop: 4,
+	},
+	chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 
 	// Prix
 	priceRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-	priceInput: {
+	priceSep: { fontSize: 18, fontFamily: Fonts.body },
+	input: {
 		flex: 1,
-		borderRadius: 10,
+		minHeight: 48,
+		borderRadius: 12,
 		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
-		fontSize: 15,
+		paddingHorizontal: 14,
+		paddingVertical: 10,
+		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
-	priceSep: { fontSize: 18, fontFamily: Fonts.body },
 
-	// Verified-only toggle
-	verifiedRow: {
+	// On/off filters
+	toggleCard: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
+	},
+	toggleRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
-		minHeight: 44,
-		borderRadius: 12,
-		borderWidth: 1,
+		gap: 12,
+		minHeight: 60,
 		paddingHorizontal: 14,
-		paddingVertical: 12,
+		paddingVertical: 10,
 	},
-	verifiedText: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
-
-	// Inputs texte
-	textInput: {
+	toggleIcon: {
+		width: 36,
+		height: 36,
 		borderRadius: 10,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
-		fontSize: 15,
-		fontFamily: Fonts.body,
+		alignItems: "center",
+		justifyContent: "center",
 	},
+	toggleText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 20,
+		fontFamily: Fonts.bodySemibold,
+	},
+	divider: { height: StyleSheet.hairlineWidth },
 
 	// Section attributs dynamiques
-	attrDivider: {
-		borderTopWidth: 1,
-		marginTop: 4,
-		marginBottom: 4,
-	},
 	attrSectionHeader: {
-		fontSize: 16,
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
-		marginBottom: 2,
+		marginBottom: -8,
 	},
 	attrBlock: { gap: 8 },
-	attrLabel: {
-		fontSize: 11,
-		fontFamily: Fonts.bodySemibold,
-		letterSpacing: 0.8,
-		textTransform: "uppercase",
-	},
-	boolRow: { flexDirection: "row", gap: 8 },
 
 	// Footer
-	footer: { padding: 16, borderTopWidth: 1 },
-	applyBtn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
-	applyText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	footer: {
+		paddingHorizontal: 16,
+		paddingTop: 12,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
+	applyBtn: {
+		minHeight: 52,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 16,
+	},
+	applyText: { color: "#ffffff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	pressed: { opacity: 0.85 },
 });

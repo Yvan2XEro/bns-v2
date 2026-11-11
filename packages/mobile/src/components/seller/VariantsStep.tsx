@@ -74,7 +74,10 @@ export function VariantsStep({
 				style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}
 			>
 				<View style={f.row}>
-					<Text style={[f.sectionTitle, { color: c.text, flex: 1 }]}>
+					<Text
+						style={[f.sectionTitle, { color: c.text, flex: 1 }]}
+						accessibilityRole="header"
+					>
 						{form.hasVariants
 							? t("product.variantsGenerated", { count: form.variants.length })
 							: t("product.priceAndStock")}

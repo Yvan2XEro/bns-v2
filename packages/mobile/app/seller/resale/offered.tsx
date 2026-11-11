@@ -1,17 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -34,13 +29,24 @@ export default function ResaleOfferedScreen() {
 
 	if (shopLoading || !shop) {
 		return (
-			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("sellerResale.offeredTitle")} />
+				{shopLoading ? (
+					<ListSkeleton />
+				) : (
+					<EmptyState illustration="sell" title={t("seller.noShopTitle")} />
+				)}
 			</SafeAreaView>
 		);
 	}
 	return (
-		<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: c.bg }]}
+		>
 			<SellerHeader
 				title={t("sellerResale.offeredTitle")}
 				subtitle={shop.name}
@@ -50,34 +56,34 @@ export default function ResaleOfferedScreen() {
 					accessibilityRole="button"
 					accessibilityLabel={t("sellerResale.catalogueTitle")}
 					onPress={() => router.push("/seller/resale/catalogue")}
-					style={[
+					style={({ pressed }) => [
 						styles.navButton,
 						{ borderColor: c.border, backgroundColor: c.card },
+						pressed && styles.pressed,
 					]}
 				>
-					<Text style={[styles.navText, { color: c.primary }]}>
+					<Text style={[styles.navText, { color: c.link }]}>
 						{t("sellerResale.catalogueTitle")}
 					</Text>
-					<Ionicons name="chevron-forward" size={16} color={c.primary} />
+					<Ionicons name="chevron-forward" size={16} color={c.link} />
 				</Pressable>
 				<Pressable
 					accessibilityRole="button"
 					accessibilityLabel={t("sellerResale.purchaseOrdersLink")}
 					onPress={() => router.push("/seller/resale/purchase-orders")}
-					style={[
+					style={({ pressed }) => [
 						styles.navButton,
 						{ borderColor: c.border, backgroundColor: c.card },
+						pressed && styles.pressed,
 					]}
 				>
-					<Text style={[styles.navText, { color: c.primary }]}>
+					<Text style={[styles.navText, { color: c.link }]}>
 						{t("sellerResale.purchaseOrdersLink")}
 					</Text>
-					<Ionicons name="chevron-forward" size={16} color={c.primary} />
+					<Ionicons name="chevron-forward" size={16} color={c.link} />
 				</Pressable>
 			</View>
-			{offered.isPending ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
-			) : null}
+			{offered.isPending ? <ListSkeleton /> : null}
 			{offered.isError ? (
 				hasErrorCode(offered.error, ERROR_CODES.resaleDisabled) ? (
 					<EmptyState
@@ -115,14 +121,19 @@ export default function ResaleOfferedScreen() {
 
 function OfferedProductCard({ product }: { product: SupplierResaleProduct }) {
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	return (
 		<View
 			style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}
 		>
 			<View style={styles.heading}>
 				<View style={styles.flex}>
-					<Text style={[styles.title, { color: c.text }]}>{product.title}</Text>
+					<Text
+						accessibilityRole="header"
+						style={[styles.title, { color: c.text }]}
+					>
+						{product.title}
+					</Text>
 					<Text style={[styles.meta, { color: c.muted }]}>
 						{t("sellerResale.offeredStats", {
 							resellers: product.resellerCount,
@@ -139,15 +150,23 @@ function OfferedProductCard({ product }: { product: SupplierResaleProduct }) {
 							params: { id: product.productId },
 						})
 					}
-					style={[styles.edit, { backgroundColor: c.primary }]}
+					hitSlop={{ top: 2, bottom: 2 }}
+					style={({ pressed }) => [
+						styles.edit,
+						{ borderColor: c.border },
+						pressed && styles.pressed,
+					]}
 				>
-					<Text style={styles.editText}>{t("common.edit")}</Text>
+					<Ionicons name="create-outline" size={16} color={c.link} />
+					<Text style={[styles.editText, { color: c.link }]}>
+						{t("common.edit")}
+					</Text>
 				</Pressable>
 			</View>
 			{product.pendingEffectiveAt ? (
-				<Text style={[styles.pending, { color: c.primary }]}>
+				<Text style={[styles.pending, { color: c.link }]}>
 					{t("sellerResale.offeredPending", {
-						date: new Intl.DateTimeFormat(undefined, {
+						date: new Intl.DateTimeFormat(i18n.language, {
 							dateStyle: "medium",
 						}).format(new Date(product.pendingEffectiveAt)),
 					})}
@@ -199,7 +218,7 @@ const styles = StyleSheet.create({
 	nav: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 8 },
 	navButton: {
 		flex: 1,
-		minHeight: 44,
+		minHeight: 48,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
@@ -207,28 +226,41 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 10,
 	},
-	navText: { flexShrink: 1, fontFamily: Fonts.bodyMedium, fontSize: 12 },
-	list: { padding: 16 },
-	card: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 12 },
-	heading: { flexDirection: "row", alignItems: "center", gap: 12 },
-	flex: { flex: 1 },
-	title: { fontFamily: Fonts.displaySemibold, fontSize: 17 },
-	meta: { fontFamily: Fonts.body, fontSize: 12, marginTop: 4 },
+	navText: { flexShrink: 1, fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	pressed: { opacity: 0.7 },
+	list: { padding: 16, paddingBottom: 40 },
+	card: {
+		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 16,
+		padding: 16,
+		gap: 12,
+	},
+	heading: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+	flex: { flex: 1, gap: 4 },
+	title: { fontFamily: Fonts.displayBold, fontSize: 17, lineHeight: 22 },
+	meta: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 	edit: {
 		minHeight: 44,
-		justifyContent: "center",
-		borderRadius: 10,
-		paddingHorizontal: 14,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingHorizontal: 12,
 	},
-	editText: { color: "#fff", fontFamily: Fonts.bodyMedium, fontSize: 13 },
-	pending: { fontFamily: Fonts.bodyMedium, fontSize: 12 },
-	variant: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10, gap: 6 },
-	variantTitle: { fontFamily: Fonts.bodyMedium, fontSize: 13 },
+	editText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	pending: { fontFamily: Fonts.bodyMedium, fontSize: 13, lineHeight: 18 },
+	variant: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 12, gap: 6 },
+	variantTitle: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
 	priceLine: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
 		gap: 12,
 	},
-	price: { fontFamily: Fonts.bodyMedium, fontSize: 13 },
+	price: {
+		fontFamily: Fonts.displaySemibold,
+		fontSize: 14,
+		fontVariant: ["tabular-nums"],
+	},
 });

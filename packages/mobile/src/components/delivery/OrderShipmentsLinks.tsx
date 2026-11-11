@@ -21,9 +21,9 @@ export function OrderShipmentsLinks({ orderId }: { orderId: string }) {
 						number: link.number,
 					})}
 					onPress={() => router.push(link.href)}
-					style={{ minHeight: 44, justifyContent: "center" }}
+					style={{ minHeight: 48, justifyContent: "center" }}
 				>
-					<Text style={{ color: c.primary, fontFamily: Fonts.bodySemibold }}>
+					<Text style={{ color: c.link, fontFamily: Fonts.bodySemibold }}>
 						{t("shipmentPanel.openShipment", { number: link.number })}
 					</Text>
 				</Pressable>

@@ -12,6 +12,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { ApiError, api } from "@/src/lib/api";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
@@ -133,7 +134,7 @@ export function PhoneGate({ onVerified }: { onVerified: () => void }) {
 	return (
 		<View style={styles.wrap}>
 			<View style={[styles.icon, { backgroundColor: c.primarySoft }]}>
-				<Ionicons name="phone-portrait-outline" size={26} color={c.primary} />
+				<Ionicons name="phone-portrait-outline" size={26} color={c.link} />
 			</View>
 			<Text style={[styles.title, { color: c.text }]}>
 				{t("shop.gateTitle")}
@@ -174,7 +175,7 @@ export function PhoneGate({ onVerified }: { onVerified: () => void }) {
 				style={[
 					styles.button,
 					{
-						backgroundColor: c.primary,
+						backgroundColor: fillOf(c),
 						opacity: busy ? 0.7 : pending && codeValue.length !== 6 ? 0.5 : 1,
 					},
 				]}
@@ -212,11 +213,11 @@ const styles = StyleSheet.create({
 	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 21 },
 	note: { fontSize: 12, fontFamily: Fonts.body, marginTop: 6 },
 	button: {
-		height: 52,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 		marginTop: 10,
 	},
-	buttonText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	buttonText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

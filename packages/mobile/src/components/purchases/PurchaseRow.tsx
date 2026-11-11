@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { useTranslation } from "@/src/lib/i18n";
@@ -15,6 +15,7 @@ import {
 } from "@/src/lib/purchaseActions";
 import { purchaseLiveArrival } from "@/src/lib/shipmentTracking";
 import type { OrderListEntry, OrderStatusName } from "@/src/types/order";
+import { inkOf } from "../checkout/fill";
 import { LevelBadge } from "../shop/LevelBadge";
 import { ShopAvatar } from "../shop/ShopAvatar";
 import { useShopTheme } from "../shop/theme";
@@ -23,10 +24,22 @@ const TONES: Record<
 	PurchaseStatusTone,
 	{ light: [string, string]; dark: [string, string] }
 > = {
-	neutral: { light: ["#f1f5f9", "#475569"], dark: ["#1e293b", "#cbd5e1"] },
-	progress: { light: ["#dbeafe", "#1e40af"], dark: ["#172554", "#93c5fd"] },
-	success: { light: ["#dcfce7", "#166534"], dark: ["#052e16", "#86efac"] },
-	danger: { light: ["#fee2e2", "#991b1b"], dark: ["#450a0a", "#fca5a5"] },
+	neutral: {
+		light: [Colors.light.well, Colors.light.body],
+		dark: [Colors.dark.card, Colors.dark.body],
+	},
+	progress: {
+		light: [Colors.light.primaryTint, Colors.light.link],
+		dark: [Colors.dark.primaryTint, Colors.dark.link],
+	},
+	success: {
+		light: [Colors.light.successTint, Colors.light.successText],
+		dark: [Colors.dark.successTint, Colors.dark.successText],
+	},
+	danger: {
+		light: [Colors.light.dangerTint, Colors.light.dangerText],
+		dark: [Colors.dark.dangerTint, Colors.dark.dangerText],
+	},
 };
 
 /** The buyer-facing status as a tinted pill with a dot. */
@@ -66,7 +79,7 @@ export function PurchaseRow({
 		<Pressable
 			onPress={onPress}
 			accessibilityRole="button"
-			accessibilityLabel={`${entry.firstItemTitle}, ${number}`}
+			accessibilityLabel={`${entry.firstItemTitle}, ${number}, ${t(purchaseStatusKey(entry.status))}, ${formatPrice(entry.total, lang)}`}
 			accessibilityState={{ selected: Boolean(selected) }}
 			style={({ pressed }) => [
 				styles.card,
@@ -89,7 +102,7 @@ export function PurchaseRow({
 						{ backgroundColor: c.primarySoft },
 					]}
 				>
-					<Ionicons name="bag-handle-outline" size={22} color={c.primary} />
+					<Ionicons name="bag-handle-outline" size={22} color={inkOf(c)} />
 				</View>
 			)}
 			<View style={styles.main}>
@@ -117,18 +130,22 @@ export function PurchaseRow({
 				<Text style={[styles.meta, { color: c.muted }]} numberOfLines={1}>
 					{entry.orderNumber} · {formatOrderDate(entry.placedAt, lang)}
 				</Text>
-				<Text style={[styles.total, { color: c.text }]}>
-					{formatPrice(entry.total, lang)}
-					<Text style={[styles.meta, { color: c.muted }]}>
-						{" · "}
+				<View style={styles.totalRow}>
+					<Text style={[styles.total, { color: c.text }]}>
+						{formatPrice(entry.total, lang)}
+					</Text>
+					<Text
+						style={[styles.meta, styles.totalMeta, { color: c.muted }]}
+						numberOfLines={1}
+					>
 						{t("purchases.itemCount", { count: entry.itemCount })}
 						{paymentKey ? ` · ${t(paymentKey)}` : ""}
 					</Text>
-				</Text>
+				</View>
 				{liveArrival ? (
 					<View style={styles.arrival}>
-						<Ionicons name="time-outline" size={14} color={c.primary} />
-						<Text style={[styles.arrivalText, { color: c.primary }]}>
+						<Ionicons name="time-outline" size={14} color={inkOf(c)} />
+						<Text style={[styles.arrivalText, { color: inkOf(c) }]}>
 							{t("purchases.arrivalLive", { time: liveArrival })}
 						</Text>
 					</View>
@@ -143,11 +160,11 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		gap: 12,
 		padding: 14,
-		borderRadius: 18,
-		borderWidth: 1,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
 	},
 	pressed: { opacity: 0.85 },
-	thumb: { width: 56, height: 56, borderRadius: 14 },
+	thumb: { width: 64, height: 64, borderRadius: 12 },
 	thumbEmpty: { alignItems: "center", justifyContent: "center" },
 	main: { flex: 1, minWidth: 0, gap: 3 },
 	topRow: {
@@ -158,7 +175,7 @@ const styles = StyleSheet.create({
 		marginBottom: 2,
 	},
 	shop: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
-	shopName: { fontSize: 12, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	shopName: { fontSize: 13, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
 	pill: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -168,10 +185,22 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 	},
 	dot: { width: 6, height: 6, borderRadius: 3 },
-	pillText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
-	title: { fontSize: 15, fontFamily: Fonts.displayBold, lineHeight: 20 },
+	pillText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	title: { fontSize: 15, fontFamily: Fonts.bodySemibold, lineHeight: 20 },
 	meta: { fontSize: 12, fontFamily: Fonts.body },
-	total: { fontSize: 14, fontFamily: Fonts.bodyBold },
+	totalRow: {
+		flexDirection: "row",
+		alignItems: "baseline",
+		gap: 8,
+		marginTop: 2,
+	},
+	total: {
+		fontSize: 17,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.3,
+		fontVariant: ["tabular-nums"],
+	},
+	totalMeta: { flexShrink: 1 },
 	arrival: { flexDirection: "row", alignItems: "center", gap: 4 },
-	arrivalText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	arrivalText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 });

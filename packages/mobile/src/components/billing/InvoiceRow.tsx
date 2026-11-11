@@ -40,7 +40,7 @@ export function InvoiceRow({
 				style={styles.main}
 			>
 				<View style={styles.head}>
-					<Text style={[s.cardTitle, { color: c.primary }]}>{number}</Text>
+					<Text style={[s.cardTitle, { color: c.link }]}>{number}</Text>
 					<InvoiceStatusBadge status={invoice.status} />
 				</View>
 				<Text style={[s.meta, { color: c.muted }]}>
@@ -60,7 +60,7 @@ export function InvoiceRow({
 								date: formatOrderDate(invoice.dueAt, locale),
 							})}
 				</Text>
-				<Text style={[s.cardTitle, { color: c.text }]}>
+				<Text style={[s.amount, styles.total, { color: c.text }]}>
 					{formatPrice(invoice.totalDue, locale)}
 				</Text>
 			</Pressable>
@@ -77,7 +77,8 @@ export function InvoiceRow({
 
 const styles = StyleSheet.create({
 	row: { gap: 10 },
-	main: { gap: 4, minHeight: 44 },
+	main: { gap: 4, minHeight: 48 },
+	total: { fontSize: 20, lineHeight: 25, marginTop: 2 },
 	head: {
 		flexDirection: "row",
 		alignItems: "center",

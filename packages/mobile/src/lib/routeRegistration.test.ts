@@ -35,7 +35,10 @@ const P4_ROOTS = [
 ];
 
 function appFiles(pattern: string): string[] {
-	return [...new Glob(pattern).scanSync({ cwd: APP_ROOT })].sort();
+	// Bun's Glob answers with the OS separator; routes are always "/".
+	return [...new Glob(pattern).scanSync({ cwd: APP_ROOT })]
+		.map((file) => file.replaceAll("\\", "/"))
+		.sort();
 }
 
 const allFiles = appFiles("**/*");

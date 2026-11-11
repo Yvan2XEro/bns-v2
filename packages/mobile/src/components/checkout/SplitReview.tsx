@@ -9,8 +9,8 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useSplitPlace, useSplitQuote } from "@/src/hooks/useCheckoutGroup";
@@ -32,17 +32,30 @@ import type {
 import { CheckoutButton } from "./CheckoutButton";
 import { useAppLocale, useCheckoutFlow } from "./CheckoutProvider";
 import { DeliveryOptionCard } from "./DeliveryOptionCard";
+import { DetailSkeleton } from "./DetailSkeleton";
+import { FormError } from "./FormError";
 import { PaymentMethodPicker } from "./PaymentMethodPicker";
+import { TotalTag } from "./TotalTag";
+
+function Separator() {
+	return <View style={styles.separator} />;
+}
 
 /**
  * The review of a multi-shop cart: one quote, one card per group with its own
  * delivery pick, one address for all, one acceptance. Every figure is the
  * server's; the buyer picks, the server prices.
+ *
+ * A re-quote (a new delivery pick, another payment method) keeps the last
+ * answer on screen, dimmed, until the new one lands: the list never collapses
+ * into a spinner under the buyer's thumb, and a stale figure is never shown
+ * at full strength or placed.
  */
 export function SplitReview({ address }: { address: AddressInput }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const locale = useAppLocale();
+	const insets = useSafeAreaInsets();
 	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
 	const quote = useSplitQuote();
 	const place = useSplitPlace();
@@ -53,19 +66,25 @@ export function SplitReview({ address }: { address: AddressInput }) {
 	const [idempotencyKey, setIdempotencyKey] = useState(() =>
 		newIdempotencyKey(),
 	);
-	const view: SplitQuoteView | undefined = quote.data;
+	// A mutation forgets its answer the moment the next one starts.
+	const [lastView, setLastView] = useState<SplitQuoteView | undefined>();
+	const view: SplitQuoteView | undefined = quote.data ?? lastView;
+	const stale = quote.isPending || quote.isError;
 
 	const requestQuote = (
 		nextMethod: PaymentMethod,
 		nextPicks: Record<string, string>,
 	) => {
 		setAccepted(false);
-		quote.mutate({
-			address,
-			paymentMethod: nextMethod,
-			locale,
-			deliveryByGroup: nextPicks,
-		});
+		quote.mutate(
+			{
+				address,
+				paymentMethod: nextMethod,
+				locale,
+				deliveryByGroup: nextPicks,
+			},
+			{ onSuccess: (fresh) => setLastView(fresh) },
+		);
 	};
 	// biome-ignore lint/correctness/useExhaustiveDependencies: the first quote is the mount's
 	useEffect(() => requestQuote(method, picks), []);
@@ -81,7 +100,7 @@ export function SplitReview({ address }: { address: AddressInput }) {
 	};
 
 	const placeOrders = () => {
-		if (!view) return;
+		if (!view || stale) return;
 		const body = splitPlaceBody({
 			address,
 			quote: view,
@@ -125,22 +144,28 @@ export function SplitReview({ address }: { address: AddressInput }) {
 		/>
 	) : null;
 
+	const quoteError = quote.isError ? (
+		<View style={styles.stack}>
+			<FormError message={resolveErrorMessage(quote.error, t)} />
+			<CheckoutButton
+				variant="outline"
+				icon="refresh"
+				label={t("checkout.retryQuote")}
+				onPress={() => requestQuote(method, picks)}
+			/>
+		</View>
+	) : null;
+
 	if (!view) {
 		return (
-			<View style={{ padding: 16, gap: 16 }}>
-				{methodPicker}
+			<View>
+				{methodPicker ? (
+					<View style={styles.pickerPad}>{methodPicker}</View>
+				) : null}
 				{quote.isError ? (
-					<>
-						<Text style={formStyles.error} accessibilityRole="alert">
-							{resolveErrorMessage(quote.error, t)}
-						</Text>
-						<CheckoutButton
-							label={t("checkout.retryQuote")}
-							onPress={() => requestQuote(method, picks)}
-						/>
-					</>
+					<View style={styles.pad}>{quoteError}</View>
 				) : (
-					<ActivityIndicator color={c.primary} />
+					<DetailSkeleton cards={1} />
 				)}
 			</View>
 		);
@@ -154,16 +179,20 @@ export function SplitReview({ address }: { address: AddressInput }) {
 		)
 			? place.error
 			: null;
-	const canPlace = accepted && view.groups.length > 0 && !quote.isPending;
+	const canPlace = accepted && view.groups.length > 0 && !stale;
+	const grand = formatPrice(view.grandTotal, locale);
 
 	return (
 		<FlashList<SplitQuoteGroup>
 			data={view.groups}
 			keyExtractor={(group) => group.groupKey}
-			contentContainerStyle={{ padding: 16 }}
-			ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+			extraData={{ picks, stale, method }}
+			contentContainerStyle={{ padding: 16, paddingBottom: 24 + insets.bottom }}
+			ItemSeparatorComponent={Separator}
 			ListHeaderComponent={
-				<View style={{ marginBottom: 16 }}>{methodPicker}</View>
+				methodPicker ? (
+					<View style={styles.headerGap}>{methodPicker}</View>
+				) : null
 			}
 			renderItem={({ item: group }) => {
 				const chosen = picks[group.groupKey] ?? group.selectedOptionId;
@@ -174,59 +203,104 @@ export function SplitReview({ address }: { address: AddressInput }) {
 							{ backgroundColor: c.card, borderColor: c.border },
 						]}
 					>
-						<Text style={[styles.title, { color: c.text }]}>
+						<Text
+							style={[styles.title, { color: c.text }]}
+							accessibilityRole="header"
+						>
 							{t("checkoutGroup.deliveryFor", {
 								shop: group.storefrontShop.name,
 							})}
 						</Text>
-						{group.delivery.options.map((option) => (
-							<DeliveryOptionCard
-								key={option.optionId}
-								option={option}
-								checked={option.optionId === chosen}
-								locale={locale}
-								selectable={method !== "cod" || option.codAllowed}
-								onSelect={() => pick(group.groupKey, option.optionId)}
+						<View accessibilityRole="radiogroup" style={styles.options}>
+							{group.delivery.options.map((option) => (
+								<DeliveryOptionCard
+									key={option.optionId}
+									option={option}
+									checked={option.optionId === chosen}
+									locale={locale}
+									selectable={method !== "cod" || option.codAllowed}
+									onSelect={() => pick(group.groupKey, option.optionId)}
+								/>
+							))}
+						</View>
+						<View style={[styles.divider, { backgroundColor: c.border }]} />
+						<View style={[styles.amounts, stale ? styles.dim : null]}>
+							<AmountRow
+								label={t("checkoutGroup.groupSubtotal")}
+								value={formatPrice(group.subtotal, locale)}
 							/>
-						))}
-						<AmountRow
-							label={t("checkoutGroup.groupSubtotal")}
-							value={formatPrice(group.subtotal, locale)}
-						/>
-						<AmountRow
-							label={t("checkoutGroup.groupDelivery")}
-							value={formatPrice(group.deliveryFee, locale)}
-						/>
-						<AmountRow
-							label={t("checkoutGroup.groupTotal")}
-							value={formatPrice(group.total, locale)}
-							strong
-						/>
+							<AmountRow
+								label={t("checkoutGroup.groupDelivery")}
+								value={
+									group.deliveryFee === 0
+										? t("checkout.free")
+										: formatPrice(group.deliveryFee, locale)
+								}
+							/>
+							<AmountRow
+								label={t("checkoutGroup.groupTotal")}
+								value={formatPrice(group.total, locale)}
+								strong
+							/>
+						</View>
 					</View>
 				);
 			}}
 			ListFooterComponent={
-				<View style={{ gap: 12, marginTop: 16 }}>
+				<View style={styles.footer}>
 					{view.unavailableGroups.length > 0 ? (
-						<View style={{ gap: 4 }}>
-							<Text style={[styles.title, { color: c.dangerText }]}>
-								{t("checkoutGroup.unavailableTitle")}
-							</Text>
-							{view.unavailableGroups.map((entry) => (
-								<Text
-									key={entry.groupKey}
-									style={[styles.meta, { color: c.dangerText }]}
-								>
-									{t(unavailableReasonKey(entry.reason))}
+						<View
+							style={[styles.notice, { backgroundColor: c.warningSoft }]}
+							accessibilityRole="alert"
+						>
+							<Ionicons
+								name="information-circle"
+								size={18}
+								color={c.warningText}
+								style={styles.noticeIcon}
+							/>
+							<View style={[styles.flex, styles.noticeLines]}>
+								<Text style={[styles.noticeTitle, { color: c.warningText }]}>
+									{t("checkoutGroup.unavailableTitle")}
 								</Text>
-							))}
+								{view.unavailableGroups.map((entry) => (
+									<Text
+										key={entry.groupKey}
+										style={[styles.meta, { color: c.warningText }]}
+									>
+										{t(unavailableReasonKey(entry.reason))}
+									</Text>
+								))}
+							</View>
 						</View>
 					) : null}
-					<AmountRow
-						label={t("checkoutGroup.grandTotal")}
-						value={formatPrice(view.grandTotal, locale)}
-						strong
-					/>
+					<View
+						style={[styles.grand, { borderTopColor: c.border }]}
+						accessible
+						accessibilityLabel={
+							quote.isPending
+								? t("checkout.loadingQuote")
+								: `${t("checkoutGroup.grandTotal")} ${grand}`
+						}
+						accessibilityLiveRegion="polite"
+					>
+						<Text style={[styles.grandLabel, { color: c.text }]}>
+							{t("checkoutGroup.grandTotal")}
+						</Text>
+						{quote.isPending ? (
+							<View style={styles.requote}>
+								<ActivityIndicator color={c.primary} size="small" />
+								<Text style={[styles.meta, { color: c.muted }]}>
+									{t("checkout.loadingQuote")}
+								</Text>
+							</View>
+						) : (
+							<View style={stale ? styles.dim : null}>
+								<TotalTag amount={grand} />
+							</View>
+						)}
+					</View>
+					{quoteError}
 					<Pressable
 						onPress={() => setAccepted(!accepted)}
 						accessibilityRole="checkbox"
@@ -239,15 +313,13 @@ export function SplitReview({ address }: { address: AddressInput }) {
 							size={24}
 							color={accepted ? c.primary : c.muted}
 						/>
-						<Text style={[styles.meta, { flex: 1, color: c.text }]}>
+						<Text style={[styles.acceptText, { color: c.text }]}>
 							{t("checkout.acceptTerms")}
 						</Text>
 					</Pressable>
-					{placeError ? (
-						<Text style={formStyles.error} accessibilityRole="alert">
-							{resolveErrorMessage(placeError, t)}
-						</Text>
-					) : null}
+					<FormError
+						message={placeError ? resolveErrorMessage(placeError, t) : null}
+					/>
 					<CheckoutButton
 						label={t("checkoutGroup.placeOrders")}
 						onPress={placeOrders}
@@ -272,8 +344,17 @@ function AmountRow({
 	const c = useShopTheme();
 	return (
 		<View style={styles.row}>
-			<Text style={[styles.meta, { color: c.muted }]}>{label}</Text>
-			<Text style={[strong ? styles.title : styles.meta, { color: c.text }]}>
+			<Text
+				style={[
+					strong ? styles.strongLabel : styles.meta,
+					{ color: strong ? c.text : c.body },
+				]}
+			>
+				{label}
+			</Text>
+			<Text
+				style={[strong ? styles.strongValue : styles.value, { color: c.text }]}
+			>
 				{value}
 			</Text>
 		</View>
@@ -281,23 +362,62 @@ function AmountRow({
 }
 
 const styles = StyleSheet.create({
+	flex: { flex: 1 },
+	separator: { height: 16 },
+	stack: { gap: 10 },
+	pad: { padding: 16 },
+	pickerPad: { paddingHorizontal: 16, paddingTop: 16 },
+	headerGap: { marginBottom: 16 },
 	card: {
 		padding: 16,
-		gap: 10,
+		gap: 12,
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
 	},
-	title: { fontSize: 16, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	options: { gap: 10 },
+	divider: { height: StyleSheet.hairlineWidth },
+	amounts: { gap: 6 },
+	dim: { opacity: 0.45 },
+	title: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	meta: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.body },
+	value: {
+		fontSize: 14,
+		fontFamily: Fonts.bodySemibold,
+		fontVariant: ["tabular-nums"],
+	},
+	strongLabel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	strongValue: {
+		fontSize: 17,
+		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
+	},
+	footer: { gap: 12, marginTop: 16 },
+	notice: { flexDirection: "row", gap: 8, padding: 12, borderRadius: 12 },
+	noticeIcon: { marginTop: 1 },
+	noticeLines: { gap: 4 },
+	noticeTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	grand: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: 12,
+		minHeight: 56,
+		paddingTop: 14,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
+	grandLabel: { fontSize: 18, fontFamily: Fonts.displayBold, flexShrink: 1 },
+	requote: { flexDirection: "row", alignItems: "center", gap: 8 },
+	acceptText: { flex: 1, fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
 	row: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
+		gap: 12,
 	},
 	accept: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
-		minHeight: 44,
+		gap: 12,
+		minHeight: 48,
 	},
 });

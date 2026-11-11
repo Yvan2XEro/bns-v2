@@ -4,13 +4,18 @@ import { Image } from "expo-image";
 import { router, usePathname } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { ShellPattern } from "@/src/components/brand/BackgroundPattern";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
-import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { ReviewStars } from "@/src/components/ReviewStars";
+import {
+	GroupedRow,
+	GroupedSection,
+	type RowIconTone,
+} from "@/src/components/settings/Grouped";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { switchAppMode } from "@/src/components/shop/SwitchModeButton";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -40,10 +45,7 @@ interface MenuItemProps {
 	sublabel?: string;
 	onPress: () => void;
 	danger?: boolean;
-	iconBg?: string;
-	iconColor?: string;
-	isDark: boolean;
-	borderColor: string;
+	iconTone?: RowIconTone;
 	rightElement?: React.ReactNode;
 	/** Open in the pane beside the menu. */
 	selected?: boolean;
@@ -55,58 +57,23 @@ function MenuItem({
 	sublabel,
 	onPress,
 	danger,
-	iconBg,
-	iconColor,
-	isDark,
-	borderColor,
+	iconTone,
 	rightElement,
 	selected,
 }: MenuItemProps) {
-	const selectedStyle = useSelectedRowStyle()(selected);
-	const textColor = danger ? "#dc2626" : isDark ? "#e2e8f0" : "#0f172a";
-	const resolvedIconColor = danger
-		? "#dc2626"
-		: (iconColor ?? (isDark ? "#94a3b8" : "#475569"));
-	const resolvedIconBg = danger
-		? isDark
-			? "#3b1111"
-			: "#fee2e2"
-		: (iconBg ?? (isDark ? "#1e293b" : "#f1f5f9"));
-
 	return (
-		<AnimatedPressable
+		<GroupedRow
+			icon={icon}
+			iconTone={iconTone}
+			label={label}
+			detail={sublabel}
 			onPress={onPress}
-			scaleTo={0.98}
-			accessibilityState={{ selected: Boolean(selected) }}
-			style={[
-				styles.menuItem,
-				{ borderBottomColor: borderColor },
-				selectedStyle,
-			]}
-		>
-			<View style={[styles.iconBox, { backgroundColor: resolvedIconBg }]}>
-				<Ionicons name={icon} size={17} color={resolvedIconColor} />
-			</View>
-			<View style={{ flex: 1 }}>
-				<Text style={[styles.menuLabel, { color: textColor }]}>{label}</Text>
-				{sublabel && (
-					<Text
-						style={[
-							styles.menuSublabel,
-							{ color: isDark ? "#64748b" : "#94a3b8" },
-						]}
-					>
-						{sublabel}
-					</Text>
-				)}
-			</View>
-			{rightElement}
-			<Ionicons
-				name="chevron-forward"
-				size={16}
-				color={isDark ? "#334155" : "#cbd5e1"}
-			/>
-		</AnimatedPressable>
+			destructive={danger}
+			selected={selected}
+			trailing={rightElement}
+			accessory={danger ? "none" : "chevron"}
+			accessibilityLabel={sublabel ? `${label}, ${sublabel}` : label}
+		/>
 	);
 }
 
@@ -155,13 +122,13 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 
 	const notificationReady = useNotificationReady();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e293b" : "#f1f5f9";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
+	const c = Colors[isDark ? "dark" : "light"];
+	const bg = c.background;
+	const textColor = c.foreground;
+	const mutedColor = c.mutedForeground;
+	// Headers sit on the ground like every other screen; the shell's indigo
+	// is kept for the guest card, as DESIGN.md asks.
+	const accentBg = bg;
 
 	if (!user) {
 		const goLogin = () =>
@@ -174,10 +141,6 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 				pathname: "/auth/register",
 				params: getAuthModalParams(pathname),
 			});
-		const cardStyle = [
-			styles.sectionCard,
-			{ backgroundColor: cardBg, borderColor: isDark ? "#1e3a5f" : "#e2e8f0" },
-		];
 		const language =
 			i18n.language?.slice(0, 2) === "en" ? "English" : "Français";
 		return (
@@ -187,14 +150,14 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 			>
 				<View style={[styles.noUserHeader, { backgroundColor: accentBg }]}>
 					<View
-						style={[
-							styles.accountIconWrap,
-							{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-						]}
+						style={[styles.accountIconWrap, { backgroundColor: c.primaryTint }]}
 					>
-						<Ionicons name="person" size={22} color={primaryColor} />
+						<Ionicons name="person" size={22} color={c.link} />
 					</View>
-					<Text style={[styles.headerTitle, { color: textColor }]}>
+					<Text
+						accessibilityRole="header"
+						style={[styles.headerTitle, { color: textColor }]}
+					>
 						{t("account.myAccount")}
 					</Text>
 				</View>
@@ -209,11 +172,16 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 							style={[
 								styles.guestCard,
 								{
-									backgroundColor: isDark ? "#13213f" : "#1e40af",
+									// The shell indigo; at night it lifts a step so the
+									// card still reads against the night ground.
+									backgroundColor: isDark ? "#16265c" : c.shell,
 								},
 							]}
 						>
-							<Text style={styles.guestTitle}>{t("account.guestTitle")}</Text>
+							<ShellPattern />
+							<Text accessibilityRole="header" style={styles.guestTitle}>
+								{t("account.guestTitle")}
+							</Text>
 							<Text style={styles.guestPrompt}>
 								{t("account.signInPrompt")}
 							</Text>
@@ -225,7 +193,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								] as const
 							).map(([icon, label]) => (
 								<View key={icon} style={styles.guestPerk}>
-									<Ionicons name={icon} size={16} color="#bfdbfe" />
+									<Ionicons name={icon} size={18} color={c.shellMuted} />
 									<Text style={styles.guestPerkText}>{label}</Text>
 								</View>
 							))}
@@ -233,7 +201,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								<Pressable
 									onPress={goLogin}
 									accessibilityRole="button"
-									style={[styles.guestPrimary, { backgroundColor: "#f59e0b" }]}
+									style={[styles.guestPrimary, { backgroundColor: c.sun }]}
 								>
 									<Text style={styles.guestPrimaryText}>
 										{t("account.signIn")}
@@ -253,78 +221,60 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 					</View>
 
 					{/* Everything below works without an account. */}
-					<View style={styles.section}>
-						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							{t("account.sectionPreferences")}
-						</Text>
-						<View style={cardStyle}>
-							<MenuItem
-								icon="language-outline"
-								label={t("settings.language")}
-								sublabel={language}
-								{...entry("settings")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="contrast-outline"
-								label={t("settings.theme")}
-								{...entry("settings")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="settings-outline"
-								label={t("account.settings")}
-								{...entry("settings")}
-								isDark={isDark}
-								borderColor="transparent"
-							/>
-						</View>
-					</View>
+					<GroupedSection
+						style={styles.section}
+						inset={58}
+						title={t("account.sectionPreferences")}
+					>
+						<MenuItem
+							icon="language-outline"
+							label={t("settings.language")}
+							sublabel={language}
+							{...entry("settings")}
+						/>
+						<MenuItem
+							icon="contrast-outline"
+							label={t("settings.theme")}
+							{...entry("settings")}
+						/>
+						<MenuItem
+							icon="settings-outline"
+							label={t("account.settings")}
+							{...entry("settings")}
+						/>
+					</GroupedSection>
 
-					<View style={styles.section}>
-						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							{t("account.sectionSupport")}
-						</Text>
-						<View style={cardStyle}>
-							<MenuItem
-								icon="help-circle-outline"
-								label={t("account.help")}
-								{...entry("help")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="shield-checkmark-outline"
-								label={t("account.safety")}
-								{...entry("safety")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="mail-outline"
-								label={t("account.contact")}
-								{...entry("contact")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="document-text-outline"
-								label={t("account.terms")}
-								{...entry("terms")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="lock-closed-outline"
-								label={t("account.privacy")}
-								{...entry("privacy")}
-								isDark={isDark}
-								borderColor="transparent"
-							/>
-						</View>
-					</View>
+					<GroupedSection
+						style={styles.section}
+						inset={58}
+						title={t("account.sectionSupport")}
+					>
+						<MenuItem
+							icon="help-circle-outline"
+							label={t("account.help")}
+							{...entry("help")}
+						/>
+						<MenuItem
+							icon="shield-checkmark-outline"
+							label={t("account.safety")}
+							{...entry("safety")}
+						/>
+						<MenuItem
+							icon="mail-outline"
+							label={t("account.contact")}
+							{...entry("contact")}
+						/>
+						<MenuItem
+							icon="document-text-outline"
+							label={t("account.terms")}
+							{...entry("terms")}
+						/>
+						<MenuItem
+							icon="lock-closed-outline"
+							label={t("account.privacy")}
+							{...entry("privacy")}
+						/>
+					</GroupedSection>
 				</ScrollView>
 			</SafeAreaView>
 		);
@@ -369,7 +319,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								<View
 									style={[
 										styles.avatarPlaceholder,
-										{ backgroundColor: primaryColor },
+										{ backgroundColor: c.primaryFill },
 									]}
 								>
 									<Text style={styles.avatarLetter}>
@@ -382,6 +332,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 						{/* Info */}
 						<View style={{ flex: 1 }}>
 							<Text
+								accessibilityRole="header"
 								style={[styles.userName, { color: textColor }]}
 								numberOfLines={1}
 							>
@@ -404,10 +355,15 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 						<AnimatedPressable
 							{...entry("editProfile")}
 							scaleTo={0.95}
-							style={[styles.editBtn, { backgroundColor: cardBg }]}
+							hitSlop={6}
+							accessibilityLabel={t("account.edit")}
+							style={[
+								styles.editBtn,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
 						>
-							<Ionicons name="pencil" size={14} color={primaryColor} />
-							<Text style={[styles.editBtnText, { color: primaryColor }]}>
+							<Ionicons name="pencil" size={14} color={c.link} />
+							<Text style={[styles.editBtnText, { color: c.link }]}>
 								{t("account.edit")}
 							</Text>
 						</AnimatedPressable>
@@ -419,347 +375,231 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 					<SuspensionBanner />
 
 					{isModerator && (
-						<View style={styles.section}>
-							<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-								{t("account.sectionModeration")}
-							</Text>
-							<View
-								style={[
-									styles.sectionCard,
-									{
-										backgroundColor: cardBg,
-										borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
-									},
-								]}
-							>
-								<MenuItem
-									icon="shield-half-outline"
-									label={t("account.moderation")}
-									sublabel={
-										pendingCount > 0
-											? t("account.moderationPending", { count: pendingCount })
-											: t("account.moderationIdle")
-									}
-									iconBg={isDark ? "#451a03" : "#fef3c7"}
-									iconColor="#d97706"
-									rightElement={
-										pendingCount > 0 ? (
-											<View style={styles.notifBadge}>
-												<Text style={styles.notifBadgeText}>
-													{pendingCount > 9 ? "9+" : pendingCount}
-												</Text>
-											</View>
-										) : undefined
-									}
-									onPress={() => router.push("/moderation")}
-									isDark={isDark}
-									borderColor={borderColor}
-								/>
-							</View>
-						</View>
+						<GroupedSection
+							style={styles.section}
+							inset={58}
+							title={t("account.sectionModeration")}
+						>
+							<MenuItem
+								icon="shield-half-outline"
+								label={t("account.moderation")}
+								sublabel={
+									pendingCount > 0
+										? t("account.moderationPending", { count: pendingCount })
+										: t("account.moderationIdle")
+								}
+								iconTone="sun"
+								rightElement={
+									pendingCount > 0 ? (
+										<View style={styles.notifBadge}>
+											<Text style={styles.notifBadgeText}>
+												{pendingCount > 9 ? "9+" : pendingCount}
+											</Text>
+										</View>
+									) : undefined
+								}
+								onPress={() => router.push("/moderation")}
+							/>
+						</GroupedSection>
 					)}
 
 					{(shopsEnabled || ownShop || isShopMember) && (
-						<View style={styles.section}>
-							<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-								{t("account.sectionShop")}
-							</Text>
-							<View
-								style={[
-									styles.sectionCard,
-									{
-										backgroundColor: cardBg,
-										borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
-									},
-								]}
-							>
-								{ownShop ? (
-									<MenuItem
-										icon="storefront-outline"
-										label={ownShop.name}
-										sublabel={
-											ownShop.status === "suspended"
-												? t("account.shopSuspended")
-												: t("account.myShop")
-										}
-										iconBg={isDark ? "#172554" : "#dbeafe"}
-										iconColor={primaryColor}
-										rightElement={
-											<LevelBadge badge={ownShop.badge} size="sm" />
-										}
-										onPress={() => router.push("/seller")}
-										isDark={isDark}
-										borderColor={borderColor}
-									/>
-								) : shopsEnabled ? (
-									<MenuItem
-										icon="storefront-outline"
-										label={t("account.openShop")}
-										sublabel={t("account.openShopSublabel")}
-										iconBg={isDark ? "#451a03" : "#fef3c7"}
-										iconColor="#d97706"
-										onPress={() => router.push("/shop/create")}
-										isDark={isDark}
-										borderColor={borderColor}
-									/>
-								) : null}
-								{isShopMember ? (
-									<MenuItem
-										icon="swap-horizontal"
-										label={
-											inSellerMode
-												? t("sellerMode.switchToBuyer")
-												: t("sellerMode.switchToSeller")
-										}
-										sublabel={
-											inSellerMode
-												? t("sellerMode.switchToBuyerSub")
-												: t("sellerMode.switchToSellerSub")
-										}
-										iconBg={isDark ? "#172554" : "#dbeafe"}
-										iconColor={primaryColor}
-										onPress={() =>
-											switchAppMode(inSellerMode ? "buyer" : "seller")
-										}
-										isDark={isDark}
-										borderColor={borderColor}
-									/>
-								) : null}
-							</View>
-						</View>
+						<GroupedSection
+							style={styles.section}
+							inset={58}
+							title={t("account.sectionShop")}
+						>
+							{ownShop ? (
+								<MenuItem
+									icon="storefront-outline"
+									label={ownShop.name}
+									sublabel={
+										ownShop.status === "suspended"
+											? t("account.shopSuspended")
+											: t("account.myShop")
+									}
+									iconTone="brand"
+									rightElement={<LevelBadge badge={ownShop.badge} size="sm" />}
+									onPress={() => router.push("/seller")}
+								/>
+							) : shopsEnabled ? (
+								<MenuItem
+									icon="storefront-outline"
+									label={t("account.openShop")}
+									sublabel={t("account.openShopSublabel")}
+									iconTone="sun"
+									onPress={() => router.push("/shop/create")}
+								/>
+							) : null}
+							{isShopMember ? (
+								<MenuItem
+									icon="swap-horizontal"
+									label={
+										inSellerMode
+											? t("sellerMode.switchToBuyer")
+											: t("sellerMode.switchToSeller")
+									}
+									sublabel={
+										inSellerMode
+											? t("sellerMode.switchToBuyerSub")
+											: t("sellerMode.switchToSellerSub")
+									}
+									iconTone="brand"
+									onPress={() =>
+										switchAppMode(inSellerMode ? "buyer" : "seller")
+									}
+								/>
+							) : null}
+						</GroupedSection>
 					)}
 
 					{/* Mon activité */}
-					<View style={styles.section}>
-						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							{t("account.sectionPurchases")}
-						</Text>
-						<View
-							style={[
-								styles.sectionCard,
-								{
-									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
-								},
-							]}
-						>
-							{ordersEnabled ? (
-								<>
-									<MenuItem
-										icon="bag-handle-outline"
-										label={t("account.myPurchases")}
-										sublabel={t("account.myPurchasesSublabel")}
-										{...entry("purchases")}
-										isDark={isDark}
-										borderColor={borderColor}
-									/>
-									<MenuItem
-										icon="chatbubble-ellipses-outline"
-										label={t("disputes.title")}
-										sublabel={t("disputes.subtitle")}
-										{...entry("disputes")}
-										isDark={isDark}
-										borderColor={borderColor}
-									/>
-									<MenuItem
-										icon="return-down-back-outline"
-										label={t("returns.title")}
-										sublabel={t("returns.subtitle")}
-										{...entry("returns")}
-										isDark={isDark}
-										borderColor={borderColor}
-									/>
-									<MenuItem
-										icon="location-outline"
-										label={t("addresses.title")}
-										sublabel={t("addresses.menuSublabel")}
-										{...entry("addresses")}
-										isDark={isDark}
-										borderColor={borderColor}
-									/>
-									<MenuItem
-										icon="cart-outline"
-										label={t("account.cart")}
-										{...entry("cart")}
-										isDark={isDark}
-										borderColor={borderColor}
-									/>
-								</>
-							) : null}
-							{courierSpace ? (
+					<GroupedSection
+						style={styles.section}
+						inset={58}
+						title={t("account.sectionPurchases")}
+					>
+						{ordersEnabled ? (
+							<>
 								<MenuItem
-									icon="bicycle-outline"
-									label={t("shipmentPanel.courierSpace")}
-									sublabel={t("shipmentPanel.courierSpaceSublabel")}
-									onPress={() => router.push(courierSpace)}
-									isDark={isDark}
-									borderColor={borderColor}
+									icon="bag-handle-outline"
+									label={t("account.myPurchases")}
+									sublabel={t("account.myPurchasesSublabel")}
+									{...entry("purchases")}
 								/>
-							) : null}
+								<MenuItem
+									icon="chatbubble-ellipses-outline"
+									label={t("disputes.title")}
+									sublabel={t("disputes.subtitle")}
+									{...entry("disputes")}
+								/>
+								<MenuItem
+									icon="return-down-back-outline"
+									label={t("returns.title")}
+									sublabel={t("returns.subtitle")}
+									{...entry("returns")}
+								/>
+								<MenuItem
+									icon="location-outline"
+									label={t("addresses.title")}
+									sublabel={t("addresses.menuSublabel")}
+									{...entry("addresses")}
+								/>
+								<MenuItem
+									icon="cart-outline"
+									label={t("account.cart")}
+									{...entry("cart")}
+								/>
+							</>
+						) : null}
+						{courierSpace ? (
 							<MenuItem
-								icon="heart-outline"
-								label={t("account.favorites")}
-								sublabel={t("account.favoritesSublabel")}
-								{...entry("favorites")}
-								isDark={isDark}
-								borderColor={borderColor}
+								icon="bicycle-outline"
+								label={t("shipmentPanel.courierSpace")}
+								sublabel={t("shipmentPanel.courierSpaceSublabel")}
+								onPress={() => router.push(courierSpace)}
 							/>
-							<MenuItem
-								icon="bookmark-outline"
-								label={t("account.savedSearches")}
-								{...entry("searches")}
-								isDark={isDark}
-								borderColor="transparent"
-							/>
-						</View>
-					</View>
+						) : null}
+						<MenuItem
+							icon="heart-outline"
+							label={t("account.favorites")}
+							sublabel={t("account.favoritesSublabel")}
+							{...entry("favorites")}
+						/>
+						<MenuItem
+							icon="bookmark-outline"
+							label={t("account.savedSearches")}
+							{...entry("searches")}
+						/>
+					</GroupedSection>
 
 					{/* Mes annonces */}
-					<View style={styles.section}>
-						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							{t("account.sectionListings")}
-						</Text>
-						<View
-							style={[
-								styles.sectionCard,
-								{
-									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
-								},
-							]}
-						>
-							<MenuItem
-								icon="cube-outline"
-								label={t("account.myListings")}
-								sublabel={t("account.myListingsSublabel")}
-								{...entry("listings")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="rocket-outline"
-								label={t("account.boostHistory")}
-								{...entry("boosts")}
-								isDark={isDark}
-								borderColor="transparent"
-							/>
-						</View>
-					</View>
+					<GroupedSection
+						style={styles.section}
+						inset={58}
+						title={t("account.sectionListings")}
+					>
+						<MenuItem
+							icon="cube-outline"
+							label={t("account.myListings")}
+							sublabel={t("account.myListingsSublabel")}
+							{...entry("listings")}
+						/>
+						<MenuItem
+							icon="rocket-outline"
+							label={t("account.boostHistory")}
+							{...entry("boosts")}
+						/>
+					</GroupedSection>
 
 					{/* Paramètres */}
-					<View style={styles.section}>
-						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							{t("account.sectionSettings")}
-						</Text>
-						<View
-							style={[
-								styles.sectionCard,
-								{
-									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
-								},
-							]}
-						>
-							<MenuItem
-								icon="settings-outline"
-								label={t("account.settings")}
-								{...entry("settings")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="shield-checkmark-outline"
-								label={t("account.security")}
-								{...entry("security")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="notifications-outline"
-								label={t("account.notifications")}
-								{...entry("notifications")}
-								isDark={isDark}
-								borderColor="transparent"
-								rightElement={
-									notificationReady ? <NotificationsUnreadBadge /> : undefined
-								}
-							/>
-						</View>
-					</View>
+					<GroupedSection
+						style={styles.section}
+						inset={58}
+						title={t("account.sectionSettings")}
+					>
+						<MenuItem
+							icon="settings-outline"
+							label={t("account.settings")}
+							{...entry("settings")}
+						/>
+						<MenuItem
+							icon="shield-checkmark-outline"
+							label={t("account.security")}
+							{...entry("security")}
+						/>
+						<MenuItem
+							icon="notifications-outline"
+							label={t("account.notifications")}
+							{...entry("notifications")}
+							rightElement={
+								notificationReady ? <NotificationsUnreadBadge /> : undefined
+							}
+						/>
+					</GroupedSection>
 
 					{/* Assistance */}
-					<View style={styles.section}>
-						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							{t("account.sectionSupport")}
-						</Text>
-						<View
-							style={[
-								styles.sectionCard,
-								{
-									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
-								},
-							]}
-						>
-							<MenuItem
-								icon="help-circle-outline"
-								label={t("account.help")}
-								{...entry("help")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="shield-checkmark-outline"
-								label={t("account.safety")}
-								{...entry("safety")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="mail-outline"
-								label={t("account.contact")}
-								{...entry("contact")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="document-text-outline"
-								label={t("account.terms")}
-								{...entry("terms")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
-								icon="lock-closed-outline"
-								label={t("account.privacy")}
-								{...entry("privacy")}
-								isDark={isDark}
-								borderColor="transparent"
-							/>
-						</View>
-					</View>
+					<GroupedSection
+						style={styles.section}
+						inset={58}
+						title={t("account.sectionSupport")}
+					>
+						<MenuItem
+							icon="help-circle-outline"
+							label={t("account.help")}
+							{...entry("help")}
+						/>
+						<MenuItem
+							icon="shield-checkmark-outline"
+							label={t("account.safety")}
+							{...entry("safety")}
+						/>
+						<MenuItem
+							icon="mail-outline"
+							label={t("account.contact")}
+							{...entry("contact")}
+						/>
+						<MenuItem
+							icon="document-text-outline"
+							label={t("account.terms")}
+							{...entry("terms")}
+						/>
+						<MenuItem
+							icon="lock-closed-outline"
+							label={t("account.privacy")}
+							{...entry("privacy")}
+						/>
+					</GroupedSection>
 
 					{/* Déconnexion */}
-					<View style={[styles.section, { marginBottom: 32 }]}>
-						<View
-							style={[
-								styles.sectionCard,
-								{
-									backgroundColor: cardBg,
-									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
-								},
-							]}
-						>
-							<MenuItem
-								icon="log-out-outline"
-								label={t("account.logout")}
-								onPress={handleLogout}
-								danger
-								isDark={isDark}
-								borderColor="transparent"
-							/>
-						</View>
-					</View>
+					<GroupedSection style={[styles.section, { marginBottom: 32 }]}>
+						<MenuItem
+							icon="log-out-outline"
+							label={t("account.logout")}
+							onPress={handleLogout}
+							danger
+						/>
+					</GroupedSection>
 				</View>
 			</ScrollView>
 		</SafeAreaView>
@@ -767,34 +607,45 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 }
 
 const styles = StyleSheet.create({
-	guestCard: { borderRadius: 22, padding: 20, gap: 10 },
-	guestTitle: { color: "#ffffff", fontFamily: Fonts.displayBold, fontSize: 22 },
+	guestCard: { borderRadius: 22, padding: 20, gap: 10, overflow: "hidden" },
+	guestTitle: {
+		color: "#ffffff",
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 24,
+		letterSpacing: -0.5,
+	},
 	guestPrompt: {
-		color: "#dbeafe",
+		color: "#e3e9fb",
 		fontFamily: Fonts.body,
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		marginBottom: 4,
 	},
 	guestPerk: { flexDirection: "row", alignItems: "center", gap: 10 },
-	guestPerkText: { color: "#eff6ff", fontFamily: Fonts.body, fontSize: 14 },
+	guestPerkText: {
+		flex: 1,
+		color: "#eff1fb",
+		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 21,
+	},
 	guestActions: { flexDirection: "row", gap: 10, marginTop: 10 },
 	guestPrimary: {
 		flex: 1,
-		height: 46,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	guestPrimaryText: {
-		color: "#0f172a",
-		fontFamily: Fonts.bodySemibold,
-		fontSize: 15,
+		color: "#12163a",
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
 	},
 	guestSecondary: {
 		flex: 1,
-		height: 46,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 		borderWidth: 1,
@@ -802,8 +653,8 @@ const styles = StyleSheet.create({
 	},
 	guestSecondaryText: {
 		color: "#ffffff",
-		fontFamily: Fonts.bodySemibold,
-		fontSize: 15,
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
 	},
 	safe: { flex: 1 },
 
@@ -829,7 +680,13 @@ const styles = StyleSheet.create({
 		borderTopRightRadius: 20,
 		overflow: "hidden",
 	},
-	headerTitle: { fontSize: 24, fontFamily: Fonts.displayExtrabold },
+	// Tab roots share the h1 large title (30/34), like Search and Messages.
+	headerTitle: {
+		fontSize: 30,
+		lineHeight: 34,
+		letterSpacing: -0.8,
+		fontFamily: Fonts.displayExtrabold,
+	},
 
 	/* ── Profile header ── */
 	profileHeader: {
@@ -856,82 +713,44 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displayBold,
 		color: "#fff",
 	},
-	verifiedBadge: {
-		position: "absolute",
-		bottom: -2,
-		right: -2,
-		backgroundColor: "#fff",
-		borderRadius: 10,
+	userName: {
+		fontSize: 22,
+		lineHeight: 27,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.5,
+		marginBottom: 3,
 	},
-	userName: { fontSize: 18, fontFamily: Fonts.displayBold, marginBottom: 3 },
-	memberSince: { fontSize: 12, marginTop: 3, fontFamily: Fonts.body },
+	memberSince: {
+		fontSize: 13,
+		lineHeight: 18,
+		marginTop: 4,
+		fontFamily: Fonts.body,
+	},
 	editBtn: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 5,
-		borderRadius: 10,
-		paddingHorizontal: 10,
-		paddingVertical: 7,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.08,
-		shadowRadius: 4,
-		elevation: 2,
+		gap: 6,
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth * 2,
+		paddingHorizontal: 14,
+		minHeight: 40,
 	},
-	editBtnText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	editBtnText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 
 	/* ── Content ── */
 	content: {
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		paddingTop: 20,
+		borderTopLeftRadius: 22,
+		borderTopRightRadius: 22,
+		paddingTop: 24,
 		minHeight: 500,
 	},
-	section: { paddingHorizontal: 16, marginBottom: 12 },
-	sectionLabel: {
-		fontSize: 11,
-		textTransform: "uppercase",
-		fontFamily: Fonts.bodySemibold,
-		letterSpacing: 1,
-		marginBottom: 8,
-		marginLeft: 4,
-	},
-	sectionCard: {
-		borderRadius: 14,
-		overflow: "hidden",
-		borderWidth: 1,
-	},
+	section: { paddingHorizontal: 16, marginBottom: 24 },
 
 	/* ── Menu item ── */
-	menuItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 14,
-		paddingVertical: 13,
-		borderBottomWidth: 1,
-		gap: 12,
-	},
-	iconBox: {
-		width: 34,
-		height: 34,
-		borderRadius: 10,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	menuLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	menuSublabel: { fontSize: 11, fontFamily: Fonts.body, marginTop: 1 },
 
 	/* ── Register row ── */
-	registerRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		padding: 16,
-	},
-	registerText: { fontSize: 14, fontFamily: Fonts.body },
-	registerLink: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	notifBadge: {
-		backgroundColor: "#dc2626",
+		backgroundColor: "#d23a2e",
 		borderRadius: 10,
 		minWidth: 18,
 		height: 18,
@@ -942,7 +761,7 @@ const styles = StyleSheet.create({
 	},
 	notifBadgeText: {
 		color: "#fff",
-		fontSize: 10,
+		fontSize: 11,
 		fontFamily: Fonts.displayExtrabold,
 	},
 });

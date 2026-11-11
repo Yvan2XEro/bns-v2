@@ -8,6 +8,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk, successInk } from "@/src/components/shop/ink";
 import { useHandleAvailability } from "@/src/hooks/useShops";
 import { useTranslation } from "@/src/lib/i18n";
 import { normalizeHandle, validateHandle } from "@/src/lib/shopHandle";
@@ -98,9 +99,9 @@ export function HandleField({
 				{status === "checking" ? (
 					<ActivityIndicator size="small" color={c.muted} />
 				) : status === "available" ? (
-					<Ionicons name="checkmark-circle" size={18} color={c.success} />
+					<Ionicons name="checkmark-circle" size={18} color={successInk(c)} />
 				) : status !== "idle" ? (
-					<Ionicons name="close-circle" size={18} color={c.danger} />
+					<Ionicons name="close-circle" size={18} color={dangerInk(c)} />
 				) : null}
 			</View>
 			{status !== "idle" ? (
@@ -118,7 +119,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		height: 50,
 		borderRadius: 12,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		paddingHorizontal: 12,
 		gap: 4,
 	},

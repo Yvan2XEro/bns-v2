@@ -14,8 +14,10 @@ import {
 	useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { LevelLadder } from "@/src/components/verification/LevelLadder";
@@ -91,12 +93,14 @@ export default function VerificationHubScreen() {
 		>
 			<SellerHeader title={t("verification.hub.title")} />
 
-			{isLoading ? <HubSkeleton /> : null}
+			{isLoading ? <DetailSkeleton cards={3} /> : null}
 
 			{!isLoading && isError ? (
-				<HubError
-					message={resolveErrorMessage(myShop.error ?? query.error, t)}
-					onRetry={() => {
+				<EmptyState
+					illustration="notFound"
+					title={resolveErrorMessage(myShop.error ?? query.error, t)}
+					ctaLabel={t("common.retry")}
+					onCta={() => {
 						void myShop.refetch();
 						void query.refetch();
 					}}
@@ -128,7 +132,7 @@ export default function VerificationHubScreen() {
 							>
 								<Ionicons
 									name="information-circle"
-									size={18}
+									size={20}
 									color={c.warningText}
 								/>
 								<Text style={[styles.bannerText, { color: c.warningText }]}>
@@ -211,9 +215,12 @@ function HubFooter({
 				accessibilityState={{ disabled: pending, busy: pending }}
 				disabled={pending}
 				onPress={onPress}
-				style={[
+				style={({ pressed }) => [
 					styles.footerBtn,
-					{ backgroundColor: c.primary, opacity: pending ? 0.6 : 1 },
+					{
+						backgroundColor: fillOf(c),
+						opacity: pending ? 0.6 : pressed ? 0.85 : 1,
+					},
 				]}
 			>
 				{pending ? (
@@ -226,48 +233,9 @@ function HubFooter({
 	);
 }
 
-function HubSkeleton() {
-	const c = useShopTheme();
-	return (
-		<View style={styles.content}>
-			{[0, 1, 2].map((i) => (
-				<View
-					key={i}
-					style={[styles.skeletonBlock, { backgroundColor: c.neutralSoft }]}
-				/>
-			))}
-		</View>
-	);
-}
-
-function HubError({
-	message,
-	onRetry,
-}: {
-	message: string;
-	onRetry: () => void;
-}) {
-	const c = useShopTheme();
-	const { t } = useTranslation();
-	return (
-		<View accessibilityRole="alert" style={styles.errorWrap}>
-			<Ionicons name="cloud-offline-outline" size={28} color={c.muted} />
-			<Text style={[styles.errorText, { color: c.text }]}>{message}</Text>
-			<Pressable
-				accessibilityRole="button"
-				accessibilityLabel={t("common.retry")}
-				onPress={onRetry}
-				style={[styles.retryBtn, { backgroundColor: c.primary }]}
-			>
-				<Text style={styles.retryLabel}>{t("common.retry")}</Text>
-			</Pressable>
-		</View>
-	);
-}
-
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	content: { padding: 16, gap: 14, paddingBottom: 40 },
+	content: { padding: 16, gap: 16, paddingBottom: 40 },
 	contentWithFooter: { paddingBottom: 110 },
 	footer: {
 		position: "absolute",
@@ -279,49 +247,23 @@ const styles = StyleSheet.create({
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
 	footerBtn: {
-		minHeight: 50,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingHorizontal: 20,
 	},
 	footerLabel: {
 		color: "#ffffff",
-		fontSize: 15,
-		fontFamily: Fonts.bodySemibold,
-	},
-	skeletonBlock: { height: 96, borderRadius: 16 },
-	errorWrap: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 10,
-		padding: 32,
-	},
-	errorText: {
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
-		textAlign: "center",
-	},
-	retryBtn: {
-		minHeight: 44,
-		minWidth: 44,
-		paddingHorizontal: 20,
-		borderRadius: 12,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	retryLabel: {
-		color: "#ffffff",
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 	banner: {
 		flexDirection: "row",
 		alignItems: "flex-start",
-		gap: 8,
+		gap: 10,
 		borderRadius: 12,
-		padding: 12,
+		padding: 14,
 	},
-	bannerText: { flex: 1, fontSize: 13, fontFamily: Fonts.body },
+	bannerText: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
 });

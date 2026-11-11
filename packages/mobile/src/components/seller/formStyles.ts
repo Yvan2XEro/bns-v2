@@ -10,15 +10,16 @@ export const formStyles = StyleSheet.create({
 	},
 	sectionTitle: { fontSize: 16, fontFamily: Fonts.displayBold },
 	labelRow: { flexDirection: "row", justifyContent: "space-between" },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	counter: { fontSize: 12, fontFamily: Fonts.body },
-	hint: { fontSize: 12, fontFamily: Fonts.body },
+	hint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	input: {
-		minHeight: 46,
+		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		paddingHorizontal: 12,
-		fontSize: 15,
+		// DESIGN.md: body copy is 16 inside inputs.
+		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
 	multiline: { minHeight: 110, paddingTop: 12, textAlignVertical: "top" },
@@ -31,7 +32,8 @@ export const formStyles = StyleSheet.create({
 		minHeight: 44,
 		justifyContent: "center",
 	},
-	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
-	error: { fontSize: 12, fontFamily: Fonts.body, color: "#dc2626" },
+	/** Colour comes from the caller: `dangerInk(c)`, legible in both themes. */
+	error: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 });

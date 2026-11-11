@@ -17,6 +17,7 @@ import {
 	useAppLocale,
 	useCheckoutFlow,
 } from "@/src/components/checkout/CheckoutProvider";
+import { FormError } from "@/src/components/checkout/FormError";
 import { OrderSummaryCard } from "@/src/components/checkout/OrderSummaryCard";
 import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPicker";
 import { PreContractPanel } from "@/src/components/checkout/PreContractPanel";
@@ -166,9 +167,16 @@ function Review() {
 		return (
 			<View style={{ padding: 16, gap: 16 }}>
 				{methodPicker}
-				<View style={formStyles.row}>
+				<View
+					style={[
+						styles.loading,
+						{ backgroundColor: c.card, borderColor: c.border },
+					]}
+					accessibilityRole="progressbar"
+					accessibilityLabel={t("checkout.loadingQuote")}
+				>
 					<ActivityIndicator color={c.primary} />
-					<Text style={[formStyles.hint, { color: c.muted }]}>
+					<Text style={[styles.loadingText, { color: c.body }]}>
 						{t("checkout.loadingQuote")}
 					</Text>
 				</View>
@@ -180,11 +188,9 @@ function Review() {
 			<View style={{ padding: 16, gap: 16 }}>
 				{methodPicker}
 				<View style={{ gap: 12 }}>
-					{quote.error ? (
-						<Text style={formStyles.error} accessibilityRole="alert">
-							{resolveErrorMessage(quote.error, t)}
-						</Text>
-					) : null}
+					<FormError
+						message={quote.error ? resolveErrorMessage(quote.error, t) : null}
+					/>
 					<View style={formStyles.row}>
 						<CheckoutButton
 							variant="outline"
@@ -208,7 +214,9 @@ function Review() {
 
 	return (
 		<ScreenColumn width="reading">
-			<ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+			<ScrollView
+				contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 32 }}
+			>
 				{methodPicker}
 				{state.previousQuote ? (
 					<View
@@ -220,7 +228,7 @@ function Review() {
 							<Text style={[styles.noticeTitle, { color: c.warningText }]}>
 								{t("checkout.quoteChanged")}
 							</Text>
-							<Text style={[formStyles.hint, { color: c.warningText }]}>
+							<Text style={[styles.noticeBody, { color: c.warningText }]}>
 								{t("checkout.quoteChangedBody")}
 							</Text>
 						</View>
@@ -258,17 +266,13 @@ function Review() {
 					<Ionicons
 						name={state.accepted ? "checkbox" : "square-outline"}
 						size={24}
-						color={state.accepted ? c.primary : c.muted}
+						color={state.accepted ? c.link : c.muted}
 					/>
 					<Text style={[styles.acceptText, { color: c.text }]}>
 						{t("checkout.acceptTerms")}
 					</Text>
 				</Pressable>
-				{shown ? (
-					<Text style={formStyles.error} accessibilityRole="alert">
-						{resolveErrorMessage(shown, t)}
-					</Text>
-				) : null}
+				<FormError message={shown ? resolveErrorMessage(shown, t) : null} />
 				<CheckoutButton
 					label={t("checkout.placeOrder")}
 					onPress={placeOrder}
@@ -281,13 +285,23 @@ function Review() {
 }
 
 const styles = StyleSheet.create({
-	notice: { flexDirection: "row", gap: 10, padding: 12, borderRadius: 14 },
-	noticeTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	notice: { flexDirection: "row", gap: 10, padding: 14, borderRadius: 14 },
+	noticeTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	noticeBody: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 	accept: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
-		minHeight: 44,
+		gap: 12,
+		minHeight: 48,
 	},
-	acceptText: { flex: 1, fontSize: 14, fontFamily: Fonts.body },
+	acceptText: { flex: 1, fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
+	loading: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		padding: 16,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
+	loadingText: { flex: 1, fontSize: 15, fontFamily: Fonts.body },
 });

@@ -1,3 +1,4 @@
+import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { sellerBrandPalette } from "./brandTones";
 import { useSellerBrandTheme } from "./sellerBrand";
@@ -5,7 +6,6 @@ import { useSellerBrandTheme } from "./sellerBrand";
 export interface ShopPalette {
 	isDark: boolean;
 	bg: string;
-	header: string;
 	card: string;
 	input: string;
 	text: string;
@@ -14,6 +14,15 @@ export interface ShopPalette {
 	border: string;
 	primary: string;
 	primarySoft: string;
+	/**
+	 * Behind a white label: filled buttons, selected chips, ticked boxes. The
+	 * platform's night primary gives white only 3.8:1, so it steps down to
+	 * `#2448ab`; a shop's own colour is already darkened by its brand palette.
+	 * Bars, dots and rails with nothing on top keep `primary`.
+	 */
+	fill: string;
+	/** Brand-coloured words on a card: links, selected labels, inline actions. */
+	link: string;
 	sell: string;
 	success: string;
 	successSoft: string;
@@ -38,29 +47,33 @@ export function useShopTheme(): ShopPalette {
 	const branded = brand
 		? sellerBrandPalette(brand, isDark ? "dark" : "light")
 		: null;
+	const c = Colors[isDark ? "dark" : "light"];
 	return {
 		isDark,
-		bg: isDark ? "#0b1120" : "#f8fafc",
-		header: isDark ? "#111827" : "#eef2ff",
-		card: isDark ? "#1e293b" : "#ffffff",
-		input: isDark ? "#0f172a" : "#f8fafc",
-		text: isDark ? "#e2e8f0" : "#0f172a",
-		body: isDark ? "#cbd5e1" : "#334155",
-		muted: isDark ? "#94a3b8" : "#64748b",
-		border: isDark ? "#1e3a5f" : "#e2e8f0",
-		primary: isDark ? "#3b82f6" : "#1e40af",
-		primarySoft: isDark ? "#172554" : "#dbeafe",
-		...branded,
-		sell: "#f59e0b",
-		success: "#16a34a",
-		successSoft: isDark ? "#052e16" : "#dcfce7",
-		successText: isDark ? "#86efac" : "#166534",
-		warningSoft: isDark ? "#451a03" : "#fef3c7",
-		warningText: isDark ? "#fcd34d" : "#92400e",
-		danger: "#dc2626",
-		dangerSoft: isDark ? "#450a0a" : "#fee2e2",
-		dangerText: isDark ? "#fca5a5" : "#991b1b",
-		neutralSoft: isDark ? "#1e293b" : "#f1f5f9",
-		neutralText: isDark ? "#cbd5e1" : "#475569",
+		bg: c.background,
+		card: c.card,
+		input: isDark ? c.well : c.background,
+		text: c.foreground,
+		body: c.body,
+		muted: c.mutedForeground,
+		border: c.border,
+		primary: c.primary,
+		primarySoft: c.primaryTint,
+		fill: c.primaryFill,
+		link: c.link,
+		...(branded ? { ...branded, link: branded.primary } : null),
+		// Signage yellow and the fills keep their day value in both themes.
+		sell: Colors.light.sun,
+		success: Colors.light.success,
+		successSoft: c.successTint,
+		successText: c.successText,
+		warningSoft: c.warningTint,
+		warningText: c.warningText,
+		danger: Colors.light.destructive,
+		dangerSoft: c.dangerTint,
+		dangerText: c.dangerText,
+		neutralSoft: isDark ? c.card : c.well,
+		/** Words on `neutralSoft`: running-text ink, 9:1 on the well by day. */
+		neutralText: c.body,
 	};
 }

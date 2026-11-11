@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
@@ -67,6 +67,7 @@ export function ShopHeader({
 				</View>
 				<Text
 					style={[styles.name, { color: c.text }]}
+					accessibilityRole="header"
 					onLayout={(e) => {
 						nameBox.current = e.nativeEvent.layout;
 						report();
@@ -78,11 +79,16 @@ export function ShopHeader({
 					<LevelBadge badge={shop.badge} />
 					<Pressable
 						onPress={onShare}
-						hitSlop={8}
+						hitSlop={{ left: 4, right: 4 }}
 						accessibilityRole="button"
 						accessibilityLabel={t("shop.shareLabel", { name: shop.name })}
+						style={({ pressed }) => [styles.share, pressed && styles.pressed]}
 					>
-						<Text style={[styles.link, { color: brand.accentText }]}>
+						<Ionicons name="share-outline" size={15} color={brand.accentText} />
+						<Text
+							style={[styles.link, { color: brand.accentText }]}
+							numberOfLines={1}
+						>
 							{shopUrlLabel(shop.handle, webUrl)}
 						</Text>
 					</Pressable>
@@ -103,27 +109,40 @@ export function ShopHeader({
 
 const styles = StyleSheet.create({
 	banner: { height: 140, overflow: "hidden" },
-	body: { paddingHorizontal: 16, marginTop: -36, gap: 8 },
+	body: { paddingHorizontal: 16, marginTop: -36, gap: 10 },
 	logoRing: { alignSelf: "flex-start", borderWidth: 4, borderRadius: 22 },
-	name: { fontSize: 24, fontFamily: Fonts.displayExtrabold },
+	name: {
+		fontSize: 26,
+		lineHeight: 31,
+		letterSpacing: -0.6,
+		fontFamily: Fonts.displayExtrabold,
+	},
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
+		columnGap: 12,
 		flexWrap: "wrap",
 	},
-	link: { fontSize: 13, fontFamily: Fonts.bodySemibold, paddingVertical: 4 },
-	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 21 },
+	share: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 5,
+		minHeight: 44,
+		flexShrink: 1,
+	},
+	pressed: { opacity: 0.6 },
+	link: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	trust: {
 		flexDirection: "row",
 		flexWrap: "wrap",
 		alignItems: "center",
-		columnGap: 12,
-		rowGap: 4,
+		columnGap: 14,
+		rowGap: 6,
 	},
 	trustItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-	trustText: { fontSize: 13, fontFamily: Fonts.body },
-	trustStrong: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	trustText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	trustStrong: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 });
 
 const TRUST_ICONS: Record<
@@ -156,8 +175,8 @@ function TrustStrip({ shop }: { shop: PublicShop }) {
 				<View key={item.kind} style={styles.trustItem}>
 					<Ionicons
 						name={TRUST_ICONS[item.kind]}
-						size={13}
-						color={item.kind === "rating" ? "#f59e0b" : c.muted}
+						size={14}
+						color={item.kind === "rating" ? Colors.light.sun : c.muted}
 					/>
 					<Text
 						style={[

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { useRef, useState } from "react";
+import { StyleSheet, Text, type TextInput } from "react-native";
 import { Fonts } from "@/constants/theme";
 import {
 	AuthField,
@@ -10,6 +10,7 @@ import {
 	authErrorMessage,
 } from "@/src/components/auth/AuthLayout";
 import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
+import { FormError } from "@/src/components/checkout/FormError";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAuth } from "@/src/lib/auth";
@@ -30,6 +31,14 @@ export default function RegisterScreen() {
 	const [password, setPassword] = useState("");
 	const [confirm, setConfirm] = useState("");
 	const [loading, setLoading] = useState(false);
+	// What the form refuses is said on the form: the field's border and a
+	// line under it. The sheet is kept for what the server answers.
+	const [missing, setMissing] = useState(false);
+	const [passwordError, setPasswordError] = useState<string | null>(null);
+	const [confirmError, setConfirmError] = useState<string | null>(null);
+	const emailRef = useRef<TextInput>(null);
+	const passwordRef = useRef<TextInput>(null);
+	const confirmRef = useRef<TextInput>(null);
 
 	const redirectTo = getSafeAuthRedirect(params.redirect);
 
@@ -43,24 +52,13 @@ export default function RegisterScreen() {
 	};
 
 	const handleRegister = async () => {
-		if (!name || !email || !password || !confirm) {
-			showError(t("auth.missingFieldsTitle"), t("auth.missingFieldsMessage"));
-			return;
-		}
-		if (password.length < 8) {
-			showError(
-				t("auth.passwordTooShortTitle"),
-				t("auth.passwordTooShortMessage"),
-			);
-			return;
-		}
-		if (password !== confirm) {
-			showError(
-				t("auth.passwordMismatchTitle"),
-				t("auth.passwordMismatchMessage"),
-			);
-			return;
-		}
+		const empty = !name.trim() || !email.trim() || !password || !confirm;
+		const tooShort = password.length > 0 && password.length < 8;
+		const mismatch = !tooShort && confirm.length > 0 && password !== confirm;
+		setMissing(empty);
+		setPasswordError(tooShort ? t("auth.passwordTooShortMessage") : null);
+		setConfirmError(mismatch ? t("auth.passwordMismatchMessage") : null);
+		if (empty || tooShort || mismatch) return;
 		setLoading(true);
 		try {
 			const address = email.trim().toLowerCase();
@@ -124,10 +122,14 @@ export default function RegisterScreen() {
 				autoCapitalize="words"
 				autoComplete="name"
 				returnKeyType="next"
+				submitBehavior="submit"
+				onSubmitEditing={() => emailRef.current?.focus()}
+				error={missing && !name.trim()}
 			/>
 			<AuthField
 				label={t("auth.email")}
 				icon="mail-outline"
+				inputRef={emailRef}
 				value={email}
 				onChangeText={setEmail}
 				placeholder={t("auth.emailPlaceholder")}
@@ -135,23 +137,38 @@ export default function RegisterScreen() {
 				autoCapitalize="none"
 				autoComplete="email"
 				returnKeyType="next"
+				submitBehavior="submit"
+				onSubmitEditing={() => passwordRef.current?.focus()}
+				error={missing && !email.trim()}
 			/>
 			<AuthField
 				label={t("auth.password")}
 				icon="lock-closed-outline"
+				inputRef={passwordRef}
 				value={password}
-				onChangeText={setPassword}
+				onChangeText={(text) => {
+					setPassword(text);
+					if (passwordError && text.length >= 8) setPasswordError(null);
+				}}
 				placeholder={t("auth.passwordMinHint")}
 				password
 				autoCapitalize="none"
 				autoComplete="new-password"
 				returnKeyType="next"
+				submitBehavior="submit"
+				onSubmitEditing={() => confirmRef.current?.focus()}
+				error={passwordError ?? (missing && !password)}
 			/>
 			<AuthField
 				label={t("auth.confirmPassword")}
 				icon="lock-closed-outline"
+				inputRef={confirmRef}
 				value={confirm}
-				onChangeText={setConfirm}
+				onChangeText={(text) => {
+					setConfirm(text);
+					if (confirmError && text === password) setConfirmError(null);
+				}}
+				error={confirmError ?? (missing && !confirm)}
 				placeholder={t("auth.confirmPasswordPlaceholder")}
 				password
 				autoCapitalize="none"
@@ -159,6 +176,7 @@ export default function RegisterScreen() {
 				returnKeyType="go"
 				onSubmitEditing={handleRegister}
 			/>
+			<FormError message={missing ? t("auth.missingFieldsMessage") : null} />
 			<AuthSubmit
 				label={t("auth.createMyAccount")}
 				onPress={handleRegister}
@@ -167,31 +185,28 @@ export default function RegisterScreen() {
 			<Text style={[styles.termsText, { color: c.muted }]}>
 				{t("auth.termsPrefix")}{" "}
 				<Text
-					style={[styles.termsLink, { color: c.primary }]}
+					style={[styles.termsLink, { color: c.link }]}
 					onPress={() => router.push("/terms")}
+					accessibilityRole="link"
 				>
 					{t("auth.termsLink")}
 				</Text>{" "}
 				{t("auth.privacyPrefix")}{" "}
 				<Text
-					style={[styles.termsLink, { color: c.primary }]}
+					style={[styles.termsLink, { color: c.link }]}
 					onPress={() => router.push("/privacy")}
+					accessibilityRole="link"
 				>
 					{t("auth.privacyLink")}
 				</Text>
 				.
 			</Text>
-			<SocialAuthButtons
-				borderColor={c.border}
-				mutedColor={c.muted}
-				onPress={handleSocialLogin}
-				primaryColor={c.primary}
-			/>
+			<SocialAuthButtons onPress={handleSocialLogin} disabled={loading} />
 		</AuthScreen>
 	);
 }
 
 const styles = StyleSheet.create({
-	termsText: { fontSize: 12, fontFamily: Fonts.body, lineHeight: 18 },
+	termsText: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 19 },
 	termsLink: { fontFamily: Fonts.bodySemibold },
 });

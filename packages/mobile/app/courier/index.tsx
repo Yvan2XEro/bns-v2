@@ -10,6 +10,8 @@ import {
 } from "@/src/components/delivery/CourierRows";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { QueueSkeleton } from "@/src/components/moderation/ModerationKit";
+import { OpsGroupHeader } from "@/src/components/moderation/OpsGroupHeader";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -33,9 +35,28 @@ function AssignRider({ row }: { row: CourierShipmentRow }) {
 	const riders = useCourierRiders(row.courierId);
 	const assign = useAssignCourierRider(row.id);
 	return (
-		<View style={{ gap: 8 }}>
+		<View style={styles.assign}>
+			{riders.isLoading ? (
+				<ActivityIndicator
+					color={c.muted}
+					style={styles.loading}
+					accessibilityLabel={t("shipmentPanel.assignRider")}
+				/>
+			) : null}
+			{riders.error ? (
+				<View
+					accessibilityRole="alert"
+					style={[styles.error, { backgroundColor: c.dangerSoft }]}
+				>
+					<Text style={[styles.note, { color: c.dangerText }]}>
+						{resolveErrorMessage(riders.error, t)}
+					</Text>
+				</View>
+			) : null}
 			{riders.data?.length === 0 ? (
-				<Text style={{ color: c.muted }}>{t("shipmentPanel.noRiders")}</Text>
+				<Text style={[styles.note, { color: c.muted }]}>
+					{t("shipmentPanel.noRiders")}
+				</Text>
 			) : null}
 			{(riders.data ?? []).map((member) => {
 				const user = typeof member.user === "object" ? member.user : null;
@@ -45,7 +66,9 @@ function AssignRider({ row }: { row: CourierShipmentRow }) {
 						key={member.id}
 						tone="secondary"
 						label={user?.name ?? userId}
-						pending={assign.isPending}
+						// The spinner sits on the rider being assigned; the others wait.
+						pending={assign.isPending && assign.variables === userId}
+						disabled={assign.isPending}
 						// One tap away from sending someone across town: confirm first.
 						onPress={() =>
 							showConfirm(
@@ -60,9 +83,14 @@ function AssignRider({ row }: { row: CourierShipmentRow }) {
 				);
 			})}
 			{assign.error ? (
-				<Text accessibilityRole="alert" style={{ color: c.danger }}>
-					{resolveErrorMessage(assign.error, t)}
-				</Text>
+				<View
+					accessibilityRole="alert"
+					style={[styles.error, { backgroundColor: c.dangerSoft }]}
+				>
+					<Text style={[styles.note, { color: c.dangerText }]}>
+						{resolveErrorMessage(assign.error, t)}
+					</Text>
+				</View>
 			) : null}
 		</View>
 	);
@@ -79,46 +107,53 @@ function DispatcherRow({ row }: { row: CourierShipmentRow }) {
 		row.codCollection?.remittanceStatus === "pending";
 	return (
 		<CourierRow row={row}>
-			{canAssign ? (
-				<SheetButton
-					tone="secondary"
-					label={t("shipmentPanel.assignRider")}
-					onPress={() => setAssigning(!assigning)}
-				/>
-			) : null}
-			{assigning ? <AssignRider row={row} /> : null}
-			{canRemit ? (
-				<SheetButton
-					label={t("shipmentPanel.declareRemitted")}
-					pending={remitted.isPending}
-					// Declaring cash handed over is final: the amount is stated first.
-					onPress={() =>
-						showConfirm(
-							t("shipmentPanel.declareRemitted"),
-							t("shipmentPanel.remitConfirm", {
-								amount: formatPrice(
-									row.codCollection?.collectedAmount ??
-										row.codCollection?.expectedAmount ??
-										0,
-									i18n.language,
-								),
-							}),
-							() => remitted.mutate(undefined),
-						)
-					}
-				/>
+			{canAssign || canRemit ? (
+				<View style={styles.actions}>
+					{canAssign ? (
+						<SheetButton
+							tone="secondary"
+							label={t("shipmentPanel.assignRider")}
+							expanded={assigning}
+							onPress={() => setAssigning(!assigning)}
+						/>
+					) : null}
+					{assigning ? <AssignRider row={row} /> : null}
+					{canRemit ? (
+						<SheetButton
+							label={t("shipmentPanel.declareRemitted")}
+							pending={remitted.isPending}
+							// Declaring cash handed over is final: the amount is stated first.
+							onPress={() =>
+								showConfirm(
+									t("shipmentPanel.declareRemitted"),
+									t("shipmentPanel.remitConfirm", {
+										amount: formatPrice(
+											row.codCollection?.collectedAmount ??
+												row.codCollection?.expectedAmount ??
+												0,
+											i18n.language,
+										),
+									}),
+									() => remitted.mutate(undefined),
+								)
+							}
+						/>
+					) : null}
+				</View>
 			) : null}
 		</CourierRow>
 	);
 }
 
+const Separator = () => <View style={styles.separator} />;
+
 export default function CourierDispatchScreen() {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const query = useCourierShipments();
-	const items: CourierListItem[] = groupRiderRows(
-		query.data?.rows ?? [],
-	).flatMap(({ group, rows }) => [
+	const groups = groupRiderRows(query.data?.rows ?? []);
+	const counts = new Map(groups.map(({ group, rows }) => [group, rows.length]));
+	const items: CourierListItem[] = groups.flatMap(({ group, rows }) => [
 		{ kind: "header" as const, key: `h-${group}`, group },
 		...rows.map((row) => ({ kind: "row" as const, key: row.id, row })),
 	]);
@@ -129,7 +164,7 @@ export default function CourierDispatchScreen() {
 		>
 			<SellerHeader title={t("shipmentPanel.dispatchTitle")} />
 			{query.isPending ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<QueueSkeleton rows={4} />
 			) : query.isError ? (
 				<EmptyState
 					illustration="auth"
@@ -147,17 +182,19 @@ export default function CourierDispatchScreen() {
 						refreshing={query.isRefetching}
 						onRefresh={() => void query.refetch()}
 						contentContainerStyle={styles.content}
-						ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+						ItemSeparatorComponent={Separator}
 						ListEmptyComponent={
-							<Text style={{ color: c.muted }}>
-								{t("shipmentPanel.riderEmpty")}
-							</Text>
+							<EmptyState
+								illustration="empty"
+								title={t("shipmentPanel.riderEmpty")}
+							/>
 						}
 						renderItem={({ item }) =>
 							item.kind === "header" ? (
-								<Text style={[styles.header, { color: c.text }]}>
-									{t(GROUP_LABEL[item.group])}
-								</Text>
+								<OpsGroupHeader
+									title={t(GROUP_LABEL[item.group])}
+									count={counts.get(item.group) ?? 0}
+								/>
 							) : (
 								<DispatcherRow row={item.row} />
 							)
@@ -171,7 +208,11 @@ export default function CourierDispatchScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 40 },
+	separator: { height: 10 },
 	content: { padding: 16, paddingBottom: 48 },
-	header: { fontSize: 16, fontFamily: Fonts.displayBold, marginTop: 8 },
+	actions: { gap: 8, marginTop: 8 },
+	assign: { gap: 8 },
+	note: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	error: { borderRadius: 12, padding: 12 },
+	loading: { minHeight: 48 },
 });

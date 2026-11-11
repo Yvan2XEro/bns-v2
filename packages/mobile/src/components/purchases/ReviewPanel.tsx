@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 2,
 	},
-	photoAddText: { fontSize: 10, fontFamily: Fonts.bodySemibold },
+	photoAddText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	star: {
 		width: 44,
 		height: 44,

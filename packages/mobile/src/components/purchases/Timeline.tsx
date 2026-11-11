@@ -3,6 +3,7 @@ import { useTranslation } from "@/src/lib/i18n";
 import { formatOrderDate } from "@/src/lib/orderMoney";
 import { timelineLabelKey } from "@/src/lib/purchaseActions";
 import type { OrderTimelineEntry } from "@/src/types/order";
+import { fillOf, inkOf } from "../checkout/fill";
 import { useShopTheme } from "../shop/theme";
 import { Card, purchaseText } from "./ui";
 
@@ -29,7 +30,7 @@ export function Timeline({ entries }: { entries: OrderTimelineEntry[] }) {
 											styles.dot,
 											latest
 												? {
-														backgroundColor: c.primary,
+														backgroundColor: fillOf(c).bg,
 														borderColor: c.primarySoft,
 													}
 												: { backgroundColor: c.card, borderColor: c.border },
@@ -45,7 +46,7 @@ export function Timeline({ entries }: { entries: OrderTimelineEntry[] }) {
 									<Text
 										style={[
 											purchaseText.label,
-											{ color: latest ? c.primary : c.text },
+											{ color: latest ? inkOf(c) : c.text },
 										]}
 									>
 										{t(timelineLabelKey(entry.type))}
@@ -73,6 +74,6 @@ const styles = StyleSheet.create({
 	entry: { flexDirection: "row", gap: 12 },
 	rail: { width: 14, alignItems: "center" },
 	dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 3, marginTop: 3 },
-	line: { flex: 1, width: 2, marginVertical: 2 },
-	text: { flex: 1, gap: 2, paddingBottom: 14 },
+	line: { flex: 1, width: 2, marginVertical: 3 },
+	text: { flex: 1, gap: 2, paddingBottom: 16 },
 });

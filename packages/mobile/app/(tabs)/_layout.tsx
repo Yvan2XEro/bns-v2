@@ -58,12 +58,7 @@ function AccountTabIcon({
 	const notificationReady = useNotificationReady();
 	return (
 		<View>
-			<AnimatedTabIcon
-				name="person-outline"
-				focusedName="person"
-				color={color}
-				focused={focused}
-			/>
+			<AnimatedTabIcon name="person" color={color} focused={focused} />
 			{notificationReady && <NotificationsCount />}
 		</View>
 	);
@@ -71,40 +66,51 @@ function AccountTabIcon({
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
-/** Tab icon with bounce animation using React Native Animated (more reliable in tab bar) */
+/**
+ * Tab icon: solid at every state, the way a painted sign is solid.
+ *
+ * Outline icons went thin and papery next to the sell plaque and the ndop
+ * shell, so both states are filled now. That costs the old silhouette cue
+ * between selected and not, so selection is carried by a tinted plaque behind
+ * the glyph plus the colour — not by colour alone, which is thin on a white
+ * bar and thinner on #0c1030.
+ */
 function AnimatedTabIcon({
 	name,
-	focusedName,
 	color,
 	focused,
-	size = 26,
+	size = 24,
 }: {
 	name: IoniconsName;
-	focusedName: IoniconsName;
 	color: ColorValue;
 	focused: boolean;
 	size?: number;
 }) {
 	const scale = useRef(new Animated.Value(1)).current;
+	const plaque = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
 	useEffect(() => {
 		if (focused) {
 			Animated.sequence([
-				Animated.spring(scale, {
-					toValue: 1.22,
+				Animated.timing(scale, {
+					toValue: 0.86,
+					duration: 90,
 					useNativeDriver: true,
-					speed: 50,
-					bounciness: 14,
 				}),
 				Animated.spring(scale, {
 					toValue: 1,
 					useNativeDriver: true,
-					speed: 20,
-					bounciness: 8,
+					speed: 24,
+					bounciness: 6,
 				}),
 			]).start();
 		}
-	}, [focused, scale]);
+		Animated.timing(plaque, {
+			toValue: focused ? 1 : 0,
+			duration: focused ? 180 : 120,
+			useNativeDriver: true,
+		}).start();
+	}, [focused, scale, plaque]);
 
 	return (
 		<Animated.View
@@ -116,7 +122,28 @@ function AnimatedTabIcon({
 				transform: [{ scale }],
 			}}
 		>
-			<Ionicons name={focused ? focusedName : name} size={size} color={color} />
+			<Animated.View
+				pointerEvents="none"
+				style={[
+					styles.plaque,
+					{
+						backgroundColor: color as string,
+						opacity: plaque.interpolate({
+							inputRange: [0, 1],
+							outputRange: [0, 0.14],
+						}),
+						transform: [
+							{
+								scale: plaque.interpolate({
+									inputRange: [0, 1],
+									outputRange: [0.7, 1],
+								}),
+							},
+						],
+					},
+				]}
+			/>
+			<Ionicons name={name} size={size} color={color} />
 		</Animated.View>
 	);
 }
@@ -127,7 +154,7 @@ function SellButton() {
 	return (
 		<View style={[styles.sellWrap, isExpanded && styles.sellWrapRail]}>
 			<View style={styles.sellBtn}>
-				<Ionicons name="add" size={28} color="#0f172a" />
+				<Ionicons name="add" size={26} color="#12163a" />
 			</View>
 		</View>
 	);
@@ -162,7 +189,7 @@ export default function TabLayout() {
 
 	const unreadCount = unreadData?.count ?? 0;
 
-	const tabOptions = useTabNavigatorOptions(isDark ? "#3b82f6" : "#1e40af");
+	const tabOptions = useTabNavigatorOptions(isDark ? "#ffc94a" : "#2f5bd4");
 
 	return (
 		<Tabs screenOptions={tabOptions}>
@@ -171,12 +198,7 @@ export default function TabLayout() {
 				options={{
 					title: t("navigation.home"),
 					tabBarIcon: ({ color, focused }) => (
-						<AnimatedTabIcon
-							name="home-outline"
-							focusedName="home"
-							color={color}
-							focused={focused}
-						/>
+						<AnimatedTabIcon name="home" color={color} focused={focused} />
 					),
 				}}
 			/>
@@ -185,12 +207,7 @@ export default function TabLayout() {
 				options={{
 					title: t("navigation.favorites"),
 					tabBarIcon: ({ color, focused }) => (
-						<AnimatedTabIcon
-							name="heart-outline"
-							focusedName="heart"
-							color={color}
-							focused={focused}
-						/>
+						<AnimatedTabIcon name="heart" color={color} focused={focused} />
 					),
 				}}
 			/>
@@ -209,8 +226,7 @@ export default function TabLayout() {
 					tabBarIcon: ({ color, focused }) => (
 						<View>
 							<AnimatedTabIcon
-								name="chatbubbles-outline"
-								focusedName="chatbubbles"
+								name="chatbubbles"
 								color={color}
 								focused={focused}
 							/>
@@ -238,31 +254,39 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
 	sellWrap: {
-		width: 52,
-		height: 52,
+		width: 56,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
-		marginTop: -16,
+		marginTop: -6,
 	},
 	sellWrapRail: { marginTop: 0 },
+	// Sits behind the selected glyph so the state reads by shape, not only
+	// by hue. Tinted from the active colour, so it follows the theme.
+	plaque: {
+		position: "absolute",
+		width: 40,
+		height: 30,
+		borderRadius: 10,
+	},
+	// A painted sign plaque: yellow, squared, an ink edge along its foot.
 	sellBtn: {
-		width: 52,
-		height: 52,
-		borderRadius: 26,
+		width: 56,
+		height: 42,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#f59e0b",
-		shadowColor: "#f59e0b",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.4,
-		shadowRadius: 8,
-		elevation: 8,
+		backgroundColor: "#ffb81c",
+		borderBottomWidth: 3,
+		borderBottomColor: "#9a6a00",
 	},
 	badge: {
 		position: "absolute",
 		top: -4,
-		right: -8,
-		backgroundColor: "#dc2626",
+		right: -9,
+		backgroundColor: "#d23a2e",
+		borderWidth: 2,
+		borderColor: "#ffffff",
 		borderRadius: 10,
 		minWidth: 18,
 		height: 18,
@@ -272,7 +296,7 @@ const styles = StyleSheet.create({
 	},
 	badgeText: {
 		color: "#fff",
-		fontSize: 10,
+		fontSize: 11,
 		fontFamily: Fonts.displayExtrabold,
 	},
 });

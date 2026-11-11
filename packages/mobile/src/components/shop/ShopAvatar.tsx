@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import { useShopTheme } from "./theme";
 
@@ -30,7 +31,7 @@ export function ShopAvatar({
 		return <Image source={{ uri }} style={box} contentFit="cover" />;
 	}
 	return (
-		<View style={[styles.fallback, box, { backgroundColor: c.primary }]}>
+		<View style={[styles.fallback, box, { backgroundColor: fillOf(c) }]}>
 			<Text style={[styles.text, { fontSize: size * 0.36 }]}>
 				{initials(name)}
 			</Text>

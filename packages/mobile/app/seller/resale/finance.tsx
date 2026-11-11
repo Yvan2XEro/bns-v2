@@ -1,15 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -74,7 +69,7 @@ export default function ResellerFinanceScreen() {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<DetailSkeleton cards={2} />
 			</SafeAreaView>
 		);
 	}
@@ -149,7 +144,7 @@ export default function ResellerFinanceScreen() {
 										{ backgroundColor: c.card, borderColor: c.border },
 									]}
 								>
-									<Ionicons name="card-outline" size={20} color={c.primary} />
+									<Ionicons name="card-outline" size={20} color={c.link} />
 									<Text style={[styles.noticeText, { color: c.text }]}>
 										{t("sellerResale.finance.accountRequired")}
 									</Text>
@@ -176,7 +171,10 @@ export default function ResellerFinanceScreen() {
 					}
 					renderItem={({ item }) =>
 						item.type === "heading" ? (
-							<Text style={[styles.section, { color: c.text }]}>
+							<Text
+								accessibilityRole="header"
+								style={[styles.section, { color: c.text }]}
+							>
 								{item.label}
 							</Text>
 						) : (
@@ -272,32 +270,43 @@ function payoutStatus(
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 32 },
 	list: { paddingHorizontal: 16, paddingBottom: 28 },
 	headerContent: { gap: 12, paddingVertical: 14 },
 	notice: {
 		alignItems: "center",
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		flexDirection: "row",
 		gap: 10,
 		padding: 14,
 	},
-	noticeText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
+	noticeText: { flex: 1, fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
 	summary: { flexDirection: "row", gap: 10 },
-	card: { borderRadius: 14, borderWidth: 1, flex: 1, gap: 8, padding: 14 },
-	cardTitle: { fontFamily: Fonts.bodyMedium, fontSize: 12 },
-	cardValue: { fontFamily: Fonts.displayBold, fontSize: 17 },
+	card: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		flex: 1,
+		gap: 8,
+		padding: 14,
+	},
+	cardTitle: { fontFamily: Fonts.bodyMedium, fontSize: 13, lineHeight: 18 },
+	cardValue: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 19,
+		lineHeight: 24,
+		fontVariant: ["tabular-nums"],
+	},
 	section: {
-		fontFamily: Fonts.displaySemibold,
-		fontSize: 16,
-		paddingBottom: 8,
-		paddingTop: 18,
+		fontFamily: Fonts.displayBold,
+		fontSize: 17,
+		lineHeight: 22,
+		paddingBottom: 10,
+		paddingTop: 24,
 	},
 	row: {
 		alignItems: "center",
 		borderRadius: 12,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		flexDirection: "row",
 		gap: 12,
 		justifyContent: "space-between",
@@ -306,7 +315,11 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 10,
 	},
-	rowLabel: { flex: 1, fontFamily: Fonts.body, fontSize: 13 },
-	amount: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
+	rowLabel: { flex: 1, fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
+	amount: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 15,
+		fontVariant: ["tabular-nums"],
+	},
 	empty: { paddingVertical: 24, textAlign: "center" },
 });

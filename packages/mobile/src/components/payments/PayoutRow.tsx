@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -22,12 +23,12 @@ export function PayoutRow({ payout }: { payout: SellerPayoutRowData }) {
 			style={[
 				s.card,
 				styles.row,
-				{ backgroundColor: c.card, borderColor: c.border },
+				{ backgroundColor: c.card, borderColor: c.border, minHeight: 72 },
 			]}
 		>
 			<View style={styles.main}>
 				<View style={styles.head}>
-					<Text style={[s.cardTitle, { color: c.primary, fontSize: 14 }]}>
+					<Text style={[styles.date, { color: c.text }]}>
 						{formatOrderDate(payout.date, locale)}
 					</Text>
 					<PayoutStatusBadge status={payout.status} />
@@ -36,7 +37,7 @@ export function PayoutRow({ payout }: { payout: SellerPayoutRowData }) {
 					{payout.destinationMasked}
 				</Text>
 			</View>
-			<Text style={[s.cardTitle, { color: c.text, fontSize: 15 }]}>
+			<Text style={[styles.amount, { color: c.text }]}>
 				{formatPrice(payout.amount, locale)}
 			</Text>
 		</Pressable>
@@ -51,6 +52,14 @@ const styles = StyleSheet.create({
 		gap: 10,
 	},
 	main: { flex: 1, gap: 4 },
+	date: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodySemibold },
+	amount: {
+		fontSize: 17,
+		lineHeight: 22,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.3,
+		fontVariant: ["tabular-nums"],
+	},
 	head: {
 		flexDirection: "row",
 		alignItems: "center",

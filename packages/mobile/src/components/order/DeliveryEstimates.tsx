@@ -79,6 +79,6 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 	},
 	content: { flex: 1, gap: 4 },
-	line: { fontFamily: Fonts.body, fontSize: 13 },
-	notice: { fontFamily: Fonts.body, fontSize: 12 },
+	line: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
+	notice: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
 });

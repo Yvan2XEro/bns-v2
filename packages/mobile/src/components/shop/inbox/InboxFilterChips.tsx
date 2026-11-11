@@ -17,6 +17,9 @@ export function InboxFilterChips({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	// A selected chip sits on the contrast-safe fill with a white label, as
+	// the buyer inbox's filters do.
+	const onSelected = "#ffffff";
 
 	return (
 		<ScrollView
@@ -35,17 +38,28 @@ export function InboxFilterChips({
 						animationType="scale"
 						haptic="light"
 						accessibilityRole="button"
-						accessibilityLabel={t(`inbox.filter_${filter}`)}
+						accessibilityLabel={
+							count !== undefined
+								? `${t(`inbox.filter_${filter}`)}, ${count}`
+								: t(`inbox.filter_${filter}`)
+						}
+						hitSlop={{ top: 6, bottom: 6 }}
 						accessibilityState={{ selected }}
 						style={[
 							styles.chip,
 							{
-								backgroundColor: selected ? c.primary : c.card,
-								borderColor: selected ? c.primary : c.border,
+								backgroundColor: selected ? c.fill : c.card,
+								borderColor: selected ? c.fill : c.border,
 							},
 						]}
 					>
-						<Text style={[styles.label, { color: selected ? "#fff" : c.body }]}>
+						<Text
+							style={[
+								styles.label,
+								selected ? styles.labelSelected : null,
+								{ color: selected ? onSelected : c.body },
+							]}
+						>
 							{t(`inbox.filter_${filter}`)}
 						</Text>
 						{count !== undefined ? (
@@ -54,7 +68,7 @@ export function InboxFilterChips({
 									styles.badge,
 									{
 										backgroundColor: selected
-											? "rgba(255,255,255,0.25)"
+											? "rgba(255,255,255,0.2)"
 											: c.neutralSoft,
 									},
 								]}
@@ -62,7 +76,7 @@ export function InboxFilterChips({
 								<Text
 									style={[
 										styles.badgeText,
-										{ color: selected ? "#fff" : c.neutralText },
+										{ color: selected ? onSelected : c.neutralText },
 									]}
 								>
 									{count}
@@ -89,17 +103,18 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 6,
 		borderRadius: 999,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		paddingHorizontal: 14,
-		paddingVertical: 9,
 		minHeight: 36,
 	},
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	labelSelected: { fontFamily: Fonts.bodyBold },
 	badge: {
 		borderRadius: 999,
 		paddingHorizontal: 6,
 		minWidth: 20,
+		paddingVertical: 1,
 		alignItems: "center",
 	},
-	badgeText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	badgeText: { fontSize: 12, fontFamily: Fonts.displayBold },
 });

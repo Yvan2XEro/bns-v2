@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { ReturnOutcome } from "@/src/components/verification/ReturnOutcome";
@@ -46,7 +47,7 @@ export default function VerificationReturnScreen() {
 						accessibilityRole="button"
 						accessibilityLabel={t("common.retry")}
 						onPress={onRefresh}
-						style={[styles.button, { backgroundColor: c.primary }]}
+						style={[styles.button, { backgroundColor: fillOf(c) }]}
 					>
 						<Text style={styles.buttonLabel}>{t("common.retry")}</Text>
 					</Pressable>
@@ -66,7 +67,7 @@ export default function VerificationReturnScreen() {
 							onPress={onBackToHub}
 							style={styles.linkButton}
 						>
-							<Text style={[styles.linkLabel, { color: c.primary }]}>
+							<Text style={[styles.linkLabel, { color: c.link }]}>
 								{t("verification.return.backToHub")}
 							</Text>
 						</Pressable>
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
 	},
 	body: { fontSize: 14, fontFamily: Fonts.body, textAlign: "center" },
 	button: {
-		minHeight: 44,
+		minHeight: 48,
 		minWidth: 44,
 		paddingHorizontal: 20,
 		borderRadius: 12,
@@ -98,11 +99,11 @@ const styles = StyleSheet.create({
 	},
 	buttonLabel: {
 		color: "#ffffff",
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 	linkButton: {
-		minHeight: 44,
+		minHeight: 48,
 		minWidth: 44,
 		alignItems: "center",
 		justifyContent: "center",

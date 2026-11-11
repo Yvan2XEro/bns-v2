@@ -1,18 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TextInput,
-	View,
-} from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { Fonts } from "@/constants/theme";
+import { ChoiceChips } from "@/src/components/checkout/ChoiceChips";
+import { FormError } from "@/src/components/checkout/FormError";
+import { FormButton } from "@/src/components/settings/FormButton";
+import { FormField } from "@/src/components/settings/FormField";
+import { useGroupedColors } from "@/src/components/settings/Grouped";
+import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useCloseScreen } from "@/src/contexts/DetailPaneContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -21,68 +19,74 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
+const SUBJECT_KEYS = [
+	"subjectGeneral",
+	"subjectTechnical",
+	"subjectAbuse",
+	"subjectPartnership",
+	"subjectOther",
+] as const;
+
+type SubjectKey = (typeof SUBJECT_KEYS)[number];
+
 export function ContactScreen() {
-	const isDark = useColorScheme() === "dark";
+	const c = useGroupedColors();
 	const { centeredContent } = useResponsive();
 	const { user } = useAuth();
 	const { showError } = useAlert();
 	const close = useCloseScreen("/(tabs)/account");
 	const { t } = useTranslation();
 
-	const SUBJECTS = [
-		t("contact.subjectGeneral"),
-		t("contact.subjectTechnical"),
-		t("contact.subjectAbuse"),
-		t("contact.subjectPartnership"),
-		t("contact.subjectOther"),
-	];
-
 	const [name, setName] = useState(user?.name ?? "");
 	const [email, setEmail] = useState(user?.email ?? "");
-	const [subject, setSubject] = useState(() => SUBJECTS[0]);
+	const [subject, setSubject] = useState<SubjectKey>("subjectGeneral");
 	const [message, setMessage] = useState("");
 	const [sent, setSent] = useState(false);
-
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	// Empty fields are said on the form, not in a sheet.
+	const [missing, setMissing] = useState(false);
 
 	const { mutate: sendMessage, isPending } = useMutation({
 		mutationFn: () =>
-			api.post("/api/public/contact", { name, email, subject, message }),
+			api.post("/api/public/contact", {
+				name,
+				email,
+				subject: t(`contact.${subject}`),
+				message,
+			}),
 		onSuccess: () => setSent(true),
 		onError: (err: any) =>
 			showError(t("contact.errorTitle"), resolveErrorMessage(err, t)),
 	});
 
+	const submit = () => {
+		if (!name.trim() || !email.trim() || !message.trim()) {
+			setMissing(true);
+			return;
+		}
+		setMissing(false);
+		sendMessage();
+	};
+
 	if (sent) {
 		return (
 			<SafeAreaView
 				edges={["top"]}
-				style={[styles.safe, { backgroundColor: bg }]}
+				style={[styles.safe, { backgroundColor: c.background }]}
 			>
-				<View style={styles.center}>
-					<Ionicons
-						name="checkmark-circle"
-						size={64}
-						color="#16a34a"
-						style={{ marginBottom: 16 }}
-					/>
-					<Text style={[styles.title, { color: textColor }]}>
+				<View style={[styles.done, centeredContent]}>
+					<View style={[styles.doneTile, { backgroundColor: c.successTint }]}>
+						<Ionicons name="checkmark" size={30} color={c.successText} />
+					</View>
+					<Text
+						accessibilityRole="header"
+						style={[styles.doneTitle, { color: c.foreground }]}
+					>
 						{t("contact.successTitle")}
 					</Text>
-					<Text style={[styles.subtitle, { color: mutedColor }]}>
+					<Text style={[styles.doneBody, { color: c.body }]}>
 						{t("contact.successMessage")}
 					</Text>
-					<Pressable
-						onPress={close}
-						style={[styles.btn, { backgroundColor: primaryColor }]}
-					>
-						<Text style={styles.btnText}>{t("contact.backBtn")}</Text>
-					</Pressable>
+					<FormButton label={t("contact.backBtn")} onPress={close} />
 				</View>
 			</SafeAreaView>
 		);
@@ -91,170 +95,84 @@ export function ContactScreen() {
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<HeaderBackButton color={textColor} fallback="/(tabs)/account" inline />
-				<Text style={[styles.headerTitle, { color: textColor }]}>
-					{t("contact.title")}
-				</Text>
-				<View style={{ width: 40 }} />
-			</View>
-			<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
-				{[
-					{
-						label: t("contact.nameLabel"),
-						value: name,
-						set: setName,
-						placeholder: t("contact.namePlaceholder"),
-						type: "default",
-					},
-					{
-						label: t("contact.emailLabel"),
-						value: email,
-						set: setEmail,
-						placeholder: t("contact.emailPlaceholder"),
-						type: "email-address",
-					},
-				].map(({ label, value, set, placeholder, type }) => (
-					<View key={label}>
-						<Text style={[styles.fieldLabel, { color: mutedColor }]}>
-							{label}
-						</Text>
-						<TextInput
-							value={value}
-							onChangeText={set}
-							placeholder={placeholder}
-							placeholderTextColor={mutedColor}
-							style={[
-								styles.field,
-								{ backgroundColor: cardBg, borderColor, color: textColor },
-							]}
-							keyboardType={type as any}
-							autoCapitalize={type === "email-address" ? "none" : "words"}
-						/>
-					</View>
-				))}
-				<Text style={[styles.fieldLabel, { color: mutedColor }]}>
-					{t("contact.subjectLabel")}
-				</Text>
-				<ScrollView
-					horizontal
-					showsHorizontalScrollIndicator={false}
-					contentContainerStyle={styles.subjectRow}
-				>
-					{SUBJECTS.map((s) => (
-						<Pressable
-							key={s}
-							onPress={() => setSubject(s)}
-							style={[
-								styles.subjectPill,
-								{
-									backgroundColor: subject === s ? primaryColor : cardBg,
-									borderColor: subject === s ? primaryColor : borderColor,
-								},
-							]}
-						>
-							<Text
-								style={[
-									styles.subjectText,
-									{ color: subject === s ? "#fff" : mutedColor },
-								]}
-							>
-								{s}
-							</Text>
-						</Pressable>
-					))}
-				</ScrollView>
-				<Text style={[styles.fieldLabel, { color: mutedColor }]}>
-					{t("contact.messageLabel")}
-				</Text>
-				<TextInput
+			<SettingsHeader title={t("contact.title")} />
+			<KeyboardAwareScrollView
+				contentContainerStyle={[styles.scroll, centeredContent]}
+				keyboardShouldPersistTaps="handled"
+				bottomOffset={20}
+			>
+				<FormField
+					label={t("contact.nameLabel")}
+					value={name}
+					onChangeText={setName}
+					placeholder={t("contact.namePlaceholder")}
+					autoCapitalize="words"
+					autoComplete="name"
+					error={missing && !name.trim()}
+				/>
+				<FormField
+					label={t("contact.emailLabel")}
+					value={email}
+					onChangeText={setEmail}
+					placeholder={t("contact.emailPlaceholder")}
+					keyboardType="email-address"
+					autoCapitalize="none"
+					autoComplete="email"
+					error={missing && !email.trim()}
+				/>
+				<ChoiceChips
+					label={t("contact.subjectLabel")}
+					options={SUBJECT_KEYS.map((key) => ({
+						key,
+						label: t(`contact.${key}`),
+					}))}
+					value={subject}
+					onChange={(key) => setSubject(key as SubjectKey)}
+				/>
+				<FormField
+					label={t("contact.messageLabel")}
 					value={message}
 					onChangeText={setMessage}
 					placeholder={t("contact.messagePlaceholder")}
-					placeholderTextColor={mutedColor}
-					style={[
-						styles.textarea,
-						{ backgroundColor: cardBg, borderColor, color: textColor },
-					]}
 					multiline
-					numberOfLines={6}
+					error={missing && !message.trim()}
 				/>
-				<Pressable
-					onPress={() =>
-						!name || !email || !message
-							? showError(t("contact.errorTitle"), t("contact.fillAllFields"))
-							: sendMessage()
-					}
-					disabled={isPending}
-					style={[styles.btn, { backgroundColor: primaryColor }]}
-				>
-					{isPending ? (
-						<ActivityIndicator color="#fff" />
-					) : (
-						<Text style={styles.btnText}>{t("contact.send")}</Text>
-					)}
-				</Pressable>
-			</ScrollView>
+				<FormError message={missing ? t("contact.fillAllFields") : null} />
+				<FormButton
+					label={t("contact.send")}
+					onPress={submit}
+					loading={isPending}
+				/>
+			</KeyboardAwareScrollView>
 		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: {
-		flex: 1,
+	scroll: { padding: 16, paddingTop: 20, gap: 20, paddingBottom: 48 },
+	done: { flex: 1, justifyContent: "center", padding: 24 },
+	doneTile: {
+		width: 64,
+		height: 64,
+		borderRadius: 18,
 		alignItems: "center",
 		justifyContent: "center",
-		padding: 32,
 	},
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
+	doneTitle: {
+		fontSize: 28,
+		lineHeight: 33,
+		letterSpacing: -0.6,
+		fontFamily: Fonts.displayExtrabold,
+		marginTop: 20,
 	},
-	headerTitle: {
-		flex: 1,
-		fontSize: 18,
-		fontWeight: "700",
-		textAlign: "center",
+	doneBody: {
+		fontSize: 16,
+		lineHeight: 24,
+		fontFamily: Fonts.body,
+		marginTop: 10,
+		marginBottom: 28,
 	},
-	scroll: { padding: 20, gap: 12, paddingBottom: 40 },
-	fieldLabel: { fontSize: 13, fontWeight: "600", marginBottom: 6 },
-	field: {
-		borderRadius: 10,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
-		fontSize: 15,
-	},
-	textarea: {
-		borderRadius: 12,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		fontSize: 14,
-		minHeight: 120,
-		textAlignVertical: "top",
-	},
-	subjectRow: { gap: 8, paddingBottom: 4 },
-	subjectPill: {
-		borderRadius: 20,
-		borderWidth: 1,
-		paddingHorizontal: 12,
-		paddingVertical: 7,
-	},
-	subjectText: { fontSize: 13, fontWeight: "500" },
-	btn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
-	btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-	title: {
-		fontSize: 22,
-		fontWeight: "800",
-		marginBottom: 8,
-		textAlign: "center",
-	},
-	subtitle: { fontSize: 14, textAlign: "center", marginBottom: 24 },
 });

@@ -1,8 +1,9 @@
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -40,7 +41,7 @@ export default function SellerInsightsScreen() {
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
 				<SellerHeader title={t("sellerInsights.title")} />
-				<ActivityIndicator color={c.primary} style={styles.spinner} />
+				<DetailSkeleton cards={3} />
 			</SafeAreaView>
 		);
 	}
@@ -113,9 +114,14 @@ export default function SellerInsightsScreen() {
 						<InsightsHeader view={view} period={period} onPeriod={setPeriod} />
 					}
 					ListEmptyComponent={
-						<Text style={[styles.emptyProducts, { color: c.muted }]}>
-							{t("sellerInsights.noProducts")}
-						</Text>
+						<View style={styles.emptyProducts}>
+							<EmptyState
+								illustration="listings"
+								size={140}
+								title={t("sellerInsights.noProducts")}
+								subtitle={t("sellerInsights.noProductsHint")}
+							/>
+						</View>
 					}
 					ListFooterComponent={
 						<InsightsFooter view={view} onAction={handleAction} />
@@ -129,7 +135,6 @@ export default function SellerInsightsScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 48 },
 	list: { paddingBottom: 20 },
-	emptyProducts: { paddingHorizontal: 16, paddingVertical: 12, fontSize: 12 },
+	emptyProducts: { paddingVertical: 8 },
 });

@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import {
-	ActivityIndicator,
 	Pressable,
 	RefreshControl,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { BillingShell } from "@/src/components/billing/BillingShell";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { CurrentPeriodCard } from "@/src/components/billing/CurrentPeriodCard";
@@ -16,6 +16,7 @@ import { InvoiceRow } from "@/src/components/billing/InvoiceRow";
 import { RestrictionBanner } from "@/src/components/billing/RestrictionBanner";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useBilling } from "@/src/hooks/useBilling";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -33,8 +34,8 @@ function BillingContent({ shopId }: { shopId: string }) {
 
 	if (billing.isPending) {
 		return (
-			<View style={styles.center}>
-				<ActivityIndicator color={c.primary} />
+			<View style={styles.loading}>
+				<ListSkeleton rows={4} />
 			</View>
 		);
 	}
@@ -69,13 +70,16 @@ function BillingContent({ shopId }: { shopId: string }) {
 					{ backgroundColor: c.card, borderColor: c.border },
 				]}
 			>
-				<Ionicons name="options-outline" size={20} color={c.primary} />
+				<Ionicons name="options-outline" size={20} color={c.link} />
 				<Text style={[s.cardTitle, { color: c.text, flex: 1 }]}>
 					{t("billing.orderSettingsTitle")}
 				</Text>
 				<Ionicons name="chevron-forward" size={18} color={c.muted} />
 			</Pressable>
-			<Text style={[s.cardTitle, { color: c.text, marginTop: 4 }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.sectionTitle, { color: c.text }]}
+			>
 				{t("billing.invoicesTitle")}
 			</Text>
 			{hasPayable ? (
@@ -110,6 +114,7 @@ function BillingContent({ shopId }: { shopId: string }) {
 					<RefreshControl
 						refreshing={billing.isRefetching}
 						onRefresh={refresh}
+						tintColor={c.primary}
 					/>
 				}
 			/>
@@ -127,10 +132,17 @@ export default function BillingScreen() {
 }
 
 const styles = StyleSheet.create({
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
+	loading: { flex: 1, paddingTop: 16 },
+	sectionTitle: {
+		fontSize: 19,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.3,
+		marginTop: 8,
+	},
 	list: { padding: 16, paddingBottom: 32 },
 	header: { gap: 12, marginBottom: 12 },
-	link: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 },
+	link: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48 },
 	separator: { height: 10 },
 	empty: {
 		textAlign: "center",

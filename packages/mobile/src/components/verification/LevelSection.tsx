@@ -6,6 +6,7 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
@@ -117,7 +118,7 @@ export function LevelSection({
 						{ borderColor: c.primary, backgroundColor: c.primarySoft },
 					]}
 				>
-					<Text style={[styles.continueLabel, { color: c.primary }]}>
+					<Text style={[styles.continueLabel, { color: c.link }]}>
 						{t("verification.requestCard.continue")}
 					</Text>
 				</Pressable>
@@ -136,7 +137,7 @@ export function LevelSection({
 							onPress={() => onStart(level)}
 							style={[
 								styles.cta,
-								{ backgroundColor: c.primary, opacity: isPending ? 0.6 : 1 },
+								{ backgroundColor: fillOf(c), opacity: isPending ? 0.6 : 1 },
 							]}
 						>
 							{isPending ? (
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
 	sectionGap: { marginTop: 10 },
 	continueBtn: {
 		marginTop: 12,
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 10,
 		borderWidth: StyleSheet.hairlineWidth,
 		alignItems: "center",
@@ -200,23 +201,28 @@ const styles = StyleSheet.create({
 		minWidth: 120,
 	},
 	cta: {
-		minHeight: 44,
+		minHeight: 48,
 		minWidth: 44,
 		paddingHorizontal: 16,
-		borderRadius: 10,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaLabel: { color: "#ffffff", fontSize: 13, fontFamily: Fonts.bodySemibold },
+	ctaLabel: { color: "#ffffff", fontSize: 15, fontFamily: Fonts.bodyBold },
 	reasonWrap: { alignItems: "flex-end", gap: 6 },
-	reason: { fontSize: 11, fontFamily: Fonts.body, textAlign: "right" },
+	reason: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.body,
+		textAlign: "right",
+	},
 	ctaDisabled: {
-		minHeight: 44,
+		minHeight: 48,
 		minWidth: 44,
 		paddingHorizontal: 16,
-		borderRadius: 10,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaDisabledLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	ctaDisabledLabel: { fontSize: 15, fontFamily: Fonts.bodyBold },
 });

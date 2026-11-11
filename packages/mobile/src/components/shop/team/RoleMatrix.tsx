@@ -21,7 +21,10 @@ export function RoleMatrix() {
 		<View
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
-			<Text style={[styles.title, { color: c.muted }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.title, { color: c.muted }]}
+			>
 				{t("team.matrixTitle")}
 			</Text>
 			<View style={styles.row}>
@@ -145,12 +148,16 @@ function Cell({ cell }: { cell: MatrixCell }) {
 }
 
 const styles = StyleSheet.create({
-	card: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 2 },
+	card: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 14,
+		gap: 2,
+	},
 	title: {
-		fontSize: 12,
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
-		letterSpacing: 0.6,
-		textTransform: "uppercase",
 		marginBottom: 6,
 	},
 	row: { flexDirection: "row", alignItems: "center", minHeight: 30 },

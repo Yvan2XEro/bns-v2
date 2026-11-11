@@ -77,3 +77,27 @@ describe("the callback API", () => {
 		});
 	});
 });
+
+describe("showSuccess", () => {
+	test("is a toast when one is given, and opens no sheet", async () => {
+		const present = mock(async () => 0);
+		const notify = mock(() => {});
+		const alerts = createAlerts(
+			present,
+			() => {},
+			(key) => key,
+			notify,
+		);
+		alerts.showSuccess("Saved", "");
+		await tick();
+		expect(notify).toHaveBeenCalledWith("Saved", undefined);
+		expect(present).not.toHaveBeenCalled();
+	});
+
+	test("stays a sheet without one", async () => {
+		const { alerts, shown } = sheet(0);
+		alerts.showSuccess("Saved", "All good");
+		await tick();
+		expect(shown[0]?.type).toBe("success");
+	});
+});

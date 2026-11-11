@@ -70,17 +70,23 @@ export function CartLineRow({
 					{formatPrice(line.lineSubtotal, locale)}
 				</Text>
 				{state === "unavailable" ? (
-					<Text style={[styles.meta, { color: c.dangerText }]}>
-						{t("cart.unavailable")}
-					</Text>
+					<View style={styles.status}>
+						<Ionicons name="alert-circle" size={14} color={c.dangerText} />
+						<Text style={[styles.statusText, { color: c.dangerText }]}>
+							{t("cart.unavailable")}
+						</Text>
+					</View>
 				) : null}
 				{state === "price_changed" ? (
-					<Text style={[styles.meta, { color: c.warningText }]}>
-						{t("cart.priceChanged")} ·{" "}
-						{t("cart.priceWas", {
-							price: formatPrice(line.priceAtAdd, locale),
-						})}
-					</Text>
+					<View style={styles.status}>
+						<Ionicons name="pricetag" size={14} color={c.warningText} />
+						<Text style={[styles.statusText, { color: c.warningText }]}>
+							{t("cart.priceChanged")} ·{" "}
+							{t("cart.priceWas", {
+								price: formatPrice(line.priceAtAdd, locale),
+							})}
+						</Text>
+					</View>
 				) : null}
 				<View style={styles.row}>
 					<Pressable
@@ -89,9 +95,9 @@ export function CartLineRow({
 						accessibilityRole="button"
 						accessibilityLabel={t("cart.removeItem", { title: line.title })}
 						style={[styles.remove, { opacity: busy ? 0.4 : 1 }]}
-						hitSlop={6}
+						hitSlop={4}
 					>
-						<Ionicons name="close" size={14} color={c.muted} />
+						<Ionicons name="trash-outline" size={15} color={c.muted} />
 						<Text style={[styles.removeText, { color: c.muted }]}>
 							{t("cart.remove")}
 						</Text>
@@ -109,9 +115,9 @@ export function CartLineRow({
 								accessibilityRole="button"
 								accessibilityLabel={t("cart.decrease", { title: line.title })}
 								style={stepStyle(stepper.canDecrease)}
-								hitSlop={4}
+								hitSlop={2}
 							>
-								<Ionicons name="remove" size={16} color={c.text} />
+								<Ionicons name="remove" size={18} color={c.text} />
 							</Pressable>
 							<Text
 								style={[styles.quantity, { color: c.text }]}
@@ -126,9 +132,9 @@ export function CartLineRow({
 								accessibilityRole="button"
 								accessibilityLabel={t("cart.increase", { title: line.title })}
 								style={stepStyle(stepper.canIncrease)}
-								hitSlop={4}
+								hitSlop={2}
 							>
-								<Ionicons name="add" size={16} color={c.primary} />
+								<Ionicons name="add" size={18} color={c.primary} />
 							</Pressable>
 						</View>
 					</View>
@@ -149,7 +155,7 @@ const styles = StyleSheet.create({
 		gap: 12,
 		padding: 12,
 		borderRadius: 16,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 	},
 	thumb: {
 		width: 72,
@@ -168,9 +174,17 @@ const styles = StyleSheet.create({
 		marginTop: 6,
 	},
 	rowEnd: { flexDirection: "row", alignItems: "center", gap: 10 },
-	title: { fontSize: 15, fontFamily: Fonts.displayBold, lineHeight: 20 },
-	price: { fontSize: 16, fontFamily: Fonts.displayBold, marginTop: 2 },
+	title: { fontSize: 15, fontFamily: Fonts.bodySemibold, lineHeight: 20 },
+	price: {
+		fontSize: 17,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.3,
+		fontVariant: ["tabular-nums"],
+		marginTop: 2,
+	},
 	meta: { fontSize: 12, fontFamily: Fonts.body },
+	status: { flexDirection: "row", alignItems: "center", gap: 4 },
+	statusText: { flexShrink: 1, fontSize: 13, fontFamily: Fonts.bodySemibold },
 	stepper: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -178,17 +192,24 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 	},
 	step: {
-		width: 36,
-		height: 36,
+		width: 44,
+		height: 44,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	quantity: {
 		minWidth: 24,
 		textAlign: "center",
-		fontSize: 15,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
 	},
-	remove: { flexDirection: "row", alignItems: "center", gap: 3, minHeight: 36 },
+	remove: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		minHeight: 44,
+		paddingRight: 4,
+	},
 	removeText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 });

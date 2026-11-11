@@ -4,6 +4,7 @@ import { Fonts } from "@/constants/theme";
 import { formatDate } from "@/src/lib/formatDate";
 import type { ModerationShopSheet } from "@/src/types/api";
 import type { ModerationPalette, Translate } from "./theme";
+import { tonesOf } from "./tones";
 
 interface ShopSuspensionCardProps {
 	suspension: ModerationShopSheet["suspension"];
@@ -17,6 +18,8 @@ export function ShopSuspensionCard({
 	c,
 	t,
 }: ShopSuspensionCardProps) {
+	const k = tonesOf(c);
+
 	if (!suspension.active) {
 		return (
 			<View
@@ -26,8 +29,12 @@ export function ShopSuspensionCard({
 					{ backgroundColor: c.card, borderColor: c.border },
 				]}
 			>
-				<Ionicons name="checkmark-circle-outline" size={20} color={c.success} />
-				<Text style={[styles.sanctionTitle, { color: c.text }]}>
+				<Ionicons
+					name="checkmark-circle-outline"
+					size={20}
+					color={k.successText}
+				/>
+				<Text style={[styles.calmTitle, { color: c.text }]}>
 					{t("moderation.noActiveSuspension")}
 				</Text>
 			</View>
@@ -38,12 +45,12 @@ export function ShopSuspensionCard({
 		<View
 			style={[
 				styles.card,
-				{ backgroundColor: c.dangerSoft, borderColor: c.danger },
+				{ backgroundColor: c.dangerSoft, borderColor: k.dangerText },
 			]}
 		>
 			<View style={styles.row}>
-				<Ionicons name="ban" size={18} color={c.danger} />
-				<Text style={[styles.sanctionTitle, { color: c.danger }]}>
+				<Ionicons name="ban" size={20} color={k.dangerText} />
+				<Text style={[styles.sanctionTitle, { color: k.dangerText }]}>
 					{suspension.indefinite
 						? t("moderation.shopSuspendedIndefinitely")
 						: t("moderation.suspendedUntil", {
@@ -57,7 +64,7 @@ export function ShopSuspensionCard({
 				</Text>
 			) : null}
 			{suspension.note ? (
-				<Text style={[styles.meta, { color: c.muted }]}>{suspension.note}</Text>
+				<Text style={[styles.meta, { color: c.text }]}>{suspension.note}</Text>
 			) : null}
 		</View>
 	);
@@ -66,12 +73,18 @@ export function ShopSuspensionCard({
 const styles = StyleSheet.create({
 	card: {
 		borderRadius: 14,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 14,
-		gap: 10,
+		borderWidth: 1,
+		padding: 16,
+		gap: 8,
 	},
-	row: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-	sanctionTitle: { fontSize: 14, fontFamily: Fonts.displayBold, flex: 1 },
-	body: { fontSize: 14, fontFamily: Fonts.body },
-	meta: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
+	row: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		flexWrap: "wrap",
+	},
+	calmTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold, flex: 1 },
+	sanctionTitle: { fontSize: 16, fontFamily: Fonts.displayBold, flex: 1 },
+	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

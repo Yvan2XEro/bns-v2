@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -34,9 +35,7 @@ export function PaymentsShell({
 		>
 			<SellerHeader title={title} />
 			{mine.isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<DetailSkeleton cards={2} />
 			) : !shopId || !can(role, "payments.view") ? (
 				<EmptyState
 					illustration="auth"
@@ -52,5 +51,4 @@ export function PaymentsShell({
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 });

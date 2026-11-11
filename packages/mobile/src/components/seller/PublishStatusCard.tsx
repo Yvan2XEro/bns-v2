@@ -25,7 +25,10 @@ export function PublishStatusCard({
 
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}>
-			<Text style={[f.sectionTitle, { color: c.text }]}>
+			<Text
+				style={[f.sectionTitle, { color: c.text }]}
+				accessibilityRole="header"
+			>
 				{t("product.statusTitle")}
 			</Text>
 			<SegmentedControl
@@ -42,7 +45,12 @@ export function PublishStatusCard({
 				{t(`product.status_${form.status}_hint`)}
 			</Text>
 			<View style={[styles.info, { backgroundColor: c.neutralSoft }]}>
-				<Ionicons name="information-circle-outline" size={16} color={c.body} />
+				<Ionicons
+					name="information-circle-outline"
+					size={16}
+					color={c.body}
+					importantForAccessibility="no"
+				/>
 				<Text style={[f.hint, { color: c.body, flex: 1 }]}>
 					{t("product.listingAuto")}
 				</Text>

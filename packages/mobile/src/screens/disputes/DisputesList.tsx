@@ -1,21 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+	CaseStatusPill,
+	disputeTone,
+} from "@/src/components/checkout/CaseStatusPill";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
-import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
 import { useSelectedRowStyle } from "@/src/components/layout/selectedRow";
+import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { useShopTheme } from "@/src/components/shop/theme";
 import { useBuyerDisputes } from "@/src/hooks/useDisputes";
 import {
 	DISPUTE_REASON_LABELS,
@@ -26,39 +25,19 @@ import { formatPrice } from "@/src/lib/market";
 import type { DisputeListRow } from "../../../../api/src/contracts/disputes";
 
 export function DisputesList({ selectedId, onOpen }: SplitListProps) {
-	const dark = useColorScheme() === "dark";
+	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
 	const query = useBuyerDisputes();
-	const colors = {
-		bg: dark ? "#0b1120" : "#f8fafc",
-		text: dark ? "#e2e8f0" : "#0f172a",
-		muted: dark ? "#94a3b8" : "#64748b",
-		border: dark ? "#1e3a5f" : "#e2e8f0",
-		card: dark ? "#111c2e" : "#ffffff",
-		primary: dark ? "#c4b5fd" : "#6d28d9",
-	};
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: colors.bg }]}
+			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
-			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<HeaderBackButton
-					color={colors.text}
-					fallback="/(tabs)/account"
-					inline
-				/>
-				<Text style={[styles.title, { color: colors.text }]}>
-					{t("disputes.title")}
-				</Text>
-				<View style={styles.spacer} />
-			</View>
-			{query.isPending ? (
-				<ActivityIndicator style={styles.loader} color={colors.primary} />
-			) : null}
+			<SellerHeader title={t("disputes.title")} />
+			{query.isPending ? <OrderListSkeleton /> : null}
 			{query.isError ? (
 				<EmptyState
-					icon="alert-circle-outline"
+					illustration="notFound"
 					title={t("disputes.loadError")}
 					ctaLabel={t("common.retry")}
 					onCta={() => void query.refetch()}
@@ -66,7 +45,7 @@ export function DisputesList({ selectedId, onOpen }: SplitListProps) {
 			) : null}
 			{query.data?.rows.length === 0 ? (
 				<EmptyState
-					icon="chatbubble-ellipses-outline"
+					illustration="empty"
 					title={t("disputes.emptyTitle")}
 					subtitle={t("disputes.emptyBody")}
 					ctaLabel={t("disputes.viewPurchases")}
@@ -80,10 +59,10 @@ export function DisputesList({ selectedId, onOpen }: SplitListProps) {
 						extraData={selectedId}
 						keyExtractor={(row) => row.id}
 						contentContainerStyle={styles.list}
+						ItemSeparatorComponent={Separator}
 						renderItem={({ item }) => (
 							<DisputeRow
 								item={item}
-								dark={dark}
 								locale={i18n.language}
 								selected={item.id === selectedId}
 								onPress={() => onOpen(item.id)}
@@ -96,59 +75,63 @@ export function DisputesList({ selectedId, onOpen }: SplitListProps) {
 	);
 }
 
+function Separator() {
+	return <View style={styles.separator} />;
+}
+
 function DisputeRow({
 	item,
-	dark,
 	locale,
 	onPress,
 	selected,
 }: {
 	item: DisputeListRow;
-	dark: boolean;
 	locale: string;
 	onPress: () => void;
 	/** Open in the detail pane beside the list. */
 	selected?: boolean;
 }) {
+	const c = useShopTheme();
 	const { t } = useTranslation();
 	const selectedStyle = useSelectedRowStyle()(selected);
-	const bg = dark ? "#111c2e" : "#fff";
-	const text = dark ? "#e2e8f0" : "#0f172a";
-	const muted = dark ? "#94a3b8" : "#64748b";
+	const status = t(DISPUTE_STATUS_LABELS[item.status]);
+	const amount = formatPrice(item.amountAtStake, locale);
 	return (
 		<Pressable
 			accessibilityRole="button"
+			accessibilityLabel={`${item.number}, ${status}, ${amount}${
+				item.overdue ? `, ${t("disputes.overdue")}` : ""
+			}`}
 			onPress={onPress}
 			accessibilityState={{ selected: Boolean(selected) }}
-			style={[
+			style={({ pressed }) => [
 				styles.card,
-				{ backgroundColor: bg, borderColor: dark ? "#1e3a5f" : "#e2e8f0" },
+				{ backgroundColor: c.card, borderColor: c.border },
 				selectedStyle,
+				pressed && styles.pressed,
 			]}
 		>
 			<View style={styles.rowTop}>
-				<Text style={[styles.number, { color: text }]}>{item.number}</Text>
-				<Text
-					style={[
-						styles.status,
-						{ color: item.overdue ? "#dc2626" : "#6d28d9" },
-					]}
-				>
-					{t(DISPUTE_STATUS_LABELS[item.status])}
+				<Text style={[styles.number, { color: c.text }]} numberOfLines={1}>
+					{item.number}
 				</Text>
+				<CaseStatusPill label={status} tone={disputeTone(item.status)} />
 			</View>
-			<Text style={[styles.description, { color: muted }]}>
+			<Text style={[styles.description, { color: c.body }]}>
 				{t("disputes.order", { number: item.orderNumber })} ·{" "}
 				{t(DISPUTE_REASON_LABELS[item.reason])}
 			</Text>
 			<View style={styles.rowBottom}>
-				<Text style={[styles.description, { color: muted }]}>
-					{formatPrice(item.amountAtStake, locale)}
-				</Text>
+				<Text style={[styles.amount, { color: c.text }]}>{amount}</Text>
 				{item.overdue ? (
-					<Text style={styles.overdue}>{t("disputes.overdue")}</Text>
+					<View style={styles.overdue}>
+						<Ionicons name="alert-circle" size={15} color={c.dangerText} />
+						<Text style={[styles.overdueText, { color: c.dangerText }]}>
+							{t("disputes.overdue")}
+						</Text>
+					</View>
 				) : null}
-				<Ionicons name="chevron-forward" size={18} color={muted} />
+				<Ionicons name="chevron-forward" size={18} color={c.muted} />
 			</View>
 		</Pressable>
 	);
@@ -156,38 +139,39 @@ function DisputeRow({
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	header: {
-		alignItems: "center",
-		borderBottomWidth: StyleSheet.hairlineWidth,
-		flexDirection: "row",
-		gap: 16,
-		paddingHorizontal: 18,
-		paddingVertical: 14,
-	},
-	title: { flex: 1, fontFamily: Fonts.displaySemibold, fontSize: 20 },
-	spacer: { width: 22 },
-	loader: { marginTop: 40 },
-	list: { padding: 16 },
+	list: { padding: 16, paddingBottom: 40 },
+	separator: { height: 10 },
 	card: {
 		borderRadius: 16,
-		borderWidth: 1,
-		gap: 9,
-		marginBottom: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		gap: 8,
 		padding: 16,
 	},
+	pressed: { opacity: 0.85 },
 	rowTop: {
 		alignItems: "center",
 		flexDirection: "row",
 		justifyContent: "space-between",
+		gap: 12,
 	},
-	number: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
-	status: { fontFamily: Fonts.bodyMedium, fontSize: 12 },
-	description: { fontFamily: Fonts.body, fontSize: 13 },
+	number: {
+		flexShrink: 1,
+		fontFamily: Fonts.displayBold,
+		fontSize: 17,
+		fontVariant: ["tabular-nums"],
+	},
+	description: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
 	rowBottom: {
 		alignItems: "center",
 		flexDirection: "row",
 		gap: 10,
-		justifyContent: "flex-end",
 	},
-	overdue: { color: "#dc2626", fontFamily: Fonts.bodyMedium, fontSize: 12 },
+	amount: {
+		flex: 1,
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 17,
+		fontVariant: ["tabular-nums"],
+	},
+	overdue: { flexDirection: "row", alignItems: "center", gap: 4 },
+	overdueText: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
 });

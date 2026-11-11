@@ -1,15 +1,10 @@
 /**
- * CustomAlert — Bottom sheet animé
+ * CustomAlert — the sheet for decisions and errors.
  *
- * Design :
- *  - Sheet ancré en bas, coins arrondis en haut
- *  - Handle bar + icône double ring animée
- *  - Backdrop foncé indépendant
- *  - Boutons : row si ≤2, colonne si >2
- *
- * Animations (Reanimated) :
- *  - Entrée  : sheet spring depuis bas + backdrop fade + icon rings en cascade
- *  - Sortie  : spring rapide vers bas, Modal masquée 290ms après
+ * Passing good news is a toast (see Toast.tsx); this sheet is for what needs
+ * an answer or must not be missed. It rises from the bottom with a
+ * decelerating ease, one tinted tile names the kind, and the actions sit
+ * at its foot: side by side for two, stacked for more.
  */
 
 import { Ionicons } from "@expo/vector-icons";
@@ -28,13 +23,14 @@ import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
 	withDelay,
-	withSpring,
 	withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { feedback } from "@/src/lib/feedback";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,35 +53,49 @@ interface CustomAlertProps {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const ACCENT: Record<AlertType, string> = {
-	success: "#10b981",
-	error: "#ef4444",
-	warning: "#f59e0b",
-	info: "#1e40af", // overridden at runtime for dark mode
-	confirm: "#1e40af",
-};
-
-const ACCENT_DARK: Record<AlertType, string> = {
-	success: "#10b981",
-	error: "#ef4444",
-	warning: "#f59e0b",
-	info: "#3b82f6",
-	confirm: "#3b82f6",
+/** The tile's ink and its tinted ground, per kind and theme. */
+const TONE: Record<
+	AlertType,
+	{ light: [string, string]; dark: [string, string] }
+> = {
+	success: {
+		light: [Colors.light.success, Colors.light.successTint],
+		dark: [Colors.dark.success, Colors.dark.successTint],
+	},
+	error: {
+		light: [Colors.light.destructive, Colors.light.dangerTint],
+		dark: [Colors.dark.dangerText, Colors.dark.dangerTint],
+	},
+	warning: {
+		light: [Colors.light.warning, Colors.light.warningTint],
+		dark: [Colors.dark.warning, Colors.dark.warningTint],
+	},
+	info: {
+		light: [Colors.light.primary, Colors.light.primaryTint],
+		dark: [Colors.dark.link, Colors.dark.primaryTint],
+	},
+	confirm: {
+		light: [Colors.light.primary, Colors.light.primaryTint],
+		dark: [Colors.dark.link, Colors.dark.primaryTint],
+	},
 };
 
 const ICON: Record<AlertType, keyof typeof Ionicons.glyphMap> = {
-	success: "checkmark-circle",
-	error: "close-circle",
-	warning: "warning",
-	info: "information-circle",
-	confirm: "help-circle",
+	success: "checkmark",
+	error: "close",
+	warning: "alert",
+	info: "information",
+	confirm: "help",
 };
+
+/** Deep indigo in both themes, so white labels keep their contrast. */
+const ACTION_BG = Colors.light.ownBubble;
+const DESTRUCTIVE_BG = "#d23a2e";
 
 // ─── Animation constants ──────────────────────────────────────────────────────
 
-const SPRING_IN = { damping: 17, stiffness: 190, mass: 0.9 } as const;
-const SPRING_OUT = { damping: 24, stiffness: 300, mass: 0.8 } as const;
-export const ALERT_EXIT_DELAY = 300;
+const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
+export const ALERT_EXIT_DELAY = 220;
 const EXIT_DELAY = ALERT_EXIT_DELAY;
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -99,6 +109,7 @@ export default function CustomAlert({
 	onClose,
 }: CustomAlertProps) {
 	const isDark = useColorScheme() === "dark";
+	const reduced = useReducedMotion();
 	const insets = useSafeAreaInsets();
 	const { isTablet, width, dialogMaxWidth } = useResponsive();
 	// On iPad the full-bleed sheet becomes a centred, width-capped dialog.
@@ -112,68 +123,57 @@ export default function CustomAlert({
 			}
 		: null;
 
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const dividerColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accent = isDark ? ACCENT_DARK[type] : ACCENT[type];
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const textColor = isDark ? "#e1e3ee" : "#12163a";
+	const mutedColor = isDark ? "#a3a7c8" : "#5b6088";
+	const dividerColor = isDark ? "#2a3170" : "#e1e3ee";
+	const [ink, tint] = TONE[type][isDark ? "dark" : "light"];
 
 	const [modalOpen, setModalOpen] = useState(false);
 
-	const sheetY = useSharedValue(800);
-	const sheetRotate = useSharedValue(-0.012);
+	const sheetY = useSharedValue(600);
 	const backdropAlp = useSharedValue(0);
-	const outerScale = useSharedValue(0);
-	const innerScale = useSharedValue(0);
+	const iconScale = useSharedValue(0.6);
 
 	useEffect(() => {
 		if (visible) {
-			sheetY.value = 800;
-			sheetRotate.value = -0.012;
+			sheetY.value = reduced ? 0 : 600;
 			backdropAlp.value = 0;
-			outerScale.value = 0;
-			innerScale.value = 0;
+			iconScale.value = reduced ? 1 : 0.6;
 			setModalOpen(true);
+			// What the sheet says, felt as well as read. A confirm is routine:
+			// a nudge, no sound.
+			if (type === "error") feedback("error");
+			else if (type === "warning") feedback("notice");
+			else if (type === "confirm") feedback("notice", { sound: false });
+			else if (type === "success") feedback("success");
 
 			const id = setTimeout(() => {
-				sheetY.value = withSpring(0, SPRING_IN);
-				sheetRotate.value = withSpring(0, { damping: 14, stiffness: 180 });
-				backdropAlp.value = withTiming(1, {
-					duration: 300,
-					easing: Easing.out(Easing.ease),
-				});
-				outerScale.value = withDelay(
-					130,
-					withSpring(1, { damping: 10, stiffness: 210 }),
-				);
-				innerScale.value = withDelay(
-					185,
-					withSpring(1, { damping: 8, stiffness: 230 }),
+				sheetY.value = withTiming(0, { duration: 380, easing: EASE_OUT });
+				backdropAlp.value = withTiming(1, { duration: 260 });
+				iconScale.value = withDelay(
+					120,
+					withTiming(1, { duration: 320, easing: EASE_OUT }),
 				);
 			}, 10);
 			return () => clearTimeout(id);
 		}
-		sheetY.value = withSpring(800, SPRING_OUT);
-		sheetRotate.value = withTiming(-0.008, { duration: 220 });
-		backdropAlp.value = withTiming(0, { duration: 220 });
-		outerScale.value = withTiming(0, { duration: 180 });
-		innerScale.value = withTiming(0, { duration: 140 });
+		sheetY.value = reduced
+			? 0
+			: withTiming(600, { duration: 200, easing: Easing.in(Easing.quad) });
+		backdropAlp.value = withTiming(0, { duration: 200 });
 		const id = setTimeout(() => setModalOpen(false), EXIT_DELAY);
 		return () => clearTimeout(id);
-	}, [visible, backdropAlp, innerScale, outerScale, sheetRotate, sheetY]);
+	}, [visible, type, reduced, backdropAlp, iconScale, sheetY]);
 
 	const sheetAnim = useAnimatedStyle(() => ({
-		transform: [
-			{ translateY: sheetY.value },
-			{ rotate: `${sheetRotate.value}rad` },
-		],
+		transform: [{ translateY: sheetY.value }],
+		// With Reduce Motion the sheet fades in place instead of rising.
+		opacity: reduced ? backdropAlp.value : 1,
 	}));
 	const backdropAnim = useAnimatedStyle(() => ({ opacity: backdropAlp.value }));
-	const outerAnim = useAnimatedStyle(() => ({
-		transform: [{ scale: outerScale.value }],
-	}));
-	const innerAnim = useAnimatedStyle(() => ({
-		transform: [{ scale: innerScale.value }],
+	const iconAnim = useAnimatedStyle(() => ({
+		transform: [{ scale: iconScale.value }],
 	}));
 
 	const handlePress = useCallback(
@@ -188,34 +188,41 @@ export default function CustomAlert({
 
 	const actionBtns = buttons.filter((b) => b.style !== "cancel");
 	const cancelBtns = buttons.filter((b) => b.style === "cancel");
-	const ordered = [...actionBtns, ...cancelBtns];
+	// In a row, cancel sits left and the action right, under the thumb; in a
+	// stack, cancel comes last, under the actions.
 	const isColumn = buttons.length > 2;
+	const ordered = isColumn
+		? [...actionBtns, ...cancelBtns]
+		: [...cancelBtns, ...actionBtns];
 
 	const renderButton = (btn: AlertButton, i: number) => {
 		const isCancel = btn.style === "cancel";
 		const isDestructive = btn.style === "destructive";
 
-		const bgColor = isCancel
-			? "transparent"
-			: isDestructive
-				? "#ef4444"
-				: accent;
-		const txtColor = isCancel ? mutedColor : "#ffffff";
-
 		return (
 			<Pressable
 				key={i}
 				onPress={() => handlePress(btn)}
-				style={[
+				accessibilityRole="button"
+				style={({ pressed }) => [
 					styles.button,
-					{ backgroundColor: bgColor },
-					isCancel && { borderWidth: 1, borderColor: dividerColor },
+					isCancel
+						? { borderWidth: 1, borderColor: dividerColor }
+						: { backgroundColor: isDestructive ? DESTRUCTIVE_BG : ACTION_BG },
 					!isColumn && { flex: 1 },
 					isColumn && styles.buttonFull,
-					isCancel && isColumn && styles.cancelColumnBtn,
+					{ opacity: pressed ? 0.82 : 1 },
 				]}
 			>
-				<Text style={[styles.buttonText, { color: txtColor }]}>{btn.text}</Text>
+				<Text
+					style={[
+						styles.buttonText,
+						{ color: isCancel ? textColor : "#ffffff" },
+					]}
+					numberOfLines={1}
+				>
+					{btn.text}
+				</Text>
 			</Pressable>
 		);
 	};
@@ -229,7 +236,7 @@ export default function CustomAlert({
 			statusBarTranslucent
 		>
 			{/* Backdrop */}
-			<TouchableWithoutFeedback onPress={onClose}>
+			<TouchableWithoutFeedback onPress={onClose} accessible={false}>
 				<Animated.View
 					style={[StyleSheet.absoluteFill, styles.backdrop, backdropAnim]}
 				/>
@@ -237,55 +244,41 @@ export default function CustomAlert({
 
 			{/* Sheet */}
 			<Animated.View
+				accessibilityViewIsModal
 				style={[
 					styles.sheet,
 					{
 						backgroundColor: cardBg,
-						paddingBottom: Math.max(insets.bottom + 16, 32),
+						paddingBottom: Math.max(insets.bottom + 12, 24),
 					},
 					tabletSheetStyle,
 					sheetAnim,
 				]}
 			>
-				{/* Handle */}
 				<View
 					style={[
 						styles.handle,
-						{ backgroundColor: isDark ? "#334155" : "#cbd5e1" },
+						{ backgroundColor: isDark ? "#3a4290" : "#c9cce0" },
 					]}
 				/>
 
-				{/* Double ring icon */}
 				<Animated.View
-					style={[
-						styles.iconOuter,
-						{ backgroundColor: `${accent}1a` },
-						outerAnim,
-					]}
+					style={[styles.icon, { backgroundColor: tint }, iconAnim]}
 				>
-					<Animated.View
-						style={[
-							styles.iconInner,
-							{ backgroundColor: `${accent}2e` },
-							innerAnim,
-						]}
-					>
-						<Ionicons name={ICON[type]} size={34} color={accent} />
-					</Animated.View>
+					<Ionicons name={ICON[type]} size={30} color={ink} />
 				</Animated.View>
 
-				{/* Title */}
-				<Text style={[styles.title, { color: textColor }]}>{title}</Text>
+				<Text
+					style={[styles.title, { color: textColor }]}
+					accessibilityRole="header"
+				>
+					{title}
+				</Text>
 
-				{/* Message */}
 				{message ? (
 					<Text style={[styles.message, { color: mutedColor }]}>{message}</Text>
 				) : null}
 
-				{/* Divider */}
-				<View style={[styles.divider, { backgroundColor: dividerColor }]} />
-
-				{/* Buttons */}
 				<View style={[styles.buttonsWrap, isColumn && styles.buttonsColumn]}>
 					{ordered.map(renderButton)}
 				</View>
@@ -298,7 +291,7 @@ export default function CustomAlert({
 
 const styles = StyleSheet.create({
 	backdrop: {
-		backgroundColor: "rgba(0,0,0,0.62)",
+		backgroundColor: "rgba(12, 16, 48, 0.6)",
 	},
 	sheet: {
 		position: "absolute",
@@ -307,78 +300,68 @@ const styles = StyleSheet.create({
 		right: 0,
 		borderTopLeftRadius: 28,
 		borderTopRightRadius: 28,
-		paddingHorizontal: 24,
+		paddingHorizontal: 20,
 		paddingTop: 8,
 		alignItems: "center",
-		shadowColor: "#000",
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: -6 },
-		shadowOpacity: 0.12,
+		shadowOpacity: 0.14,
 		shadowRadius: 20,
 		elevation: 24,
 	},
 	handle: {
-		width: 40,
+		width: 36,
 		height: 4,
 		borderRadius: 2,
-		marginBottom: 24,
+		marginBottom: 20,
 		marginTop: 4,
 	},
-	iconOuter: {
-		width: 88,
-		height: 88,
-		borderRadius: 44,
+	icon: {
+		width: 60,
+		height: 60,
+		borderRadius: 18,
 		alignItems: "center",
 		justifyContent: "center",
 		marginBottom: 16,
 	},
-	iconInner: {
-		width: 68,
-		height: 68,
-		borderRadius: 34,
-		alignItems: "center",
-		justifyContent: "center",
-	},
 	title: {
-		fontSize: 20,
-		fontFamily: Fonts.displayBold,
+		fontSize: 22,
+		lineHeight: 27,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.5,
 		textAlign: "center",
 		marginBottom: 8,
-		lineHeight: 28,
+		maxWidth: 420,
 	},
 	message: {
-		fontSize: 14,
+		fontSize: 15,
 		fontFamily: Fonts.body,
 		textAlign: "center",
 		lineHeight: 22,
-		marginBottom: 16,
-		paddingHorizontal: 8,
-	},
-	divider: {
-		height: 1,
-		width: "100%",
-		marginBottom: 16,
+		maxWidth: 420,
+		paddingHorizontal: 4,
 	},
 	buttonsWrap: {
 		flexDirection: "row",
 		width: "100%",
 		gap: 10,
+		marginTop: 24,
 	},
 	buttonsColumn: {
 		flexDirection: "column",
 		gap: 8,
 	},
 	button: {
-		paddingVertical: 14,
-		borderRadius: 14,
+		minHeight: 52,
+		paddingHorizontal: 12,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	buttonFull: { width: "100%" },
-	cancelColumnBtn: { marginTop: 4 },
 	buttonText: {
-		fontSize: 15,
-		fontFamily: Fonts.displayBold,
-		letterSpacing: 0.2,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 });
 

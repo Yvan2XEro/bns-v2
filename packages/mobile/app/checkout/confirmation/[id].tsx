@@ -14,6 +14,9 @@ import { Fonts } from "@/constants/theme";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
 import { CodeEntry } from "@/src/components/checkout/CodeEntry";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
+import { fillOf, inkOf } from "@/src/components/checkout/fill";
+import { TotalTag } from "@/src/components/checkout/TotalTag";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -52,7 +55,7 @@ export default function CheckoutConfirmationScreen() {
 	useEffect(() => {
 		hapticOutcome("success");
 	}, []);
-	const heroColor = outcome === "confirmed" ? c.success : c.primary;
+	const heroColor = outcome === "confirmed" ? c.successText : inkOf(c);
 	const heroSoft = outcome === "confirmed" ? c.successSoft : c.primarySoft;
 	const total = order ? formatPrice(order.amounts.total, locale) : "";
 	const place = order
@@ -68,7 +71,7 @@ export default function CheckoutConfirmationScreen() {
 		>
 			<SellerHeader title={t("checkout.title")} icon="close" onBack={leave} />
 			{purchase.isPending ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<DetailSkeleton cards={2} />
 			) : !order ? (
 				<EmptyState
 					illustration="notFound"
@@ -81,20 +84,17 @@ export default function CheckoutConfirmationScreen() {
 					<ScreenColumn width="reading">
 						<ScrollView contentContainerStyle={styles.scroll}>
 							<View style={styles.hero}>
-								<View
-									style={[styles.halo, { backgroundColor: `${heroSoft}80` }]}
-								>
-									<View
-										style={[styles.haloInner, { backgroundColor: heroSoft }]}
-									>
-										<Ionicons
-											name={outcome === "confirmed" ? "checkmark" : "call"}
-											size={34}
-											color={heroColor}
-										/>
-									</View>
+								<View style={[styles.heroTile, { backgroundColor: heroSoft }]}>
+									<Ionicons
+										name={outcome === "confirmed" ? "checkmark" : "call"}
+										size={34}
+										color={heroColor}
+									/>
 								</View>
-								<Text style={[styles.title, { color: c.text }]}>
+								<Text
+									style={[styles.title, { color: c.text }]}
+									accessibilityRole="header"
+								>
 									{t("checkout.orderPlaced")}
 								</Text>
 								<Text style={[styles.number, { color: c.body }]}>
@@ -138,6 +138,17 @@ export default function CheckoutConfirmationScreen() {
 									/>
 								) : null}
 								<View style={[styles.divider, { backgroundColor: c.border }]} />
+								<View
+									style={styles.totalRow}
+									accessible
+									accessibilityLabel={`${t("checkout.total")} ${total}`}
+								>
+									<Text style={[styles.totalLabel, { color: c.text }]}>
+										{t("checkout.total")}
+									</Text>
+									<TotalTag amount={total} />
+								</View>
+								<View style={[styles.divider, { backgroundColor: c.border }]} />
 								<ReceiptRow
 									order={order}
 									total={
@@ -147,7 +158,10 @@ export default function CheckoutConfirmationScreen() {
 									}
 								/>
 							</View>
-							<Text style={[styles.section, { color: c.text }]}>
+							<Text
+								style={[styles.section, { color: c.text }]}
+								accessibilityRole="header"
+							>
 								{t("checkout.nextTitle")}
 							</Text>
 							<NextSteps
@@ -186,6 +200,9 @@ export default function CheckoutConfirmationScreen() {
 					>
 						<CheckoutButton
 							icon="cube-outline"
+							// While a code is owed, confirming it is the screen's one
+							// filled action; tracking steps back to a quiet button.
+							variant={outcome === "code" ? "outline" : "primary"}
 							label={t("checkout.trackOrder")}
 							onPress={() =>
 								router.replace({
@@ -292,7 +309,7 @@ function InfoRow({
 			</View>
 			<View style={{ flex: 1, gap: 2 }}>
 				<Text style={[styles.infoTitle, { color: c.text }]}>{title}</Text>
-				<Text style={[styles.infoBody, { color: c.muted }]}>{body}</Text>
+				<Text style={[styles.infoBody, { color: c.body }]}>{body}</Text>
 			</View>
 		</View>
 	);
@@ -301,6 +318,7 @@ function InfoRow({
 /** Numbered steps on a rail; the first is the one under way. */
 function NextSteps({ steps }: { steps: { title: string; body: string }[] }) {
 	const c = useShopTheme();
+	const fill = fillOf(c);
 	return (
 		<View>
 			{steps.map((step, index) => {
@@ -313,14 +331,14 @@ function NextSteps({ steps }: { steps: { title: string; body: string }[] }) {
 								style={[
 									styles.dot,
 									current
-										? { backgroundColor: c.primary, borderColor: c.primary }
+										? { backgroundColor: fill.bg, borderColor: fill.bg }
 										: { backgroundColor: c.card, borderColor: c.border },
 								]}
 							>
 								<Text
 									style={[
 										styles.dotText,
-										{ color: current ? "#fff" : c.muted },
+										{ color: current ? fill.fg : c.muted },
 									]}
 								>
 									{index + 1}
@@ -334,12 +352,12 @@ function NextSteps({ steps }: { steps: { title: string; body: string }[] }) {
 							<Text
 								style={[
 									styles.stepTitle,
-									{ color: current ? c.primary : c.text },
+									{ color: current ? inkOf(c) : c.text },
 								]}
 							>
 								{step.title}
 							</Text>
-							<Text style={[styles.infoBody, { color: c.muted }]}>
+							<Text style={[styles.infoBody, { color: c.body }]}>
 								{step.body}
 							</Text>
 						</View>
@@ -353,40 +371,42 @@ function NextSteps({ steps }: { steps: { title: string; body: string }[] }) {
 const styles = StyleSheet.create({
 	scroll: { padding: 16, gap: 16, paddingBottom: 24 },
 	hero: { alignItems: "center", gap: 6, paddingTop: 8 },
-	halo: {
-		width: 96,
-		height: 96,
-		borderRadius: 48,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	haloInner: {
+	heroTile: {
 		width: 72,
 		height: 72,
-		borderRadius: 36,
+		borderRadius: 20,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	title: {
-		fontSize: 26,
+		fontSize: 28,
+		lineHeight: 33,
+		letterSpacing: -0.6,
 		fontFamily: Fonts.displayExtrabold,
 		textAlign: "center",
 		marginTop: 10,
 	},
+	totalRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: 12,
+	},
+	totalLabel: { fontSize: 17, fontFamily: Fonts.displayBold },
 	meta: { fontSize: 14, fontFamily: Fonts.body },
 	number: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	card: {
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 16,
-		padding: 14,
-		gap: 12,
+		padding: 16,
+		gap: 14,
 	},
 	divider: { height: StyleSheet.hairlineWidth },
 	receiptRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	infoRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
 	infoTile: {
@@ -397,8 +417,13 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	infoTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	infoBody: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
-	section: { fontSize: 17, fontFamily: Fonts.displayBold, marginTop: 4 },
+	infoBody: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
+	section: {
+		fontSize: 20,
+		lineHeight: 25,
+		fontFamily: Fonts.displayBold,
+		marginTop: 8,
+	},
 	step: { flexDirection: "row", gap: 12 },
 	rail: { alignItems: "center", width: 28 },
 	dot: {
@@ -412,7 +437,7 @@ const styles = StyleSheet.create({
 	dotText: { fontSize: 13, fontFamily: Fonts.displayBold },
 	line: { flex: 1, width: 2, marginVertical: 2 },
 	stepText: { flex: 1, gap: 2, paddingBottom: 16, paddingTop: 3 },
-	stepTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	stepTitle: { fontSize: 16, fontFamily: Fonts.bodySemibold },
 	bar: {
 		padding: 16,
 		gap: 10,

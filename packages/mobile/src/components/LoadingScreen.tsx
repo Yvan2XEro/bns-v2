@@ -132,9 +132,9 @@ export function LoadingScreen() {
 			<Animated.View style={[styles.textBlock, logoAnimStyle]}>
 				<Text style={[styles.appName, { color: colors.foreground }]}>
 					Buy
-					<Text style={{ color: "#f59e0b" }}>'</Text>
-					<Text style={{ color: "#f59e0b" }}>N</Text>
-					<Text style={{ color: "#f59e0b" }}>'</Text>Sellem
+					<Text style={{ color: "#ffb81c" }}>'</Text>
+					<Text style={{ color: "#ffb81c" }}>N</Text>
+					<Text style={{ color: "#ffb81c" }}>'</Text>Sellem
 				</Text>
 				<Text style={[styles.tagline, { color: colors.mutedForeground }]}>
 					{t("common.tagline")}

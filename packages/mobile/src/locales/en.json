@@ -17,8 +17,12 @@
 		"tabs": {
 			"dashboard": "Dashboard",
 			"orders": "Orders",
+			"ordersWithCount_one": "Orders, {{count}} to handle",
+			"ordersWithCount": "Orders, {{count}} to handle",
 			"catalogue": "Catalogue",
 			"messages": "Messages",
+			"messagesWithCount_one": "Messages, {{count}} unread",
+			"messagesWithCount": "Messages, {{count}} unread",
 			"shop": "Shop"
 		},
 		"greeting": "Hello {{name}}",
@@ -120,6 +124,7 @@
 		"confirmPasswordPlaceholder": "Repeat your password",
 		"missingFieldsTitle": "Missing fields",
 		"missingFieldsMessage": "Please fill in all fields",
+		"loginMissingFields": "Enter your email and password.",
 		"loginFailedTitle": "Login failed",
 		"loginFailedMessage": "Invalid email or password",
 		"socialLoginFailedMessage": "Social login failed",
@@ -198,13 +203,15 @@
 		"sortNewest": "Recent",
 		"sortPriceAsc": "Price ↑",
 		"sortPriceDesc": "Price ↓",
+		"sortPriceAscA11y": "Price, low to high",
+		"sortPriceDescA11y": "Price, high to low",
 		"saveSearch": "Save this search",
 		"saveSearchTitle": "Save search",
 		"saveSearchSub": "Name this search to find it easily.",
 		"saveSearchName": "Search name",
 		"saveSearchNamePlaceholder": "e.g. Used phones in Yaoundé",
-		"saveSearchPlaceholderFallback": "e.g. Cars in Yaoundé",
-		"searchSaved": "Search saved!",
+		"saveSearchPlaceholderFallback": "e.g. Cars in Douala",
+		"searchSaved": "Search saved",
 		"saved": "Saved!",
 		"save": "Save",
 		"noResults": "No results found",
@@ -262,7 +269,7 @@
 			"tip2": "Never share your bank details or transfer money in advance.",
 			"tip3": "Inspect the item thoroughly before making any payment.",
 			"strip": "Public place · Check before paying · No advance payment",
-			"stripShop": "Pay on BuyNSellem · Never outside the platform · Check the parcel before the code"
+			"stripShop": "Pay on Buy'N'Sellem · Never outside the platform · Check the parcel before giving the code"
 		},
 		"attributes": "Details",
 		"sellerInfo": "Seller Info",
@@ -306,7 +313,7 @@
 		"messageShop": "Message the shop",
 		"contactBy": "Contact the seller",
 		"whatsapp": "WhatsApp",
-		"whatsappAbout": "Hello, is your listing \"{{title}}\" on BuyNSellem still available? {{url}}",
+		"whatsappAbout": "Hello, is your listing \"{{title}}\" on Buy'N'Sellem still available? {{url}}",
 		"barOrder": "Order",
 		"orderAction": "Order · {{price}}",
 		"orderableBadge": "Buy online"
@@ -409,7 +416,7 @@
 		"attributeMax": "Maximum value: {{value}}",
 		"attributeInvalidDate": "Invalid date (DD/MM/YYYY)",
 		"attributeInvalidNumber": "Invalid number",
-		"stepPhotosQualityTipGeneric": "Clear, well-lit photos make your listing more convincing.",
+		"stepPhotosQualityTipGeneric": "Sharp photos taken in daylight sell faster.",
 		"stepDescribe": "Your ad",
 		"stepDescribeTitle": "What are you selling?",
 		"stepDescribeHint": "Describe your item in a few words. We suggest a category from the title.",
@@ -478,6 +485,7 @@
 		"orderContextShort": "Order {{number}}",
 		"unreadWithCount": "Unread ({{count}})",
 		"markAllRead": "Mark all read",
+		"markAllReadError": "Couldn't mark everything as read. Try again.",
 		"noMessages": "No messages",
 		"deleteError": "Could not delete the conversation.",
 		"deleteTitle": "Delete conversation",
@@ -508,10 +516,16 @@
 		"systemOrderOpen": "View order",
 		"sending": "Sending…",
 		"notSent": "Not sent · tap to retry",
-		"queuedOffline": "Offline · your messages will go out when the network is back"
+		"queuedOffline": "Offline · your messages will go out when the network is back",
+		"typing": "{{name}} is typing…",
+		"you": "You: {{text}}",
+		"copy": "Copy",
+		"copied": "Message copied",
+		"actions": "Message options",
+		"actionsHint": "Long-press to copy the message"
 	},
 	"account": {
-		"guestTitle": "Welcome to BuyNSellem",
+		"guestTitle": "Welcome to Buy'N'Sellem",
 		"guestPerkFavorites": "Your favourites and saved searches",
 		"guestPerkMessages": "Messages with sellers",
 		"guestPerkOrders": "Tracking your orders",
@@ -659,7 +673,8 @@
 		"statusPublishedNotice": "Editing this listing will re-submit it for review.",
 		"statusRejectedNotice": "Your listing was rejected.",
 		"statusRejectionReason": "Reason: {{reason}}",
-		"saleSection": "Sale"
+		"saleSection": "Sale",
+		"photosFailedOnSave": "Some photos were not sent. Retry or remove them before saving."
 	},
 	"profile": {
 		"bio": "Bio",
@@ -749,6 +764,9 @@
 		"theme": "Theme",
 		"themeLight": "Light",
 		"themeDark": "Dark",
+		"soundsSection": "Sounds",
+		"soundsLabel": "Interface sounds",
+		"soundsHint": "A balafon note when a message arrives, a listing goes live or an order goes through. Silent when your iPhone is on silent.",
 		"themeSystem": "System",
 		"currentPassword": "Current password",
 		"newPassword": "New password",
@@ -887,8 +905,7 @@
 		"successMessage": "Your listing is now featured.",
 		"mobileUnavailableBadge": "Temporarily unavailable",
 		"mobileUnavailableTitle": "Boosting is not available in the mobile app right now.",
-		"mobileUnavailableMessage": "This feature is being updated for the mobile release. You can still manage your listing normally from the app.",
-		"listingReference": "Listing reference: {{listingId}}"
+		"mobileUnavailableMessage": "This feature is being updated for the mobile release. You can still manage your listing normally from the app."
 	},
 	"report": {
 		"title": "Report",
@@ -947,7 +964,8 @@
 		"month": "This month",
 		"orderable": "Buy online (protected payment or cash on delivery)",
 		"showCount_one": "Show {{count}} listing",
-		"showCount": "Show {{count}} listings"
+		"showCount": "Show {{count}} listings",
+		"tags": "Tags"
 	},
 	"errors": {
 		"generic": "An unexpected error occurred. Please try again.",
@@ -1023,7 +1041,7 @@
 		"totalSpent": "Total spent on boosts",
 		"monthlySpend": "Monthly Spend",
 		"last6Months": "Last 6 months",
-		"history": "HISTORY",
+		"history": "History",
 		"endOfHistory": "— End of history —",
 		"statusCompleted": "Completed",
 		"statusActive": "Active",
@@ -1094,7 +1112,7 @@
 		"successMessage": "We will get back to you as soon as possible.",
 		"backBtn": "Back",
 		"errorTitle": "Error",
-		"fillAllFields": "Please fill in all fields",
+		"fillAllFields": "Add your name, email and message.",
 		"subjectGeneral": "General question",
 		"subjectTechnical": "Technical issue",
 		"subjectAbuse": "Report abuse",
@@ -1103,7 +1121,7 @@
 	},
 	"notifications": {
 		"title": "Notifications",
-		"markAllRead": "Mark all read",
+		"markAllRead": "Mark all as read",
 		"noNotifications": "No notifications",
 		"noNotificationsSub": "Your listing and message alerts will appear here",
 		"enablePush": "Enable",
@@ -1138,7 +1156,7 @@
 		"sections": {
 			"intro": {
 				"title": "1. About this policy",
-				"body": "This policy explains what the BuyNSellem mobile app collects, why it collects it, and what happens to it. Every item below matches a feature you can actually use in the app. Where a feature is optional, we say so."
+				"body": "Buy'N'Sellem is a product of OverBrand SARL. This policy explains what the Buy'N'Sellem mobile app collects, why it collects it, and what happens to it. Every item below matches a feature you can actually use in the app. Where a feature is optional, we say so."
 			},
 			"account": {
 				"title": "2. Account information",
@@ -1202,7 +1220,7 @@
 			},
 			"children": {
 				"title": "17. Age requirement",
-				"body": "BuyNSellem is intended for adults. The app is not meant for anyone under 18 and we do not knowingly collect personal information from children. If you believe a child has created an account, contact us at support@buynsellem.com."
+				"body": "Buy'N'Sellem is intended for adults. The app is not meant for anyone under 18 and we do not knowingly collect personal information from children. If you believe a child has created an account, contact us at support@buynsellem.com."
 			},
 			"security": {
 				"title": "18. How we protect your data",
@@ -1232,7 +1250,7 @@
 			},
 			"service": {
 				"title": "2. What the service is",
-				"body": "Buy'N'Sellem is a classifieds platform that lets people buy and sell items directly with each other in Cameroon and the surrounding region."
+				"body": "Buy'N'Sellem is a classifieds platform that lets people buy and sell items directly with each other in Cameroon and the surrounding region. Buy'N'Sellem is a product of OverBrand SARL."
 			},
 			"eligibility": {
 				"title": "3. Who can use it",
@@ -1603,6 +1621,7 @@
 	},
 	"tagPicker": {
 		"title": "Choose tags",
+		"placeholder": "Add tags",
 		"selectedCount": "{{count}}/{{max}} selected",
 		"empty": "No tags available",
 		"confirm": "Confirm ({{count}})"
@@ -1732,8 +1751,8 @@
 		"action_shop_suspend": "Shop suspended",
 		"action_shop_unsuspend": "Shop suspension lifted",
 		"bannerTitle": "Your account is suspended",
-		"bannerIndefinite": "You can browse BuyNSellem, but you cannot publish listings or send messages. Contact support to have this reviewed.",
-		"bannerUntil": "You can browse BuyNSellem, but you cannot publish listings or send messages until {{date}}.",
+		"bannerIndefinite": "You can browse Buy'N'Sellem, but you cannot publish listings or send messages. Contact support to have this reviewed.",
+		"bannerUntil": "You can browse Buy'N'Sellem, but you cannot publish listings or send messages until {{date}}.",
 		"shopTitle": "Shop",
 		"shopStatus_active": "Active",
 		"shopStatus_suspended": "Suspended",
@@ -1956,10 +1975,18 @@
 		"paymentsOpenExposureLabel": "Open protected exposure",
 		"paymentsRefundRateTitle": "Refund rate ({{days}}d)",
 		"paymentsRefundRateBody": "{{refunded}} of {{orders}} orders refunded",
-		"paymentsOrigin_platformRelease": "Released by BuyNSellem",
+		"paymentsOrigin_platformRelease": "Released by Buy'N'Sellem",
 		"paymentsOrigin_providerSchedule": "NotchPay's own schedule",
 		"rejectMessageLabel": "Message to the seller",
-		"rejectMessageRequired": "Explain the reason to the seller when it is “Other reason”."
+		"rejectMessageRequired": "Explain the reason to the seller when it is “Other reason”.",
+		"listingStatusDeleted": "Deleted",
+		"listingAlreadyPublished": "Already live: only a rejection can take it down.",
+		"listingAlreadyRejected": "Already rejected: approving it puts it back online.",
+		"reportAlreadyClosed": "This report is already closed.",
+		"riskAlreadyClosed": "This risk flag is already closed.",
+		"riskDecisionSaved": "Decision saved",
+		"target_phone": "Phone",
+		"target_device": "Device"
 	},
 	"shop": {
 		"deliveryCities": "Delivery or pickup available in: {{cities}}",
@@ -2164,7 +2191,7 @@
 		"searchInShop": "Search this shop",
 		"searchClose": "Close search",
 		"searchClear": "Clear search",
-		"searchEverywhere": "Search “{{q}}” across BuyNSellem",
+		"searchEverywhere": "Search “{{q}}” across Buy'N'Sellem",
 		"noListingsFiltered": "No listing in this shop matches.",
 		"aboutReturnPolicy": "Return policy"
 	},
@@ -2269,7 +2296,8 @@
 		"action_seller_cancellation_rate": "Update stock to prevent cancellations",
 		"action_low_conversion": "Review a popular product's price and photos",
 		"action_slow_response": "Turn on message notifications to reply sooner",
-		"insufficient": "Not enough activity"
+		"insufficient": "Not enough activity",
+		"noProductsHint": "A product shows up here once it gets a view or an order in this period."
 	},
 	"share": {
 		"title": "Share",
@@ -2464,9 +2492,9 @@
 			"pageTitle": "Identity verification",
 			"consent": {
 				"title": "Before you start",
-				"intro": "To verify your identity, BuyNSellem sends your identification document and a live selfie to its identity verification partner. Please read what this involves before you continue.",
+				"intro": "To verify your identity, Buy'N'Sellem sends your identification document and a live selfie to its identity verification partner. Please read what this involves before you continue.",
 				"collects": "What we collect: an identity document (national ID, passport or residence permit) and a selfie used to match your face to it.",
-				"vendor": "This information is processed by BuyNSellem's identity verification partner (currently Didit or Smile ID), which may process it outside Cameroon under contractual data-protection safeguards.",
+				"vendor": "This information is processed by Buy'N'Sellem's identity verification partner (currently Didit or Smile ID), which may process it outside Cameroon under contractual data-protection safeguards.",
 				"retention": "The vendor deletes its own copy within 30 days of a decision. We keep the verification file for 90 days after a final decision (up to a year if the request was revoked for fraud), and a record that verification took place for 5 years, as the law requires.",
 				"rights": "You can ask to see or delete this information at any time, except for what the law requires us to keep.",
 				"contact": "Contact: privacy@buynsellem.com",
@@ -3244,7 +3272,8 @@
 		"payPillMobileMoney": "Mobile money",
 		"handoverAlsoSms": "Also sent by SMS",
 		"deliveryInstructions": "Delivery instructions",
-		"emptyCta": "Browse listings"
+		"emptyCta": "Browse listings",
+		"payOnDeliveryConfirmBody": "This order will be cancelled. You can then order again and choose pay on delivery."
 	},
 	"sellerOrders": {
 		"title": "Orders",
@@ -3340,7 +3369,7 @@
 		"handoverRefresh": "Check again",
 		"keypadDelete": "Delete the last digit",
 		"fallbackBuyerTitle": "Ask the buyer to confirm",
-		"fallbackBuyerBody": "The buyer can confirm receipt directly in their BuyNSellem app.",
+		"fallbackBuyerBody": "The buyer can confirm receipt directly in their Buy'N'Sellem app.",
 		"fallbackDeclareTitle": "Declare the delivery yourself",
 		"declareWarning": "A declaration is weaker proof than the code: the buyer has 48 hours to contest it.",
 		"photoAdded": "Photo added",
@@ -3405,7 +3434,7 @@
 		"restrictedBlocked": "Blocked: your shop cannot receive new orders.",
 		"restrictedAllowed": "Still possible: processing and delivering your existing orders, and messaging your customers.",
 		"restrictedClearOverdue": "To lift it: pay the overdue invoice below. It is lifted as soon as the payment is confirmed.",
-		"restrictedClearStaff": "To lift it: it was set by the BuyNSellem team, contact support.",
+		"restrictedClearStaff": "To lift it: it was set by the Buy'N'Sellem team, contact support.",
 		"invoiceNotFound": "This invoice cannot be found.",
 		"viewInvoice": "View invoice",
 		"openDocument": "Open or share the document",
@@ -3429,7 +3458,7 @@
 		"pickupLandmark": "Landmark",
 		"pickupAddressRequired": "Enter the address where customers collect their orders.",
 		"tooLong": "{{max}} characters at most.",
-		"salesTermsHint": "Added to BuyNSellem's general terms on each of your orders.",
+		"salesTermsHint": "Added to Buy'N'Sellem's general terms on each of your orders.",
 		"capsMaxOrderTotal": "Largest order: {{amount}}",
 		"capsMaxDailyOrders": "New orders per day: {{count}} at most",
 		"capsMaxOpenOrders": "Open orders at once: {{count}} at most",
@@ -3458,7 +3487,7 @@
 		"timelineTitle": "History",
 		"actor_buyer": "Buyer",
 		"actor_seller": "Shop",
-		"actor_staff": "BuyNSellem team",
+		"actor_staff": "Buy'N'Sellem team",
 		"actor_system": "System",
 		"actor_courier": "Courier",
 		"event_placed": "Order placed",
@@ -3641,7 +3670,8 @@
 		"threadTitle": "Dispute · {{number}}",
 		"authorBuyer": "Buyer",
 		"authorStaff": "Buy'N'Sellem mediation",
-		"staffBadge": "Team"
+		"staffBadge": "Team",
+		"requestedAmountMax": "Up to {{amount}}, the order total"
 	},
 	"returns": {
 		"chooseInspection": "Choose an inspection result",
@@ -3768,7 +3798,8 @@
 		"actionSuccess": "Your action was submitted.",
 		"viewPurchases": "View my purchases",
 		"viewCase": "View return case",
-		"orderNumber": "Order {{number}}"
+		"orderNumber": "Order {{number}}",
+		"confirmCancelBody": "The return request will be closed and cannot be reopened."
 	},
 	"sellerReturns": {
 		"title": "Customer returns",
@@ -3997,8 +4028,8 @@
 	},
 	"payments": {
 		"disclosure_listingBadge": "Protected payment available: your money is released to the seller only after delivery. Fee: {{rate}}% (min {{min}})",
-		"disclosure_holder": "Your payment is collected and held by NotchPay, a payment provider. BuyNSellem never holds your money.",
-		"disclosure_sellerLegend": "Funds are held by NotchPay. BuyNSellem never holds your money.",
+		"disclosure_holder": "Your payment is collected and held by NotchPay, a payment provider. Buy'N'Sellem never holds your money.",
+		"disclosure_sellerLegend": "Funds are held by NotchPay. Buy'N'Sellem never holds your money.",
 		"method_title": "Payment method",
 		"method_cod": "Pay on delivery",
 		"method_codBody": "Pay when you receive your order.",
@@ -4134,7 +4165,7 @@
 		"setup_step1Body": "Protected payment requires identity verification level 2.",
 		"setup_step1Action": "Verify my identity",
 		"setup_step2Title": "Open your NotchPay account",
-		"setup_step2Body": "NotchPay, a payment provider, collects your customers' payments and pays them out to you. BuyNSellem never holds your money.",
+		"setup_step2Body": "NotchPay, a payment provider, collects your customers' payments and pays them out to you. Buy'N'Sellem never holds your money.",
 		"setup_step2Action": "Continue with NotchPay",
 		"setup_requirementsDue": "NotchPay still needs:",
 		"setup_step3Title": "Add your payout account",
@@ -4250,6 +4281,8 @@
 		"saveFailed": "The zone could not be saved.",
 		"delete": "Delete zone",
 		"deleteConfirm": "Delete this zone? If orders used it, it is deactivated instead.",
+		"deleteFailed": "The zone could not be deleted.",
+		"notFound": "This no longer exists. It may have been removed from another device.",
 		"deleted": "Zone removed.",
 		"deactivated": "This zone has orders, so it was deactivated instead.",
 		"locationsTitle": "Pickup points",
@@ -4260,6 +4293,8 @@
 		"originBadge": "Default origin",
 		"pickupBadge": "Pickup",
 		"deactivate": "Deactivate",
+		"deactivateConfirm": "Buyers will no longer be able to choose this pickup point.",
+		"deactivateFailed": "The pickup point could not be deactivated.",
 		"fieldLocName": "Name",
 		"fieldDistrict": "District",
 		"fieldAddress": "Address (optional)",
@@ -4351,7 +4386,7 @@
 		"actionFailed": "That action could not be completed.",
 		"note": "Note (optional)",
 		"reportAttempt": "Report the failed attempt",
-		"riderLinkMessage": "Your BuyNSellem delivery link: {{url}}",
+		"riderLinkMessage": "Your Buy'N'Sellem delivery link: {{url}}",
 		"riderName": "Rider name",
 		"riderPhone": "Rider phone",
 		"riderLinkOnce": "This link is shown once. Share it with the rider now.",
@@ -4565,7 +4600,7 @@
 			}
 		},
 		"moreShare": "Other ways to share",
-		"shareMessage": "Check out my shop {{shop}} on BuyNSellem: {{url}}",
+		"shareMessage": "Check out my shop {{shop}} on Buy'N'Sellem: {{url}}",
 		"tipLabel": "Did you know?",
 		"tipDismiss": "Got it",
 		"tip": {
@@ -4819,6 +4854,6 @@
 		"title": "All categories",
 		"allOf": "All of {{name}}",
 		"seeAllCount": "See all {{count}}",
-		"more": "See all"
+		"more": "All"
 	}
 }

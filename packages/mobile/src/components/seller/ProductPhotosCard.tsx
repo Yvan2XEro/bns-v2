@@ -66,6 +66,7 @@ export function ProductPhotosCard({
 							source={{ uri: resolveImageUrl(image.uri) ?? image.uri }}
 							style={styles.photoImg}
 							contentFit="cover"
+							accessibilityIgnoresInvertColors
 						/>
 						{index === 0 ? (
 							<View style={styles.cover}>
@@ -84,7 +85,7 @@ export function ProductPhotosCard({
 							accessibilityRole="button"
 							accessibilityLabel={t("create.removePhoto")}
 						>
-							<Ionicons name="close" size={12} color="#fff" />
+							<Ionicons name="close" size={16} color="#ffffff" />
 						</Pressable>
 					</View>
 				))}
@@ -100,18 +101,21 @@ export function ProductPhotosCard({
 				<Pressable
 					onPress={addPhoto}
 					disabled={photos.full}
-					style={[
+					style={({ pressed }) => [
 						styles.photo,
 						styles.add,
-						{ borderColor: c.border },
+						{
+							borderColor: c.link,
+							backgroundColor: pressed ? c.primarySoft : "transparent",
+						},
 						photos.full && { opacity: 0.4 },
 					]}
 					accessibilityRole="button"
 					accessibilityLabel={t("product.addPhoto")}
 					accessibilityState={{ disabled: photos.full }}
 				>
-					<Ionicons name="camera-outline" size={20} color={c.primary} />
-					<Text style={[f.hint, { color: c.primary }]}>
+					<Ionicons name="camera-outline" size={22} color={c.link} />
+					<Text style={[styles.addText, { color: c.link }]} numberOfLines={2}>
 						{t("product.addPhoto")}
 					</Text>
 				</Pressable>
@@ -127,25 +131,32 @@ export function ProductPhotosCard({
 
 const styles = StyleSheet.create({
 	photos: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-	photo: { width: 84, height: 84, borderRadius: 12, overflow: "hidden" },
+	photo: { width: 88, height: 88, borderRadius: 12, overflow: "hidden" },
 	photoImg: { width: "100%", height: "100%" },
 	add: {
-		borderWidth: 1,
+		borderWidth: 1.5,
 		borderStyle: "dashed",
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 2,
+		gap: 4,
+		padding: 4,
+	},
+	addText: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodySemibold,
+		textAlign: "center",
 	},
 	cover: {
 		position: "absolute",
 		left: 4,
 		bottom: 4,
-		backgroundColor: "rgba(15,23,42,0.75)",
+		backgroundColor: "rgba(18, 22, 58, 0.75)",
 		borderRadius: 6,
-		paddingHorizontal: 5,
-		paddingVertical: 1,
+		paddingHorizontal: 6,
+		paddingVertical: 2,
 	},
-	coverText: { color: "#fff", fontSize: 10, fontFamily: Fonts.bodySemibold },
+	coverText: { color: "#ffffff", fontSize: 12, fontFamily: Fonts.bodyBold },
 	remove: {
 		position: "absolute",
 		top: 4,
@@ -153,7 +164,7 @@ const styles = StyleSheet.create({
 		width: 28,
 		height: 28,
 		borderRadius: 14,
-		backgroundColor: "rgba(15,23,42,0.75)",
+		backgroundColor: "rgba(18, 22, 58, 0.75)",
 		alignItems: "center",
 		justifyContent: "center",
 	},

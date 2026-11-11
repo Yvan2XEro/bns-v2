@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Children, Fragment, isValidElement, type ReactNode } from "react";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
-import { useShopTheme } from "@/src/components/shop/theme";
+import { useGroupedColors } from "@/src/components/settings/Grouped";
 import { districtName } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -11,9 +11,25 @@ import {
 	savedAddressToInput,
 } from "@/src/lib/savedAddresses";
 
+/** The leading icon (20) and its gap (12) past the card's 16pt edge. */
+const TEXT_INSET = 16 + 20 + 12;
+
+/** The actions a card was given, with fragments and conditionals unwrapped. */
+function flattenActions(children: ReactNode): ReactNode[] {
+	return Children.toArray(children).flatMap((child) => {
+		if (!isValidElement(child)) return [];
+		if (child.type === Fragment) {
+			return flattenActions((child.props as { children?: ReactNode }).children);
+		}
+		return [child];
+	});
+}
+
 /**
- * One saved address. No map on mobile yet (it needs a native module, planned
- * with the next native build): the landmark and the coordinates stand in.
+ * One saved address, drawn as a grouped card: the address, then its actions
+ * on a row under a hairline inset to the text. No map on mobile yet (it
+ * needs a native module, planned with the next native build): the landmark
+ * and the coordinates stand in.
  */
 export function SavedAddressCard({
 	address,
@@ -30,21 +46,24 @@ export function SavedAddressCard({
 	onSelect?: () => void;
 	actions?: ReactNode;
 }) {
-	const c = useShopTheme();
+	const c = useGroupedColors();
 	const { t } = useTranslation();
 	const disabled = Boolean(disabledReason);
+	const title = address.label ?? address.recipientName;
+	const place = `${districtName(savedAddressToInput(address))}, ${cityLabel}${
+		address.landmark ? ` — ${address.landmark}` : ""
+	}`;
+	const contact = `${address.label ? `${address.recipientName} · ` : ""}${address.phone}`;
+	const actionList = flattenActions(actions);
 
 	return (
 		<View
 			style={[
 				styles.card,
 				selected
-					? {
-							borderWidth: 2,
-							borderColor: c.primary,
-							backgroundColor: c.primarySoft,
-						}
-					: { borderWidth: 1, borderColor: c.border, backgroundColor: c.card },
+					? { borderWidth: 2, borderColor: c.primary }
+					: { borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
+				{ backgroundColor: c.card },
 			]}
 		>
 			<Pressable
@@ -52,7 +71,22 @@ export function SavedAddressCard({
 				disabled={disabled || !onSelect}
 				accessibilityRole={onSelect ? "radio" : undefined}
 				accessibilityState={{ checked: selected, disabled }}
-				style={[styles.body, disabled && { opacity: 0.6 }]}
+				accessibilityLabel={[
+					title,
+					address.isDefault ? t("addresses.default") : null,
+					place,
+					contact,
+					disabledReason,
+				]
+					.filter(Boolean)
+					.join(", ")}
+				android_ripple={onSelect ? { color: c.well } : undefined}
+				style={({ pressed }) => [
+					styles.body,
+					pressed && onSelect && Platform.OS === "ios"
+						? { backgroundColor: c.well }
+						: null,
+				]}
 			>
 				<Ionicons
 					name={
@@ -63,47 +97,50 @@ export function SavedAddressCard({
 							: "location-outline"
 					}
 					size={20}
-					color={c.primary}
+					color={selected ? c.primary : c.mutedForeground}
+					style={[styles.lead, disabled && styles.dim]}
 				/>
-				<View style={{ flex: 1, gap: 2 }}>
+				<View style={[styles.text, disabled && styles.dim]}>
 					<View style={styles.titleRow}>
-						<Text style={[styles.title, { color: c.text }]}>
-							{address.label ?? address.recipientName}
+						<Text
+							style={[styles.title, { color: c.foreground }]}
+							numberOfLines={1}
+						>
+							{title}
 						</Text>
 						{address.isDefault ? (
-							<Text
-								style={[
-									styles.tag,
-									{ color: c.primary, backgroundColor: c.primarySoft },
-								]}
-							>
-								{t("addresses.default")}
-							</Text>
+							<View style={[styles.tag, { backgroundColor: c.primaryTint }]}>
+								<Text style={[styles.tagText, { color: c.link }]}>
+									{t("addresses.default")}
+								</Text>
+							</View>
 						) : null}
 					</View>
-					<Text style={[styles.line, { color: c.text }]}>
-						{districtName(savedAddressToInput(address))}, {cityLabel}
-						{address.landmark ? ` — ${address.landmark}` : ""}
-					</Text>
-					<Text style={[styles.line, { color: c.muted }]}>
-						{address.label ? `${address.recipientName} · ` : ""}
-						{address.phone}
+					<Text style={[styles.line, { color: c.body }]}>{place}</Text>
+					<Text style={[styles.meta, { color: c.mutedForeground }]}>
+						{contact}
 					</Text>
 					{address.gps ? (
-						<Text style={[styles.small, { color: c.muted }]}>
+						<Text style={[styles.meta, { color: c.mutedForeground }]}>
 							{t("addresses.coordinates", {
 								coordinates: coordinatesText(address.gps),
 							})}
 						</Text>
 					) : null}
-					{disabledReason ? (
-						<Text style={[styles.small, { color: c.warningText }]}>
-							{disabledReason}
-						</Text>
-					) : null}
 				</View>
 			</Pressable>
-			{actions ? <View style={styles.actions}>{actions}</View> : null}
+			{disabledReason ? (
+				// Said at full strength: dimmed, the reason would be unreadable.
+				<Text style={[styles.reason, { color: c.warningText }]}>
+					{disabledReason}
+				</Text>
+			) : null}
+			{actionList.length > 0 ? (
+				<>
+					<View style={[styles.separator, { backgroundColor: c.border }]} />
+					<View style={styles.actions}>{actionList}</View>
+				</>
+			) : null}
 		</View>
 	);
 }
@@ -119,21 +156,24 @@ export function CardAction({
 	tone?: "primary" | "danger";
 	disabled?: boolean;
 }) {
-	const c = useShopTheme();
+	const c = useGroupedColors();
+	const color =
+		tone === "danger" ? (c.isDark ? c.dangerText : c.destructive) : c.link;
 	return (
 		<Pressable
 			onPress={onPress}
 			disabled={disabled}
 			accessibilityRole="button"
 			accessibilityLabel={label}
-			style={styles.action}
+			accessibilityState={{ disabled }}
+			android_ripple={{ color: c.well }}
+			style={({ pressed }) => [
+				styles.action,
+				pressed && Platform.OS === "ios" ? { backgroundColor: c.well } : null,
+				disabled ? styles.dim : null,
+			]}
 		>
-			<Text
-				style={[
-					styles.actionText,
-					{ color: tone === "danger" ? c.danger : c.primary },
-				]}
-			>
+			<Text style={[styles.actionText, { color }]} numberOfLines={1}>
 				{label}
 			</Text>
 		</Pressable>
@@ -141,26 +181,52 @@ export function CardAction({
 }
 
 const styles = StyleSheet.create({
-	card: { borderRadius: 14, padding: 12, gap: 6 },
-	body: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
+	card: { borderRadius: 14, overflow: "hidden" },
+	body: {
+		flexDirection: "row",
+		gap: 12,
+		alignItems: "flex-start",
+		paddingHorizontal: 16,
+		paddingVertical: 14,
+	},
+	lead: { marginTop: 1 },
+	dim: { opacity: 0.55 },
+	text: { flex: 1, gap: 3 },
 	titleRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
-		flexWrap: "wrap",
 	},
-	title: { fontSize: 15, fontFamily: Fonts.bodyBold },
-	tag: {
-		fontSize: 11,
-		fontFamily: Fonts.bodyBold,
-		paddingHorizontal: 8,
-		paddingVertical: 2,
-		borderRadius: 999,
-		overflow: "hidden",
+	title: {
+		flexShrink: 1,
+		fontSize: 16,
+		lineHeight: 21,
+		fontFamily: Fonts.bodySemibold,
 	},
-	line: { fontSize: 13, fontFamily: Fonts.body },
-	small: { fontSize: 12, fontFamily: Fonts.body },
-	actions: { flexDirection: "row", justifyContent: "flex-end", gap: 4 },
-	action: { minHeight: 44, justifyContent: "center", paddingHorizontal: 10 },
-	actionText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	tag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+	tagText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
+	line: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	reason: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodyMedium,
+		marginLeft: TEXT_INSET,
+		marginRight: 16,
+		marginTop: -6,
+		marginBottom: 12,
+	},
+	separator: { height: StyleSheet.hairlineWidth, marginLeft: TEXT_INSET },
+	actions: {
+		flexDirection: "row",
+		justifyContent: "flex-end",
+		paddingHorizontal: 4,
+	},
+	action: {
+		minHeight: 48,
+		justifyContent: "center",
+		paddingHorizontal: 14,
+		borderRadius: 10,
+	},
+	actionText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 });

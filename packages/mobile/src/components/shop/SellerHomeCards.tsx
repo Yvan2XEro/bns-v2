@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useTranslation } from "@/src/lib/i18n";
 import type {
 	LaunchActionKey,
@@ -39,7 +40,10 @@ export function SellerLaunchCard({
 		<View
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
-			<Text style={[styles.title, { color: c.text }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.title, { color: c.text }]}
+			>
 				{t("sellerHome.launchTitle")}
 			</Text>
 			<Text style={[styles.body, { color: c.body }]}>
@@ -88,8 +92,8 @@ export function SellerLaunchCard({
 					accessibilityRole="button"
 					style={styles.more}
 				>
-					<Ionicons name="share-outline" size={15} color={c.primary} />
-					<Text style={[styles.moreText, { color: c.primary }]}>
+					<Ionicons name="share-outline" size={15} color={c.link} />
+					<Text style={[styles.moreText, { color: c.link }]}>
 						{t("sellerHome.moreShare")}
 					</Text>
 				</Pressable>
@@ -118,15 +122,18 @@ export function SellerTipCard({
 			]}
 			accessibilityRole="summary"
 		>
-			<View style={styles.tipHead}>
-				<Ionicons name="bulb-outline" size={18} color={c.primary} />
-				<Text style={[styles.tipLabel, { color: c.primary }]}>
-					{t("sellerHome.tipLabel")}
+			{/* The tip names itself: a bulb and its title, no label above it. */}
+			<View
+				style={styles.tipHead}
+				accessible
+				accessibilityRole="header"
+				accessibilityLabel={`${t("sellerHome.tipLabel")} ${t(`sellerHome.tip.${tip}.title`)}`}
+			>
+				<Ionicons name="bulb-outline" size={20} color={c.link} />
+				<Text style={[styles.tipTitle, { color: c.text }]}>
+					{t(`sellerHome.tip.${tip}.title`)}
 				</Text>
 			</View>
-			<Text style={[styles.rowTitle, { color: c.text }]}>
-				{t(`sellerHome.tip.${tip}.title`)}
-			</Text>
 			<Text style={[styles.body, { color: c.body }]}>
 				{t(`sellerHome.tip.${tip}.body`)}
 			</Text>
@@ -135,7 +142,7 @@ export function SellerTipCard({
 					<Pressable
 						onPress={onOpen}
 						accessibilityRole="button"
-						style={[styles.tipButton, { backgroundColor: c.primary }]}
+						style={[styles.tipButton, { backgroundColor: fillOf(c) }]}
 					>
 						<Text style={styles.tipButtonText}>
 							{t(`sellerHome.tip.${tip}.action`)}
@@ -193,8 +200,8 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 8,
 	},
-	title: { fontSize: 18, fontFamily: Fonts.displayBold },
-	body: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	title: { fontSize: 19, lineHeight: 24, fontFamily: Fonts.displayBold },
+	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	row: {
 		flexDirection: "row",
@@ -216,7 +223,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 6,
-		minHeight: 44,
+		minHeight: 48,
 		alignSelf: "flex-start",
 	},
 	moreText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
@@ -226,16 +233,16 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 6,
 	},
-	tipHead: { flexDirection: "row", alignItems: "center", gap: 6 },
-	tipLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodyBold,
-		textTransform: "uppercase",
-		letterSpacing: 0.4,
+	tipHead: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+	tipTitle: {
+		flex: 1,
+		fontSize: 16,
+		lineHeight: 21,
+		fontFamily: Fonts.displayBold,
 	},
 	tipActions: { flexDirection: "row", gap: 8, marginTop: 4 },
 	tipButton: {
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 12,
 		paddingHorizontal: 14,
 		alignItems: "center",
@@ -243,11 +250,11 @@ const styles = StyleSheet.create({
 	},
 	tipButtonText: {
 		color: "#fff",
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 	tipGhost: {
-		minHeight: 44,
+		minHeight: 48,
 		paddingHorizontal: 12,
 		alignItems: "center",
 		justifyContent: "center",

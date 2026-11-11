@@ -48,7 +48,7 @@ export function ContestSheet({
 			closeLabel={t("purchases.dismiss")}
 		>
 			{contestBy ? (
-				<Text style={[purchaseText.muted, { color: c.muted }]}>
+				<Text style={[purchaseText.label, { color: c.text }]}>
 					{t("purchases.contestWindow", {
 						date: formatOrderDate(contestBy, lang),
 					})}
@@ -94,7 +94,8 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderRadius: 12,
 		padding: 12,
-		fontSize: 14,
+		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 		textAlignVertical: "top",
 	},

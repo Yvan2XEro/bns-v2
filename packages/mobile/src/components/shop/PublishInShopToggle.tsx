@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		padding: 14,
 		marginBottom: 12,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	title: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	hint: { fontSize: 12, fontFamily: Fonts.body },

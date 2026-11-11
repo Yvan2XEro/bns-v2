@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { setAppMode } from "@/src/hooks/useAppMode";
 import type { AppMode } from "@/src/lib/appMode";
@@ -67,23 +67,26 @@ function SellerTabRow({
 		<Pressable
 			onPress={onPress}
 			accessibilityRole="button"
+			accessibilityLabel={label}
+			accessibilityHint={sub}
+			android_ripple={{ color: c.border, foreground: true }}
 			style={({ pressed }) => [
 				styles.row,
 				{
 					backgroundColor: c.card,
 					borderColor: c.border,
-					opacity: pressed ? 0.85 : 1,
+					opacity: pressed && Platform.OS === "ios" ? 0.7 : 1,
 				},
 			]}
 		>
 			<View style={[styles.icon, { backgroundColor: c.primarySoft }]}>
-				<Ionicons name={icon} size={18} color={c.primary} />
+				<Ionicons name={icon} size={20} color={c.link} />
 			</View>
-			<View style={{ flex: 1 }}>
+			<View style={styles.copy}>
 				<Text style={[styles.label, { color: c.text }]}>{label}</Text>
 				<Text style={[styles.sub, { color: c.muted }]}>{sub}</Text>
 			</View>
-			<Ionicons name="chevron-forward" size={16} color={c.muted} />
+			<Ionicons name="chevron-forward" size={18} color={c.muted} />
 		</Pressable>
 	);
 }
@@ -92,18 +95,22 @@ const styles = StyleSheet.create({
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 12,
-		padding: 14,
+		gap: 14,
+		paddingHorizontal: 16,
+		paddingVertical: 14,
+		minHeight: 68,
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
 	},
 	icon: {
-		width: 34,
-		height: 34,
-		borderRadius: 10,
+		width: 40,
+		height: 40,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	label: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	sub: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
+	copy: { flex: 1, gap: 2 },
+	label: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	sub: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

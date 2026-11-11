@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useTranslation } from "@/src/lib/i18n";
 import { useShopTheme } from "../theme";
 
@@ -27,7 +28,7 @@ export function TeamLocked() {
 				onPress={() => router.push("/seller/verification" as never)}
 				accessibilityRole="button"
 				accessibilityLabel={t("team.lockedCta")}
-				style={[styles.cta, { backgroundColor: c.primary }]}
+				style={[styles.cta, { backgroundColor: fillOf(c) }]}
 			>
 				<Text style={styles.ctaText}>{t("team.lockedCta")}</Text>
 			</Pressable>
@@ -57,11 +58,11 @@ const styles = StyleSheet.create({
 	},
 	cta: {
 		marginTop: 12,
-		minHeight: 44,
+		minHeight: 48,
 		paddingHorizontal: 20,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaText: { color: "#fff", fontSize: 14, fontFamily: Fonts.bodySemibold },
+	ctaText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

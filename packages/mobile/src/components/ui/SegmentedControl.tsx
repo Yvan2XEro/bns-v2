@@ -36,7 +36,7 @@ export function SegmentedControl<K extends string>({
 	const c = useShopTheme();
 	// In dark mode `card` and `neutralSoft` are the same slate; the raised
 	// segment needs a step lighter to read as selected.
-	const raised = c.isDark ? "#334155" : c.card;
+	const raised = c.isDark ? "#3a3f66" : c.card;
 	return (
 		<View
 			style={[styles.track, { backgroundColor: c.neutralSoft }, style]}
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	selected: {
-		shadowColor: "#0f172a",
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.08,
 		shadowRadius: 3,

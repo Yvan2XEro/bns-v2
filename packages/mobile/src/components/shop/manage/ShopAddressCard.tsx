@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { formStyles as f } from "@/src/components/seller/formStyles";
 import { HandleField } from "@/src/components/shop/HandleField";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useChangeHandleForm } from "@/src/hooks/useChangeHandleForm";
 import { formatDate } from "@/src/lib/formatDate";
@@ -40,7 +41,10 @@ export function ShopAddressCard({
 
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}>
-			<Text style={[f.sectionTitle, { color: c.text }]}>
+			<Text
+				style={[f.sectionTitle, { color: c.text }]}
+				accessibilityRole="header"
+			>
 				{t("shop.addressTitle")}
 			</Text>
 			{!owner ? (
@@ -99,7 +103,9 @@ function OwnerHandleForm({
 				{t("shop.handleChangeHint")}
 			</Text>
 			{form.formState.errors.root?.message ? (
-				<Text style={f.error}>{form.formState.errors.root.message}</Text>
+				<Text style={[f.error, { color: dangerInk(c) }]}>
+					{form.formState.errors.root.message}
+				</Text>
 			) : null}
 			{handle !== shop.handle ? (
 				<Pressable
@@ -115,7 +121,7 @@ function OwnerHandleForm({
 					{isPending ? (
 						<ActivityIndicator color={c.primary} />
 					) : (
-						<Text style={[f.label, { color: c.primary }]}>
+						<Text style={[f.label, { color: c.link }]}>
 							{t("shop.changeHandle")}
 						</Text>
 					)}
@@ -127,7 +133,7 @@ function OwnerHandleForm({
 
 const styles = StyleSheet.create({
 	outline: {
-		height: 44,
+		height: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",

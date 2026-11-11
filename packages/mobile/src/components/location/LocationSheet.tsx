@@ -137,7 +137,10 @@ function LocationSheetBody({
 				<View
 					style={[
 						styles.search,
-						{ backgroundColor: c.card, borderColor: c.border },
+						{
+							backgroundColor: c.card,
+							borderColor: query ? c.primary : c.border,
+						},
 					]}
 				>
 					<Ionicons name="search" size={18} color={c.muted} />
@@ -154,7 +157,7 @@ function LocationSheetBody({
 					{query ? (
 						<Pressable
 							onPress={() => setQuery("")}
-							hitSlop={12}
+							hitSlop={14}
 							accessibilityRole="button"
 							accessibilityLabel={t("locationSheet.clear")}
 						>
@@ -163,7 +166,12 @@ function LocationSheetBody({
 					) : null}
 				</View>
 				{status ? (
-					<Text style={[styles.status, { color: c.muted }]}>{status}</Text>
+					<Text
+						style={[styles.status, { color: c.body }]}
+						accessibilityLiveRegion="polite"
+					>
+						{status}
+					</Text>
 				) : null}
 			</View>
 			<FlashList
@@ -241,10 +249,10 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		minHeight: 50,
+		minHeight: 48,
 		paddingHorizontal: 14,
-		borderRadius: 14,
-		borderWidth: 1,
+		borderRadius: 12,
+		borderWidth: 1.5,
 	},
 	input: {
 		flex: 1,

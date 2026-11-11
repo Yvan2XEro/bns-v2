@@ -9,15 +9,19 @@ import {
 	Pressable,
 	StyleSheet,
 	Text,
-	TextInput,
 	type TextInputProps,
 	View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { FormField } from "@/src/components/settings/FormField";
+import {
+	GroupedRow,
+	GroupedSection,
+	useGroupedColors,
+} from "@/src/components/settings/Grouped";
+import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useCloseScreen } from "@/src/contexts/DetailPaneContext";
@@ -38,7 +42,6 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function EditProfileScreen() {
-	const isDark = useColorScheme() === "dark";
 	const { centeredContent } = useResponsive();
 	const { user, refreshUser } = useAuth();
 	const { showSuccess, showError, showAlert } = useAlert();
@@ -53,12 +56,7 @@ export function EditProfileScreen() {
 	const [avatarUri, setAvatarUri] = useState<string | null>(null);
 	const [avatarUploading, setAvatarUploading] = useState(false);
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const c = useGroupedColors();
 
 	const pickAvatar = async (fromCamera: boolean) => {
 		try {
@@ -174,23 +172,30 @@ export function EditProfileScreen() {
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<HeaderBackButton color={textColor} fallback="/(tabs)/account" inline />
-				<Text style={[styles.headerTitle, { color: textColor }]}>
-					{t("profile.editProfileTitle")}
-				</Text>
-				<Pressable onPress={() => save()} disabled={isPending}>
-					{isPending ? (
-						<ActivityIndicator color={primaryColor} />
-					) : (
-						<Text style={[styles.saveBtn, { color: primaryColor }]}>
-							{t("profile.save")}
-						</Text>
-					)}
-				</Pressable>
-			</View>
+			<SettingsHeader
+				title={t("profile.editProfileTitle")}
+				right={
+					<Pressable
+						onPress={() => save()}
+						disabled={isPending}
+						accessibilityRole="button"
+						accessibilityLabel={t("profile.save")}
+						accessibilityState={{ disabled: isPending, busy: isPending }}
+						hitSlop={12}
+						style={styles.saveHit}
+					>
+						{isPending ? (
+							<ActivityIndicator color={c.link} />
+						) : (
+							<Text style={[styles.saveBtn, { color: c.link }]}>
+								{t("profile.save")}
+							</Text>
+						)}
+					</Pressable>
+				}
+			/>
 
 			<KeyboardAwareScrollView
 				contentContainerStyle={[styles.scroll, centeredContent]}
@@ -209,36 +214,44 @@ export function EditProfileScreen() {
 							}}
 							style={styles.avatar}
 							contentFit="cover"
+							accessibilityIgnoresInvertColors
 						/>
 					) : (
 						<View
 							style={[
 								styles.avatarPlaceholder,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+								{ backgroundColor: c.primaryTint },
 							]}
 						>
-							<Text style={[styles.avatarLetter, { color: primaryColor }]}>
+							<Text style={[styles.avatarLetter, { color: c.link }]}>
 								{user?.name?.[0]?.toUpperCase()}
 							</Text>
 						</View>
 					)}
 					<Pressable
-						style={[
+						style={({ pressed }) => [
 							styles.changeAvatarBtn,
 							{
-								backgroundColor: primaryColor,
-								opacity: avatarUploading ? 0.7 : 1,
+								backgroundColor: c.card,
+								borderColor: c.borderStrong,
+								opacity: avatarUploading ? 0.6 : pressed ? 0.85 : 1,
 							},
 						]}
 						onPress={handlePickAvatar}
 						disabled={avatarUploading}
+						hitSlop={4}
+						accessibilityRole="button"
+						accessibilityState={{
+							disabled: avatarUploading,
+							busy: avatarUploading,
+						}}
 					>
 						{avatarUploading ? (
-							<ActivityIndicator size="small" color="#fff" />
+							<ActivityIndicator size="small" color={c.link} />
 						) : (
 							<>
-								<Ionicons name="camera" size={14} color="#fff" />
-								<Text style={styles.changeAvatarText}>
+								<Ionicons name="camera-outline" size={16} color={c.link} />
+								<Text style={[styles.changeAvatarText, { color: c.link }]}>
 									{t("profile.change")}
 								</Text>
 							</>
@@ -250,57 +263,39 @@ export function EditProfileScreen() {
 				    it; a visitor with no shop sees nothing, same as before shops
 				    carried badges. */}
 				{ownShop ? (
-					<Pressable
-						onPress={() => router.push("/seller/verification" as never)}
-						accessibilityRole="button"
-						accessibilityLabel={t("shop.increaseLevel")}
-						style={[
-							styles.banner,
-							{
-								backgroundColor: isDark ? "#162032" : "#eff6ff",
-								borderColor: primaryColor,
-							},
-						]}
-					>
-						<LevelBadge badge={ownShop.badge} size="sm" />
-						<Text style={[styles.bannerText, { color: primaryColor, flex: 1 }]}>
-							{t("shop.increaseLevel")}
-						</Text>
-						<Ionicons name="chevron-forward" size={16} color={primaryColor} />
-					</Pressable>
+					<GroupedSection>
+						<GroupedRow
+							label={t("shop.increaseLevel")}
+							onPress={() => router.push("/seller/verification" as never)}
+							trailing={<LevelBadge badge={ownShop.badge} size="sm" />}
+						/>
+					</GroupedSection>
 				) : null}
 
 				{/* Fields */}
 				{fields.map(
 					({ label, value, set, placeholder, multiline, keyboard }) => (
-						<View key={label} style={{ gap: 6 }}>
-							<Text style={[styles.fieldLabel, { color: mutedColor }]}>
-								{label}
-							</Text>
-							<TextInput
-								value={value}
-								onChangeText={set}
-								placeholder={placeholder}
-								placeholderTextColor={mutedColor}
-								style={[
-									styles.field,
-									{ backgroundColor: cardBg, borderColor, color: textColor },
-									multiline && styles.multiline,
-								]}
-								multiline={multiline}
-								numberOfLines={multiline ? 4 : 1}
-								keyboardType={
-									(keyboard as TextInputProps["keyboardType"]) ?? "default"
-								}
-							/>
-						</View>
+						<FormField
+							key={label}
+							label={label}
+							value={value}
+							onChangeText={set}
+							placeholder={placeholder}
+							multiline={multiline}
+							keyboardType={
+								(keyboard as TextInputProps["keyboardType"]) ?? "default"
+							}
+						/>
 					),
 				)}
 
-				<View
-					style={[styles.infoBox, { backgroundColor: cardBg, borderColor }]}
-				>
-					<Text style={[styles.infoText, { color: mutedColor }]}>
+				<View style={styles.note}>
+					<Ionicons
+						name="information-circle-outline"
+						size={18}
+						color={c.mutedForeground}
+					/>
+					<Text style={[styles.infoText, { color: c.mutedForeground }]}>
 						{t("profile.phoneManagedInSettings")}
 					</Text>
 				</View>
@@ -311,68 +306,39 @@ export function EditProfileScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
-	},
-	headerTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
-	saveBtn: { fontSize: 15, fontFamily: Fonts.displayBold },
-	scroll: { padding: 20, gap: 16, paddingBottom: 40 },
-	avatarSection: { alignItems: "center", gap: 10 },
-	avatar: { width: 90, height: 90, borderRadius: 45 },
+	saveHit: { minHeight: 44, justifyContent: "center" },
+	saveBtn: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	scroll: { padding: 16, paddingTop: 24, gap: 20, paddingBottom: 48 },
+	avatarSection: { alignItems: "center", gap: 12 },
+	avatar: { width: 96, height: 96, borderRadius: 48 },
 	avatarPlaceholder: {
-		width: 90,
-		height: 90,
-		borderRadius: 45,
+		width: 96,
+		height: 96,
+		borderRadius: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	avatarLetter: { fontSize: 34, fontFamily: Fonts.displayBold },
+	avatarLetter: { fontSize: 36, fontFamily: Fonts.displayBold },
 	changeAvatarBtn: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
-		borderRadius: 20,
+		gap: 6,
+		minHeight: 40,
+		borderRadius: 12,
+		borderWidth: 1,
 		paddingHorizontal: 14,
-		paddingVertical: 7,
 	},
-	changeAvatarText: {
-		color: "#fff",
-		fontSize: 13,
-		fontFamily: Fonts.bodySemibold,
-	},
-	banner: {
+	changeAvatarText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	note: {
 		flexDirection: "row",
-		alignItems: "center",
 		gap: 8,
-		borderRadius: 10,
-		borderWidth: 1,
-		padding: 12,
-	},
-	bannerText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
-	fieldLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	field: {
-		borderRadius: 10,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
-		fontSize: 15,
-		fontFamily: Fonts.body,
-	},
-	infoBox: {
-		borderRadius: 10,
-		borderWidth: 1,
-		paddingHorizontal: 12,
-		paddingVertical: 12,
+		alignItems: "flex-start",
+		paddingHorizontal: 4,
 	},
 	infoText: {
+		flex: 1,
 		fontSize: 13,
-		lineHeight: 18,
+		lineHeight: 19,
 		fontFamily: Fonts.body,
 	},
-	multiline: { minHeight: 100, textAlignVertical: "top" },
 });

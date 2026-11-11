@@ -41,7 +41,7 @@ export function LocationCard() {
 					<Ionicons
 						name={place ? "location" : "map-outline"}
 						size={22}
-						color={c.primary}
+						color={c.link}
 					/>
 				</View>
 				<View style={styles.copy}>
@@ -50,13 +50,13 @@ export function LocationCard() {
 							? t("locationSheet.cardTitlePlace", { place })
 							: t("locationSheet.cardTitleAll")}
 					</Text>
-					<Text style={[styles.body, { color: c.muted }]}>
+					<Text style={[styles.body, { color: c.body }]}>
 						{place
 							? t("locationSheet.cardBodyPlace")
 							: t("locationSheet.cardBodyAll")}
 					</Text>
 				</View>
-				<View style={[styles.action, { backgroundColor: c.primary }]}>
+				<View style={[styles.action, { backgroundColor: c.fill }]}>
 					<Text style={styles.actionText}>
 						{place
 							? t("locationSheet.cardChange")
@@ -84,9 +84,10 @@ const styles = StyleSheet.create({
 		gap: 12,
 		marginHorizontal: 16,
 		padding: 14,
-		borderRadius: 18,
+		borderRadius: 16,
 		borderWidth: 1,
-		shadowColor: "#1e40af",
+		// An ink shadow with an offset, never a coloured glow.
+		shadowColor: "#12163a",
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.06,
 		shadowRadius: 8,
@@ -101,14 +102,14 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	copy: { flex: 1, gap: 2 },
-	title: { fontSize: 15, fontFamily: Fonts.displayBold },
-	body: { fontSize: 12.5, lineHeight: 17, fontFamily: Fonts.body },
+	title: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.displayBold },
+	body: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	action: {
-		minHeight: 36,
+		minHeight: 40,
 		paddingHorizontal: 14,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	actionText: { color: "#fff", fontSize: 13, fontFamily: Fonts.bodySemibold },
+	actionText: { color: "#fff", fontSize: 14, fontFamily: Fonts.bodyBold },
 });

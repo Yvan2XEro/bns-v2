@@ -10,8 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { ConsentNotice } from "@/src/components/verification/ConsentNotice";
@@ -46,11 +48,7 @@ export default function IdentityConsentScreen() {
 				onBack={() => router.back()}
 			/>
 
-			{isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
-			) : null}
+			{isLoading ? <DetailSkeleton cards={2} /> : null}
 
 			{!isLoading && isError ? (
 				<View style={styles.center}>
@@ -64,7 +62,7 @@ export default function IdentityConsentScreen() {
 							void myShop.refetch();
 							void query.refetch();
 						}}
-						style={[styles.retryBtn, { backgroundColor: c.primary }]}
+						style={[styles.retryBtn, { backgroundColor: fillOf(c) }]}
 					>
 						<Text style={styles.retryLabel}>{t("common.retry")}</Text>
 					</Pressable>
@@ -126,7 +124,7 @@ export default function IdentityConsentScreen() {
 							style={[
 								styles.submit,
 								{
-									backgroundColor: c.primary,
+									backgroundColor: fillOf(c),
 									opacity: startDisabled ? 0.5 : 1,
 								},
 							]}
@@ -161,7 +159,7 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	retryBtn: {
-		minHeight: 44,
+		minHeight: 48,
 		minWidth: 44,
 		paddingHorizontal: 20,
 		borderRadius: 12,
@@ -170,8 +168,8 @@ const styles = StyleSheet.create({
 	},
 	retryLabel: {
 		color: "#ffffff",
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 	content: { padding: 16, gap: 16, paddingBottom: 40 },
 	banner: { borderRadius: 12, padding: 12 },
@@ -185,6 +183,6 @@ const styles = StyleSheet.create({
 	submitLabel: {
 		color: "#ffffff",
 		fontSize: 16,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 });

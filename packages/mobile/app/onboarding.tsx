@@ -15,6 +15,7 @@ import Animated, {
 	Easing,
 	useAnimatedProps,
 	useAnimatedStyle,
+	useReducedMotion,
 	useSharedValue,
 	withDelay,
 	withRepeat,
@@ -22,7 +23,10 @@ import Animated, {
 	withSpring,
 	withTiming,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import Svg, {
 	Circle,
 	Ellipse,
@@ -34,6 +38,7 @@ import Svg, {
 } from "react-native-svg";
 import { Colors, Fonts, shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { ShellPattern } from "@/src/components/brand/BackgroundPattern";
 import { useOnboarding } from "@/src/contexts/OnboardingContext";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -47,20 +52,20 @@ const _AnimatedLine = Animated.createAnimatedComponent(Line);
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const P = {
-	blueDark: "#1e3a8a",
-	blue: "#1e40af",
+	blueDark: "#2448ab",
+	blue: "#2f5bd4",
 	blueMid: "#3b82f6",
-	blueLight: "#93c5fd",
-	bluePale: "#dbeafe",
-	yellowDark: "#b45309",
-	yellow: "#d97706",
-	yellowMid: "#f59e0b",
-	yellowLight: "#fbbf24",
-	yellowPale: "#fef3c7",
-	amber: "#f59e0b",
-	amberLight: "#fde68a",
+	blueLight: "#a9b4f0",
+	bluePale: "#e3e9fb",
+	yellowDark: "#8a5a00",
+	yellow: "#9a6a00",
+	yellowMid: "#ffb81c",
+	yellowLight: "#ffc94a",
+	yellowPale: "#fff1c7",
+	amber: "#ffb81c",
+	amberLight: "#ffe08a",
 	white: "#ffffff",
-	dark: "#0f172a",
+	dark: "#12163a",
 };
 
 // ─── Slide data ───────────────────────────────────────────────────────────────
@@ -68,29 +73,21 @@ function getSlides(t: (key: string) => string) {
 	return [
 		{
 			id: "welcome",
-			bgLight: "#eff6ff",
-			bgDark: "#1a2540",
 			title: t("onboarding.slide1Title"),
 			description: t("onboarding.slide1Desc"),
 		},
 		{
 			id: "browse",
-			bgLight: "#f0f9ff",
-			bgDark: "#0c2233",
 			title: t("onboarding.slide2Title"),
 			description: t("onboarding.slide2Desc"),
 		},
 		{
 			id: "sell",
-			bgLight: "#fff7ed",
-			bgDark: "#261508",
 			title: t("onboarding.slide3Title"),
 			description: t("onboarding.slide3Desc"),
 		},
 		{
 			id: "chat",
-			bgLight: "#f0fdf4",
-			bgDark: "#0a2015",
 			title: t("onboarding.slide4Title"),
 			description: t("onboarding.slide4Desc"),
 		},
@@ -524,7 +521,7 @@ function IllustrationSearch() {
 			/>
 			<Rect x="54" y="14" width="112" height="194" rx="17" fill={P.blueMid} />
 			{/* Screen */}
-			<Rect x="58" y="26" width="104" height="172" rx="11" fill="#f8fafc" />
+			<Rect x="58" y="26" width="104" height="172" rx="11" fill="#f4f5f9" />
 			{/* Notch */}
 			<Rect x="87" y="22" width="46" height="7" rx="3.5" fill={P.blueDark} />
 			{/* Home bar */}
@@ -605,8 +602,8 @@ function IllustrationSearch() {
 					width="90"
 					height="46"
 					rx="8"
-					fill="#fffbeb"
-					stroke="#fde68a"
+					fill="#fff9e8"
+					stroke="#ffe08a"
 					strokeWidth="1"
 				/>
 				<Rect
@@ -1385,21 +1382,18 @@ const ILLUSTRATIONS = [
 ];
 
 // ─── Dot indicator ────────────────────────────────────────────────────────────
-function Dot({
-	index,
-	currentIndex,
-	colors,
-}: {
-	index: number;
-	currentIndex: number;
-	colors: (typeof Colors)["light"];
-}) {
+function Dot({ index, currentIndex }: { index: number; currentIndex: number }) {
 	const isActive = index === currentIndex;
+	const reduceMotion = useReducedMotion();
 	const w = useSharedValue(isActive ? 28 : 8);
 
 	useEffect(() => {
-		w.value = withSpring(isActive ? 28 : 8, { damping: 14, stiffness: 280 });
-	}, [isActive, w]);
+		const target = isActive ? 28 : 8;
+		// Reduce Motion: the active dot changes width at once.
+		w.value = reduceMotion
+			? target
+			: withSpring(target, { damping: 14, stiffness: 280 });
+	}, [isActive, w, reduceMotion]);
 
 	const style = useAnimatedStyle(() => ({ width: w.value }));
 
@@ -1407,7 +1401,9 @@ function Dot({
 		<Animated.View
 			style={[
 				dotStyles.dot,
-				{ backgroundColor: isActive ? colors.primary : colors.border },
+				{
+					backgroundColor: isActive ? "#ffb81c" : "rgba(255,255,255,0.28)",
+				},
 				style,
 			]}
 		/>
@@ -1421,12 +1417,13 @@ const dotStyles = StyleSheet.create({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function OnboardingScreen() {
 	const isDark = useColorScheme() === "dark";
-	const colors = isDark ? Colors.dark : Colors.light;
+	const shell = isDark ? Colors.dark.shell : Colors.light.shell;
 	const { t } = useTranslation();
 	const { hasSeenOnboarding, isLoading, markOnboardingSeen } = useOnboarding();
 	// Live width — the pager measures each slide against it, so a stale
 	// module-scope value breaks paging after rotation / Stage Manager resize.
 	const { width: SW } = useWindowDimensions();
+	const insets = useSafeAreaInsets();
 	const SLIDES = getSlides(t);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const flatListRef = useRef<FlatList>(null);
@@ -1469,7 +1466,8 @@ export default function OnboardingScreen() {
 		index: number;
 	}) => {
 		const IllustrationComponent = ILLUSTRATIONS[index];
-		const bg = isDark ? item.bgDark : item.bgLight;
+		// One card colour for every slide: the indigo field does the talking.
+		const bg = isDark ? "#1a1f4a" : "#ffffff";
 
 		return (
 			<View style={[styles.slide, { width: SW }]}>
@@ -1483,35 +1481,35 @@ export default function OnboardingScreen() {
 					{index === 0 && (
 						<View style={styles.logoRow}>
 							<Image
-								source={require("@/assets/icon2.png")}
+								source={require("@/assets/icon2-dark.png")}
 								style={styles.logoImg}
 								contentFit="contain"
 							/>
 						</View>
 					)}
-					<Text style={[styles.slideTitle, { color: colors.foreground }]}>
+					<Text accessibilityRole="header" style={styles.slideTitle}>
 						{item.title}
 					</Text>
-					<Text style={[styles.slideDesc, { color: colors.mutedForeground }]}>
-						{item.description}
-					</Text>
+					<Text style={styles.slideDesc}>{item.description}</Text>
 				</View>
 			</View>
 		);
 	};
 
 	return (
-		<SafeAreaView
-			style={[styles.container, { backgroundColor: colors.background }]}
-		>
-			<StatusBar style={isDark ? "light" : "dark"} />
+		<SafeAreaView style={[styles.container, { backgroundColor: shell }]}>
+			<StatusBar style="light" />
+			<ShellPattern />
 
 			{/* Skip */}
 			{!isLast && (
-				<Pressable style={styles.skipBtn} onPress={handleComplete} hitSlop={12}>
-					<Text style={[styles.skipText, { color: colors.mutedForeground }]}>
-						{t("onboarding.skip")}
-					</Text>
+				<Pressable
+					style={[styles.skipBtn, { top: insets.top + 4 }]}
+					onPress={handleComplete}
+					hitSlop={8}
+					accessibilityRole="button"
+				>
+					<Text style={styles.skipText}>{t("onboarding.skip")}</Text>
 				</Pressable>
 			)}
 
@@ -1536,23 +1534,24 @@ export default function OnboardingScreen() {
 					SW >= 768 && { alignSelf: "center", width: "100%", maxWidth: 520 },
 				]}
 			>
-				<View style={styles.dotsRow}>
+				<View
+					style={styles.dotsRow}
+					accessible
+					accessibilityRole="progressbar"
+					accessibilityLabel={`${currentIndex + 1} / ${SLIDES.length}`}
+				>
 					{SLIDES.map((_, i) => (
-						<Dot
-							key={i}
-							index={i}
-							currentIndex={currentIndex}
-							colors={colors}
-						/>
+						<Dot key={i} index={i} currentIndex={currentIndex} />
 					))}
 				</View>
 
 				<Pressable
 					style={({ pressed }) => [
 						styles.nextBtn,
-						{ backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+						{ opacity: pressed ? 0.85 : 1 },
 					]}
 					onPress={goNext}
+					accessibilityRole="button"
 				>
 					<Text style={styles.nextBtnText}>
 						{isLast ? t("onboarding.start") : t("onboarding.next")}
@@ -1564,28 +1563,35 @@ export default function OnboardingScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+/** Quiet words on the shell: 4.6:1 on the day blue, 11:1 on the night one. */
+const SHELL_MUTED = Colors.light.shellMuted;
+
 const styles = StyleSheet.create({
 	container: { flex: 1 },
 	skipBtn: {
 		position: "absolute",
-		top: 56,
-		right: 24,
+		right: 12,
 		zIndex: 10,
-		paddingVertical: 6,
+		minHeight: 44,
+		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	skipText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	skipText: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		color: SHELL_MUTED,
+	},
 	slide: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingHorizontal: 28,
-		gap: 28,
+		gap: 32,
 	},
 	illustCard: {
-		width: 240,
-		height: 240,
-		borderRadius: 36,
+		width: 248,
+		height: 248,
+		borderRadius: 32,
 		alignItems: "center",
 		justifyContent: "center",
 		...shadows.lg,
@@ -1595,17 +1601,19 @@ const styles = StyleSheet.create({
 	logoImg: { width: 52, height: 52, borderRadius: 14 },
 	slideTitle: {
 		fontFamily: Fonts.displayExtrabold,
-		fontSize: 30,
-		letterSpacing: -0.5,
+		fontSize: 32,
+		letterSpacing: -0.9,
 		textAlign: "center",
-		lineHeight: 38,
+		lineHeight: 37,
+		color: "#ffffff",
 	},
 	slideDesc: {
 		fontFamily: Fonts.body,
-		fontSize: 15,
-		lineHeight: 23,
+		fontSize: 16,
+		lineHeight: 24,
 		textAlign: "center",
-		maxWidth: 310,
+		maxWidth: 320,
+		color: SHELL_MUTED,
 	},
 	bottomBar: {
 		paddingHorizontal: 24,
@@ -1618,16 +1626,20 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 6,
 	},
+	// The sign-plaque button: yellow, ink letters, a darker foot.
+	// The sell plaque's yellow and foot: the one action on the shell.
 	nextBtn: {
-		height: 54,
-		borderRadius: 16,
+		minHeight: 56,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
-		...shadows.md,
+		backgroundColor: Colors.light.sun,
+		borderBottomWidth: 3,
+		borderBottomColor: Colors.light.warning,
 	},
 	nextBtnText: {
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
-		color: "#ffffff",
+		color: Colors.light.sunForeground,
 	},
 });

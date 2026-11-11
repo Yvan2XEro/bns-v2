@@ -46,11 +46,15 @@ export function usePhotoUploads({
 			running.current += 1;
 			upload(asset, latest.current.alt)
 				.then((photo) => {
+					// Removed by the seller while it was still sending: it must not
+					// come back once the upload lands.
+					if (!assets.current.has(key)) return;
 					assets.current.delete(key);
 					setPending((list) => list.filter((p) => p.key !== key));
 					latest.current.onUploaded(photo);
 				})
 				.catch((error: unknown) => {
+					if (!assets.current.has(key)) return;
 					const { t: translate } = latest.current;
 					setPending((list) =>
 						list.map((p) =>

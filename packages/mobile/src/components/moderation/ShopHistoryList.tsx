@@ -1,8 +1,10 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formatDate } from "@/src/lib/formatDate";
 import type { ModerationLogEntry, ReportDoc } from "@/src/types/api";
+import { SectionTitle, TonePill } from "./ModerationKit";
 import type { ModerationPalette, Translate } from "./theme";
 
 interface ShopHistoryListProps {
@@ -21,12 +23,10 @@ export function ShopHistoryList({
 }: ShopHistoryListProps) {
 	return (
 		<>
-			<View style={{ gap: 8 }}>
-				<Text style={[styles.sectionLabel, { color: c.muted }]}>
-					{t("moderation.reportsAgainstShop")}
-				</Text>
+			<View style={styles.section}>
+				<SectionTitle>{t("moderation.reportsAgainstShop")}</SectionTitle>
 				{reports.length === 0 ? (
-					<Text style={[styles.meta, { color: c.muted }]}>
+					<Text style={[styles.empty, { color: c.muted }]}>
 						{t("moderation.noReports")}
 					</Text>
 				) : (
@@ -36,18 +36,31 @@ export function ShopHistoryList({
 				)}
 			</View>
 
-			<View style={{ gap: 8 }}>
-				<Text style={[styles.sectionLabel, { color: c.muted }]}>
-					{t("moderation.historyLabel")}
-				</Text>
+			<View style={styles.section}>
+				<SectionTitle>{t("moderation.historyLabel")}</SectionTitle>
 				{history.length === 0 ? (
-					<Text style={[styles.meta, { color: c.muted }]}>
+					<Text style={[styles.empty, { color: c.muted }]}>
 						{t("moderation.historyEmpty")}
 					</Text>
 				) : (
-					history.map((entry) => (
-						<HistoryRow key={entry.id} entry={entry} c={c} t={t} />
-					))
+					// A log, not a list of things to open: one card, entries split
+					// by hairlines, so it never reads like the tappable reports.
+					<View
+						style={[
+							styles.log,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						{history.map((entry, index) => (
+							<HistoryRow
+								key={entry.id}
+								entry={entry}
+								first={index === 0}
+								c={c}
+								t={t}
+							/>
+						))}
+					</View>
 				)}
 			</View>
 		</>
@@ -63,21 +76,26 @@ function ReportRow({
 	c: ModerationPalette;
 	t: Translate;
 }) {
+	const status = t(`moderation.reportStatus_${report.status}`);
 	return (
 		<Pressable
 			accessibilityRole="button"
-			accessibilityLabel={t(`report.${report.reason}`)}
+			accessibilityLabel={`${t(`report.${report.reason}`)}, ${status}`}
 			onPress={() => router.push(`/moderation/report/${report.id}` as never)}
-			style={[
-				styles.historyRow,
-				{ backgroundColor: c.card, borderColor: c.border },
+			style={({ pressed }) => [
+				styles.row,
+				{
+					backgroundColor: c.card,
+					borderColor: c.border,
+					opacity: pressed ? 0.85 : 1,
+				},
 			]}
 		>
-			<View style={{ flex: 1 }}>
-				<Text style={[styles.historyAction, { color: c.text }]}>
+			<View style={styles.flex}>
+				<Text style={[styles.rowTitle, { color: c.text }]}>
 					{t(`report.${report.reason}`)}
 				</Text>
-				<Text style={[styles.meta, { color: c.muted }]}>
+				<Text style={[styles.meta, { color: c.muted }]} numberOfLines={2}>
 					{[
 						report.description,
 						formatDate(report.createdAt, {
@@ -90,24 +108,23 @@ function ReportRow({
 						.join(" · ")}
 				</Text>
 			</View>
-			<Text
-				style={[
-					styles.meta,
-					{ color: report.status === "pending" ? c.warning : c.muted },
-				]}
-			>
-				{t(`moderation.reportStatus_${report.status}`)}
-			</Text>
+			<TonePill
+				tone={report.status === "pending" ? "warning" : "neutral"}
+				label={status}
+			/>
+			<Ionicons name="chevron-forward" size={18} color={c.muted} />
 		</Pressable>
 	);
 }
 
 function HistoryRow({
 	entry,
+	first,
 	c,
 	t,
 }: {
 	entry: ModerationLogEntry;
+	first: boolean;
 	c: ModerationPalette;
 	t: Translate;
 }) {
@@ -122,13 +139,16 @@ function HistoryRow({
 	return (
 		<View
 			style={[
-				styles.historyRow,
-				{ backgroundColor: c.card, borderColor: c.border },
+				styles.logRow,
+				!first && styles.logDivided,
+				{ borderTopColor: c.border },
 			]}
 		>
-			<View style={{ flex: 1 }}>
-				<Text style={[styles.historyAction, { color: c.text }]}>
-					{t(`moderation.action_${entry.action.replace(".", "_")}`)}
+			<View style={styles.flex}>
+				<Text style={[styles.rowTitle, { color: c.text }]}>
+					{t(`moderation.action_${entry.action.replace(".", "_")}`, {
+						defaultValue: entry.action,
+					})}
 				</Text>
 				<Text style={[styles.meta, { color: c.muted }]}>
 					{[
@@ -144,7 +164,7 @@ function HistoryRow({
 						.join(" · ")}
 				</Text>
 				{entry.reason ? (
-					<Text style={[styles.meta, { color: c.muted }]}>
+					<Text style={[styles.meta, { color: c.text }]}>
 						{t(`report.${entry.reason}`, { defaultValue: entry.reason })}
 					</Text>
 				) : null}
@@ -154,20 +174,25 @@ function HistoryRow({
 }
 
 const styles = StyleSheet.create({
-	sectionLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
-	},
-	meta: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
-	historyRow: {
+	flex: { flex: 1 },
+	section: { gap: 8 },
+	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	row: {
 		flexDirection: "row",
 		alignItems: "center",
+		gap: 10,
 		borderRadius: 12,
 		borderWidth: StyleSheet.hairlineWidth,
 		padding: 12,
-		minHeight: 44,
+		minHeight: 56,
 	},
-	historyAction: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	log: {
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingHorizontal: 12,
+	},
+	logRow: { flexDirection: "row", paddingVertical: 12 },
+	logDivided: { borderTopWidth: StyleSheet.hairlineWidth },
+	rowTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body, marginTop: 1 },
 });

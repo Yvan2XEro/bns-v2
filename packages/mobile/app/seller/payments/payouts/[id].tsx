@@ -1,19 +1,21 @@
 import { useLocalSearchParams } from "expo-router";
 import {
-	ActivityIndicator,
 	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { PaymentsShell } from "@/src/components/payments/PaymentsShell";
 import { PayoutStatusBadge } from "@/src/components/payments/PayoutStatusBadge";
-import { useShopTheme } from "@/src/components/shop/theme";
+import { AmountTag } from "@/src/components/shop/Tags";
+import { type ShopPalette, useShopTheme } from "@/src/components/shop/theme";
 import { useSellerPayout } from "@/src/hooks/useSellerPayments";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
@@ -21,19 +23,41 @@ import { formatPrice } from "@/src/lib/market";
 import { formatOrderDate } from "@/src/lib/orderMoney";
 import { PAYOUT_STATUSES, type PayoutStatus } from "@/src/lib/paymentStatus";
 
+/**
+ * One label/value line of a detail card. `numeric` sets the value in Outfit,
+ * the face the app gives to amounts and counts.
+ */
 function Line({
 	label,
 	value,
 	c,
+	numeric = false,
+	first = false,
 }: {
 	label: string;
 	value: string;
-	c: ReturnType<typeof useShopTheme>;
+	c: ShopPalette;
+	numeric?: boolean;
+	first?: boolean;
 }) {
 	return (
-		<View style={styles.row}>
-			<Text style={[s.meta, { color: c.muted, flex: 1 }]}>{label}</Text>
-			<Text style={[s.cardTitle, { color: c.text, fontSize: 14 }]}>
+		<View
+			style={[
+				styles.line,
+				!first && {
+					borderTopWidth: StyleSheet.hairlineWidth,
+					borderTopColor: c.border,
+				},
+			]}
+		>
+			<Text style={[styles.lineLabel, { color: c.muted }]}>{label}</Text>
+			<Text
+				style={[
+					numeric ? styles.lineNumber : styles.lineValue,
+					{ color: c.text },
+				]}
+				numberOfLines={1}
+			>
 				{value}
 			</Text>
 		</View>
@@ -53,11 +77,7 @@ function PayoutDetailContent({
 	const payout = useSellerPayout(shopId, payoutId);
 
 	if (payout.isPending) {
-		return (
-			<View style={styles.center}>
-				<ActivityIndicator color={c.primary} />
-			</View>
-		);
+		return <DetailSkeleton cards={2} />;
 	}
 	if (payout.isError) {
 		return (
@@ -81,6 +101,8 @@ function PayoutDetailContent({
 		);
 	}
 
+	const card = [s.card, { backgroundColor: c.card, borderColor: c.border }];
+
 	return (
 		<ScreenColumn width="reading">
 			<ScrollView
@@ -89,83 +111,88 @@ function PayoutDetailContent({
 					<RefreshControl
 						refreshing={payout.isRefetching}
 						onRefresh={() => payout.refetch()}
+						tintColor={c.primary}
+						colors={[c.primary]}
 					/>
 				}
 			>
-				<View
-					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
-				>
+				<View style={card}>
 					<View style={styles.head}>
-						<Text style={[s.cardTitle, { color: c.text, fontSize: 18 }]}>
-							{formatPrice(detail.amount, locale)}
-						</Text>
+						<View
+							accessible
+							accessibilityLabel={`${t("payments.seller_colAmount")}: ${formatPrice(detail.amount, locale)}`}
+						>
+							<AmountTag label={formatPrice(detail.amount, locale)} size="lg" />
+						</View>
 						<PayoutStatusBadge status={detail.status} />
 					</View>
-					<Line
-						label={t("payments.seller_colDate")}
-						value={formatOrderDate(detail.date, locale)}
-						c={c}
-					/>
-					<Line
-						label={t("payments.seller_colAmount")}
-						value={formatPrice(detail.amount, locale)}
-						c={c}
-					/>
-					{detail.fee > 0 ? (
+					<View style={styles.lines}>
 						<Line
-							label={t("payments.seller_colFee")}
-							value={formatPrice(detail.fee, locale)}
+							first
+							label={t("payments.seller_colDate")}
+							value={formatOrderDate(detail.date, locale)}
 							c={c}
 						/>
-					) : null}
-					<Line
-						label={t("payments.seller_colDestination")}
-						value={detail.destinationMasked}
-						c={c}
-					/>
+						{detail.fee > 0 ? (
+							<Line
+								label={t("payments.seller_colFee")}
+								value={formatPrice(detail.fee, locale)}
+								c={c}
+								numeric
+							/>
+						) : null}
+						<Line
+							label={t("payments.seller_colDestination")}
+							value={detail.destinationMasked}
+							c={c}
+						/>
+					</View>
 				</View>
 
-				<View
-					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
-				>
-					<Text style={[s.cardTitle, { color: c.text }]}>
-						{t("payments.payout_orders")}
-					</Text>
-					{detail.orders.length === 0 ? (
-						<Text style={[s.meta, { color: c.muted }]}>
-							{t("payments.seller_noPayouts")}
+				{detail.orders.length > 0 ? (
+					<View style={card}>
+						<Text
+							accessibilityRole="header"
+							style={[s.cardTitle, { color: c.text }]}
+						>
+							{t("payments.payout_orders")}
 						</Text>
-					) : (
-						detail.orders.map((order) => (
-							<View key={order.orderId} style={styles.row}>
-								<Text style={[s.meta, { color: c.body, flex: 1 }]}>
-									{order.orderNumber}
-								</Text>
-								<Text style={[s.meta, { color: c.text }]}>
-									{formatPrice(order.amount, locale)}
-								</Text>
-							</View>
-						))
-					)}
-				</View>
-
-				<View
-					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
-				>
-					<Text style={[s.cardTitle, { color: c.text }]}>
-						{t("payments.payout_history")}
-					</Text>
-					{detail.statusHistory.map((entry, index) => (
-						<View key={`${entry.status}-${index}`} style={styles.row}>
-							<Text style={[s.meta, { color: c.body, flex: 1 }]}>
-								{t(PAYOUT_STATUSES[entry.status as PayoutStatus])}
-							</Text>
-							<Text style={[s.meta, { color: c.muted }]}>
-								{formatOrderDate(entry.at, locale)}
-							</Text>
+						<View style={styles.lines}>
+							{detail.orders.map((order, index) => (
+								<Line
+									key={order.orderId}
+									first={index === 0}
+									label={order.orderNumber}
+									value={formatPrice(order.amount, locale)}
+									c={c}
+									numeric
+								/>
+							))}
 						</View>
-					))}
-				</View>
+					</View>
+				) : null}
+
+				{detail.statusHistory.length > 0 ? (
+					<View style={card}>
+						<Text
+							accessibilityRole="header"
+							style={[s.cardTitle, { color: c.text }]}
+						>
+							{t("payments.payout_history")}
+						</Text>
+						<View style={styles.lines}>
+							{detail.statusHistory.map((entry, index) => (
+								<Line
+									key={`${entry.status}-${index}`}
+									first={index === 0}
+									label={t(PAYOUT_STATUSES[entry.status as PayoutStatus])}
+									value={formatOrderDate(entry.at, locale)}
+									c={c}
+								/>
+							))}
+						</View>
+					</View>
+				) : null}
 			</ScrollView>
 		</ScreenColumn>
 	);
@@ -182,13 +209,36 @@ export default function SellerPayoutScreen() {
 }
 
 const styles = StyleSheet.create({
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	content: { padding: 16, gap: 12, paddingBottom: 32 },
 	head: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		marginBottom: 4,
+		flexWrap: "wrap",
+		gap: 8,
+		marginBottom: 6,
 	},
-	row: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+	lines: { marginTop: 2 },
+	line: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		minHeight: 44,
+		paddingVertical: 8,
+	},
+	lineLabel: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	lineValue: {
+		fontSize: 14,
+		lineHeight: 20,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+		textAlign: "right",
+	},
+	lineNumber: {
+		fontSize: 15,
+		lineHeight: 20,
+		fontFamily: Fonts.displaySemibold,
+		letterSpacing: -0.1,
+		fontVariant: ["tabular-nums"],
+	},
 });

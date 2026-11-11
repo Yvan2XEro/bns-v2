@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useCallback, useMemo, useState } from "react";
 import {
 	Modal,
@@ -11,17 +12,23 @@ import {
 } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useSheetPresentation } from "@/src/components/layout/sheetPresentation";
+import { useDiscoveryPalette } from "@/src/components/search/palette";
 import { normalizeText } from "@/src/lib/categorySuggest";
 import { useTranslation } from "@/src/lib/i18n";
 import { getListingCategoryIcon } from "@/src/lib/listingForm";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 export interface SheetColors {
 	cardBg: string;
 	textColor: string;
 	mutedColor: string;
 	primary: string;
+	/** Behind the white glyph of a selected tile; defaults to `primary`. */
+	fill?: string;
+	/** The selected field's ring and the check mark; defaults to `primary`. */
+	link?: string;
 	border: string;
 	isDark: boolean;
 	inputBg: string;
@@ -33,13 +40,32 @@ interface CategoryNode {
 }
 
 /**
- * `category.icon` is free text: an emoji for most categories, but the admin may
- * also have typed an icon class name. Only the former is renderable.
+ * A category's mark in a 36pt tile: its picture when the admin gave it one
+ * (the same thumbnail the home grid shows), else the glyph for its listing
+ * type. `category.icon` is admin free text, often an emoji, so it is never
+ * drawn: emoji do not stand in for icons.
  */
-function categoryEmoji(category: any): string | null {
-	const icon = typeof category?.icon === "string" ? category.icon.trim() : "";
-	if (!icon || /^[\w.:-]+$/.test(icon)) return null;
-	return icon;
+function CategoryGlyph({ category, color }: { category: any; color: string }) {
+	const image = category?.image;
+	if (image?.url) {
+		return (
+			<Image
+				source={{
+					uri: resolveListingImageUrl(image, "thumbnail") ?? image.url,
+				}}
+				style={StyleSheet.absoluteFill}
+				contentFit="cover"
+				accessibilityIgnoresInvertColors
+			/>
+		);
+	}
+	return (
+		<Ionicons
+			name={getListingCategoryIcon(category) as any}
+			size={18}
+			color={color}
+		/>
+	);
 }
 
 function parentIdOf(category: any): string {
@@ -140,7 +166,10 @@ export function CategorySheet({
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
 	const sheet = useSheetPresentation();
-	const { textColor, mutedColor, primary, border, isDark, inputBg } = colors;
+	const palette = useDiscoveryPalette();
+	const { textColor, mutedColor, primary, border, inputBg } = colors;
+	const fill = colors.fill ?? primary;
+	const link = colors.link ?? primary;
 
 	const [search, setSearch] = useState("");
 	const [openRootId, setOpenRootId] = useState<string | null>(null);
@@ -189,7 +218,7 @@ export function CategorySheet({
 		[onSelect, close],
 	);
 
-	const sheetBg = isDark ? "#0b1120" : "#ffffff";
+	const sheetBg = palette.isDark ? palette.background : palette.card;
 	const selectedId = value?.id ? String(value.id) : null;
 
 	const renderRow = (
@@ -213,18 +242,13 @@ export function CategorySheet({
 				<View
 					style={[
 						styles.rowIcon,
-						{ backgroundColor: selected ? primary : inputBg },
+						{ backgroundColor: selected ? fill : inputBg },
 					]}
 				>
-					{categoryEmoji(category) ? (
-						<Text style={styles.rowEmoji}>{categoryEmoji(category)}</Text>
-					) : (
-						<Ionicons
-							name={getListingCategoryIcon(category) as any}
-							size={18}
-							color={selected ? "#fff" : mutedColor}
-						/>
-					)}
+					<CategoryGlyph
+						category={category}
+						color={selected ? ON_FILL : mutedColor}
+					/>
 				</View>
 				<View style={styles.rowText}>
 					<Text
@@ -243,7 +267,7 @@ export function CategorySheet({
 					) : null}
 				</View>
 				{selected ? (
-					<Ionicons name="checkmark-circle" size={20} color={primary} />
+					<Ionicons name="checkmark-circle" size={20} color={link} />
 				) : null}
 			</Pressable>
 		);
@@ -289,8 +313,7 @@ export function CategorySheet({
 							{openRoot ? (
 								<Pressable
 									onPress={() => setOpenRootId(null)}
-									hitSlop={8}
-									style={styles.backBtn}
+									style={styles.iconBtn}
 									accessibilityRole="button"
 									accessibilityLabel={t("common.back")}
 								>
@@ -306,11 +329,11 @@ export function CategorySheet({
 							</Text>
 							<Pressable
 								onPress={close}
-								hitSlop={8}
+								style={[styles.iconBtn, { backgroundColor: inputBg }]}
 								accessibilityRole="button"
 								accessibilityLabel={t("common.close")}
 							>
-								<Ionicons name="close" size={22} color={textColor} />
+								<Ionicons name="close" size={20} color={textColor} />
 							</Pressable>
 						</View>
 
@@ -320,7 +343,7 @@ export function CategorySheet({
 								{ backgroundColor: inputBg, borderColor: border },
 							]}
 						>
-							<Ionicons name="search-outline" size={16} color={mutedColor} />
+							<Ionicons name="search-outline" size={18} color={mutedColor} />
 							<TextInput
 								value={search}
 								onChangeText={setSearch}
@@ -335,11 +358,11 @@ export function CategorySheet({
 							{search.length > 0 ? (
 								<Pressable
 									onPress={() => setSearch("")}
-									hitSlop={8}
+									hitSlop={14}
 									accessibilityRole="button"
 									accessibilityLabel={t("search.clearSearch")}
 								>
-									<Ionicons name="close-circle" size={16} color={mutedColor} />
+									<Ionicons name="close-circle" size={18} color={mutedColor} />
 								</Pressable>
 							) : null}
 						</View>
@@ -390,17 +413,10 @@ export function CategorySheet({
 											<View
 												style={[styles.rowIcon, { backgroundColor: inputBg }]}
 											>
-												{categoryEmoji(node.category) ? (
-													<Text style={styles.rowEmoji}>
-														{categoryEmoji(node.category)}
-													</Text>
-												) : (
-													<Ionicons
-														name={getListingCategoryIcon(node.category) as any}
-														size={18}
-														color={mutedColor}
-													/>
-												)}
+												<CategoryGlyph
+													category={node.category}
+													color={mutedColor}
+												/>
 											</View>
 											<View style={styles.rowText}>
 												<Text
@@ -465,6 +481,8 @@ export function CategoryField({
 	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const { cardBg, textColor, mutedColor, primary, border, inputBg } = colors;
+	const fill = colors.fill ?? primary;
+	const link = colors.link ?? primary;
 
 	return (
 		<>
@@ -472,7 +490,7 @@ export function CategoryField({
 				onPress={() => setOpen(true)}
 				style={[
 					styles.trigger,
-					{ backgroundColor: cardBg, borderColor: value ? primary : border },
+					{ backgroundColor: cardBg, borderColor: value ? link : border },
 				]}
 				accessibilityRole="button"
 				accessibilityLabel={value?.name ?? t("create.selectCategory")}
@@ -481,22 +499,16 @@ export function CategoryField({
 				<View
 					style={[
 						styles.triggerIcon,
-						{ backgroundColor: value ? primary : inputBg },
+						{ backgroundColor: value ? fill : inputBg },
 					]}
 				>
 					{/* Empty, the field leads with a chevron: it says "this opens a
 					    list" without spending a word on it. Filled, the category's own
 					    icon is the more useful thing to show. */}
-					{value && categoryEmoji(value) ? (
-						<Text style={styles.rowEmoji}>{categoryEmoji(value)}</Text>
+					{value ? (
+						<CategoryGlyph category={value} color={ON_FILL} />
 					) : (
-						<Ionicons
-							name={
-								value ? (getListingCategoryIcon(value) as any) : "chevron-down"
-							}
-							size={18}
-							color={value ? "#fff" : mutedColor}
-						/>
+						<Ionicons name="chevron-down" size={18} color={mutedColor} />
 					)}
 				</View>
 				<View style={styles.rowText}>
@@ -547,8 +559,11 @@ export function CategoryField({
 	);
 }
 
+/** The glyph on a selected tile: white holds 4.5:1 on every `fill`. */
+const ON_FILL = Colors.light.primaryForeground;
+
 const styles = StyleSheet.create({
-	backdrop: { backgroundColor: "rgba(15, 23, 42, 0.45)" },
+	backdrop: { backgroundColor: "rgba(18, 22, 58, 0.45)" },
 	backdropFill: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
 	sheetWrap: { maxHeight: "88%", width: "100%", alignItems: "center" },
 	sheet: {
@@ -574,21 +589,33 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
-		paddingVertical: 12,
+		paddingVertical: 8,
 	},
-	backBtn: { marginLeft: -4 },
-	sheetTitle: { flex: 1, fontSize: 17, fontFamily: Fonts.displayBold },
+	iconBtn: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	sheetTitle: {
+		flex: 1,
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
+		fontFamily: Fonts.displayBold,
+	},
 	searchWrap: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
 		borderWidth: 1,
 		borderRadius: 12,
-		paddingHorizontal: 12,
-		height: 44,
+		paddingHorizontal: 14,
+		minHeight: 48,
 		marginBottom: 8,
 	},
-	searchInput: { flex: 1, fontSize: 14, fontFamily: Fonts.body },
+	searchInput: { flex: 1, fontSize: 16, padding: 0, fontFamily: Fonts.body },
 	// `flexShrink` is what lets the list give way to the header and search above
 	// it; React Native defaults it to 0, so the list would otherwise claim its
 	// full content height and scroll nothing.
@@ -597,7 +624,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
-		paddingVertical: 12,
+		minHeight: 60,
+		paddingVertical: 10,
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	rowInset: { paddingLeft: 16 },
@@ -605,14 +633,19 @@ const styles = StyleSheet.create({
 		width: 36,
 		height: 36,
 		borderRadius: 10,
+		overflow: "hidden",
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	rowEmoji: { fontSize: 18 },
 	rowText: { flex: 1, gap: 2 },
 	rowName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	rowSub: { fontSize: 12, fontFamily: Fonts.body },
-	empty: { textAlign: "center", paddingVertical: 32, fontSize: 14 },
+	rowSub: { fontSize: 13, lineHeight: 17, fontFamily: Fonts.body },
+	empty: {
+		textAlign: "center",
+		paddingVertical: 32,
+		fontSize: 15,
+		fontFamily: Fonts.body,
+	},
 	trigger: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -620,11 +653,13 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderRadius: 14,
 		padding: 12,
+		minHeight: 60,
 	},
 	triggerIcon: {
 		width: 36,
 		height: 36,
 		borderRadius: 10,
+		overflow: "hidden",
 		alignItems: "center",
 		justifyContent: "center",
 	},

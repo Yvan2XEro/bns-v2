@@ -11,11 +11,13 @@ import {
 } from "react-native";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { HoldsList } from "@/src/components/payments/HoldsList";
 import { PaymentsShell } from "@/src/components/payments/PaymentsShell";
 import { PayoutAccountForm } from "@/src/components/payments/PayoutAccountForm";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import {
@@ -148,11 +150,7 @@ function SetupContent({ shopId }: { shopId: string }) {
 		});
 
 	if (setup.isPending) {
-		return (
-			<View style={styles.center}>
-				<ActivityIndicator color={c.primary} />
-			</View>
-		);
+		return <DetailSkeleton cards={2} />;
 	}
 	if (setup.isError) {
 		return (
@@ -226,7 +224,7 @@ function SetupContent({ shopId }: { shopId: string }) {
 							accessibilityRole="button"
 							accessibilityLabel={t("payments.setup_step1Action")}
 							onPress={() => router.push("/seller/verification")}
-							style={[s.button, { backgroundColor: c.primary, marginTop: 10 }]}
+							style={[s.button, { backgroundColor: fillOf(c), marginTop: 10 }]}
 						>
 							<Text style={s.buttonText}>
 								{t("payments.setup_step1Action")}
@@ -274,7 +272,7 @@ function SetupContent({ shopId }: { shopId: string }) {
 								disabled={startOnboarding.isPending}
 								style={[
 									s.button,
-									{ backgroundColor: c.primary, marginTop: 10 },
+									{ backgroundColor: fillOf(c), marginTop: 10 },
 								]}
 							>
 								{startOnboarding.isPending ? (

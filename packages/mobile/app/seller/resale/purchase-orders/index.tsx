@@ -17,7 +17,9 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { StatusTag } from "@/src/components/shop/Tags";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useShopPurchaseOrders } from "@/src/hooks/usePurchaseOrders";
@@ -54,7 +56,8 @@ export default function ResalePurchaseOrdersScreen() {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<SellerHeader title={t("sellerResale.title")} />
+				<ListSkeleton />
 			</SafeAreaView>
 		);
 	}
@@ -84,41 +87,48 @@ export default function ResalePurchaseOrdersScreen() {
 				onPress={() => router.push("/seller/resale/finance")}
 				accessibilityRole="button"
 				accessibilityLabel={t("sellerResale.financeLink")}
-				style={[
+				style={({ pressed }) => [
 					styles.financeLink,
 					{ borderColor: c.border, backgroundColor: c.card },
+					pressed && styles.pressed,
 				]}
 			>
-				<Text style={[styles.financeLinkText, { color: c.primary }]}>
+				<Ionicons name="stats-chart-outline" size={18} color={c.link} />
+				<Text style={[styles.financeLinkText, { color: c.link }]}>
 					{t("sellerResale.financeLink")}
 				</Text>
-				<Ionicons name="chevron-forward" size={18} color={c.primary} />
+				<Ionicons name="chevron-forward" size={18} color={c.link} />
 			</Pressable>
-			<View style={styles.tabs}>
-				{(["supplier", "reseller"] as const).map((side) => (
-					<Pressable
-						key={side}
-						onPress={() => patch({ side })}
-						accessibilityRole="tab"
-						accessibilityState={{ selected: state.side === side }}
-						style={[
-							styles.tab,
-							{
-								borderColor: state.side === side ? c.primary : c.border,
-								backgroundColor: state.side === side ? c.primary : c.card,
-							},
-						]}
-					>
-						<Text
-							style={[
-								styles.tabText,
-								{ color: state.side === side ? "#ffffff" : c.text },
+			<View
+				accessibilityRole="tablist"
+				style={[styles.tabs, { backgroundColor: c.neutralSoft }]}
+			>
+				{(["supplier", "reseller"] as const).map((side) => {
+					const selected = state.side === side;
+					return (
+						<Pressable
+							key={side}
+							onPress={() => patch({ side })}
+							accessibilityRole="tab"
+							accessibilityState={{ selected }}
+							style={({ pressed }) => [
+								styles.tab,
+								selected && [styles.tabActive, { backgroundColor: c.card }],
+								pressed && !selected && styles.pressed,
 							]}
 						>
-							{t(`sellerResale.${side}`)}
-						</Text>
-					</Pressable>
-				))}
+							<Text
+								style={[
+									styles.tabText,
+									{ color: selected ? c.text : c.body },
+									selected && styles.tabTextActive,
+								]}
+							>
+								{t(`sellerResale.${side}`)}
+							</Text>
+						</Pressable>
+					);
+				})}
 			</View>
 			<View
 				style={[
@@ -139,7 +149,7 @@ export default function ResalePurchaseOrdersScreen() {
 				/>
 			</View>
 			{orders.isLoading ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<ListSkeleton />
 			) : orders.isError ? (
 				<EmptyState
 					illustration="notFound"
@@ -181,6 +191,8 @@ export default function ResalePurchaseOrdersScreen() {
 								refreshing={orders.isRefetching && !orders.isFetchingNextPage}
 								onRefresh={() => orders.refetch()}
 								tintColor={c.primary}
+								colors={[c.primary]}
+								progressBackgroundColor={c.card}
 							/>
 						}
 						onEndReached={() => {
@@ -224,10 +236,16 @@ function PurchaseOrderRow({
 			onPress={onPress}
 			accessibilityRole="button"
 			accessibilityLabel={`${row.number}, ${status}, ${counterparty}`}
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+			style={({ pressed }) => [
+				styles.card,
+				{ backgroundColor: c.card, borderColor: c.border },
+				pressed && styles.pressed,
+			]}
 		>
 			<View style={styles.line}>
-				<Text style={[styles.number, { color: c.text }]}>{row.number}</Text>
+				<Text style={[styles.number, { color: c.text }]} numberOfLines={1}>
+					{row.number}
+				</Text>
 				<Text style={[styles.amount, { color: c.text }]}>
 					{formatPrice(row.collectAmount, locale)}
 				</Text>
@@ -247,7 +265,7 @@ function PurchaseOrderRow({
 				</Text>
 			</View>
 			<View style={styles.line}>
-				<Text style={[styles.meta, { color: c.primary }]}>{status}</Text>
+				<StatusTag label={status} tone="info" />
 				<Ionicons name="chevron-forward" size={18} color={c.muted} />
 			</View>
 		</Pressable>
@@ -257,33 +275,48 @@ function PurchaseOrderRow({
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	spinner: { marginTop: 40 },
+	pressed: { opacity: 0.7 },
 	financeLink: {
 		alignItems: "center",
 		borderRadius: 12,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		flexDirection: "row",
-		justifyContent: "space-between",
+		gap: 10,
 		marginHorizontal: 16,
 		marginTop: 12,
-		minHeight: 46,
+		minHeight: 48,
 		paddingHorizontal: 14,
 	},
-	financeLinkText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
-	tabs: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 12 },
+	financeLinkText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	tabs: {
+		flexDirection: "row",
+		gap: 4,
+		padding: 4,
+		borderRadius: 12,
+		marginHorizontal: 16,
+		marginTop: 12,
+	},
 	tab: {
 		flex: 1,
 		minHeight: 44,
-		borderWidth: 1,
-		borderRadius: 12,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingHorizontal: 8,
 	},
+	tabActive: {
+		shadowColor: "#12163a",
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.08,
+		shadowRadius: 2,
+		elevation: 1,
+	},
 	tabText: {
-		fontFamily: Fonts.bodySemibold,
-		fontSize: 13,
+		fontFamily: Fonts.bodyMedium,
+		fontSize: 14,
 		textAlign: "center",
 	},
+	tabTextActive: { fontFamily: Fonts.bodyBold },
 	search: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -292,17 +325,17 @@ const styles = StyleSheet.create({
 		marginTop: 12,
 		paddingHorizontal: 12,
 		borderRadius: 12,
-		borderWidth: 1,
-		minHeight: 44,
+		borderWidth: StyleSheet.hairlineWidth,
+		minHeight: 48,
 	},
-	input: { flex: 1, fontSize: 15, fontFamily: Fonts.body },
+	input: { flex: 1, minHeight: 48, fontSize: 16, fontFamily: Fonts.body },
 	list: { paddingHorizontal: 16, paddingVertical: 14 },
 	card: {
-		padding: 14,
+		padding: 16,
 		borderRadius: 14,
-		borderWidth: 1,
-		gap: 8,
-		minHeight: 44,
+		borderWidth: StyleSheet.hairlineWidth,
+		gap: 10,
+		minHeight: 48,
 	},
 	line: {
 		flexDirection: "row",
@@ -310,10 +343,19 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		gap: 8,
 	},
-	number: { flex: 1, fontSize: 15, fontFamily: Fonts.displayBold },
-	amount: { fontSize: 14, fontFamily: Fonts.bodyBold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	number: {
+		flex: 1,
+		fontSize: 16,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
+	amount: {
+		fontSize: 16,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
+	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
 	itemsLine: { flexDirection: "row", alignItems: "center", gap: 10 },
 	itemsText: { flex: 1 },
-	thumbnail: { width: 34, height: 34, borderRadius: 8 },
+	thumbnail: { width: 44, height: 44, borderRadius: 8 },
 });

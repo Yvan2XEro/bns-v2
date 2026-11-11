@@ -1,6 +1,7 @@
 import i18next from "i18next";
 import { createContext, type ReactNode, useContext } from "react";
 import { AlertSheet } from "@/src/components/AlertSheet";
+import { ToastHost, toast } from "@/src/components/Toast";
 import { type Alerts, createAlerts } from "@/src/lib/alerts";
 
 /**
@@ -11,6 +12,7 @@ export const alerts: Alerts = createAlerts(
 	(request) => AlertSheet.call(request),
 	() => AlertSheet.end(null),
 	(key) => i18next.t(key),
+	(title, message) => toast.show({ type: "success", title, message }),
 );
 
 const AlertContext = createContext<Alerts | undefined>(undefined);
@@ -20,6 +22,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
 		<AlertContext.Provider value={alerts}>
 			{children}
 			<AlertSheet />
+			<ToastHost />
 		</AlertContext.Provider>
 	);
 }

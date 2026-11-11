@@ -94,12 +94,16 @@ export function VariantOptionRow({
 						onPress={() => onRemoveValue(value)}
 						style={[
 							f.chip,
+							styles.valueChip,
 							{ borderColor: c.primary, backgroundColor: c.primarySoft },
 						]}
 						accessibilityRole="button"
 						accessibilityLabel={t("product.removeValue", { value })}
 					>
-						<Text style={[f.chipText, { color: c.primary }]}>{value} ×</Text>
+						<Text style={[f.chipText, { color: c.link }]}>{value}</Text>
+						{!readOnly ? (
+							<Ionicons name="close" size={14} color={c.link} />
+						) : null}
 					</Pressable>
 				))}
 				{!readOnly ? (
@@ -129,4 +133,5 @@ const styles = StyleSheet.create({
 	option: { gap: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
 	valueInput: { minWidth: 110, paddingVertical: 6, fontFamily: Fonts.body },
 	iconButton: { minHeight: 44, paddingVertical: 4 },
+	valueChip: { flexDirection: "row", alignItems: "center", gap: 6 },
 });

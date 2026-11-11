@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -23,7 +24,7 @@ export function PaymentsOrderRow({ order }: { order: SellerPaymentsOrderRow }) {
 			]}
 		>
 			<View style={styles.head}>
-				<Text style={[s.cardTitle, { color: c.primary, fontSize: 14 }]}>
+				<Text style={[s.cardTitle, { color: c.link, fontSize: 14 }]}>
 					{order.orderNumber}
 				</Text>
 				<Text style={[s.meta, { color: c.muted }]}>
@@ -84,7 +85,11 @@ function Line({
 			<Text
 				style={[
 					s.meta,
-					{ color: c.text, fontWeight: emphasis ? "700" : "400" },
+					{
+						color: c.text,
+						fontFamily: emphasis ? Fonts.displayExtrabold : Fonts.body,
+						fontVariant: ["tabular-nums"],
+					},
 				]}
 			>
 				{value}

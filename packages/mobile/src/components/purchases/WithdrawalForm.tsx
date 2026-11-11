@@ -13,6 +13,7 @@ import {
 	withdrawalSchema,
 } from "@/src/lib/purchaseForms";
 import type { OrderView, WithdrawalResponse } from "@/src/types/order";
+import { inkOf } from "../checkout/fill";
 import { useShopTheme } from "../shop/theme";
 import { Card, FieldError, PurchaseButton, purchaseText } from "./ui";
 
@@ -40,14 +41,19 @@ function Stepper({
 				accessibilityState={{ disabled: off }}
 				style={[styles.step, { borderColor: c.border, opacity: off ? 0.4 : 1 }]}
 			>
-				<Ionicons name={icon} size={20} color={c.primary} />
+				<Ionicons name={icon} size={20} color={inkOf(c)} />
 			</Pressable>
 		);
 	};
 	return (
 		<View style={styles.stepper}>
 			{step(-1, "remove", t("purchases.withdrawalLess", { title }))}
-			<Text style={[styles.count, { color: c.text }]}>{value}</Text>
+			<Text
+				style={[styles.count, { color: c.text }]}
+				accessibilityLiveRegion="polite"
+			>
+				{value}
+			</Text>
 			{step(1, "add", t("purchases.withdrawalMore", { title }))}
 		</View>
 	);
@@ -91,7 +97,17 @@ export function WithdrawalForm({
 						? [item.title, item.variantLabel].filter(Boolean).join(" — ")
 						: "";
 					return (
-						<View key={field.id} style={styles.line}>
+						<View
+							key={field.id}
+							style={[
+								styles.line,
+								index > 0 && {
+									borderTopWidth: StyleSheet.hairlineWidth,
+									borderTopColor: c.border,
+									paddingTop: 12,
+								},
+							]}
+						>
 							<View style={styles.lineMain}>
 								<Text style={[purchaseText.strong, { color: c.text }]}>
 									{title}
@@ -136,6 +152,7 @@ export function WithdrawalForm({
 							multiline
 							maxLength={2000}
 							accessibilityLabel={t("purchases.withdrawalReason")}
+							placeholderTextColor={c.muted}
 							style={[
 								styles.input,
 								{
@@ -164,25 +181,27 @@ const styles = StyleSheet.create({
 	lineMain: { flex: 1, minWidth: 0, gap: 2 },
 	stepper: { flexDirection: "row", alignItems: "center", gap: 6 },
 	step: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	count: {
-		minWidth: 24,
+		minWidth: 28,
 		textAlign: "center",
-		fontSize: 16,
-		fontFamily: Fonts.bodyBold,
+		fontSize: 18,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
 	},
 	input: {
-		minHeight: 80,
+		minHeight: 112,
 		borderWidth: 1,
 		borderRadius: 12,
 		padding: 12,
-		fontSize: 14,
+		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 		textAlignVertical: "top",
 	},

@@ -1,5 +1,6 @@
-import { ActivityIndicator, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { useShopTheme } from "../theme";
 import { Header } from "./Header";
 
@@ -15,12 +16,11 @@ export function LoadingShell({
 	return (
 		<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
 			<Header onClose={onClose} title={title} />
-			<ActivityIndicator style={styles.spinner} color={c.primary} />
+			<DetailSkeleton cards={2} />
 		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 40 },
 });

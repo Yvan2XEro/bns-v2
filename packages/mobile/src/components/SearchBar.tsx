@@ -8,8 +8,9 @@ import {
 	View,
 	type ViewStyle,
 } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/src/lib/i18n";
 
 interface SearchFieldProps {
 	value: string;
@@ -22,14 +23,18 @@ interface SearchFieldProps {
 	onClear?: () => void;
 	/** Highlighted state; defaults to "the input has focus". */
 	active?: boolean;
+	/** Return key on the keyboard. */
+	onSubmitEditing?: () => void;
+	/** Screen-reader name; defaults to the placeholder. */
+	accessibilityLabel?: string;
 	style?: StyleProp<ViewStyle>;
 	ref?: Ref<TextInput>;
 }
 
 /**
  * The app's search field — the home screen's look, shared so every screen
- * that searches reads the same: rounded card, tinted icon tile, primary
- * border while in use.
+ * that searches reads the same: a plain white field, primary border while in
+ * use.
  */
 export function SearchField({
 	value,
@@ -40,44 +45,29 @@ export function SearchField({
 	onBlur,
 	onClear,
 	active,
+	onSubmitEditing,
+	accessibilityLabel,
 	style,
 	ref,
 }: SearchFieldProps) {
-	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
+	const c = Colors[useColorScheme() === "dark" ? "dark" : "light"];
 	const [focused, setFocused] = useState(false);
 	const highlighted = active ?? focused;
-	const primary = isDark ? "#3b82f6" : "#1e40af";
-	const muted = isDark ? "#94a3b8" : "#64748b";
+	const muted = c.mutedForeground;
 
 	return (
 		<View
 			style={[
 				styles.field,
 				{
-					backgroundColor: isDark ? "#1e293b" : "#ffffff",
-					borderColor: highlighted ? primary : isDark ? "#1e3a5f" : "#e2e8f0",
+					backgroundColor: c.card,
+					borderColor: highlighted ? c.primary : c.borderStrong,
 				},
 				style,
 			]}
 		>
-			<View
-				style={[
-					styles.iconTile,
-					{
-						backgroundColor: highlighted
-							? primary
-							: isDark
-								? "#111827"
-								: "#eef2ff",
-					},
-				]}
-			>
-				<Ionicons
-					name="search"
-					size={15}
-					color={highlighted ? "#fff" : primary}
-				/>
-			</View>
+			<Ionicons name="search" size={19} color={highlighted ? c.link : muted} />
 			<TextInput
 				ref={ref}
 				value={value}
@@ -92,17 +82,21 @@ export function SearchField({
 				}}
 				placeholder={placeholder}
 				placeholderTextColor={muted}
-				style={[styles.input, { color: isDark ? "#e2e8f0" : "#0f172a" }]}
+				selectionColor={c.link}
+				style={[styles.input, { color: c.foreground }]}
 				autoFocus={autoFocus}
+				onSubmitEditing={onSubmitEditing}
+				accessibilityLabel={accessibilityLabel ?? placeholder}
 				returnKeyType="search"
 			/>
 			{value.length > 0 && (
 				<Pressable
 					onPress={onClear ?? (() => onChangeText(""))}
-					hitSlop={10}
 					accessibilityRole="button"
+					accessibilityLabel={t("search.clearSearch")}
+					style={styles.clear}
 				>
-					<Ionicons name="close-circle" size={18} color={muted} />
+					<Ionicons name="close-circle" size={20} color={muted} />
 				</Pressable>
 			)}
 		</View>
@@ -124,24 +118,20 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		borderRadius: 16,
+		minHeight: 48,
+		borderRadius: 12,
 		borderWidth: 1.5,
-		paddingHorizontal: 8,
-		paddingVertical: 8,
-		shadowColor: "#1e40af",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.08,
-		shadowRadius: 6,
-		elevation: 2,
+		paddingHorizontal: 14,
 	},
-	iconTile: {
-		width: 32,
-		height: 32,
-		borderRadius: 10,
+	// A 44pt target for a 20pt glyph, tucked inside the field's right edge.
+	clear: {
+		marginRight: -12,
+		width: 44,
+		height: 44,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	// Android's TextInput carries its own vertical padding; without this the
-	// field grows taller than the icon tile.
-	input: { flex: 1, fontSize: 15, padding: 0, fontFamily: Fonts.body },
+	// field grows past its 48pt.
+	input: { flex: 1, fontSize: 16, padding: 0, fontFamily: Fonts.body },
 });

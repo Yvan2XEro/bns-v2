@@ -1,16 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -110,9 +106,7 @@ export default function MemberDetailScreen() {
 			<SellerHeader title={t("team.memberDetail")} />
 
 			{isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<DetailSkeleton cards={2} />
 			) : isError || !member ? (
 				<EmptyState
 					illustration="notFound"
@@ -127,10 +121,13 @@ export default function MemberDetailScreen() {
 							<ShopAvatar
 								name={member.name ?? t("team.noName")}
 								logo={member.avatarUrl}
-								size={56}
-								radius={28}
+								size={64}
+								radius={32}
 							/>
-							<Text style={[styles.name, { color: c.text }]}>
+							<Text
+								accessibilityRole="header"
+								style={[styles.name, { color: c.text }]}
+							>
 								{member.name ?? t("team.noName")}
 							</Text>
 							<Text style={[styles.meta, { color: c.muted }]}>
@@ -147,16 +144,17 @@ export default function MemberDetailScreen() {
 						</View>
 
 						{memberActions(role, member).canChangeRole ? (
-							<View
-								style={[
-									styles.card,
-									{ backgroundColor: c.card, borderColor: c.border },
-								]}
-							>
-								<Text style={[styles.cardTitle, { color: c.text }]}>
+							<View style={styles.section}>
+								<Text
+									accessibilityRole="header"
+									style={[styles.sectionTitle, { color: c.text }]}
+								>
 									{t("team.changeRole")}
 								</Text>
-								<View style={styles.roleRow}>
+								<View
+									accessibilityRole="radiogroup"
+									style={[styles.segment, { backgroundColor: c.neutralSoft }]}
+								>
 									{(["manager", "staff"] as const).map((option) => {
 										const active = member.role === option;
 										return (
@@ -164,21 +162,24 @@ export default function MemberDetailScreen() {
 												key={option}
 												onPress={() => !active && onToggleRole(member)}
 												disabled={active || changeRole.isPending}
-												accessibilityRole="button"
-												accessibilityState={{ selected: active }}
+												accessibilityRole="radio"
+												accessibilityState={{
+													checked: active,
+													disabled: changeRole.isPending,
+												}}
 												accessibilityLabel={t(ROLE_KEY[option])}
-												style={[
-													styles.roleChip,
-													{
-														borderColor: active ? c.primary : c.border,
-														backgroundColor: active ? c.primarySoft : c.card,
-													},
+												style={({ pressed }) => [
+													styles.segmentItem,
+													active && { backgroundColor: c.card },
+													active && styles.segmentActive,
+													pressed && !active && styles.pressed,
 												]}
 											>
 												<Text
 													style={[
-														styles.roleChipText,
-														{ color: active ? c.primary : c.body },
+														styles.segmentText,
+														{ color: active ? c.text : c.body },
+														active && styles.segmentTextActive,
 													]}
 												>
 													{t(ROLE_KEY[option])}
@@ -190,23 +191,12 @@ export default function MemberDetailScreen() {
 							</View>
 						) : null}
 
-						{memberActions(role, member).canRemove ? (
-							<Pressable
-								onPress={() => onRemove(member)}
-								disabled={removeMember.isPending}
-								accessibilityRole="button"
-								accessibilityLabel={t("team.remove")}
-								style={[styles.removeBtn, { borderColor: c.danger }]}
-							>
-								<Text style={[styles.removeText, { color: c.danger }]}>
-									{t("team.remove")}
-								</Text>
-							</Pressable>
-						) : null}
-
 						{canViewActivity ? (
-							<View style={styles.activitySection}>
-								<Text style={[styles.cardTitle, { color: c.text }]}>
+							<View style={styles.section}>
+								<Text
+									accessibilityRole="header"
+									style={[styles.sectionTitle, { color: c.text }]}
+								>
 									{t("team.recentActivity")}
 								</Text>
 								{entries.length === 0 ? (
@@ -214,13 +204,21 @@ export default function MemberDetailScreen() {
 										{t("team.activityEmpty")}
 									</Text>
 								) : (
-									<View style={{ gap: 8 }}>
-										{entries.map((entry) => (
+									<View
+										style={[
+											styles.group,
+											{ backgroundColor: c.card, borderColor: c.border },
+										]}
+									>
+										{entries.map((entry, index) => (
 											<View
 												key={entry.id}
 												style={[
 													styles.activityRow,
-													{ backgroundColor: c.card, borderColor: c.border },
+													index > 0 && {
+														borderTopWidth: StyleSheet.hairlineWidth,
+														borderTopColor: c.border,
+													},
 												]}
 											>
 												<Text
@@ -246,6 +244,31 @@ export default function MemberDetailScreen() {
 								)}
 							</View>
 						) : null}
+
+						{/* Destructive, so it closes the page rather than leading it. */}
+						{memberActions(role, member).canRemove ? (
+							<Pressable
+								onPress={() => onRemove(member)}
+								disabled={removeMember.isPending}
+								accessibilityRole="button"
+								accessibilityLabel={t("team.remove")}
+								accessibilityState={{ disabled: removeMember.isPending }}
+								style={({ pressed }) => [
+									styles.removeBtn,
+									{ borderColor: c.danger },
+									(pressed || removeMember.isPending) && styles.pressed,
+								]}
+							>
+								<Ionicons
+									name="person-remove-outline"
+									size={18}
+									color={dangerInk(c)}
+								/>
+								<Text style={[styles.removeText, { color: dangerInk(c) }]}>
+									{t("team.remove")}
+								</Text>
+							</Pressable>
+						) : null}
 					</ScrollView>
 				</ScreenColumn>
 			)}
@@ -256,47 +279,74 @@ export default function MemberDetailScreen() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
-	content: { padding: 16, gap: 20, paddingBottom: 40 },
-	profile: { alignItems: "center", gap: 6 },
-	name: { fontSize: 18, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	content: { padding: 16, gap: 28, paddingBottom: 48 },
+	profile: { alignItems: "center", gap: 6, paddingTop: 8 },
+	name: {
+		fontSize: 23,
+		lineHeight: 28,
+		letterSpacing: -0.5,
+		fontFamily: Fonts.displayBold,
+		textAlign: "center",
+		marginTop: 6,
+	},
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	chip: {
 		borderRadius: 999,
 		paddingHorizontal: 10,
-		paddingVertical: 3,
+		paddingVertical: 4,
 		marginTop: 4,
 	},
-	chipText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
-	card: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
-	cardTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	roleRow: { flexDirection: "row", gap: 8 },
-	roleChip: {
+	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	section: { gap: 10 },
+	sectionTitle: {
+		fontSize: 17,
+		lineHeight: 22,
+		letterSpacing: -0.2,
+		fontFamily: Fonts.displayBold,
+	},
+	segment: { flexDirection: "row", borderRadius: 12, padding: 4, gap: 4 },
+	segmentItem: {
+		flex: 1,
 		minHeight: 44,
-		paddingHorizontal: 16,
-		borderRadius: 999,
-		borderWidth: 1,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	roleChipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	segmentActive: {
+		shadowColor: "#12163a",
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.08,
+		shadowRadius: 2,
+		elevation: 1,
+	},
+	segmentText: { fontSize: 14, fontFamily: Fonts.bodyMedium },
+	segmentTextActive: { fontFamily: Fonts.bodyBold },
+	pressed: { opacity: 0.6 },
 	removeBtn: {
-		minHeight: 44,
+		flexDirection: "row",
+		gap: 8,
+		minHeight: 52,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	removeText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	activitySection: { gap: 8 },
+	removeText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	group: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
+	},
 	activityRow: {
-		minHeight: 44,
-		padding: 12,
-		borderRadius: 14,
-		borderWidth: 1,
+		minHeight: 56,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
 		gap: 2,
+		justifyContent: "center",
 	},
 	activityAction: {
-		fontSize: 13,
+		fontSize: 14,
+		lineHeight: 19,
 		fontFamily: Fonts.bodySemibold,
 		textTransform: "capitalize",
 	},

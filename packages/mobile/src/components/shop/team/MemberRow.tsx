@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
@@ -37,7 +38,11 @@ export function MemberRow({
 				name,
 				role: t(ROLE_KEY[member.role]),
 			})}
-			style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}
+			style={({ pressed }) => [
+				styles.row,
+				{ backgroundColor: c.card, borderColor: c.border },
+				pressed && styles.pressed,
+			]}
 		>
 			<ShopAvatar name={name} logo={member.avatarUrl} size={40} radius={20} />
 			<View style={styles.body}>
@@ -58,6 +63,7 @@ export function MemberRow({
 					{joined ? ` · ${t("team.joined", { date: joined })}` : ""}
 				</Text>
 			</View>
+			<Ionicons name="chevron-forward" size={18} color={c.muted} />
 		</Pressable>
 	);
 }
@@ -67,19 +73,20 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
-		minHeight: 44,
+		minHeight: 48,
 		padding: 12,
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 	},
+	pressed: { opacity: 0.85 },
 	body: { flex: 1, gap: 2 },
 	nameLine: { flexDirection: "row", alignItems: "center", gap: 8 },
-	name: { fontSize: 15, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	name: { fontSize: 16, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	chip: {
 		borderRadius: 999,
 		paddingHorizontal: 8,
 		paddingVertical: 2,
 	},
-	chipText: { fontSize: 10, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 });

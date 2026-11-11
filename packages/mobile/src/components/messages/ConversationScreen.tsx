@@ -1,12 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	FlatList,
+	Keyboard,
+	type NativeScrollEvent,
+	type NativeSyntheticEvent,
+	Platform,
 	Pressable,
 	StyleSheet,
 	Text,
@@ -14,8 +19,13 @@ import {
 	View,
 } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import Animated, {
+	useAnimatedStyle,
+	useSharedValue,
+	withSpring,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts, SpringPresets } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
@@ -23,6 +33,7 @@ import { SkeletonMessageBubbles } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { useIsBlocked, useToggleBlock } from "@/src/hooks/useBlockedUsers";
+import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
@@ -30,10 +41,11 @@ import {
 	conversationHeader,
 	messageAuthorLabel,
 } from "@/src/lib/conversationView";
+import { feedback } from "@/src/lib/feedback";
 import i18n, { useTranslation } from "@/src/lib/i18n";
-import { formatPrice } from "@/src/lib/market";
 import { track } from "@/src/lib/monitoring";
 import { askForPushInContext } from "@/src/lib/notifications";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import { isSystemMessage } from "@/src/lib/systemMessage";
 import type {
 	Conversation,
@@ -42,7 +54,21 @@ import type {
 	UserDoc,
 } from "@/src/types/api";
 import { ANALYTICS_EVENTS } from "../../../../api/src/contracts/monitoring";
+import {
+	type AttachedListing,
+	attachedListingOf,
+	ComposerListingChip,
+	MessageListingCard,
+} from "./ListingAttachment";
+import { type MessageAction, MessageActionSheet } from "./MessageActionSheet";
+import {
+	fetchLatestMessages,
+	fetchOlderMessages,
+	type MessagePage,
+	messagesKey,
+} from "./messageHistory";
 import { SystemChip } from "./SystemChip";
+import { TypingIndicator } from "./TypingIndicator";
 
 function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
 	return value && typeof value === "object" && "doc" in value
@@ -77,37 +103,6 @@ function isViewerShopSide(
 	if (!shopOf(conv)) return false;
 	const buyerId = buyerIdOf(conv);
 	return buyerId !== null && buyerId !== userId;
-}
-
-function TypingDots({ color }: { color: string }) {
-	const [step, setStep] = useState(0);
-	useEffect(() => {
-		const id = setInterval(() => setStep((s) => (s + 1) % 3), 380);
-		return () => clearInterval(id);
-	}, []);
-	return (
-		<View
-			style={{
-				flexDirection: "row",
-				gap: 5,
-				alignItems: "center",
-				paddingVertical: 4,
-			}}
-		>
-			{[0, 1, 2].map((i) => (
-				<View
-					key={i}
-					style={{
-						width: 8,
-						height: 8,
-						borderRadius: 4,
-						backgroundColor: color,
-						opacity: step === i ? 1 : 0.28,
-					}}
-				/>
-			))}
-		</View>
-	);
 }
 
 export interface ConversationScreenProps {
@@ -146,23 +141,27 @@ export function ConversationScreen({
 }: ConversationScreenProps) {
 	const isDark = useColorScheme() === "dark";
 	const { centeredContent } = useResponsive();
+	const reducedMotion = useReducedMotion();
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const { chatClient, onlineUsers } = useChatClient();
-	const { showAlert } = useAlert();
+	const { showAlert, showSuccess } = useAlert();
 	const queryClient = useQueryClient();
 	const [text, setText] = useState(initialDraft);
 	const [isOtherTyping, setIsOtherTyping] = useState(false);
 	const [readByOther, setReadByOther] = useState<Set<string>>(new Set());
-	const listRef = useRef<FlatList>(null);
+	const listRef = useRef<FlashListRef<any>>(null);
 	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	/** Whether the reader sits at the latest message — set by scrolling, read on events. */
+	const nearBottomRef = useRef(true);
+	const [loadingOlder, setLoadingOlder] = useState(false);
+	const loadingOlderRef = useRef(false);
+	/** The message whose long-press sheet is open. */
+	const [actionTarget, setActionTarget] = useState<any | null>(null);
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const C = Colors[isDark ? "dark" : "light"];
+	// Links and initials: the contrast-safe brand word tone in both themes.
+	const link = C.link;
 
 	const { data: convData } = useQuery({
 		queryKey: ["conversation", conversationId],
@@ -184,16 +183,41 @@ export function ConversationScreen({
 		isLoading,
 		isError,
 		refetch,
-	} = useQuery({
-		queryKey: ["messages", conversationId],
-		queryFn: () =>
-			api.get<{ docs: any[] }>(
-				`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&limit=100&depth=1`,
-			),
+	} = useQuery<MessagePage>({
+		queryKey: messagesKey(conversationId),
+		// The newest page first; older history loads as the reader scrolls up.
+		queryFn: () => fetchLatestMessages(queryClient, conversationId),
 		enabled: !!conversationId,
 	});
 
-	const messages = messagesData?.docs ?? [];
+	const messages = messagesData?.docs ?? EMPTY;
+	const hasOlder = messagesData?.hasOlder ?? false;
+
+	async function loadOlder() {
+		const oldest = messages[0]?.createdAt;
+		if (!hasOlder || !oldest || loadingOlderRef.current) return;
+		loadingOlderRef.current = true;
+		setLoadingOlder(true);
+		try {
+			const page = await fetchOlderMessages(conversationId, oldest);
+			queryClient.setQueryData<MessagePage>(
+				messagesKey(conversationId),
+				(old) => {
+					if (!old) return old;
+					const held = new Set(old.docs.map((m) => m.id));
+					return {
+						docs: [...page.docs.filter((m) => !held.has(m.id)), ...old.docs],
+						hasOlder: page.hasOlder,
+					};
+				},
+			);
+		} catch {
+			// The top of the thread stays where it is; scrolling up again retries.
+		} finally {
+			loadingOlderRef.current = false;
+			setLoadingOlder(false);
+		}
+	}
 	const conv = convData ? unwrapDoc(convData) : undefined;
 	const otherUser = conv?.participants?.find(
 		(p): p is UserDoc => typeof p === "object" && p.id !== user?.id,
@@ -215,12 +239,8 @@ export function ConversationScreen({
 		: null;
 	const contextListingRaw =
 		contextListingData?.doc ?? contextListingData ?? null;
-	const [attachedListing, setAttachedListing] = useState<{
-		id: string;
-		title: string;
-		price?: number;
-		thumbnailUrl?: string;
-	} | null>(null);
+	const [attachedListing, setAttachedListing] =
+		useState<AttachedListing | null>(null);
 	const isOtherOnline = otherUser?.id ? onlineUsers.has(otherUser.id) : false;
 
 	const { isBlocked, blockId } = useIsBlocked(otherUser?.id);
@@ -252,12 +272,7 @@ export function ConversationScreen({
 	// Init listing attachment from URL param once data loads
 	useEffect(() => {
 		if (contextListingRaw && listingParam) {
-			setAttachedListing({
-				id: contextListingRaw.id,
-				title: contextListingRaw.title,
-				price: contextListingRaw.price,
-				thumbnailUrl: contextListingRaw.images?.[0]?.image?.url,
-			});
+			setAttachedListing(attachedListingOf(contextListingRaw));
 		}
 	}, [contextListingRaw, listingParam]);
 
@@ -307,6 +322,16 @@ export function ConversationScreen({
 				return { ...old, docs: [...old.docs, msg] };
 			});
 			queryClient.invalidateQueries({ queryKey: ["conversations"] });
+			// The other person's words arrive with a soft two-note strike; our
+			// own echo (it carries the tempId) and system notes stay silent.
+			const senderId = msg.sender?.id ?? msg.sender;
+			if (
+				!msg.tempId &&
+				senderId &&
+				senderId !== user?.id &&
+				!isSystemMessage(msg)
+			)
+				feedback("receive");
 			// Mark as read immediately since we're viewing the conversation
 			chatClient.markRead(conversationId, [msg.id]);
 			chatClient.markDelivered(conversationId, msg.id);
@@ -324,6 +349,7 @@ export function ConversationScreen({
 
 		// Kept on screen, marked as not sent, so the text can be retried.
 		const onFailed = ({ tempId, error }: { tempId: string; error: string }) => {
+			feedback("error", { sound: false });
 			track(ANALYTICS_EVENTS.messageFailed, {
 				platform: "mobile",
 				reason: error,
@@ -359,18 +385,6 @@ export function ConversationScreen({
 		chatClient.on("typing", onTyping);
 		chatClient.on("message:read", onMessageRead);
 
-		// Mark existing unread messages as read
-		const unreadIds = messages
-			.filter((m: any) => {
-				const senderId = m.sender?.id ?? m.sender;
-				return senderId !== user?.id && !m.read;
-			})
-			.map((m: any) => m.id);
-		if (unreadIds.length > 0) {
-			chatClient.markRead(conversationId, unreadIds);
-			queryClient.invalidateQueries({ queryKey: ["conversations"] });
-		}
-
 		return () => {
 			chatClient.off("message:new", onNewMessage);
 			chatClient.off("message:confirmed", onConfirmed);
@@ -382,18 +396,54 @@ export function ConversationScreen({
 	}, [
 		chatClient,
 		conversationId,
-		messages.filter,
 		queryClient.invalidateQueries,
 		queryClient.setQueryData,
 		user?.id,
 	]);
 
-	// Scroll to bottom when messages change
+	// Mark the other side's unread messages read once they are loaded — the
+	// socket effect above runs before the history arrives, so it cannot.
+	const messagesRef = useRef(messages);
+	messagesRef.current = messages;
+	const markedReadRef = useRef(new Set<string>());
 	useEffect(() => {
-		if (messages.length > 0) {
-			setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-		}
-	}, [messages.length]);
+		if (!chatClient || !conversationId || !lastMessageId) return;
+		const unreadIds = messagesRef.current
+			.filter((m: any) => {
+				const senderId = m.sender?.id ?? m.sender;
+				return (
+					senderId !== user?.id && !m.read && !markedReadRef.current.has(m.id)
+				);
+			})
+			.map((m: any) => m.id as string);
+		if (unreadIds.length === 0) return;
+		for (const id of unreadIds) markedReadRef.current.add(id);
+		chatClient.markRead(conversationId, unreadIds);
+		queryClient.invalidateQueries({ queryKey: ["conversations"] });
+	}, [chatClient, conversationId, lastMessageId, queryClient, user?.id]);
+
+	// New messages land at the bottom through the list's own
+	// `maintainVisibleContentPosition`; the keyboard and the typing bubble
+	// change the space without adding a message, so they bring the reader
+	// back down here — only when they were already reading the latest.
+	useEffect(() => {
+		const sub = Keyboard.addListener("keyboardDidShow", () => {
+			if (nearBottomRef.current)
+				listRef.current?.scrollToEnd({ animated: true });
+		});
+		return () => sub.remove();
+	}, []);
+	useEffect(() => {
+		if (isOtherTyping && nearBottomRef.current)
+			listRef.current?.scrollToEnd({ animated: true });
+	}, [isOtherTyping]);
+
+	const onListScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+		const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+		nearBottomRef.current =
+			contentOffset.y + layoutMeasurement.height >=
+			contentSize.height - Math.max(80, layoutMeasurement.height * 0.2);
+	};
 
 	// Typing indicator: emit start/stop as user types
 	const handleTextChange = (val: string) => {
@@ -462,6 +512,15 @@ export function ConversationScreen({
 		});
 		queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		setSending(false);
+		// Read further up, the reader is brought to what they just sent; at the
+		// bottom already, the list's own autoscroll does it.
+		if (!nearBottomRef.current) {
+			nearBottomRef.current = true;
+			requestAnimationFrame(() =>
+				listRef.current?.scrollToEnd({ animated: true }),
+			);
+		}
+		feedback("send");
 		// The answer comes by push: a first message sent is when to ask.
 		void askForPushInContext();
 	}
@@ -489,15 +548,108 @@ export function ConversationScreen({
 		});
 	}
 
+	function openMessageActions(item: any) {
+		if (!item?.content) return;
+		feedback("tap");
+		setActionTarget(item);
+	}
+
+	const messageActions: MessageAction[] = actionTarget
+		? [
+				{
+					key: "copy",
+					label: t("messages.copy"),
+					icon: "copy-outline",
+					onPress: () => {
+						const content = String(actionTarget.content);
+						void Clipboard.setStringAsync(content).then(() =>
+							showSuccess(t("messages.copied")),
+						);
+					},
+				},
+				...(actionTarget.failed && senderIdOf(actionTarget) === user?.id
+					? [
+							{
+								key: "retry",
+								label: t("common.retry"),
+								icon: "refresh" as const,
+								onPress: () => retryMessage(actionTarget),
+							},
+						]
+					: []),
+			]
+		: [];
+
 	const formatTime = (dateStr: string) =>
 		new Date(dateStr).toLocaleTimeString(i18n.language, {
 			hour: "2-digit",
 			minute: "2-digit",
 		});
 
+	const peerLogo = resolveImageUrl(header?.logoUrl ?? null);
+	const peerName = header?.title || t("messages.user");
+	const peerAvatar: PeerAvatar = {
+		uri: peerLogo,
+		initial: peerName.charAt(0).toUpperCase() || "?",
+		square: Boolean(header?.isShop),
+	};
+
+	/**
+	 * Who to draw beside a message that is not ours: the other side of the
+	 * thread, or — in a shop thread read from the shop — a teammate, by name.
+	 */
+	function avatarFor(item: any): PeerAvatar {
+		const senderObj = typeof item.sender === "object" ? item.sender : null;
+		if (viewerIsShopSide && item.senderSide === "shop") {
+			return {
+				uri: resolveImageUrl(senderObj?.avatar?.url ?? null),
+				initial: senderObj?.name?.[0]?.toUpperCase() ?? "?",
+				square: false,
+			};
+		}
+		return peerAvatar;
+	}
+
+	function renderAvatar(avatar: PeerAvatar, size = 28) {
+		return (
+			<View
+				style={[
+					styles.msgAvatar,
+					{
+						width: size,
+						height: size,
+						borderRadius: avatar.square ? Math.round(size * 0.28) : size / 2,
+						backgroundColor: C.primaryTint,
+					},
+				]}
+				importantForAccessibility="no-hide-descendants"
+				accessibilityElementsHidden
+			>
+				{avatar.uri ? (
+					<Image
+						source={{ uri: avatar.uri }}
+						style={{ width: size, height: size }}
+						contentFit="cover"
+					/>
+				) : (
+					<Text
+						style={{
+							color: link,
+							fontFamily: Fonts.displayBold,
+							fontSize: Math.round(size * 0.43),
+						}}
+					>
+						{avatar.initial}
+					</Text>
+				)}
+			</View>
+		);
+	}
+
 	const renderMessage = ({ item, index }: { item: any; index: number }) => {
-		const isMe = item.sender?.id === user?.id || item.sender === user?.id;
+		const isMe = senderIdOf(item) === user?.id;
 		const prev = messages[index - 1];
+		const next = messages[index + 1];
 		const showDate =
 			!prev ||
 			new Date(item.createdAt).toDateString() !==
@@ -510,23 +662,30 @@ export function ConversationScreen({
 				? t("messages.today")
 				: msgDate === yesterday
 					? t("messages.yesterday")
-					: new Date(item.createdAt).toLocaleDateString(i18n.language);
+					: new Date(item.createdAt).toLocaleDateString(i18n.language, {
+							weekday: "long",
+							day: "numeric",
+							month: "long",
+						});
+
+		const dateSeparator = showDate ? (
+			<View style={styles.dateSep}>
+				<Text
+					accessibilityRole="header"
+					style={[
+						styles.dateLabel,
+						{ color: C.mutedForeground, backgroundColor: C.well },
+					]}
+				>
+					{dateLabel}
+				</Text>
+			</View>
+		) : null;
 
 		if (isSystemMessage(item)) {
 			return (
 				<>
-					{showDate && (
-						<View style={styles.dateSep}>
-							<Text
-								style={[
-									styles.dateLabel,
-									{ color: mutedColor, backgroundColor: bg },
-								]}
-							>
-								{dateLabel}
-							</Text>
-						</View>
-					)}
+					{dateSeparator}
 					<SystemChip
 						message={item}
 						side={viewerIsShopSide ? "shop" : "buyer"}
@@ -535,13 +694,20 @@ export function ConversationScreen({
 			);
 		}
 
+		// Consecutive messages from one sender read as one block: the tail,
+		// the avatar and the wider gap only close the run.
+		const startsRun = showDate || !sameRun(prev, item);
+		const endsRun = !sameRun(item, next);
+
 		const isRead = readByOther.has(item.id) || item.read;
+		const isPending =
+			isMe && !item.failed && Boolean(chatClient?.isPending(String(item.id)));
 		// Only a shop conversation needs attribution per message — more than
 		// one person can answer from that side. A classic 1:1 thread has
 		// exactly one "other" person, already named in the header.
 		const senderObj = typeof item.sender === "object" ? item.sender : null;
 		const authorLabel =
-			!isMe && shop
+			!isMe && shop && startsRun
 				? messageAuthorLabel({
 						senderSide: item.senderSide ?? null,
 						shopName: shop.name,
@@ -550,26 +716,16 @@ export function ConversationScreen({
 						viewerIsShopSide,
 					})
 				: null;
+		const listing = attachedListingOf(item.listing);
 
 		return (
 			<>
-				{showDate && (
-					<View style={styles.dateSep}>
-						<Text
-							style={[
-								styles.dateLabel,
-								{ color: mutedColor, backgroundColor: bg },
-							]}
-						>
-							{dateLabel}
-						</Text>
-					</View>
-				)}
-				{authorLabel && (
-					<Text style={[styles.authorLabel, { color: mutedColor }]}>
+				{dateSeparator}
+				{authorLabel ? (
+					<Text style={[styles.authorLabel, { color: C.mutedForeground }]}>
 						{authorLabel.primary}
 						{authorLabel.secondary ? (
-							<Text style={{ color: mutedColor }}>
+							<Text style={{ color: C.mutedForeground }}>
 								{" "}
 								{authorLabel.secondary === "formerMember"
 									? t("messages.formerMember")
@@ -577,170 +733,169 @@ export function ConversationScreen({
 							</Text>
 						) : null}
 					</Text>
-				)}
-				<View style={[styles.msgRow, isMe ? styles.msgRight : styles.msgLeft]}>
-					{!isMe && (
-						<View
-							style={[
-								styles.msgAvatar,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-							]}
-						>
-							<Text
-								style={{
-									color: primaryColor,
-									fontFamily: Fonts.displayBold,
-									fontSize: 12,
-								}}
-							>
-								{otherUser?.name?.[0]?.toUpperCase() ?? "?"}
-							</Text>
-						</View>
+				) : null}
+				<View
+					style={[
+						styles.msgRow,
+						isMe ? styles.msgRight : styles.msgLeft,
+						{ marginBottom: endsRun ? 10 : 2 },
+					]}
+				>
+					{isMe ? null : endsRun ? (
+						renderAvatar(avatarFor(item))
+					) : (
+						<View style={styles.avatarSpacer} />
 					)}
-					<View
+					<Pressable
+						onLongPress={() => openMessageActions(item)}
+						delayLongPress={350}
+						// A bubble holding a listing card stays a group, so the card
+						// keeps its own button for a screen reader; a plain bubble
+						// reads as one element that offers the same menu.
+						accessible={!listing}
+						accessibilityHint={listing ? undefined : t("messages.actionsHint")}
+						accessibilityActions={
+							listing
+								? undefined
+								: [{ name: "longpress", label: t("messages.actions") }]
+						}
+						onAccessibilityAction={(e) => {
+							if (e.nativeEvent.actionName === "longpress")
+								openMessageActions(item);
+						}}
 						style={[
 							styles.bubble,
 							{
-								backgroundColor: isMe ? primaryColor : cardBg,
-								borderColor: isMe ? primaryColor : borderColor,
+								// Own messages in deep indigo in both themes: white text
+								// keeps its contrast where the dark primary would not.
+								backgroundColor: isMe ? FILLED : C.card,
+								borderColor: isMe ? FILLED : C.border,
+								opacity:
+									actionTarget?.id === item.id ? 0.6 : item.failed ? 0.72 : 1,
 							},
-							item.listing ? { width: "86%", maxWidth: "86%" } : null,
+							endsRun ? (isMe ? styles.bubbleMine : styles.bubbleTheirs) : null,
+							listing ? styles.bubbleWithListing : null,
 						]}
 					>
-						{item.listing && (
-							<Pressable
-								onPress={() =>
-									router.push(`/listing/${item.listing.id}` as never)
-								}
-								style={[
-									styles.msgListingCard,
-									{
-										borderBottomColor: isMe
-											? "rgba(255,255,255,0.2)"
-											: borderColor,
-										backgroundColor: isMe
-											? "rgba(255,255,255,0.12)"
-											: "#f8fafc",
-									},
-								]}
-							>
-								{item.listing.thumbnailUrl && (
-									<Image
-										source={{ uri: item.listing.thumbnailUrl }}
-										style={styles.msgListingImg}
-										contentFit="cover"
-									/>
-								)}
-								<View style={styles.msgListingBottom}>
-									<View style={styles.msgListingInfo}>
-										<Text
-											style={[
-												styles.msgListingTitle,
-												{ color: isMe ? "#fff" : textColor },
-											]}
-											numberOfLines={2}
-										>
-											{item.listing.title}
-										</Text>
-										{item.listing.price != null && (
-											<Text
-												style={[
-													styles.msgListingPrice,
-													{
-														color: isMe
-															? "rgba(255,255,255,0.85)"
-															: primaryColor,
-													},
-												]}
-											>
-												{formatPrice(item.listing.price, i18n.language)}
-											</Text>
-										)}
-									</View>
-									<Ionicons
-										name="chevron-forward"
-										size={14}
-										color={isMe ? "rgba(255,255,255,0.6)" : mutedColor}
-									/>
-								</View>
-							</Pressable>
-						)}
+						{listing ? (
+							<MessageListingCard
+								listing={listing}
+								mine={isMe}
+								onPress={() => router.push(`/listing/${listing.id}` as never)}
+							/>
+						) : null}
 						<Text
-							style={[styles.bubbleText, { color: isMe ? "#fff" : textColor }]}
+							style={[
+								styles.bubbleText,
+								listing ? styles.bubbleTextUnderCard : null,
+								{ color: isMe ? "#ffffff" : C.foreground },
+							]}
 						>
 							{item.content}
 						</Text>
-						<View style={styles.bubbleMeta}>
+						<View
+							style={[
+								styles.bubbleMeta,
+								listing ? styles.bubbleTextUnderCard : null,
+							]}
+						>
 							<Text
 								style={[
 									styles.bubbleTime,
-									{ color: isMe ? "rgba(255,255,255,0.7)" : mutedColor },
+									{ color: isMe ? OWN_META : C.mutedForeground },
 								]}
 							>
 								{formatTime(item.createdAt)}
 							</Text>
-							{isMe && (
-								<Text
-									style={[
-										styles.readTick,
-										{
-											color: isRead ? "#60a5fa" : "rgba(255,255,255,0.5)",
-										},
-									]}
-								>
-									{isRead ? " ✓✓" : " ✓"}
-								</Text>
-							)}
-							{isMe &&
-								!item.failed &&
-								chatClient?.isPending(String(item.id)) && (
-									<Ionicons
-										name="time-outline"
-										size={12}
-										color="rgba(255,255,255,0.7)"
-										accessibilityLabel={t("messages.sending")}
-										style={{ marginLeft: 4 }}
-									/>
-								)}
+							{isMe && item.failed ? (
+								<Ionicons
+									name="alert-circle"
+									size={15}
+									color="#ffffff"
+									accessibilityLabel={t("messages.notSent")}
+								/>
+							) : null}
+							{isMe && !item.failed ? (
+								<Ionicons
+									name={
+										isPending
+											? "time-outline"
+											: isRead
+												? "checkmark-done"
+												: "checkmark"
+									}
+									size={15}
+									color={isRead && !isPending ? "#ffffff" : OWN_META}
+									accessibilityLabel={
+										isPending
+											? t("messages.sending")
+											: isRead
+												? t("messages.messageRead")
+												: t("messages.messageSent")
+									}
+								/>
+							) : null}
 						</View>
-					</View>
+					</Pressable>
 				</View>
-				{isMe && item.failed && (
+				{isMe && item.failed ? (
 					<Pressable
 						onPress={() => retryMessage(item)}
 						accessibilityRole="button"
+						accessibilityLabel={t("messages.notSent")}
 						hitSlop={8}
-						style={styles.failedRow}
+						style={({ pressed }) => [
+							styles.failedRow,
+							{ opacity: pressed ? 0.6 : 1 },
+						]}
 					>
-						<Ionicons name="alert-circle" size={14} color="#dc2626" />
-						<Text style={styles.failedText}>{t("messages.notSent")}</Text>
+						<Ionicons name="refresh" size={15} color={C.dangerText} />
+						<Text style={[styles.failedText, { color: C.dangerText }]}>
+							{t("messages.notSent")}
+						</Text>
 					</Pressable>
-				)}
+				) : null}
 			</>
 		);
 	};
 
 	if (!user) {
 		return (
-			<View
-				style={[
-					styles.safe,
-					{
-						backgroundColor: bg,
-						alignItems: "center",
-						justifyContent: "center",
-					},
-				]}
-			>
-				<Text style={{ color: textColor }}>{t("auth.loginRequired")}</Text>
+			<View style={[styles.safe, { backgroundColor: C.background }]}>
+				<EmptyState illustration="auth" title={t("auth.loginRequired")} />
 			</View>
 		);
 	}
 
+	const typingBubble = isOtherTyping ? (
+		<View style={[styles.msgRow, styles.msgLeft, { marginTop: 2 }]}>
+			{renderAvatar(peerAvatar)}
+			<View
+				style={[
+					styles.bubble,
+					styles.bubbleTheirs,
+					styles.typingBubble,
+					{ backgroundColor: C.card, borderColor: C.border },
+				]}
+				// The dots say it to the eye; this says it aloud, once.
+				accessible
+				accessibilityLabel={t("messages.typing", {
+					name: peerName,
+				})}
+				accessibilityLiveRegion="polite"
+			>
+				<TypingIndicator color={C.mutedForeground} />
+			</View>
+		</View>
+	) : null;
+
+	const canSend = text.trim().length > 0 && !sending;
+	const nearLimit = text.length >= MAX_LENGTH - 100;
+
 	return (
 		<SafeAreaView
 			edges={renderHeader ? ["bottom"] : ["top", "bottom"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: C.background }]}
 		>
 			{renderHeader ? (
 				renderHeader(conv)
@@ -748,55 +903,41 @@ export function ConversationScreen({
 				<View
 					style={[
 						styles.header,
-						{ backgroundColor: cardBg, borderBottomColor: borderColor },
+						{ backgroundColor: C.card, borderBottomColor: C.border },
 					]}
 				>
 					<HeaderBackButton
-						color={textColor}
+						color={C.foreground}
 						fallback="/(tabs)/messages"
 						style={styles.backBtn}
 					/>
 					<View style={styles.headerInfo}>
 						<View style={styles.avatarWrapper}>
-							<View
-								style={[
-									styles.headerAvatar,
-									{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-								]}
-							>
-								{header?.logoUrl ? (
-									<Image
-										source={{ uri: header.logoUrl }}
-										style={styles.headerAvatarImg}
-										contentFit="cover"
-									/>
-								) : (
-									<Text
-										style={{
-											color: primaryColor,
-											fontFamily: Fonts.displayBold,
-											fontSize: 16,
-										}}
-									>
-										{(header?.title ?? "?").charAt(0).toUpperCase() || "?"}
-									</Text>
-								)}
-							</View>
-							{!header?.isShop && isOtherOnline && (
-								<View style={styles.onlineDotHeader} />
-							)}
+							{renderAvatar(peerAvatar, 40)}
+							{!header?.isShop && isOtherOnline ? (
+								<View
+									style={[
+										styles.onlineDotHeader,
+										{ backgroundColor: C.success, borderColor: C.card },
+									]}
+								/>
+							) : null}
 						</View>
-						<View>
-							<Text style={[styles.headerName, { color: textColor }]}>
-								{header?.title || t("messages.user")}
+						<View style={styles.headerText}>
+							<Text
+								style={[styles.headerName, { color: C.foreground }]}
+								numberOfLines={1}
+								accessibilityRole="header"
+							>
+								{peerName}
 							</Text>
 							{!header?.isShop && isOtherOnline ? (
-								<Text style={[styles.onlineLabel, { color: "#22c55e" }]}>
+								<Text style={[styles.headerSub, { color: C.success }]}>
 									{t("messages.online")}
 								</Text>
 							) : header?.subtitle ? (
 								<Text
-									style={[styles.headerListing, { color: mutedColor }]}
+									style={[styles.headerSub, { color: C.mutedForeground }]}
 									numberOfLines={1}
 								>
 									{header.subtitle}
@@ -806,9 +947,11 @@ export function ConversationScreen({
 									onPress={() =>
 										router.push(`/listing/${attachedListing.id}` as never)
 									}
+									accessibilityRole="link"
+									hitSlop={{ top: 6, bottom: 6 }}
 								>
 									<Text
-										style={[styles.headerListing, { color: primaryColor }]}
+										style={[styles.headerSub, { color: link }]}
 										numberOfLines={1}
 									>
 										{attachedListing.title}
@@ -817,39 +960,58 @@ export function ConversationScreen({
 							) : null}
 						</View>
 					</View>
-					<Pressable
-						onPress={() =>
-							showAlert(
-								t("messages.options"),
-								"",
-								[
-									{
-										text: t("messages.viewProfile"),
-										onPress: () => router.push(`/profile/${otherUser?.id}`),
-									},
-									{
-										text: t("messages.report"),
-										onPress: () =>
-											router.push({
-												pathname: "/report",
-												params: { targetType: "user", targetId: otherUser?.id },
-											}),
-									},
-									{
-										text: isBlocked
-											? t("messages.unblock")
-											: t("messages.block"),
-										style: isBlocked ? "default" : "destructive",
-										onPress: confirmToggleBlock,
-									},
-									{ text: t("common.cancel"), style: "cancel" },
-								],
-								"info",
-							)
-						}
-					>
-						<Ionicons name="ellipsis-vertical" size={20} color={textColor} />
-					</Pressable>
+					{otherUser?.id ? (
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={t("messages.options")}
+							style={({ pressed }) => [
+								styles.optionsBtn,
+								{ opacity: pressed ? 0.6 : 1 },
+							]}
+							onPress={() =>
+								showAlert(
+									t("messages.options"),
+									"",
+									[
+										{
+											text: t("messages.viewProfile"),
+											onPress: () => router.push(`/profile/${otherUser?.id}`),
+										},
+										{
+											text: t("messages.report"),
+											onPress: () =>
+												router.push({
+													pathname: "/report",
+													params: {
+														targetType: "user",
+														targetId: otherUser?.id,
+													},
+												}),
+										},
+										{
+											text: isBlocked
+												? t("messages.unblock")
+												: t("messages.block"),
+											style: isBlocked ? "default" : "destructive",
+											onPress: confirmToggleBlock,
+										},
+										{ text: t("common.cancel"), style: "cancel" },
+									],
+									"info",
+								)
+							}
+						>
+							<Ionicons
+								name={
+									Platform.OS === "ios"
+										? "ellipsis-horizontal-circle-outline"
+										: "ellipsis-vertical"
+								}
+								size={Platform.OS === "ios" ? 24 : 20}
+								color={C.foreground}
+							/>
+						</Pressable>
+					) : null}
 				</View>
 			)}
 
@@ -859,163 +1021,295 @@ export function ConversationScreen({
 				) : isError ? (
 					// A failed history fetch used to leave a permanently blank thread.
 					<EmptyState
-						icon="chatbubbles-outline"
+						icon="cloud-offline-outline"
 						title={t("common.error")}
 						subtitle={t("home.errorSub")}
 						ctaLabel={t("common.retry")}
 						onCta={() => refetch()}
 					/>
+				) : messages.length === 0 ? (
+					<View style={[styles.threadEmptyWrap, centeredContent]}>
+						<View style={styles.threadEmpty}>
+							{renderAvatar(peerAvatar, 64)}
+							<Text
+								style={[styles.threadEmptyName, { color: C.foreground }]}
+								numberOfLines={1}
+							>
+								{peerName}
+							</Text>
+							<Text
+								style={[styles.threadEmptyText, { color: C.mutedForeground }]}
+							>
+								{t("inbox.noMessages")}
+							</Text>
+						</View>
+						{typingBubble}
+					</View>
 				) : (
-					<FlatList
-						ref={listRef}
-						data={messages}
-						renderItem={renderMessage}
-						keyExtractor={(item) => item.id}
-						contentContainerStyle={[styles.msgList, centeredContent]}
-						showsVerticalScrollIndicator={false}
-						keyboardDismissMode="interactive"
-						onContentSizeChange={() =>
-							listRef.current?.scrollToEnd({ animated: false })
-						}
-						ListFooterComponent={
-							isOtherTyping ? (
-								<View style={[styles.msgRow, styles.msgLeft, { marginTop: 4 }]}>
-									<View
-										style={[
-											styles.msgAvatar,
-											{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-										]}
-									>
-										<Text
-											style={{
-												color: primaryColor,
-												fontFamily: Fonts.displayBold,
-												fontSize: 12,
-											}}
-										>
-											{otherUser?.name?.[0]?.toUpperCase() ?? "?"}
-										</Text>
-									</View>
-									<View
-										style={[
-											styles.bubble,
-											styles.typingBubble,
-											{ backgroundColor: cardBg, borderColor },
-										]}
-									>
-										<TypingDots color={mutedColor} />
-									</View>
-								</View>
-							) : null
-						}
-					/>
+					<View style={[styles.listColumn, centeredContent]}>
+						<FlashList
+							ref={listRef}
+							data={messages}
+							renderItem={renderMessage}
+							keyExtractor={(item) => String(item.id)}
+							getItemType={(item) =>
+								isSystemMessage(item)
+									? "system"
+									: item.listing
+										? "listing"
+										: senderIdOf(item) === user.id
+											? "mine"
+											: "theirs"
+							}
+							extraData={{ readByOther, actionTarget }}
+							// A chat: the first frame opens on the latest message,
+							// history loaded above keeps the reader where they were,
+							// and what arrives while they sit at the bottom slides in.
+							maintainVisibleContentPosition={{
+								startRenderingFromBottom: true,
+								autoscrollToBottomThreshold: 0.2,
+								animateAutoScrollToBottom: !reducedMotion,
+							}}
+							onStartReached={loadOlder}
+							onStartReachedThreshold={0.5}
+							onScroll={onListScroll}
+							scrollEventThrottle={64}
+							contentContainerStyle={styles.msgList}
+							showsVerticalScrollIndicator={false}
+							keyboardDismissMode="interactive"
+							keyboardShouldPersistTaps="handled"
+							ListHeaderComponent={
+								loadingOlder ? (
+									<ActivityIndicator
+										style={styles.olderSpinner}
+										color={C.mutedForeground}
+										accessibilityLabel={t("common.loading")}
+									/>
+								) : null
+							}
+							ListFooterComponent={typingBubble}
+						/>
+					</View>
 				)}
 
-				{/* Input bar */}
+				{/* Composer */}
 				<View
 					style={[
-						{ backgroundColor: cardBg, borderTopColor: borderColor },
 						styles.inputWrapper,
+						{ backgroundColor: C.card, borderTopColor: C.border },
 					]}
 				>
-					{attachedListing && (
-						<View style={[styles.attachBar, { borderColor }]}>
-							{attachedListing.thumbnailUrl && (
-								<Image
-									source={{ uri: attachedListing.thumbnailUrl }}
-									style={styles.attachImg}
-									contentFit="cover"
-								/>
-							)}
-							<View style={styles.attachInfo}>
-								<Text
-									style={[styles.attachTitle, { color: textColor }]}
-									numberOfLines={1}
-								>
-									{attachedListing.title}
-								</Text>
-								{attachedListing.price != null && (
-									<Text style={[styles.attachPrice, { color: primaryColor }]}>
-										{formatPrice(attachedListing.price, i18n.language)}
-									</Text>
-								)}
-							</View>
-							<Pressable
-								onPress={() => setAttachedListing(null)}
-								style={styles.attachDismiss}
-							>
-								<Ionicons name="close" size={16} color={mutedColor} />
-							</Pressable>
+					{attachedListing ? (
+						<View style={centeredContent}>
+							<ComposerListingChip
+								listing={attachedListing}
+								onRemove={() => setAttachedListing(null)}
+							/>
 						</View>
-					)}
+					) : null}
 					{isBlocked ? (
-						<View style={[styles.inputBar, centeredContent]}>
-							<Text style={[styles.blockedNotice, { color: mutedColor }]}>
+						<View style={[styles.blockedBar, centeredContent]}>
+							<Ionicons
+								name="ban-outline"
+								size={18}
+								color={C.mutedForeground}
+							/>
+							<Text
+								style={[styles.blockedNotice, { color: C.mutedForeground }]}
+							>
 								{t("messages.blockedNotice")}
 							</Text>
-							<Pressable onPress={confirmToggleBlock}>
-								<Text style={[styles.blockedAction, { color: primaryColor }]}>
+							<Pressable
+								onPress={confirmToggleBlock}
+								accessibilityRole="button"
+								style={({ pressed }) => [
+									styles.blockedActionBtn,
+									{ opacity: pressed ? 0.6 : 1 },
+								]}
+							>
+								<Text style={[styles.blockedAction, { color: link }]}>
 									{t("messages.unblock")}
 								</Text>
 							</Pressable>
 						</View>
 					) : (
 						<View style={centeredContent}>
-							{!chatConnected && (
-								<Text style={[styles.offlineHint, { color: mutedColor }]}>
-									{t("messages.queuedOffline")}
-								</Text>
-							)}
-							<View style={[styles.inputBar, centeredContent]}>
-								<TextInput
-									value={text}
-									onChangeText={handleTextChange}
-									placeholder={t("messages.writePlaceholder")}
-									placeholderTextColor={mutedColor}
-									style={[
-										styles.msgInput,
-										{
-											color: textColor,
-											backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
-											borderColor,
-										},
-									]}
-									multiline
-									maxLength={1000}
-								/>
-								<Pressable
-									onPress={() => text.trim() && sendMessage()}
-									accessibilityRole="button"
-									accessibilityLabel={t("messages.send")}
-									disabled={!text.trim() || sending}
-									style={[
-										styles.sendBtn,
-										{
-											backgroundColor: text.trim()
-												? primaryColor
-												: isDark
-													? "#1e293b"
-													: "#e2e8f0",
-										},
-									]}
+							{!chatConnected ? (
+								<View
+									style={styles.offlineHint}
+									accessibilityLiveRegion="polite"
 								>
-									{sending ? (
-										<ActivityIndicator size="small" color="#fff" />
-									) : (
-										<Ionicons
-											name="send"
-											size={18}
-											color={text.trim() ? "#fff" : mutedColor}
-										/>
-									)}
-								</Pressable>
+									<Ionicons
+										name="cloud-offline-outline"
+										size={14}
+										color={C.mutedForeground}
+									/>
+									<Text
+										style={[
+											styles.offlineHintText,
+											{ color: C.mutedForeground },
+										]}
+									>
+										{t("messages.queuedOffline")}
+									</Text>
+								</View>
+							) : null}
+							<View style={styles.inputBar}>
+								<View style={styles.inputCol}>
+									<TextInput
+										value={text}
+										onChangeText={handleTextChange}
+										placeholder={t("messages.writePlaceholder")}
+										placeholderTextColor={C.mutedForeground}
+										accessibilityLabel={t("messages.writePlaceholder")}
+										selectionColor={link}
+										cursorColor={link}
+										style={[
+											styles.msgInput,
+											{
+												color: C.foreground,
+												backgroundColor: C.well,
+												borderColor: C.border,
+											},
+										]}
+										multiline
+										maxLength={MAX_LENGTH}
+									/>
+									{nearLimit ? (
+										<Text
+											style={[
+												styles.counter,
+												{
+													color:
+														text.length >= MAX_LENGTH
+															? C.destructive
+															: C.mutedForeground,
+												},
+											]}
+										>
+											{text.length}/{MAX_LENGTH}
+										</Text>
+									) : null}
+								</View>
+								<SendButton
+									onPress={() => text.trim() && sendMessage()}
+									label={t("messages.send")}
+									canSend={canSend}
+									sending={sending}
+									idleBackground={C.well}
+									idleIcon={C.faint}
+									reducedMotion={reducedMotion}
+								/>
 							</View>
 						</View>
 					)}
 				</View>
 			</KeyboardAvoidingView>
+			<MessageActionSheet
+				preview={actionTarget ? String(actionTarget.content ?? "") : null}
+				actions={messageActions}
+				onClose={() => setActionTarget(null)}
+			/>
 		</SafeAreaView>
 	);
+}
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/**
+ * The composer's send button: it gives under the thumb on a spring and
+ * springs back as the message leaves. Scale only, so it stays on the UI
+ * thread; still under Reduce Motion.
+ */
+function SendButton({
+	onPress,
+	label,
+	canSend,
+	sending,
+	idleBackground,
+	idleIcon,
+	reducedMotion,
+}: {
+	onPress: () => void;
+	label: string;
+	canSend: boolean;
+	sending: boolean;
+	idleBackground: string;
+	idleIcon: string;
+	reducedMotion: boolean;
+}) {
+	const scale = useSharedValue(1);
+	const pressStyle = useAnimatedStyle(() => ({
+		transform: [{ scale: scale.value }],
+	}));
+	const springTo = (to: number) => {
+		if (reducedMotion) return;
+		scale.value = withSpring(to, SpringPresets.micro);
+	};
+	// Sending empties the composer and disables the button mid-press, which
+	// can swallow the press-out: settle back whenever that state flips.
+	useEffect(() => {
+		if (!canSend) scale.value = withSpring(1, SpringPresets.micro);
+	}, [canSend, scale]);
+
+	return (
+		<AnimatedPressable
+			onPress={onPress}
+			onPressIn={() => springTo(0.88)}
+			onPressOut={() => springTo(1)}
+			accessibilityRole="button"
+			accessibilityLabel={label}
+			accessibilityState={{ disabled: !canSend }}
+			disabled={!canSend}
+			style={[
+				styles.sendBtn,
+				{ backgroundColor: canSend ? FILLED : idleBackground },
+				pressStyle,
+			]}
+		>
+			{sending ? (
+				<ActivityIndicator size="small" color="#ffffff" />
+			) : (
+				<Ionicons
+					name="send"
+					size={19}
+					color={canSend ? "#ffffff" : idleIcon}
+					style={styles.sendIcon}
+				/>
+			)}
+		</AnimatedPressable>
+	);
+}
+
+interface PeerAvatar {
+	uri: string | null;
+	initial: string;
+	/** A shop is a squared plaque, a person a circle. */
+	square: boolean;
+}
+
+/** Own bubbles and the send button: deep indigo in both themes, so white stays legible. */
+const FILLED = Colors.light.ownBubble;
+/** Time and ticks on an own bubble: white at 80% keeps 4.5:1 on `FILLED`. */
+const OWN_META = "rgba(255,255,255,0.8)";
+const MAX_LENGTH = 1000;
+/** A stable empty thread, so effects keyed on the list do not re-run every render. */
+const EMPTY: any[] = [];
+/** Messages closer than this from one sender stack as a run. */
+const RUN_GAP_MS = 5 * 60_000;
+
+function senderIdOf(m: any): string | undefined {
+	return m?.sender?.id ?? m?.sender;
+}
+
+function sameRun(a: any, b: any): boolean {
+	if (!a || !b) return false;
+	if (isSystemMessage(a) || isSystemMessage(b)) return false;
+	if (senderIdOf(a) !== senderIdOf(b)) return false;
+	const ta = new Date(a.createdAt);
+	const tb = new Date(b.createdAt);
+	if (ta.toDateString() !== tb.toDateString()) return false;
+	return Math.abs(tb.getTime() - ta.getTime()) < RUN_GAP_MS;
 }
 
 const styles = StyleSheet.create({
@@ -1023,165 +1317,198 @@ const styles = StyleSheet.create({
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
+		gap: 4,
+		paddingHorizontal: 4,
+		paddingVertical: 6,
+		minHeight: 56,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	backBtn: { width: 40, alignItems: "center", justifyContent: "center" },
-	headerInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
-	avatarWrapper: { position: "relative" },
-	headerAvatar: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
+	backBtn: {
+		width: 44,
+		height: 44,
 		alignItems: "center",
 		justifyContent: "center",
-		overflow: "hidden",
 	},
-	headerAvatarImg: { width: 40, height: 40 },
+	headerInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+	headerText: { flex: 1 },
+	avatarWrapper: { position: "relative" },
 	onlineDotHeader: {
 		position: "absolute",
-		bottom: 1,
-		right: 1,
+		bottom: 0,
+		right: 0,
 		width: 12,
 		height: 12,
 		borderRadius: 6,
-		backgroundColor: "#22c55e",
 		borderWidth: 2,
-		borderColor: "white",
 	},
-	headerName: { fontSize: 15, fontFamily: Fonts.displayBold },
-	headerListing: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	onlineLabel: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	msgList: { padding: 12, paddingBottom: 8 },
-	dateSep: { alignItems: "center", marginVertical: 12 },
+	headerName: {
+		fontSize: 17,
+		lineHeight: 22,
+		letterSpacing: -0.2,
+		fontFamily: Fonts.displayBold,
+	},
+	headerSub: { fontSize: 13, lineHeight: 17, fontFamily: Fonts.bodySemibold },
+	optionsBtn: {
+		width: 48,
+		height: 48,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	listColumn: { flex: 1 },
+	msgList: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },
+	olderSpinner: { paddingVertical: 12 },
+	threadEmptyWrap: {
+		flex: 1,
+		justifyContent: "center",
+		paddingHorizontal: 12,
+		paddingBottom: 8,
+	},
+	threadEmpty: { alignItems: "center", gap: 8, paddingHorizontal: 32 },
+	threadEmptyName: {
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
+		fontFamily: Fonts.displayBold,
+		marginTop: 4,
+	},
+	threadEmptyText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	dateSep: { alignItems: "center", marginTop: 14, marginBottom: 12 },
 	dateLabel: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
-		paddingHorizontal: 10,
-		paddingVertical: 3,
+		paddingHorizontal: 12,
+		paddingVertical: 4,
 		borderRadius: 10,
 		overflow: "hidden",
 	},
 	authorLabel: {
-		fontSize: 11,
+		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
-		marginLeft: 42,
-		marginBottom: 2,
+		// Avatar 28 + its 6pt gap + the bubble's own 14pt inset.
+		marginLeft: 48,
+		marginBottom: 3,
 	},
-	msgRow: { flexDirection: "row", alignItems: "flex-end", marginBottom: 6 },
+	msgRow: { flexDirection: "row", alignItems: "flex-end" },
 	msgLeft: { justifyContent: "flex-start" },
 	msgRight: { justifyContent: "flex-end" },
 	msgAvatar: {
-		width: 28,
-		height: 28,
-		borderRadius: 14,
 		alignItems: "center",
 		justifyContent: "center",
+		overflow: "hidden",
 		marginRight: 6,
-		marginBottom: 2,
 	},
+	avatarSpacer: { width: 28, marginRight: 6 },
 	bubble: {
-		borderRadius: 18,
-		borderWidth: 1,
+		borderRadius: 20,
+		borderWidth: StyleSheet.hairlineWidth,
 		paddingHorizontal: 14,
-		paddingVertical: 10,
-		maxWidth: "75%",
+		paddingTop: 9,
+		paddingBottom: 7,
+		maxWidth: "78%",
 		gap: 2,
 	},
-	typingBubble: {
-		paddingHorizontal: 16,
-		paddingVertical: 10,
+	// A shared listing fills the bubble edge to edge, with a 6pt frame.
+	bubbleWithListing: {
+		width: "82%",
+		maxWidth: 340,
+		paddingHorizontal: 6,
+		paddingTop: 6,
 	},
-	bubbleText: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.body },
+	bubbleTextUnderCard: { paddingHorizontal: 8 },
+	typingBubble: { paddingHorizontal: 16, paddingVertical: 10 },
+	bubbleMine: { borderBottomRightRadius: 6 },
+	bubbleTheirs: { borderBottomLeftRadius: 6 },
+	bubbleText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.body },
 	bubbleMeta: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "flex-end",
-		gap: 2,
+		gap: 3,
 	},
-	bubbleTime: { fontSize: 10, fontFamily: Fonts.body },
-	readTick: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	bubbleTime: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
 	failedRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		alignSelf: "flex-end",
-		gap: 4,
-		marginTop: -2,
-		marginBottom: 6,
+		gap: 5,
+		minHeight: 32,
+		marginTop: -4,
+		marginBottom: 8,
+		paddingHorizontal: 4,
+	},
+	failedText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	offlineHint: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
 		paddingHorizontal: 16,
+		paddingTop: 8,
 	},
-	failedText: {
+	offlineHintText: {
+		flex: 1,
 		fontSize: 12,
-		color: "#dc2626",
-		fontFamily: Fonts.bodySemibold,
+		lineHeight: 16,
+		fontFamily: Fonts.body,
 	},
-	offlineHint: { fontSize: 12, paddingHorizontal: 16, paddingBottom: 6 },
-	inputWrapper: { borderTopWidth: 1 },
-	attachBar: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 10,
-		paddingVertical: 8,
-		borderBottomWidth: 1,
-	},
-	attachImg: { width: 36, height: 36, borderRadius: 6 },
-	attachInfo: { flex: 1 },
-	attachTitle: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	attachPrice: { fontSize: 12, fontFamily: Fonts.displayBold },
-	attachDismiss: { padding: 4 },
-	msgListingCard: {
-		borderBottomWidth: 1,
-		marginHorizontal: -14,
-		marginTop: -10,
-		marginBottom: 6,
-		borderTopLeftRadius: 17,
-		borderTopRightRadius: 17,
-		overflow: "hidden",
-	},
-	msgListingImg: { width: "100%", height: 110 },
-	msgListingBottom: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 10,
-		paddingVertical: 8,
-	},
-	msgListingInfo: { flex: 1 },
-	msgListingTitle: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	msgListingPrice: { fontSize: 12, fontFamily: Fonts.displayBold },
+	inputWrapper: { borderTopWidth: StyleSheet.hairlineWidth },
 	inputBar: {
 		flexDirection: "row",
 		alignItems: "flex-end",
 		gap: 8,
-		padding: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+	},
+	inputCol: { flex: 1 },
+	blockedBar: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingLeft: 16,
+		paddingRight: 8,
+		paddingVertical: 4,
 	},
 	blockedNotice: {
 		flex: 1,
-		fontSize: 13,
-		fontFamily: Fonts.body,
-	},
-	blockedAction: {
 		fontSize: 14,
-		fontWeight: "600",
+		lineHeight: 19,
 		fontFamily: Fonts.body,
 	},
+	blockedActionBtn: {
+		minHeight: 48,
+		justifyContent: "center",
+		paddingHorizontal: 8,
+	},
+	blockedAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
 	msgInput: {
-		flex: 1,
-		borderRadius: 22,
-		borderWidth: 1,
-		paddingHorizontal: 14,
-		paddingVertical: 10,
-		fontSize: 15,
+		minHeight: 48,
+		maxHeight: 132,
+		borderRadius: 24,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingHorizontal: 16,
+		paddingTop: 13,
+		paddingBottom: 13,
+		fontSize: 16,
+		lineHeight: 21,
 		fontFamily: Fonts.body,
-		maxHeight: 100,
+		textAlignVertical: "center",
+	},
+	counter: {
+		alignSelf: "flex-end",
+		fontSize: 11,
+		lineHeight: 14,
+		fontFamily: Fonts.bodyMedium,
+		marginTop: 4,
+		marginRight: 12,
 	},
 	sendBtn: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
+		width: 48,
+		height: 48,
+		borderRadius: 24,
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	// The paper plane's visual centre sits left of its box.
+	sendIcon: { marginLeft: 3 },
 });

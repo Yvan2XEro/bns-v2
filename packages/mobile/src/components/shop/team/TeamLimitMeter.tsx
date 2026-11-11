@@ -23,6 +23,21 @@ export function TeamLimitMeter({ team }: { team: TeamView }) {
 			<Text style={[styles.seats, { color: c.text }]}>
 				{t("team.seats", { used, total })}
 			</Text>
+			<View
+				style={[styles.track, { backgroundColor: c.neutralSoft }]}
+				accessibilityElementsHidden
+				importantForAccessibility="no-hide-descendants"
+			>
+				<View
+					style={[
+						styles.fill,
+						{
+							width: `${total > 0 ? Math.min(100, (used / total) * 100) : 0}%`,
+							backgroundColor: overage > 0 ? c.warningText : c.primary,
+						},
+					]}
+				/>
+			</View>
 			{overage > 0 ? (
 				<Text style={[styles.overage, { color: c.warningText }]}>
 					{t("team.overage", { count: overage })}
@@ -35,10 +50,17 @@ export function TeamLimitMeter({ team }: { team: TeamView }) {
 const styles = StyleSheet.create({
 	card: {
 		borderRadius: 16,
-		borderWidth: 1,
-		padding: 14,
-		marginBottom: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 16,
+		gap: 10,
 	},
-	seats: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	overage: { fontSize: 12, fontFamily: Fonts.body, marginTop: 4 },
+	seats: {
+		fontSize: 17,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
+	track: { height: 6, borderRadius: 3, overflow: "hidden" },
+	fill: { height: "100%", borderRadius: 3 },
+	overage: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

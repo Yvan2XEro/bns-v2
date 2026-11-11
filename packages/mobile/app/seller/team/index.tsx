@@ -2,17 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { MemberRow } from "@/src/components/shop/team/MemberRow";
 import { PendingInvitationRow } from "@/src/components/shop/team/PendingInvitationRow";
@@ -97,9 +93,7 @@ export default function TeamScreen() {
 			<SellerHeader title={t("team.title")} />
 
 			{isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<ListSkeleton />
 			) : isError ? (
 				<EmptyState
 					illustration="notFound"
@@ -126,7 +120,9 @@ export default function TeamScreen() {
 						data={view.members}
 						keyExtractor={(member) => member.id}
 						contentContainerStyle={styles.list}
-						ListHeaderComponent={<TeamLimitMeter team={view} />}
+						ListHeaderComponent={
+							<TeamHeader view={view} canInvite={canInvite} isFull={isFull} />
+						}
 						renderItem={({ item }) => (
 							<MemberRow
 								member={item}
@@ -138,8 +134,6 @@ export default function TeamScreen() {
 							<PendingSection
 								view={view}
 								role={role}
-								canInvite={canInvite}
-								isFull={isFull}
 								resendingId={resendingId}
 								revokingId={revokingId}
 								onResend={handleResend}
@@ -154,6 +148,54 @@ export default function TeamScreen() {
 }
 
 /**
+ * The seats, then the screen's one primary action: inviting sits above the
+ * roster so it is reachable without scrolling past every member.
+ */
+function TeamHeader({
+	view,
+	canInvite,
+	isFull,
+}: {
+	view: TeamView;
+	canInvite: boolean;
+	isFull: boolean;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	return (
+		<View style={styles.header}>
+			<TeamLimitMeter team={view} />
+			{canInvite ? (
+				<View style={styles.inviteWrap}>
+					<Pressable
+						onPress={() => router.push("/seller/team/invite" as never)}
+						disabled={isFull}
+						accessibilityRole="button"
+						accessibilityLabel={t("team.invite")}
+						accessibilityState={{ disabled: isFull }}
+						style={({ pressed }) => [
+							styles.inviteBtn,
+							{
+								backgroundColor: fillOf(c),
+								opacity: isFull ? 0.5 : pressed ? 0.85 : 1,
+							},
+						]}
+					>
+						<Ionicons name="person-add-outline" size={18} color="#fff" />
+						<Text style={styles.inviteText}>{t("team.invite")}</Text>
+					</Pressable>
+					{isFull ? (
+						<Text style={[styles.meta, { color: c.warningText }]}>
+							{t("team.inviteFull")}
+						</Text>
+					) : null}
+				</View>
+			) : null}
+		</View>
+	);
+}
+
+/**
  * Pending invitations never reach the dozens this screen's roster could, so
  * they render through a plain map in the member `FlashList`'s footer rather
  * than a second, nested `FlashList` — React Native does not virtualize a
@@ -162,8 +204,6 @@ export default function TeamScreen() {
 function PendingSection({
 	view,
 	role,
-	canInvite,
-	isFull,
 	resendingId,
 	revokingId,
 	onResend,
@@ -171,8 +211,6 @@ function PendingSection({
 }: {
 	view: TeamView;
 	role: ShopRole | null;
-	canInvite: boolean;
-	isFull: boolean;
 	resendingId: string | null;
 	revokingId: string | null;
 	onResend: (invitation: PendingInvitationView) => void;
@@ -184,8 +222,10 @@ function PendingSection({
 
 	return (
 		<View style={styles.footer}>
-			<RoleMatrix />
-			<Text style={[styles.sectionTitle, { color: c.text }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.sectionTitle, { color: c.text }]}
+			>
 				{t("team.pending")}
 			</Text>
 			{view.invitations.length === 0 ? (
@@ -208,47 +248,35 @@ function PendingSection({
 				</View>
 			)}
 
-			{canInvite ? (
-				<View style={styles.inviteWrap}>
-					<Pressable
-						onPress={() => router.push("/seller/team/invite" as never)}
-						disabled={isFull}
-						accessibilityRole="button"
-						accessibilityLabel={t("team.invite")}
-						style={[
-							styles.inviteBtn,
-							{ backgroundColor: c.primary, opacity: isFull ? 0.5 : 1 },
-						]}
-					>
-						<Ionicons name="person-add-outline" size={18} color="#fff" />
-						<Text style={styles.inviteText}>{t("team.invite")}</Text>
-					</Pressable>
-					{isFull ? (
-						<Text style={[styles.meta, { color: c.warningText }]}>
-							{t("team.inviteFull")}
-						</Text>
-					) : null}
-				</View>
-			) : null}
+			{/* What each role may do: reference, so it comes after the actions. */}
+			<View style={styles.matrix}>
+				<RoleMatrix />
+			</View>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	list: { padding: 16, paddingBottom: 40, gap: 0 },
-	footer: { marginTop: 20, gap: 8 },
-	sectionTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
-	inviteWrap: { marginTop: 12, gap: 6 },
+	header: { gap: 12, marginBottom: 16 },
+	footer: { marginTop: 28, gap: 10 },
+	sectionTitle: {
+		fontSize: 19,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.3,
+	},
+	matrix: { marginTop: 28 },
+	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	inviteWrap: { gap: 8 },
 	inviteBtn: {
 		flexDirection: "row",
 		gap: 8,
-		minHeight: 50,
+		minHeight: 52,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	inviteText: { color: "#fff", fontSize: 15, fontFamily: Fonts.bodySemibold },
+	inviteText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

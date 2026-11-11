@@ -1,14 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import {
@@ -16,9 +9,23 @@ import {
 	type DecisionDuration,
 	DecisionSheet,
 } from "@/src/components/moderation/DecisionSheet";
+import {
+	DecisionBar,
+	DecisionButton,
+	DetailSkeleton,
+	FactRow,
+	InlineNotice,
+	LoadError,
+	ModerationCard,
+	TonePill,
+} from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
+import { tonesOf } from "@/src/components/moderation/tones";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useRiskFlag, useRiskFlagDecision } from "@/src/hooks/useModeration";
+import { resolveErrorMessage } from "@/src/lib/apiError";
+import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	riskDismissalDecision,
@@ -29,9 +36,23 @@ function textField(value: unknown): string | null {
 	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+function readableSignal(signal: string): string {
+	return signal.replaceAll(".", " · ").replaceAll("_", " ");
+}
+
+/** The moderation sheet a sanction would be taken from, when the app has one. */
+function subjectRoute(type: unknown, id: string | null): string | null {
+	if (!id) return null;
+	if (type === "user") return `/moderation/user/${id}`;
+	if (type === "shop") return `/moderation/shop/${id}`;
+	return null;
+}
+
 export default function RiskFlagScreen() {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
+	const { showSuccess } = useAlert();
 	const params = useLocalSearchParams<{ id: string }>();
 	const flagId = Array.isArray(params.id) ? params.id[0] : params.id;
 	const detail = useRiskFlag(flagId);
@@ -45,20 +66,12 @@ export default function RiskFlagScreen() {
 		return (
 			<ModerationScreen title={t("moderation.riskDetailTitle")}>
 				{detail.isError ? (
-					<View style={styles.errorState}>
-						<Text style={[styles.message, { color: c.muted }]}>
-							{t("moderation.riskDetailFailed")}
-						</Text>
-						<Pressable
-							accessibilityRole="button"
-							onPress={() => void detail.refetch()}
-							style={[styles.retryButton, { backgroundColor: c.primary }]}
-						>
-							<Text style={styles.actionLabel}>{t("common.retry")}</Text>
-						</Pressable>
-					</View>
+					<LoadError
+						title={t("moderation.riskDetailFailed")}
+						onRetry={() => void detail.refetch()}
+					/>
 				) : (
-					<ActivityIndicator color={c.primary} style={styles.loading} />
+					<DetailSkeleton />
 				)}
 			</ModerationScreen>
 		);
@@ -67,6 +80,19 @@ export default function RiskFlagScreen() {
 	const { flag, subject, evidenceRows, relatedFlags, moderationHistory } =
 		detail.data;
 	const subjectName = textField(subject.name) ?? textField(subject.label);
+	const severity = t(
+		flag.severity === "high"
+			? "moderation.riskHigh"
+			: flag.severity === "medium"
+				? "moderation.riskMedium"
+				: "moderation.riskLow",
+	);
+	const severityTone =
+		flag.severity === "high"
+			? "negative"
+			: flag.severity === "medium"
+				? "warning"
+				: "neutral";
 	const dismissChoices: DecisionChoice[] = [
 		{ value: "false_positive", label: t("moderation.riskFalsePositive") },
 	];
@@ -75,12 +101,23 @@ export default function RiskFlagScreen() {
 		{ value: 30, label: t("moderation.riskThirtyDays") },
 	];
 	const targetId = textField(subject.id);
+	const targetRoute = subjectRoute(subject.type, targetId);
+	const subjectTitle = subjectName ?? flag.subjectLabel ?? flag.subjectType;
+	const decidable = flag.status === "open" || flag.status === "reviewed";
+	// Every outcome is confirmed with a toast; the query refresh alone
+	// would leave the moderator guessing whether the tap landed.
+	const done = () => showSuccess(t("moderation.riskDecisionSaved"));
 	const resolveDismissal = (note: string) => {
 		const payload = riskDismissalDecision(note);
 		if (!payload || !flagId) return;
 		decision.mutate(
 			{ id: flagId, ...payload },
-			{ onSuccess: () => setDismissVisible(false) },
+			{
+				onSuccess: () => {
+					setDismissVisible(false);
+					done();
+				},
+			},
 		);
 	};
 	const resolveSanction = (durationDays: number | null, note: string) => {
@@ -94,229 +131,267 @@ export default function RiskFlagScreen() {
 		if (!payload) return;
 		decision.mutate(
 			{ id: flagId, ...payload },
-			{ onSuccess: () => setSanctionType(null) },
+			{
+				onSuccess: () => {
+					setSanctionType(null);
+					done();
+				},
+			},
 		);
 	};
+	const markReviewed = () => {
+		if (flag.status !== "open" || !flagId) return;
+		decision.mutate(
+			{ id: flagId, outcome: "reviewed", resolution: "none" },
+			{ onSuccess: done },
+		);
+	};
+	const evidenceValue = (value: string | number | boolean | null) =>
+		value === null
+			? null
+			: typeof value === "boolean"
+				? t(value ? "moderation.verifCommonYes" : "moderation.verifCommonNo")
+				: String(value);
 
 	return (
 		<ModerationScreen
 			title={t("moderation.riskDetailTitle")}
-			subtitle={`${t(
-				flag.severity === "high"
-					? "moderation.riskHigh"
-					: flag.severity === "medium"
-						? "moderation.riskMedium"
-						: "moderation.riskLow",
-			)} · ${flag.score}`}
+			subtitle={`${severity} · ${flag.score}`}
 		>
 			<ScreenColumn width="reading">
 				<ScrollView contentContainerStyle={styles.content}>
 					{decision.isError ? (
-						<Text style={[styles.error, { color: c.danger }]}>
-							{t("moderation.actionFailed")}
-						</Text>
+						<InlineNotice
+							text={`${t("moderation.actionFailed")} ${resolveErrorMessage(decision.error, t)}`}
+						/>
 					) : null}
-					<View
-						style={[
-							styles.card,
-							{ backgroundColor: c.card, borderColor: c.border },
-						]}
+
+					<ModerationCard
+						title={t("moderation.riskSubject")}
+						right={<TonePill tone={severityTone} label={severity} />}
 					>
-						<Text style={[styles.sectionTitle, { color: c.text }]}>
-							{t("moderation.riskSubject")}
-						</Text>
 						<Text style={[styles.primaryText, { color: c.text }]}>
-							{subjectName ?? flag.subjectLabel ?? flag.subjectType}
+							{subjectTitle}
 						</Text>
 						<Text style={[styles.secondaryText, { color: c.muted }]}>
-							{flag.subjectType}
+							{t(`moderation.target_${flag.subjectType}`, {
+								defaultValue: flag.subjectType,
+							})}
 						</Text>
-					</View>
+						{/* A sanction is weighed against the whole account or shop,
+						    not the one signal: its sheet is one tap away. */}
+						{targetRoute ? (
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={`${subjectTitle}, ${t("moderation.openTarget")}`}
+								onPress={() => router.push(targetRoute as never)}
+								style={({ pressed }) => [
+									styles.relatedRow,
+									styles.divided,
+									{ borderTopColor: c.border, opacity: pressed ? 0.7 : 1 },
+								]}
+							>
+								<Text style={[styles.relatedText, { color: k.linkText }]}>
+									{t("moderation.openTarget")}
+								</Text>
+								<Ionicons name="chevron-forward" size={18} color={c.muted} />
+							</Pressable>
+						) : null}
+					</ModerationCard>
 
-					<View
-						style={[
-							styles.card,
-							{ backgroundColor: c.card, borderColor: c.border },
-						]}
-					>
-						<Text style={[styles.sectionTitle, { color: c.text }]}>
-							{t("moderation.riskSignal")}
-						</Text>
-						<Text style={[styles.primaryText, { color: c.text }]}>
-							{flag.signal.replaceAll(".", " · ").replaceAll("_", " ")}
-						</Text>
+					<ModerationCard title={t("moderation.riskSignal")}>
+						<View style={styles.signalRow}>
+							<View
+								style={[
+									styles.score,
+									{
+										backgroundColor:
+											flag.severity === "high"
+												? c.dangerSoft
+												: flag.severity === "medium"
+													? c.warningSoft
+													: k.selectedSoft,
+									},
+								]}
+							>
+								<Text
+									style={[
+										styles.scoreText,
+										{
+											color:
+												flag.severity === "high"
+													? k.dangerText
+													: flag.severity === "medium"
+														? k.warningText
+														: k.linkText,
+										},
+									]}
+								>
+									{flag.score}
+								</Text>
+							</View>
+							<Text
+								style={[styles.primaryText, styles.flex, { color: c.text }]}
+							>
+								{readableSignal(flag.signal)}
+							</Text>
+						</View>
 						<Text style={[styles.secondaryText, { color: c.muted }]}>
 							{t("moderation.riskOccurrences", {
 								count: flag.occurrences ?? 1,
 							})}
 							{" · "}
 							{t("moderation.riskLastSeen", {
-								date: new Date(flag.lastSeenAt).toLocaleString(),
+								date: formatDate(flag.lastSeenAt, {
+									day: "numeric",
+									month: "short",
+									year: "numeric",
+									hour: "2-digit",
+									minute: "2-digit",
+								}),
 							})}
 						</Text>
-					</View>
+					</ModerationCard>
 
-					<View
-						style={[
-							styles.card,
-							{ backgroundColor: c.card, borderColor: c.border },
-						]}
-					>
-						<Text style={[styles.sectionTitle, { color: c.text }]}>
-							{t("moderation.riskEvidence")}
-						</Text>
+					<ModerationCard title={t("moderation.riskEvidence")}>
 						{evidenceRows.length === 0 ? (
 							<Text style={[styles.secondaryText, { color: c.muted }]}>
 								{t("moderation.riskNoEvidence")}
 							</Text>
 						) : (
 							evidenceRows.map((row) => (
-								<View key={row.label} style={styles.evidenceRow}>
-									<Text style={[styles.secondaryText, { color: c.muted }]}>
-										{row.label}
-									</Text>
-									<Text style={[styles.primaryText, { color: c.text }]}>
-										{row.value === null ? "-" : String(row.value)}
-									</Text>
-								</View>
+								<FactRow
+									key={row.label}
+									label={row.label}
+									value={evidenceValue(row.value)}
+								/>
 							))
 						)}
-					</View>
+					</ModerationCard>
 
 					{relatedFlags.length > 0 ? (
-						<View
-							style={[
-								styles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<Text style={[styles.sectionTitle, { color: c.text }]}>
-								{t("moderation.riskRelated")}
-							</Text>
-							{relatedFlags.map((related) => (
-								<Pressable
-									key={related.id}
-									accessibilityRole="button"
-									onPress={() => router.push(`/moderation/risk/${related.id}`)}
-									style={styles.relatedRow}
-								>
-									<Text style={[styles.primaryText, { color: c.text }]}>
-										{related.subjectLabel ?? related.subjectType}
-										{" · "}
-										{related.signal.replaceAll(".", " · ").replaceAll("_", " ")}
-									</Text>
-									<Ionicons name="chevron-forward" size={18} color={c.muted} />
-								</Pressable>
-							))}
-						</View>
+						<ModerationCard title={t("moderation.riskRelated")}>
+							{relatedFlags.map((related, index) => {
+								const label = `${related.subjectLabel ?? related.subjectType} · ${readableSignal(related.signal)}`;
+								return (
+									<Pressable
+										key={related.id}
+										accessibilityRole="button"
+										accessibilityLabel={label}
+										onPress={() =>
+											router.push(`/moderation/risk/${related.id}`)
+										}
+										style={({ pressed }) => [
+											styles.relatedRow,
+											index > 0 && styles.divided,
+											{ borderTopColor: c.border, opacity: pressed ? 0.7 : 1 },
+										]}
+									>
+										<Text style={[styles.relatedText, { color: k.linkText }]}>
+											{label}
+										</Text>
+										<Ionicons
+											name="chevron-forward"
+											size={18}
+											color={c.muted}
+										/>
+									</Pressable>
+								);
+							})}
+						</ModerationCard>
 					) : null}
 
 					{moderationHistory.length > 0 ? (
-						<View
-							style={[
-								styles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<Text style={[styles.sectionTitle, { color: c.text }]}>
-								{t("moderation.riskHistory")}
-							</Text>
+						<ModerationCard title={t("moderation.riskHistory")}>
 							{moderationHistory.map((entry) => (
 								<Text
 									key={entry.id}
-									style={[styles.secondaryText, { color: c.muted }]}
+									style={[styles.secondaryText, { color: c.text }]}
 								>
-									{entry.action} ·{" "}
-									{new Date(entry.createdAt).toLocaleDateString()}
+									{t(`moderation.action_${entry.action.replace(".", "_")}`, {
+										defaultValue: entry.action,
+									})}{" "}
+									· {formatDate(entry.createdAt)}
 								</Text>
 							))}
-						</View>
-					) : null}
-
-					{flag.status === "open" || flag.status === "reviewed" ? (
-						<View style={styles.actions}>
-							{flag.status === "open" ? (
-								<Pressable
-									accessibilityRole="button"
-									disabled={decision.isPending}
-									onPress={() =>
-										flag.status === "open" && flagId
-											? decision.mutate({
-													id: flagId,
-													outcome: "reviewed",
-													resolution: "none",
-												})
-											: undefined
-									}
-									style={[styles.actionButton, { backgroundColor: c.primary }]}
-								>
-									<Text style={styles.actionLabel}>
-										{t("moderation.riskMarkReviewed")}
-									</Text>
-								</Pressable>
-							) : null}
-							<Pressable
-								accessibilityRole="button"
-								disabled={decision.isPending}
-								onPress={() => setDismissVisible(true)}
-								style={[styles.actionButton, { backgroundColor: c.danger }]}
-							>
-								<Text style={styles.actionLabel}>
-									{t("moderation.riskDismiss")}
-								</Text>
-							</Pressable>
-							{targetId && subject.type === "user" ? (
-								<Pressable
-									accessibilityRole="button"
-									disabled={decision.isPending}
-									onPress={() => setSanctionType("suspend_user")}
-									style={[styles.actionButton, { backgroundColor: c.danger }]}
-								>
-									<Text style={styles.actionLabel}>
-										{t("moderation.riskSuspendUser")}
-									</Text>
-								</Pressable>
-							) : null}
-							{targetId && subject.type === "shop" ? (
-								<>
-									<Pressable
-										accessibilityRole="button"
-										disabled={decision.isPending}
-										onPress={() => setSanctionType("suspend_shop")}
-										style={[styles.actionButton, { backgroundColor: c.danger }]}
-									>
-										<Text style={styles.actionLabel}>
-											{t("moderation.riskSuspendShop")}
-										</Text>
-									</Pressable>
-									<Pressable
-										accessibilityRole="button"
-										disabled={decision.isPending}
-										onPress={() => setSanctionType("hold_payouts")}
-										style={[
-											styles.actionButton,
-											{ backgroundColor: c.primary },
-										]}
-									>
-										<Text style={styles.actionLabel}>
-											{t("moderation.riskHoldPayouts")}
-										</Text>
-									</Pressable>
-								</>
-							) : null}
-						</View>
+						</ModerationCard>
 					) : null}
 				</ScrollView>
 			</ScreenColumn>
+
+			{/* Closing the flag (dismiss, mark reviewed) and sanctioning the
+			    subject are different kinds of decision: the first two are calm
+			    indigo / outline, every sanction is a red outline that opens its
+			    own sheet. Nothing here acts on one tap except "mark reviewed",
+			    which changes no one's standing. */}
+			{decidable ? (
+				<DecisionBar wrap>
+					<DecisionButton
+						variant="secondary"
+						label={t("moderation.riskDismiss")}
+						onPress={() => setDismissVisible(true)}
+						disabled={decision.isPending}
+					/>
+					{flag.status === "open" ? (
+						<DecisionButton
+							variant="primary"
+							icon="checkmark"
+							label={t("moderation.riskMarkReviewed")}
+							pending={
+								decision.isPending && !dismissVisible && sanctionType === null
+							}
+							disabled={decision.isPending}
+							onPress={markReviewed}
+						/>
+					) : null}
+					{targetId && subject.type === "user" ? (
+						<DecisionButton
+							variant="dangerOutline"
+							icon="ban-outline"
+							label={t("moderation.riskSuspendUser")}
+							onPress={() => setSanctionType("suspend_user")}
+							disabled={decision.isPending}
+							style={styles.fullRow}
+						/>
+					) : null}
+					{targetId && subject.type === "shop" ? (
+						<>
+							<DecisionButton
+								variant="dangerOutline"
+								icon="ban-outline"
+								label={t("moderation.riskSuspendShop")}
+								onPress={() => setSanctionType("suspend_shop")}
+								disabled={decision.isPending}
+							/>
+							<DecisionButton
+								variant="dangerOutline"
+								icon="pause-circle-outline"
+								label={t("moderation.riskHoldPayouts")}
+								onPress={() => setSanctionType("hold_payouts")}
+								disabled={decision.isPending}
+							/>
+						</>
+					) : null}
+				</DecisionBar>
+			) : (
+				// Dismissed or actioned: say so, so an empty bar is not read as
+				// a screen that failed to load its actions.
+				<DecisionBar
+					note={{
+						text: t("moderation.riskAlreadyClosed"),
+					}}
+				/>
+			)}
+
 			<DecisionSheet
 				visible={dismissVisible}
 				title={t("moderation.riskDismissTitle")}
+				subtitle={subjectTitle}
 				choices={dismissChoices}
 				choicesLabel={t("moderation.riskResolution")}
 				textLabel={t("moderation.riskDecisionNote")}
 				textRequired
 				confirmLabel={t("moderation.riskDismiss")}
-				destructive
 				pending={decision.isPending}
 				onConfirm={({ text }) => resolveDismissal(text)}
 				onClose={() => setDismissVisible(false)}
@@ -330,6 +405,8 @@ export default function RiskFlagScreen() {
 							? "moderation.riskSuspendShop"
 							: "moderation.riskSuspendUser",
 				)}
+				// Names who the sanction falls on, right above the red confirm.
+				subtitle={subjectTitle}
 				durations={durations}
 				durationsLabel={t("moderation.riskDuration")}
 				textLabel={t("moderation.riskDecisionNote")}
@@ -347,56 +424,33 @@ export default function RiskFlagScreen() {
 }
 
 const styles = StyleSheet.create({
-	content: { gap: 12, padding: 16, paddingBottom: 32 },
-	card: {
-		borderRadius: 14,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 14,
-		gap: 8,
+	flex: { flex: 1 },
+	content: { gap: 14, padding: 16, paddingBottom: 32 },
+	primaryText: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodySemibold },
+	secondaryText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	signalRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+	score: {
+		width: 48,
+		height: 48,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
 	},
-	sectionTitle: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-	},
-	primaryText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	secondaryText: { fontSize: 12, fontFamily: Fonts.body },
-	evidenceRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		gap: 12,
-	},
+	scoreText: { fontSize: 18, fontFamily: Fonts.displayExtrabold },
 	relatedRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		minHeight: 44,
-	},
-	actions: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		gap: 10,
-		marginTop: 4,
-	},
-	actionButton: {
-		flex: 1,
-		minWidth: "45%",
+		gap: 8,
 		minHeight: 48,
-		alignItems: "center",
-		justifyContent: "center",
-		borderRadius: 12,
+		paddingVertical: 6,
 	},
-	actionLabel: { color: "#fff", fontFamily: Fonts.bodySemibold },
-	loading: { marginTop: 40 },
-	message: { margin: 24, textAlign: "center" },
-	error: { padding: 12, borderRadius: 8 },
-	errorState: { alignItems: "center", padding: 24, gap: 8 },
-	retryButton: {
-		minHeight: 44,
-		minWidth: 120,
-		alignItems: "center",
-		justifyContent: "center",
-		borderRadius: 12,
-		paddingHorizontal: 16,
+	divided: { borderTopWidth: StyleSheet.hairlineWidth },
+	relatedText: {
+		flex: 1,
+		fontSize: 14,
+		lineHeight: 20,
+		fontFamily: Fonts.bodySemibold,
 	},
+	fullRow: { flexBasis: "100%" },
 });

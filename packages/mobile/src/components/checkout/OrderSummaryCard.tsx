@@ -7,6 +7,7 @@ import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import type { QuoteResponse } from "@/src/types/order";
 import { Changed, LinkButton, Row } from "./SummaryParts";
+import { TotalTag } from "./TotalTag";
 
 /** The art. 17 summary. `changed` holds `quoteDifferences`' keys. */
 export function OrderSummaryCard({
@@ -29,7 +30,10 @@ export function OrderSummaryCard({
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
 			<View style={styles.row}>
-				<Text style={[styles.heading, { color: c.text }]}>
+				<Text
+					style={[styles.heading, { color: c.text }]}
+					accessibilityRole="header"
+				>
 					{t("checkout.summary")}
 				</Text>
 				<LinkButton
@@ -38,14 +42,9 @@ export function OrderSummaryCard({
 				/>
 			</View>
 			{lines.map((line, i) => (
-				<View key={`${line.title}-${line.variantLabel}`} style={styles.row}>
+				<View key={`${line.title}-${line.variantLabel}`} style={styles.lineRow}>
 					<View style={{ flex: 1 }}>
-						<Text
-							style={[
-								styles.meta,
-								{ color: c.text, fontFamily: Fonts.bodySemibold },
-							]}
-						>
+						<Text style={[styles.lineTitle, { color: c.text }]}>
 							{line.title}
 						</Text>
 						{line.variantLabel ? (
@@ -59,7 +58,7 @@ export function OrderSummaryCard({
 							</Changed>
 						</Text>
 					</View>
-					<Text style={[styles.meta, { color: c.text }]}>
+					<Text style={[styles.lineAmount, { color: c.text }]}>
 						{money(line.lineSubtotal)}
 					</Text>
 				</View>
@@ -82,9 +81,25 @@ export function OrderSummaryCard({
 					{money(amounts.buyerProtectionFee)}
 				</Row>
 			) : null}
-			<Row label={t("checkout.total")} strong>
-				<Changed on={changed.has("total")}>{money(amounts.total)}</Changed>
-			</Row>
+			<View
+				style={[styles.totalRow, { borderTopColor: c.border }]}
+				accessible
+				accessibilityLabel={`${t("checkout.total")} ${money(amounts.total)}${
+					changed.has("total") ? ` (${t("checkout.changed")})` : ""
+				}`}
+			>
+				<Text style={[styles.totalLabel, { color: c.text }]}>
+					{t("checkout.total")}
+				</Text>
+				<View style={styles.totalValue}>
+					<TotalTag amount={money(amounts.total)} />
+					{changed.has("total") ? (
+						<Text style={[styles.changed, { color: c.warningText }]}>
+							{t("checkout.changed")}
+						</Text>
+					) : null}
+				</View>
+			</View>
 			<View style={[styles.divider, { borderTopColor: c.border }]} />
 			<View style={styles.row}>
 				<Text
@@ -149,16 +164,40 @@ const styles = StyleSheet.create({
 	card: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 16,
-		padding: 14,
-		gap: 8,
+		padding: 16,
+		gap: 10,
 	},
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		gap: 8,
+		gap: 12,
 	},
-	heading: { fontSize: 16, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	lineRow: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		justifyContent: "space-between",
+		gap: 12,
+	},
+	heading: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	meta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
+	lineTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	lineAmount: {
+		fontSize: 15,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
+	totalRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: 12,
+		paddingTop: 10,
+		marginTop: 2,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
+	totalLabel: { fontSize: 17, fontFamily: Fonts.displayBold },
+	totalValue: { alignItems: "flex-end", gap: 2, flexShrink: 1 },
+	changed: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	divider: { borderTopWidth: StyleSheet.hairlineWidth, marginVertical: 2 },
 });

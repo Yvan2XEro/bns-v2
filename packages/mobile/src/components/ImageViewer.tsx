@@ -22,6 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
+import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 
 const MAX_SCALE = 4;
@@ -217,13 +218,13 @@ function ZoomablePhoto({
 }
 
 const styles = StyleSheet.create({
-	root: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)" },
+	root: { flex: 1, backgroundColor: "rgba(6, 8, 24, 0.96)" },
 	close: {
 		position: "absolute",
 		right: 16,
-		width: 44,
-		height: 44,
-		borderRadius: 22,
+		width: 48,
+		height: 48,
+		borderRadius: 24,
 		backgroundColor: "rgba(255,255,255,0.15)",
 		alignItems: "center",
 		justifyContent: "center",
@@ -231,8 +232,9 @@ const styles = StyleSheet.create({
 	counter: {
 		position: "absolute",
 		alignSelf: "center",
-		color: "#fff",
+		color: "#ffffff",
 		fontSize: 14,
-		fontWeight: "600",
+		fontFamily: Fonts.bodySemibold,
+		fontVariant: ["tabular-nums"],
 	},
 });

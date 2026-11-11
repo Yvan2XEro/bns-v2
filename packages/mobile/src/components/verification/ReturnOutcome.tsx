@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import type { ReturnOutcome as ReturnOutcomeValue } from "@/src/hooks/useVerificationReturn";
 import { useTranslation } from "@/src/lib/i18n";
@@ -55,7 +56,7 @@ export function ReturnOutcome({
 						"verification.return.outcome.declinedRetry.cta",
 					)}
 					onPress={onRetry}
-					style={[styles.button, { backgroundColor: c.primary }]}
+					style={[styles.button, { backgroundColor: fillOf(c) }]}
 				>
 					<Text style={styles.buttonLabel}>
 						{t("verification.return.outcome.declinedRetry.cta")}
@@ -78,7 +79,7 @@ export function ReturnOutcome({
 					accessibilityRole="button"
 					accessibilityLabel={t("verification.return.outcome.timeout.cta")}
 					onPress={onRefresh}
-					style={[styles.button, { backgroundColor: c.primary }]}
+					style={[styles.button, { backgroundColor: fillOf(c) }]}
 				>
 					<Text style={styles.buttonLabel}>
 						{t("verification.return.outcome.timeout.cta")}
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
 	title: { fontSize: 17, fontFamily: Fonts.displayBold, textAlign: "center" },
 	body: { fontSize: 14, fontFamily: Fonts.body, textAlign: "center" },
 	button: {
-		minHeight: 44,
+		minHeight: 48,
 		minWidth: 44,
 		paddingHorizontal: 20,
 		borderRadius: 12,
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
 	},
 	buttonLabel: {
 		color: "#ffffff",
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 });

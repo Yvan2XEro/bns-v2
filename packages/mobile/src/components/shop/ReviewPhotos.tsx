@@ -130,8 +130,8 @@ const styles = StyleSheet.create({
 		gap: 24,
 	},
 	navBtn: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		borderRadius: 22,
 		alignItems: "center",
 		justifyContent: "center",

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { listingKindRules, type PriceUnit } from "@/src/lib/listingKind";
 
@@ -40,6 +41,7 @@ export function PriceUnitChips({
 						<Pressable
 							key={unit}
 							onPress={() => onChange(unit)}
+							hitSlop={{ top: 6, bottom: 6 }}
 							accessibilityRole="radio"
 							accessibilityState={{ checked: on }}
 							style={[
@@ -79,14 +81,14 @@ export function priceUnitToSend(
 
 const styles = StyleSheet.create({
 	wrap: { marginTop: 12, gap: 8 },
-	label: { fontSize: 13, fontWeight: "600" },
+	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	chip: {
-		minHeight: 36,
-		paddingHorizontal: 12,
+		minHeight: 38,
+		paddingHorizontal: 14,
 		borderRadius: 18,
 		borderWidth: 1.5,
 		justifyContent: "center",
 	},
-	chipText: { fontSize: 14, fontWeight: "600" },
+	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });

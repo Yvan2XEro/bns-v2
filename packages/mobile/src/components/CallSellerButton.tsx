@@ -107,7 +107,10 @@ export function CallSellerButton({
 			accessibilityRole="button"
 			accessibilityLabel={t("listing.callSeller")}
 			accessibilityState={{ disabled: reveal.isPending }}
-			style={[style, { opacity: reveal.isPending ? 0.7 : 1 }]}
+			style={({ pressed }) => [
+				style,
+				{ opacity: reveal.isPending ? 0.7 : pressed ? 0.85 : 1 },
+			]}
 		>
 			{reveal.isPending ? (
 				<ActivityIndicator size="small" color={color} />

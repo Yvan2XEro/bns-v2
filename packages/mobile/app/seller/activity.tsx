@@ -13,6 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { ActivityRow } from "@/src/components/shop/team/ActivityRow";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -63,9 +65,7 @@ export default function ShopActivityScreen() {
 			<SellerHeader title={t("shopActivity.title")} />
 
 			{isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<ListSkeleton />
 			) : !allowed ? (
 				<EmptyState
 					illustration="auth"
@@ -85,8 +85,8 @@ export default function ShopActivityScreen() {
 							style={[
 								styles.filter,
 								{
-									backgroundColor: state.action === null ? c.primary : c.card,
-									borderColor: state.action === null ? c.primary : c.border,
+									backgroundColor: state.action === null ? fillOf(c) : c.card,
+									borderColor: state.action === null ? fillOf(c) : c.border,
 								},
 							]}
 							accessibilityRole="button"
@@ -111,8 +111,8 @@ export default function ShopActivityScreen() {
 									style={[
 										styles.filter,
 										{
-											backgroundColor: active ? c.primary : c.card,
-											borderColor: active ? c.primary : c.border,
+											backgroundColor: active ? fillOf(c) : c.card,
+											borderColor: active ? fillOf(c) : c.border,
 										},
 									]}
 									accessibilityRole="button"
@@ -186,14 +186,13 @@ export default function ShopActivityScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	filtersScroll: { flexGrow: 0 },
 	filters: { gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
 	filter: {
 		borderRadius: 999,
 		borderWidth: 1,
 		paddingHorizontal: 14,
-		minHeight: 44,
+		minHeight: 48,
 		justifyContent: "center",
 	},
 	filterText: { fontSize: 13, fontFamily: Fonts.bodySemibold },

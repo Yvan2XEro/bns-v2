@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { Fonts } from "@/constants/theme";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useSaveBusiness } from "@/src/hooks/useVerification";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -99,7 +100,7 @@ export function BusinessForm({
 				)}
 			/>
 			{errors[name] ? (
-				<Text style={[styles.hint, { color: c.danger }]}>
+				<Text style={[styles.hint, { color: dangerInk(c) }]}>
 					{errors[name]?.message}
 				</Text>
 			) : null}
@@ -217,7 +218,7 @@ export function BusinessForm({
 				accessibilityLabel={t("verification.business.save")}
 				style={[
 					styles.submit,
-					{ backgroundColor: c.primary, opacity: isSubmitting ? 0.6 : 1 },
+					{ backgroundColor: fillOf(c), opacity: isSubmitting ? 0.6 : 1 },
 				]}
 			>
 				{saveBusiness.isPending ? (
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
 	field: { gap: 6 },
 	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	input: {
-		minHeight: 44,
+		minHeight: 48,
 		borderRadius: 12,
 		borderWidth: 1,
 		paddingHorizontal: 14,
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		paddingHorizontal: 14,
 		paddingVertical: 8,
-		minHeight: 44,
+		minHeight: 48,
 		justifyContent: "center",
 	},
 	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
@@ -269,7 +270,7 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
 		padding: 14,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	submit: {
 		height: 54,
@@ -277,5 +278,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

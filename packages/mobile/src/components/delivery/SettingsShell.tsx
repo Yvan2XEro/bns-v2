@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -32,9 +33,7 @@ export function SettingsShell({
 		>
 			<SellerHeader title={title} right={right} />
 			{mine.isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<ListSkeleton rows={4} />
 			) : !deliveryZonesEnabled ? (
 				<EmptyState
 					illustration="notFound"
@@ -56,5 +55,4 @@ export function SettingsShell({
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 });

@@ -1,4 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
+import { AmountTag } from "@/src/components/shop/Tags";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPriceRange } from "@/src/lib/market";
@@ -30,8 +32,13 @@ export function PublishSummaryCard({
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}>
 			<View style={f.row}>
-				<View style={{ flex: 1, gap: 2 }}>
-					<Text style={[f.sectionTitle, { color: c.text }]}>{form.title}</Text>
+				<View style={styles.text}>
+					<Text
+						style={[f.sectionTitle, { color: c.text }]}
+						accessibilityRole="header"
+					>
+						{form.title}
+					</Text>
 					<Text style={[f.hint, { color: c.muted }]}>
 						{[
 							form.category?.name,
@@ -40,12 +47,18 @@ export function PublishSummaryCard({
 							.filter(Boolean)
 							.join(" · ")}
 					</Text>
-					<Text style={[f.label, { color: c.text }]}>
-						{range
-							? formatPriceRange(range.min, range.max, i18n.language)
-							: "—"}{" "}
-						· {t("product.unitsInStock", { count: units })}
-					</Text>
+					{/* The price wears its tag, as it will in the shop. */}
+					<View style={styles.priceRow}>
+						{range ? (
+							<AmountTag
+								size="sm"
+								label={formatPriceRange(range.min, range.max, i18n.language)}
+							/>
+						) : null}
+						<Text style={[f.label, { color: c.body }]}>
+							{t("product.unitsInStock", { count: units })}
+						</Text>
+					</View>
 				</View>
 				<Pressable
 					onPress={onEditInfo}
@@ -54,7 +67,7 @@ export function PublishSummaryCard({
 					accessibilityRole="button"
 					accessibilityLabel={t("product.edit")}
 				>
-					<Text style={[f.label, { color: c.primary }]}>
+					<Text style={[styles.editText, { color: c.link }]}>
 						{t("product.edit")}
 					</Text>
 				</Pressable>
@@ -64,6 +77,15 @@ export function PublishSummaryCard({
 }
 
 const styles = StyleSheet.create({
+	text: { flex: 1, gap: 4 },
+	priceRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		flexWrap: "wrap",
+		gap: 8,
+		marginTop: 2,
+	},
+	editText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	editButton: {
 		minHeight: 44,
 		minWidth: 44,

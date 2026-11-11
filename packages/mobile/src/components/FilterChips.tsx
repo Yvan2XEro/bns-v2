@@ -1,6 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Fonts } from "@/constants/theme";
+import { useDiscoveryPalette } from "@/src/components/search/palette";
+import { FiltersChip } from "@/src/components/search/SortBar";
+import { useTranslation } from "@/src/lib/i18n";
 
 interface Chip {
 	key: string;
@@ -14,15 +17,18 @@ interface FilterChipsProps {
 	filterCount: number;
 }
 
+/**
+ * The filters button followed by one removable chip per active filter, in a
+ * row that scrolls sideways.
+ */
 export function FilterChips({
 	chips,
 	onRemove,
 	onFiltersPress,
 	filterCount,
 }: FilterChipsProps) {
-	const isDark = useColorScheme() === "dark";
-
-	const hasFilters = filterCount > 0;
+	const c = useDiscoveryPalette();
+	const { t } = useTranslation();
 
 	return (
 		<ScrollView
@@ -30,80 +36,25 @@ export function FilterChips({
 			showsHorizontalScrollIndicator={false}
 			contentContainerStyle={styles.scroll}
 		>
-			<Pressable
-				onPress={onFiltersPress}
-				style={[
-					styles.filterBtn,
-					{
-						backgroundColor: hasFilters
-							? isDark
-								? "#1e3a5f"
-								: "#dbeafe"
-							: isDark
-								? "#1e293b"
-								: "#f1f5f9",
-						borderColor: hasFilters
-							? isDark
-								? "#3b82f6"
-								: "#1e40af"
-							: isDark
-								? "#1e3a5f"
-								: "#e2e8f0",
-					},
-				]}
-			>
-				<Ionicons
-					name="options"
-					size={14}
-					color={
-						hasFilters
-							? isDark
-								? "#93c5fd"
-								: "#1e40af"
-							: isDark
-								? "#94a3b8"
-								: "#64748b"
-					}
-				/>
-				<Text
-					style={[
-						styles.filterText,
-						{
-							color: hasFilters
-								? isDark
-									? "#93c5fd"
-									: "#1e40af"
-								: isDark
-									? "#94a3b8"
-									: "#64748b",
-						},
-					]}
-				>
-					Filtres{hasFilters ? ` (${filterCount})` : ""}
-				</Text>
-			</Pressable>
+			<FiltersChip count={filterCount} onPress={onFiltersPress} />
 			{chips.map((chip) => (
 				<View
 					key={chip.key}
 					style={[
 						styles.chip,
-						{
-							backgroundColor: isDark ? "#1e3a5f" : "#dbeafe",
-							borderColor: isDark ? "#3b82f6" : "#1e40af",
-						},
+						{ backgroundColor: c.primaryTint, borderColor: c.primary },
 					]}
 				>
-					<Text
-						style={[styles.chipText, { color: isDark ? "#93c5fd" : "#1e40af" }]}
-					>
+					<Text style={[styles.chipText, { color: c.link }]} numberOfLines={1}>
 						{chip.label}
 					</Text>
-					<Pressable onPress={() => onRemove(chip.key)} hitSlop={4}>
-						<Ionicons
-							name="close"
-							size={12}
-							color={isDark ? "#93c5fd" : "#1e40af"}
-						/>
+					<Pressable
+						onPress={() => onRemove(chip.key)}
+						accessibilityRole="button"
+						accessibilityLabel={`${chip.label}, ${t("common.delete")}`}
+						style={styles.remove}
+					>
+						<Ionicons name="close" size={16} color={c.link} />
 					</Pressable>
 				</View>
 			))}
@@ -119,24 +70,20 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 	},
-	filterBtn: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		borderRadius: 20,
-		borderWidth: 1,
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-	},
-	filterText: { fontSize: 13, fontWeight: "600" },
 	chip: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
+		minHeight: 40,
 		borderRadius: 20,
 		borderWidth: 1,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
+		paddingLeft: 14,
+		maxWidth: 260,
 	},
-	chipText: { fontSize: 13, fontWeight: "500" },
+	chipText: { flexShrink: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
+	remove: {
+		width: 40,
+		height: 40,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 });

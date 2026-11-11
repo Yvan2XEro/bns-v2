@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { SHOP_PROFILES, type ShopProfile } from "@/src/lib/listingKind";
 import { useShopTheme } from "./theme";
@@ -41,7 +42,7 @@ export function ShopProfilePicker({
 						style={[
 							styles.row,
 							{
-								borderColor: on ? c.primary : c.border,
+								borderColor: on ? c.link : c.border,
 								backgroundColor: on ? c.primarySoft : c.card,
 								opacity: disabled ? 0.6 : 1,
 							},
@@ -50,7 +51,7 @@ export function ShopProfilePicker({
 						<Ionicons
 							name={ICONS[profile]}
 							size={22}
-							color={on ? c.primary : c.muted}
+							color={on ? c.link : c.muted}
 						/>
 						<View style={styles.texts}>
 							<Text style={[styles.name, { color: c.text }]}>
@@ -78,6 +79,6 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 	},
 	texts: { flex: 1, gap: 2 },
-	name: { fontSize: 15, fontWeight: "700" },
-	description: { fontSize: 13, lineHeight: 18 },
+	name: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	description: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

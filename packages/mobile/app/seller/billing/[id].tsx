@@ -15,6 +15,7 @@ import { InvoiceStatusBadge } from "@/src/components/billing/InvoiceStatusBadge"
 import { InvoiceSummaryCard } from "@/src/components/billing/InvoiceSummaryCard";
 import { PayInvoiceButton } from "@/src/components/billing/PayInvoiceButton";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -45,11 +46,7 @@ function InvoiceContent({
 	};
 
 	if (billing.isPending) {
-		return (
-			<View style={styles.center}>
-				<ActivityIndicator color={c.primary} />
-			</View>
-		);
+		return <DetailSkeleton cards={2} />;
 	}
 	if (billing.isError) {
 		return (
@@ -98,6 +95,8 @@ function InvoiceContent({
 					<RefreshControl
 						refreshing={billing.isRefetching}
 						onRefresh={refresh}
+						tintColor={c.primary}
+						colors={[c.primary]}
 					/>
 				}
 			>
@@ -105,7 +104,10 @@ function InvoiceContent({
 					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
 				>
 					<View style={styles.head}>
-						<Text style={[s.cardTitle, { color: c.text, fontSize: 18 }]}>
+						<Text
+							accessibilityRole="header"
+							style={[s.cardTitle, { color: c.text, fontSize: 18 }]}
+						>
 							{number}
 						</Text>
 						<InvoiceStatusBadge status={invoice.status} />
@@ -146,7 +148,10 @@ function InvoiceContent({
 				<View
 					style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
 				>
-					<Text style={[s.cardTitle, { color: c.text }]}>
+					<Text
+						accessibilityRole="header"
+						style={[s.cardTitle, { color: c.text }]}
+					>
 						{t("billing.document")}
 					</Text>
 					<Text style={[s.meta, { color: c.muted }]}>
@@ -161,15 +166,11 @@ function InvoiceContent({
 						style={[s.button, { backgroundColor: c.primarySoft, marginTop: 6 }]}
 					>
 						{document.isFetching ? (
-							<ActivityIndicator color={c.primary} />
+							<ActivityIndicator color={c.link} />
 						) : (
-							<Ionicons
-								name="document-text-outline"
-								size={18}
-								color={c.primary}
-							/>
+							<Ionicons name="document-text-outline" size={18} color={c.link} />
 						)}
-						<Text style={[s.buttonText, { color: c.primary }]}>
+						<Text style={[s.buttonText, { color: c.link }]}>
 							{t("billing.openDocument")}
 						</Text>
 					</Pressable>
@@ -190,7 +191,6 @@ export default function InvoiceScreen() {
 }
 
 const styles = StyleSheet.create({
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	content: { padding: 16, gap: 12, paddingBottom: 32 },
 	head: {
 		flexDirection: "row",

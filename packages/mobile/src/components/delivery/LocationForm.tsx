@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Linking from "expo-linking";
 import * as Location from "expo-location";
@@ -9,6 +10,7 @@ import {
 	FieldError,
 	SheetButton,
 } from "@/src/components/sellerOrders/FormBits";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { googleMapsUrl } from "@/src/lib/checkoutForm";
@@ -123,9 +125,9 @@ export function LocationForm({
 				onPress={() => void locate()}
 				accessibilityRole="button"
 				accessibilityLabel={t("deliverySettings.useMyPosition")}
-				style={{ minHeight: 44, justifyContent: "center" }}
+				style={{ minHeight: 48, justifyContent: "center" }}
 			>
-				<Text style={{ color: c.primary }}>
+				<Text style={{ color: c.link }}>
 					{t("deliverySettings.useMyPosition")}
 				</Text>
 			</Pressable>
@@ -170,9 +172,9 @@ export function LocationForm({
 					}
 					accessibilityRole="link"
 					accessibilityLabel={t("deliverySettings.openInMaps")}
-					style={{ minHeight: 44, justifyContent: "center" }}
+					style={{ minHeight: 48, justifyContent: "center" }}
 				>
-					<Text style={{ color: c.primary }}>
+					<Text style={{ color: c.link }}>
 						{t("deliverySettings.openInMaps")}
 					</Text>
 				</Pressable>
@@ -223,13 +225,17 @@ export function LocationForm({
 						accessibilityRole="button"
 						accessibilityLabel={t("deliverySettings.removeRow")}
 						style={{
-							minHeight: 46,
-							minWidth: 44,
+							minHeight: 48,
+							minWidth: 48,
 							justifyContent: "center",
 							alignItems: "center",
 						}}
 					>
-						<Text style={{ color: c.danger, fontSize: 20 }}>×</Text>
+						<Ionicons
+							name="close-circle-outline"
+							size={22}
+							color={dangerInk(c)}
+						/>
 					</Pressable>
 				</View>
 			))}
@@ -248,7 +254,7 @@ export function LocationForm({
 								day: t(`deliverySettings.days.${day}`),
 							})}
 							style={{
-								minHeight: 44,
+								minHeight: 48,
 								minWidth: 44,
 								justifyContent: "center",
 								paddingHorizontal: 10,
@@ -257,7 +263,7 @@ export function LocationForm({
 								borderColor: c.border,
 							}}
 						>
-							<Text style={{ color: c.primary }}>
+							<Text style={{ color: c.link }}>
 								+ {t(`deliverySettings.days.${day}`)}
 							</Text>
 						</Pressable>
@@ -280,7 +286,7 @@ export function LocationForm({
 			/>
 			{toggle("active", "deliverySettings.fieldActive")}
 			{error ? (
-				<Text accessibilityRole="alert" style={{ color: c.danger }}>
+				<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
 					{resolveErrorMessage(error, t, t("deliverySettings.saveFailed"))}
 				</Text>
 			) : null}

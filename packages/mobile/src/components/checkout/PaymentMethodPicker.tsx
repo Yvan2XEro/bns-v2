@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -5,6 +6,7 @@ import type { BuyerProtectionConfig } from "@/src/contexts/AppConfigContext";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import type { PaymentMethod } from "@/src/types/order";
+import { inkOf } from "./fill";
 
 const METHODS: readonly PaymentMethod[] = ["cod", "mobile_money"];
 
@@ -34,11 +36,14 @@ export function PaymentMethodPicker({
 
 	return (
 		<View
-			style={[styles.card, { borderColor: c.border }]}
+			style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}
 			accessibilityRole="radiogroup"
 			accessibilityLabel={t("payments.method_title")}
 		>
-			<Text style={[styles.legend, { color: c.text }]}>
+			<Text
+				style={[styles.legend, { color: c.text }]}
+				accessibilityRole="header"
+			>
 				{t("payments.method_title")}
 			</Text>
 			<View style={styles.options}>
@@ -56,14 +61,29 @@ export function PaymentMethodPicker({
 									? "payments.method_protected"
 									: "payments.method_cod",
 							)}
-							style={[
+							style={({ pressed }) => [
 								styles.option,
 								{
 									borderColor: active ? c.primary : c.border,
 									backgroundColor: active ? c.primarySoft : c.card,
+									opacity: pressed ? 0.85 : 1,
 								},
 							]}
 						>
+							<View style={styles.optionHead}>
+								<Ionicons
+									name={
+										isProtected ? "shield-checkmark-outline" : "cash-outline"
+									}
+									size={18}
+									color={active ? inkOf(c) : c.body}
+								/>
+								<Ionicons
+									name={active ? "radio-button-on" : "radio-button-off"}
+									size={20}
+									color={active ? inkOf(c) : c.muted}
+								/>
+							</View>
 							<Text style={[styles.optionTitle, { color: c.text }]}>
 								{t(
 									isProtected
@@ -79,7 +99,7 @@ export function PaymentMethodPicker({
 								)}
 							</Text>
 							{isProtected ? (
-								<Text style={[styles.optionFee, { color: c.primary }]}>
+								<Text style={[styles.optionFee, { color: inkOf(c) }]}>
 									{fee !== null
 										? t("payments.method_protectedFee", {
 												fee: formatPrice(fee, locale),
@@ -102,20 +122,26 @@ const styles = StyleSheet.create({
 	card: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 16,
-		padding: 14,
-		gap: 10,
+		padding: 16,
+		gap: 12,
 	},
-	legend: { fontSize: 15, fontFamily: Fonts.displayBold },
+	legend: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	options: { flexDirection: "row", gap: 10 },
 	option: {
 		flex: 1,
-		minHeight: 44,
-		borderWidth: 1,
+		minHeight: 48,
+		borderWidth: 1.5,
 		borderRadius: 12,
-		padding: 10,
+		padding: 12,
 		gap: 4,
 	},
-	optionTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	optionBody: { fontSize: 12, fontFamily: Fonts.body },
-	optionFee: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	optionHead: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		marginBottom: 2,
+	},
+	optionTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	optionBody: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	optionFee: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 });

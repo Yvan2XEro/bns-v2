@@ -5,26 +5,21 @@ import { router } from "expo-router";
 import React, { useMemo } from "react";
 import {
 	ActivityIndicator,
-	FlatList,
+	Platform,
 	Pressable,
 	RefreshControl,
+	SectionList,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, {
-	Defs,
-	LinearGradient,
-	Path,
-	Polyline,
-	Rect,
-	Stop,
-} from "react-native-svg";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
-import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { useGroupedColors } from "@/src/components/settings/Grouped";
+import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
+import { StatusTag, type StatusTone } from "@/src/components/shop/Tags";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
@@ -33,11 +28,15 @@ import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
-const CHART_H = 72;
+const PAGE_SIZE = 15;
+const CHART_H = 64;
+/** Thumbnail (48) and gap (12) past the row's 16pt edge. */
+const TEXT_INSET = 16 + 48 + 12;
+
+type Palette = ReturnType<typeof useGroupedColors>;
+type TFunction = (key: string, options?: Record<string, unknown>) => string;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-type TFunction = (key: string) => string;
 
 function formatDuration(days: number | undefined | null, t: TFunction): string {
 	if (!days && days !== 0) return "—";
@@ -46,7 +45,7 @@ function formatDuration(days: number | undefined | null, t: TFunction): string {
 	if (days === 30) return t("boostHistory.month1");
 	if (days === 60) return t("boostHistory.month2");
 	if (days === 90) return t("boostHistory.month3");
-	return t("boostHistory.days", { count: days } as any);
+	return t("boostHistory.days", { count: days });
 }
 
 function formatDateRange(
@@ -59,167 +58,240 @@ function formatDateRange(
 	const end = new Date(start);
 	if (durationDays) end.setDate(end.getDate() + durationDays);
 	const fmt = (d: Date) =>
-		d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+		d.toLocaleDateString(appDateLocale(), { day: "numeric", month: "short" });
 	return durationDays ? `${fmt(start)} → ${fmt(end)}` : fmt(start);
 }
 
+/** Each payment status's words and tone; the pill draws them in both themes. */
 function getStatusConfig(
 	t: TFunction,
-): Record<string, { label: string; color: string; bg: string; icon: string }> {
+): Record<string, { label: string; tone: StatusTone }> {
 	return {
-		completed: {
-			label: t("boostHistory.statusCompleted"),
-			color: "#16a34a",
-			bg: "#dcfce7",
-			icon: "checkmark-circle",
-		},
-		pending: {
-			label: t("boostHistory.statusActive"),
-			color: "#2563eb",
-			bg: "#dbeafe",
-			icon: "time",
-		},
-		failed: {
-			label: t("boostHistory.statusFailed"),
-			color: "#dc2626",
-			bg: "#fee2e2",
-			icon: "close-circle",
-		},
-		refunded: {
-			label: t("boostHistory.statusRefunded"),
-			color: "#64748b",
-			bg: "#f1f5f9",
-			icon: "refresh-circle",
-		},
+		completed: { label: t("boostHistory.statusCompleted"), tone: "success" },
+		pending: { label: t("boostHistory.statusActive"), tone: "info" },
+		failed: { label: t("boostHistory.statusFailed"), tone: "danger" },
+		refunded: { label: t("boostHistory.statusRefunded"), tone: "neutral" },
 	};
 }
 
-// ── Boost Item Card ────────────────────────────────────────────────────────────
+/** Share of the boost period already used, 0–1; null when it cannot be told. */
+function boostProgress(item: any): number | null {
+	if (!item.durationDays || item.status !== "pending") return null;
+	// A missing createdAt used to produce NaN → width: "NaN%", which Yoga rejects.
+	const startDate = parseDate(item.createdAt);
+	if (!startDate) return null;
+	const start = startDate.getTime();
+	const end = start + item.durationDays * 86_400_000;
+	return Math.min(1, Math.max(0, (Date.now() - start) / (end - start)));
+}
 
-function BoostCard({
-	item,
-	isDark,
-	cardBg,
-	borderColor,
-	textColor,
-	mutedColor,
-}: any) {
+// ── Summary ────────────────────────────────────────────────────────────────────
+
+function Summary({
+	c,
+	totalSpent,
+	counts,
+	months,
+}: {
+	c: Palette;
+	totalSpent: number;
+	counts: { total: number; active: number; completed: number };
+	months: { label: string; value: number }[];
+}) {
 	const { t, i18n } = useTranslation();
-	const STATUS_CONFIG = getStatusConfig(t);
-	const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
+	const max = Math.max(...months.map((m) => m.value), 1);
+	const hasSpend = months.some((m) => m.value > 0);
+	const stats = [
+		{ label: t("boostHistory.total"), value: counts.total },
+		{ label: t("boostHistory.active"), value: counts.active },
+		{ label: t("boostHistory.completed"), value: counts.completed },
+	];
+
+	return (
+		<View
+			style={[
+				styles.summary,
+				{ backgroundColor: c.card, borderColor: c.border },
+			]}
+		>
+			{/* The figure that matters first: what boosting has cost. A fee paid,
+			    not a price, so plain ink; the yellow stays for prices. */}
+			<View
+				accessible
+				accessibilityLabel={`${t("boostHistory.totalSpent")}, ${formatPrice(totalSpent, i18n.language)}`}
+				style={styles.spent}
+			>
+				<Text style={[styles.spentLabel, { color: c.mutedForeground }]}>
+					{t("boostHistory.totalSpent")}
+				</Text>
+				<Text
+					style={[styles.spentAmount, { color: c.foreground }]}
+					numberOfLines={1}
+					adjustsFontSizeToFit
+				>
+					{formatPrice(totalSpent, i18n.language)}
+				</Text>
+			</View>
+
+			<View style={[styles.statStrip, { borderColor: c.border }]}>
+				{stats.map((stat, i) => (
+					<View
+						key={stat.label}
+						accessible
+						accessibilityLabel={`${stat.label}: ${stat.value}`}
+						style={[
+							styles.stat,
+							i > 0 && {
+								borderLeftWidth: StyleSheet.hairlineWidth,
+								borderLeftColor: c.border,
+							},
+						]}
+					>
+						<Text style={[styles.statValue, { color: c.foreground }]}>
+							{stat.value}
+						</Text>
+						<Text
+							style={[styles.statLabel, { color: c.mutedForeground }]}
+							numberOfLines={1}
+						>
+							{stat.label}
+						</Text>
+					</View>
+				))}
+			</View>
+
+			{hasSpend ? (
+				<View
+					style={styles.chart}
+					accessible
+					accessibilityLabel={`${t("boostHistory.monthlySpend")}, ${t("boostHistory.last6Months")}: ${months
+						.map((m) => `${m.label} ${formatPrice(m.value, i18n.language)}`)
+						.join(", ")}`}
+				>
+					<View style={styles.chartHeader}>
+						<Text style={[styles.chartTitle, { color: c.foreground }]}>
+							{t("boostHistory.monthlySpend")}
+						</Text>
+						<Text style={[styles.chartSub, { color: c.mutedForeground }]}>
+							{t("boostHistory.last6Months")}
+						</Text>
+					</View>
+					<View style={styles.bars}>
+						{months.map((m) => (
+							<View key={m.label} style={styles.barCol}>
+								<View style={styles.barTrack}>
+									<View
+										style={[
+											styles.bar,
+											{
+												height: Math.max(
+													3,
+													Math.round((m.value / max) * CHART_H),
+												),
+												backgroundColor: m.value > 0 ? c.primary : c.well,
+											},
+										]}
+									/>
+								</View>
+								<Text
+									style={[styles.barLabel, { color: c.mutedForeground }]}
+									numberOfLines={1}
+								>
+									{m.label}
+								</Text>
+							</View>
+						))}
+					</View>
+				</View>
+			) : null}
+		</View>
+	);
+}
+
+// ── Boost row ──────────────────────────────────────────────────────────────────
+
+function BoostRow({ item, c }: { item: any; c: Palette }) {
+	const { t, i18n } = useTranslation();
+	const cfg = getStatusConfig(t)[item.status] ?? getStatusConfig(t).pending;
 	const imgUrl = resolveListingImageUrl(item.listing?.images?.[0], "thumbnail");
+	const title = item.listing?.title ?? t("boostHistory.deletedListing");
 	const durationLabel = formatDuration(item.durationDays, t);
 	const dateRange = formatDateRange(item.createdAt, item.durationDays);
-	const isActive =
-		item.status === "pending" &&
-		item.listing?.boostedUntil &&
-		new Date(item.listing.boostedUntil) > new Date();
-
-	// Progress bar: % of boost period consumed
-	const progress = useMemo(() => {
-		if (!item.durationDays || item.status !== "pending") return 1;
-		// Without this guard a missing createdAt produced NaN → width: "NaN%",
-		// which Yoga rejects.
-		const startDate = parseDate(item.createdAt);
-		if (!startDate) return 0;
-		const start = startDate.getTime();
-		const end = start + item.durationDays * 86400000;
-		const now = Date.now();
-		return Math.min(1, Math.max(0, (now - start) / (end - start)));
-	}, [item]);
+	const progress = boostProgress(item);
+	const amount =
+		item.amount != null ? formatPrice(item.amount, i18n.language) : "—";
+	const listingId = item.listing?.id ?? item.listing;
 
 	return (
 		<Pressable
-			onPress={() =>
-				router.push(`/listing/${item.listing?.id ?? item.listing}`)
-			}
-			style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+			onPress={() => listingId && router.push(`/listing/${listingId}`)}
+			disabled={!listingId}
+			accessibilityRole="button"
+			accessibilityLabel={[title, cfg.label, durationLabel, dateRange, amount]
+				.filter(Boolean)
+				.join(", ")}
+			android_ripple={{ color: c.well }}
+			style={({ pressed }) => [
+				styles.row,
+				pressed && Platform.OS === "ios" ? { backgroundColor: c.well } : null,
+			]}
 		>
-			{/* Status accent bar */}
-			<View style={[styles.cardAccent, { backgroundColor: cfg.color }]} />
-
-			<View style={styles.cardInner}>
-				{/* Left: image or rocket */}
-				<View style={styles.thumbWrap}>
-					{imgUrl ? (
-						<Image
-							source={{ uri: imgUrl }}
-							style={styles.thumb}
-							contentFit="cover"
-						/>
-					) : (
-						<View
-							style={[
-								styles.thumbFallback,
-								{ backgroundColor: isDark ? "#1a1200" : "#fef3c7" },
-							]}
-						>
-							<Ionicons name="rocket" size={22} color="#f59e0b" />
-						</View>
-					)}
-					{isActive && <View style={styles.activeDot} />}
+			{imgUrl ? (
+				<Image
+					source={{ uri: imgUrl }}
+					style={[styles.thumb, { backgroundColor: c.well }]}
+					contentFit="cover"
+				/>
+			) : (
+				<View
+					style={[
+						styles.thumb,
+						styles.thumbFallback,
+						{ backgroundColor: c.sunTint },
+					]}
+				>
+					<Ionicons name="rocket-outline" size={20} color={c.warningText} />
 				</View>
+			)}
 
-				{/* Center: info */}
-				<View style={styles.cardInfo}>
+			<View style={styles.rowText}>
+				<View style={styles.rowTop}>
 					<Text
-						style={[styles.cardTitle, { color: textColor }]}
+						style={[styles.rowTitle, { color: c.foreground }]}
 						numberOfLines={1}
 					>
-						{item.listing?.title ?? t("boostHistory.deletedListing")}
+						{title}
 					</Text>
-
-					{/* Duration + date */}
-					<View style={styles.cardMeta}>
+					<Text style={[styles.rowAmount, { color: c.foreground }]}>
+						{amount}
+					</Text>
+				</View>
+				<View style={styles.rowMeta}>
+					<Text
+						style={[styles.rowMetaText, { color: c.mutedForeground }]}
+						numberOfLines={1}
+					>
+						{`${durationLabel} · ${dateRange}`}
+					</Text>
+					<StatusTag label={cfg.label} tone={cfg.tone} />
+				</View>
+				{progress !== null ? (
+					<View
+						style={[styles.progressTrack, { backgroundColor: c.well }]}
+						accessibilityElementsHidden
+						importantForAccessibility="no-hide-descendants"
+					>
 						<View
 							style={[
-								styles.durationPill,
-								{ backgroundColor: isDark ? "#1a1200" : "#fef3c7" },
+								styles.progressFill,
+								{
+									width: `${Math.round(progress * 100)}%`,
+									backgroundColor: c.sun,
+								},
 							]}
-						>
-							<Ionicons name="flash" size={10} color="#f59e0b" />
-							<Text style={styles.durationPillText}>{durationLabel}</Text>
-						</View>
-						<Text style={[styles.cardDate, { color: mutedColor }]}>
-							{dateRange}
-						</Text>
+						/>
 					</View>
-
-					{/* Progress bar for active boosts */}
-					{item.status === "pending" && (
-						<View
-							style={[
-								styles.progressTrack,
-								{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
-							]}
-						>
-							<View
-								style={[
-									styles.progressFill,
-									{
-										width: `${progress * 100}%` as any,
-										backgroundColor: "#f59e0b",
-									},
-								]}
-							/>
-						</View>
-					)}
-				</View>
-
-				{/* Right: amount + status */}
-				<View style={styles.cardRight}>
-					<Text style={styles.cardAmount}>
-						{item.amount != null
-							? formatPrice(item.amount, i18n.language)
-							: "—"}
-					</Text>
-					<View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
-						<Ionicons name={cfg.icon as any} size={11} color={cfg.color} />
-						<Text style={[styles.statusText, { color: cfg.color }]}>
-							{cfg.label}
-						</Text>
-					</View>
-				</View>
+				) : null}
 			</View>
 		</Pressable>
 	);
@@ -228,25 +300,15 @@ function BoostCard({
 // ── Main Screen ────────────────────────────────────────────────────────────────
 
 export function BoostHistoryScreen() {
-	const isDark = useColorScheme() === "dark";
+	const c = useGroupedColors();
 	const { user } = useAuth();
-	const { t, i18n } = useTranslation();
-	const { width, contentMaxWidth, centeredContent } = useResponsive();
-	// Sparkline follows the real card width (list column is capped on tablets).
-	const CHART_W = Math.min(width, contentMaxWidth) - 64;
-
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-
-	const PAGE_SIZE = 15;
+	const { t } = useTranslation();
+	const { centeredContent } = useResponsive();
 
 	const {
 		data,
 		isLoading,
+		isError,
 		isFetchingNextPage,
 		hasNextPage,
 		fetchNextPage,
@@ -268,48 +330,55 @@ export function BoostHistoryScreen() {
 		enabled: !!user,
 	});
 
-	const payments = data?.pages.flatMap((p) => p?.docs ?? []) ?? [];
-	const completed = payments.filter(
-		(p: any) => p.status === "completed",
-	).length;
-	const active = payments.filter((p: any) => p.status === "pending").length;
-	const totalSpent = payments
-		.filter((p: any) => p.status === "completed")
-		.reduce((acc: number, p: any) => acc + (p.amount ?? 0), 0);
+	const payments = useMemo(
+		() => data?.pages.flatMap((p) => p?.docs ?? []) ?? [],
+		[data],
+	);
 
-	// Sparkline: last 6 months
-	const chartPoints = useMemo(() => {
+	const summary = useMemo(() => {
+		const completed = payments.filter((p: any) => p.status === "completed");
 		const now = new Date();
+		const locale = appDateLocale();
 		const months = Array.from({ length: 6 }, (_, i) => {
 			const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-			return payments
+			const value = completed
 				.filter((p: any) => {
-					const pd = new Date(p.createdAt);
+					const pd = parseDate(p.createdAt);
 					return (
+						pd &&
 						pd.getFullYear() === d.getFullYear() &&
-						pd.getMonth() === d.getMonth() &&
-						p.status === "completed"
+						pd.getMonth() === d.getMonth()
 					);
 				})
 				.reduce((acc: number, p: any) => acc + (p.amount ?? 0), 0);
+			return {
+				label: d.toLocaleDateString(locale, { month: "short" }),
+				value,
+			};
 		});
-		const max = Math.max(...months, 1);
-		return months.map((v, i) => ({
-			x: (i / 5) * CHART_W,
-			y: CHART_H - (v / max) * (CHART_H - 10),
-			value: v,
-		}));
-	}, [payments, CHART_W]);
+		return {
+			totalSpent: completed.reduce(
+				(acc: number, p: any) => acc + (p.amount ?? 0),
+				0,
+			),
+			counts: {
+				total: payments.length,
+				active: payments.filter((p: any) => p.status === "pending").length,
+				completed: completed.length,
+			},
+			months,
+		};
+	}, [payments]);
 
-	const monthLabels = useMemo(
-		() =>
-			Array.from({ length: 6 }, (_, i) => {
-				const d = new Date();
-				d.setMonth(d.getMonth() - (5 - i));
-				return d.toLocaleDateString(appDateLocale(), { month: "short" });
-			}),
-		[],
-	);
+	// Running boosts first, where a seller looks for them; the rest below.
+	const sections = useMemo(() => {
+		const running = payments.filter((p: any) => p.status === "pending");
+		const past = payments.filter((p: any) => p.status !== "pending");
+		return [
+			{ key: "active", title: t("boostHistory.active"), data: running },
+			{ key: "history", title: t("boostHistory.history"), data: past },
+		].filter((s) => s.data.length > 0);
+	}, [payments, t]);
 
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
@@ -318,35 +387,22 @@ export function BoostHistoryScreen() {
 		setRefreshing(false);
 	};
 
-	const cardProps = { isDark, cardBg, borderColor, textColor, mutedColor };
-
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			{/* Header */}
-			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<HeaderBackButton
-					color={textColor}
-					fallback="/(tabs)/account"
-					style={styles.backBtn}
-				/>
-				<View>
-					<Text style={[styles.headerTitle, { color: textColor }]}>
-						{t("boostHistory.title")}
-					</Text>
-					<Text style={[styles.headerSub, { color: mutedColor }]}>
-						{payments.length > 0
-							? t("boostHistory.subtitle", { count: payments.length } as any)
-							: t("boostHistory.noBoosts")}
-					</Text>
-				</View>
-				<View style={{ width: 40 }} />
-			</View>
+			<SettingsHeader title={t("boostHistory.title")} />
 
 			{isLoading ? (
-				<ActivityIndicator style={{ margin: 32 }} color={primaryColor} />
+				<OrderListSkeleton rows={5} />
+			) : isError && payments.length === 0 ? (
+				<EmptyState
+					icon="alert-circle-outline"
+					title={t("common.error")}
+					ctaLabel={t("common.retry")}
+					onCta={() => void refetch()}
+				/>
 			) : payments.length === 0 ? (
 				<EmptyState
 					icon="rocket-outline"
@@ -356,209 +412,59 @@ export function BoostHistoryScreen() {
 					onCta={() => router.push("/account/listings")}
 				/>
 			) : (
-				<FlatList
-					data={payments}
+				<SectionList
+					sections={sections}
 					keyExtractor={(item) => item.id}
+					stickySectionHeadersEnabled={false}
 					refreshControl={
 						<RefreshControl
 							refreshing={refreshing}
 							onRefresh={onRefresh}
-							tintColor={primaryColor}
+							tintColor={c.primary}
+							colors={[c.primary]}
 						/>
 					}
 					ListHeaderComponent={
-						<View>
-							{/* Stats row */}
-							<View style={styles.statsRow}>
-								{[
-									{
-										label: t("boostHistory.total"),
-										value: String(payments.length),
-										icon: "rocket-outline",
-										color: primaryColor,
-										iconBg: isDark ? "#1e3a5f" : "#dbeafe",
-									},
-									{
-										label: t("boostHistory.active"),
-										value: String(active),
-										icon: "flash",
-										color: "#2563eb",
-										iconBg: isDark ? "#1e3a5f" : "#dbeafe",
-									},
-									{
-										label: t("boostHistory.completed"),
-										value: String(completed),
-										icon: "checkmark-circle",
-										color: "#16a34a",
-										iconBg: isDark ? "#0f2a1a" : "#dcfce7",
-									},
-								].map(({ label, value, icon, color, iconBg }) => (
-									<View
-										key={label}
-										style={[
-											styles.statCard,
-											{ backgroundColor: cardBg, borderColor },
-										]}
-									>
-										<View
-											style={[styles.statIconBox, { backgroundColor: iconBg }]}
-										>
-											<Ionicons name={icon as any} size={16} color={color} />
-										</View>
-										<Text style={[styles.statVal, { color }]}>{value}</Text>
-										<Text style={[styles.statLabel, { color: mutedColor }]}>
-											{label}
-										</Text>
-									</View>
-								))}
-							</View>
-
-							{/* Total spent banner */}
-							<View
-								style={[
-									styles.spentBanner,
-									{
-										backgroundColor: isDark ? "#1a1200" : "#fffbeb",
-										borderColor: isDark ? "#451a03" : "#fde68a",
-									},
-								]}
-							>
-								<View
-									style={[
-										styles.spentIconBox,
-										{ backgroundColor: isDark ? "#451a03" : "#fef3c7" },
-									]}
-								>
-									<Ionicons name="wallet-outline" size={18} color="#f59e0b" />
-								</View>
-								<View style={{ flex: 1 }}>
-									<Text style={[styles.spentLabel, { color: mutedColor }]}>
-										{t("boostHistory.totalSpent")}
-									</Text>
-									<Text
-										style={[
-											styles.spentAmount,
-											{ color: isDark ? "#fbbf24" : "#92400e" },
-										]}
-									>
-										{formatPrice(totalSpent, i18n.language)}
-									</Text>
-								</View>
-							</View>
-
-							{/* Sparkline */}
-							{completed > 0 && (
-								<View
-									style={[
-										styles.chartCard,
-										{ backgroundColor: cardBg, borderColor },
-									]}
-								>
-									<View style={styles.chartHeader}>
-										<Text style={[styles.chartTitle, { color: textColor }]}>
-											{t("boostHistory.monthlySpend")}
-										</Text>
-										<Text style={[styles.chartSub, { color: mutedColor }]}>
-											{t("boostHistory.last6Months")}
-										</Text>
-									</View>
-									<Svg width={CHART_W} height={CHART_H + 4}>
-										<Defs>
-											<LinearGradient
-												id="boostGrad"
-												x1="0"
-												y1="0"
-												x2="0"
-												y2="1"
-											>
-												<Stop
-													offset="0%"
-													stopColor="#f59e0b"
-													stopOpacity={0.25}
-												/>
-												<Stop
-													offset="100%"
-													stopColor="#f59e0b"
-													stopOpacity={0}
-												/>
-											</LinearGradient>
-										</Defs>
-										<Path
-											d={`M${chartPoints[0].x},${CHART_H} ${chartPoints.map((p) => `L${p.x},${p.y}`).join(" ")} L${chartPoints[chartPoints.length - 1].x},${CHART_H} Z`}
-											fill="url(#boostGrad)"
-										/>
-										<Polyline
-											points={chartPoints.map((p) => `${p.x},${p.y}`).join(" ")}
-											fill="none"
-											stroke="#f59e0b"
-											strokeWidth={2}
-											strokeLinejoin="round"
-											strokeLinecap="round"
-										/>
-										{chartPoints.map((p, i) => (
-											<Rect
-												key={i}
-												x={p.x - 3.5}
-												y={p.y - 3.5}
-												width={7}
-												height={7}
-												rx={3.5}
-												fill={
-													p.value > 0
-														? "#f59e0b"
-														: isDark
-															? "#1e293b"
-															: "#e2e8f0"
-												}
-												stroke={isDark ? "#0b1120" : "#ffffff"}
-												strokeWidth={1.5}
-											/>
-										))}
-									</Svg>
-									<View style={styles.chartLabels}>
-										{monthLabels.map((label, i) => (
-											<Text
-												key={i}
-												style={[styles.chartLabel, { color: mutedColor }]}
-											>
-												{label}
-											</Text>
-										))}
-									</View>
-								</View>
-							)}
-
-							{/* Section separator */}
-							<View style={styles.sectionRow}>
-								<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-									{t("boostHistory.history")}
-								</Text>
-								<View
-									style={[styles.sectionLine, { backgroundColor: borderColor }]}
-								/>
-							</View>
-						</View>
+						<Summary
+							c={c}
+							totalSpent={summary.totalSpent}
+							counts={summary.counts}
+							months={summary.months}
+						/>
 					}
-					contentContainerStyle={[
-						styles.list,
-						{ backgroundColor: bg },
-						centeredContent,
-					]}
-					renderItem={({ item }) => <BoostCard item={item} {...cardProps} />}
+					renderSectionHeader={({ section }) => (
+						<Text
+							accessibilityRole="header"
+							style={[styles.sectionTitle, { color: c.mutedForeground }]}
+						>
+							{section.title}
+						</Text>
+					)}
+					renderItem={({ item, index, section }) => (
+						<View
+							style={[
+								styles.groupRow,
+								{ backgroundColor: c.card, borderColor: c.border },
+								index === 0 && styles.groupFirst,
+								index === section.data.length - 1 && styles.groupLast,
+							]}
+						>
+							{index > 0 ? (
+								<View
+									style={[styles.separator, { backgroundColor: c.border }]}
+								/>
+							) : null}
+							<BoostRow item={item} c={c} />
+						</View>
+					)}
+					contentContainerStyle={[styles.list, centeredContent]}
 					onEndReached={() => {
 						if (hasNextPage && !isFetchingNextPage) fetchNextPage();
 					}}
 					onEndReachedThreshold={0.3}
 					ListFooterComponent={
 						isFetchingNextPage ? (
-							<ActivityIndicator
-								style={{ marginVertical: 16 }}
-								color={primaryColor}
-							/>
-						) : !hasNextPage && payments.length > 0 ? (
-							<Text style={[styles.endLabel, { color: mutedColor }]}>
-								{t("boostHistory.endOfHistory")}
-							</Text>
+							<ActivityIndicator style={styles.footerSpinner} color={c.link} />
 						) : null
 					}
 					showsVerticalScrollIndicator={false}
@@ -570,178 +476,117 @@ export function BoostHistoryScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
+	list: { padding: 16, paddingTop: 20, paddingBottom: 48 },
+	footerSpinner: { marginVertical: 16 },
 
-	/* Header */
-	header: {
+	/* Summary */
+	summary: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
+	},
+	spent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14, gap: 2 },
+	spentLabel: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
+	spentAmount: {
+		fontSize: 30,
+		lineHeight: 36,
+		letterSpacing: -0.8,
+		fontFamily: Fonts.displayExtrabold,
+	},
+	statStrip: {
 		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
+		borderTopWidth: StyleSheet.hairlineWidth,
 	},
-	backBtn: {
-		width: 40,
-		height: 40,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	headerTitle: {
-		fontSize: 17,
+	stat: { flex: 1, paddingVertical: 12, paddingHorizontal: 8, gap: 2 },
+	statValue: {
+		fontSize: 20,
+		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		textAlign: "center",
 	},
-	headerSub: { fontSize: 12, fontFamily: Fonts.body, textAlign: "center" },
-
-	/* Stats */
-	statsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
-	statCard: {
-		flex: 1,
-		borderRadius: 12,
-		borderWidth: 1,
-		padding: 12,
-		alignItems: "center",
-		gap: 4,
+	statLabel: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodyMedium,
+		textAlign: "center",
 	},
-	statIconBox: {
-		width: 32,
-		height: 32,
-		borderRadius: 8,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	statVal: { fontSize: 18, fontFamily: Fonts.displayExtrabold, lineHeight: 22 },
-	statLabel: { fontSize: 10, fontFamily: Fonts.bodySemibold },
-
-	/* Spent banner */
-	spentBanner: {
-		flexDirection: "row",
-		alignItems: "center",
+	chart: {
+		paddingHorizontal: 16,
+		paddingTop: 14,
+		paddingBottom: 14,
 		gap: 12,
-		borderRadius: 12,
-		borderWidth: 1,
-		padding: 14,
-		marginBottom: 10,
-	},
-	spentIconBox: {
-		width: 40,
-		height: 40,
-		borderRadius: 10,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	spentLabel: { fontSize: 12, fontFamily: Fonts.body },
-	spentAmount: { fontSize: 20, fontFamily: Fonts.displayExtrabold },
-
-	/* Chart */
-	chartCard: {
-		borderRadius: 12,
-		borderWidth: 1,
-		padding: 14,
-		marginBottom: 10,
-		gap: 8,
 	},
 	chartHeader: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		alignItems: "center",
+		alignItems: "baseline",
 	},
-	chartTitle: { fontSize: 13, fontFamily: Fonts.displayBold },
-	chartSub: { fontSize: 11, fontFamily: Fonts.body },
-	chartLabels: { flexDirection: "row", justifyContent: "space-between" },
-	chartLabel: { fontSize: 10, fontFamily: Fonts.body },
+	chartTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	chartSub: { fontSize: 12, fontFamily: Fonts.body },
+	bars: { flexDirection: "row", gap: 10 },
+	barCol: { flex: 1, alignItems: "center", gap: 6 },
+	barTrack: { height: CHART_H, width: "100%", justifyContent: "flex-end" },
+	bar: { width: "100%", borderRadius: 4 },
+	barLabel: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
 
-	/* Section */
-	sectionRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		marginBottom: 10,
-	},
-	sectionLabel: {
-		fontSize: 11,
+	/* Sections */
+	sectionTitle: {
 		fontFamily: Fonts.bodySemibold,
-		letterSpacing: 0.8,
-	},
-	sectionLine: { flex: 1, height: 1 },
-
-	list: { padding: 16, paddingTop: 12, gap: 8, paddingBottom: 40 },
-	endLabel: {
-		textAlign: "center",
-		fontSize: 12,
-		fontFamily: Fonts.body,
-		marginVertical: 16,
-	},
-
-	/* Boost card */
-	card: {
-		borderRadius: 14,
-		borderWidth: 1,
-		overflow: "hidden",
-		flexDirection: "row",
-	},
-	cardAccent: { width: 3 },
-	cardInner: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		padding: 12,
-		gap: 12,
-	},
-	thumbWrap: { position: "relative" },
-	thumb: { width: 56, height: 56, borderRadius: 10 },
-	thumbFallback: {
-		width: 56,
-		height: 56,
-		borderRadius: 10,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	activeDot: {
-		position: "absolute",
-		top: 4,
-		right: 4,
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-		backgroundColor: "#22c55e",
-		borderWidth: 1.5,
-		borderColor: "#fff",
-	},
-	cardInfo: { flex: 1, gap: 5 },
-	cardTitle: { fontSize: 13, fontFamily: Fonts.displayBold, lineHeight: 17 },
-	cardMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
-	durationPill: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 3,
-		borderRadius: 20,
-		paddingHorizontal: 7,
-		paddingVertical: 3,
-	},
-	durationPillText: {
-		fontSize: 10,
-		fontFamily: Fonts.displayBold,
-		color: "#f59e0b",
-	},
-	cardDate: { fontSize: 11, fontFamily: Fonts.body },
-	progressTrack: { height: 4, borderRadius: 2, overflow: "hidden" },
-	progressFill: { height: 4, borderRadius: 2 },
-	cardRight: { alignItems: "flex-end", gap: 6 },
-	cardAmount: {
-		fontSize: 14,
-		fontFamily: Fonts.displayExtrabold,
-		color: "#f59e0b",
-		textAlign: "right",
+		fontSize: 13,
 		lineHeight: 18,
+		marginLeft: 16,
+		marginTop: 24,
+		marginBottom: 8,
 	},
-	statusBadge: {
+	groupRow: {
+		borderLeftWidth: StyleSheet.hairlineWidth,
+		borderRightWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
+	},
+	groupFirst: {
+		borderTopWidth: StyleSheet.hairlineWidth,
+		borderTopLeftRadius: 14,
+		borderTopRightRadius: 14,
+	},
+	groupLast: {
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		borderBottomLeftRadius: 14,
+		borderBottomRightRadius: 14,
+	},
+	separator: { height: StyleSheet.hairlineWidth, marginLeft: TEXT_INSET },
+
+	/* Row */
+	row: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 3,
-		borderRadius: 20,
-		paddingHorizontal: 7,
-		paddingVertical: 3,
+		gap: 12,
+		minHeight: 72,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
 	},
-	statusText: { fontSize: 10, fontFamily: Fonts.displayBold },
+	thumb: { width: 48, height: 48, borderRadius: 10 },
+	thumbFallback: { alignItems: "center", justifyContent: "center" },
+	rowText: { flex: 1, gap: 4 },
+	rowTop: { flexDirection: "row", alignItems: "baseline", gap: 8 },
+	rowTitle: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 21,
+		fontFamily: Fonts.bodyMedium,
+	},
+	rowAmount: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.displayBold },
+	rowMeta: { flexDirection: "row", alignItems: "center", gap: 8 },
+	rowMetaText: {
+		flex: 1,
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+	},
+	progressTrack: {
+		height: 4,
+		borderRadius: 2,
+		overflow: "hidden",
+		marginTop: 4,
+	},
+	progressFill: { height: 4, borderRadius: 2 },
 });

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useState } from "react";
 import {
@@ -63,6 +64,10 @@ export function ShopBrandingCard({
 				onPress={() => upload("banner")}
 				accessibilityRole="button"
 				accessibilityLabel={t("shop.banner")}
+				accessibilityState={{
+					disabled: readOnly,
+					busy: uploading === "banner",
+				}}
 				style={[styles.banner, { backgroundColor: brand.headerBg }]}
 			>
 				{bannerUri ? (
@@ -79,6 +84,7 @@ export function ShopBrandingCard({
 						{t("shop.banner")}
 					</Text>
 				)}
+				{readOnly || uploading === "banner" ? null : <EditMark />}
 			</Pressable>
 			<View style={styles.logoRow}>
 				<Pressable
@@ -86,6 +92,10 @@ export function ShopBrandingCard({
 					onPress={() => upload("logo")}
 					accessibilityRole="button"
 					accessibilityLabel={t("shop.logo")}
+					accessibilityState={{
+						disabled: readOnly,
+						busy: uploading === "logo",
+					}}
 					style={[
 						styles.logoTouch,
 						{ borderColor: c.bg, backgroundColor: c.card },
@@ -93,7 +103,7 @@ export function ShopBrandingCard({
 				>
 					{uploading === "logo" ? (
 						<View style={styles.logoLoading}>
-							<ActivityIndicator color={c.primary} />
+							<ActivityIndicator color={c.link} />
 						</View>
 					) : (
 						<ShopAvatar
@@ -103,6 +113,7 @@ export function ShopBrandingCard({
 							radius={16}
 						/>
 					)}
+					{readOnly || uploading === "logo" ? null : <EditMark small />}
 				</Pressable>
 				<View style={styles.logoText}>
 					<Text style={[f.label, { color: c.text }]}>
@@ -113,6 +124,19 @@ export function ShopBrandingCard({
 					</Text>
 				</View>
 			</View>
+		</View>
+	);
+}
+
+/** The camera mark that says a picture can be replaced, once one is set too. */
+function EditMark({ small = false }: { small?: boolean }) {
+	return (
+		<View
+			style={[styles.editMark, small && styles.editMarkSmall]}
+			accessibilityElementsHidden
+			importantForAccessibility="no-hide-descendants"
+		>
+			<Ionicons name="camera-outline" size={small ? 14 : 16} color="#ffffff" />
 		</View>
 	);
 }
@@ -147,4 +171,23 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	logoText: { flex: 1, paddingBottom: 4 },
+	// Ink at 72%: the white mark keeps 4.5:1 on any photo beneath it.
+	editMark: {
+		position: "absolute",
+		right: 10,
+		bottom: 10,
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		backgroundColor: "rgba(18, 22, 58, 0.72)",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	editMarkSmall: {
+		right: 4,
+		bottom: 4,
+		width: 26,
+		height: 26,
+		borderRadius: 13,
+	},
 });

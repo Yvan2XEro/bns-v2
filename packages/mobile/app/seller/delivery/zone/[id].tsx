@@ -1,17 +1,19 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
 import { ZoneForm } from "@/src/components/delivery/ZoneForm";
+import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
-import { useShopTheme } from "@/src/components/shop/theme";
 import { alerts } from "@/src/contexts/AlertContext";
 import {
 	useDeleteZone,
 	useDeliveryZones,
 	useSaveZone,
 } from "@/src/hooks/useDeliverySettings";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import {
 	emptyZoneValues,
 	toZoneInput,
@@ -26,7 +28,6 @@ function ZoneEditor({
 	shopId: string;
 	zoneId: string | null;
 }) {
-	const c = useShopTheme();
 	const { t } = useTranslation();
 	const zones = useDeliveryZones(shopId);
 	const save = useSaveZone(shopId, zoneId);
@@ -37,8 +38,30 @@ function ZoneEditor({
 		[zone],
 	);
 
-	if (zones.isPending)
-		return <ActivityIndicator style={styles.spinner} color={c.primary} />;
+	if (zones.isPending) return <DetailSkeleton cards={3} />;
+	// An existing zone must be read before it is edited: falling through to
+	// the blank form would let a save overwrite it with empty values.
+	if (zoneId && (zones.isError || !zone)) {
+		return (
+			<EmptyState
+				illustration="notFound"
+				title={t("deliverySettings.editZone")}
+				subtitle={
+					zones.isError
+						? resolveErrorMessage(zones.error, t)
+						: t("deliverySettings.notFound")
+				}
+				ctaLabel={t("common.retry")}
+				onCta={() => zones.refetch()}
+				secondaryLabel={t("common.back")}
+				onSecondary={() =>
+					router.canGoBack()
+						? router.back()
+						: router.replace("/seller/delivery")
+				}
+			/>
+		);
+	}
 
 	const confirmDelete = async () => {
 		const confirmed = await alerts.confirm(
@@ -56,6 +79,11 @@ function ZoneEditor({
 				);
 				router.back();
 			},
+			onError: (error) =>
+				alerts.showError(
+					t("deliverySettings.deleteFailed"),
+					resolveErrorMessage(error, t),
+				),
 		});
 	};
 
@@ -103,6 +131,5 @@ export default function ZoneScreen() {
 }
 
 const styles = StyleSheet.create({
-	spinner: { marginTop: 40 },
 	content: { padding: 16, gap: 16, paddingBottom: 48 },
 });

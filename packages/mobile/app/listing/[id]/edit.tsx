@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -15,7 +14,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts, TextStyles } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
@@ -24,8 +23,11 @@ import {
 	PriceUnitChips,
 	priceUnitToSend,
 } from "@/src/components/listing/PriceUnitChips";
+import { SkeletonBox } from "@/src/components/listing/Skeletons";
+import { PendingPhotoTile } from "@/src/components/PendingPhotoTile";
 import { FieldIssueText } from "@/src/components/seller/FieldIssueText";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
+import { StatusTag, type StatusTone } from "@/src/components/shop/Tags";
 import { TagPicker } from "@/src/components/TagPicker";
 import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
 import { PhotoLimitNote } from "@/src/components/ui/PhotoLimitNote";
@@ -34,6 +36,7 @@ import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import { CATEGORIES_STALE_TIME_MS } from "@/src/hooks/useListings";
 import { usePhoneGate } from "@/src/hooks/usePhoneGate";
+import { usePhotoUploads } from "@/src/hooks/usePhotoUploads";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
@@ -61,8 +64,8 @@ import {
 	serializeAttributeValues,
 } from "@/src/lib/listingForm";
 import { listingKindRules } from "@/src/lib/listingKind";
-import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { canAddPhoto } from "@/src/lib/photoLimit";
+import { makeMain } from "@/src/lib/photoQueue";
 import type { Place } from "@/src/lib/places";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { rejectionText } from "../../../../api/src/contracts/listingRejection";
@@ -71,6 +74,21 @@ const DURATIONS = [30, 60, 90];
 
 type ImageItem = { id: string; uri: string };
 
+/** The Ndop tokens for the current appearance. */
+function usePalette() {
+	return Colors[useColorScheme() === "dark" ? "dark" : "light"];
+}
+
+/** How the listing's current state reads, by what it asks of the seller. */
+const STATUS_TONE: Record<string, StatusTone> = {
+	draft: "neutral",
+	pending: "warning",
+	published: "success",
+	rejected: "danger",
+	sold: "info",
+	expired: "neutral",
+};
+
 function SectionCard({
 	icon,
 	title,
@@ -78,39 +96,37 @@ function SectionCard({
 	cardBg,
 	borderColor,
 	textColor,
-	mutedColor,
-	primaryColor,
-	isDark,
 }: any) {
+	const C = usePalette();
 	return (
 		<View
 			style={[styles.sectionCard, { backgroundColor: cardBg, borderColor }]}
 		>
 			<View style={styles.sectionHeader}>
 				<View
-					style={[
-						styles.sectionIconBox,
-						{ backgroundColor: isDark ? "#0f172a" : "#f1f5f9" },
-					]}
+					style={[styles.sectionIconBox, { backgroundColor: C.primaryTint }]}
+					importantForAccessibility="no-hide-descendants"
 				>
-					<Ionicons
-						name={icon}
-						size={16}
-						color={isDark ? "#94a3b8" : "#475569"}
-					/>
+					<Ionicons name={icon} size={16} color={C.link} />
 				</View>
-				<Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
+				<Text
+					style={[styles.sectionTitle, { color: textColor }]}
+					accessibilityRole="header"
+				>
+					{title}
+				</Text>
 			</View>
 			<View style={styles.sectionBody}>{children}</View>
 		</View>
 	);
 }
 
-function FieldLabel({ label, required, mutedColor }: any) {
+function FieldLabel({ label, required }: any) {
+	const C = usePalette();
 	return (
-		<Text style={[styles.fieldLabel, { color: mutedColor }]}>
+		<Text style={[styles.fieldLabel, { color: C.foreground }]}>
 			{label}
-			{required && <Text style={{ color: "#ef4444" }}> *</Text>}
+			{required && <Text style={{ color: C.dangerText }}> *</Text>}
 		</Text>
 	);
 }
@@ -169,6 +185,7 @@ function EditAttributeField({
 	inputBg: string;
 }) {
 	const { t } = useTranslation();
+	const C = usePalette();
 	const issue = getAttributeIssue(attribute, value);
 	// A field left empty is not an error the user made yet; bad input is.
 	const showIssue = issue !== null && issue.code !== "required";
@@ -193,13 +210,15 @@ function EditAttributeField({
 			/>
 
 			{attribute.type === "select" && attribute.options.length > 0 ? (
-				<View style={styles.pillRow}>
+				<View style={styles.pillRow} accessibilityRole="radiogroup">
 					{attribute.options.map((opt) => {
 						const active = value === opt.value;
 						return (
 							<Pressable
 								key={opt.value}
 								onPress={() => onChange(active ? "" : opt.value)}
+								accessibilityRole="radio"
+								accessibilityState={{ checked: active }}
 								style={[
 									styles.pill,
 									{
@@ -208,11 +227,13 @@ function EditAttributeField({
 									},
 								]}
 							>
-								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								{active && (
+									<Ionicons name="checkmark" size={14} color="#ffffff" />
+								)}
 								<Text
 									style={[
 										styles.pillText,
-										{ color: active ? "#fff" : mutedColor },
+										{ color: active ? "#ffffff" : textColor },
 									]}
 								>
 									{opt.label}
@@ -222,7 +243,7 @@ function EditAttributeField({
 					})}
 				</View>
 			) : attribute.type === "boolean" ? (
-				<View style={styles.pillRow}>
+				<View style={styles.pillRow} accessibilityRole="radiogroup">
 					{[
 						{ label: t("common.yes"), value: "true" },
 						{ label: t("common.no"), value: "false" },
@@ -232,6 +253,8 @@ function EditAttributeField({
 							<Pressable
 								key={opt.value}
 								onPress={() => onChange(active ? "" : opt.value)}
+								accessibilityRole="radio"
+								accessibilityState={{ checked: active }}
 								style={[
 									styles.pill,
 									{
@@ -240,11 +263,13 @@ function EditAttributeField({
 									},
 								]}
 							>
-								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								{active && (
+									<Ionicons name="checkmark" size={14} color="#ffffff" />
+								)}
 								<Text
 									style={[
 										styles.pillText,
-										{ color: active ? "#fff" : mutedColor },
+										{ color: active ? "#ffffff" : textColor },
 									]}
 								>
 									{opt.label}
@@ -259,7 +284,7 @@ function EditAttributeField({
 						styles.inputRow,
 						{
 							backgroundColor: inputBg,
-							borderColor: showIssue ? "#ef4444" : borderColor,
+							borderColor: showIssue ? C.destructive : borderColor,
 						},
 					]}
 				>
@@ -290,6 +315,7 @@ function EditAttributeField({
 									: "default"
 						}
 						maxLength={attribute.type === "date" ? 10 : undefined}
+						accessibilityLabel={attribute.name}
 						style={[styles.rowInput, { color: textColor }]}
 					/>
 					{/* The unit sits with the value, e.g. "120 km". */}
@@ -302,7 +328,10 @@ function EditAttributeField({
 			)}
 
 			{showIssue ? (
-				<Text style={[styles.attrError, { color: "#ef4444" }]}>
+				<Text
+					style={[styles.attrError, { color: C.dangerText }]}
+					accessibilityRole="alert"
+				>
 					{attributeIssueMessage(issue, t)}
 				</Text>
 			) : bounds ? (
@@ -321,13 +350,17 @@ export default function EditListingScreen() {
 	const { t } = useTranslation();
 	const { photosIncluded } = useAppConfig();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const inputBg = isDark ? "#0b1120" : "#f8fafc";
+	// Ndop tokens. `primaryColor` is for brand words, rings and icons; `fill`
+	// sits behind white labels (white on the night primary falls under 4.5:1).
+	const C = Colors[isDark ? "dark" : "light"];
+	const bg = C.background;
+	const cardBg = C.card;
+	const textColor = C.foreground;
+	const mutedColor = C.mutedForeground;
+	const primaryColor = C.link;
+	const fill = C.primaryFill;
+	const borderColor = C.border;
+	const inputBg = C.well;
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["listing", id],
@@ -384,7 +417,6 @@ export default function EditListingScreen() {
 	const [duration, setDuration] = useState(30);
 	const [attributes, setAttributes] = useState<Record<string, any>>({});
 	const [images, setImages] = useState<ImageItem[]>([]);
-	const [uploading, setUploading] = useState(false);
 	const [nextStatus, setNextStatus] = useState<"draft" | "pending">("pending");
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 	const { data: myShop } = useMyShop();
@@ -467,7 +499,7 @@ export default function EditListingScreen() {
 	useEffect(() => {
 		if (!applicableTagIds) return;
 		setSelectedTagIds((ids) => pruneTagIds(ids, applicableTagIds));
-	}, [applicableTagIds, selectedTagIds]);
+	}, [applicableTagIds]);
 
 	const categoryAttributes = useMemo(
 		() => getCategoryAttributes(category),
@@ -497,7 +529,6 @@ export default function EditListingScreen() {
 		applicableTags: applicableTagIds,
 		photoLimit: photosIncluded,
 	});
-	const photosFull = !canAddPhoto(images.length, photosIncluded);
 	const draftKey = JSON.stringify(draft);
 	const [attempted, setAttempted] = useState(false);
 	const [refused, setRefused] = useState<{
@@ -529,64 +560,20 @@ export default function EditListingScreen() {
 		);
 	}, [listing, attributesKey, categoryAttributes]);
 
-	// ── Image picker ───────────────────────────────────────────────
-	const pickImage = async (fromCamera: boolean) => {
-		try {
-			if (fromCamera) {
-				const { status } = await ImagePicker.requestCameraPermissionsAsync();
-				if (status !== "granted") {
-					showError(t("edit.permissionDenied"), t("edit.cameraPermissionMsg"));
-					return;
-				}
-			} else {
-				const { status } =
-					await ImagePicker.requestMediaLibraryPermissionsAsync();
-				if (status !== "granted") {
-					showError(t("edit.permissionDenied"), t("edit.galleryPermissionMsg"));
-					return;
-				}
-			}
-
-			const result = fromCamera
-				? await ImagePicker.launchCameraAsync({
-						allowsEditing: true,
-						aspect: [4, 3],
-						quality: 0.85,
-					})
-				: await ImagePicker.launchImageLibraryAsync({
-						mediaTypes: ["images"],
-						allowsEditing: true,
-						aspect: [4, 3],
-						quality: 0.85,
-					});
-
-			if (result.canceled || !result.assets?.[0]) return;
-			const asset = result.assets[0];
-
-			setUploading(true);
-			const defaultBaseName = `photo_${Date.now()}`;
-			const formData = await createMediaUploadFormData(asset, {
-				defaultBaseName,
-				alt: asset.fileName?.replace(/\.[^.]+$/, "") || `${title} image`,
-			});
-			const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
-				"/api/media",
-				formData,
-			);
-			const mediaId = uploaded?.doc?.id;
-			const mediaUri = uploaded?.doc?.url ?? asset.uri;
-			if (!mediaId) throw new Error(t("edit.uploadError"));
-
-			setImages((prev) => [...prev, { id: mediaId, uri: mediaUri }]);
-		} catch (err: any) {
-			showError(
-				t("edit.errorTitle"),
-				resolveErrorMessage(err, t, t("edit.uploadError")),
-			);
-		} finally {
-			setUploading(false);
-		}
-	};
+	// ── Photos ─────────────────────────────────────────────────────
+	// The same pipeline as the create form: several at once, each uploading
+	// in the background with its own progress, failure and retry. A photo
+	// joins `images` only once the API has given it a media id, so what the
+	// PATCH sends is unchanged: the ids of the uploaded photos, in order.
+	const uploads = usePhotoUploads({
+		alt: title,
+		onUploaded: (photo) => setImages((prev) => [...prev, photo]),
+	});
+	const photosTaken = images.length + uploads.pending.length;
+	const photosFull = !canAddPhoto(photosTaken, photosIncluded);
+	const photosRemaining = Math.max(0, photosIncluded - photosTaken);
+	const pickImage = (fromCamera: boolean) =>
+		void uploads.pick(fromCamera, photosRemaining);
 
 	const showImagePicker = () => {
 		if (photosFull) {
@@ -596,7 +583,7 @@ export default function EditListingScreen() {
 		showAlert(t("edit.addPhotoTitle"), t("edit.addPhotoSource"), [
 			{ text: t("edit.camera"), onPress: () => pickImage(true) },
 			{ text: t("edit.gallery"), onPress: () => pickImage(false) },
-			{ text: t("edit.cancel"), style: "cancel" },
+			{ text: t("common.cancel"), style: "cancel" },
 		]);
 	};
 
@@ -665,6 +652,18 @@ export default function EditListingScreen() {
 			!requirePhone("publishListing")
 		)
 			return;
+		// A photo still on its way has no media id yet: saving now would drop it
+		// without a word.
+		if (uploads.uploading) {
+			showWarning(t("create.photosStillUploading"));
+			return;
+		}
+		// A photo that failed has no media id either: the seller retries or
+		// removes it, rather than losing it to a save that says nothing.
+		if (uploads.pending.some((photo) => photo.status === "failed")) {
+			showWarning(t("edit.photosFailedOnSave"));
+			return;
+		}
 		// Only a field the preset actually shows may block the save: a hidden
 		// price is never "required", which `listingDraftIssues` already knows.
 		if (draftIssues.length > 0) {
@@ -675,11 +674,39 @@ export default function EditListingScreen() {
 		save();
 	};
 
+	// The form's own frame while the ad loads: header, then cards in the shape
+	// of the photo strip and the fields, instead of a lone spinner.
 	if (isLoading) {
 		return (
-			<View style={[styles.loader, { backgroundColor: bg }]}>
-				<ActivityIndicator color={primaryColor} size="large" />
-			</View>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: bg }]}
+			>
+				<View style={[styles.header, { borderBottomColor: borderColor }]}>
+					<HeaderBackButton
+						color={textColor}
+						fallback="/(tabs)/account"
+						style={styles.backBtn}
+					/>
+					<Text
+						style={[styles.headerTitle, { color: textColor }]}
+						accessibilityRole="header"
+					>
+						{t("edit.title")}
+					</Text>
+					<View style={styles.backBtn} />
+				</View>
+				<View
+					style={[styles.scroll, centeredContent]}
+					accessible
+					accessibilityRole="progressbar"
+					accessibilityLabel={t("common.loading")}
+				>
+					<SkeletonBox width="100%" height={150} radius={16} />
+					<SkeletonBox width="100%" height={230} radius={16} />
+					<SkeletonBox width="100%" height={180} radius={16} />
+				</View>
+			</SafeAreaView>
 		);
 	}
 
@@ -704,19 +731,29 @@ export default function EditListingScreen() {
 					fallback="/(tabs)/account"
 					style={styles.backBtn}
 				/>
-				<Text style={[styles.headerTitle, { color: textColor }]}>
+				<Text
+					style={[styles.headerTitle, { color: textColor }]}
+					accessibilityRole="header"
+				>
 					{t("edit.title")}
 				</Text>
 				<Pressable
 					onPress={handleSavePress}
 					disabled={isPending}
-					style={[
+					hitSlop={6}
+					accessibilityRole="button"
+					accessibilityLabel={t("edit.save")}
+					accessibilityState={{ busy: isPending, disabled: isPending }}
+					style={({ pressed }) => [
 						styles.saveBtn,
-						{ backgroundColor: primaryColor, opacity: isPending ? 0.7 : 1 },
+						{
+							backgroundColor: fill,
+							opacity: isPending ? 0.7 : pressed ? 0.85 : 1,
+						},
 					]}
 				>
 					{isPending ? (
-						<ActivityIndicator size="small" color="#fff" />
+						<ActivityIndicator size="small" color="#ffffff" />
 					) : (
 						<Text style={styles.saveBtnText}>{t("edit.save")}</Text>
 					)}
@@ -766,53 +803,96 @@ export default function EditListingScreen() {
 						contentContainerStyle={styles.imageList}
 					>
 						{images.map((img, index) => (
-							<View key={img.id} style={styles.imageWrap}>
+							<View
+								key={img.id}
+								style={[
+									styles.imageWrap,
+									{ backgroundColor: C.well, borderColor },
+								]}
+							>
 								<Image
 									source={{ uri: img.uri }}
-									style={styles.imageThumb}
+									style={StyleSheet.absoluteFill}
 									contentFit="cover"
+									accessibilityIgnoresInvertColors
 								/>
-								{index === 0 && (
-									<View style={styles.mainBadge}>
+								{index === 0 ? (
+									<View style={[styles.mainBadge, { backgroundColor: fill }]}>
 										<Text style={styles.mainBadgeText}>
 											{t("edit.mainPhoto")}
 										</Text>
 									</View>
+								) : (
+									// The first photo is the one on every card: any other can
+									// take its place, as on the create form.
+									<Pressable
+										onPress={() => setImages((prev) => makeMain(prev, index))}
+										hitSlop={8}
+										accessibilityRole="button"
+										accessibilityLabel={t("create.makeMain")}
+										style={styles.makeMainBtn}
+									>
+										<Ionicons name="star-outline" size={16} color="#ffffff" />
+									</Pressable>
 								)}
 								<Pressable
 									onPress={() =>
 										setImages((prev) => prev.filter((_, i) => i !== index))
 									}
+									hitSlop={10}
+									accessibilityRole="button"
+									accessibilityLabel={t("create.removePhoto")}
 									style={styles.removeImageBtn}
 								>
-									<Ionicons name="close" size={12} color="#fff" />
+									<Ionicons name="close" size={16} color="#ffffff" />
 								</Pressable>
 							</View>
 						))}
+						{uploads.pending.map((photo) => (
+							<PendingPhotoTile
+								key={photo.key}
+								photo={photo}
+								onRetry={() => uploads.retry(photo.key)}
+								onRemove={() => uploads.remove(photo.key)}
+								style={[
+									styles.imageWrap,
+									{ backgroundColor: C.well, borderColor },
+								]}
+							/>
+						))}
 						<Pressable
 							onPress={showImagePicker}
-							disabled={uploading || photosFull}
-							accessibilityState={{ disabled: uploading || photosFull }}
-							style={[
+							disabled={photosFull}
+							accessibilityRole="button"
+							accessibilityLabel={t("edit.addPhoto")}
+							accessibilityState={{ disabled: photosFull }}
+							style={({ pressed }) => [
 								styles.addImageBtn,
-								{ backgroundColor: inputBg, borderColor },
+								{
+									backgroundColor: pressed ? C.primaryTint : cardBg,
+									borderColor: primaryColor,
+								},
 								photosFull && { opacity: 0.4 },
 							]}
 						>
-							{uploading ? (
-								<ActivityIndicator color={primaryColor} />
-							) : (
-								<>
-									<Ionicons
-										name="camera-outline"
-										size={24}
-										color={mutedColor}
-									/>
-									<Text style={[styles.addImageText, { color: mutedColor }]}>
-										{t("edit.addPhoto")}
-									</Text>
-								</>
-							)}
+							<View
+								style={[
+									styles.addIconCircle,
+									{ backgroundColor: C.primaryTint },
+								]}
+							>
+								<Ionicons
+									name="camera-outline"
+									size={20}
+									color={primaryColor}
+								/>
+							</View>
+							<Text
+								style={[styles.addImageText, { color: primaryColor }]}
+								numberOfLines={2}
+							>
+								{t("edit.addPhoto")}
+							</Text>
 						</Pressable>
 					</ScrollView>
 					<PhotoLimitNote
@@ -821,6 +901,14 @@ export default function EditListingScreen() {
 						color={mutedColor}
 					/>
 					<FieldIssueText issue={issueAt(visibleIssues, "images")} />
+					{uploads.uploading && (
+						<Text
+							style={[styles.hint, styles.uploadingNote, { color: mutedColor }]}
+							accessibilityLiveRegion="polite"
+						>
+							{t("create.photosStillUploading")}
+						</Text>
+					)}
 				</SectionCard>
 
 				{/* ── Détails ── */}
@@ -850,8 +938,12 @@ export default function EditListingScreen() {
 								{ backgroundColor: inputBg, borderColor, color: textColor },
 							]}
 							maxLength={100}
+							accessibilityLabel={t("edit.titleLabel")}
 						/>
-						<Text style={[styles.charCount, { color: mutedColor }]}>
+						<Text
+							style={[styles.charCount, { color: mutedColor }]}
+							importantForAccessibility="no"
+						>
 							{title.length}/100
 						</Text>
 					</View>
@@ -879,6 +971,7 @@ export default function EditListingScreen() {
 							]}
 							multiline
 							numberOfLines={5}
+							accessibilityLabel={t("edit.descriptionLabel")}
 						/>
 					</View>
 				</SectionCard>
@@ -893,7 +986,10 @@ export default function EditListingScreen() {
 						{attributeSections.map((section) => (
 							<View key={section.key} style={styles.attrSection}>
 								{section.title ? (
-									<Text style={[styles.groupHeading, { color: textColor }]}>
+									<Text
+										style={[styles.groupHeading, { color: textColor }]}
+										accessibilityRole="header"
+									>
 										{section.title}
 									</Text>
 								) : null}
@@ -905,7 +1001,8 @@ export default function EditListingScreen() {
 										onChange={(v: string) => updateAttr(attr.slug, v)}
 										textColor={textColor}
 										mutedColor={mutedColor}
-										primaryColor={primaryColor}
+										// Behind the selected pill's white label.
+										primaryColor={fill}
 										borderColor={borderColor}
 										inputBg={inputBg}
 									/>
@@ -934,9 +1031,6 @@ export default function EditListingScreen() {
 									{ backgroundColor: inputBg, borderColor },
 								]}
 							>
-								<Text style={[styles.currency, { color: mutedColor }]}>
-									{t("common.currency", { defaultValue: "XAF" })}
-								</Text>
 								<TextInput
 									value={price}
 									// Whole XAF amounts only: a separator typed on the numeric
@@ -946,7 +1040,17 @@ export default function EditListingScreen() {
 									placeholderTextColor={mutedColor}
 									style={[styles.priceInput, { color: textColor }]}
 									keyboardType="number-pad"
+									accessibilityLabel={priceLabel}
 								/>
+								{/* The currency on the yellow tag every price wears. */}
+								<View
+									style={[styles.currencyTag, { backgroundColor: C.sun }]}
+									importantForAccessibility="no-hide-descendants"
+								>
+									<Text style={[styles.currency, { color: C.sunForeground }]}>
+										{t("common.currency", { defaultValue: "XAF" })}
+									</Text>
+								</View>
 							</View>
 							<PriceUnitChips
 								kind={categoryPreset.categoryType}
@@ -1016,25 +1120,28 @@ export default function EditListingScreen() {
 							label={t("edit.durationLabel")}
 							mutedColor={mutedColor}
 						/>
-						<View style={styles.pillRow}>
+						<View style={styles.pillRow} accessibilityRole="radiogroup">
 							{DURATIONS.map((d) => {
 								const active = duration === d;
 								return (
 									<Pressable
 										key={d}
 										onPress={() => setDuration(d)}
+										accessibilityRole="radio"
+										accessibilityState={{ checked: active }}
+										accessibilityLabel={`${d} ${t("edit.days")}`}
 										style={[
 											styles.durationPill,
 											{
-												backgroundColor: active ? primaryColor : inputBg,
-												borderColor: active ? primaryColor : borderColor,
+												backgroundColor: active ? fill : inputBg,
+												borderColor: active ? fill : borderColor,
 											},
 										]}
 									>
 										<Text
 											style={[
 												styles.durationNum,
-												{ color: active ? "#fff" : textColor },
+												{ color: active ? "#ffffff" : textColor },
 											]}
 										>
 											{d}
@@ -1042,9 +1149,7 @@ export default function EditListingScreen() {
 										<Text
 											style={[
 												styles.durationUnit,
-												{
-													color: active ? "rgba(255,255,255,0.75)" : mutedColor,
-												},
+												{ color: active ? "#ffffff" : mutedColor },
 											]}
 										>
 											{t("edit.days")}
@@ -1066,42 +1171,6 @@ export default function EditListingScreen() {
 					{listing?.status &&
 						(() => {
 							const s = listing.status as string;
-							const statusColors: Record<
-								string,
-								{ bg: string; text: string; border: string }
-							> = {
-								draft: {
-									bg: isDark ? "#1e293b" : "#f1f5f9",
-									text: isDark ? "#94a3b8" : "#64748b",
-									border: isDark ? "#334155" : "#cbd5e1",
-								},
-								pending: {
-									bg: isDark ? "#2d1f00" : "#fffbeb",
-									text: isDark ? "#fbbf24" : "#92400e",
-									border: isDark ? "#854d0e" : "#fde68a",
-								},
-								published: {
-									bg: isDark ? "#052e16" : "#f0fdf4",
-									text: isDark ? "#4ade80" : "#15803d",
-									border: isDark ? "#166534" : "#bbf7d0",
-								},
-								rejected: {
-									bg: isDark ? "#2d0707" : "#fef2f2",
-									text: isDark ? "#f87171" : "#b91c1c",
-									border: isDark ? "#991b1b" : "#fecaca",
-								},
-								sold: {
-									bg: isDark ? "#1e1440" : "#faf5ff",
-									text: isDark ? "#c084fc" : "#7e22ce",
-									border: isDark ? "#6b21a8" : "#e9d5ff",
-								},
-								expired: {
-									bg: isDark ? "#2c1000" : "#fff7ed",
-									text: isDark ? "#fb923c" : "#c2410c",
-									border: isDark ? "#9a3412" : "#fed7aa",
-								},
-							};
-							const colors = statusColors[s] ?? statusColors.draft;
 							// Sniffing the French translation to pick a language was both a
 							// t() bypass and wrong for every other status, which stayed
 							// French in English.
@@ -1119,60 +1188,32 @@ export default function EditListingScreen() {
 								expired: t("listings.statusExpired"),
 							};
 							return (
-								<View style={{ gap: 8 }}>
-									<View
-										style={{
-											flexDirection: "row",
-											alignItems: "center",
-											gap: 8,
-										}}
-									>
+								<View style={styles.statusBlock}>
+									<View style={styles.statusRow}>
 										<Text style={[styles.fieldLabel, { color: mutedColor }]}>
 											{t("edit.statusCurrentLabel")}
 										</Text>
-										<View
-											style={{
-												borderRadius: 20,
-												borderWidth: 1,
-												borderColor: colors.border,
-												backgroundColor: colors.bg,
-												paddingHorizontal: 10,
-												paddingVertical: 3,
-											}}
-										>
-											<Text
-												style={{
-													fontSize: 12,
-													fontFamily: Fonts.bodySemibold,
-													color: colors.text,
-												}}
-											>
-												{statusLabel[s] ?? s}
-											</Text>
-										</View>
+										<StatusTag
+											label={statusLabel[s] ?? s}
+											tone={STATUS_TONE[s] ?? "neutral"}
+										/>
 									</View>
 
 									{s === "published" && (
 										<View
-											style={{
-												borderRadius: 10,
-												borderWidth: 1,
-												borderColor: isDark ? "#854d0e" : "#fde68a",
-												backgroundColor: isDark ? "#2d1f00" : "#fffbeb",
-												padding: 10,
-												flexDirection: "row",
-												gap: 8,
-												alignItems: "flex-start",
-											}}
+											style={[
+												styles.notice,
+												{ backgroundColor: C.warningTint },
+											]}
 										>
-											<Text style={{ fontSize: 14 }}>\u26a0\ufe0f</Text>
+											<Ionicons
+												name="warning-outline"
+												size={18}
+												color={C.warningText}
+												importantForAccessibility="no"
+											/>
 											<Text
-												style={{
-													flex: 1,
-													fontSize: 12,
-													fontFamily: Fonts.body,
-													color: isDark ? "#fbbf24" : "#92400e",
-												}}
+												style={[styles.noticeText, { color: C.warningText }]}
 											>
 												{t("edit.statusPublishedNotice")}
 											</Text>
@@ -1181,37 +1222,30 @@ export default function EditListingScreen() {
 
 									{s === "rejected" && (
 										<View
-											style={{
-												borderRadius: 10,
-												borderWidth: 1,
-												borderColor: isDark ? "#991b1b" : "#fecaca",
-												backgroundColor: isDark ? "#2d0707" : "#fef2f2",
-												padding: 10,
-												gap: 4,
-											}}
+											style={[styles.notice, { backgroundColor: C.dangerTint }]}
 										>
-											<Text
-												style={{
-													fontSize: 12,
-													fontFamily: Fonts.bodySemibold,
-													color: isDark ? "#f87171" : "#b91c1c",
-												}}
-											>
-												{t("edit.statusRejectedNotice")}
-											</Text>
-											{rejection ? (
+											<Ionicons
+												name="alert-circle-outline"
+												size={18}
+												color={C.dangerText}
+												importantForAccessibility="no"
+											/>
+											<View style={styles.noticeBody}>
 												<Text
-													style={{
-														fontSize: 12,
-														fontFamily: Fonts.body,
-														color: isDark ? "#f87171" : "#b91c1c",
-													}}
+													style={[styles.noticeTitle, { color: C.dangerText }]}
 												>
-													{t("edit.statusRejectionReason", {
-														reason: rejection,
-													})}
+													{t("edit.statusRejectedNotice")}
 												</Text>
-											) : null}
+												{rejection ? (
+													<Text
+														style={[styles.noticeText, { color: C.dangerText }]}
+													>
+														{t("edit.statusRejectionReason", {
+															reason: rejection,
+														})}
+													</Text>
+												) : null}
+											</View>
 										</View>
 									)}
 								</View>
@@ -1219,7 +1253,7 @@ export default function EditListingScreen() {
 						})()}
 
 					{/* Status options */}
-					<View style={{ gap: 10 }}>
+					<View style={styles.statusOptions} accessibilityRole="radiogroup">
 						{(
 							[
 								{
@@ -1246,60 +1280,40 @@ export default function EditListingScreen() {
 								<Pressable
 									key={opt.value}
 									onPress={() => setNextStatus(opt.value)}
-									style={{
-										borderRadius: 12,
-										borderWidth: 2,
-										borderColor: active ? primaryColor : borderColor,
-										backgroundColor: active
-											? isDark
-												? "rgba(59,130,246,0.1)"
-												: "rgba(30,64,175,0.05)"
-											: cardBg,
-										padding: 14,
-										flexDirection: "row",
-										alignItems: "center",
-										gap: 12,
-									}}
+									accessibilityRole="radio"
+									accessibilityState={{ checked: active }}
+									accessibilityLabel={`${opt.label}. ${opt.desc}`}
+									style={[
+										styles.statusOption,
+										{
+											borderColor: active ? primaryColor : borderColor,
+											backgroundColor: active ? C.primaryTint : cardBg,
+										},
+									]}
 								>
 									<View
-										style={{
-											width: 20,
-											height: 20,
-											borderRadius: 10,
-											borderWidth: 2,
-											borderColor: active ? primaryColor : mutedColor,
-											alignItems: "center",
-											justifyContent: "center",
-										}}
+										style={[
+											styles.radio,
+											{ borderColor: active ? primaryColor : mutedColor },
+										]}
 									>
 										{active && (
 											<View
-												style={{
-													width: 10,
-													height: 10,
-													borderRadius: 5,
-													backgroundColor: primaryColor,
-												}}
+												style={[
+													styles.radioDot,
+													{ backgroundColor: primaryColor },
+												]}
 											/>
 										)}
 									</View>
-									<View style={{ flex: 1 }}>
+									<View style={styles.statusOptionText}>
 										<Text
-											style={{
-												fontSize: 14,
-												fontFamily: Fonts.bodySemibold,
-												color: textColor,
-											}}
+											style={[styles.statusOptionLabel, { color: textColor }]}
 										>
 											{opt.label}
 										</Text>
 										<Text
-											style={{
-												fontSize: 12,
-												fontFamily: Fonts.body,
-												color: mutedColor,
-												marginTop: 2,
-											}}
+											style={[styles.statusOptionDesc, { color: mutedColor }]}
 										>
 											{opt.desc}
 										</Text>
@@ -1308,6 +1322,7 @@ export default function EditListingScreen() {
 										name={opt.icon}
 										size={18}
 										color={active ? primaryColor : mutedColor}
+										importantForAccessibility="no"
 									/>
 								</Pressable>
 							);
@@ -1326,19 +1341,22 @@ export default function EditListingScreen() {
 					onPress={handleSavePress}
 					disabled={isPending}
 					scaleTo={0.97}
+					accessibilityRole="button"
+					accessibilityLabel={t("edit.saveChanges")}
+					accessibilityState={{ busy: isPending, disabled: isPending }}
 					style={[
 						styles.submitBtn,
-						{ backgroundColor: primaryColor, opacity: isPending ? 0.7 : 1 },
+						{ backgroundColor: fill, opacity: isPending ? 0.7 : 1 },
 					]}
 				>
 					{isPending ? (
-						<ActivityIndicator color="#fff" />
+						<ActivityIndicator color="#ffffff" />
 					) : (
 						<>
 							<Ionicons
 								name="checkmark-circle-outline"
 								size={20}
-								color="#fff"
+								color="#ffffff"
 							/>
 							<Text style={styles.submitText}>{t("edit.saveChanges")}</Text>
 						</>
@@ -1351,19 +1369,18 @@ export default function EditListingScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	loader: { flex: 1, alignItems: "center", justifyContent: "center" },
 
 	/* Header */
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
+		paddingVertical: 8,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	backBtn: {
-		width: 40,
-		height: 40,
+		width: 44,
+		height: 44,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -1374,16 +1391,17 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	saveBtn: {
+		minHeight: 38,
+		minWidth: 44,
 		borderRadius: 10,
 		paddingHorizontal: 14,
-		paddingVertical: 7,
-		minWidth: 40,
 		alignItems: "center",
+		justifyContent: "center",
 	},
 	saveBtnText: {
-		color: "#fff",
-		fontSize: 13,
-		fontFamily: Fonts.displayBold,
+		color: "#ffffff",
+		fontSize: 15,
+		fontFamily: Fonts.bodyBold,
 	},
 
 	scroll: { padding: 16, gap: 12, paddingBottom: 48 },
@@ -1391,7 +1409,7 @@ const styles = StyleSheet.create({
 	/* Section card */
 	sectionCard: {
 		borderRadius: 16,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		overflow: "hidden",
 	},
 	sectionHeader: {
@@ -1403,15 +1421,15 @@ const styles = StyleSheet.create({
 		paddingBottom: 10,
 	},
 	sectionIconBox: {
-		width: 30,
-		height: 30,
-		borderRadius: 8,
+		width: 32,
+		height: 32,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	sectionTitle: {
-		fontSize: 15,
-		fontFamily: Fonts.displayBold,
+		...TextStyles.h3,
+		flexShrink: 1,
 	},
 	sectionBody: {
 		paddingHorizontal: 16,
@@ -1423,74 +1441,121 @@ const styles = StyleSheet.create({
 	fieldGroup: { gap: 6 },
 	attrSection: { gap: 14 },
 	groupHeading: {
-		fontSize: 12,
-		fontFamily: Fonts.displayBold,
-		letterSpacing: 0.4,
-		textTransform: "uppercase",
+		...TextStyles.h4,
 	},
 	attrUnit: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 		marginLeft: 8,
 	},
 	attrError: {
-		fontSize: 12,
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 	},
 	attrHint: {
-		fontSize: 11,
+		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.body,
 	},
 	fieldLabel: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 	hint: {
-		fontSize: 12,
+		fontSize: 13,
 		fontFamily: Fonts.body,
-		lineHeight: 18,
+		lineHeight: 19,
 	},
 	input: {
-		borderRadius: 10,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
-		fontSize: 15,
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
+		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
 	multiline: {
 		minHeight: 120,
 		textAlignVertical: "top",
-		paddingTop: 11,
+		lineHeight: 22,
 	},
 	charCount: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.body,
+		fontVariant: ["tabular-nums"],
 		alignSelf: "flex-end",
 	},
 	inputRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		borderRadius: 10,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 11,
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		paddingVertical: 6,
 	},
 	rowInput: {
 		flex: 1,
-		fontSize: 15,
+		fontSize: 16,
 		fontFamily: Fonts.body,
+		paddingVertical: 6,
+	},
+	currencyTag: {
+		borderRadius: 7,
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+		marginLeft: 8,
 	},
 	currency: {
-		fontSize: 13,
-		fontFamily: Fonts.displayBold,
-		marginRight: 8,
+		fontSize: 14,
+		fontFamily: Fonts.displayExtrabold,
 	},
 	priceInput: {
 		flex: 1,
-		fontSize: 16,
-		fontFamily: Fonts.displayBold,
+		fontSize: 22,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.4,
+		fontVariant: ["tabular-nums"],
+		paddingVertical: 6,
 	},
+
+	/* Status */
+	statusBlock: { gap: 10 },
+	statusRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+	notice: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		gap: 10,
+		borderRadius: 12,
+		padding: 12,
+	},
+	noticeBody: { flex: 1, gap: 4 },
+	noticeTitle: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	noticeText: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	statusOptions: { gap: 10 },
+	statusOption: {
+		minHeight: 64,
+		borderRadius: 12,
+		borderWidth: 1.5,
+		padding: 14,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+	},
+	radio: {
+		width: 22,
+		height: 22,
+		borderRadius: 11,
+		borderWidth: 2,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	radioDot: { width: 10, height: 10, borderRadius: 5 },
+	statusOptionText: { flex: 1, gap: 2 },
+	statusOptionLabel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	statusOptionDesc: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 
 	/* Pills */
 	pillRow: {
@@ -1501,89 +1566,110 @@ const styles = StyleSheet.create({
 	pill: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 5,
-		borderRadius: 20,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 7,
+		gap: 6,
+		minHeight: 44,
+		borderRadius: 22,
+		borderWidth: 1,
+		paddingHorizontal: 16,
 	},
 	pillText: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 
 	/* Duration */
 	durationPill: {
 		flex: 1,
+		minHeight: 56,
 		alignItems: "center",
+		justifyContent: "center",
 		borderRadius: 12,
-		borderWidth: 1.5,
-		paddingVertical: 10,
+		borderWidth: 1,
+		paddingVertical: 8,
 	},
 	durationNum: {
-		fontSize: 18,
-		fontFamily: Fonts.displayExtrabold,
-		lineHeight: 22,
+		fontSize: 20,
+		fontFamily: Fonts.displayBold,
+		lineHeight: 24,
+		fontVariant: ["tabular-nums"],
 	},
 	durationUnit: {
-		fontSize: 11,
-		fontFamily: Fonts.body,
+		fontSize: 12,
+		fontFamily: Fonts.bodyMedium,
 	},
 
-	/* Images */
+	/* Images: the create form's tile, laid out as a strip. */
 	imageList: {
 		gap: 10,
 		paddingVertical: 4,
 	},
 	imageWrap: {
-		position: "relative",
-		width: 90,
-		height: 90,
-	},
-	imageThumb: {
-		width: 90,
-		height: 90,
-		borderRadius: 10,
+		width: 100,
+		height: 100,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
 	},
 	mainBadge: {
 		position: "absolute",
-		bottom: 4,
-		left: 4,
-		backgroundColor: "rgba(0,0,0,0.55)",
+		bottom: 6,
+		left: 6,
 		borderRadius: 6,
-		paddingHorizontal: 5,
+		paddingHorizontal: 6,
 		paddingVertical: 2,
 	},
 	mainBadgeText: {
-		color: "#fff",
-		fontSize: 9,
-		fontFamily: Fonts.displayBold,
+		color: "#ffffff",
+		fontSize: 12,
+		fontFamily: Fonts.bodyBold,
 	},
+	makeMainBtn: {
+		position: "absolute",
+		bottom: 6,
+		left: 6,
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		backgroundColor: "rgba(18, 22, 58, 0.7)",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	// The same ink disc as on the create form and an uploading photo.
 	removeImageBtn: {
 		position: "absolute",
-		top: 4,
-		right: 4,
-		backgroundColor: "rgba(0,0,0,0.6)",
-		borderRadius: 10,
-		width: 20,
-		height: 20,
+		top: 6,
+		right: 6,
+		backgroundColor: "rgba(18, 22, 58, 0.7)",
+		borderRadius: 14,
+		width: 28,
+		height: 28,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	addImageBtn: {
-		width: 90,
-		height: 90,
-		borderRadius: 10,
+		width: 100,
+		height: 100,
+		borderRadius: 14,
 		borderWidth: 1.5,
 		borderStyle: "dashed",
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 4,
+		gap: 6,
+		padding: 6,
+	},
+	addIconCircle: {
+		width: 36,
+		height: 36,
+		borderRadius: 18,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	addImageText: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
+		textAlign: "center",
 	},
+	uploadingNote: { marginTop: 4 },
 
 	/* Submit */
 	submitBtn: {
@@ -1591,13 +1677,14 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		borderRadius: 14,
-		paddingVertical: 15,
+		minHeight: 52,
+		borderRadius: 12,
+		paddingVertical: 14,
 		marginTop: 4,
 	},
 	submitText: {
-		color: "#fff",
+		color: "#ffffff",
 		fontSize: 16,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 });

@@ -1,12 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
@@ -15,11 +9,13 @@ import {
 	CardAction,
 	SavedAddressCard,
 } from "@/src/components/address/SavedAddressCard";
-import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
+import { FormError } from "@/src/components/checkout/FormError";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
-import { useShopTheme } from "@/src/components/shop/theme";
+import { FormButton } from "@/src/components/settings/FormButton";
+import { useGroupedColors } from "@/src/components/settings/Grouped";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import {
@@ -40,7 +36,7 @@ import {
 
 /** « Mes adresses »: the buyer's address book, at most ten, one default. */
 export function AddressesScreen() {
-	const c = useShopTheme();
+	const c = useGroupedColors();
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const { showConfirm } = useAlert();
@@ -70,49 +66,62 @@ export function AddressesScreen() {
 	};
 
 	return (
-		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
-			<View style={[styles.header, { borderBottomColor: c.border }]}>
-				{editing ? (
-					// Back from the form to the list, inside this screen.
-					<Pressable
-						onPress={() => setEditing(null)}
-						accessibilityRole="button"
-						accessibilityLabel={t("common.back")}
-						style={styles.back}
-					>
-						<Ionicons name="arrow-back" size={22} color={c.text} />
-					</Pressable>
-				) : (
-					<HeaderBackButton
-						color={c.text}
-						fallback="/(tabs)/account"
-						style={styles.back}
-					/>
-				)}
-				<Text style={[styles.title, { color: c.text }]}>
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: c.background }]}
+		>
+			{/* SettingsHeader's bar, with a back that leaves the form for the
+			    list without leaving the screen. */}
+			<View
+				style={[
+					styles.header,
+					{ backgroundColor: c.background, borderBottomColor: c.border },
+				]}
+			>
+				<View style={styles.side}>
+					{editing ? (
+						// Back from the form to the list, inside this screen.
+						<Pressable
+							onPress={() => setEditing(null)}
+							accessibilityRole="button"
+							accessibilityLabel={t("common.back")}
+							style={styles.back}
+						>
+							<Ionicons name="arrow-back" size={22} color={c.foreground} />
+						</Pressable>
+					) : (
+						<HeaderBackButton
+							color={c.foreground}
+							fallback="/(tabs)/account"
+							style={styles.back}
+						/>
+					)}
+				</View>
+				<Text
+					accessibilityRole="header"
+					numberOfLines={1}
+					style={[styles.title, { color: c.foreground }]}
+				>
 					{editing
 						? editingAddress
 							? t("addresses.editTitle")
 							: t("addresses.newTitle")
 						: t("addresses.title")}
 				</Text>
+				<View style={styles.side} />
 			</View>
 			<ScreenColumn width="reading">
 				<KeyboardAwareScrollView
-					contentContainerStyle={{ padding: 16, gap: 12 }}
+					contentContainerStyle={styles.scroll}
 					keyboardShouldPersistTaps="handled"
 				>
-					{list.isPending ? (
-						<ActivityIndicator style={{ marginTop: 32 }} color={c.primary} />
-					) : null}
+					{list.isPending && !editing ? <OrderListSkeleton rows={3} /> : null}
 					{list.isError ? (
-						<View style={{ gap: 12 }}>
-							<Text style={{ color: c.dangerText }}>
-								{t("addresses.loadError")}
-							</Text>
-							<CheckoutButton
+						<View style={styles.stack}>
+							<FormError message={t("addresses.loadError")} />
+							<FormButton
 								label={t("common.retry")}
-								variant="outline"
+								variant="secondary"
 								onPress={() => void list.refetch()}
 							/>
 						</View>
@@ -150,7 +159,7 @@ export function AddressesScreen() {
 						/>
 					) : list.data ? (
 						<>
-							<Text style={[styles.subtitle, { color: c.muted }]}>
+							<Text style={[styles.subtitle, { color: c.mutedForeground }]}>
 								{t("addresses.subtitle")}
 							</Text>
 							{addresses.length === 0 ? (
@@ -160,18 +169,18 @@ export function AddressesScreen() {
 									subtitle={t("addresses.emptyBody")}
 								/>
 							) : (
-								<Text style={[styles.subtitle, { color: c.muted }]}>
+								<Text style={[styles.count, { color: c.mutedForeground }]}>
 									{t("addresses.count", {
 										count: addresses.length,
 										limit: list.data.limit,
 									})}
 								</Text>
 							)}
-							{actionError ? (
-								<Text style={{ color: c.dangerText }}>
-									{resolveErrorMessage(actionError, t)}
-								</Text>
-							) : null}
+							<FormError
+								message={
+									actionError ? resolveErrorMessage(actionError, t) : null
+								}
+							/>
 							{addresses.map((address) => (
 								<SavedAddressCard
 									key={address.id}
@@ -207,14 +216,14 @@ export function AddressesScreen() {
 								/>
 							))}
 							{full ? (
-								<Text style={[styles.subtitle, { color: c.muted }]}>
+								<Text style={[styles.subtitle, { color: c.mutedForeground }]}>
 									{t("addresses.limitReached")}
 								</Text>
 							) : (
-								<CheckoutButton
+								<FormButton
 									label={t("addresses.add")}
-									icon="add"
 									onPress={() => startEditing(null)}
+									style={styles.addButton}
 								/>
 							)}
 						</>
@@ -226,15 +235,38 @@ export function AddressesScreen() {
 }
 
 const styles = StyleSheet.create({
+	safe: { flex: 1 },
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 12,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
+		minHeight: 56,
+		paddingHorizontal: 4,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	back: { minWidth: 44, minHeight: 44, justifyContent: "center" },
-	title: { fontSize: 18, fontFamily: Fonts.displayBold },
-	subtitle: { fontSize: 13, fontFamily: Fonts.body },
+	back: {
+		width: 48,
+		height: 48,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	side: { width: 48 },
+	title: {
+		flex: 1,
+		textAlign: "center",
+		fontFamily: Fonts.displayBold,
+		fontSize: 18,
+		lineHeight: 23,
+		letterSpacing: -0.2,
+	},
+	scroll: { padding: 16, paddingTop: 20, paddingBottom: 48, gap: 12 },
+	stack: { gap: 12 },
+	subtitle: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	count: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+		marginTop: 8,
+		marginLeft: 16,
+	},
+	addButton: { marginTop: 8 },
 });

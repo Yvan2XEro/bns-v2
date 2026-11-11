@@ -10,8 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { SegmentedControl } from "@/src/components/ui/SegmentedControl";
@@ -156,11 +158,7 @@ export default function BusinessVerificationScreen() {
 		>
 			<SellerHeader title={t("verification.business.pageTitle")} />
 
-			{isLoading ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
-			) : null}
+			{isLoading ? <DetailSkeleton cards={2} /> : null}
 
 			{!isLoading && isError ? (
 				<EmptyState
@@ -246,7 +244,7 @@ export default function BusinessVerificationScreen() {
 									{submit.isError ? (
 										<Text
 											role="alert"
-											style={[styles.submitError, { color: c.danger }]}
+											style={[styles.submitError, { color: dangerInk(c) }]}
 										>
 											{resolveErrorMessage(submit.error, t)}
 										</Text>
@@ -259,7 +257,7 @@ export default function BusinessVerificationScreen() {
 										style={[
 											styles.submit,
 											{
-												backgroundColor: c.primary,
+												backgroundColor: fillOf(c),
 												opacity: !ready || submit.isPending ? 0.5 : 1,
 											},
 										]}
@@ -291,10 +289,10 @@ const styles = StyleSheet.create({
 	missing: { fontSize: 13, fontFamily: Fonts.body },
 	submitError: { fontSize: 13, fontFamily: Fonts.body },
 	submit: {
-		height: 54,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

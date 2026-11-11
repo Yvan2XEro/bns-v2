@@ -47,7 +47,7 @@ export function VerificationStatusCard({
 						<LevelBadge badge={view.capabilities.badge} />
 					)}
 				</View>
-				<Text style={[styles.level, { color: c.primary }]}>
+				<Text style={[styles.level, { color: c.link }]}>
 					{level}
 					<Text style={[styles.of, { color: c.muted }]}> / {TOP_LEVEL}</Text>
 				</Text>
@@ -73,7 +73,12 @@ export function VerificationStatusCard({
 }
 
 const styles = StyleSheet.create({
-	card: { borderRadius: 16, borderWidth: 1, padding: 16, gap: 12 },
+	card: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 16,
+		gap: 12,
+	},
 	row: { flexDirection: "row", alignItems: "center", gap: 12 },
 	main: { flex: 1, gap: 6, alignItems: "flex-start" },
 	label: { fontSize: 13, fontFamily: Fonts.body },

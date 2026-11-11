@@ -35,13 +35,17 @@ export function CategoryChips({
 					onPress={() => onChange(value.filter((v) => v.id !== cat.id))}
 					accessibilityRole="button"
 					accessibilityLabel={t("shop.removeCategoryLabel", { name: cat.name })}
-					hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-					style={[styles.chip, { backgroundColor: c.primarySoft }]}
+					hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+					style={({ pressed }) => [
+						styles.chip,
+						{ backgroundColor: c.primarySoft },
+						pressed && styles.pressed,
+					]}
 				>
-					<Text style={[styles.chipText, { color: c.primary }]}>
+					<Text style={[styles.chipText, { color: c.link }]} numberOfLines={1}>
 						{cat.name}
 					</Text>
-					<Ionicons name="close" size={13} color={c.primary} />
+					<Ionicons name="close-circle" size={16} color={c.link} />
 				</Pressable>
 			))}
 			{value.length < max ? (
@@ -49,11 +53,16 @@ export function CategoryChips({
 					onPress={() => setOpen(true)}
 					accessibilityRole="button"
 					accessibilityLabel={t("shop.addCategory")}
-					hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-					style={[styles.chip, styles.add, { borderColor: c.border }]}
+					hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+					style={({ pressed }) => [
+						styles.chip,
+						styles.add,
+						{ borderColor: c.link },
+						pressed && styles.pressed,
+					]}
 				>
-					<Ionicons name="add" size={14} color={c.muted} />
-					<Text style={[styles.chipText, { color: c.muted }]}>
+					<Ionicons name="add" size={16} color={c.link} />
+					<Text style={[styles.chipText, { color: c.link }]}>
 						{t("shop.addCategory")}
 					</Text>
 				</Pressable>
@@ -76,6 +85,8 @@ export function CategoryChips({
 					textColor: c.text,
 					mutedColor: c.muted,
 					primary: c.primary,
+					fill: c.fill,
+					link: c.link,
 					border: c.border,
 					isDark: c.isDark,
 					inputBg: c.input,
@@ -90,11 +101,19 @@ const styles = StyleSheet.create({
 	chip: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
+		gap: 6,
 		borderRadius: 999,
-		paddingHorizontal: 12,
-		paddingVertical: 7,
+		paddingLeft: 14,
+		paddingRight: 10,
+		minHeight: 40,
+		maxWidth: "100%",
 	},
-	add: { borderWidth: 1, borderStyle: "dashed" },
-	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	add: {
+		borderWidth: 1,
+		borderStyle: "dashed",
+		paddingLeft: 10,
+		paddingRight: 14,
+	},
+	pressed: { opacity: 0.7 },
+	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
 });

@@ -46,22 +46,25 @@ export function ProductEditorContent({
 			{listing ? (
 				<Pressable
 					onPress={() => router.push(`/listing/${listing.id}` as never)}
-					style={[
+					style={({ pressed }) => [
 						f.card,
 						styles.listingRow,
-						{ backgroundColor: c.card, borderColor: c.border },
+						{
+							backgroundColor: pressed ? c.primarySoft : c.card,
+							borderColor: c.border,
+						},
 					]}
 					accessibilityRole="button"
 					accessibilityLabel={t("product.viewListing")}
 				>
-					<Ionicons name="globe-outline" size={18} color={c.primary} />
+					<Ionicons name="globe-outline" size={18} color={c.link} />
 					<Text style={[f.label, { color: c.text, flex: 1 }]}>
 						{t("product.listingStats", {
 							views: listing.views,
 							favorites: listing.favorites,
 						})}
 					</Text>
-					<Text style={[f.label, { color: c.primary }]}>
+					<Text style={[f.label, { color: c.link }]}>
 						{t("product.viewListing")}
 					</Text>
 				</Pressable>
@@ -81,5 +84,5 @@ export function ProductEditorContent({
 }
 
 const styles = StyleSheet.create({
-	listingRow: { flexDirection: "row", alignItems: "center" },
+	listingRow: { flexDirection: "row", alignItems: "center", minHeight: 56 },
 });

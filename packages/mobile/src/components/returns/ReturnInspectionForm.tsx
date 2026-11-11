@@ -13,6 +13,8 @@ import {
 	type ReturnInspectionFormOutput,
 } from "../../../../api/src/contracts/returnInputs";
 import type { ReturnCaseView } from "../../../../api/src/contracts/returns";
+import { caseForm } from "../checkout/caseForm";
+import { fillOf } from "../checkout/fill";
 import { useShopTheme } from "../shop/theme";
 import { ReturnEvidenceUpload } from "./ReturnEvidenceUpload";
 
@@ -47,7 +49,12 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 	});
 	return (
 		<View style={{ gap: 16 }}>
-			<Text style={{ color: c.text }}>{t("returns.action.inspect")}</Text>
+			<Text
+				style={[caseForm.heading, { color: c.text }]}
+				accessibilityRole="header"
+			>
+				{t("returns.action.inspect")}
+			</Text>
 			{view.items.map((item, index) => (
 				<View
 					key={item.orderItemId}
@@ -59,10 +66,10 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 						borderRadius: 12,
 					}}
 				>
-					<Text style={{ color: c.text }}>
+					<Text style={[caseForm.body, { color: c.text }]}>
 						{item.title} × {item.quantity}
 					</Text>
-					<Text style={{ color: c.body }}>
+					<Text style={[caseForm.label, { color: c.body }]}>
 						{t("returns.inspectionOutcome")}
 					</Text>
 					<Controller
@@ -82,16 +89,18 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 										disabled={submit.isPending}
 										onPress={() => field.onChange(outcome)}
 										style={{
-											minHeight: 44,
+											minHeight: 48,
 											justifyContent: "center",
 											padding: 10,
-											borderRadius: 8,
-											borderWidth: 1,
+											borderRadius: 12,
+											borderWidth: 1.5,
 											borderColor:
 												field.value === outcome ? c.primary : c.border,
+											backgroundColor:
+												field.value === outcome ? c.primarySoft : c.card,
 										}}
 									>
-										<Text style={{ color: c.text }}>
+										<Text style={[caseForm.body, { color: c.text }]}>
 											{t(INSPECTION_OUTCOME_LABELS[outcome])}
 										</Text>
 									</Pressable>
@@ -117,18 +126,20 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 								onChangeText={field.onChange}
 								editable={view.basis !== "non_conformity" && !submit.isPending}
 								style={{
-									minHeight: 44,
+									minHeight: 48,
 									color: c.text,
+									...caseForm.input,
+									backgroundColor: c.input,
 									borderColor: c.border,
 									borderWidth: 1,
 									padding: 10,
-									borderRadius: 8,
+									borderRadius: 12,
 								}}
 							/>
 						)}
 					/>
 					{view.basis === "non_conformity" ? (
-						<Text style={{ color: c.muted }}>
+						<Text style={[caseForm.meta, { color: c.muted }]}>
 							{t("returns.deductionUnavailable")}
 						</Text>
 					) : null}
@@ -146,13 +157,16 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 								editable={!submit.isPending}
 								multiline
 								maxLength={1000}
+								textAlignVertical="top"
 								style={{
 									minHeight: 80,
 									color: c.text,
+									...caseForm.input,
+									backgroundColor: c.input,
 									borderColor: c.border,
 									borderWidth: 1,
 									padding: 10,
-									borderRadius: 8,
+									borderRadius: 12,
 								}}
 							/>
 						)}
@@ -170,14 +184,20 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 						)}
 					/>
 					{form.formState.errors.items?.[index] ? (
-						<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+						<Text
+							accessibilityRole="alert"
+							style={[caseForm.error, { color: c.dangerText }]}
+						>
 							{t("returns.inspectionValidation")}
 						</Text>
 					) : null}
 				</View>
 			))}
 			{form.formState.errors.root ? (
-				<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+				<Text
+					accessibilityRole="alert"
+					style={[caseForm.error, { color: c.dangerText }]}
+				>
 					{form.formState.errors.root.message}
 				</Text>
 			) : null}
@@ -187,14 +207,17 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 				disabled={submit.isPending}
 				onPress={() => void send()}
 				style={{
-					minHeight: 44,
+					minHeight: 52,
 					justifyContent: "center",
 					alignItems: "center",
-					backgroundColor: c.primary,
-					borderRadius: 10,
+					opacity: submit.isPending ? 0.5 : 1,
+					backgroundColor: fillOf(c).bg,
+					borderRadius: 12,
 				}}
 			>
-				<Text style={{ color: "#fff" }}>{t("returns.action.inspect")}</Text>
+				<Text style={[caseForm.buttonText, { color: fillOf(c).fg }]}>
+					{t("returns.action.inspect")}
+				</Text>
 			</Pressable>
 		</View>
 	);

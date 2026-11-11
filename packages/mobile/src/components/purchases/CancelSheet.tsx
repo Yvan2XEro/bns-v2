@@ -10,6 +10,7 @@ import {
 	type CancelValues,
 	cancelSchema,
 } from "@/src/lib/purchaseForms";
+import { inkOf } from "../checkout/fill";
 import { useShopTheme } from "../shop/theme";
 import { FieldError, PurchaseButton, purchaseText, Sheet } from "./ui";
 
@@ -69,14 +70,14 @@ export function CancelSheet({
 										styles.option,
 										{
 											borderColor: selected ? c.primary : c.border,
-											backgroundColor: selected ? c.primarySoft : "transparent",
+											backgroundColor: selected ? c.primarySoft : c.card,
 										},
 									]}
 								>
 									<Ionicons
 										name={selected ? "radio-button-on" : "radio-button-off"}
 										size={20}
-										color={selected ? c.primary : c.muted}
+										color={selected ? inkOf(c) : c.muted}
 									/>
 									<Text style={[purchaseText.body, { color: c.text }]}>
 										{t(reason.labelKey)}
@@ -104,9 +105,9 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		minHeight: 48,
-		paddingHorizontal: 12,
+		minHeight: 52,
+		paddingHorizontal: 14,
 		borderRadius: 12,
-		borderWidth: 1,
+		borderWidth: 1.5,
 	},
 });

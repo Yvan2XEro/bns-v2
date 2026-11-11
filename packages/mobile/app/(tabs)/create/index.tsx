@@ -17,12 +17,14 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, {
 	Easing,
 	useAnimatedStyle,
+	useReducedMotion,
 	useSharedValue,
 	withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts, TextStyles } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { PublishedStamp } from "@/src/components/brand/PublishedStamp";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { CityPicker } from "@/src/components/CityPicker";
 import {
@@ -90,6 +92,8 @@ import { ANALYTICS_EVENTS } from "../../../../api/src/contracts/monitoring";
 import { whatsappShareUrl } from "../../../../api/src/contracts/whatsapp";
 
 const DURATIONS = [30, 60, 90];
+/** Space between photo tiles; three tiles and two gaps fill the row. */
+const PHOTO_GAP = 10;
 
 /**
  * Steps are addressed by id, never by position: which ones exist depends on the
@@ -272,24 +276,22 @@ export default function CreateScreen() {
 	const translateX = useSharedValue(0);
 	const opacity = useSharedValue(1);
 	const stepRef = useRef<StepId>("describe");
+	// Reduce Motion: the step fades in place instead of sliding.
+	const reduceMotion = useReducedMotion();
 
 	const goToStep = (next: StepId) => {
 		const target = steps.includes(next) ? next : "describe";
 		const from = steps.indexOf(stepRef.current);
 		const to = steps.indexOf(target);
 		const dir = to > from ? 1 : -1;
-		translateX.value = dir * SCREEN_W * 0.4;
+		translateX.value = reduceMotion ? 0 : dir * SCREEN_W * 0.25;
 		opacity.value = 0;
 		stepRef.current = target;
 		setStep(target);
-		translateX.value = withTiming(0, {
-			duration: 320,
-			easing: Easing.out(Easing.cubic),
-		});
-		opacity.value = withTiming(1, {
-			duration: 260,
-			easing: Easing.out(Easing.ease),
-		});
+		// The system's decelerating ease (0.16, 1, 0.3, 1), as everywhere else.
+		const ease = Easing.bezier(0.16, 1, 0.3, 1);
+		translateX.value = withTiming(0, { duration: 300, easing: ease });
+		opacity.value = withTiming(1, { duration: 220, easing: ease });
 	};
 
 	const stepAnimStyle = useAnimatedStyle(() => ({
@@ -298,14 +300,22 @@ export default function CreateScreen() {
 		opacity: opacity.value,
 	}));
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primary = isDark ? "#3b82f6" : "#1e40af";
-	const border = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
-	const inputBg = isDark ? "#162032" : "#f8fafc";
+	// Every colour comes from the Ndop tokens. `primary` is the brand word
+	// colour (links, icons, outlines) and `fill` the one behind a white label:
+	// in dark mode the two differ, because white on the night primary falls
+	// under 4.5:1.
+	const C = Colors[isDark ? "dark" : "light"];
+	const bg = C.background;
+	const cardBg = C.card;
+	const textColor = C.foreground;
+	const mutedColor = C.mutedForeground;
+	const primary = C.link;
+	const fill = C.primaryFill;
+	const border = C.border;
+	// The wizard sits on the ground: the indigo shell belongs to home, auth and
+	// onboarding only.
+	const accentBg = C.background;
+	const inputBg = C.well;
 
 	// Pre-fill the location from the remembered place, so a seller does not
 	// re-enter their city on every listing. Only ever fills an empty field, and
@@ -475,14 +485,15 @@ export default function CreateScreen() {
 			>
 				<View style={[styles.noUserHeader, { backgroundColor: accentBg }]}>
 					<View
-						style={[
-							styles.sellIconWrap,
-							{ backgroundColor: isDark ? "#422006" : "#fef3c7" },
-						]}
+						style={[styles.sellIconWrap, { backgroundColor: C.sun }]}
+						importantForAccessibility="no-hide-descendants"
 					>
-						<Ionicons name="pricetag" size={22} color="#d97706" />
+						<Ionicons name="pricetag" size={22} color={C.sunForeground} />
 					</View>
-					<Text style={[styles.noUserTitle, { color: textColor }]}>
+					<Text
+						style={[styles.noUserTitle, { color: textColor }]}
+						accessibilityRole="header"
+					>
 						{t("create.sell")}
 					</Text>
 				</View>
@@ -503,28 +514,30 @@ export default function CreateScreen() {
 			>
 				<View style={[styles.noUserHeader, { backgroundColor: accentBg }]}>
 					<View
-						style={[
-							styles.sellIconWrap,
-							{ backgroundColor: isDark ? "#422006" : "#fef3c7" },
-						]}
+						style={[styles.sellIconWrap, { backgroundColor: C.sun }]}
+						importantForAccessibility="no-hide-descendants"
 					>
-						<Ionicons name="pricetag" size={22} color="#d97706" />
+						<Ionicons name="pricetag" size={22} color={C.sunForeground} />
 					</View>
-					<Text style={[styles.noUserTitle, { color: textColor }]}>
+					<Text
+						style={[styles.noUserTitle, { color: textColor }]}
+						accessibilityRole="header"
+					>
 						{t("create.sell")}
 					</Text>
 				</View>
 				<View style={[styles.contentWrap, { backgroundColor: bg }]}>
 					<View style={styles.noUserInner}>
 						<View
-							style={[
-								styles.lockCircle,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-							]}
+							style={[styles.lockCircle, { backgroundColor: C.primaryTint }]}
+							importantForAccessibility="no-hide-descendants"
 						>
 							<Ionicons name="lock-closed" size={32} color={primary} />
 						</View>
-						<Text style={[styles.noUserHeading, { color: textColor }]}>
+						<Text
+							style={[styles.noUserHeading, { color: textColor }]}
+							accessibilityRole="header"
+						>
 							{t("create.loginRequired")}
 						</Text>
 						<Text style={[styles.noUserSub, { color: mutedColor }]}>
@@ -537,7 +550,12 @@ export default function CreateScreen() {
 									params: getAuthModalParams(pathname),
 								})
 							}
-							style={[styles.loginBtn, { backgroundColor: primary }]}
+							accessibilityRole="button"
+							style={[
+								styles.loginBtn,
+								styles.loginBtnWide,
+								{ backgroundColor: fill },
+							]}
 						>
 							<Text style={styles.loginBtnText}>{t("auth.login")}</Text>
 						</Pressable>
@@ -553,10 +571,12 @@ export default function CreateScreen() {
 		textColor,
 		mutedColor,
 		primary,
+		fill,
 		border,
 		isDark,
 		accentBg,
 		inputBg,
+		C,
 	};
 
 	const issuesOn = (id: StepId): FieldIssue[] => {
@@ -662,9 +682,19 @@ export default function CreateScreen() {
 					onPress={() =>
 						stepIndex > 0 ? goToStep(steps[stepIndex - 1]) : router.back()
 					}
-					style={[styles.backBtn, { backgroundColor: cardBg }]}
+					hitSlop={4}
+					accessibilityRole="button"
+					accessibilityLabel={t("common.back")}
+					style={({ pressed }) => [
+						styles.backBtn,
+						{
+							backgroundColor: cardBg,
+							borderColor: border,
+							opacity: pressed ? 0.7 : 1,
+						},
+					]}
 				>
-					<Ionicons name="arrow-back" size={18} color={textColor} />
+					<Ionicons name="arrow-back" size={20} color={textColor} />
 				</Pressable>
 
 				{/* Four steps in, "Nouvelle annonce" tells the seller nothing they do
@@ -675,6 +705,7 @@ export default function CreateScreen() {
 					<Text
 						style={[styles.headerTitle, { color: textColor }]}
 						numberOfLines={1}
+						accessibilityRole="header"
 					>
 						{form.title.trim() || t("create.newListing")}
 					</Text>
@@ -704,14 +735,20 @@ export default function CreateScreen() {
 				<Pressable
 					onPress={discardDraft}
 					disabled={!hasDraft}
-					style={[
+					hitSlop={4}
+					style={({ pressed }) => [
 						styles.discardBtn,
-						{ backgroundColor: cardBg, opacity: hasDraft ? 1 : 0.4 },
+						{
+							backgroundColor: cardBg,
+							borderColor: border,
+							opacity: !hasDraft ? 0.4 : pressed ? 0.7 : 1,
+						},
 					]}
 					accessibilityRole="button"
 					accessibilityLabel={t("create.discardTitle")}
+					accessibilityState={{ disabled: !hasDraft }}
 				>
-					<Ionicons name="trash-outline" size={18} color={mutedColor} />
+					<Ionicons name="trash-outline" size={20} color={mutedColor} />
 				</Pressable>
 			</View>
 
@@ -807,7 +844,7 @@ function DescribeStep({
 	gate,
 	colors,
 }: any) {
-	const { bg, cardBg, textColor, mutedColor, border, inputBg } = colors;
+	const { bg, cardBg, textColor, mutedColor, border, inputBg, C } = colors;
 	const { t } = useTranslation();
 	const isProductCategory = isProductListingCategory(form.category);
 
@@ -828,7 +865,10 @@ function DescribeStep({
 			showsVerticalScrollIndicator={false}
 			keyboardShouldPersistTaps="handled"
 		>
-			<Text style={[styles.stepTitle, { color: textColor }]}>
+			<Text
+				style={[styles.stepTitle, { color: textColor }]}
+				accessibilityRole="header"
+			>
 				{t("create.stepDescribeTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
@@ -863,7 +903,10 @@ function DescribeStep({
 					maxLength={100}
 					autoFocus
 				/>
-				<Text style={[styles.charCount, { color: mutedColor }]}>
+				<Text
+					style={[styles.charCount, { color: mutedColor }]}
+					importantForAccessibility="no"
+				>
 					{form.title.length}/100
 				</Text>
 
@@ -920,7 +963,8 @@ function DescribeStep({
 							? t("create.categoryGuessedFromTitle")
 							: null
 					}
-					colors={colors}
+					// White glyphs sit on the fill; the ring and check take the link.
+					colors={{ ...colors, link: C.link }}
 				/>
 			</View>
 
@@ -951,9 +995,10 @@ function DetailsStep({
 		textColor,
 		mutedColor,
 		primary,
+		fill,
 		border,
-		isDark,
 		inputBg,
+		C,
 	} = colors;
 	const { t } = useTranslation();
 	const categoryPreset = getListingFormPreset(form.category);
@@ -1002,7 +1047,10 @@ function DetailsStep({
 			showsVerticalScrollIndicator={false}
 			keyboardShouldPersistTaps="handled"
 		>
-			<Text style={[styles.stepTitle, { color: textColor }]}>
+			<Text
+				style={[styles.stepTitle, { color: textColor }]}
+				accessibilityRole="header"
+			>
 				{t("create.stepDetailsTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
@@ -1046,14 +1094,15 @@ function DetailsStep({
 								},
 							]}
 							keyboardType="number-pad"
+							accessibilityLabel={priceLabel}
 						/>
+						{/* The currency sits on the yellow tag every price wears, so
+						    the field already reads as the price it will become. */}
 						<View
-							style={[
-								styles.priceBadge,
-								{ backgroundColor: isDark ? "#422006" : "#fef3c7" },
-							]}
+							style={[styles.priceBadge, { backgroundColor: C.sun }]}
+							importantForAccessibility="no-hide-descendants"
 						>
-							<Text style={[styles.priceBadgeText, { color: "#b45309" }]}>
+							<Text style={[styles.priceBadgeText, { color: C.sunForeground }]}>
 								{t("common.currency", { defaultValue: "XAF" })}
 							</Text>
 						</View>
@@ -1129,18 +1178,21 @@ function DetailsStep({
 					label={t("create.durationFieldLabel")}
 					colors={colors}
 				/>
-				<View style={styles.durationRow}>
+				<View style={styles.durationRow} accessibilityRole="radiogroup">
 					{DURATIONS.map((d) => {
 						const active = form.duration === d;
 						return (
 							<Pressable
 								key={d}
 								onPress={() => update("duration", d)}
+								accessibilityRole="radio"
+								accessibilityState={{ checked: active }}
+								accessibilityLabel={`${d} ${t("create.days")}`}
 								style={[
 									styles.durationPill,
 									{
-										backgroundColor: active ? primary : inputBg,
-										borderColor: active ? primary : border,
+										backgroundColor: active ? fill : inputBg,
+										borderColor: active ? fill : border,
 										flex: 1,
 									},
 								]}
@@ -1148,7 +1200,7 @@ function DetailsStep({
 								<Text
 									style={[
 										styles.durationNum,
-										{ color: active ? "#fff" : textColor },
+										{ color: active ? "#ffffff" : textColor },
 									]}
 								>
 									{d}
@@ -1156,7 +1208,7 @@ function DetailsStep({
 								<Text
 									style={[
 										styles.durationUnit,
-										{ color: active ? "rgba(255,255,255,0.8)" : mutedColor },
+										{ color: active ? "#ffffff" : mutedColor },
 									]}
 								>
 									{t("create.days")}
@@ -1212,7 +1264,10 @@ function AttributesStep({
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 			keyboardShouldPersistTaps="handled"
 		>
-			<Text style={[styles.stepTitle, { color: textColor }]}>
+			<Text
+				style={[styles.stepTitle, { color: textColor }]}
+				accessibilityRole="header"
+			>
 				{form.category?.name}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
@@ -1223,7 +1278,10 @@ function AttributesStep({
 				<View key={section.key}>
 					{section.title ? (
 						<View style={styles.groupHeadingRow}>
-							<Text style={[styles.groupHeading, { color: textColor }]}>
+							<Text
+								style={[styles.groupHeading, { color: textColor }]}
+								accessibilityRole="header"
+							>
 								{section.title}
 							</Text>
 							<View style={[styles.groupRule, { backgroundColor: border }]} />
@@ -1259,7 +1317,7 @@ function AttributesStep({
  * exactly how `date` went missing.
  */
 function AttributeField({ attribute, value, onChange, colors }: any) {
-	const { cardBg, textColor, mutedColor, primary, border, inputBg } = colors;
+	const { cardBg, textColor, mutedColor, fill, border, inputBg, C } = colors;
 	const { t } = useTranslation();
 	const attr: ListingAttribute = attribute;
 	const issue = getAttributeIssue(attr, value);
@@ -1293,26 +1351,30 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 			/>
 
 			{attr.type === "select" && attr.options.length > 0 ? (
-				<View style={styles.conditionWrap}>
+				<View style={styles.conditionWrap} accessibilityRole="radiogroup">
 					{attr.options.map((opt) => {
 						const active = value === opt.value;
 						return (
 							<Pressable
 								key={opt.value}
 								onPress={() => onChange(active ? "" : opt.value)}
+								accessibilityRole="radio"
+								accessibilityState={{ checked: active }}
 								style={[
 									styles.conditionPill,
 									{
-										backgroundColor: active ? primary : inputBg,
-										borderColor: active ? primary : border,
+										backgroundColor: active ? fill : inputBg,
+										borderColor: active ? fill : border,
 									},
 								]}
 							>
-								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								{active && (
+									<Ionicons name="checkmark" size={14} color="#ffffff" />
+								)}
 								<Text
 									style={[
 										styles.conditionText,
-										{ color: active ? "#fff" : mutedColor },
+										{ color: active ? "#ffffff" : textColor },
 									]}
 								>
 									{opt.label}
@@ -1322,7 +1384,7 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 					})}
 				</View>
 			) : attr.type === "boolean" ? (
-				<View style={[styles.conditionWrap, { gap: 8 }]}>
+				<View style={styles.conditionWrap} accessibilityRole="radiogroup">
 					{[
 						{ label: t("common.yes"), value: "true" },
 						{ label: t("common.no"), value: "false" },
@@ -1332,19 +1394,23 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 							<Pressable
 								key={opt.value}
 								onPress={() => onChange(active ? "" : opt.value)}
+								accessibilityRole="radio"
+								accessibilityState={{ checked: active }}
 								style={[
 									styles.conditionPill,
 									{
-										backgroundColor: active ? primary : inputBg,
-										borderColor: active ? primary : border,
+										backgroundColor: active ? fill : inputBg,
+										borderColor: active ? fill : border,
 									},
 								]}
 							>
-								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								{active && (
+									<Ionicons name="checkmark" size={14} color="#ffffff" />
+								)}
 								<Text
 									style={[
 										styles.conditionText,
-										{ color: active ? "#fff" : mutedColor },
+										{ color: active ? "#ffffff" : textColor },
 									]}
 								>
 									{opt.label}
@@ -1382,12 +1448,13 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 									: "default"
 						}
 						maxLength={attr.type === "date" ? 10 : undefined}
+						accessibilityLabel={attr.name}
 						style={[
 							styles.fieldInput,
 							styles.attrInput,
 							{
 								color: textColor,
-								borderColor: showIssue ? "#ef4444" : border,
+								borderColor: showIssue ? C.destructive : border,
 								backgroundColor: inputBg,
 							},
 						]}
@@ -1402,7 +1469,10 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 			)}
 
 			{showIssue ? (
-				<Text style={[styles.attrError, { color: "#ef4444" }]}>
+				<Text
+					style={[styles.attrError, { color: C.dangerText }]}
+					accessibilityRole="alert"
+				>
 					{attributeIssueMessage(issue, t)}
 				</Text>
 			) : boundsHint ? (
@@ -1446,8 +1516,15 @@ function attributeIssueMessage(
 // ─── Photos Step ───────────────────────────────────────────────────────────────
 
 function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
-	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
+	const { bg, cardBg, textColor, mutedColor, primary, fill, border, C } =
+		colors;
 	const { t } = useTranslation();
+	// Three tiles to a row at any width: measured from the grid itself, so the
+	// centred column on a tablet is respected.
+	const [gridWidth, setGridWidth] = useState(0);
+	const tile =
+		gridWidth > 0 ? Math.floor((gridWidth - PHOTO_GAP * 2) / 3) : 100;
+	const tileSize = { width: tile, height: tile };
 	// Whether a photo is mandatory is the category's call, not this screen's.
 	const photosRequired = getListingFormPreset(form.category).fields.photos
 		.required;
@@ -1489,7 +1566,10 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 			style={{ flex: 1, backgroundColor: bg }}
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 		>
-			<Text style={[styles.stepTitle, { color: textColor }]}>
+			<Text
+				style={[styles.stepTitle, { color: textColor }]}
+				accessibilityRole="header"
+			>
 				{t("create.stepPhotosTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
@@ -1497,43 +1577,42 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 			</Text>
 
 			{/* Tip card */}
-			<View
-				style={[
-					styles.tipCard,
-					{
-						backgroundColor: isDark ? "#1e3a5f" : "#dbeafe",
-						borderColor: isDark ? "#2d5a9e" : "#bfdbfe",
-					},
-				]}
-			>
-				<Ionicons name="information-circle-outline" size={16} color={primary} />
-				<Text style={[styles.tipText, { color: primary }]}>
+			<View style={[styles.tipCard, { backgroundColor: C.primaryTint }]}>
+				<Ionicons
+					name="bulb-outline"
+					size={18}
+					color={primary}
+					importantForAccessibility="no"
+				/>
+				<Text style={[styles.tipText, { color: textColor }]}>
 					{isProductListingCategory(form.category)
 						? t("create.stepPhotosQualityTip")
-						: t("create.stepPhotosQualityTipGeneric", {
-								defaultValue:
-									"Des photos nettes et bien éclairées rendent votre annonce plus convaincante.",
-							})}
+						: t("create.stepPhotosQualityTipGeneric")}
 				</Text>
 			</View>
 
-			<View style={styles.photosGrid}>
+			<View
+				style={styles.photosGrid}
+				onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
+			>
 				{form.images.map((img: UploadedImage, i: number) => (
 					<View
 						key={img.id}
 						style={[
 							styles.photoThumb,
+							tileSize,
 							{ backgroundColor: cardBg, borderColor: border },
 						]}
 					>
 						<Image
 							source={{ uri: img.uri }}
-							style={{ width: "100%", height: "100%", borderRadius: 12 }}
+							style={StyleSheet.absoluteFill}
 							contentFit="cover"
+							accessibilityIgnoresInvertColors
 						/>
 						{i === 0 ? (
 							<View
-								style={[styles.photoPrimaryBadge, { backgroundColor: primary }]}
+								style={[styles.photoPrimaryBadge, { backgroundColor: fill }]}
 							>
 								<Text style={styles.photoPrimaryText}>{t("create.main")}</Text>
 							</View>
@@ -1546,9 +1625,10 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 								}
 								accessibilityRole="button"
 								accessibilityLabel={t("create.makeMain")}
-								style={[styles.photoMakeMainBtn]}
+								hitSlop={8}
+								style={styles.photoMakeMainBtn}
 							>
-								<Ionicons name="star-outline" size={14} color="#fff" />
+								<Ionicons name="star-outline" size={16} color="#ffffff" />
 							</Pressable>
 						)}
 						<Pressable
@@ -1558,7 +1638,9 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 							accessibilityLabel={t("create.removePhoto")}
 							style={styles.photoDeleteBtn}
 						>
-							<Ionicons name="close-circle" size={26} color="#ef4444" />
+							{/* The same ink disc as a photo still uploading: one way to
+							    remove a picture, legible on any photo. */}
+							<Ionicons name="close" size={16} color="#ffffff" />
 						</Pressable>
 					</View>
 				))}
@@ -1570,16 +1652,18 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 						onRemove={() => uploads.remove(photo.key)}
 						style={[
 							styles.photoThumb,
+							tileSize,
 							{ backgroundColor: cardBg, borderColor: border },
 						]}
 					/>
 				))}
 
 				<Pressable
-					style={[
+					style={({ pressed }) => [
 						styles.addPhotoBtn,
+						tileSize,
 						{
-							backgroundColor: isDark ? "#162032" : "#f0f7ff",
+							backgroundColor: pressed ? C.primaryTint : cardBg,
 							borderColor: primary,
 						},
 						full && { opacity: 0.4 },
@@ -1590,21 +1674,17 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 					accessibilityLabel={t("create.addPhoto")}
 					accessibilityState={{ disabled: full }}
 				>
-					{
-						<>
-							<View
-								style={[
-									styles.addIconCircle,
-									{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-								]}
-							>
-								<Ionicons name="add" size={24} color={primary} />
-							</View>
-							<Text style={[styles.addPhotoText, { color: primary }]}>
-								{t("create.addPhoto")}
-							</Text>
-						</>
-					}
+					<View
+						style={[styles.addIconCircle, { backgroundColor: C.primaryTint }]}
+					>
+						<Ionicons name="camera-outline" size={22} color={primary} />
+					</View>
+					<Text
+						style={[styles.addPhotoText, { color: primary }]}
+						numberOfLines={2}
+					>
+						{t("create.addPhoto")}
+					</Text>
 				</Pressable>
 			</View>
 			<PhotoLimitNote
@@ -1614,13 +1694,16 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 			/>
 
 			{photosRequired && form.images.length === 0 && (
-				<Text style={[styles.photoRequired, { color: "#ef4444" }]}>
+				<Text style={[styles.photoRequired, { color: C.dangerText }]}>
 					{t("create.photoRequired")}
 				</Text>
 			)}
 			<FieldIssueList issues={gate.issues} attributes={[]} />
 			{uploads.uploading && (
-				<Text style={[styles.stepSub, { color: mutedColor }]}>
+				<Text
+					style={[styles.stepSub, styles.uploadingNote, { color: mutedColor }]}
+					accessibilityLiveRegion="polite"
+				>
 					{t("create.photosStillUploading")}
 				</Text>
 			)}
@@ -1649,7 +1732,7 @@ function ReviewStep({
 	const { user } = useAuth();
 	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
-	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
+	const { bg, cardBg, textColor, mutedColor, primary, border, C } = colors;
 	const { data: myShop } = useMyShop();
 	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
 	const [publishInShop, setPublishInShop] = useState(true);
@@ -1757,7 +1840,14 @@ function ReviewStep({
 			step: "attributes",
 		}));
 
-	const rows = [
+	const rows: {
+		id: string;
+		label: string;
+		icon: string;
+		value: string;
+		step: string;
+		tag?: boolean;
+	}[] = [
 		{
 			id: "category",
 			label: t("create.categoryFieldLabel"),
@@ -1791,6 +1881,7 @@ function ReviewStep({
 							(key) => t(`listingKind.${key}`),
 						),
 						step: "details",
+						tag: true,
 					},
 				]
 			: []),
@@ -1816,7 +1907,10 @@ function ReviewStep({
 			style={{ flex: 1, backgroundColor: bg }}
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 		>
-			<Text style={[styles.stepTitle, { color: textColor }]}>
+			<Text
+				style={[styles.stepTitle, { color: textColor }]}
+				accessibilityRole="header"
+			>
 				{t("create.stepReviewTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
@@ -1842,27 +1936,46 @@ function ReviewStep({
 						<View
 							style={[
 								styles.reviewIconWrap,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+								{ backgroundColor: C.primaryTint },
 							]}
+							importantForAccessibility="no-hide-descendants"
 						>
-							<Ionicons name={row.icon as any} size={14} color={primary} />
+							<Ionicons name={row.icon as any} size={16} color={primary} />
 						</View>
-						<View style={{ flex: 1 }}>
+						<View style={styles.reviewText}>
 							<Text style={[styles.reviewLabel, { color: mutedColor }]}>
 								{row.label}
 							</Text>
-							<Text
-								style={[styles.reviewValue, { color: textColor }]}
-								numberOfLines={1}
-							>
-								{row.value}
-							</Text>
+							{/* The price wears its tag here as it will on the card:
+							    ink on signage yellow, in the display face. */}
+							{row.tag && form.price ? (
+								<View
+									style={[styles.reviewPriceTag, { backgroundColor: C.sun }]}
+								>
+									<Text
+										style={[styles.reviewPriceText, { color: C.sunForeground }]}
+										numberOfLines={1}
+									>
+										{row.value}
+									</Text>
+								</View>
+							) : (
+								<Text
+									style={[styles.reviewValue, { color: textColor }]}
+									numberOfLines={2}
+								>
+									{row.value}
+								</Text>
+							)}
 						</View>
 						<Pressable
 							onPress={() => setStep(row.step)}
-							style={[
+							hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+							accessibilityRole="button"
+							accessibilityLabel={`${t("create.editBtn")}, ${row.label}`}
+							style={({ pressed }) => [
 								styles.editPill,
-								{ backgroundColor: isDark ? "#162032" : "#f0f7ff" },
+								{ backgroundColor: pressed ? C.primaryTint : "transparent" },
 							]}
 						>
 							<Text style={[styles.editPillText, { color: primary }]}>
@@ -1888,14 +2001,28 @@ function ReviewStep({
 				onPress={() => submit("pending")}
 				disabled={isPending}
 				accessibilityRole="button"
-				style={[styles.publishBtn, { backgroundColor: "#f59e0b" }]}
+				accessibilityLabel={t("create.publishBtn")}
+				accessibilityState={{ busy: isPending, disabled: isPending }}
+				style={({ pressed }) => [
+					styles.publishBtn,
+					{
+						backgroundColor: C.sun,
+						transform: [{ scale: pressed && !isPending ? 0.98 : 1 }],
+					},
+				]}
 			>
 				{isPending ? (
-					<ActivityIndicator color="#fff" />
+					<ActivityIndicator color={C.sunForeground} />
 				) : (
 					<>
-						<Ionicons name="rocket-outline" size={20} color="#fff" />
-						<Text style={styles.publishBtnText}>{t("create.publishBtn")}</Text>
+						<Ionicons
+							name="pricetag-outline"
+							size={20}
+							color={C.sunForeground}
+						/>
+						<Text style={[styles.publishBtnText, { color: C.sunForeground }]}>
+							{t("create.publishBtn")}
+						</Text>
 					</>
 				)}
 			</Pressable>
@@ -1905,7 +2032,11 @@ function ReviewStep({
 				onPress={() => submit("draft")}
 				disabled={isPending}
 				accessibilityRole="button"
-				style={styles.draftBtn}
+				accessibilityState={{ disabled: isPending }}
+				style={({ pressed }) => [
+					styles.draftBtn,
+					{ opacity: pressed ? 0.6 : 1 },
+				]}
 			>
 				<Ionicons name="document-outline" size={18} color={mutedColor} />
 				<Text style={[styles.draftBtnText, { color: mutedColor }]}>
@@ -1947,7 +2078,7 @@ function PublishedView({
 		bg: string;
 		textColor: string;
 		mutedColor: string;
-		primary: string;
+		fill: string;
 		cardBg: string;
 		border: string;
 	};
@@ -1955,7 +2086,7 @@ function PublishedView({
 }) {
 	const { t } = useTranslation();
 	const { webUrl } = useAppConfig();
-	const { bg, textColor, mutedColor, primary, cardBg, border } = colors;
+	const { bg, textColor, mutedColor, fill, cardBg, border } = colors;
 	const share = () => {
 		const url = `${webUrl ?? ""}/listing/${listing.id}`;
 		void Linking.openURL(whatsappShareUrl(`${listing.title} ${url}`)).catch(
@@ -1968,15 +2099,11 @@ function PublishedView({
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={styles.publishedWrap}>
-				<View
-					style={[
-						styles.lockCircle,
-						{ backgroundColor: "#dcfce7", alignSelf: "center" },
-					]}
+				<PublishedStamp />
+				<Text
+					style={[styles.noUserHeading, { color: textColor }]}
+					accessibilityRole="header"
 				>
-					<Ionicons name="checkmark" size={36} color="#15803d" />
-				</View>
-				<Text style={[styles.noUserHeading, { color: textColor }]}>
 					{t("create.publishSuccess")}
 				</Text>
 				<Text style={[styles.noUserSub, { color: mutedColor }]}>
@@ -1985,16 +2112,19 @@ function PublishedView({
 				<Pressable
 					onPress={() => router.push(`/listing/${listing.id}`)}
 					accessibilityRole="button"
-					style={[styles.loginBtn, { backgroundColor: primary }]}
+					style={[styles.loginBtn, { backgroundColor: fill }]}
 				>
 					<Text style={styles.loginBtnText}>{t("create.viewListing")}</Text>
 				</Pressable>
+				{/* WhatsApp's own green with ink on it (8:1): sellers know the
+				    button before they read it. */}
 				<Pressable
 					onPress={share}
 					accessibilityRole="button"
 					style={[styles.loginBtn, { backgroundColor: "#25D366" }]}
 				>
-					<Text style={[styles.loginBtnText, { color: "#0f172a" }]}>
+					<Ionicons name="logo-whatsapp" size={20} color="#12163a" />
+					<Text style={[styles.loginBtnText, { color: "#12163a" }]}>
 						{t("create.shareWhatsApp")}
 					</Text>
 				</Pressable>
@@ -2018,13 +2148,18 @@ function PublishedView({
 // ─── Shared sub-components ─────────────────────────────────────────────────────
 
 function FieldHeader({ icon, label, required, colors }: any) {
-	const { textColor, mutedColor, primary } = colors;
+	const { textColor, primary } = colors;
 	return (
 		<View style={styles.fieldHeaderRow}>
-			<Ionicons name={icon} size={14} color={primary} />
+			<Ionicons
+				name={icon}
+				size={16}
+				color={primary}
+				importantForAccessibility="no"
+			/>
 			<Text style={[styles.fieldLabel, { color: textColor }]}>
 				{label}
-				{required && <Text style={{ color: "#ef4444" }}> *</Text>}
+				{required && <Text style={{ color: colors.C.dangerText }}> *</Text>}
 			</Text>
 		</View>
 	);
@@ -2032,29 +2167,30 @@ function FieldHeader({ icon, label, required, colors }: any) {
 
 /** Pressing it while inactive still calls `onPress`, so a step can say why it is blocked. */
 function NextButton({ label, onPress, active, colors }: any) {
-	const { primary, mutedColor, isDark } = colors;
+	const { fill, mutedColor, C } = colors;
 	return (
 		<Pressable
 			onPress={onPress}
 			accessibilityRole="button"
 			accessibilityState={{ disabled: !active }}
-			style={[
+			style={({ pressed }) => [
 				styles.nextBtn,
 				{
-					backgroundColor: active ? primary : isDark ? "#1e293b" : "#e2e8f0",
-					opacity: active ? 1 : 0.6,
+					backgroundColor: active ? fill : C.well,
+					borderColor: active ? fill : C.border,
+					transform: [{ scale: active && pressed ? 0.98 : 1 }],
 				},
 			]}
 		>
 			<Text
-				style={[styles.nextBtnText, { color: active ? "#fff" : mutedColor }]}
+				style={[styles.nextBtnText, { color: active ? "#ffffff" : mutedColor }]}
 			>
 				{label}
 			</Text>
 			<Ionicons
 				name="arrow-forward"
 				size={18}
-				color={active ? "#fff" : mutedColor}
+				color={active ? "#ffffff" : mutedColor}
 			/>
 		</Pressable>
 	);
@@ -2084,7 +2220,10 @@ const styles = StyleSheet.create({
 	sellIconWrap: {
 		width: 44,
 		height: 44,
-		borderRadius: 14,
+		borderRadius: 12,
+		// The sell plaque's darker foot, as on the tab bar.
+		borderBottomWidth: 3,
+		borderBottomColor: "#9a6a00",
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -2120,21 +2259,28 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	noUserSub: {
-		fontSize: 14,
+		fontSize: 15,
 		fontFamily: Fonts.body,
 		textAlign: "center",
-		lineHeight: 20,
+		lineHeight: 22,
 		marginBottom: 24,
+		maxWidth: 320,
 	},
 	loginBtn: {
-		borderRadius: 14,
-		paddingHorizontal: 32,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 8,
+		borderRadius: 12,
+		minHeight: 52,
+		paddingHorizontal: 24,
 		paddingVertical: 14,
 	},
+	loginBtnWide: { alignSelf: "stretch" },
 	loginBtnText: {
-		color: "#fff",
-		fontSize: 15,
-		fontFamily: Fonts.displayBold,
+		color: "#ffffff",
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 
 	/* ── Header ── */
@@ -2147,32 +2293,30 @@ const styles = StyleSheet.create({
 		paddingBottom: 12,
 	},
 	backBtn: {
-		width: 36,
-		height: 36,
-		borderRadius: 10,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		borderWidth: StyleSheet.hairlineWidth,
 		alignItems: "center",
 		justifyContent: "center",
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.08,
-		shadowRadius: 4,
-		elevation: 2,
 	},
 	headerCenter: { flex: 1 },
 	headerTitle: {
-		fontSize: 17,
+		fontSize: 18,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},
 	headerStep: {
-		fontSize: 11,
-		fontFamily: Fonts.body,
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodyMedium,
 		marginTop: 1,
 	},
 	discardBtn: {
-		width: 36,
-		height: 36,
-		borderRadius: 10,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		borderWidth: StyleSheet.hairlineWidth,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -2180,24 +2324,24 @@ const styles = StyleSheet.create({
 	/* ── Progress ── */
 
 	/* ── Step headings ── */
+	// One question per step, set as the screen's title (h2): the header above
+	// already carries the listing's own name.
 	stepTitle: {
-		fontSize: 22,
-		fontFamily: Fonts.displayBold,
-		letterSpacing: -0.3,
+		...TextStyles.h2,
+		marginTop: 4,
 		marginBottom: 6,
 	},
 	stepSub: {
-		fontSize: 13,
-		fontFamily: Fonts.body,
-		lineHeight: 20,
+		...TextStyles.body,
 		marginBottom: 20,
 	},
+	uploadingNote: { marginTop: 8, marginBottom: 0 },
 
 	/* ── Field card ── */
 	fieldCard: {
 		borderRadius: 16,
-		borderWidth: 1,
-		padding: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 16,
 		marginBottom: 12,
 		gap: 10,
 	},
@@ -2207,31 +2351,33 @@ const styles = StyleSheet.create({
 		gap: 6,
 	},
 	fieldLabel: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 	fieldDivider: {
-		height: 1,
-		marginVertical: 2,
+		height: StyleSheet.hairlineWidth,
+		marginVertical: 4,
 	},
 	fieldInput: {
+		minHeight: 48,
 		borderWidth: 1,
-		borderRadius: 10,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		fontSize: 15,
+		borderRadius: 12,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
+		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
 	multiline: {
-		height: 110,
+		minHeight: 120,
 		textAlignVertical: "top",
-		paddingTop: 10,
+		lineHeight: 22,
 	},
 	charCount: {
-		fontSize: 11,
+		fontSize: 12,
 		fontFamily: Fonts.body,
+		fontVariant: ["tabular-nums"],
 		textAlign: "right",
-		marginTop: -6,
+		marginTop: -4,
 	},
 
 	/* ── Category attributes ── */
@@ -2239,14 +2385,11 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		marginTop: 6,
+		marginTop: 12,
 		marginBottom: 10,
 	},
 	groupHeading: {
-		fontSize: 13,
-		fontFamily: Fonts.displayBold,
-		letterSpacing: 0.4,
-		textTransform: "uppercase",
+		...TextStyles.h4,
 	},
 	groupRule: {
 		flex: 1,
@@ -2261,15 +2404,17 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	attrUnit: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 	attrError: {
-		fontSize: 12,
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 	},
 	attrHint: {
-		fontSize: 11,
+		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.body,
 	},
 
@@ -2281,21 +2426,25 @@ const styles = StyleSheet.create({
 	},
 	priceInput: {
 		flex: 1,
+		minHeight: 56,
 		borderWidth: 1,
-		borderRadius: 10,
-		paddingHorizontal: 12,
+		borderRadius: 12,
+		paddingHorizontal: 14,
 		paddingVertical: 10,
-		fontSize: 18,
-		fontFamily: Fonts.displayBold,
+		fontSize: 24,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.5,
+		fontVariant: ["tabular-nums"],
 	},
 	priceBadge: {
+		minHeight: 56,
 		borderRadius: 10,
 		paddingHorizontal: 14,
-		paddingVertical: 12,
+		justifyContent: "center",
 	},
 	priceBadgeText: {
-		fontSize: 14,
-		fontFamily: Fonts.displayBold,
+		fontSize: 16,
+		fontFamily: Fonts.displayExtrabold,
 	},
 
 	/* ── Option pills ── */
@@ -2307,14 +2456,14 @@ const styles = StyleSheet.create({
 	conditionPill: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 5,
-		borderRadius: 20,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 7,
+		gap: 6,
+		minHeight: 44,
+		borderRadius: 22,
+		borderWidth: 1,
+		paddingHorizontal: 16,
 	},
 	conditionText: {
-		fontSize: 12,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -2340,50 +2489,53 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	durationPill: {
+		minHeight: 56,
 		borderRadius: 12,
-		borderWidth: 1.5,
-		paddingVertical: 12,
+		borderWidth: 1,
+		paddingVertical: 8,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	durationNum: {
-		fontSize: 18,
+		fontSize: 20,
+		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
 	},
 	durationUnit: {
-		fontSize: 11,
-		fontFamily: Fonts.body,
+		fontSize: 12,
+		fontFamily: Fonts.bodyMedium,
 	},
 
 	/* ── Tip ── */
 	tipCard: {
 		flexDirection: "row",
 		alignItems: "flex-start",
-		gap: 8,
+		gap: 10,
 		borderRadius: 12,
-		borderWidth: 1,
 		padding: 12,
 		marginBottom: 16,
 	},
 	tipText: {
 		flex: 1,
-		fontSize: 12,
+		fontSize: 14,
 		fontFamily: Fonts.body,
-		lineHeight: 18,
+		lineHeight: 20,
 	},
 
 	/* ── Photos ── */
 	photosGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
-		gap: 10,
+		gap: PHOTO_GAP,
 		marginBottom: 8,
 	},
 	photoThumb: {
 		width: 100,
 		height: 100,
-		borderRadius: 12,
-		borderWidth: 1,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -2394,23 +2546,25 @@ const styles = StyleSheet.create({
 	addPhotoBtn: {
 		width: 100,
 		height: 100,
-		borderRadius: 12,
-		borderWidth: 2,
+		borderRadius: 14,
+		borderWidth: 1.5,
 		borderStyle: "dashed",
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 6,
+		padding: 6,
 	},
 	addIconCircle: {
 		width: 40,
 		height: 40,
-		borderRadius: 12,
+		borderRadius: 20,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	addPhotoText: {
-		fontSize: 11,
+		fontSize: 13,
 		fontFamily: Fonts.bodySemibold,
+		textAlign: "center",
 	},
 	photoRequired: {
 		fontSize: 13,
@@ -2427,25 +2581,31 @@ const styles = StyleSheet.create({
 		paddingVertical: 2,
 	},
 	photoPrimaryText: {
-		color: "#fff",
-		fontSize: 9,
-		fontFamily: Fonts.displayBold,
+		color: "#ffffff",
+		fontSize: 12,
+		fontFamily: Fonts.bodyBold,
 	},
 	photoMakeMainBtn: {
 		position: "absolute",
 		bottom: 6,
 		left: 6,
-		width: 30,
-		height: 30,
-		borderRadius: 15,
-		backgroundColor: "rgba(15,23,42,0.65)",
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		backgroundColor: "rgba(18, 22, 58, 0.7)",
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	photoDeleteBtn: {
 		position: "absolute",
-		top: 4,
-		right: 4,
+		top: 6,
+		right: 6,
+		width: 28,
+		height: 28,
+		borderRadius: 14,
+		backgroundColor: "rgba(18, 22, 58, 0.7)",
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	gpsBtn: {
 		flexDirection: "row",
@@ -2465,43 +2625,59 @@ const styles = StyleSheet.create({
 	/* ── Review ── */
 	reviewCard: {
 		borderRadius: 16,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		overflow: "hidden",
 		marginBottom: 20,
 	},
 	reviewRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
-		paddingHorizontal: 14,
-		paddingVertical: 13,
-		borderBottomWidth: 1,
+		gap: 12,
+		minHeight: 60,
+		paddingLeft: 14,
+		paddingRight: 8,
+		paddingVertical: 10,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	reviewIconWrap: {
 		width: 32,
 		height: 32,
-		borderRadius: 9,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	reviewText: { flex: 1, gap: 2 },
 	reviewLabel: {
-		fontSize: 11,
-		fontFamily: Fonts.bodySemibold,
-		letterSpacing: 0.3,
-		textTransform: "uppercase",
-		marginBottom: 1,
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodyMedium,
 	},
 	reviewValue: {
-		fontSize: 14,
-		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 20,
+		fontFamily: Fonts.bodySemibold,
+	},
+	reviewPriceTag: {
+		alignSelf: "flex-start",
+		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 2,
+		marginTop: 2,
+	},
+	reviewPriceText: {
+		fontSize: 17,
+		lineHeight: 22,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.3,
 	},
 	editPill: {
-		borderRadius: 8,
+		minHeight: 36,
+		borderRadius: 10,
 		paddingHorizontal: 10,
-		paddingVertical: 5,
+		justifyContent: "center",
 	},
 	editPillText: {
-		fontSize: 12,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 	publishBtn: {
@@ -2509,37 +2685,36 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 10,
-		borderRadius: 16,
-		paddingVertical: 16,
-		shadowColor: "#f59e0b",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.35,
-		shadowRadius: 10,
-		elevation: 6,
+		borderRadius: 12,
+		minHeight: 56,
+		paddingVertical: 14,
+		// The sign plaque, as on the sell tab: a darker foot, no glow.
+		borderBottomWidth: 3,
+		borderBottomColor: "#9a6a00",
 	},
 	publishBtnText: {
-		color: "#fff",
-		fontSize: 17,
-		fontFamily: Fonts.displayBold,
+		color: "#12163a",
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 	draftBtn: {
 		alignItems: "center",
 		flexDirection: "row",
 		gap: 8,
 		justifyContent: "center",
-		marginTop: 12,
-		paddingVertical: 12,
+		minHeight: 48,
+		marginTop: 8,
 	},
 	draftBtnText: {
 		fontFamily: Fonts.bodySemibold,
-		fontSize: 14,
+		fontSize: 15,
 	},
 	publishNote: {
-		fontSize: 12,
+		fontSize: 13,
 		fontFamily: Fonts.body,
 		textAlign: "center",
-		marginTop: 12,
-		lineHeight: 18,
+		marginTop: 8,
+		lineHeight: 19,
 	},
 
 	/* ── Next button ── */
@@ -2548,12 +2723,14 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		borderRadius: 16,
-		paddingVertical: 15,
-		marginTop: 8,
+		borderRadius: 12,
+		borderWidth: 1,
+		minHeight: 52,
+		paddingVertical: 14,
+		marginTop: 12,
 	},
 	nextBtnText: {
 		fontSize: 16,
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 	},
 });

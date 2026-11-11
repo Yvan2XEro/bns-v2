@@ -106,5 +106,5 @@ const styles = StyleSheet.create({
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
 	lines: { flex: 1, gap: 10 },
 	line: { gap: 1 },
-	value: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	value: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodySemibold },
 });

@@ -61,8 +61,11 @@ export function SellerInsightsSummary({
 		>
 			<View style={styles.top}>
 				<View style={styles.heading}>
-					<Ionicons name="analytics-outline" size={20} color={c.primary} />
-					<Text style={[styles.title, { color: c.text }]}>
+					<Ionicons name="analytics-outline" size={20} color={c.link} />
+					<Text
+						accessibilityRole="header"
+						style={[styles.title, { color: c.text }]}
+					>
 						{t("sellerInsights.title")}
 					</Text>
 				</View>
@@ -72,7 +75,7 @@ export function SellerInsightsSummary({
 					style={[styles.openButton, { backgroundColor: c.primarySoft }]}
 					onPress={() => router.push("./insights")}
 				>
-					<Text style={[styles.openText, { color: c.primary }]}>
+					<Text style={[styles.openText, { color: c.link }]}>
 						{t("sellerInsights.open")}
 					</Text>
 				</Pressable>
@@ -138,7 +141,12 @@ function Metric({
 			<Text numberOfLines={1} style={[styles.label, { color: palette.muted }]}>
 				{label}
 			</Text>
-			<Text numberOfLines={1} style={[styles.value, { color: palette.text }]}>
+			<Text
+				numberOfLines={1}
+				adjustsFontSizeToFit
+				minimumFontScale={0.6}
+				style={[styles.value, { color: palette.text }]}
+			>
 				{value}
 			</Text>
 			{delta ? (
@@ -165,7 +173,12 @@ function signedCount(value: number, locale: string): string {
 }
 
 const styles = StyleSheet.create({
-	card: { borderRadius: 18, borderWidth: 1, padding: 15, gap: 12 },
+	card: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 16,
+		gap: 14,
+	},
 	top: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -173,21 +186,31 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	heading: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-	title: { fontSize: 15, fontFamily: Fonts.displayBold },
+	title: {
+		fontSize: 19,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.3,
+	},
 	openButton: {
-		minHeight: 40,
+		minHeight: 48,
 		justifyContent: "center",
 		paddingHorizontal: 12,
 		borderRadius: 10,
 	},
-	openText: { fontSize: 12, fontFamily: Fonts.displayBold },
+	openText: { fontSize: 14, fontFamily: Fonts.bodyBold },
 	metrics: { flexDirection: "row", gap: 10 },
 	metric: { flex: 1, minWidth: 0, gap: 5 },
-	label: { fontSize: 11, fontFamily: Fonts.body },
-	value: { fontSize: 13, fontFamily: Fonts.displayBold },
-	delta: { fontSize: 10, fontFamily: Fonts.body },
+	label: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	value: {
+		fontSize: 20,
+		lineHeight: 25,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.4,
+	},
+	delta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	action: {
-		minHeight: 44,
+		minHeight: 48,
 		borderTopWidth: StyleSheet.hairlineWidth,
 		paddingTop: 10,
 		flexDirection: "row",

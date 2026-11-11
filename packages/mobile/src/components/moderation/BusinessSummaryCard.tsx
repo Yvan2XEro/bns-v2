@@ -3,24 +3,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ModerationVerificationDetail } from "@/src/types/api";
+import { CardDivider, FactRow, ModerationCard } from "./ModerationKit";
 import { useModerationTheme } from "./theme";
+import { tonesOf } from "./tones";
 
 type Business = NonNullable<
 	ModerationVerificationDetail["request"]["business"]
 >;
 type ReviewSignals = ModerationVerificationDetail["request"]["reviewSignals"];
-
-function Row({ label, value }: { label: string; value: string | null }) {
-	const c = useModerationTheme();
-	return (
-		<View style={styles.row}>
-			<Text style={[styles.label, { color: c.muted }]}>{label}</Text>
-			<Text style={[styles.value, { color: c.text }]} numberOfLines={2}>
-				{value ?? "—"}
-			</Text>
-		</View>
-	);
-}
 
 /** The seller's registry details, level 3 only. */
 export function BusinessSummaryCard({
@@ -31,6 +21,7 @@ export function BusinessSummaryCard({
 	signals: ReviewSignals;
 }) {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
 
 	if (!business) return null;
@@ -38,13 +29,10 @@ export function BusinessSummaryCard({
 	const niuFlagged = signals.some((signal) => signal.code === "niu_format");
 
 	return (
-		<View
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-		>
-			<Text style={[styles.title, { color: c.text }]}>
-				{t("moderation.verifBusinessTitle")}
-			</Text>
-			<Row
+		// Four groups, in the order a registry extract is checked: who the
+		// business is, its numbers, where it sits, who answers for it.
+		<ModerationCard title={t("moderation.verifBusinessTitle")}>
+			<FactRow
 				label={t("moderation.verifBusinessType")}
 				value={
 					business.businessType
@@ -52,52 +40,54 @@ export function BusinessSummaryCard({
 						: null
 				}
 			/>
-			<Row
+			<FactRow
 				label={t("moderation.verifBusinessLegalName")}
 				value={business.legalName}
 			/>
-			<Row
+			<FactRow
 				label={t("moderation.verifBusinessTradeName")}
 				value={business.tradeName}
 			/>
-			<Row
+			<CardDivider />
+			<FactRow
 				label={t("moderation.verifBusinessRccm")}
 				value={business.rccmNumber}
 			/>
-			<Row
+			<FactRow
 				label={t("moderation.verifBusinessEntreprenantNumber")}
 				value={business.entreprenantDeclarationNumber}
 			/>
-			<View style={styles.row}>
-				<Text style={[styles.label, { color: c.muted }]}>
-					{t("moderation.verifBusinessNiu")}
-				</Text>
-				<View style={styles.niuValue}>
-					<Text style={[styles.value, { color: c.text }]}>
-						{business.niu ?? "—"}
-					</Text>
-					{niuFlagged ? (
-						<View
-							style={[styles.warningPill, { backgroundColor: c.warningSoft }]}
-						>
-							<Ionicons name="alert-circle" size={12} color={c.warning} />
-							<Text style={[styles.warningText, { color: c.warning }]}>
-								{t("moderation.verifBusinessNiuFormatWarning")}
-							</Text>
-						</View>
-					) : null}
-				</View>
+			<View style={styles.niuRow}>
+				<FactRow
+					label={t("moderation.verifBusinessNiu")}
+					value={business.niu}
+				/>
+				{niuFlagged ? (
+					<View
+						style={[styles.warningPill, { backgroundColor: c.warningSoft }]}
+					>
+						<Ionicons name="alert-circle" size={14} color={k.warningText} />
+						<Text style={[styles.warningText, { color: k.warningText }]}>
+							{t("moderation.verifBusinessNiuFormatWarning")}
+						</Text>
+					</View>
+				) : null}
 			</View>
-			<Row
+			<CardDivider />
+			<FactRow
 				label={t("moderation.verifBusinessAddress")}
 				value={business.registeredAddress}
 			/>
-			<Row label={t("moderation.verifBusinessCity")} value={business.city} />
-			<Row
+			<FactRow
+				label={t("moderation.verifBusinessCity")}
+				value={business.city}
+			/>
+			<CardDivider />
+			<FactRow
 				label={t("moderation.verifBusinessRepresentative")}
 				value={business.legalRepresentativeName}
 			/>
-			<Row
+			<FactRow
 				label={t("moderation.verifBusinessRepresentativeIsOwner")}
 				value={t(
 					business.legalRepresentativeIsOwner
@@ -105,39 +95,20 @@ export function BusinessSummaryCard({
 						: "moderation.verifCommonNo",
 				)}
 			/>
-		</View>
+		</ModerationCard>
 	);
 }
 
 const styles = StyleSheet.create({
-	card: {
-		borderRadius: 14,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 14,
-		gap: 8,
-	},
-	title: { fontSize: 15, fontFamily: Fonts.displayBold, marginBottom: 2 },
-	row: {
-		flexDirection: "row",
-		alignItems: "flex-start",
-		justifyContent: "space-between",
-		gap: 12,
-	},
-	label: { fontSize: 13, fontFamily: Fonts.body },
-	value: {
-		fontSize: 13,
-		fontFamily: Fonts.bodySemibold,
-		flexShrink: 1,
-		textAlign: "right",
-	},
-	niuValue: { flexShrink: 1, alignItems: "flex-end", gap: 4 },
+	niuRow: { gap: 6 },
 	warningPill: {
+		alignSelf: "flex-end",
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
-		borderRadius: 999,
+		gap: 6,
+		borderRadius: 8,
 		paddingHorizontal: 8,
-		paddingVertical: 3,
+		paddingVertical: 4,
 	},
-	warningText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	warningText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

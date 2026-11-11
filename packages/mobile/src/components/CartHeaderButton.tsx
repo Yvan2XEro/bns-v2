@@ -1,12 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useEffect, useRef } from "react";
 import {
 	Pressable,
 	type StyleProp,
+	StyleSheet,
 	Text,
-	View,
 	type ViewStyle,
 } from "react-native";
+import Animated, {
+	useAnimatedStyle,
+	useSharedValue,
+	withSequence,
+	withTiming,
+} from "react-native-reanimated";
+import { Fonts } from "@/constants/theme";
 import { useCart } from "@/src/hooks/useCart";
 import { useAuth } from "@/src/lib/auth";
 import { cartItemCount } from "@/src/lib/cartCount";
@@ -40,26 +48,52 @@ export function CartHeaderButton({
 			}
 		>
 			<Ionicons name="bag-handle-outline" size={size} color={color} />
-			{count > 0 && (
-				<View
-					style={{
-						position: "absolute",
-						top: -2,
-						right: -2,
-						minWidth: 18,
-						height: 18,
-						borderRadius: 9,
-						paddingHorizontal: 4,
-						backgroundColor: "#ef4444",
-						alignItems: "center",
-						justifyContent: "center",
-					}}
-				>
-					<Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
-						{count > 99 ? "99+" : count}
-					</Text>
-				</View>
-			)}
+			{count > 0 && <CartCount count={count} />}
 		</Pressable>
 	);
 }
+
+/**
+ * The item count, on a yellow tag like a price. It hops once when the count
+ * goes up, so an add made from a listing is seen landing in the bag.
+ */
+function CartCount({ count }: { count: number }) {
+	const previous = useRef(count);
+	const scale = useSharedValue(1);
+
+	useEffect(() => {
+		if (count > previous.current) {
+			scale.value = withSequence(
+				withTiming(1.35, { duration: 120 }),
+				withTiming(1, { duration: 220 }),
+			);
+		}
+		previous.current = count;
+	}, [count, scale]);
+
+	const style = useAnimatedStyle(() => ({
+		transform: [{ scale: scale.value }],
+	}));
+
+	return (
+		<Animated.View style={[styles.badge, style]}>
+			<Text style={styles.badgeText}>{count > 99 ? "99+" : count}</Text>
+		</Animated.View>
+	);
+}
+
+const styles = StyleSheet.create({
+	badge: {
+		position: "absolute",
+		top: -3,
+		right: -3,
+		minWidth: 18,
+		height: 18,
+		borderRadius: 6,
+		paddingHorizontal: 4,
+		backgroundColor: "#ffb81c",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	badgeText: { color: "#12163a", fontSize: 11, fontFamily: Fonts.bodyBold },
+});

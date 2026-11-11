@@ -21,6 +21,8 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { alerts } from "@/src/contexts/AlertContext";
@@ -92,8 +94,12 @@ export default function ResaleCatalogueScreen() {
 
 	if (shopLoading || !shop) {
 		return (
-			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("sellerResale.catalogueTitle")} />
+				<ListSkeleton />
 			</SafeAreaView>
 		);
 	}
@@ -121,7 +127,10 @@ export default function ResaleCatalogueScreen() {
 
 	const rows = catalogue.data?.products ?? [];
 	return (
-		<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: c.bg }]}
+		>
 			<SellerHeader
 				title={t("sellerResale.catalogueTitle")}
 				subtitle={shop.name}
@@ -161,10 +170,10 @@ export default function ResaleCatalogueScreen() {
 					{ borderColor: c.border, backgroundColor: c.card },
 				]}
 			>
-				<Text style={[styles.ordersText, { color: c.primary }]}>
+				<Text style={[styles.ordersText, { color: c.link }]}>
 					{t("sellerResale.purchaseOrdersLink")}
 				</Text>
-				<Ionicons name="chevron-forward" size={17} color={c.primary} />
+				<Ionicons name="chevron-forward" size={17} color={c.link} />
 			</Pressable>
 			{needsTerms ? (
 				<TermsCard
@@ -186,9 +195,7 @@ export default function ResaleCatalogueScreen() {
 					}}
 				/>
 			) : null}
-			{catalogue.isLoading ? (
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
-			) : null}
+			{catalogue.isLoading ? <ListSkeleton /> : null}
 			{catalogue.isError && !needsTerms ? (
 				hasErrorCode(catalogue.error, ERROR_CODES.resaleDisabled) ? (
 					<EmptyState
@@ -296,7 +303,7 @@ function TermsCard({
 				<Ionicons
 					name={accepted ? "checkbox" : "square-outline"}
 					size={21}
-					color={c.primary}
+					color={c.link}
 				/>
 				<Text style={[styles.body, { color: c.text }]}>{acceptLabel}</Text>
 			</Pressable>
@@ -306,7 +313,7 @@ function TermsCard({
 				style={[
 					styles.primaryButton,
 					{
-						backgroundColor: c.primary,
+						backgroundColor: fillOf(c),
 						opacity: accepted && version && !loading ? 1 : 0.55,
 					},
 				]}
@@ -430,7 +437,7 @@ function CatalogueProductCard({
 					style={[
 						styles.primaryButton,
 						{
-							backgroundColor: c.primary,
+							backgroundColor: fillOf(c),
 							opacity: product.linkStatus === "requested" ? 0.55 : 1,
 						},
 					]}
@@ -459,7 +466,7 @@ function CatalogueProductCard({
 						style={[
 							styles.primaryButton,
 							{
-								backgroundColor: c.primary,
+								backgroundColor: fillOf(c),
 								opacity: isPending || product.variants.length === 0 ? 0.55 : 1,
 							},
 						]}
@@ -524,13 +531,15 @@ function VariantPrice({
 								styles.priceInput,
 								{
 									backgroundColor: c.input,
-									borderColor: fieldState.error ? "#DC2626" : c.border,
+									borderColor: fieldState.error ? c.danger : c.border,
 									color: c.text,
 								},
 							]}
 						/>
 						{fieldState.error ? (
-							<Text style={styles.fieldError}>{fieldState.error.message}</Text>
+							<Text style={[styles.fieldError, { color: dangerInk(c) }]}>
+								{fieldState.error.message}
+							</Text>
 						) : null}
 					</View>
 				)}
@@ -549,7 +558,6 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 	},
 	safe: { flex: 1 },
-	spinner: { marginTop: 28 },
 	search: {
 		alignItems: "center",
 		borderRadius: 12,
@@ -559,38 +567,43 @@ const styles = StyleSheet.create({
 		marginHorizontal: 16,
 		marginTop: 12,
 		paddingHorizontal: 12,
-		minHeight: 46,
+		minHeight: 48,
 	},
 	searchInput: {
 		flex: 1,
 		fontFamily: Fonts.body,
-		fontSize: 14,
-		paddingVertical: 10,
+		fontSize: 16,
+		minHeight: 48,
 	},
 	ordersLink: {
 		alignItems: "center",
 		borderRadius: 12,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		flexDirection: "row",
 		justifyContent: "space-between",
 		marginHorizontal: 16,
 		marginTop: 10,
-		minHeight: 44,
+		minHeight: 48,
 		paddingHorizontal: 14,
 	},
-	ordersText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
-	list: { padding: 16, paddingBottom: 36 },
-	productCard: { borderRadius: 16, borderWidth: 1, gap: 14, padding: 14 },
+	ordersText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	list: { padding: 16, paddingBottom: 40 },
+	productCard: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		gap: 14,
+		padding: 16,
+	},
 	productHeader: { flexDirection: "row", gap: 12 },
 	productImage: { borderRadius: 10, height: 74, width: 74 },
 	imagePlaceholder: { alignItems: "center", justifyContent: "center" },
 	productInfo: { flex: 1, gap: 4 },
-	productTitle: { fontFamily: Fonts.displaySemibold, fontSize: 16 },
-	body: { fontFamily: Fonts.body, fontSize: 13 },
+	productTitle: { fontFamily: Fonts.displayBold, fontSize: 16, lineHeight: 21 },
+	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
 	description: {
 		fontFamily: Fonts.body,
-		fontSize: 12,
-		lineHeight: 17,
+		fontSize: 13,
+		lineHeight: 18,
 		marginTop: 2,
 	},
 	prices: { gap: 10 },
@@ -601,49 +614,50 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 	},
 	variantInfo: { flex: 1, gap: 3 },
-	hint: { fontFamily: Fonts.body, fontSize: 11 },
+	hint: { fontFamily: Fonts.body, fontSize: 12, lineHeight: 16 },
 	priceInputWrap: { alignItems: "flex-end", width: 130 },
 	priceInput: {
-		borderRadius: 9,
+		borderRadius: 12,
 		borderWidth: 1,
-		fontFamily: Fonts.bodyMedium,
-		minHeight: 42,
+		fontFamily: Fonts.displaySemibold,
+		fontSize: 16,
+		minHeight: 48,
 		paddingHorizontal: 10,
 		textAlign: "right",
 		width: "100%",
 	},
 	fieldError: {
-		color: "#DC2626",
 		fontFamily: Fonts.body,
-		fontSize: 10,
+		fontSize: 13,
+		lineHeight: 18,
 	},
 	primaryButton: {
 		alignItems: "center",
-		borderRadius: 10,
+		borderRadius: 12,
 		justifyContent: "center",
-		minHeight: 44,
+		minHeight: 52,
 		paddingHorizontal: 14,
 	},
-	primaryText: { color: "#fff", fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	primaryText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
 	terms: {
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		gap: 12,
 		margin: 16,
 		marginBottom: 0,
 		padding: 14,
 	},
-	cardTitle: { fontFamily: Fonts.displaySemibold, fontSize: 16 },
+	cardTitle: { fontFamily: Fonts.displayBold, fontSize: 17, lineHeight: 22 },
 	termsBody: {
 		fontFamily: Fonts.body,
-		fontSize: 12,
-		lineHeight: 18,
+		fontSize: 13,
+		lineHeight: 19,
 		maxHeight: 150,
 	},
 	acceptRow: {
 		alignItems: "center",
 		flexDirection: "row",
 		gap: 8,
-		minHeight: 44,
+		minHeight: 48,
 	},
 });

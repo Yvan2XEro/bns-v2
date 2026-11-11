@@ -4,6 +4,8 @@ import { Pressable, Text, View } from "react-native";
 import { useUploadReturnEvidence } from "@/src/hooks/useReturns";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
+import { caseForm } from "../checkout/caseForm";
+import { inkOf } from "../checkout/fill";
 import { useShopTheme } from "../shop/theme";
 
 export function ReturnEvidenceUpload({
@@ -54,20 +56,22 @@ export function ReturnEvidenceUpload({
 				disabled={pending || evidenceIds.length >= 10}
 				onPress={() => void add()}
 				style={{
-					minHeight: 44,
+					minHeight: 48,
 					justifyContent: "center",
 					padding: 12,
-					borderWidth: 1,
+					borderWidth: 1.5,
+					borderStyle: "dashed",
 					borderColor: c.border,
-					borderRadius: 10,
+					backgroundColor: c.card,
+					borderRadius: 12,
 					opacity: pending ? 0.5 : 1,
 				}}
 			>
-				<Text style={{ color: c.primary }}>
+				<Text style={[caseForm.label, { color: inkOf(c) }]}>
 					{t(pending ? "returns.evidenceUploading" : "returns.evidenceUpload")}
 				</Text>
 			</Pressable>
-			<Text style={{ color: c.muted }}>
+			<Text style={[caseForm.meta, { color: c.muted }]}>
 				{t("returns.evidenceCount", { count: evidenceIds.length })}
 			</Text>
 			{evidenceIds.map((id, index) => (
@@ -79,15 +83,18 @@ export function ReturnEvidenceUpload({
 					})}
 					disabled={pending}
 					onPress={() => onChange(evidenceIds.filter((value) => value !== id))}
-					style={{ minHeight: 44, justifyContent: "center" }}
+					style={{ minHeight: 48, justifyContent: "center" }}
 				>
-					<Text style={{ color: c.primary }}>
+					<Text style={[caseForm.label, { color: inkOf(c) }]}>
 						{t("returns.removeEvidence", { number: index + 1 })}
 					</Text>
 				</Pressable>
 			))}
 			{error ? (
-				<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+				<Text
+					accessibilityRole="alert"
+					style={[caseForm.error, { color: c.dangerText }]}
+				>
 					{error}
 				</Text>
 			) : null}

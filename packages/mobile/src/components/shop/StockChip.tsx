@@ -47,5 +47,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 9,
 		paddingVertical: 3,
 	},
-	text: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	text: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { router, usePathname } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -18,7 +19,7 @@ import ReanimatedSwipeable, {
 	type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
@@ -35,28 +36,42 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { appDateLocale } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
+import {
+	resolveImageUrl,
+	resolveListingImageUrl,
+} from "@/src/lib/resolveImageUrl";
 import { can } from "@/src/lib/shopRoles";
 import { compactTimeAgo } from "@/src/lib/timeAgo";
 
 /** The shape this screen needs off a conversation row — a narrow, typed view over the loosely-typed `api.get` payload, not `any`. */
 interface ConversationListRow {
 	id: string;
-	shop?: { id: string; name: string } | string | null;
+	shop?:
+		| { id: string; name: string; logo?: { url?: string | null } | null }
+		| string
+		| null;
 	buyer?: { id: string } | string | null;
 	participants?: Array<
 		| { id: string; name?: string | null; avatar?: { url?: string } | null }
 		| string
 	>;
-	lastMessage?: { content?: string | null } | null;
-	listing?: { title?: string | null } | null;
+	lastMessage?: {
+		content?: string | null;
+		/** An id, or the user at depth 2. */
+		sender?: { id: string } | string | null;
+		kind?: string | null;
+	} | null;
+	listing?: { title?: string | null; images?: unknown[] | null } | null;
 	order?: { orderNumber?: string | null } | string | null;
 	updatedAt?: string;
 	unreadCount?: number;
 }
 
-function shopOf(
-	conv: ConversationListRow,
-): { id: string; name: string } | null {
+function shopOf(conv: ConversationListRow): {
+	id: string;
+	name: string;
+	logo?: { url?: string | null } | null;
+} | null {
 	return conv.shop && typeof conv.shop === "object" ? conv.shop : null;
 }
 
@@ -94,6 +109,13 @@ function formatTime(dateStr: string): string {
 	return compactTimeAgo(d) ?? "";
 }
 
+/** Own bubbles, the send button and the unread badge share one deep indigo: white stays legible on it in both themes. */
+const FILLED = Colors.light.ownBubble;
+/** The swipe-to-delete fill: the light red in both themes, since white on the night red falls to 3.6:1. */
+const DELETE_FILL = Colors.light.destructive;
+/** Avatar 52 + its 12pt gap + the row's 16pt inset: hairlines start under the name, as in a native inbox. */
+const SEPARATOR_INSET = 80;
+
 type FilterTab = "all" | "unread" | "orders";
 
 /** The account's conversations; one opens through `onOpen`. */
@@ -101,6 +123,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 	const selectedRowStyle = useSelectedRowStyle();
 	const { showError, showConfirm } = useAlert();
 	const isDark = useColorScheme() === "dark";
+	const C = Colors[isDark ? "dark" : "light"];
 	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 	const { user } = useAuth();
@@ -114,7 +137,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 
 	const myShops = useMyShops();
 
-	const { data, isLoading, refetch } = useQuery({
+	const { data, isLoading, isError, refetch } = useQuery({
 		queryKey: ["conversations"],
 		queryFn: () =>
 			api.get<{ docs: any[] }>(
@@ -167,13 +190,10 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 		setRefreshing(false);
 	};
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
+	// The unread time and "mark all read" in the contrast-safe brand tone.
+	const unreadAccent = C.link;
+	// DESIGN.md's "body" tone: secondary text with more weight than meta.
+	const bodyText = C.body;
 
 	const unreadCount = useMemo(
 		() => conversations.filter((c) => (c.unreadCount ?? 0) > 0).length,
@@ -237,7 +257,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 
 			queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		} catch {
-			// silently fail
+			showError(t("common.error"), t("messages.markAllReadError"));
 		} finally {
 			setMarkingAllRead(false);
 		}
@@ -260,46 +280,75 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 		);
 	};
 
+	const header = (
+		<View style={styles.header}>
+			<Text
+				style={[styles.headerTitle, { color: C.foreground }]}
+				accessibilityRole="header"
+			>
+				{t("messages.title")}
+			</Text>
+			{user && unreadCount > 0 ? (
+				<Pressable
+					onPress={handleMarkAllRead}
+					disabled={markingAllRead}
+					accessibilityRole="button"
+					accessibilityLabel={t("messages.markAllRead")}
+					accessibilityState={{ busy: markingAllRead }}
+					hitSlop={4}
+					style={({ pressed }) => [
+						styles.markReadBtn,
+						{ opacity: pressed ? 0.6 : 1 },
+					]}
+				>
+					{markingAllRead ? (
+						<ActivityIndicator size="small" color={unreadAccent} />
+					) : (
+						<Ionicons
+							name="checkmark-done-outline"
+							size={18}
+							color={unreadAccent}
+						/>
+					)}
+					<Text style={[styles.markReadText, { color: unreadAccent }]}>
+						{t("messages.markAllRead")}
+					</Text>
+				</Pressable>
+			) : null}
+		</View>
+	);
+
 	if (!user) {
 		return (
 			<SafeAreaView
 				edges={["top"]}
-				style={[styles.safe, { backgroundColor: accentBg }]}
+				style={[styles.safe, { backgroundColor: C.background }]}
 			>
-				<View style={[styles.noUserHeader, { backgroundColor: accentBg }]}>
-					<View
-						style={[
-							styles.msgIconWrap,
-							{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-						]}
-					>
-						<Ionicons name="chatbubbles" size={22} color={primaryColor} />
-					</View>
-					<Text style={[styles.headerTitle, { color: textColor }]}>
-						{t("messages.title")}
-					</Text>
-				</View>
-				<View style={[styles.contentWrap, { backgroundColor: bg }]}>
-					<EmptyState
-						icon="chatbubbles-outline"
-						title={t("auth.loginRequired")}
-						subtitle={t("auth.loginToAccess")}
-						ctaLabel={t("auth.signIn")}
-						onCta={() =>
-							router.push({
-								pathname: "/auth/login",
-								params: getAuthModalParams(pathname),
-							})
-						}
-					/>
-				</View>
+				{header}
+				<EmptyState
+					illustration="messages"
+					title={t("auth.loginRequired")}
+					subtitle={t("auth.loginToAccess")}
+					ctaLabel={t("auth.signIn")}
+					onCta={() =>
+						router.push({
+							pathname: "/auth/login",
+							params: getAuthModalParams(pathname),
+						})
+					}
+				/>
 			</SafeAreaView>
 		);
 	}
 
 	const renderRightActions = (convId: string) => (
-		<Pressable onPress={() => handleDelete(convId)} style={styles.deleteAction}>
-			<Ionicons name="trash-outline" size={22} color="#fff" />
+		<Pressable
+			onPress={() => handleDelete(convId)}
+			accessibilityRole="button"
+			accessibilityLabel={t("messages.deleteConversation")}
+			style={[styles.deleteAction, { backgroundColor: DELETE_FILL }]}
+		>
+			<Ionicons name="trash-outline" size={22} color="#ffffff" />
 			<Text style={styles.deleteActionText}>{t("common.delete")}</Text>
 		</Pressable>
 	);
@@ -309,15 +358,19 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 			item.participants?.find((p: any) => p.id !== user.id) ??
 			item.participants?.[0];
 		const lastMsg = item.lastMessage;
-		const unread = (item.unreadCount ?? 0) > 0;
+		const count: number = item.unreadCount ?? 0;
+		const unread = count > 0;
 		const isOnline = other?.id ? onlineUsers.has(other.id) : false;
 		const chip = showsShopChip(item);
 		// The buyer talks to the shop, not to whoever owns it.
 		const shop = shopOf(item);
-		const title =
-			shop && !isViewerShopSide(item, user.id)
-				? shop.name
-				: (other?.name ?? t("messages.user"));
+		const talksToShop = Boolean(shop) && !isViewerShopSide(item, user.id);
+		const title = talksToShop
+			? (shop?.name ?? t("messages.user"))
+			: (other?.name ?? t("messages.user"));
+		const avatarUri = talksToShop
+			? resolveImageUrl(shop?.logo?.url ?? null)
+			: (other?.avatar?.url ?? null);
 		const orderNumber = orderNumberOf(item);
 		const listingTitle = item.listing?.title ?? null;
 		const context = orderNumber
@@ -328,6 +381,35 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 					})
 				: t("messages.orderContextShort", { number: orderNumber })
 			: listingTitle;
+		const thumbUri = resolveListingImageUrl(
+			item.listing?.images?.[0],
+			"thumbnail",
+		);
+		const time = item.updatedAt ? formatTime(item.updatedAt) : "";
+		const senderId =
+			typeof lastMsg?.sender === "string"
+				? lastMsg.sender
+				: (lastMsg?.sender?.id ?? null);
+		// Whose turn it is, at a glance: your own last word carries "You:".
+		const mine =
+			Boolean(lastMsg?.content) &&
+			lastMsg?.kind !== "system" &&
+			senderId === user.id;
+		const preview = lastMsg?.content
+			? mine
+				? t("messages.you", { text: lastMsg.content })
+				: lastMsg.content
+			: t("messages.noMessages");
+		const a11yLabel = [
+			title,
+			chip ? t("messages.shopChip") : null,
+			unread ? t("inbox.unreadCount", { count }) : null,
+			context,
+			preview,
+			time,
+		]
+			.filter(Boolean)
+			.join(", ");
 
 		return (
 			<ReanimatedSwipeable
@@ -342,38 +424,43 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 			>
 				<Pressable
 					onPress={() => onOpen(item.id)}
+					accessibilityRole="button"
+					accessibilityLabel={a11yLabel}
 					accessibilityState={{ selected: item.id === selectedId }}
+					// Swiping is invisible to a screen reader: the same delete is
+					// offered as an action on the row.
+					accessibilityActions={[
+						{ name: "delete", label: t("messages.deleteConversation") },
+					]}
+					onAccessibilityAction={(event) => {
+						if (event.nativeEvent.actionName === "delete")
+							handleDelete(item.id);
+					}}
 					style={({ pressed }) => [
 						styles.convItem,
-						{
-							backgroundColor: pressed
-								? isDark
-									? "#162032"
-									: "#f8fafc"
-								: cardBg,
-							borderBottomColor: borderColor,
-						},
+						{ backgroundColor: pressed ? C.well : C.card },
 						selectedRowStyle(item.id === selectedId),
 					]}
 				>
-					{/* Avatar */}
 					<View style={styles.avatarContainer}>
+						{/* A shop is a squared plaque, a person a circle: who you are
+						    talking to reads before the name does. */}
 						<ShopAvatar
 							name={title}
-							logo={
-								shop && !isViewerShopSide(item, user.id)
-									? null
-									: (other?.avatar?.url ?? null)
-							}
-							size={50}
+							logo={avatarUri}
+							size={52}
+							radius={talksToShop ? 14 : 26}
 						/>
-						{unread && !isOnline && <View style={styles.unreadDot} />}
-						{isOnline && (
-							<View style={[styles.onlineDot, { borderColor: cardBg }]} />
-						)}
+						{isOnline && !talksToShop ? (
+							<View
+								style={[
+									styles.onlineDot,
+									{ backgroundColor: C.success, borderColor: C.card },
+								]}
+							/>
+						) : null}
 					</View>
 
-					{/* Content */}
 					<View style={styles.convContent}>
 						<View style={styles.convTop}>
 							<View style={styles.convNameRow}>
@@ -381,10 +468,10 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 									style={[
 										styles.convName,
 										{
-											color: textColor,
+											color: C.foreground,
 											fontFamily: unread
 												? Fonts.displayBold
-												: Fonts.displayMedium,
+												: Fonts.displaySemibold,
 										},
 									]}
 									numberOfLines={1}
@@ -395,52 +482,68 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 									<View
 										style={[
 											styles.shopChip,
-											{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+											{ backgroundColor: C.primaryTint },
 										]}
 									>
 										<Text
-											style={[styles.shopChipText, { color: primaryColor }]}
+											style={[styles.shopChipText, { color: unreadAccent }]}
 										>
 											{t("messages.shopChip")}
 										</Text>
 									</View>
 								) : null}
 							</View>
-							<Text style={[styles.convTime, { color: mutedColor }]}>
-								{item.updatedAt ? formatTime(item.updatedAt) : ""}
+							<Text
+								style={[
+									styles.convTime,
+									unread
+										? { color: unreadAccent, fontFamily: Fonts.bodyBold }
+										: { color: C.mutedForeground },
+								]}
+							>
+								{time}
 							</Text>
 						</View>
 						{context ? (
 							<Text
-								style={[styles.convContext, { color: mutedColor }]}
+								style={[styles.convContext, { color: C.mutedForeground }]}
 								numberOfLines={1}
 							>
 								{context}
 							</Text>
 						) : null}
-						<Text
-							style={[
-								styles.convLastMsg,
-								{
-									color: unread ? textColor : mutedColor,
-									fontFamily: unread ? Fonts.bodySemibold : Fonts.body,
-								},
-							]}
-							numberOfLines={1}
-						>
-							{lastMsg?.content ?? t("messages.noMessages")}
-						</Text>
+						<View style={styles.convBottom}>
+							<Text
+								style={[
+									styles.convLastMsg,
+									{
+										color: unread ? C.foreground : C.mutedForeground,
+										fontFamily: unread ? Fonts.bodySemibold : Fonts.body,
+									},
+								]}
+								numberOfLines={1}
+							>
+								{preview}
+							</Text>
+							{unread ? (
+								<View style={[styles.unreadBadge, { backgroundColor: FILLED }]}>
+									<Text style={styles.unreadBadgeText}>
+										{count > 99 ? "99+" : count}
+									</Text>
+								</View>
+							) : null}
+						</View>
 					</View>
 
-					{unread ? (
-						<View
-							style={[styles.unreadBadge, { backgroundColor: primaryColor }]}
-						>
-							<Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>
-						</View>
-					) : (
-						<Ionicons name="chevron-forward" size={16} color={mutedColor} />
-					)}
+					{thumbUri ? (
+						<Image
+							source={{ uri: thumbUri }}
+							style={[styles.thumb, { backgroundColor: C.well }]}
+							contentFit="cover"
+							recyclingKey={thumbUri}
+							accessible={false}
+						/>
+					) : null}
 				</Pressable>
 			</ReanimatedSwipeable>
 		);
@@ -449,69 +552,18 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: C.background }]}
 		>
-			{/* Header */}
-			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Text style={[styles.headerTitle, { color: textColor }]}>
-					{t("messages.title")}
-				</Text>
-				<View style={styles.headerActions}>
-					{unreadCount > 0 && (
-						<Pressable
-							onPress={handleMarkAllRead}
-							disabled={markingAllRead}
-							style={[
-								styles.markReadBtn,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-							]}
-						>
-							{markingAllRead ? (
-								<ActivityIndicator size="small" color={primaryColor} />
-							) : (
-								<>
-									<Ionicons
-										name="checkmark-done-outline"
-										size={16}
-										color={primaryColor}
-									/>
-									<Text style={[styles.markReadText, { color: primaryColor }]}>
-										{t("messages.markAllRead")}
-									</Text>
-								</>
-							)}
-						</Pressable>
-					)}
-					{conversations.length > 0 && (
-						<View
-							style={[
-								styles.countBadge,
-								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-							]}
-						>
-							<Text
-								style={{
-									color: primaryColor,
-									fontSize: 12,
-									fontFamily: Fonts.displayBold,
-								}}
-							>
-								{conversations.length}
-							</Text>
-						</View>
-					)}
-				</View>
-			</View>
+			{header}
 
-			{/* Search bar */}
 			<SearchBar
 				value={search}
 				onChangeText={setSearch}
 				placeholder={t("messages.searchPlaceholder")}
 			/>
 
-			{/* Filter pills */}
-			<View style={[styles.filterRow, { backgroundColor: bg }]}>
+			{/* Filters */}
+			<View style={styles.filterRow}>
 				{(["all", "unread", "orders"] as FilterTab[]).map((tab) => {
 					const active = filter === tab;
 					const label =
@@ -520,32 +572,31 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 							: tab === "orders"
 								? t("messages.filterOrders")
 								: unreadCount > 0
-									? t("messages.unreadWithCount").replace(
-											"{{count}}",
-											String(unreadCount),
-										)
+									? t("messages.unreadWithCount", { count: unreadCount })
 									: t("messages.unread");
 					return (
 						<Pressable
 							key={tab}
 							onPress={() => setFilter(tab)}
+							accessibilityRole="button"
+							accessibilityState={{ selected: active }}
+							hitSlop={{ top: 6, bottom: 6 }}
 							style={[
 								styles.filterPill,
-								{
-									backgroundColor: active
-										? primaryColor
-										: isDark
-											? "#1e293b"
-											: "#f1f5f9",
-								},
+								active
+									? {
+											backgroundColor: C.primaryFill,
+											borderColor: C.primaryFill,
+										}
+									: { backgroundColor: C.card, borderColor: C.border },
 							]}
 						>
 							<Text
 								style={[
 									styles.filterPillText,
 									{
-										color: active ? "#fff" : mutedColor,
-										fontFamily: active ? Fonts.displayBold : Fonts.body,
+										color: active ? "#ffffff" : bodyText,
+										fontFamily: active ? Fonts.bodyBold : Fonts.bodySemibold,
 									},
 								]}
 							>
@@ -558,10 +609,25 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 
 			{/* List */}
 			{isLoading ? (
-				[...Array(7)].map((_, i) => <SkeletonConversationRow key={i} />)
+				<View
+					accessibilityLabel={t("common.loading")}
+					accessibilityState={{ busy: true }}
+				>
+					{[...Array(7)].map((_, i) => (
+						<SkeletonConversationRow key={i} />
+					))}
+				</View>
+			) : isError && conversations.length === 0 ? (
+				<EmptyState
+					icon="cloud-offline-outline"
+					title={t("home.errorTitle")}
+					subtitle={t("home.errorSub")}
+					ctaLabel={t("common.retry")}
+					onCta={() => refetch()}
+				/>
 			) : filtered.length === 0 ? (
 				<EmptyState
-					icon="chatbubbles-outline"
+					illustration={search ? "searching" : "messages"}
 					title={
 						search
 							? t("search.noResults")
@@ -571,10 +637,7 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 					}
 					subtitle={
 						search
-							? t("messages.noConversationsForSearch").replace(
-									"{{query}}",
-									search,
-								)
+							? t("messages.noConversationsForSearch", { query: search })
 							: filter === "unread"
 								? t("messages.allRead")
 								: t("messages.contactSeller")
@@ -596,14 +659,22 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 					renderItem={renderConversation}
 					extraData={selectedId}
 					keyExtractor={(item) => item.id}
-					contentContainerStyle={centeredContent}
+					contentContainerStyle={[styles.listContent, centeredContent]}
+					ItemSeparatorComponent={() => (
+						<View style={{ backgroundColor: C.card }}>
+							<View style={[styles.separator, { backgroundColor: C.border }]} />
+						</View>
+					)}
 					refreshControl={
 						<RefreshControl
 							refreshing={refreshing}
 							onRefresh={onRefresh}
-							tintColor={primaryColor}
+							tintColor={C.primary}
+							colors={[C.primary]}
 						/>
 					}
+					keyboardDismissMode="on-drag"
+					keyboardShouldPersistTaps="handled"
 					showsVerticalScrollIndicator={false}
 				/>
 			)}
@@ -613,127 +684,109 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	noUserHeader: {
+	header: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
 		paddingHorizontal: 16,
-		paddingTop: 6,
-		paddingBottom: 14,
+		paddingTop: 12,
+		paddingBottom: 8,
+		minHeight: 60,
 	},
-	msgIconWrap: {
-		width: 44,
-		height: 44,
-		borderRadius: 14,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	contentWrap: {
+	headerTitle: {
 		flex: 1,
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		overflow: "hidden",
+		fontSize: 30,
+		lineHeight: 34,
+		letterSpacing: -0.8,
+		fontFamily: Fonts.displayExtrabold,
 	},
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 16,
-		borderBottomWidth: 1,
-	},
-	headerTitle: { fontSize: 24, fontFamily: Fonts.displayExtrabold, flex: 1 },
-	headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
 	markReadBtn: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
-		borderRadius: 10,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
+		gap: 6,
+		minHeight: 44,
+		paddingHorizontal: 4,
 	},
-	markReadText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	countBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+	markReadText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	filterRow: {
 		flexDirection: "row",
 		paddingHorizontal: 16,
+		paddingTop: 2,
 		paddingBottom: 12,
 		gap: 8,
 	},
 	filterPill: {
-		paddingVertical: 7,
+		minHeight: 36,
+		justifyContent: "center",
 		paddingHorizontal: 16,
-		borderRadius: 20,
+		borderRadius: 18,
+		borderWidth: StyleSheet.hairlineWidth,
 	},
-	filterPillText: { fontSize: 13 },
+	filterPillText: { fontSize: 14 },
+	listContent: { paddingBottom: 24 },
 	convItem: {
 		flexDirection: "row",
 		alignItems: "center",
+		gap: 12,
 		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
+		paddingVertical: 12,
+		minHeight: 76,
 	},
-	avatarContainer: { position: "relative", marginRight: 12 },
-	unreadDot: {
-		position: "absolute",
-		bottom: 1,
-		right: 1,
-		width: 14,
-		height: 14,
-		borderRadius: 7,
-		backgroundColor: "#dc2626",
-		borderWidth: 2,
-		borderColor: "white",
+	separator: {
+		height: StyleSheet.hairlineWidth,
+		marginLeft: SEPARATOR_INSET,
 	},
+	avatarContainer: { position: "relative" },
 	onlineDot: {
 		position: "absolute",
-		bottom: 1,
-		right: 1,
+		bottom: 0,
+		right: 0,
 		width: 14,
 		height: 14,
 		borderRadius: 7,
-		backgroundColor: "#22c55e",
 		borderWidth: 2,
 	},
-	convContent: { flex: 1 },
+	convContent: { flex: 1, gap: 2 },
 	convTop: {
 		flexDirection: "row",
-		justifyContent: "space-between",
-		marginBottom: 2,
+		alignItems: "baseline",
+		gap: 8,
 	},
 	convNameRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
-	convName: { fontSize: 15, flexShrink: 1, fontFamily: Fonts.displayMedium },
+	convName: { fontSize: 16, lineHeight: 21, flexShrink: 1 },
 	shopChip: {
-		borderRadius: 4,
+		borderRadius: 6,
 		paddingHorizontal: 6,
 		paddingVertical: 2,
 	},
-	shopChipText: { fontSize: 10, fontFamily: Fonts.bodySemibold },
+	shopChipText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 	convTime: { fontSize: 12, fontFamily: Fonts.body },
-	convContext: { fontSize: 12, fontFamily: Fonts.body, marginBottom: 2 },
-	convLastMsg: { fontSize: 13, fontFamily: Fonts.body },
+	convContext: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	convBottom: { flexDirection: "row", alignItems: "center", gap: 8 },
+	convLastMsg: { flex: 1, fontSize: 14, lineHeight: 19 },
 	unreadBadge: {
-		minWidth: 20,
-		height: 20,
-		borderRadius: 10,
+		minWidth: 22,
+		height: 22,
+		borderRadius: 11,
 		alignItems: "center",
 		justifyContent: "center",
-		paddingHorizontal: 5,
+		paddingHorizontal: 6,
 	},
 	unreadBadgeText: {
-		color: "#fff",
-		fontSize: 11,
+		color: "#ffffff",
+		fontSize: 12,
 		fontFamily: Fonts.displayBold,
 	},
+	thumb: { width: 48, height: 48, borderRadius: 10 },
 	deleteAction: {
-		backgroundColor: "#dc2626",
 		justifyContent: "center",
 		alignItems: "center",
-		width: 80,
+		width: 88,
 		gap: 4,
 	},
 	deleteActionText: {
-		color: "#fff",
-		fontSize: 11,
+		color: "#ffffff",
+		fontSize: 12,
 		fontFamily: Fonts.bodySemibold,
 	},
 });

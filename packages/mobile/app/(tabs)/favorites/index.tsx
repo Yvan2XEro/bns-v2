@@ -6,6 +6,7 @@ import {
 	FlatList,
 	Pressable,
 	RefreshControl,
+	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
@@ -19,7 +20,7 @@ import Animated, {
 	useSharedValue,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
@@ -31,9 +32,6 @@ import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<any[]>);
-
-// Height of the expanded title row (icon 44 + gap between rows ~16)
-const EXPANDED_ROW_H = 60;
 
 const SORTS = [
 	{ key: "recent", labelKey: "favorites.sortRecent", icon: "time-outline" },
@@ -52,6 +50,9 @@ const SORTS = [
 
 type SortKey = (typeof SORTS)[number]["key"];
 
+/** A favourite carries its listing, or is the listing (optimistic rows). */
+const getListing = (fav: any) => fav.listing ?? fav;
+
 export default function FavoritesScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
@@ -64,62 +65,23 @@ export default function FavoritesScreen() {
 	const [refreshing, setRefreshing] = React.useState(false);
 
 	// ── Colors ──────────────────────────────────────────────────────
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
-	const inputBg = isDark ? "#162032" : "#f1f5f9";
+	const c = Colors[isDark ? "dark" : "light"];
 
 	// ── Scroll ──────────────────────────────────────────────────────
+	// The large title stays put; once the grid slides under the header a
+	// hairline draws the edge, the way a native large-title bar does.
 	const scrollY = useSharedValue(0);
 	const scrollHandler = useAnimatedScrollHandler({
 		onScroll: (e) => {
 			scrollY.value = e.contentOffset.y;
 		},
 	});
-
-	// Expanded row shrinks from EXPANDED_ROW_H → 0
-	const expandedRowStyle = useAnimatedStyle(() => ({
-		height: interpolate(
-			scrollY.value,
-			[0, EXPANDED_ROW_H],
-			[EXPANDED_ROW_H, 0],
-			Extrapolation.CLAMP,
-		),
-		opacity: interpolate(
-			scrollY.value,
-			[0, EXPANDED_ROW_H * 0.6],
-			[1, 0],
-			Extrapolation.CLAMP,
-		),
-		overflow: "hidden",
-	}));
-
-	// Compact bar fades in once expanded row is mostly gone
-	const compactStyle = useAnimatedStyle(() => ({
-		opacity: interpolate(
-			scrollY.value,
-			[EXPANDED_ROW_H * 0.5, EXPANDED_ROW_H],
-			[0, 1],
-			Extrapolation.CLAMP,
-		),
-		transform: [
-			{
-				translateY: interpolate(
-					scrollY.value,
-					[EXPANDED_ROW_H * 0.5, EXPANDED_ROW_H],
-					[6, 0],
-					Extrapolation.CLAMP,
-				),
-			},
-		],
+	const edgeStyle = useAnimatedStyle(() => ({
+		opacity: interpolate(scrollY.value, [0, 12], [0, 1], Extrapolation.CLAMP),
 	}));
 
 	// ── Data ────────────────────────────────────────────────────────
-	const { favorites, isLoading, refetch, toggleFavorite } =
+	const { favorites, isLoading, isError, refetch, toggleFavorite } =
 		useFavoriteActions();
 
 	const onRefresh = async () => {
@@ -127,8 +89,6 @@ export default function FavoritesScreen() {
 		await refetch();
 		setRefreshing(false);
 	};
-
-	const getListing = (fav: any) => fav.listing ?? fav;
 
 	const filtered = useMemo(() => {
 		let list = [...favorites];
@@ -148,72 +108,77 @@ export default function FavoritesScreen() {
 			return 0;
 		});
 		return list;
-	}, [favorites, query, sortKey, getListing]);
+	}, [favorites, query, sortKey]);
 
 	const pairs = chunkIntoRows(filtered, columns);
+
+	const title = (
+		<Text
+			accessibilityRole="header"
+			style={[styles.pageTitle, { color: c.foreground }]}
+			numberOfLines={1}
+		>
+			{t("favorites.title")}
+		</Text>
+	);
 
 	// ── Not logged in ───────────────────────────────────────────────
 	if (!user) {
 		return (
 			<SafeAreaView
 				edges={["top"]}
-				style={[styles.safe, { backgroundColor: accentBg }]}
+				style={[styles.safe, { backgroundColor: c.background }]}
 			>
-				<View style={[styles.noUserHeader, { backgroundColor: accentBg }]}>
-					<View style={[styles.heartIconWrap, { backgroundColor: "#fee2e2" }]}>
-						<Ionicons name="heart" size={22} color="#ef4444" />
-					</View>
-					<Text style={[styles.pageTitle, { color: textColor }]}>
-						{t("favorites.title")}
-					</Text>
-				</View>
-				<View style={[styles.contentWrap, { backgroundColor: bg }]}>
-					<EmptyState
-						icon="heart-outline"
-						title={t("favorites.signIn")}
-						subtitle={t("favorites.signInSub")}
-						ctaLabel={t("auth.login")}
-						onCta={() =>
-							router.push({
-								pathname: "/auth/login",
-								params: getAuthModalParams(pathname),
-							})
-						}
-					/>
-				</View>
+				<View style={styles.titleRow}>{title}</View>
+				<EmptyState
+					icon="heart-outline"
+					title={t("favorites.signIn")}
+					subtitle={t("favorites.signInSub")}
+					ctaLabel={t("auth.login")}
+					onCta={() =>
+						router.push({
+							pathname: "/auth/login",
+							params: getAuthModalParams(pathname),
+						})
+					}
+				/>
 			</SafeAreaView>
 		);
 	}
 
 	const hasToolbar = !isLoading && favorites.length > 0;
+	const countLine =
+		favorites.length > 0
+			? filtered.length !== favorites.length
+				? `${filtered.length} / ${t("favorites.listingCount", { count: favorites.length })}`
+				: t("favorites.listingsSaved", { count: favorites.length })
+			: null;
 
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: accentBg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			{/* ══ Header ══ */}
-			<View style={[styles.headerWrap, { backgroundColor: accentBg }]}>
-				{/* Expanded row — collapses on scroll */}
-				<Animated.View style={[styles.expandedRow, expandedRowStyle]}>
-					<View style={[styles.heartIconWrap, { backgroundColor: "#fee2e2" }]}>
-						<Ionicons name="heart" size={22} color="#ef4444" />
-					</View>
-					<View style={{ flex: 1 }}>
-						<Text style={[styles.pageTitle, { color: textColor }]}>
-							Favoris
-						</Text>
-						{favorites.length > 0 && (
-							<Text style={[styles.expandedCount, { color: mutedColor }]}>
-								{filtered.length !== favorites.length
-									? `${filtered.length} / ${t("favorites.listingCount", { count: favorites.length })}`
-									: t("favorites.listingsSaved", { count: favorites.length })}
+			{/* ══ Header: large title on the ground, then the tools ══ */}
+			<View style={styles.header}>
+				<View style={styles.titleRow}>
+					<View style={styles.titleText}>
+						{title}
+						{countLine ? (
+							<Text style={[styles.count, { color: c.mutedForeground }]}>
+								{countLine}
 							</Text>
-						)}
+						) : null}
 					</View>
 					<Pressable
 						onPress={() => router.push("/(tabs)/account")}
-						style={[styles.avatarBtn, { backgroundColor: cardBg, borderColor }]}
+						accessibilityRole="button"
+						accessibilityLabel={t("account.myAccount")}
+						hitSlop={4}
+						style={[
+							styles.avatarBtn,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
 					>
 						{(user as any)?.avatar?.url ? (
 							<Image
@@ -222,112 +187,93 @@ export default function FavoritesScreen() {
 								contentFit="cover"
 							/>
 						) : (
-							<Ionicons name="person" size={18} color={mutedColor} />
+							<Ionicons name="person" size={18} color={c.mutedForeground} />
 						)}
 					</Pressable>
-				</Animated.View>
+				</View>
 
-				{/* Compact bar — appears on scroll */}
-				<Animated.View
-					style={[styles.compactBar, compactStyle]}
-					pointerEvents="none"
-				>
-					<Ionicons name="heart" size={14} color="#ef4444" />
-					<Text style={[styles.compactTitle, { color: textColor }]}>
-						Favoris
-					</Text>
-					{favorites.length > 0 && (
-						<View
-							style={[styles.compactBadge, { backgroundColor: primaryColor }]}
-						>
-							<Text style={styles.compactBadgeText}>{filtered.length}</Text>
-						</View>
-					)}
-				</Animated.View>
-
-				{/* Search bar — always visible */}
-				<View style={styles.searchWrap}>
-					<View
-						style={[
-							styles.searchBar,
-							{
-								backgroundColor: cardBg,
-								borderColor: query.length > 0 ? primaryColor : borderColor,
-								shadowColor: primaryColor,
-								shadowOpacity: query.length > 0 ? 0.18 : 0,
-							},
-						]}
-					>
+				{hasToolbar ? (
+					<View style={styles.searchWrap}>
 						<View
 							style={[
-								styles.searchIconBubble,
+								styles.searchBar,
 								{
-									backgroundColor:
-										query.length > 0
-											? primaryColor
-											: isDark
-												? "#1e3a5f"
-												: "#dbeafe",
+									backgroundColor: c.card,
+									borderColor: query.length > 0 ? c.primary : c.borderStrong,
 								},
 							]}
 						>
-							<Ionicons
-								name="search"
-								size={14}
-								color={query.length > 0 ? "#fff" : primaryColor}
+							<Ionicons name="search" size={18} color={c.mutedForeground} />
+							<TextInput
+								value={query}
+								onChangeText={setQuery}
+								placeholder={t("favorites.searchPlaceholder")}
+								placeholderTextColor={c.mutedForeground}
+								accessibilityLabel={t("favorites.searchPlaceholder")}
+								selectionColor={c.primary}
+								returnKeyType="search"
+								style={[styles.searchInput, { color: c.foreground }]}
 							/>
-						</View>
-						<TextInput
-							value={query}
-							onChangeText={setQuery}
-							placeholder={t("favorites.searchPlaceholder")}
-							placeholderTextColor={mutedColor}
-							style={[styles.searchInput, { color: textColor }]}
-						/>
-						{query.length > 0 && (
-							<Pressable onPress={() => setQuery("")} hitSlop={10}>
-								<View
-									style={[
-										styles.clearBubble,
-										{ backgroundColor: isDark ? "#334155" : "#e2e8f0" },
-									]}
+							{query.length > 0 ? (
+								<Pressable
+									onPress={() => setQuery("")}
+									hitSlop={14}
+									accessibilityRole="button"
+									accessibilityLabel={t("favorites.clear")}
 								>
-									<Ionicons name="close" size={11} color={mutedColor} />
-								</View>
-							</Pressable>
-						)}
+									<View
+										style={[
+											styles.clearBubble,
+											{ backgroundColor: c.borderStrong },
+										]}
+									>
+										<Ionicons name="close" size={12} color={c.foreground} />
+									</View>
+								</Pressable>
+							) : null}
+						</View>
 					</View>
-				</View>
-			</View>
+				) : null}
 
-			{/* ══ Content ══ */}
-			<View style={[styles.contentWrap, { backgroundColor: bg }]}>
-				{/* Sort pills */}
-				{hasToolbar && (
-					<View style={[styles.sortRow, { borderBottomColor: borderColor }]}>
+				{hasToolbar ? (
+					<ScrollView
+						horizontal
+						showsHorizontalScrollIndicator={false}
+						style={styles.sortScroll}
+						contentContainerStyle={styles.sortRow}
+						accessibilityRole="radiogroup"
+					>
 						{SORTS.map((s) => {
 							const active = sortKey === s.key;
 							return (
 								<Pressable
 									key={s.key}
 									onPress={() => setSortKey(s.key)}
+									accessibilityRole="radio"
+									accessibilityState={{ checked: active }}
+									hitSlop={{ top: 4, bottom: 4 }}
 									style={[
 										styles.sortPill,
-										{
-											backgroundColor: active ? primaryColor : inputBg,
-											borderColor: active ? primaryColor : borderColor,
-										},
+										active
+											? {
+													backgroundColor: c.primaryFill,
+													borderColor: c.primaryFill,
+												}
+											: {
+													backgroundColor: c.card,
+													borderColor: c.borderStrong,
+												},
 									]}
 								>
 									<Ionicons
-										name={s.icon as any}
-										size={11}
-										color={active ? "#fff" : mutedColor}
+										name={s.icon}
+										size={14}
+										color={active ? "#ffffff" : c.mutedForeground}
 									/>
 									<Text
 										style={[
 											styles.sortPillText,
-											{ color: active ? "#fff" : mutedColor },
+											{ color: active ? "#ffffff" : c.foreground },
 										]}
 									>
 										{t(s.labelKey)}
@@ -335,79 +281,107 @@ export default function FavoritesScreen() {
 								</Pressable>
 							);
 						})}
-					</View>
-				)}
+					</ScrollView>
+				) : null}
 
-				{/* List */}
-				{isLoading ? (
-					<View style={styles.skeletonGrid}>
-						{Array.from({ length: columns * 3 }).map((_, i) => (
-							<SkeletonCard key={i} cardWidth={cardWidth} />
-						))}
-					</View>
-				) : favorites.length === 0 ? (
-					<EmptyState
-						icon="heart-outline"
-						title={t("favorites.noFavorites")}
-						subtitle={t("favorites.noFavoritesSub")}
-						ctaLabel={t("favorites.browse")}
-						onCta={() => router.push("/(tabs)/home")}
-					/>
-				) : filtered.length === 0 ? (
-					<View style={styles.noResultWrap}>
-						<Ionicons
-							name="search-outline"
-							size={40}
-							color={mutedColor}
-							style={{ marginBottom: 12 }}
-						/>
-						<Text style={[styles.noResultTitle, { color: textColor }]}>
-							{t("favorites.noResults")}
-						</Text>
-						<Text style={[styles.noResultSub, { color: mutedColor }]}>
-							{t("favorites.noResultsFor", { query })}
-						</Text>
-						<Pressable
-							onPress={() => setQuery("")}
-							style={[styles.clearBtn, { borderColor: primaryColor }]}
-						>
-							<Text style={[styles.clearBtnText, { color: primaryColor }]}>
-								{t("favorites.clear")}
-							</Text>
-						</Pressable>
-					</View>
-				) : (
-					<AnimatedFlatList
-						data={pairs}
-						renderItem={({ item }: { item: any[] }) => (
-							<View style={styles.row}>
-								{item.map((fav: any) => (
-									<ListingCard
-										key={fav.id}
-										listing={getListing(fav)}
-										width={cardWidth}
-										isFavorite
-										onToggleFavorite={() => toggleFavorite(getListing(fav))}
-										onPress={(id) => router.push(`/listing/${id}`)}
-									/>
-								))}
-							</View>
-						)}
-						keyExtractor={(row: any[]) => row.map((fav) => fav.id).join("|")}
-						contentContainerStyle={styles.list}
-						onScroll={scrollHandler}
-						scrollEventThrottle={16}
-						showsVerticalScrollIndicator={false}
-						refreshControl={
-							<RefreshControl
-								refreshing={refreshing}
-								onRefresh={onRefresh}
-								tintColor={primaryColor}
-							/>
-						}
-					/>
-				)}
+				<Animated.View
+					pointerEvents="none"
+					style={[styles.edge, { backgroundColor: c.border }, edgeStyle]}
+				/>
 			</View>
+
+			{/* ══ Content ══ */}
+			{isLoading ? (
+				<View
+					style={styles.skeletonGrid}
+					accessible
+					accessibilityRole="progressbar"
+					accessibilityLabel={t("common.loading")}
+				>
+					{Array.from({ length: columns * 3 }).map((_, i) => (
+						<SkeletonCard key={i} cardWidth={cardWidth} />
+					))}
+				</View>
+			) : isError && favorites.length === 0 ? (
+				<EmptyState
+					icon="alert-circle-outline"
+					title={t("common.error")}
+					subtitle={t("home.errorSub")}
+					ctaLabel={t("common.retry")}
+					onCta={() => void refetch()}
+				/>
+			) : favorites.length === 0 ? (
+				<EmptyState
+					icon="heart-outline"
+					title={t("favorites.noFavorites")}
+					subtitle={t("favorites.noFavoritesSub")}
+					ctaLabel={t("favorites.browse")}
+					onCta={() => router.push("/(tabs)/home")}
+				/>
+			) : filtered.length === 0 ? (
+				<View style={styles.noResultWrap}>
+					<Ionicons
+						name="search-outline"
+						size={40}
+						color={c.mutedForeground}
+						style={styles.noResultIcon}
+					/>
+					<Text
+						accessibilityRole="header"
+						style={[styles.noResultTitle, { color: c.foreground }]}
+					>
+						{t("favorites.noResults")}
+					</Text>
+					<Text style={[styles.noResultSub, { color: c.mutedForeground }]}>
+						{t("favorites.noResultsFor", { query })}
+					</Text>
+					<Pressable
+						onPress={() => setQuery("")}
+						accessibilityRole="button"
+						style={[
+							styles.clearBtn,
+							{ borderColor: c.borderStrong, backgroundColor: c.card },
+						]}
+					>
+						<Text style={[styles.clearBtnText, { color: c.link }]}>
+							{t("favorites.clear")}
+						</Text>
+					</Pressable>
+				</View>
+			) : (
+				<AnimatedFlatList
+					data={pairs}
+					renderItem={({ item }: { item: any[] }) => (
+						<View style={styles.row}>
+							{item.map((fav: any) => (
+								<ListingCard
+									key={fav.id}
+									listing={getListing(fav)}
+									width={cardWidth}
+									isFavorite
+									onToggleFavorite={() => toggleFavorite(getListing(fav))}
+									onPress={(id) => router.push(`/listing/${id}`)}
+								/>
+							))}
+						</View>
+					)}
+					keyExtractor={(row: any[]) => row.map((fav) => fav.id).join("|")}
+					contentContainerStyle={styles.list}
+					onScroll={scrollHandler}
+					scrollEventThrottle={16}
+					keyboardDismissMode="on-drag"
+					keyboardShouldPersistTaps="handled"
+					showsVerticalScrollIndicator={false}
+					refreshControl={
+						<RefreshControl
+							refreshing={refreshing}
+							onRefresh={onRefresh}
+							tintColor={c.primary}
+							colors={[c.primary]}
+						/>
+					}
+				/>
+			)}
 		</SafeAreaView>
 	);
 }
@@ -416,150 +390,91 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 
 	/* ── Header ── */
-	headerWrap: {
-		paddingHorizontal: 16,
-		paddingTop: 6,
-		paddingBottom: 12,
-		gap: 12,
-		zIndex: 10,
-	},
-	noUserHeader: {
+	header: { gap: 12, paddingBottom: 12 },
+	// Tab roots share the h1 large title (30/34), like Account and Search.
+	titleRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
+		minHeight: 52,
 		paddingHorizontal: 16,
-		paddingTop: 6,
-		paddingBottom: 14,
+		paddingTop: 8,
 	},
-
-	/* Expanded row */
-	expandedRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 12,
-	},
-	heartIconWrap: {
-		width: 44,
-		height: 44,
-		borderRadius: 14,
-		alignItems: "center",
-		justifyContent: "center",
-		flexShrink: 0,
-	},
+	titleText: { flex: 1 },
 	pageTitle: {
-		fontSize: 24,
+		fontSize: 30,
+		lineHeight: 34,
+		letterSpacing: -0.8,
 		fontFamily: Fonts.displayExtrabold,
-		letterSpacing: -0.4,
-		lineHeight: 28,
 	},
-	expandedCount: {
-		fontSize: 12,
+	count: {
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.body,
-		marginTop: 1,
+		marginTop: 2,
 	},
 	avatarBtn: {
-		width: 38,
-		height: 38,
-		borderRadius: 19,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
 		alignItems: "center",
 		justifyContent: "center",
 		borderWidth: 1,
 		overflow: "hidden",
-		flexShrink: 0,
 	},
-	avatar: { width: 38, height: 38 },
-
-	/* Compact bar */
-	compactBar: {
+	avatar: { width: 44, height: 44 },
+	edge: {
 		position: "absolute",
-		left: 16,
-		right: 16,
-		top: 6,
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 6,
-		height: EXPANDED_ROW_H,
-	},
-	compactTitle: {
-		fontSize: 16,
-		fontFamily: Fonts.displayBold,
-	},
-	compactBadge: {
-		borderRadius: 10,
-		paddingHorizontal: 7,
-		paddingVertical: 1,
-		minWidth: 22,
-		alignItems: "center",
-	},
-	compactBadgeText: {
-		color: "#fff",
-		fontSize: 11,
-		fontFamily: Fonts.displayBold,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		height: StyleSheet.hairlineWidth,
 	},
 
 	/* Search bar */
-	searchWrap: {
-		// intentionally no extra padding — gap: 12 in headerWrap handles spacing
-	},
+	searchWrap: { paddingHorizontal: 16 },
 	searchBar: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 9,
-		borderRadius: 16,
-		borderWidth: 1.5,
-		paddingHorizontal: 10,
-		paddingVertical: 9,
-		shadowOffset: { width: 0, height: 3 },
-		shadowRadius: 8,
-		elevation: 0,
+		gap: 10,
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 14,
 	},
-	searchIconBubble: {
-		width: 28,
-		height: 28,
-		borderRadius: 9,
-		alignItems: "center",
-		justifyContent: "center",
-	},
+	// Android's TextInput carries its own vertical padding.
 	searchInput: {
 		flex: 1,
-		fontSize: 14,
+		fontSize: 16,
 		fontFamily: Fonts.body,
+		paddingVertical: 10,
 	},
 	clearBubble: {
-		width: 20,
-		height: 20,
-		borderRadius: 10,
+		width: 22,
+		height: 22,
+		borderRadius: 11,
 		alignItems: "center",
 		justifyContent: "center",
-	},
-
-	/* ── Content ── */
-	contentWrap: {
-		flex: 1,
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		overflow: "hidden",
 	},
 
 	/* Sort row */
+	sortScroll: { flexGrow: 0 },
 	sortRow: {
 		flexDirection: "row",
-		gap: 7,
-		paddingHorizontal: 14,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
+		gap: 8,
+		paddingHorizontal: 16,
 	},
 	sortPill: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
-		borderRadius: 20,
-		borderWidth: 1.5,
-		paddingHorizontal: 10,
-		paddingVertical: 5,
+		gap: 6,
+		minHeight: 40,
+		borderRadius: 999,
+		borderWidth: 1,
+		paddingHorizontal: 14,
 	},
 	sortPillText: {
-		fontSize: 12,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -570,31 +485,33 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		padding: 32,
 	},
+	noResultIcon: { marginBottom: 12 },
 	noResultTitle: {
 		fontSize: 18,
 		fontFamily: Fonts.displayBold,
 		marginBottom: 6,
 	},
 	noResultSub: {
-		fontSize: 13,
+		fontSize: 15,
 		fontFamily: Fonts.body,
 		textAlign: "center",
-		lineHeight: 20,
+		lineHeight: 22,
 		marginBottom: 20,
 	},
 	clearBtn: {
-		borderRadius: 20,
-		borderWidth: 1.5,
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
 		paddingHorizontal: 20,
-		paddingVertical: 8,
+		justifyContent: "center",
 	},
 	clearBtnText: {
-		fontSize: 13,
-		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
 	},
 
 	/* List */
-	list: { padding: 16, gap: 12, paddingBottom: 40 },
+	list: { padding: 16, gap: 16, paddingBottom: 40 },
 	row: { flexDirection: "row", gap: 12 },
 	skeletonGrid: {
 		flexDirection: "row",

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { fillOf } from "./fill";
 
 /** The checkout's two button weights: the step's action, and a quiet one. */
 export function CheckoutButton({
@@ -29,6 +30,7 @@ export function CheckoutButton({
 	style?: ViewStyle;
 }) {
 	const c = useShopTheme();
+	const fill = fillOf(c);
 	const primary = variant === "primary";
 	const inactive = disabled || loading;
 
@@ -39,23 +41,28 @@ export function CheckoutButton({
 			accessibilityRole="button"
 			accessibilityLabel={label}
 			accessibilityState={{ disabled: inactive, busy: loading }}
-			style={[
+			style={({ pressed }) => [
 				styles.button,
 				primary
-					? { backgroundColor: c.primary }
+					? { backgroundColor: fill.bg }
 					: { borderColor: c.border, borderWidth: 1, backgroundColor: c.card },
-				{ opacity: disabled ? 0.5 : 1 },
+				{ opacity: disabled ? 0.45 : pressed ? 0.85 : 1 },
+				pressed && !inactive ? styles.pressed : null,
 				style,
 			]}
 		>
 			{loading ? (
-				<ActivityIndicator color={primary ? "#fff" : c.primary} />
+				<ActivityIndicator color={primary ? fill.fg : c.primary} />
 			) : (
 				<>
 					{icon ? (
-						<Ionicons name={icon} size={18} color={primary ? "#fff" : c.text} />
+						<Ionicons
+							name={icon}
+							size={18}
+							color={primary ? fill.fg : c.text}
+						/>
 					) : null}
-					<Text style={[styles.text, { color: primary ? "#fff" : c.text }]}>
+					<Text style={[styles.text, { color: primary ? fill.fg : c.text }]}>
 						{label}
 					</Text>
 				</>
@@ -67,12 +74,19 @@ export function CheckoutButton({
 const styles = StyleSheet.create({
 	button: {
 		minHeight: 52,
-		borderRadius: 14,
+		borderRadius: 12,
 		paddingHorizontal: 16,
+		paddingVertical: 10,
 		flexDirection: "row",
 		gap: 8,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	text: { fontSize: 16, fontFamily: Fonts.displayBold },
+	pressed: { transform: [{ scale: 0.98 }] },
+	text: {
+		fontSize: 16,
+		fontFamily: Fonts.bodyBold,
+		flexShrink: 1,
+		textAlign: "center",
+	},
 });

@@ -1,4 +1,6 @@
 import { Text } from "react-native";
+import { dangerInk } from "@/src/components/shop/ink";
+import { useShopTheme } from "@/src/components/shop/theme";
 import { type FieldIssue, issueMessage } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import { formStyles as f } from "./formStyles";
@@ -6,12 +8,13 @@ import { formStyles as f } from "./formStyles";
 /** The message under a field the server would refuse; nothing when it is fine. */
 export function FieldIssueText({ issue }: { issue: FieldIssue | undefined }) {
 	const { t } = useTranslation();
+	const c = useShopTheme();
 	if (!issue) return null;
 	return (
-		<Text style={f.error} accessibilityRole="alert">
+		<Text style={[f.error, { color: dangerInk(c) }]} accessibilityRole="alert">
 			{issueMessage(t, issue)}
 		</Text>
 	);
 }
 
-export const ISSUE_BORDER = "#dc2626";
+export const ISSUE_BORDER = "#d23a2e";

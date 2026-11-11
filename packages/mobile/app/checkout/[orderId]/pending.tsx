@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -6,15 +7,21 @@ import {
 	Linking,
 	Pressable,
 	ScrollView,
+	StyleSheet,
 	Text,
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
+import { FormError } from "@/src/components/checkout/FormError";
+import { inkOf } from "@/src/components/checkout/fill";
+import { TotalTag } from "@/src/components/checkout/TotalTag";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	useCreatePaymentIntent,
 	usePaymentStatus,
@@ -23,6 +30,7 @@ import { useCancelOrder } from "@/src/hooks/useOrderActions";
 import { usePurchase } from "@/src/hooks/usePurchases";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { newIdempotencyKey } from "@/src/lib/checkoutFlow";
+import { hapticOutcome } from "@/src/lib/haptics";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { availableActions } from "@/src/lib/orderActions";
@@ -68,6 +76,7 @@ export default function CheckoutPendingScreen() {
 	const createIntent = useCreatePaymentIntent(orderId);
 	const purchase = usePurchase(orderId);
 	const cancel = useCancelOrder(orderId);
+	const { confirm, showError } = useAlert();
 
 	const [now, setNow] = useState(() => new Date());
 	useEffect(() => {
@@ -168,12 +177,34 @@ export default function CheckoutPendingScreen() {
 	// stock this order held is freed by the cancellation itself, and the
 	// buyer re-places on their own from the purchases list — no separate
 	// COD-conversion transition.
+	// It cancels the order, so it is asked first, and a refusal is said.
 	const payOnDelivery = async () => {
-		await cancel.mutateAsync({ reason: "buyer_changed_mind" });
-		router.replace("/purchases");
+		const ok = await confirm(
+			t("purchases.cancelConfirm"),
+			t("purchases.payOnDeliveryConfirmBody"),
+			{
+				confirmText: t("purchases.cancelSubmit"),
+				destructive: true,
+			},
+		);
+		if (!ok) return;
+		try {
+			await cancel.mutateAsync({ reason: "buyer_changed_mind" });
+			router.replace("/purchases");
+		} catch (error) {
+			showError(t("payments.pay_payOnDelivery"), resolveErrorMessage(error, t));
+		}
 	};
 
 	const phase = status.data ? pendingPhaseOf(status.data, now) : "checking";
+
+	// The money went through: felt once, when the screen sees it happen.
+	const announcedRef = useRef(false);
+	useEffect(() => {
+		if (phase !== "succeeded" || announcedRef.current) return;
+		announcedRef.current = true;
+		hapticOutcome("success");
+	}, [phase]);
 	const resendSeconds = resendSecondsLeft(attemptStartedAtRef.current, now);
 	const canResendNow = resendSeconds === 0 && Boolean(channel && phone);
 
@@ -191,52 +222,90 @@ export default function CheckoutPendingScreen() {
 	const failedCardActions = intent
 		? failedActions(intent.attemptsLeft, offerCod)
 		: [];
+	const canRetry =
+		failedCardActions.includes("retry") && Boolean(channel && phone);
+	const secondsLeft = intent ? secondsUntil(intent.expiresAt, now) : 0;
+	// The last minute is said in the warning ink, not by motion.
+	const closing = secondsLeft > 0 && secondsLeft <= 60;
+	const total = order ? formatPrice(order.amounts.total, i18n.language) : null;
+
+	// The exact amount the operator's prompt will show, to check before typing
+	// the PIN. It stands from the first frame, while the status is still read.
+	const amountBlock = total ? (
+		<View
+			style={styles.amount}
+			accessible
+			accessibilityLabel={t("payments.pending_amount", { amount: total })}
+		>
+			<Text style={[styles.amountLabel, { color: c.body }]}>
+				{t("payments.summary_total")}
+			</Text>
+			<TotalTag size="xl" amount={total} />
+		</View>
+	) : null;
+	const card = [
+		formStyles.card,
+		{ backgroundColor: c.card, borderColor: c.border },
+	];
 
 	return (
-		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
+		<SafeAreaView
+			edges={["top", "bottom"]}
+			style={[styles.flex, { backgroundColor: c.bg }]}
+		>
 			<SellerHeader title={t("payments.pending_title")} onBack={goToOrder} />
 			<ScreenColumn width="reading">
-				<ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+				<ScrollView contentContainerStyle={styles.scroll}>
 					{phase === "checking" ? (
-						<View style={{ alignItems: "center", gap: 12, paddingTop: 24 }}>
-							<ActivityIndicator color={c.primary} />
-							<Text style={[formStyles.label, { color: c.text }]}>
-								{t("payments.pending_checking")}
-							</Text>
+						<View style={card}>
+							{amountBlock}
+							<View
+								style={styles.checking}
+								accessibilityLiveRegion="polite"
+								accessibilityLabel={t("payments.pending_checking")}
+							>
+								<ActivityIndicator color={c.primary} />
+								<Text style={[styles.body, styles.flex, { color: c.body }]}>
+									{t("payments.pending_checking")}
+								</Text>
+							</View>
 						</View>
 					) : null}
 
 					{phase === "pending" && intent ? (
-						<View
-							style={[
-								formStyles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<Text style={[formStyles.sectionTitle, { color: c.text }]}>
-								{t("payments.pending_title")}
-							</Text>
-							<Text style={[formStyles.label, { color: c.primary }]}>
-								{t("payments.pending_expiresIn", {
-									time: formatCountdown(secondsUntil(intent.expiresAt, now)),
-								})}
-							</Text>
-							{purchase.data ? (
-								// The exact amount the operator's prompt will show, to check
-								// before typing the PIN.
-								<Text style={[formStyles.sectionTitle, { color: c.text }]}>
-									{t("payments.pending_amount", {
-										amount: formatPrice(
-											purchase.data.amounts.total,
-											i18n.language,
-										),
+						<View style={card}>
+							{amountBlock}
+							<View
+								style={[
+									styles.timer,
+									{ backgroundColor: closing ? c.warningSoft : c.primarySoft },
+								]}
+							>
+								<Ionicons
+									name="phone-portrait-outline"
+									size={20}
+									color={closing ? c.warningText : inkOf(c)}
+								/>
+								<Text
+									style={[
+										styles.countdown,
+										{ color: closing ? c.warningText : c.text },
+									]}
+									accessibilityRole="timer"
+								>
+									{t("payments.pending_expiresIn", {
+										time: formatCountdown(secondsLeft),
 									})}
 								</Text>
-							) : null}
-							<Text style={[formStyles.label, { color: c.body }]}>
+							</View>
+							<View style={[styles.divider, { backgroundColor: c.border }]} />
+							<Text
+								style={[styles.subhead, { color: c.text }]}
+								accessibilityRole="header"
+							>
 								{t("payments.pending_providerInstructions")}
 							</Text>
-							<Text style={[formStyles.hint, { color: c.body }]}>
+							<Text style={[styles.body, { color: c.body }]}>
 								{instructions ||
 									t(PAYMENT_CHANNEL_INSTRUCTIONS[intent.channel])}
 							</Text>
@@ -255,14 +324,21 @@ export default function CheckoutPendingScreen() {
 							{canResendNow ? (
 								<Pressable
 									onPress={() => void resend()}
+									disabled={createIntent.isPending}
 									accessibilityRole="button"
+									accessibilityState={{ busy: createIntent.isPending }}
+									style={styles.linkTarget}
 								>
-									<Text style={[formStyles.hint, { color: c.primary }]}>
-										{t("payments.pending_noPrompt")}
-									</Text>
+									{createIntent.isPending ? (
+										<ActivityIndicator color={c.primary} />
+									) : (
+										<Text style={[styles.link, { color: inkOf(c) }]}>
+											{t("payments.pending_noPrompt")}
+										</Text>
+									)}
 								</Pressable>
 							) : channel && phone ? (
-								<Text style={[formStyles.hint, { color: c.muted }]}>
+								<Text style={[styles.meta, { color: c.muted }]}>
 									{t("payments.pending_noPromptWait", {
 										time: formatCountdown(resendSeconds),
 									})}
@@ -272,26 +348,33 @@ export default function CheckoutPendingScreen() {
 					) : null}
 
 					{phase === "failed" && intent ? (
-						<View
-							style={[
-								formStyles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<Text style={[formStyles.sectionTitle, { color: c.dangerText }]}>
-								{t("payments.failed_title")}
-							</Text>
+						<View style={card}>
+							<View style={styles.lead}>
+								<View style={[styles.tile, { backgroundColor: c.dangerSoft }]}>
+									<Ionicons
+										name="close-circle"
+										size={22}
+										color={c.dangerText}
+									/>
+								</View>
+								<Text
+									style={[styles.title, { color: c.text }]}
+									accessibilityRole="header"
+								>
+									{t("payments.failed_title")}
+								</Text>
+							</View>
 							{intent.failureCode ? (
-								<Text style={[formStyles.hint, { color: c.body }]}>
+								<Text style={[styles.body, { color: c.body }]}>
 									{t(PAYMENT_FAILURE_MESSAGES[intent.failureCode])}
 								</Text>
 							) : null}
-							<Text style={[formStyles.hint, { color: c.muted }]}>
+							<Text style={[styles.meta, { color: c.muted }]}>
 								{t("payments.failed_attemptsLeft", {
 									attempts: intent.attemptsLeft,
 								})}
 							</Text>
-							{failedCardActions.includes("retry") && channel && phone ? (
+							{canRetry ? (
 								<CheckoutButton
 									label={t("payments.failed_retry")}
 									onPress={() => void resend()}
@@ -299,11 +382,24 @@ export default function CheckoutPendingScreen() {
 								/>
 							) : null}
 							{failedCardActions.includes("changeOperator") ? (
-								<Pressable onPress={changeOperator} accessibilityRole="button">
-									<Text style={[formStyles.hint, { color: c.primary }]}>
-										{t("payments.failed_changeNumber")}
-									</Text>
-								</Pressable>
+								canRetry ? (
+									<Pressable
+										onPress={changeOperator}
+										accessibilityRole="button"
+										style={styles.linkTarget}
+									>
+										<Text style={[styles.link, { color: inkOf(c) }]}>
+											{t("payments.failed_changeNumber")}
+										</Text>
+									</Pressable>
+								) : (
+									// Without the number to resend to, this is the way on:
+									// it takes the button, not a link.
+									<CheckoutButton
+										label={t("payments.failed_changeNumber")}
+										onPress={changeOperator}
+									/>
+								)
 							) : null}
 							{failedCardActions.includes("payOnDelivery") ? (
 								<CheckoutButton
@@ -317,30 +413,24 @@ export default function CheckoutPendingScreen() {
 					) : null}
 
 					{phase === "expired" || phase === "cancelled" ? (
-						<View
-							style={[
-								formStyles.card,
-								{ backgroundColor: c.card, borderColor: c.border },
-							]}
-						>
-							<Text style={[formStyles.sectionTitle, { color: c.text }]}>
-								{t("payments.expired_title")}
-							</Text>
-							<Text style={[formStyles.hint, { color: c.body }]}>
+						<View style={card}>
+							<View style={styles.lead}>
+								<View style={[styles.tile, { backgroundColor: c.warningSoft }]}>
+									<Ionicons
+										name="time-outline"
+										size={22}
+										color={c.warningText}
+									/>
+								</View>
+								<Text
+									style={[styles.title, { color: c.text }]}
+									accessibilityRole="header"
+								>
+									{t("payments.expired_title")}
+								</Text>
+							</View>
+							<Text style={[styles.body, { color: c.body }]}>
 								{t("payments.expired_body")}
-							</Text>
-						</View>
-					) : null}
-
-					{phase === "succeeded" ? (
-						<View
-							style={[
-								formStyles.card,
-								{ backgroundColor: c.successSoft, borderColor: c.border },
-							]}
-						>
-							<Text style={[formStyles.label, { color: c.successText }]}>
-								{t("payments.success_banner")}
 							</Text>
 							<CheckoutButton
 								label={t("checkout.viewOrder")}
@@ -349,13 +439,108 @@ export default function CheckoutPendingScreen() {
 						</View>
 					) : null}
 
-					{createIntent.error ? (
-						<Text style={formStyles.error}>
-							{resolveErrorMessage(createIntent.error, t)}
-						</Text>
+					{phase === "succeeded" ? (
+						<View style={card} accessibilityLiveRegion="polite">
+							<View style={styles.lead}>
+								<View style={[styles.tile, { backgroundColor: c.successSoft }]}>
+									<Ionicons
+										name="checkmark-circle"
+										size={24}
+										color={c.successText}
+									/>
+								</View>
+								<Text style={[styles.body, styles.flex, { color: c.text }]}>
+									{t("payments.success_banner")}
+								</Text>
+							</View>
+							{total ? (
+								<View
+									style={styles.paidRow}
+									accessible
+									accessibilityLabel={`${t("checkout.total")} ${total}`}
+								>
+									<Text style={[styles.amountLabel, { color: c.body }]}>
+										{t("checkout.total")}
+									</Text>
+									<Text style={[styles.paid, { color: c.text }]}>{total}</Text>
+								</View>
+							) : null}
+							<CheckoutButton
+								label={t("checkout.viewOrder")}
+								onPress={goToOrder}
+							/>
+						</View>
 					) : null}
+
+					<FormError
+						message={
+							createIntent.error
+								? resolveErrorMessage(createIntent.error, t)
+								: null
+						}
+					/>
 				</ScrollView>
 			</ScreenColumn>
 		</SafeAreaView>
 	);
 }
+
+const styles = StyleSheet.create({
+	flex: { flex: 1 },
+	scroll: { padding: 16, gap: 16, paddingBottom: 32 },
+	checking: { flexDirection: "row", alignItems: "center", gap: 12 },
+	lead: { flexDirection: "row", alignItems: "center", gap: 12 },
+	tile: {
+		width: 44,
+		height: 44,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	timer: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		minHeight: 44,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		borderRadius: 12,
+	},
+	countdown: {
+		flex: 1,
+		fontSize: 16,
+		lineHeight: 21,
+		fontFamily: Fonts.bodySemibold,
+		fontVariant: ["tabular-nums"],
+	},
+	title: {
+		flex: 1,
+		fontSize: 18,
+		lineHeight: 23,
+		fontFamily: Fonts.displayBold,
+	},
+	amount: { gap: 6, paddingVertical: 4 },
+	amountLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	paidRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: 12,
+	},
+	paid: {
+		fontSize: 20,
+		lineHeight: 25,
+		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
+	},
+	divider: { height: StyleSheet.hairlineWidth },
+	subhead: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	meta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
+	linkTarget: { minHeight: 44, justifyContent: "center" },
+	link: {
+		fontSize: 15,
+		fontFamily: Fonts.bodySemibold,
+		textDecorationLine: "underline",
+	},
+});

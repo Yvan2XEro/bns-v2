@@ -1,13 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
-import { type ShopPalette, useShopTheme } from "@/src/components/shop/theme";
 import { useAppPermissions } from "@/src/hooks/useAppPermissions";
 import {
 	APP_PERMISSIONS,
@@ -16,6 +9,7 @@ import {
 	permissionAction,
 } from "@/src/lib/appPermissions";
 import { useTranslation } from "@/src/lib/i18n";
+import { GroupedSection, RowIcon, useGroupedColors } from "./Grouped";
 
 const ICONS: Record<AppPermission, keyof typeof Ionicons.glyphMap> = {
 	notifications: "notifications-outline",
@@ -24,56 +18,81 @@ const ICONS: Record<AppPermission, keyof typeof Ionicons.glyphMap> = {
 	photos: "images-outline",
 };
 
-/** The pill's colours: allowed reads as a success, refused as a warning. */
-function tone(state: PermissionState, c: ShopPalette) {
+type Palette = ReturnType<typeof useGroupedColors>;
+
+/** The state's colours: allowed reads as a success, refused as a warning. */
+function tone(state: PermissionState, c: Palette) {
 	switch (state) {
 		case "granted":
-			return { bg: c.successSoft, fg: c.successText };
+			return { fg: c.successText, icon: "checkmark-circle" as const };
 		case "limited":
 		case "denied":
 		case "blocked":
-			return { bg: c.warningSoft, fg: c.warningText };
+			return { fg: c.warningText, icon: "alert-circle" as const };
 		default:
-			return { bg: c.neutralSoft, fg: c.neutralText };
+			return { fg: c.mutedForeground, icon: "ellipse-outline" as const };
 	}
 }
 
 /**
- * Every device permission the app uses: what it is for, where it stands, and
- * the one thing to do about it — ask, or open the system settings, the only
- * place one can be withdrawn or restored once refused for good.
+ * Every device permission the app uses, as a grouped list: what it is for,
+ * where it stands, and the one thing to do about it — ask, or open the
+ * system settings, the only place one can be withdrawn or restored once
+ * refused for good.
  */
-export function PermissionList() {
-	const c = useShopTheme();
+export function PermissionList({ title }: { title: string }) {
+	const c = useGroupedColors();
 	const { t } = useTranslation();
 	const { states, act } = useAppPermissions();
 
-	if (!states) return <ActivityIndicator color={c.primary} />;
-
 	return (
-		<View style={styles.list}>
-			<Text style={[styles.intro, { color: c.muted }]}>
-				{t("settings.permissions.intro")}
-			</Text>
+		<GroupedSection
+			title={title}
+			footer={t("settings.permissions.intro")}
+			inset={58}
+		>
 			{APP_PERMISSIONS.map((permission) => {
+				const label = t(`settings.permissions.${permission}.label`);
+				if (!states) {
+					return (
+						<View key={permission} style={styles.row}>
+							<RowIcon name={ICONS[permission]} />
+							<View style={styles.text}>
+								<Text style={[styles.label, { color: c.foreground }]}>
+									{label}
+								</Text>
+								<View style={[styles.skeleton, { backgroundColor: c.well }]} />
+							</View>
+						</View>
+					);
+				}
 				const state = states[permission];
 				const action = permissionAction(state);
 				const colors = tone(state, c);
-				const label = t(`settings.permissions.${permission}.label`);
+				const status = t(`settings.permissions.status.${state}`);
+				const actionLabel = t(
+					`settings.permissions.action.${actionKey(state)}`,
+				);
 				return (
-					<View
-						key={permission}
-						style={[styles.row, { borderTopColor: c.border }]}
-					>
-						<Ionicons name={ICONS[permission]} size={20} color={c.text} />
-						<View style={styles.text}>
-							<Text style={[styles.label, { color: c.text }]}>{label}</Text>
-							<Text style={[styles.why, { color: c.muted }]}>
+					<View key={permission} style={styles.row}>
+						<RowIcon name={ICONS[permission]} />
+						<View
+							style={styles.text}
+							accessible
+							accessibilityLabel={`${label}, ${status}. ${t(
+								`settings.permissions.${permission}.why`,
+							)}`}
+						>
+							<Text style={[styles.label, { color: c.foreground }]}>
+								{label}
+							</Text>
+							<Text style={[styles.why, { color: c.mutedForeground }]}>
 								{t(`settings.permissions.${permission}.why`)}
 							</Text>
-							<View style={[styles.pill, { backgroundColor: colors.bg }]}>
-								<Text style={[styles.pillText, { color: colors.fg }]}>
-									{t(`settings.permissions.status.${state}`)}
+							<View style={styles.status}>
+								<Ionicons name={colors.icon} size={14} color={colors.fg} />
+								<Text style={[styles.statusText, { color: colors.fg }]}>
+									{status}
 								</Text>
 							</View>
 						</View>
@@ -81,31 +100,35 @@ export function PermissionList() {
 							<Pressable
 								onPress={() => void act(permission)}
 								accessibilityRole="button"
-								accessibilityLabel={`${label}: ${t(
-									`settings.permissions.action.${actionKey(state)}`,
-								)}`}
-								hitSlop={6}
-								style={[
+								accessibilityLabel={`${label}: ${actionLabel}`}
+								hitSlop={8}
+								style={({ pressed }) => [
 									styles.button,
 									action === "request"
-										? { backgroundColor: c.primary }
-										: { borderColor: c.border, borderWidth: 1 },
+										? { backgroundColor: c.primaryFill }
+										: {
+												borderColor: c.borderStrong,
+												borderWidth: StyleSheet.hairlineWidth * 2,
+											},
+									pressed ? { opacity: 0.8 } : null,
 								]}
 							>
 								<Text
 									style={[
 										styles.buttonText,
-										{ color: action === "request" ? "#fff" : c.text },
+										{
+											color: action === "request" ? "#ffffff" : c.link,
+										},
 									]}
 								>
-									{t(`settings.permissions.action.${actionKey(state)}`)}
+									{actionLabel}
 								</Text>
 							</Pressable>
 						) : null}
 					</View>
 				);
 			})}
-		</View>
+		</GroupedSection>
 	);
 }
 
@@ -119,37 +142,32 @@ function actionKey(
 }
 
 const styles = StyleSheet.create({
-	list: { gap: 0 },
-	intro: {
-		fontSize: 13,
-		fontFamily: Fonts.body,
-		lineHeight: 18,
-		marginBottom: 8,
-	},
 	row: {
 		flexDirection: "row",
 		alignItems: "flex-start",
 		gap: 12,
-		paddingVertical: 12,
-		borderTopWidth: StyleSheet.hairlineWidth,
+		paddingHorizontal: 16,
+		paddingVertical: 14,
 	},
-	text: { flex: 1, gap: 4 },
-	label: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	text: { flex: 1, gap: 3 },
+	label: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.bodyMedium },
 	why: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
-	pill: {
-		alignSelf: "flex-start",
-		borderRadius: 999,
-		paddingHorizontal: 8,
-		paddingVertical: 2,
-		marginTop: 2,
+	status: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 5,
+		marginTop: 3,
 	},
-	pillText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	statusText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	skeleton: { height: 12, width: "60%", borderRadius: 6, marginTop: 6 },
 	button: {
 		minHeight: 36,
+		minWidth: 72,
 		paddingHorizontal: 14,
 		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
+		alignSelf: "center",
 	},
-	buttonText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	buttonText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });

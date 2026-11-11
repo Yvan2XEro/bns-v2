@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import { setStatusBarStyle } from "expo-status-bar";
+import { useCallback } from "react";
 import {
-	ActivityIndicator,
 	RefreshControl,
 	ScrollView,
 	Share,
@@ -13,12 +14,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import {
-	HUB_HEADER_BG,
 	SellerHubBar,
 	SellerHubLinkCard,
+	useHubHeaderBg,
 } from "@/src/components/shop/SellerHubHeader";
 import { SellerInsightsSummary } from "@/src/components/shop/SellerInsightsSummary";
 import {
@@ -109,13 +112,32 @@ export default function SellerHubScreen() {
 	const { t, i18n } = useTranslation();
 	const { webUrl } = useAppConfig();
 	const { data, isLoading, isError, refetch, isRefetching } = useMyShop();
+	const hubBg = useHubHeaderBg();
 	const locale = i18n.language?.startsWith("en") ? "en-US" : "fr-FR";
+	// The shell band needs white status-bar ink; the error and no-shop states
+	// sit on the light ground and keep the default.
+	const inkBand = isLoading || Boolean(!isError && data?.shop && data?.counts);
+	useFocusEffect(
+		useCallback(() => {
+			if (!inkBand) return;
+			setStatusBarStyle("light");
+			return () => setStatusBarStyle("auto");
+		}, [inkBand]),
+	);
 
 	if (isLoading) {
+		// The shell band is drawn straight away so the header does not flash in
+		// over a blank ground once the shop arrives.
 		return (
-			<View style={[styles.center, { backgroundColor: c.bg }]}>
-				<ActivityIndicator color={c.primary} />
-			</View>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: hubBg }]}
+			>
+				<View style={styles.loadingBand} />
+				<View style={[styles.safe, { backgroundColor: c.bg }]}>
+					<ListSkeleton rows={4} />
+				</View>
+			</SafeAreaView>
 		);
 	}
 
@@ -171,6 +193,7 @@ function SellerHubContent({
 	onRefetch: () => void;
 }) {
 	const c = useShopTheme();
+	const hubBg = useHubHeaderBg();
 	const { t } = useTranslation();
 	const {
 		ordersEnabled,
@@ -363,7 +386,7 @@ function SellerHubContent({
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: HUB_HEADER_BG }]}
+			style={[styles.safe, { backgroundColor: hubBg }]}
 		>
 			<SellerHubBar shop={shop} />
 			<ScreenColumn width="wide">
@@ -378,6 +401,8 @@ function SellerHubContent({
 								if (readsOrders) void toAcceptList.refetch();
 							}}
 							tintColor={c.primary}
+							colors={[c.primary]}
+							progressBackgroundColor={c.card}
 						/>
 					}
 				>
@@ -394,9 +419,9 @@ function SellerHubContent({
 									{ backgroundColor: c.dangerSoft, borderColor: c.danger },
 								]}
 							>
-								<Ionicons name="ban" size={18} color={c.danger} />
-								<View style={{ flex: 1 }}>
-									<Text style={[styles.bannerTitle, { color: c.danger }]}>
+								<Ionicons name="ban" size={20} color={dangerInk(c)} />
+								<View style={styles.bannerCopy}>
+									<Text style={[styles.bannerTitle, { color: dangerInk(c) }]}>
 										{shop.suspension.indefinite || !shop.suspension.until
 											? t("seller.suspendedIndefinitely")
 											: t("seller.suspendedUntil", {
@@ -408,7 +433,7 @@ function SellerHubContent({
 												})}
 									</Text>
 									{shop.suspension.reason ? (
-										<Text style={[styles.meta, { color: c.text }]}>
+										<Text style={[styles.meta, { color: c.body }]}>
 											{t(`report.${shop.suspension.reason}`)}
 										</Text>
 									) : null}
@@ -426,8 +451,8 @@ function SellerHubContent({
 									{ backgroundColor: c.neutralSoft, borderColor: c.border },
 								]}
 							>
-								<Ionicons name="lock-closed" size={18} color={c.muted} />
-								<View style={{ flex: 1 }}>
+								<Ionicons name="lock-closed" size={20} color={c.muted} />
+								<View style={styles.bannerCopy}>
 									<Text style={[styles.bannerTitle, { color: c.text }]}>
 										{roleReason === "dormant"
 											? t("seller.hubLocked.dormant")
@@ -464,10 +489,10 @@ function SellerHubContent({
 						) : null}
 
 						{tabRoot ? (
-							<>
+							<View style={styles.modeRows}>
 								<MyAccountButton />
 								<SwitchModeButton target="buyer" />
-							</>
+							</View>
 						) : null}
 					</View>
 				</ScrollView>
@@ -478,16 +503,20 @@ function SellerHubContent({
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
+	loadingBand: { height: 136 },
 	switcher: { paddingHorizontal: 16 },
-	content: { padding: 16, gap: 14 },
+	content: { padding: 16, gap: 16 },
 	banner: {
 		flexDirection: "row",
-		gap: 10,
-		padding: 14,
+		alignItems: "flex-start",
+		gap: 12,
+		padding: 16,
 		borderRadius: 14,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 	},
-	bannerTitle: { fontSize: 14, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	bannerCopy: { flex: 1, gap: 4 },
+	bannerTitle: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.displayBold },
+	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	// The two mode rows leave the shop's work behind: set apart from the tiles.
+	modeRows: { gap: 10, marginTop: 12 },
 });

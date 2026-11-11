@@ -49,7 +49,7 @@ export function ShopCard({
 					<LevelBadge badge={hit.badge} size="sm" />
 					<View style={styles.row}>
 						{reviews > 0 ? (
-							<Ionicons name="star" size={12} color="#f59e0b" />
+							<Ionicons name="star" size={12} color="#ffb81c" />
 						) : null}
 						<Text style={[styles.meta, { color: c.body }]}>{rating}</Text>
 					</View>
@@ -69,7 +69,7 @@ export function ShopCard({
 				) : null}
 			</View>
 			<View style={[styles.view, { borderColor: c.primary }]}>
-				<Text style={[styles.viewText, { color: c.primary }]}>
+				<Text style={[styles.viewText, { color: c.link }]}>
 					{t("shop.view")}
 				</Text>
 			</View>
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
 		padding: 14,
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
-		minHeight: 44,
+		minHeight: 48,
 	},
 	name: { fontSize: 16, fontFamily: Fonts.displayBold },
 	row: { flexDirection: "row", alignItems: "center", gap: 6 },
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 1,
 	},
 	sponsoredText: {
-		fontSize: 10,
+		fontSize: 11,
 		fontFamily: Fonts.bodySemibold,
 		textTransform: "uppercase",
 		letterSpacing: 0.4,

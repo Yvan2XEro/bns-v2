@@ -1,12 +1,15 @@
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
-import { EmptyState } from "@/src/components/EmptyState";
 import {
 	type DecisionResult,
 	DecisionSheet,
 } from "@/src/components/moderation/DecisionSheet";
+import {
+	DetailSkeleton,
+	LoadError,
+} from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import {
 	OrderItemsCard,
@@ -111,25 +114,18 @@ export default function ModerateOrderScreen() {
 			subtitle={order?.orderNumber}
 		>
 			{sheet.isPending ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+				<DetailSkeleton />
 			) : sheet.isError || !order || !actions ? (
-				<EmptyState
-					illustration="notFound"
+				<LoadError
 					title={t("moderationOrder.loadError")}
-					subtitle={
+					message={
 						sheet.error ? resolveErrorMessage(sheet.error, t) : undefined
 					}
-					ctaLabel={t("common.retry")}
-					onCta={() => sheet.refetch()}
+					onRetry={() => void sheet.refetch()}
 				/>
 			) : (
 				<>
-					<ScrollView
-						contentContainerStyle={[
-							{ padding: 16, gap: 14, paddingBottom: 24 },
-							centeredContent,
-						]}
-					>
+					<ScrollView contentContainerStyle={[styles.content, centeredContent]}>
 						<OrderSummaryCard order={order} locale={locale} c={c} t={t} />
 						<OrderRiskCard order={order} c={c} t={t} />
 						<OrderDeliveryCard order={order} c={c} t={t} />
@@ -166,3 +162,7 @@ export default function ModerateOrderScreen() {
 		</ModerationScreen>
 	);
 }
+
+const styles = StyleSheet.create({
+	content: { padding: 16, gap: 14, paddingBottom: 24 },
+});

@@ -1,14 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, useLocalSearchParams } from "expo-router";
 import { useForm } from "react-hook-form";
-import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { HandoverFallbacks } from "@/src/components/sellerOrders/HandoverFallbacks";
 import { HandoverKeypad } from "@/src/components/sellerOrders/HandoverKeypad";
+import { dangerInk } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -53,7 +55,7 @@ export default function HandoverScreen() {
 				style={[styles.safe, { backgroundColor: c.bg }]}
 			>
 				{header}
-				<ActivityIndicator style={styles.spinner} color={c.primary} />
+				<DetailSkeleton cards={1} />
 			</SafeAreaView>
 		);
 	}
@@ -144,7 +146,7 @@ export default function HandoverScreen() {
 							{state.wrong ? (
 								<Text
 									accessibilityRole="alert"
-									style={[styles.center, { color: c.danger }]}
+									style={[styles.center, { color: dangerInk(c) }]}
 								>
 									{t("sellerOrders.handoverWrong")}
 								</Text>
@@ -152,7 +154,7 @@ export default function HandoverScreen() {
 							{otherError ? (
 								<Text
 									accessibilityRole="alert"
-									style={[styles.center, { color: c.danger }]}
+									style={[styles.center, { color: dangerInk(c) }]}
 								>
 									{otherError}
 								</Text>
@@ -178,7 +180,6 @@ export default function HandoverScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	spinner: { marginTop: 40 },
 	content: { padding: 16, paddingBottom: 40, gap: 16 },
 	body: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
 	center: { textAlign: "center", fontSize: 14, fontFamily: Fonts.bodyMedium },

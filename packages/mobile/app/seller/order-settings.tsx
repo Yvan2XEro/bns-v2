@@ -1,5 +1,4 @@
 import {
-	ActivityIndicator,
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
@@ -11,6 +10,7 @@ import { BillingShell } from "@/src/components/billing/BillingShell";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { CapsNotice } from "@/src/components/billing/CapsNotice";
 import { OrderSettingsForm } from "@/src/components/billing/OrderSettingsForm";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -38,11 +38,7 @@ function OrderSettingsContent({
 	const canEdit = can(role, "settings.edit");
 
 	if (settings.isPending) {
-		return (
-			<View style={styles.center}>
-				<ActivityIndicator color={c.primary} />
-			</View>
-		);
+		return <DetailSkeleton cards={2} />;
 	}
 	if (settings.isError) {
 		return (
@@ -106,6 +102,5 @@ export default function OrderSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	content: { padding: 16, gap: 12, paddingBottom: 40 },
 });

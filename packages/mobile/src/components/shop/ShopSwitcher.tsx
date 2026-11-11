@@ -59,7 +59,7 @@ export function ShopSwitcher() {
 						{
 							backgroundColor: c.isDark
 								? "rgba(0,0,0,0.6)"
-								: "rgba(15,23,42,0.4)",
+								: "rgba(18, 22, 58,0.4)",
 						},
 					]}
 					onPress={() => setOpen(false)}
@@ -70,7 +70,10 @@ export function ShopSwitcher() {
 						{ backgroundColor: c.card, borderColor: c.border },
 					]}
 				>
-					<Text style={[styles.menuTitle, { color: c.muted }]}>
+					<Text
+						accessibilityRole="header"
+						style={[styles.menuTitle, { color: c.muted }]}
+					>
 						{t("inbox.switchShop")}
 					</Text>
 					<ScrollView style={styles.menuList}>
@@ -111,7 +114,7 @@ export function ShopSwitcher() {
 										) : null}
 									</View>
 									{selected ? (
-										<Ionicons name="checkmark" size={18} color={c.primary} />
+										<Ionicons name="checkmark" size={18} color={c.link} />
 									) : null}
 								</Pressable>
 							);
@@ -132,7 +135,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 10,
 		paddingVertical: 6,
-		minHeight: 44,
+		minHeight: 48,
 		maxWidth: 220,
 	},
 	triggerLabel: { flex: 1, fontSize: 13, fontFamily: Fonts.bodySemibold },
@@ -147,10 +150,9 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 	},
 	menuTitle: {
-		fontSize: 11,
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
 		paddingHorizontal: 16,
 		paddingBottom: 6,
 	},

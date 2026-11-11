@@ -20,13 +20,7 @@ import { badgeForLevel, statusToneKey } from "@/src/lib/verification";
 import type { ModerationVerificationQueueItem } from "@/src/types/api";
 import { SignalChip } from "./SignalsPanel";
 import { useModerationTheme } from "./theme";
-
-const TONE_COLOR_KEY = {
-	positive: "success",
-	negative: "danger",
-	warning: "warning",
-	neutral: "muted",
-} as const;
+import { toneColors, tonesOf } from "./tones";
 
 /**
  * One request in the "to review" queue. Claiming is attempted, never
@@ -48,30 +42,42 @@ export function VerificationCard({
 	const age = relativeAge(item.submittedAt);
 	const claimable = item.status === "submitted" && !item.assignee;
 	const tone = statusToneKey(item.status);
+	const k = tonesOf(c);
+	const status = toneColors(tone, c);
+	const shopLabel = t("moderation.verifRowShop", {
+		id: item.shopId ?? item.id,
+	});
 
 	return (
 		<Pressable
 			accessibilityRole="button"
-			accessibilityLabel={t("moderation.verifRowShop", {
-				id: item.shopId ?? item.id,
-			})}
+			accessibilityLabel={`${shopLabel}, ${t(`moderation.verifStatus_${item.status}`)}`}
 			onPress={() =>
 				router.push(`/moderation/verification/${item.id}` as never)
 			}
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+			style={({ pressed }) => [
+				styles.card,
+				{
+					backgroundColor: c.card,
+					borderColor: c.border,
+					opacity: pressed ? 0.85 : 1,
+				},
+			]}
 		>
 			<View style={styles.header}>
-				<Text style={[styles.shop, { color: c.primary }]} numberOfLines={1}>
-					{t("moderation.verifRowShop", { id: item.shopId ?? item.id })}
+				<Text style={[styles.shop, { color: c.text }]} numberOfLines={1}>
+					{shopLabel}
 				</Text>
 				<Ionicons name="chevron-forward" size={18} color={c.muted} />
 			</View>
 
 			<View style={styles.meta}>
 				<LevelBadge badge={badgeForLevel(item.requestedLevel)} size="sm" />
-				<Text style={[styles.status, { color: c[TONE_COLOR_KEY[tone]] }]}>
-					{t(`moderation.verifStatus_${item.status}`)}
-				</Text>
+				<View style={[styles.statusPill, { backgroundColor: status.soft }]}>
+					<Text style={[styles.status, { color: status.text }]}>
+						{t(`moderation.verifStatus_${item.status}`)}
+					</Text>
+				</View>
 				{age ? (
 					<Text style={[styles.age, { color: c.muted }]}>
 						{t(`moderation.age${capitalize(age.unit)}`, { count: age.count })}
@@ -105,14 +111,20 @@ export function VerificationCard({
 							},
 						);
 					}}
-					style={[styles.claimBtn, { backgroundColor: c.primary }]}
+					style={({ pressed }) => [
+						styles.claimBtn,
+						{ backgroundColor: k.primaryFill, opacity: pressed ? 0.88 : 1 },
+					]}
 				>
 					{claim.isPending ? (
-						<ActivityIndicator color="#fff" />
+						<ActivityIndicator color={k.onFill} />
 					) : (
-						<Text style={styles.claimText}>
-							{t("moderation.verifRowClaim")}
-						</Text>
+						<>
+							<Ionicons name="hand-left-outline" size={18} color={k.onFill} />
+							<Text style={styles.claimText}>
+								{t("moderation.verifRowClaim")}
+							</Text>
+						</>
 					)}
 				</Pressable>
 			) : null}
@@ -131,24 +143,33 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
+		gap: 8,
 	},
-	shop: { fontSize: 15, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	shop: {
+		fontSize: 16,
+		lineHeight: 21,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 	meta: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
 		flexWrap: "wrap",
 	},
-	status: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	age: { fontSize: 12, fontFamily: Fonts.body },
+	statusPill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+	status: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
+	age: { fontSize: 13, fontFamily: Fonts.body },
 	signals: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
 	claimBtn: {
 		alignSelf: "flex-start",
-		minHeight: 44,
-		paddingHorizontal: 16,
-		borderRadius: 10,
+		flexDirection: "row",
+		gap: 8,
+		minHeight: 48,
+		paddingHorizontal: 18,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	claimText: { fontSize: 13, fontFamily: Fonts.bodySemibold, color: "#fff" },
+	claimText: { fontSize: 15, fontFamily: Fonts.bodyBold, color: "#ffffff" },
 });

@@ -3,6 +3,8 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/checkout/fill";
+import { TotalTag } from "@/src/components/checkout/TotalTag";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { canCheckout, cartTotals } from "@/src/lib/cartLines";
@@ -32,7 +34,7 @@ export function CartSummary({
 				]}
 			>
 				<View style={styles.row}>
-					<Text style={[styles.meta, { color: c.muted }]}>
+					<Text style={[styles.label, { color: c.body }]}>
 						{t("cart.subtotal")} ·{" "}
 						{t("cart.itemCount", { count: totals.itemCount })}
 					</Text>
@@ -44,24 +46,37 @@ export function CartSummary({
 					{t("cart.deliveryNext")}
 				</Text>
 				{totals.priceChangedCount > 0 ? (
-					<Text style={[styles.meta, { color: c.warningText }]}>
-						{t("cart.priceChangedNotice", { count: totals.priceChangedCount })}
-					</Text>
+					<Notice
+						icon="pricetag-outline"
+						color={c.warningText}
+						text={t("cart.priceChangedNotice", {
+							count: totals.priceChangedCount,
+						})}
+					/>
 				) : null}
 				{totals.unavailableCount > 0 ? (
-					<Text style={[styles.meta, { color: c.dangerText }]}>
-						{t("cart.unavailableBlocking")}
-					</Text>
+					<Notice
+						icon="alert-circle-outline"
+						color={c.dangerText}
+						text={t("cart.unavailableBlocking")}
+					/>
 				) : null}
 				{cart.shopOrderable ? null : (
-					<Text style={[styles.meta, { color: c.dangerText }]}>
-						{t("cart.shopNotOrderable")}
-					</Text>
+					<Notice
+						icon="alert-circle-outline"
+						color={c.dangerText}
+						text={t("cart.shopNotOrderable")}
+					/>
 				)}
 			</View>
 			<View style={[styles.note, { backgroundColor: c.primarySoft }]}>
-				<Ionicons name="cash-outline" size={16} color={c.primary} />
-				<Text style={[styles.noteText, { color: c.primary }]}>
+				<Ionicons
+					name="cash-outline"
+					size={18}
+					color={c.link}
+					style={styles.noteIcon}
+				/>
+				<Text style={[styles.noteText, { color: c.link }]}>
 					{t("cart.codNote", { days: withdrawalDays })}
 				</Text>
 			</View>
@@ -81,6 +96,8 @@ export function CartCheckoutBar({
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
 	const ready = canCheckout(cart);
+	const fill = fillOf(c);
+	const subtotal = formatPrice(cart.subtotal, locale);
 
 	return (
 		<View
@@ -93,13 +110,15 @@ export function CartCheckoutBar({
 				},
 			]}
 		>
-			<View>
+			<View style={styles.barTotal}>
 				<Text style={[styles.meta, { color: c.muted }]}>
 					{t("cart.subtotal")}
 				</Text>
-				<Text style={[styles.amount, { color: c.text }]}>
-					{formatPrice(cart.subtotal, locale)}
-				</Text>
+				<TotalTag
+					amount={subtotal}
+					size="md"
+					accessibilityLabel={`${t("cart.subtotal")} ${subtotal}`}
+				/>
 			</View>
 			<Pressable
 				onPress={() => router.push("/checkout/address")}
@@ -107,27 +126,67 @@ export function CartCheckoutBar({
 				accessibilityRole="button"
 				accessibilityLabel={t("cart.checkout")}
 				accessibilityState={{ disabled: !ready }}
-				style={[
+				style={({ pressed }) => [
 					styles.cta,
-					{ backgroundColor: c.primary, opacity: ready ? 1 : 0.5 },
+					{
+						backgroundColor: fill.bg,
+						opacity: ready ? (pressed ? 0.85 : 1) : 0.45,
+					},
 				]}
 			>
-				<Text style={styles.ctaText}>{t("cart.checkout")}</Text>
+				<Text style={[styles.ctaText, { color: fill.fg }]}>
+					{t("cart.checkout")}
+				</Text>
 			</Pressable>
+		</View>
+	);
+}
+
+function Notice({
+	icon,
+	color,
+	text,
+}: {
+	icon: "pricetag-outline" | "alert-circle-outline";
+	color: string;
+	text: string;
+}) {
+	return (
+		<View style={styles.notice}>
+			<Ionicons name={icon} size={16} color={color} style={styles.noteIcon} />
+			<Text style={[styles.noticeText, { color }]}>{text}</Text>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	wrap: { marginTop: 12, gap: 12 },
-	card: { padding: 16, gap: 8, borderRadius: 16, borderWidth: 1 },
+	card: {
+		padding: 16,
+		gap: 10,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
 	row: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
 	},
 	meta: { fontSize: 13, fontFamily: Fonts.body },
-	amount: { fontSize: 18, fontFamily: Fonts.displayBold },
+	label: { flex: 1, fontSize: 15, fontFamily: Fonts.bodySemibold },
+	amount: {
+		fontSize: 18,
+		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
+	},
+	notice: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
+	noticeText: {
+		flex: 1,
+		fontSize: 13,
+		lineHeight: 19,
+		fontFamily: Fonts.bodyMedium,
+	},
+	noteIcon: { marginTop: 1 },
 	note: {
 		flexDirection: "row",
 		gap: 8,
@@ -135,7 +194,8 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		alignItems: "flex-start",
 	},
-	noteText: { flex: 1, fontSize: 12, lineHeight: 17, fontFamily: Fonts.body },
+	noteText: { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
+	barTotal: { gap: 4, flexShrink: 1 },
 	bar: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -148,10 +208,11 @@ const styles = StyleSheet.create({
 	cta: {
 		flex: 1,
 		maxWidth: 240,
-		height: 52,
-		borderRadius: 14,
+		minHeight: 52,
+		borderRadius: 12,
+		paddingHorizontal: 16,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	ctaText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -58,7 +59,7 @@ export function ConsentNotice({
 					style={[
 						styles.box,
 						{ borderColor: checked ? c.primary : c.border },
-						checked ? { backgroundColor: c.primary } : null,
+						checked ? { backgroundColor: fillOf(c) } : null,
 					]}
 				>
 					{checked ? (
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
 	paragraph: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 20 },
 	checkboxRow: {
 		marginTop: 4,
-		minHeight: 44,
+		minHeight: 48,
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,

@@ -45,7 +45,11 @@ export function SellerHeader({
 				/>
 			)}
 			<View style={{ flex: 1 }}>
-				<Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
+				<Text
+					accessibilityRole="header"
+					style={[styles.title, { color: c.text }]}
+					numberOfLines={1}
+				>
 					{title}
 				</Text>
 				{subtitle ? (
@@ -69,12 +73,17 @@ const styles = StyleSheet.create({
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	back: {
-		width: 44,
-		height: 44,
+		width: 48,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	edge: { width: 4 },
-	title: { fontSize: 17, fontFamily: Fonts.displayBold },
-	subtitle: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
+	title: {
+		fontSize: 18,
+		lineHeight: 23,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.2,
+	},
+	subtitle: { fontSize: 13, fontFamily: Fonts.body, marginTop: 1 },
 });

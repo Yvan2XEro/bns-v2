@@ -42,16 +42,15 @@ export default function VerifyPhoneScreen() {
 					keyboardShouldPersistTaps="handled"
 				>
 					<View style={[styles.iconTile, { backgroundColor: c.primarySoft }]}>
-						<Ionicons
-							name="phone-portrait-outline"
-							size={28}
-							color={c.primary}
-						/>
+						<Ionicons name="phone-portrait-outline" size={28} color={c.link} />
 					</View>
-					<Text style={[styles.title, { color: c.text }]}>
+					<Text
+						accessibilityRole="header"
+						style={[styles.title, { color: c.text }]}
+					>
 						{t(`accountTrust.${action}.title`)}
 					</Text>
-					<Text style={[styles.body, { color: c.muted }]}>
+					<Text style={[styles.body, { color: c.body }]}>
 						{t(`accountTrust.${action}.body`)}
 					</Text>
 					<PhoneGate
@@ -68,7 +67,13 @@ export default function VerifyPhoneScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	close: { alignSelf: "flex-end", padding: 16 },
+	close: {
+		alignSelf: "flex-end",
+		width: 56,
+		height: 56,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 	content: { padding: 24, paddingTop: 0, gap: 12 },
 	iconTile: {
 		width: 56,
@@ -77,6 +82,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	title: { fontSize: 24, fontFamily: Fonts.displayExtrabold, marginTop: 8 },
-	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
+	title: {
+		fontSize: 26,
+		lineHeight: 31,
+		letterSpacing: -0.6,
+		fontFamily: Fonts.displayExtrabold,
+		marginTop: 8,
+	},
+	body: { fontSize: 16, fontFamily: Fonts.body, lineHeight: 24 },
 });

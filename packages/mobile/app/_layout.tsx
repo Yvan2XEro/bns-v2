@@ -18,7 +18,6 @@ import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import {
-	Redirect,
 	router,
 	Stack,
 	usePathname,
@@ -40,6 +39,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { Colors, Fonts } from "@/constants/theme";
 import {
 	AppConfigProvider,
 	useAppConfig,
@@ -83,6 +83,7 @@ import {
 	notificationRoute,
 	pushTapTarget,
 } from "@/src/lib/deepLinks";
+import { loadFeedbackPreferences } from "@/src/lib/feedback";
 import { reportError } from "@/src/lib/monitoring";
 import { syncPushToken } from "@/src/lib/notifications";
 
@@ -106,20 +107,32 @@ export function ErrorBoundary({
 	retry: () => Promise<void>;
 }) {
 	useEffect(() => reportError(error), [error]);
+	// Outside every provider: the scheme comes from the OS, the words straight
+	// from i18n, and a missing font falls back to the system face.
+	const c = Colors[Appearance.getColorScheme() === "dark" ? "dark" : "light"];
 	return (
-		<View style={errorStyles.container}>
-			<Text style={errorStyles.title}>Une erreur est survenue</Text>
-			<Text style={errorStyles.message}>
-				{error?.message ?? "Erreur inconnue"}
+		<View style={[errorStyles.container, { backgroundColor: c.background }]}>
+			<Text
+				style={[errorStyles.title, { color: c.foreground }]}
+				accessibilityRole="header"
+			>
+				{i18n.t("common.error")}
+			</Text>
+			<Text style={[errorStyles.message, { color: c.body }]}>
+				{error?.message ?? i18n.t("home.errorSub")}
 			</Text>
 			<Pressable
 				accessibilityRole="button"
 				onPress={() => {
 					void retry();
 				}}
-				style={errorStyles.button}
+				style={({ pressed }) => [
+					errorStyles.button,
+					{ backgroundColor: c.primaryFill },
+					pressed && { opacity: 0.85 },
+				]}
 			>
-				<Text style={errorStyles.buttonLabel}>Réessayer</Text>
+				<Text style={errorStyles.buttonLabel}>{i18n.t("common.retry")}</Text>
 			</Pressable>
 		</View>
 	);
@@ -128,27 +141,37 @@ export function ErrorBoundary({
 const errorStyles = StyleSheet.create({
 	container: {
 		alignItems: "center",
-		backgroundColor: "#ffffff",
 		flex: 1,
 		gap: 12,
 		justifyContent: "center",
 		padding: 32,
 	},
-	title: { fontSize: 20, fontWeight: "700", textAlign: "center" },
+	title: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 20,
+		lineHeight: 25,
+		textAlign: "center",
+	},
 	message: {
-		color: "#6b7280",
-		fontSize: 14,
+		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 22,
 		maxWidth: 420,
 		textAlign: "center",
 	},
 	button: {
-		backgroundColor: "#1e40af",
+		alignItems: "center",
 		borderRadius: 12,
+		justifyContent: "center",
 		marginTop: 12,
+		minHeight: 52,
 		paddingHorizontal: 24,
-		paddingVertical: 12,
 	},
-	buttonLabel: { color: "#ffffff", fontSize: 15, fontWeight: "600" },
+	buttonLabel: {
+		color: Colors.light.primaryForeground,
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
+	},
 });
 
 const queryClient = new QueryClient({
@@ -173,10 +196,38 @@ export const unstable_settings = { anchor: "(tabs)" };
 
 // ─── Root layout ──────────────────────────────────────────────────────────────
 
+// Navigation chrome (headers, back chevrons, screen grounds) in the Ndop
+// palette rather than React Navigation's stock blue and grey.
+const NdopLight = {
+	...DefaultTheme,
+	colors: {
+		...DefaultTheme.colors,
+		primary: Colors.light.primary,
+		background: Colors.light.background,
+		card: Colors.light.card,
+		text: Colors.light.foreground,
+		border: Colors.light.border,
+		notification: Colors.light.destructive,
+	},
+};
+const NdopDark = {
+	...DarkTheme,
+	colors: {
+		...DarkTheme.colors,
+		primary: Colors.dark.primary,
+		background: Colors.dark.background,
+		card: Colors.dark.background,
+		text: Colors.dark.foreground,
+		border: Colors.dark.border,
+		notification: Colors.dark.destructive,
+	},
+};
+
 export default function RootLayout() {
 	usePhonePortraitLock();
-	// Load saved language + theme preferences before first render
+	// Load saved language + theme + sound preferences before first render
 	useEffect(() => {
+		void loadFeedbackPreferences();
 		Promise.all([
 			AsyncStorage.getItem(LANG_STORAGE_KEY),
 			AsyncStorage.getItem(THEME_STORAGE_KEY),
@@ -393,33 +444,36 @@ function RootLayoutNav() {
 	const { isLoading: authLoading } = useAuth();
 	const { hasSeenOnboarding, isLoading: onboardingLoading } = useOnboarding();
 	const pathname = usePathname();
+	const navigationReady = Boolean(useRootNavigationState()?.key);
 	const showLoader = authLoading || onboardingLoading;
 	const isOnboardingRoute = pathname === "/onboarding";
+	const launchTarget = showLoader
+		? null
+		: !hasSeenOnboarding && !isOnboardingRoute
+			? "/onboarding"
+			: hasSeenOnboarding && isOnboardingRoute
+				? "/(tabs)/home"
+				: null;
 
-	if (showLoader) {
-		return <LoadingScreen />;
-	}
-
-	if (!hasSeenOnboarding && !isOnboardingRoute) {
-		return (
-			<>
-				<LoadingScreen />
-				<Redirect href="/onboarding" />
-			</>
-		);
-	}
-
-	if (hasSeenOnboarding && isOnboardingRoute) {
-		return (
-			<>
-				<LoadingScreen />
-				<Redirect href="/(tabs)/home" />
-			</>
-		);
-	}
+	// The navigator stays mounted and the launch redirect is an effect, sent
+	// once per destination when the navigator is ready. A <Redirect> rendered
+	// in its place had no navigator to land in: the path never changed, the
+	// layout rendered the redirect again, and React stopped the loop with
+	// "Maximum update depth exceeded".
+	const redirected = useRef<string | null>(null);
+	useEffect(() => {
+		if (!launchTarget) {
+			redirected.current = null;
+			return;
+		}
+		if (!navigationReady || redirected.current === launchTarget) return;
+		redirected.current = launchTarget;
+		router.replace(launchTarget);
+	}, [launchTarget, navigationReady]);
+	const covered = showLoader || launchTarget !== null;
 
 	return (
-		<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+		<ThemeProvider value={colorScheme === "dark" ? NdopDark : NdopLight}>
 			<SellerBrandProvider>
 				<Stack>
 					<Stack.Screen name="onboarding" options={{ headerShown: false }} />
@@ -773,6 +827,11 @@ function RootLayoutNav() {
 				</Stack>
 				<PushTapNavigator />
 			</SellerBrandProvider>
+			{covered ? (
+				<View style={StyleSheet.absoluteFill}>
+					<LoadingScreen />
+				</View>
+			) : null}
 
 			<StatusBar style="auto" />
 		</ThemeProvider>

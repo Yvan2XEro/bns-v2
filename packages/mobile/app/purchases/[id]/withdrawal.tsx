@@ -1,14 +1,13 @@
 import { router, useLocalSearchParams } from "expo-router";
 import {
-	ActivityIndicator,
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
 	StyleSheet,
 	Text,
-	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { Card, purchaseText } from "@/src/components/purchases/ui";
@@ -56,9 +55,7 @@ export default function WithdrawalScreen() {
 				}
 			/>
 			{purchase.isPending ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<DetailSkeleton cards={3} />
 			) : purchase.isError || !order ? (
 				<EmptyState
 					illustration="notFound"
@@ -82,7 +79,10 @@ export default function WithdrawalScreen() {
 							<Card>
 								<WithdrawalWindowNote order={order} now={now} />
 								{offered ? null : (
-									<Text style={[purchaseText.body, { color: c.body }]}>
+									<Text
+										style={[purchaseText.body, { color: c.body }]}
+										accessibilityRole="alert"
+									>
 										{t("purchases.withdrawalUnavailable")}
 									</Text>
 								)}
@@ -106,6 +106,5 @@ export default function WithdrawalScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	content: { padding: 16, gap: 14, paddingBottom: 48 },
 });

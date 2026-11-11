@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
 	},
 	tab: {
 		flex: 1,
-		height: 44,
+		height: 48,
 		alignItems: "center",
 		justifyContent: "center",
 		borderBottomWidth: 2,

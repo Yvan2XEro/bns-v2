@@ -14,7 +14,9 @@ import {
 } from "./deepLinks";
 
 const APP_ROOT = join(import.meta.dir, "../../app");
+// Bun's Glob answers with the OS separator; routes are always "/".
 const ROUTES = [...new Glob("**/*").scanSync({ cwd: APP_ROOT })]
+	.map((file) => file.replaceAll("\\", "/"))
 	.filter(isScreenFile)
 	.map(routeNameOf);
 

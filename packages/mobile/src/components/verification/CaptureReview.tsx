@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import type { PickedFile } from "@/src/lib/verificationBusiness";
@@ -63,7 +64,7 @@ export function CaptureReview({
 						accessibilityLabel={t("common.cancel")}
 						style={styles.headerButton}
 					>
-						<Text style={[styles.cancel, { color: c.primary }]}>
+						<Text style={[styles.cancel, { color: c.link }]}>
 							{t("common.cancel")}
 						</Text>
 					</Pressable>
@@ -117,9 +118,9 @@ export function CaptureReview({
 									<Ionicons
 										name="camera-reverse-outline"
 										size={16}
-										color={c.primary}
+										color={c.link}
 									/>
-									<Text style={[styles.pageActionText, { color: c.primary }]}>
+									<Text style={[styles.pageActionText, { color: c.link }]}>
 										{t("verification.capture.retake")}
 									</Text>
 								</Pressable>
@@ -130,14 +131,23 @@ export function CaptureReview({
 									accessibilityLabel={t("verification.capture.remove")}
 									style={styles.pageAction}
 								>
-									<Ionicons name="trash-outline" size={16} color={c.danger} />
-									<Text style={[styles.pageActionText, { color: c.danger }]}>
+									<Ionicons
+										name="trash-outline"
+										size={16}
+										color={dangerInk(c)}
+									/>
+									<Text
+										style={[styles.pageActionText, { color: dangerInk(c) }]}
+									>
 										{t("verification.capture.remove")}
 									</Text>
 								</Pressable>
 							</View>
 							{rejected?.index === index ? (
-								<Text role="alert" style={[styles.error, { color: c.danger }]}>
+								<Text
+									role="alert"
+									style={[styles.error, { color: dangerInk(c) }]}
+								>
 									{rejected.message}
 								</Text>
 							) : null}
@@ -154,8 +164,8 @@ export function CaptureReview({
 								{ borderColor: c.border, backgroundColor: c.input },
 							]}
 						>
-							<Ionicons name="add" size={20} color={c.primary} />
-							<Text style={[styles.addPageText, { color: c.primary }]}>
+							<Ionicons name="add" size={20} color={c.link} />
+							<Text style={[styles.addPageText, { color: c.link }]}>
 								{t("verification.capture.addPage")}
 							</Text>
 						</Pressable>
@@ -172,7 +182,7 @@ export function CaptureReview({
 						})}
 						style={[
 							styles.send,
-							{ backgroundColor: c.primary, opacity: canSend ? 1 : 0.5 },
+							{ backgroundColor: fillOf(c), opacity: canSend ? 1 : 0.5 },
 						]}
 					>
 						<Text style={styles.sendText}>
@@ -195,7 +205,7 @@ const styles = StyleSheet.create({
 		minHeight: 52,
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	headerButton: { minWidth: 72, minHeight: 44, justifyContent: "center" },
+	headerButton: { minWidth: 72, minHeight: 48, justifyContent: "center" },
 	cancel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	title: {
 		flex: 1,
@@ -218,7 +228,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
-		minHeight: 44,
+		minHeight: 48,
 		paddingHorizontal: 6,
 	},
 	pageActionText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
@@ -241,5 +251,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	sendText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	sendText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

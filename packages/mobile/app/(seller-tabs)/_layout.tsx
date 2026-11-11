@@ -1,9 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Redirect, Tabs } from "expo-router";
-import { useEffect } from "react";
-import { type ColorValue, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { useEffect, useRef } from "react";
+import {
+	Animated,
+	type ColorValue,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
 import { sellerBrandPalette } from "@/src/components/shop/brandTones";
@@ -30,22 +36,56 @@ import { can } from "@/src/lib/shopRoles";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
+/**
+ * Solid at every state, matching the buyer tabs. Selection reads from the
+ * tinted plaque behind the glyph as well as the colour, since two solid
+ * glyphs separated only by hue are hard to tell apart on either ground.
+ */
 function TabIcon({
 	name,
-	focusedName,
 	color,
 	focused,
 	badge = 0,
 }: {
 	name: IoniconsName;
-	focusedName: IoniconsName;
 	color: ColorValue;
 	focused: boolean;
 	badge?: number;
 }) {
+	const plaque = useRef(new Animated.Value(focused ? 1 : 0)).current;
+
+	useEffect(() => {
+		Animated.timing(plaque, {
+			toValue: focused ? 1 : 0,
+			duration: focused ? 180 : 120,
+			useNativeDriver: true,
+		}).start();
+	}, [focused, plaque]);
+
 	return (
-		<View>
-			<Ionicons name={focused ? focusedName : name} size={26} color={color} />
+		<View style={styles.icon}>
+			<Animated.View
+				pointerEvents="none"
+				style={[
+					styles.plaque,
+					{
+						backgroundColor: color as string,
+						opacity: plaque.interpolate({
+							inputRange: [0, 1],
+							outputRange: [0, 0.14],
+						}),
+						transform: [
+							{
+								scale: plaque.interpolate({
+									inputRange: [0, 1],
+									outputRange: [0.7, 1],
+								}),
+							},
+						],
+					},
+				]}
+			/>
+			<Ionicons name={name} size={26} color={color} />
 			{badge > 0 ? (
 				<View style={styles.badge}>
 					<Text style={styles.badgeText}>{badge > 9 ? "9+" : badge}</Text>
@@ -76,11 +116,18 @@ export default function SellerTabLayout() {
 	}, [lostMembership]);
 
 	const activeColor = brand
-		? sellerBrandPalette(brand, isDark ? "dark" : "light").primary
-		: isDark
-			? "#3b82f6"
-			: "#1e40af";
+		? isDark
+			? // The seller palette's dark primary is darkened for a white label,
+				// which can sink below 3:1 on the night bar; the shop's text tone
+				// is built to read on the night ground.
+				brand.dark.accentText
+			: sellerBrandPalette(brand, "light").primary
+		: // The buyer tabs' own selection colour, so switching mode keeps the bar.
+			Colors[isDark ? "dark" : "light"].tabIconSelected;
 	const tabOptions = useTabNavigatorOptions(activeColor);
+	// The counts are drawn inside the icons; screen readers get them here.
+	const ordersBadge = useOrdersBadge();
+	const inboxBadge = useInboxBadge();
 
 	if (resolved === "pending") return <LoadingScreen />;
 	if (resolved === "buyer") return <Redirect href="/(tabs)/home" />;
@@ -93,12 +140,7 @@ export default function SellerTabLayout() {
 					options={{
 						title: t("sellerMode.tabs.dashboard"),
 						tabBarIcon: ({ color, focused }) => (
-							<TabIcon
-								name="grid-outline"
-								focusedName="grid"
-								color={color}
-								focused={focused}
-							/>
+							<TabIcon name="grid" color={color} focused={focused} />
 						),
 					}}
 				/>
@@ -107,8 +149,17 @@ export default function SellerTabLayout() {
 					options={{
 						href: retail ? undefined : null,
 						title: t("sellerMode.tabs.orders"),
+						tabBarAccessibilityLabel:
+							ordersBadge > 0
+								? t("sellerMode.tabs.ordersWithCount", { count: ordersBadge })
+								: undefined,
 						tabBarIcon: ({ color, focused }) => (
-							<OrdersTabIcon color={color} focused={focused} />
+							<TabIcon
+								name="receipt"
+								color={color}
+								focused={focused}
+								badge={ordersBadge}
+							/>
 						),
 					}}
 				/>
@@ -120,8 +171,7 @@ export default function SellerTabLayout() {
 							: t("sellerAds.title"),
 						tabBarIcon: ({ color, focused }) => (
 							<TabIcon
-								name={retail ? "cube-outline" : "megaphone-outline"}
-								focusedName={retail ? "cube" : "megaphone"}
+								name={retail ? "cube" : "megaphone"}
 								color={color}
 								focused={focused}
 							/>
@@ -132,8 +182,17 @@ export default function SellerTabLayout() {
 					name="sell/inbox"
 					options={{
 						title: t("sellerMode.tabs.messages"),
+						tabBarAccessibilityLabel:
+							inboxBadge > 0
+								? t("sellerMode.tabs.messagesWithCount", { count: inboxBadge })
+								: undefined,
 						tabBarIcon: ({ color, focused }) => (
-							<InboxTabIcon color={color} focused={focused} />
+							<TabIcon
+								name="chatbubbles"
+								color={color}
+								focused={focused}
+								badge={inboxBadge}
+							/>
 						),
 					}}
 				/>
@@ -142,12 +201,7 @@ export default function SellerTabLayout() {
 					options={{
 						title: t("sellerMode.tabs.shop"),
 						tabBarIcon: ({ color, focused }) => (
-							<TabIcon
-								name="storefront-outline"
-								focusedName="storefront"
-								color={color}
-								focused={focused}
-							/>
+							<TabIcon name="storefront" color={color} focused={focused} />
 						),
 					}}
 				/>
@@ -157,38 +211,18 @@ export default function SellerTabLayout() {
 }
 
 /** Same query (and cache entry) as the orders list's "to accept" tab. */
-function OrdersTabIcon({
-	color,
-	focused,
-}: {
-	color: ColorValue;
-	focused: boolean;
-}) {
+function useOrdersBadge(): number {
 	const { ordersEnabled } = useAppConfig();
 	const { shop } = useActiveShop();
 	const reads = showsOrdersTile(shop?.role, ordersEnabled);
 	const list = useSellerOrders(reads ? shop?.shopId : undefined, {
 		tab: "to_accept",
 	});
-	return (
-		<TabIcon
-			name="receipt-outline"
-			focusedName="receipt"
-			color={color}
-			focused={focused}
-			badge={ordersToHandle(list.data?.pages[0]?.counts)}
-		/>
-	);
+	return ordersToHandle(list.data?.pages[0]?.counts);
 }
 
 /** `inboxUnread` rides on the shop list; a new message refreshes it. */
-function InboxTabIcon({
-	color,
-	focused,
-}: {
-	color: ColorValue;
-	focused: boolean;
-}) {
+function useInboxBadge(): number {
 	const { shop } = useActiveShop();
 	const { chatClient } = useChatClient();
 	const queryClient = useQueryClient();
@@ -203,24 +237,30 @@ function InboxTabIcon({
 		};
 	}, [chatClient, queryClient]);
 
-	const unread = can(shop?.role, "inbox.reply") ? (shop?.inboxUnread ?? 0) : 0;
-	return (
-		<TabIcon
-			name="chatbubbles-outline"
-			focusedName="chatbubbles"
-			color={color}
-			focused={focused}
-			badge={unread}
-		/>
-	);
+	return can(shop?.role, "inbox.reply") ? (shop?.inboxUnread ?? 0) : 0;
 }
 
 const styles = StyleSheet.create({
+	icon: {
+		width: 44,
+		height: 32,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	// Behind the selected glyph, tinted from the active colour.
+	plaque: {
+		position: "absolute",
+		width: 44,
+		height: 32,
+		borderRadius: 11,
+	},
 	badge: {
 		position: "absolute",
-		top: -4,
-		right: -8,
-		backgroundColor: "#dc2626",
+		// The glyph is 26 wide inside a 44x32 box, so the corner it wants is
+		// inset from the box edge, not outside it.
+		top: 0,
+		right: 4,
+		backgroundColor: "#d23a2e",
 		borderRadius: 10,
 		minWidth: 18,
 		height: 18,
@@ -229,8 +269,9 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 4,
 	},
 	badgeText: {
-		color: "#fff",
-		fontSize: 10,
+		color: "#ffffff",
+		fontSize: 11,
 		fontFamily: Fonts.displayExtrabold,
+		fontVariant: ["tabular-nums"],
 	},
 });

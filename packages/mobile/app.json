@@ -160,7 +160,6 @@
 				}
 			],
 			"expo-web-browser",
-			"expo-status-bar",
 			"expo-apple-authentication",
 			[
 				"react-native-document-scanner-plugin",

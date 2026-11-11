@@ -1,35 +1,33 @@
-import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	KeyboardAvoidingView,
-	Modal,
-	Platform,
-	Pressable,
 	RefreshControl,
 	StyleSheet,
 	Text,
-	TextInput,
+	type TextInput,
 	View,
 } from "react-native";
-import {
-	SafeAreaView,
-	useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
+import { ListingGridSkeleton } from "@/src/components/listing/Skeletons";
 import { SearchSegments } from "@/src/components/SearchSegments";
-import { SkeletonCard } from "@/src/components/SkeletonCard";
+import { useDiscoveryPalette } from "@/src/components/search/palette";
+import { FiltersButton, QueryField } from "@/src/components/search/QueryField";
+import {
+	SaveSearchButton,
+	SaveSearchDialog,
+} from "@/src/components/search/SaveSearch";
 import {
 	CategorySuggestions,
 	RecentSearches,
 } from "@/src/components/search/SearchSuggestions";
+import { SortBar, type SortKey } from "@/src/components/search/SortBar";
 import { ShopResults } from "@/src/components/shop/ShopResults";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { useCategories } from "@/src/hooks/useListings";
@@ -50,34 +48,17 @@ import { matchCategories } from "../../../../api/src/contracts/searchSuggest";
  * Search: the query, its filters and the results. Inside the search tab's
  * split, a result opens beside the list on a tablet in landscape.
  */
+const RowGap = () => <View style={styles.rowGap} />;
+
 export function SearchResults({ selectedId, onOpen }: SplitListProps) {
-	const isDark = useColorScheme() === "dark";
+	const c = useDiscoveryPalette();
 	const { t } = useTranslation();
-	const insets = useSafeAreaInsets();
 	const { user } = useAuth();
 	const params = useLocalSearchParams();
-	const { isTablet, columns, cardWidth, dialogMaxWidth } = useResponsive();
-
-	const SORTS = [
-		{
-			key: "newest",
-			label: t("search.sortNewest"),
-			icon: "time-outline" as const,
-		},
-		{
-			key: "price_asc",
-			label: t("search.sortPriceAsc"),
-			icon: "trending-up-outline" as const,
-		},
-		{
-			key: "price_desc",
-			label: t("search.sortPriceDesc"),
-			icon: "trending-down-outline" as const,
-		},
-	];
+	const { columns, cardWidth } = useResponsive();
 
 	const [query, setQuery] = useState((params.q as string) ?? "");
-	const [sort, setSort] = useState("newest");
+	const [sort, setSort] = useState<SortKey>("newest");
 	const [debouncedQuery, setDebouncedQuery] = useState(query);
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
 		undefined,
@@ -239,57 +220,15 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 
 	const pairs = chunkIntoRows(listings, columns);
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
-
 	// ── Save search dialog ─────────────────────────────────────────
 	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-	const [saveName, setSaveName] = useState("");
-	const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
-		"idle",
-	);
-
-	const { mutate: saveSearch } = useMutation({
-		mutationFn: () => {
-			const urlParams = new URLSearchParams();
-			if (debouncedQuery) urlParams.set("q", debouncedQuery);
-			for (const [k, v] of Object.entries(searchParams)) {
-				if (v && k !== "sort") urlParams.set(k, v);
-			}
-			return api.post("/api/saved-searches", {
-				name: saveName.trim() || debouncedQuery || t("search.saveSearch"),
-				query: debouncedQuery,
-				filters: {
-					category: params.category,
-					minPrice: params.minPrice,
-					maxPrice: params.maxPrice,
-					location: params.location,
-					sort,
-					...attrParams,
-				},
-				url: `/search?${urlParams.toString()}`,
-			});
-		},
-		onSuccess: () => {
-			setSaveStatus("saved");
-			setTimeout(() => {
-				setSaveDialogOpen(false);
-				setSaveStatus("idle");
-				setSaveName("");
-			}, 1200);
-		},
-		onError: () => setSaveStatus("idle"),
-	});
-
-	const openSaveDialog = () => {
-		setSaveName(debouncedQuery || "");
-		setSaveStatus("idle");
-		setSaveDialogOpen(true);
+	const savedFilters = {
+		category: params.category,
+		minPrice: params.minPrice,
+		maxPrice: params.maxPrice,
+		location: params.location,
+		sort,
+		...attrParams,
 	};
 
 	const renderRow = ({ item }: { item: ListingHitMapped[] }) => (
@@ -311,7 +250,31 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 		</View>
 	);
 
-	const hasActiveSearch = !!(debouncedQuery || params.category);
+	const clearQuery = () => {
+		clearTimeout(debounceRef.current);
+		setQuery("");
+		setDebouncedQuery("");
+	};
+
+	// "Clear filters" clears them all, query included: clearing the text alone
+	// left a filtered search that still matched nothing.
+	const clearAll = () => {
+		clearQuery();
+		const reset: Record<string, undefined> = {
+			category: undefined,
+			minPrice: undefined,
+			maxPrice: undefined,
+			tags: undefined,
+			location: undefined,
+			radius: undefined,
+			lat: undefined,
+			lng: undefined,
+			verified: undefined,
+			orderable: undefined,
+		};
+		for (const key of Object.keys(attrParams)) reset[key] = undefined;
+		router.setParams(reset);
+	};
 
 	// Typed text that names a category offers to browse it whole; once one is
 	// chosen, the text would only narrow it again, so it is cleared.
@@ -320,107 +283,44 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 		: matchCategories(categoriesData?.categories ?? [], query);
 	const browseCategory = (id: string) => {
 		remember(query);
-		clearTimeout(debounceRef.current);
-		setQuery("");
-		setDebouncedQuery("");
+		clearQuery();
 		inputRef.current?.blur();
 		router.setParams({ category: id });
 	};
 	const showRecent =
 		inputFocused && query.trim().length === 0 && recent.length > 0;
+	const canSave = !!(debouncedQuery || activeFilterCount > 0) && !!user;
 
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: accentBg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			{/* ── Header ── */}
-			<View style={[styles.header, { backgroundColor: accentBg }]}>
-				<View style={styles.titleRow}>
-					<Text style={[styles.pageTitle, { color: textColor }]}>
-						{t("search.title")}
-					</Text>
-					{hasActiveSearch && listings.length > 0 && !isLoading && (
-						<View
-							style={[styles.countBadge, { backgroundColor: primaryColor }]}
-						>
-							<Text style={styles.countText}>{totalDocs}</Text>
-						</View>
-					)}
-				</View>
-
-				{/* Search input */}
-				<View
-					style={[
-						styles.searchWrap,
-						{
-							backgroundColor: cardBg,
-							shadowColor: isDark ? "#000" : "#94a3b8",
-						},
-					]}
+			{/* ── Header: the title, then the query and its filters ── */}
+			<View style={styles.header}>
+				<Text
+					style={[styles.pageTitle, { color: c.foreground }]}
+					accessibilityRole="header"
 				>
-					<View
-						style={[styles.searchIconCircle, { backgroundColor: primaryColor }]}
-					>
-						<Ionicons name="search" size={15} color="#fff" />
-					</View>
-					<TextInput
+					{t("search.title")}
+				</Text>
+				<View style={styles.fieldRow}>
+					<QueryField
 						ref={inputRef}
 						value={query}
 						onChangeText={handleQueryChange}
+						onSubmit={() => runSearch(query)}
+						onClear={clearQuery}
 						onFocus={() => setInputFocused(true)}
 						onBlur={() => setInputFocused(false)}
-						onSubmitEditing={() => runSearch(query)}
 						placeholder={t("home.searchPlaceholderDetailed")}
-						placeholderTextColor={mutedColor}
-						style={[
-							styles.searchInput,
-							{ color: textColor, fontFamily: Fonts.body },
-						]}
-						returnKeyType="search"
 					/>
-					{query.length > 0 ? (
-						<Pressable
-							onPress={() => {
-								setQuery("");
-								setDebouncedQuery("");
-							}}
-							hitSlop={10}
-							style={[
-								styles.clearBtn,
-								{ backgroundColor: isDark ? "#334155" : "#f1f5f9" },
-							]}
-						>
-							<Ionicons name="close" size={13} color={mutedColor} />
-						</Pressable>
-					) : (
-						<Pressable
-							onPress={openFilters}
-							style={[
-								styles.filterIconBtn,
-								{
-									backgroundColor:
-										activeFilterCount > 0
-											? primaryColor
-											: isDark
-												? "#334155"
-												: "#f1f5f9",
-								},
-							]}
-							hitSlop={8}
-						>
-							<Ionicons
-								name="options"
-								size={15}
-								color={activeFilterCount > 0 ? "#fff" : primaryColor}
-							/>
-						</Pressable>
-					)}
+					<FiltersButton count={activeFilterCount} onPress={openFilters} />
 				</View>
 			</View>
 
 			{/* ── Content area ── */}
-			<View style={[styles.content, { backgroundColor: bg }]}>
+			<View style={styles.content}>
 				<SearchSegments
 					active={segment}
 					onChange={setSegment}
@@ -428,85 +328,8 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 					shopsCount={shopTotal}
 				/>
 
-				{segment === "listings" && (
-					<View style={[styles.sortBar, { borderBottomColor: borderColor }]}>
-						<View style={styles.sortPills}>
-							{SORTS.map((s) => {
-								const active = sort === s.key;
-								return (
-									<Pressable
-										key={s.key}
-										onPress={() => setSort(s.key)}
-										style={[
-											styles.sortPill,
-											{
-												backgroundColor: active
-													? primaryColor
-													: isDark
-														? "#1e293b"
-														: "#f1f5f9",
-												borderColor: active ? primaryColor : "transparent",
-											},
-										]}
-									>
-										<Ionicons
-											name={s.icon}
-											size={12}
-											color={active ? "#fff" : mutedColor}
-										/>
-										<Text
-											style={[
-												styles.sortText,
-												{
-													color: active ? "#fff" : mutedColor,
-													fontFamily: Fonts.bodySemibold,
-												},
-											]}
-										>
-											{s.label}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
-						{query.length > 0 && (
-							<Pressable
-								onPress={openFilters}
-								style={[
-									styles.filtersBtn,
-									{
-										backgroundColor:
-											activeFilterCount > 0
-												? primaryColor
-												: isDark
-													? "#1e293b"
-													: "#f1f5f9",
-										borderColor:
-											activeFilterCount > 0 ? primaryColor : borderColor,
-									},
-								]}
-							>
-								<Ionicons
-									name="options"
-									size={14}
-									color={activeFilterCount > 0 ? "#fff" : mutedColor}
-								/>
-								<Text
-									style={[
-										styles.filtersText,
-										{
-											color: activeFilterCount > 0 ? "#fff" : mutedColor,
-											fontFamily: Fonts.body,
-										},
-									]}
-								>
-									{activeFilterCount > 0
-										? t("search.filtersCount", { count: activeFilterCount })
-										: t("search.filters")}
-								</Text>
-							</Pressable>
-						)}
-					</View>
+				{segment === "listings" && !showRecent && (
+					<SortBar sort={sort} onChange={setSort} />
 				)}
 
 				{segment === "listings" && !showRecent && (
@@ -525,18 +348,14 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 						onClear={clear}
 					/>
 				) : segment === "shops" ? (
-					<ShopResults
-						params={shopParams}
-						onClear={() => {
-							setQuery("");
-							setDebouncedQuery("");
-						}}
-					/>
+					<ShopResults params={shopParams} onClear={clearQuery} />
 				) : isLoading ? (
-					<View style={styles.skeletonGrid}>
-						{Array.from({ length: columns * 4 }).map((_, i) => (
-							<SkeletonCard key={i} cardWidth={cardWidth} />
-						))}
+					<View style={styles.skeleton}>
+						<ListingGridSkeleton
+							cardWidth={cardWidth}
+							columns={columns}
+							rows={3}
+						/>
 					</View>
 				) : isError ? (
 					// Without this a network failure / 401 / 500 rendered the
@@ -553,11 +372,11 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 						icon="search-outline"
 						title={t("search.noResults")}
 						subtitle={t("search.noResultsHint")}
-						ctaLabel={t("search.clearFilters")}
-						onCta={() => {
-							setQuery("");
-							setDebouncedQuery("");
-						}}
+						{...(activeFilterCount > 0
+							? { ctaLabel: t("search.clearFilters"), onCta: clearAll }
+							: query
+								? { ctaLabel: t("search.clearSearch"), onCta: clearQuery }
+								: {})}
 					/>
 				) : (
 					// Recycled rows keyed by their listings, so a page appended at
@@ -567,12 +386,22 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 						renderItem={renderRow}
 						extraData={selectedId}
 						keyExtractor={(row) => row.map((listing) => listing.id).join("|")}
-						contentContainerStyle={styles.list}
+						// FlashList positions rows itself and ignores `gap` on the
+						// container, so the 16pt between rows is a separator.
+						ItemSeparatorComponent={RowGap}
+						contentContainerStyle={{
+							...styles.list,
+							// The save button floats over the grid: the last row clears it.
+							paddingBottom: canSave ? 96 : 32,
+						}}
+						keyboardDismissMode="on-drag"
+						keyboardShouldPersistTaps="handled"
 						refreshControl={
 							<RefreshControl
 								refreshing={refreshing}
 								onRefresh={onRefresh}
-								tintColor={primaryColor}
+								tintColor={c.primary}
+								colors={[c.primaryFill]}
 							/>
 						}
 						onEndReached={() =>
@@ -581,10 +410,7 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 						onEndReachedThreshold={0.5}
 						ListFooterComponent={
 							isFetchingNextPage ? (
-								<ActivityIndicator
-									color={primaryColor}
-									style={{ margin: 16 }}
-								/>
+								<ActivityIndicator color={c.primary} style={styles.more} />
 							) : null
 						}
 						showsVerticalScrollIndicator={false}
@@ -592,120 +418,17 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 				)}
 			</View>
 
-			{/* Save Search FAB */}
-			{(debouncedQuery || activeFilterCount > 0) && user && (
-				<Pressable
-					style={[styles.fab, { backgroundColor: primaryColor }]}
-					onPress={openSaveDialog}
-				>
-					<Ionicons name="bookmark" size={18} color="#fff" />
-					<Text style={[styles.fabText, { fontFamily: Fonts.displayBold }]}>
-						{t("search.save")}
-					</Text>
-				</Pressable>
+			{canSave && segment === "listings" && !showRecent && (
+				<SaveSearchButton onPress={() => setSaveDialogOpen(true)} />
 			)}
 
-			{/* Save dialog */}
-			<Modal
+			<SaveSearchDialog
 				visible={saveDialogOpen}
-				transparent
-				animationType="fade"
-				onRequestClose={() => setSaveDialogOpen(false)}
-			>
-				<KeyboardAvoidingView
-					behavior={Platform.OS === "ios" ? "padding" : "height"}
-					style={[
-						styles.modalOverlay,
-						{ paddingBottom: insets.bottom + 32 },
-						// Centred dialog on iPad instead of a 1024pt-wide sheet.
-						isTablet && { justifyContent: "center", alignItems: "center" },
-					]}
-				>
-					<Pressable
-						style={StyleSheet.absoluteFill}
-						onPress={() => setSaveDialogOpen(false)}
-					/>
-					<View
-						style={[
-							styles.modalCard,
-							{ backgroundColor: cardBg, borderColor },
-							isTablet && { width: "100%", maxWidth: dialogMaxWidth },
-						]}
-					>
-						<Text style={[styles.modalTitle, { color: textColor }]}>
-							{t("search.saveSearchTitle")}
-						</Text>
-						<Text style={[styles.modalSub, { color: mutedColor }]}>
-							{t("search.saveSearchSub")}
-						</Text>
-
-						<TextInput
-							value={saveName}
-							onChangeText={setSaveName}
-							placeholder={
-								debouncedQuery || t("search.saveSearchPlaceholderFallback")
-							}
-							placeholderTextColor={mutedColor}
-							autoFocus
-							style={[
-								styles.modalInput,
-								{
-									color: textColor,
-									borderColor: primaryColor,
-									backgroundColor: isDark ? "#0b1120" : "#f8fafc",
-								},
-							]}
-							returnKeyType="done"
-							onSubmitEditing={() => saveStatus === "idle" && saveSearch()}
-						/>
-
-						<View style={styles.modalActions}>
-							<Pressable
-								onPress={() => setSaveDialogOpen(false)}
-								style={[
-									styles.modalBtn,
-									{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
-								]}
-							>
-								<Text style={[styles.modalBtnText, { color: mutedColor }]}>
-									{t("common.cancel")}
-								</Text>
-							</Pressable>
-
-							<Pressable
-								onPress={() => saveStatus === "idle" && saveSearch()}
-								disabled={saveStatus !== "idle"}
-								style={[
-									styles.modalBtn,
-									styles.modalBtnPrimary,
-									{
-										backgroundColor:
-											saveStatus === "saved" ? "#16a34a" : primaryColor,
-									},
-								]}
-							>
-								{saveStatus === "saving" ? (
-									<ActivityIndicator size="small" color="#fff" />
-								) : saveStatus === "saved" ? (
-									<>
-										<Ionicons name="checkmark" size={15} color="#fff" />
-										<Text style={styles.modalBtnTextPrimary}>
-											{t("search.saved")}
-										</Text>
-									</>
-								) : (
-									<>
-										<Ionicons name="bookmark" size={15} color="#fff" />
-										<Text style={styles.modalBtnTextPrimary}>
-											{t("search.save")}
-										</Text>
-									</>
-								)}
-							</Pressable>
-						</View>
-					</View>
-				</KeyboardAvoidingView>
-			</Modal>
+				onClose={() => setSaveDialogOpen(false)}
+				query={debouncedQuery}
+				searchParams={searchParams}
+				filters={savedFilters}
+			/>
 		</SafeAreaView>
 	);
 }
@@ -715,191 +438,20 @@ const styles = StyleSheet.create({
 	header: {
 		paddingHorizontal: 16,
 		paddingTop: 8,
-		paddingBottom: 16,
-	},
-	titleRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		marginBottom: 12,
+		paddingBottom: 12,
+		gap: 12,
 	},
 	pageTitle: {
-		fontSize: 26,
+		fontSize: 30,
+		lineHeight: 34,
+		letterSpacing: -0.8,
 		fontFamily: Fonts.displayExtrabold,
-		letterSpacing: -0.5,
 	},
-	countBadge: {
-		borderRadius: 10,
-		paddingHorizontal: 8,
-		paddingVertical: 2,
-		minWidth: 28,
-		alignItems: "center",
-	},
-	countText: {
-		color: "#fff",
-		fontSize: 12,
-		fontFamily: Fonts.displayBold,
-	},
-	searchWrap: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		borderRadius: 16,
-		paddingHorizontal: 10,
-		paddingVertical: 8,
-		shadowOffset: { width: 0, height: 3 },
-		shadowOpacity: 0.12,
-		shadowRadius: 8,
-		elevation: 4,
-	},
-	searchIconCircle: {
-		width: 30,
-		height: 30,
-		borderRadius: 10,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	searchInput: {
-		flex: 1,
-		fontSize: 15,
-		paddingVertical: 4,
-	},
-	clearBtn: {
-		width: 24,
-		height: 24,
-		borderRadius: 12,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	filterIconBtn: {
-		width: 30,
-		height: 30,
-		borderRadius: 10,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	content: {
-		flex: 1,
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		overflow: "hidden",
-	},
-	sortBar: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 10,
-		borderBottomWidth: 1,
-	},
-	sortPills: {
-		flexDirection: "row",
-		gap: 6,
-	},
-	sortPill: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		borderRadius: 20,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
-	},
-	sortText: { fontSize: 12 },
-	filtersBtn: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		borderRadius: 20,
-		borderWidth: 1,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
-	},
-	filtersText: { fontSize: 12 },
-	list: { padding: 16, gap: 12 },
-	row: { flexDirection: "row", gap: 12, marginBottom: 0 },
-	skeletonGrid: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		padding: 16,
-		gap: 12,
-	},
-	fab: {
-		position: "absolute",
-		bottom: 20,
-		right: 16,
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 6,
-		borderRadius: 24,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.2,
-		shadowRadius: 8,
-		elevation: 8,
-	},
-	fabText: { color: "#fff", fontSize: 14 },
-
-	// Modal
-	modalOverlay: {
-		flex: 1,
-		backgroundColor: "rgba(0,0,0,0.5)",
-		justifyContent: "flex-end",
-		// paddingBottom is applied inline from the safe-area insets.
-		paddingHorizontal: 16,
-	},
-	modalCard: {
-		borderRadius: 20,
-		borderWidth: 1,
-		padding: 20,
-		gap: 12,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: -4 },
-		shadowOpacity: 0.12,
-		shadowRadius: 16,
-		elevation: 10,
-	},
-	modalTitle: {
-		fontSize: 17,
-		fontFamily: Fonts.displayBold,
-	},
-	modalSub: {
-		fontSize: 13,
-		fontFamily: Fonts.body,
-		lineHeight: 18,
-		marginTop: -4,
-	},
-	modalInput: {
-		borderWidth: 1.5,
-		borderRadius: 12,
-		paddingHorizontal: 14,
-		paddingVertical: 12,
-		fontSize: 15,
-		fontFamily: Fonts.body,
-	},
-	modalActions: {
-		flexDirection: "row",
-		gap: 10,
-		marginTop: 4,
-	},
-	modalBtn: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 6,
-		borderRadius: 12,
-		paddingVertical: 13,
-	},
-	modalBtnPrimary: {},
-	modalBtnText: {
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
-	},
-	modalBtnTextPrimary: {
-		color: "#fff",
-		fontSize: 14,
-		fontFamily: Fonts.displayBold,
-	},
+	fieldRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+	content: { flex: 1 },
+	list: { paddingHorizontal: 16, paddingTop: 12 },
+	rowGap: { height: 16 },
+	row: { flexDirection: "row", gap: 12 },
+	skeleton: { padding: 16 },
+	more: { margin: 16 },
 });

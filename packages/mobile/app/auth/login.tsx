@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Pressable, StyleSheet, Text, type TextInput } from "react-native";
 import { Fonts } from "@/constants/theme";
 import {
 	AuthField,
@@ -10,6 +10,7 @@ import {
 	authErrorMessage,
 } from "@/src/components/auth/AuthLayout";
 import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
+import { FormError } from "@/src/components/checkout/FormError";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { ApiError } from "@/src/lib/api";
@@ -33,6 +34,10 @@ export default function LoginScreen() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
+	// Empty fields are said on the form, not in a sheet: the border marks
+	// each one and a line under them says what is missing.
+	const [missing, setMissing] = useState(false);
+	const passwordRef = useRef<TextInput>(null);
 
 	const redirectTo = getSafeAuthRedirect(params.redirect);
 
@@ -54,10 +59,11 @@ export default function LoginScreen() {
 	}, [params.oauthError, showError, t]);
 
 	const handleLogin = async () => {
-		if (!email || !password) {
-			showError(t("auth.missingFieldsTitle"), t("auth.missingFieldsMessage"));
+		if (!email.trim() || !password) {
+			setMissing(true);
 			return;
 		}
+		setMissing(false);
 		setLoading(true);
 		try {
 			await login(email.trim().toLowerCase(), password);
@@ -128,14 +134,19 @@ export default function LoginScreen() {
 				autoCapitalize="none"
 				autoComplete="email"
 				returnKeyType="next"
+				submitBehavior="submit"
+				onSubmitEditing={() => passwordRef.current?.focus()}
+				error={missing && !email.trim()}
 			/>
 			<AuthField
 				label={t("auth.password")}
 				icon="lock-closed-outline"
+				inputRef={passwordRef}
 				value={password}
 				onChangeText={setPassword}
 				placeholder="••••••••"
 				password
+				error={missing && !password}
 				autoCapitalize="none"
 				autoComplete="password"
 				returnKeyType="go"
@@ -143,30 +154,26 @@ export default function LoginScreen() {
 				trailingLabel={
 					<Pressable
 						onPress={() => router.push("/auth/forgot-password")}
-						hitSlop={8}
+						hitSlop={12}
 						accessibilityRole="link"
 					>
-						<Text style={[styles.forgotLink, { color: c.primary }]}>
+						<Text style={[styles.forgotLink, { color: c.link }]}>
 							{t("auth.forgotPassword")}
 						</Text>
 					</Pressable>
 				}
 			/>
+			<FormError message={missing ? t("auth.loginMissingFields") : null} />
 			<AuthSubmit
 				label={t("auth.signIn")}
 				onPress={handleLogin}
 				loading={loading}
 			/>
-			<SocialAuthButtons
-				borderColor={c.border}
-				mutedColor={c.muted}
-				onPress={handleSocialLogin}
-				primaryColor={c.primary}
-			/>
+			<SocialAuthButtons onPress={handleSocialLogin} disabled={loading} />
 		</AuthScreen>
 	);
 }
 
 const styles = StyleSheet.create({
-	forgotLink: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	forgotLink: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
 });

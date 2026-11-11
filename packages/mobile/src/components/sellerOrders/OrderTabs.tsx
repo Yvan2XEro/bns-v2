@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { SHOP_ORDER_TABS, type ShopOrderTab } from "@/src/lib/orderStatus";
@@ -39,6 +40,8 @@ export function OrderTabs({
 				const selected = tab === active;
 				const label = t(TAB_KEYS[tab]);
 				const count = counts?.[tab];
+				// Orders waiting on the seller keep their count lit on every tab.
+				const pending = tab === "to_accept" && !selected && (count ?? 0) > 0;
 				return (
 					<Pressable
 						key={tab}
@@ -48,12 +51,13 @@ export function OrderTabs({
 						accessibilityLabel={
 							count === undefined ? label : `${label}, ${count}`
 						}
-						style={[
+						style={({ pressed }) => [
 							styles.tab,
 							{
-								backgroundColor: selected ? c.primary : c.card,
-								borderColor: selected ? c.primary : c.border,
+								backgroundColor: selected ? fillOf(c) : c.card,
+								borderColor: selected ? fillOf(c) : c.border,
 							},
+							pressed && !selected && styles.pressed,
 						]}
 					>
 						<Text style={[styles.label, { color: selected ? "#fff" : c.body }]}>
@@ -66,14 +70,22 @@ export function OrderTabs({
 									{
 										backgroundColor: selected
 											? "rgba(255,255,255,0.25)"
-											: c.neutralSoft,
+											: pending
+												? c.warningSoft
+												: c.neutralSoft,
 									},
 								]}
 							>
 								<Text
 									style={[
 										styles.countText,
-										{ color: selected ? "#fff" : c.neutralText },
+										{
+											color: selected
+												? "#fff"
+												: pending
+													? c.warningText
+													: c.neutralText,
+										},
 									]}
 								>
 									{count}
@@ -97,9 +109,20 @@ const styles = StyleSheet.create({
 		borderRadius: 999,
 		borderWidth: 1,
 		paddingHorizontal: 14,
-		minHeight: 44,
+		minHeight: 48,
 	},
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	count: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 },
-	countText: { fontSize: 12, fontFamily: Fonts.bodyBold },
+	pressed: { opacity: 0.7 },
+	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	count: {
+		minWidth: 22,
+		alignItems: "center",
+		borderRadius: 999,
+		paddingHorizontal: 7,
+		paddingVertical: 2,
+	},
+	countText: {
+		fontSize: 12,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
 });

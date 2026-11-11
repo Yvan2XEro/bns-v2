@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
@@ -16,6 +16,7 @@ import {
 	type AddressChoice,
 	useCheckoutFlow,
 } from "@/src/components/checkout/CheckoutProvider";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -90,7 +91,7 @@ function AddressStep() {
 	};
 
 	if (saved.isPending) {
-		return <ActivityIndicator style={{ marginTop: 32 }} color={c.primary} />;
+		return <OrderListSkeleton rows={2} />;
 	}
 
 	// A refused address goes back to the form it came from, prefilled.
@@ -127,13 +128,14 @@ function AddressStep() {
 			>
 				{addresses.length > 0 && !editing ? (
 					<View
+						accessibilityRole="tablist"
 						style={{
 							flexDirection: "row",
 							gap: 8,
 							backgroundColor: c.card,
 							borderRadius: 12,
 							padding: 4,
-							borderWidth: 1,
+							borderWidth: StyleSheet.hairlineWidth,
 							borderColor: c.border,
 						}}
 					>
@@ -145,6 +147,7 @@ function AddressStep() {
 									onPress={() => setMode(tab)}
 									accessibilityRole="tab"
 									accessibilityState={{ selected: on }}
+									hitSlop={{ top: 4, bottom: 4 }}
 									style={{
 										flex: 1,
 										minHeight: 44,
@@ -157,7 +160,8 @@ function AddressStep() {
 									<Text
 										style={{
 											fontFamily: Fonts.bodySemibold,
-											color: on ? c.primary : c.muted,
+											fontSize: 15,
+											color: on ? c.link : c.muted,
 										}}
 									>
 										{tab === "list"

@@ -97,6 +97,9 @@ export function ProductInfoStep({
 						textColor: c.text,
 						mutedColor: c.muted,
 						primary: c.primary,
+						// Behind the sheet's white icon glyphs.
+						fill: c.fill,
+						link: c.link,
 						border: c.border,
 						isDark: c.isDark,
 						inputBg: c.input,
@@ -107,7 +110,10 @@ export function ProductInfoStep({
 				{groupListingAttributes(attributes).map((section) => (
 					<View key={section.key} style={{ gap: 10 }}>
 						{section.title ? (
-							<Text style={[f.sectionTitle, { color: c.text }]}>
+							<Text
+								style={[f.sectionTitle, { color: c.text }]}
+								accessibilityRole="header"
+							>
 								{section.title}
 							</Text>
 						) : null}

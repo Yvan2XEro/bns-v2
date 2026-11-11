@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -11,6 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { inkOf } from "@/src/components/checkout/fill";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
@@ -44,9 +47,11 @@ function GroupHeader({ checkoutGroup }: { checkoutGroup: string }) {
 			accessibilityLabel={t("checkoutGroup.openGroup")}
 			style={styles.groupHeader}
 		>
-			<Text style={[styles.groupHeaderText, { color: c.primary }]}>
+			<Ionicons name="layers-outline" size={16} color={inkOf(c)} />
+			<Text style={[styles.groupHeaderText, { color: inkOf(c) }]}>
 				{t("checkoutGroup.purchasesHeader")}
 			</Text>
+			<Ionicons name="chevron-forward" size={16} color={inkOf(c)} />
 		</Pressable>
 	);
 }
@@ -91,9 +96,7 @@ export function PurchasesList({ selectedId, onOpen }: SplitListProps) {
 			/>
 
 			{purchases.isPending ? (
-				<View style={styles.center}>
-					<ActivityIndicator color={c.primary} />
-				</View>
+				<OrderListSkeleton />
 			) : purchases.isError ? (
 				<EmptyState
 					illustration="notFound"
@@ -146,9 +149,12 @@ export function PurchasesList({ selectedId, onOpen }: SplitListProps) {
 							}
 						}}
 						ListEmptyComponent={
-							<Text style={[styles.empty, { color: c.muted }]}>
-								{t("purchases.tabEmpty")}
-							</Text>
+							<View style={styles.emptyWrap}>
+								<Ionicons name="receipt-outline" size={28} color={c.muted} />
+								<Text style={[styles.empty, { color: c.body }]}>
+									{t("purchases.tabEmpty")}
+								</Text>
+							</View>
 						}
 						ListFooterComponent={
 							purchases.hasNextPage ? (
@@ -162,7 +168,7 @@ export function PurchasesList({ selectedId, onOpen }: SplitListProps) {
 									{purchases.isFetchingNextPage ? (
 										<ActivityIndicator color={c.primary} />
 									) : (
-										<Text style={[styles.moreText, { color: c.primary }]}>
+										<Text style={[styles.moreText, { color: inkOf(c) }]}>
 											{t("purchases.loadMore")}
 										</Text>
 									)}
@@ -178,21 +184,27 @@ export function PurchasesList({ selectedId, onOpen }: SplitListProps) {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	tabs: { marginHorizontal: 16, marginTop: 12 },
+	emptyWrap: { alignItems: "center", gap: 10, paddingTop: 40 },
 	empty: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 		textAlign: "center",
-		marginTop: 24,
+		maxWidth: 280,
 	},
 	more: {
-		minHeight: 44,
+		minHeight: 48,
 		alignItems: "center",
 		justifyContent: "center",
 		marginTop: 12,
 	},
-	groupHeader: { minHeight: 44, justifyContent: "center" },
-	groupHeaderText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	moreText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	groupHeader: {
+		minHeight: 44,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+	},
+	groupHeaderText: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
+	moreText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 });

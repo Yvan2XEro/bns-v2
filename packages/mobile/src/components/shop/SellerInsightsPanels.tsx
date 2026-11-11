@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { successInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { sparklineHeights } from "@/src/lib/insightChart";
@@ -52,7 +53,7 @@ export function InsightsHeader({
 			delta: t("sellerInsights.previousDelta", {
 				value: signed(view.totals.delta.gmvDelivered, lang),
 			}),
-			color: c.success,
+			color: successInk(c),
 		},
 	];
 	return (
@@ -482,8 +483,13 @@ const styles = StyleSheet.create({
 	},
 	metricLabel: { fontSize: 11, fontFamily: Fonts.body },
 	metricValue: { fontSize: 16, fontFamily: Fonts.displayBold },
-	metricDelta: { fontSize: 10, fontFamily: Fonts.body },
-	panel: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 12 },
+	metricDelta: { fontSize: 11, fontFamily: Fonts.body },
+	panel: {
+		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 16,
+		padding: 14,
+		gap: 12,
+	},
 	panelTitle: { fontSize: 15, fontFamily: Fonts.displayBold, marginTop: 2 },
 	funnelLine: { gap: 5 },
 	inline: {
@@ -507,7 +513,7 @@ const styles = StyleSheet.create({
 	rowTitle: { fontSize: 12, fontFamily: Fonts.displayBold },
 	footer: { paddingHorizontal: 16, paddingBottom: 36, gap: 12 },
 	action: {
-		minHeight: 44,
+		minHeight: 48,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",

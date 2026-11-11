@@ -1,14 +1,8 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useReducer } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { BusinessSummaryCard } from "@/src/components/moderation/BusinessSummaryCard";
 import {
@@ -21,9 +15,18 @@ import {
 } from "@/src/components/moderation/DecisionSheet";
 import { DocumentList } from "@/src/components/moderation/DocumentList";
 import { KycSummaryCard } from "@/src/components/moderation/KycSummaryCard";
+import {
+	DecisionBar,
+	DecisionButton,
+	type DecisionVariant,
+	DetailSkeleton,
+	InlineNotice,
+	LoadError,
+} from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { SignalsPanel } from "@/src/components/moderation/SignalsPanel";
 import { useModerationTheme } from "@/src/components/moderation/theme";
+import { tonesOf } from "@/src/components/moderation/tones";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import {
 	moderationVerificationKeys,
@@ -47,6 +50,31 @@ import {
 
 const DESTRUCTIVE_ACTIONS = new Set<ReviewerAction>(["reject", "revoke"]);
 
+/**
+ * How each reviewer action looks in the bar, and where it sits: the neutral
+ * moves first, refusals next, the forward decision last (rightmost, under
+ * the thumb). Refusals are outlines because they open their own sheet.
+ */
+const ACTION_STYLE: Record<
+	ReviewerAction,
+	{
+		variant: DecisionVariant;
+		icon: React.ComponentProps<typeof DecisionButton>["icon"];
+		order: number;
+	}
+> = {
+	release: { variant: "secondary", icon: "arrow-undo-outline", order: 0 },
+	request_info: {
+		variant: "secondary",
+		icon: "chatbubble-ellipses-outline",
+		order: 1,
+	},
+	reject: { variant: "dangerOutline", icon: "close", order: 2 },
+	revoke: { variant: "dangerOutline", icon: "ban-outline", order: 3 },
+	claim: { variant: "primary", icon: "hand-left-outline", order: 4 },
+	approve: { variant: "approve", icon: "checkmark", order: 5 },
+};
+
 interface State {
 	activeAction: ReviewerAction | null;
 	checklist: ChecklistState;
@@ -69,6 +97,7 @@ export default function VerificationReviewScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const requestId = String(id);
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const queryClient = useQueryClient();
@@ -82,7 +111,11 @@ export default function VerificationReviewScreen() {
 	const detail = query.data;
 	const request = detail?.request;
 	const actions =
-		detail && request ? availableActions(detail.viewer, request.status) : [];
+		detail && request
+			? [...availableActions(detail.viewer, request.status)].sort(
+					(a, b) => ACTION_STYLE[a].order - ACTION_STYLE[b].order,
+				)
+			: [];
 	const approveDisabled =
 		request?.requestedLevel === 3 && !checklistComplete(state.checklist);
 	const activeConfig = state.activeAction
@@ -152,37 +185,67 @@ export default function VerificationReviewScreen() {
 				) : undefined
 			}
 		>
-			{query.isLoading || !detail || !request ? (
-				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+			{query.isLoading ? (
+				<DetailSkeleton />
+			) : query.isError || !detail || !request ? (
+				<LoadError
+					title={t("common.error")}
+					message={
+						query.error ? resolveErrorMessage(query.error, t) : undefined
+					}
+					onRetry={() => void query.refetch()}
+				/>
 			) : (
 				<>
 					<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
-						{detail.owner ? (
-							<Text style={[styles.owner, { color: c.muted }]}>
-								{detail.owner.name || detail.owner.email}
-							</Text>
+						{decide.isError ? (
+							<InlineNotice text={resolveErrorMessage(decide.error, t)} />
 						) : null}
 
-						{decide.isError ? (
-							<Text
-								accessibilityRole="alert"
-								style={[
-									styles.banner,
-									{ color: c.danger, backgroundColor: c.dangerSoft },
+						{/* Who is asking, one tap from their account sheet: a refusal
+						    is often decided by what else that account has done. */}
+						{detail.owner ? (
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={`${detail.owner.name || detail.owner.email}, ${t("moderation.openAccount")}`}
+								onPress={() =>
+									router.push(`/moderation/user/${detail.owner?.id}` as never)
+								}
+								style={({ pressed }) => [
+									styles.ownerRow,
+									{
+										backgroundColor: c.card,
+										borderColor: c.border,
+										opacity: pressed ? 0.85 : 1,
+									},
 								]}
 							>
-								{resolveErrorMessage(decide.error, t)}
-							</Text>
+								<Ionicons
+									name="person-circle-outline"
+									size={24}
+									color={c.muted}
+								/>
+								<View style={styles.flex}>
+									<Text style={[styles.owner, { color: c.text }]}>
+										{detail.owner.name || detail.owner.email}
+									</Text>
+									<Text style={[styles.ownerLink, { color: k.linkText }]}>
+										{t("moderation.openAccount")}
+									</Text>
+								</View>
+								<Ionicons name="chevron-forward" size={18} color={c.muted} />
+							</Pressable>
 						) : null}
 
+						{/* Red flags before the facts they qualify. */}
+						<SignalsPanel
+							signals={request.reviewSignals}
+							otherRequests={detail.otherRequests}
+						/>
 						<KycSummaryCard kyc={request.kyc} />
 						<BusinessSummaryCard
 							business={request.business}
 							signals={request.reviewSignals}
-						/>
-						<SignalsPanel
-							signals={request.reviewSignals}
-							otherRequests={detail.otherRequests}
 						/>
 						{request.requestedLevel === 3 ? (
 							<ChecklistSwitches
@@ -194,51 +257,36 @@ export default function VerificationReviewScreen() {
 					</ScrollView>
 
 					{actions.length > 0 ? (
-						<View
-							style={[
-								styles.actionBar,
-								{ backgroundColor: c.card, borderTopColor: c.border },
-							]}
+						<DecisionBar
+							wrap
+							note={
+								approveDisabled
+									? {
+											text: t("moderation.verifApproveChecklistIncomplete"),
+											tone: "warning",
+										}
+									: null
+							}
 						>
-							{approveDisabled ? (
-								<Text style={[styles.checklistHint, { color: c.warning }]}>
-									{t("moderation.verifApproveChecklistIncomplete")}
-								</Text>
-							) : null}
-							<ScrollView
-								horizontal
-								showsHorizontalScrollIndicator={false}
-								contentContainerStyle={{ gap: 8 }}
-							>
-								{actions.map((action) => {
-									const disabled =
-										decide.isPending ||
-										(action === "approve" && approveDisabled);
-									return (
-										<Pressable
-											key={action}
-											accessibilityRole="button"
-											accessibilityLabel={t(`moderation.verifAction_${action}`)}
-											disabled={disabled}
-											onPress={() => selectAction(action)}
-											style={[
-												styles.actionBtn,
-												{
-													backgroundColor: DESTRUCTIVE_ACTIONS.has(action)
-														? c.danger
-														: c.primary,
-													opacity: disabled ? 0.5 : 1,
-												},
-											]}
-										>
-											<Text style={styles.actionText}>
-												{t(`moderation.verifAction_${action}`)}
-											</Text>
-										</Pressable>
-									);
-								})}
-							</ScrollView>
-						</View>
+							{actions.map((action) => {
+								const look = ACTION_STYLE[action];
+								const quick = action === "claim" || action === "release";
+								return (
+									<DecisionButton
+										key={action}
+										variant={look.variant}
+										icon={look.icon}
+										label={t(`moderation.verifAction_${action}`)}
+										pending={quick && decide.isPending}
+										disabled={
+											decide.isPending ||
+											(action === "approve" && approveDisabled)
+										}
+										onPress={() => selectAction(action)}
+									/>
+								);
+							})}
+						</DecisionBar>
 					) : null}
 
 					<DecisionSheet
@@ -295,26 +343,17 @@ export default function VerificationReviewScreen() {
 
 const styles = StyleSheet.create({
 	scroll: { padding: 16, gap: 14, paddingBottom: 24 },
-	owner: { fontSize: 13, fontFamily: Fonts.body },
-	banner: {
-		fontSize: 13,
-		fontFamily: Fonts.body,
-		borderRadius: 10,
-		padding: 10,
-	},
-	actionBar: {
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		gap: 8,
-		borderTopWidth: StyleSheet.hairlineWidth,
-	},
-	checklistHint: { fontSize: 12, fontFamily: Fonts.body },
-	actionBtn: {
-		minHeight: 44,
-		paddingHorizontal: 18,
-		borderRadius: 12,
+	flex: { flex: 1 },
+	ownerRow: {
+		flexDirection: "row",
 		alignItems: "center",
-		justifyContent: "center",
+		gap: 12,
+		minHeight: 60,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingHorizontal: 14,
+		paddingVertical: 10,
 	},
-	actionText: { fontSize: 14, fontFamily: Fonts.bodySemibold, color: "#fff" },
+	owner: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	ownerLink: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 });

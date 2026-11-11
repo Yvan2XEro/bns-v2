@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import React from "react";
 import {
 	FlatList,
+	Platform,
 	Pressable,
 	RefreshControl,
 	StyleSheet,
@@ -13,10 +14,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
-import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { SkeletonRow } from "@/src/components/SkeletonCard";
+import { useGroupedColors } from "@/src/components/settings/Grouped";
+import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
@@ -24,20 +25,18 @@ import { useAuth } from "@/src/lib/auth";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 
+/**
+ * Saved searches as one inset list: tap a search to run it again, the
+ * switch turns its alerts on or off, the bin removes it after a prompt.
+ */
 export function SavedSearchesScreen() {
-	const isDark = useColorScheme() === "dark";
+	const c = useGroupedColors();
 	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 	const { user, isLoading: authLoading } = useAuth();
 	const queryClient = useQueryClient();
 	const { showConfirm } = useAlert();
-
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const danger = c.isDark ? c.dangerText : c.destructive;
 
 	const { data, isLoading, refetch } = useQuery({
 		queryKey: ["saved-searches"],
@@ -71,18 +70,17 @@ export function SavedSearchesScreen() {
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<HeaderBackButton color={textColor} fallback="/(tabs)/account" inline />
-				<Text style={[styles.title, { color: textColor }]}>
-					{t("savedSearches.title")}
-				</Text>
-				<View style={{ width: 40 }} />
-			</View>
+			<SettingsHeader title={t("savedSearches.title")} />
 
 			{authLoading || isLoading ? (
-				<View style={styles.skeletonList}>
+				<View
+					style={styles.skeletonList}
+					accessible
+					accessibilityRole="progressbar"
+					accessibilityLabel={t("common.loading")}
+				>
 					{Array.from({ length: 5 }).map((_, i) => (
 						<SkeletonRow key={i} />
 					))}
@@ -91,7 +89,7 @@ export function SavedSearchesScreen() {
 				<EmptyState
 					icon="bookmark-outline"
 					title={t("savedSearches.noSearches")}
-					subtitle="Sauvegardez vos recherches pour être notifié des nouvelles annonces"
+					subtitle={t("savedSearches.noSearchesSubtitle")}
 					ctaLabel={t("common.search")}
 					onCta={() => router.push("/(tabs)/search")}
 				/>
@@ -103,47 +101,87 @@ export function SavedSearchesScreen() {
 						<RefreshControl
 							refreshing={refreshing}
 							onRefresh={onRefresh}
-							tintColor={primaryColor}
+							tintColor={c.primary}
+							colors={[c.primary]}
 						/>
 					}
-					contentContainerStyle={[{ padding: 16, gap: 10 }, centeredContent]}
-					renderItem={({ item }) => (
-						<Pressable
-							onPress={() => {
-								router.push({
-									pathname: "/(tabs)/search",
-									params: { q: item.name },
-								});
-							}}
+					contentContainerStyle={[styles.list, centeredContent]}
+					// The hairline between rows starts at the text, as in the grouped
+					// lists of Settings; the card's sides run past it.
+					ItemSeparatorComponent={() => (
+						<View
 							style={[
-								styles.searchItem,
-								{ backgroundColor: cardBg, borderColor },
+								styles.separator,
+								{ backgroundColor: c.card, borderColor: c.border },
 							]}
 						>
-							<View style={styles.searchInfo}>
-								<Text style={[styles.searchName, { color: textColor }]}>
-									{item.name}
-								</Text>
-								{formatDate(item.createdAt) && (
-									<Text style={[styles.searchDate, { color: mutedColor }]}>
-										{formatDate(item.createdAt)}
+							<View
+								style={[styles.separatorLine, { backgroundColor: c.border }]}
+							/>
+						</View>
+					)}
+					renderItem={({ item, index }) => {
+						const date = formatDate(item.createdAt);
+						const first = index === 0;
+						const last = index === searches.length - 1;
+						return (
+							<View
+								style={[
+									styles.item,
+									{ backgroundColor: c.card, borderColor: c.border },
+									first && styles.itemFirst,
+									last && styles.itemLast,
+								]}
+							>
+								<Pressable
+									onPress={() => {
+										router.push({
+											pathname: "/(tabs)/search",
+											params: { q: item.name },
+										});
+									}}
+									accessibilityRole="button"
+									accessibilityLabel={[item.name, date]
+										.filter(Boolean)
+										.join(", ")}
+									android_ripple={{ color: c.well }}
+									style={({ pressed }) => [
+										styles.searchInfo,
+										pressed && Platform.OS === "ios"
+											? { backgroundColor: c.well }
+											: null,
+									]}
+								>
+									<Text
+										style={[styles.searchName, { color: c.foreground }]}
+										numberOfLines={2}
+									>
+										{item.name}
 									</Text>
-								)}
-							</View>
-							<View style={styles.searchActions}>
-								<View style={{ alignItems: "center", gap: 2 }}>
+									{date ? (
+										<Text
+											style={[styles.searchDate, { color: c.mutedForeground }]}
+										>
+											{date}
+										</Text>
+									) : null}
+								</Pressable>
+								<View style={styles.alert}>
 									<Switch
 										value={item.alertEnabled ?? false}
 										onValueChange={(val) =>
 											toggleAlert({ id: item.id, alertEnabled: val })
 										}
-										thumbColor={item.alertEnabled ? primaryColor : "#f4f4f5"}
-										trackColor={{
-											false: borderColor,
-											true: isDark ? "#1e3a5f" : "#dbeafe",
-										}}
+										accessibilityLabel={`${t("savedSearches.alerts")}, ${item.name}`}
+										trackColor={{ false: c.borderStrong, true: c.primaryFill }}
+										thumbColor="#ffffff"
+										ios_backgroundColor={c.borderStrong}
 									/>
-									<Text style={[styles.alertLabel, { color: mutedColor }]}>
+									<Text
+										style={[styles.alertLabel, { color: c.mutedForeground }]}
+										importantForAccessibility="no"
+										accessibilityElementsHidden
+									>
 										{t("savedSearches.alerts")}
 									</Text>
 								</View>
@@ -155,16 +193,19 @@ export function SavedSearchesScreen() {
 											() => deleteSearch(item.id),
 										)
 									}
-									style={[
+									accessibilityRole="button"
+									accessibilityLabel={`${t("common.delete")}, ${item.name}`}
+									hitSlop={4}
+									style={({ pressed }) => [
 										styles.deleteBtn,
-										{ backgroundColor: isDark ? "#1a0a0a" : "#fee2e2" },
+										pressed ? { backgroundColor: c.dangerTint } : null,
 									]}
 								>
-									<Ionicons name="trash" size={16} color="#dc2626" />
+									<Ionicons name="trash-outline" size={20} color={danger} />
 								</Pressable>
 							</View>
-						</Pressable>
-					)}
+						);
+					}}
 				/>
 			)}
 		</SafeAreaView>
@@ -173,36 +214,52 @@ export function SavedSearchesScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	header: {
+	skeletonList: { padding: 16, gap: 10 },
+	list: { padding: 16, paddingTop: 20, paddingBottom: 48 },
+	// The rows read as one inset card: hairline sides, rounded ends.
+	item: {
 		flexDirection: "row",
 		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
+		minHeight: 64,
+		borderLeftWidth: StyleSheet.hairlineWidth,
+		borderRightWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
 	},
-	title: { fontSize: 17, fontFamily: Fonts.displayBold },
-	skeletonList: {
-		padding: 16,
-		gap: 10,
+	itemFirst: {
+		borderTopWidth: StyleSheet.hairlineWidth,
+		borderTopLeftRadius: 14,
+		borderTopRightRadius: 14,
 	},
-	searchItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		borderRadius: 12,
-		borderWidth: 1,
-		padding: 14,
+	itemLast: {
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		borderBottomLeftRadius: 14,
+		borderBottomRightRadius: 14,
 	},
-	searchInfo: { flex: 1, gap: 4 },
-	searchName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	searchDate: { fontSize: 12, fontFamily: Fonts.body },
-	searchActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-	alertLabel: { fontSize: 10, fontFamily: Fonts.bodySemibold },
+	separator: {
+		borderLeftWidth: StyleSheet.hairlineWidth,
+		borderRightWidth: StyleSheet.hairlineWidth,
+	},
+	separatorLine: { height: StyleSheet.hairlineWidth, marginLeft: 16 },
+	// The pressable text fills the row's height, so the press highlight
+	// reaches the card's edges like a GroupedRow's.
+	searchInfo: {
+		flex: 1,
+		alignSelf: "stretch",
+		justifyContent: "center",
+		gap: 2,
+		paddingLeft: 16,
+		paddingRight: 8,
+		paddingVertical: 12,
+	},
+	searchName: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.bodyMedium },
+	searchDate: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	alert: { alignItems: "center", gap: 2, paddingHorizontal: 4 },
+	alertLabel: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 	deleteBtn: {
-		width: 36,
-		height: 36,
-		borderRadius: 8,
+		width: 48,
+		height: 48,
+		marginRight: 4,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},

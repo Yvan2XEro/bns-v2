@@ -1,47 +1,28 @@
-import { StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
-import { useShopTheme } from "@/src/components/shop/theme";
+import { StatusTag, type StatusTone } from "@/src/components/shop/Tags";
 import { useTranslation } from "@/src/lib/i18n";
 import { PAYOUT_STATUSES, type PayoutStatus } from "@/src/lib/paymentStatus";
 
-const TONE: Record<PayoutStatus, "neutral" | "success" | "warning" | "danger"> =
-	{
-		scheduled: "neutral",
-		pending: "warning",
-		sent: "warning",
-		processing: "warning",
-		complete: "success",
-		failed: "danger",
-		reversed: "danger",
-		cancelled: "neutral",
-	};
+/**
+ * Toned by what a payout asks of the seller, in the shared `StatusTag`
+ * vocabulary: a payout on its way is moving (info), not waiting on them.
+ */
+const TONE: Record<PayoutStatus, StatusTone> = {
+	scheduled: "neutral",
+	pending: "info",
+	sent: "info",
+	processing: "info",
+	complete: "success",
+	failed: "danger",
+	reversed: "danger",
+	cancelled: "neutral",
+};
 
 export function PayoutStatusBadge({ status }: { status: PayoutStatus }) {
-	const c = useShopTheme();
 	const { t } = useTranslation();
-	const tone: Record<string, { bg: string; fg: string }> = {
-		neutral: { bg: c.neutralSoft, fg: c.neutralText },
-		success: { bg: c.successSoft, fg: c.successText },
-		warning: { bg: c.warningSoft, fg: c.warningText },
-		danger: { bg: c.dangerSoft, fg: c.dangerText },
-	};
-	const picked = tone[TONE[status]] ?? tone.neutral;
-
 	return (
-		<View style={[styles.badge, { backgroundColor: picked?.bg }]}>
-			<Text style={[styles.text, { color: picked?.fg }]}>
-				{t(PAYOUT_STATUSES[status])}
-			</Text>
-		</View>
+		<StatusTag
+			label={t(PAYOUT_STATUSES[status])}
+			tone={TONE[status] ?? "neutral"}
+		/>
 	);
 }
-
-const styles = StyleSheet.create({
-	badge: {
-		borderRadius: 999,
-		paddingHorizontal: 10,
-		paddingVertical: 3,
-		alignSelf: "flex-start",
-	},
-	text: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-});

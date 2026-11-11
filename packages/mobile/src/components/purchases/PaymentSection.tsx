@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
@@ -32,7 +33,10 @@ export function PaymentSection({ order }: { order: OrderView }) {
 		<View
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
-			<Text style={[styles.title, { color: c.text }]}>
+			<Text
+				style={[styles.title, { color: c.text }]}
+				accessibilityRole="header"
+			>
 				{t("payments.order_paymentTitle")}
 			</Text>
 			{payable ? (
@@ -47,9 +51,17 @@ export function PaymentSection({ order }: { order: OrderView }) {
 				/>
 			) : null}
 			{order.paymentStatus === "paid" ? (
-				<Text style={[styles.note, { color: c.successText }]}>
-					{t("payments.order_paidProtected")}
-				</Text>
+				<View style={styles.line}>
+					<Ionicons
+						name="shield-checkmark"
+						size={18}
+						color={c.successText}
+						style={styles.icon}
+					/>
+					<Text style={[styles.note, styles.flex, { color: c.successText }]}>
+						{t("payments.order_paidProtected")}
+					</Text>
+				</View>
 			) : null}
 			{refunding ? (
 				<View style={{ gap: 2 }}>
@@ -71,10 +83,13 @@ const styles = StyleSheet.create({
 	card: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 16,
-		padding: 14,
-		gap: 10,
+		padding: 16,
+		gap: 12,
 	},
-	title: { fontSize: 15, fontFamily: Fonts.displayBold },
-	subtitle: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	note: { fontSize: 13, fontFamily: Fonts.body },
+	title: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	subtitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	note: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	line: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
+	icon: { marginTop: 1 },
+	flex: { flex: 1 },
 });

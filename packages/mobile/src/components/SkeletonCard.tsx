@@ -1,5 +1,12 @@
 import { useEffect } from "react";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+	type DimensionValue,
+	type StyleProp,
+	StyleSheet,
+	useWindowDimensions,
+	View,
+	type ViewStyle,
+} from "react-native";
 import Animated, {
 	Easing,
 	useAnimatedStyle,
@@ -7,29 +14,40 @@ import Animated, {
 	withRepeat,
 	withTiming,
 } from "react-native-reanimated";
+import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 
-function SkeletonBlock({
+/**
+ * The one skeleton primitive. It breathes slowly while content loads (the one
+ * loop DESIGN.md allows) and holds still under Reduce Motion.
+ */
+export function SkeletonBlock({
 	width: w,
 	height: h,
 	borderRadius = 6,
 	style,
 }: {
-	width: number | string;
+	width: DimensionValue;
 	height: number;
 	borderRadius?: number;
-	style?: object;
+	style?: StyleProp<ViewStyle>;
 }) {
 	const isDark = useColorScheme() === "dark";
+	const reduced = useReducedMotion();
 	const opacity = useSharedValue(1);
 
 	useEffect(() => {
+		if (reduced) {
+			opacity.value = 0.7;
+			return;
+		}
 		opacity.value = withRepeat(
 			withTiming(0.4, { duration: 800, easing: Easing.inOut(Easing.ease) }),
 			-1,
 			true,
 		);
-	}, [opacity]);
+	}, [opacity, reduced]);
 
 	const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
@@ -37,10 +55,10 @@ function SkeletonBlock({
 		<Animated.View
 			style={[
 				{
-					width: w as any,
+					width: w,
 					height: h,
 					borderRadius,
-					backgroundColor: isDark ? "#1e3a5f" : "#e2e8f0",
+					backgroundColor: isDark ? Colors.dark.border : Colors.light.border,
 				},
 				animStyle,
 				style,
@@ -56,11 +74,15 @@ export function SkeletonCard({ cardWidth }: { cardWidth?: number }) {
 
 	return (
 		<View style={[styles.card, { width: w }]}>
-			<SkeletonBlock width={w} height={w * 0.75} borderRadius={0} />
+			<SkeletonBlock
+				width={w}
+				height={Math.round(w * 0.75)}
+				borderRadius={14}
+			/>
 			<View style={styles.content}>
-				<SkeletonBlock width="55%" height={14} />
-				<SkeletonBlock width="80%" height={12} style={{ marginTop: 6 }} />
-				<SkeletonBlock width="60%" height={10} style={{ marginTop: 6 }} />
+				<SkeletonBlock width="85%" height={13} />
+				<SkeletonBlock width="55%" height={13} style={{ marginTop: 5 }} />
+				<SkeletonBlock width="45%" height={10} style={{ marginTop: 7 }} />
 			</View>
 		</View>
 	);
@@ -68,18 +90,19 @@ export function SkeletonCard({ cardWidth }: { cardWidth?: number }) {
 
 export function SkeletonRow() {
 	const isDark = useColorScheme() === "dark";
+	const c = isDark ? Colors.dark : Colors.light;
 	return (
 		<View
-			style={[styles.row, { backgroundColor: isDark ? "#1e293b" : "#fff" }]}
+			style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}
 		>
-			<SkeletonBlock width={70} height={70} borderRadius={8} />
+			<SkeletonBlock width={70} height={70} borderRadius={10} />
 			<View style={styles.rowContent}>
 				<SkeletonBlock width="70%" height={13} />
 				<SkeletonBlock width="40%" height={12} style={{ marginTop: 6 }} />
 				<SkeletonBlock
 					width="30%"
 					height={18}
-					borderRadius={12}
+					borderRadius={8}
 					style={{ marginTop: 6 }}
 				/>
 			</View>
@@ -87,30 +110,29 @@ export function SkeletonRow() {
 	);
 }
 
+/**
+ * Matches the inbox row: 52pt avatar, name and time, context, preview, and the
+ * listing photo on the right. The hairline starts under the name (80pt inset),
+ * as the loaded list draws it.
+ */
 export function SkeletonConversationRow() {
 	const isDark = useColorScheme() === "dark";
+	const c = isDark ? Colors.dark : Colors.light;
 	return (
-		<View
-			style={[
-				convStyles.row,
-				{
-					backgroundColor: isDark ? "#1e293b" : "#fff",
-					borderBottomColor: isDark ? "#1e3a5f" : "#f1f5f9",
-				},
-			]}
-		>
-			<SkeletonBlock width={50} height={50} borderRadius={25} />
-			<View style={convStyles.content}>
-				<View style={convStyles.topRow}>
-					<SkeletonBlock width="52%" height={14} />
-					<SkeletonBlock width={34} height={10} borderRadius={4} />
+		<View style={{ backgroundColor: c.card }}>
+			<View style={convStyles.row}>
+				<SkeletonBlock width={52} height={52} borderRadius={26} />
+				<View style={convStyles.content}>
+					<View style={convStyles.topRow}>
+						<SkeletonBlock width="52%" height={14} />
+						<SkeletonBlock width={34} height={10} borderRadius={4} />
+					</View>
+					<SkeletonBlock width="40%" height={11} style={{ marginTop: 7 }} />
+					<SkeletonBlock width="72%" height={12} style={{ marginTop: 7 }} />
 				</View>
-				<SkeletonBlock
-					width="72%"
-					height={12}
-					style={{ marginTop: 7 } as object}
-				/>
+				<SkeletonBlock width={48} height={48} borderRadius={10} />
 			</View>
+			<View style={[convStyles.separator, { backgroundColor: c.border }]} />
 		</View>
 	);
 }
@@ -124,8 +146,20 @@ export function SkeletonMessageBubbles() {
 		{ isMe: false, widthPct: "40%", height: 40 },
 		{ isMe: true, widthPct: "62%", height: 58 },
 	];
+	// Anchored to the composer, as the thread itself opens on its latest
+	// message: the swap to real bubbles happens where the eye already is.
 	return (
-		<View style={{ paddingHorizontal: 12, paddingVertical: 16, gap: 8 }}>
+		<View
+			style={{
+				flex: 1,
+				justifyContent: "flex-end",
+				paddingHorizontal: 12,
+				paddingVertical: 16,
+				gap: 8,
+			}}
+			accessibilityElementsHidden
+			importantForAccessibility="no-hide-descendants"
+		>
 			{bubbles.map((b, i) => (
 				<View
 					key={i}
@@ -139,10 +173,17 @@ export function SkeletonMessageBubbles() {
 					{!b.isMe && (
 						<SkeletonBlock width={28} height={28} borderRadius={14} />
 					)}
+					{/* The thread's own geometry: radius 20, the tail corner squared
+					    toward the sender, so the swap to real messages holds still. */}
 					<SkeletonBlock
-						width={b.widthPct as unknown as number}
+						width={b.widthPct as DimensionValue}
 						height={b.height}
-						borderRadius={18}
+						borderRadius={20}
+						style={
+							b.isMe
+								? { borderBottomRightRadius: 6 }
+								: { borderBottomLeftRadius: 6 }
+						}
 					/>
 				</View>
 			))}
@@ -154,9 +195,9 @@ const convStyles = StyleSheet.create({
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
+		minHeight: 76,
 		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
+		paddingVertical: 12,
 		gap: 12,
 	},
 	content: { flex: 1 },
@@ -165,22 +206,17 @@ const convStyles = StyleSheet.create({
 		justifyContent: "space-between",
 		alignItems: "center",
 	},
+	separator: { height: StyleSheet.hairlineWidth, marginLeft: 80 },
 });
 
 const styles = StyleSheet.create({
-	card: {
-		borderRadius: 14,
-		overflow: "hidden",
-		borderWidth: 1,
-		borderColor: "#e2e8f0",
-	},
-	content: { padding: 10, gap: 0 },
+	card: {},
+	content: { paddingTop: 8, paddingHorizontal: 2, paddingBottom: 4 },
 	row: {
 		flexDirection: "row",
-		borderRadius: 12,
-		borderWidth: 1,
-		borderColor: "#e2e8f0",
-		padding: 10,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 12,
 		gap: 12,
 		alignItems: "center",
 	},

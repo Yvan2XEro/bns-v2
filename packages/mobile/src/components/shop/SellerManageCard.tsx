@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { useShopTheme } from "./theme";
 
@@ -24,7 +24,10 @@ export function SellerManageCard({ tiles }: { tiles: ManageTile[] }) {
 
 	return (
 		<>
-			<Text style={[styles.sectionLabel, { color: c.muted }]}>
+			<Text
+				accessibilityRole="header"
+				style={[styles.sectionLabel, { color: c.text }]}
+			>
 				{t("seller.manage")}
 			</Text>
 			<View style={styles.grid}>
@@ -73,7 +76,7 @@ function Tile({
 					<Ionicons
 						name={icon}
 						size={20}
-						color={alert ? c.warningText : c.primary}
+						color={alert ? c.warningText : c.link}
 					/>
 				</View>
 				{badge ? (
@@ -97,10 +100,11 @@ function Tile({
 
 const styles = StyleSheet.create({
 	sectionLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
+		fontSize: 19,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.3,
+		marginTop: 6,
 	},
 	grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
 	tile: {
@@ -109,8 +113,8 @@ const styles = StyleSheet.create({
 		flexGrow: 1,
 		gap: 4,
 		padding: 14,
-		borderRadius: 18,
-		borderWidth: 1,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
 	},
 	tileWide: { width: "100%" },
 	pressed: { opacity: 0.85 },
@@ -127,15 +131,20 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	tileTitle: { fontSize: 15, fontFamily: Fonts.displayBold },
-	tileBody: { fontSize: 12, fontFamily: Fonts.body, lineHeight: 16 },
+	tileTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.displayBold },
+	tileBody: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	badge: {
-		minWidth: 20,
-		height: 20,
-		borderRadius: 10,
+		minWidth: 22,
+		height: 22,
+		borderRadius: 11,
 		alignItems: "center",
 		justifyContent: "center",
-		paddingHorizontal: 5,
+		paddingHorizontal: 6,
 	},
-	badgeText: { color: "#fff", fontSize: 11, fontFamily: Fonts.displayBold },
+	badgeText: {
+		color: Colors.light.sunForeground,
+		fontSize: 12,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
 });

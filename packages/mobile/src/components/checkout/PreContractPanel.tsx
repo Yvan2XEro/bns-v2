@@ -5,12 +5,18 @@ import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ContractSnapshot } from "@/src/types/order";
+import { inkOf } from "./fill";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
 	const c = useShopTheme();
 	const [open, setOpen] = useState(false);
 	return (
-		<View style={[styles.section, { borderColor: c.border }]}>
+		<View
+			style={[
+				styles.section,
+				{ borderColor: c.border, backgroundColor: c.card },
+			]}
+		>
 			<Pressable
 				onPress={() => setOpen(!open)}
 				accessibilityRole="button"
@@ -58,7 +64,10 @@ export function PreContractPanel({
 	return (
 		<View style={{ gap: 8 }}>
 			<View style={styles.header}>
-				<Text style={[styles.heading, { color: c.text }]}>
+				<Text
+					style={[styles.heading, { color: c.text }]}
+					accessibilityRole="header"
+				>
 					{t("checkout.preContract")}
 				</Text>
 				<Pressable
@@ -67,9 +76,7 @@ export function PreContractPanel({
 					accessibilityLabel={toggle}
 					style={styles.toggle}
 				>
-					<Text style={[styles.toggleText, { color: c.primary }]}>
-						{toggle}
-					</Text>
+					<Text style={[styles.toggleText, { color: inkOf(c) }]}>{toggle}</Text>
 				</Pressable>
 			</View>
 			<Section title={t("checkout.sellerIdentity")}>
@@ -123,25 +130,31 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 	},
-	heading: { fontSize: 16, fontFamily: Fonts.displayBold },
-	toggle: { minHeight: 44, justifyContent: "center" },
+	heading: {
+		flexShrink: 1,
+		fontSize: 18,
+		lineHeight: 23,
+		fontFamily: Fonts.displayBold,
+	},
+	toggle: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },
 	toggleText: {
-		fontSize: 13,
+		fontSize: 14,
 		fontFamily: Fonts.bodySemibold,
 		textDecorationLine: "underline",
 	},
 	section: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 12,
-		paddingHorizontal: 12,
+		paddingHorizontal: 14,
 	},
 	sectionHeader: {
-		minHeight: 44,
+		minHeight: 48,
+		gap: 8,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
 	},
-	sectionTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold, flex: 1 },
-	sectionBody: { paddingBottom: 12, gap: 6 },
-	text: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
+	sectionTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold, flex: 1 },
+	sectionBody: { paddingBottom: 14, gap: 8 },
+	text: { fontSize: 14, lineHeight: 21, fontFamily: Fonts.body },
 });

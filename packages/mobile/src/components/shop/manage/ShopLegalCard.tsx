@@ -7,7 +7,9 @@ import {
 	TextInput,
 	View,
 } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { formStyles as f } from "@/src/components/seller/formStyles";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useUpdateShopLegalForm } from "@/src/hooks/useUpdateShopLegalForm";
 import { useTranslation } from "@/src/lib/i18n";
@@ -39,7 +41,10 @@ export function ShopLegalCard({ shop }: { shop: MyShop }) {
 
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}>
-			<Text style={[f.sectionTitle, { color: c.text }]}>
+			<Text
+				style={[f.sectionTitle, { color: c.text }]}
+				accessibilityRole="header"
+			>
 				{t("shop.legalSectionTitle")}
 			</Text>
 			<Text style={[f.hint, { color: c.muted }]}>
@@ -64,8 +69,8 @@ export function ShopLegalCard({ shop }: { shop: MyShop }) {
 									style={[
 										f.chip,
 										{
-											backgroundColor: active ? c.primary : c.input,
-											borderColor: active ? c.primary : c.border,
+											backgroundColor: active ? fillOf(c) : c.input,
+											borderColor: active ? fillOf(c) : c.border,
 											opacity: disabled ? 0.6 : 1,
 										},
 									]}
@@ -133,13 +138,13 @@ export function ShopLegalCard({ shop }: { shop: MyShop }) {
 				)}
 			/>
 			{form.formState.errors.niu ? (
-				<Text style={f.error}>
+				<Text style={[f.error, { color: dangerInk(c) }]}>
 					{t(form.formState.errors.niu.message ?? "")}
 				</Text>
 			) : null}
 
 			{form.formState.errors.root?.message ? (
-				<Text style={f.error} role="alert">
+				<Text style={[f.error, { color: dangerInk(c) }]} role="alert">
 					{form.formState.errors.root.message}
 				</Text>
 			) : null}
@@ -153,7 +158,7 @@ export function ShopLegalCard({ shop }: { shop: MyShop }) {
 					style={[
 						styles.save,
 						{
-							backgroundColor: c.primary,
+							backgroundColor: fillOf(c),
 							opacity: disabled || !form.formState.isValid ? 0.5 : 1,
 						},
 					]}
@@ -176,5 +181,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	saveText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+	saveText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
 });

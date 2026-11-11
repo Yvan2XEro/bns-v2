@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -10,11 +11,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import { useTranslation } from "@/src/lib/i18n";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import type { InboxConversationView } from "@/src/types/api";
 import { useShopTheme } from "../theme";
 
 interface ConversationHeaderProps {
 	buyerName: string | null;
+	/** From the inbox row when the thread was opened from the list. */
+	buyerAvatarUrl?: string | null;
 	listingTitle: string | null;
 	assignee: InboxConversationView["assignee"];
 	status: "open" | "done";
@@ -32,6 +36,7 @@ interface ConversationHeaderProps {
  */
 export function ConversationHeader({
 	buyerName,
+	buyerAvatarUrl,
 	listingTitle,
 	assignee,
 	status,
@@ -45,6 +50,11 @@ export function ConversationHeader({
 	// ConversationScreen leaves the top edge to a custom header, and the
 	// route draws no stack header: this one clears the status bar itself.
 	const insets = useSafeAreaInsets();
+	// The dark primary drops under 4.5:1 on its soft tint; the lighter
+	// tone does not.
+	const accent = c.link;
+	const name = buyerName ?? t("inbox.unknownBuyer");
+	const avatarUri = resolveImageUrl(buyerAvatarUrl ?? null);
 	const assigneeLabel = assignee
 		? assignee.suspended
 			? t("inbox.assignedSuspended", {
@@ -70,9 +80,27 @@ export function ConversationHeader({
 					fallback="/seller/inbox"
 					style={styles.backBtn}
 				/>
-				<View style={{ flex: 1 }}>
-					<Text style={[styles.buyer, { color: c.text }]} numberOfLines={1}>
-						{buyerName ?? t("inbox.unknownBuyer")}
+				{avatarUri ? (
+					<Image
+						source={{ uri: avatarUri }}
+						style={[styles.avatar, { backgroundColor: c.neutralSoft }]}
+						contentFit="cover"
+						accessible={false}
+					/>
+				) : (
+					<View style={[styles.avatar, { backgroundColor: c.primarySoft }]}>
+						<Text style={[styles.avatarInitial, { color: accent }]}>
+							{name[0]?.toUpperCase() ?? "?"}
+						</Text>
+					</View>
+				)}
+				<View style={styles.titleCol}>
+					<Text
+						style={[styles.buyer, { color: c.text }]}
+						numberOfLines={1}
+						accessibilityRole="header"
+					>
+						{name}
 					</Text>
 					{listingTitle ? (
 						<Text
@@ -89,20 +117,23 @@ export function ConversationHeader({
 				<Pressable
 					onPress={onAssigneePress}
 					disabled={assigneePending}
-					style={[
+					hitSlop={{ top: 4, bottom: 4 }}
+					style={({ pressed }) => [
 						styles.chip,
 						{
 							borderColor: assignee?.suspended ? c.danger : c.border,
 							backgroundColor: assignee?.suspended
 								? c.dangerSoft
 								: c.neutralSoft,
+							opacity: pressed ? 0.7 : 1,
 						},
 					]}
 					accessibilityRole="button"
-					accessibilityLabel={t("inbox.assigneeSheetTitle")}
+					accessibilityLabel={`${t("inbox.assigneeSheetTitle")}, ${assigneeLabel}`}
+					accessibilityState={{ busy: assigneePending }}
 				>
 					{assigneePending ? (
-						<ActivityIndicator size="small" color={c.primary} />
+						<ActivityIndicator size="small" color={accent} />
 					) : (
 						<Ionicons
 							name="person-circle-outline"
@@ -124,21 +155,24 @@ export function ConversationHeader({
 				<Pressable
 					onPress={onToggleStatus}
 					disabled={statusPending}
-					style={[
+					hitSlop={{ top: 4, bottom: 4 }}
+					style={({ pressed }) => [
 						styles.chip,
 						{
-							borderColor: status === "done" ? c.success : c.primary,
+							borderColor: status === "done" ? c.success : accent,
 							backgroundColor:
 								status === "done" ? c.successSoft : c.primarySoft,
+							opacity: pressed ? 0.7 : 1,
 						},
 					]}
 					accessibilityRole="button"
 					accessibilityLabel={
 						status === "done" ? t("inbox.reopen") : t("inbox.markDone")
 					}
+					accessibilityState={{ busy: statusPending }}
 				>
 					{statusPending ? (
-						<ActivityIndicator size="small" color={c.primary} />
+						<ActivityIndicator size="small" color={accent} />
 					) : (
 						<Ionicons
 							name={
@@ -147,13 +181,13 @@ export function ConversationHeader({
 									: "checkmark-circle-outline"
 							}
 							size={16}
-							color={status === "done" ? c.successText : c.primary}
+							color={status === "done" ? c.successText : accent}
 						/>
 					)}
 					<Text
 						style={[
 							styles.chipText,
-							{ color: status === "done" ? c.successText : c.primary },
+							{ color: status === "done" ? c.successText : accent },
 						]}
 					>
 						{status === "done" ? t("inbox.reopen") : t("inbox.markDone")}
@@ -165,32 +199,54 @@ export function ConversationHeader({
 }
 
 const styles = StyleSheet.create({
-	wrap: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 10 },
+	wrap: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 12 },
 	topRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
-		paddingHorizontal: 8,
-		paddingVertical: 8,
+		gap: 10,
+		paddingLeft: 4,
+		paddingRight: 16,
+		paddingVertical: 6,
+		minHeight: 56,
 	},
 	backBtn: {
-		width: 40,
-		height: 40,
+		width: 44,
+		height: 44,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	buyer: { fontSize: 15, fontFamily: Fonts.displayBold },
-	listing: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
-	actionsRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16 },
+	avatar: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		alignItems: "center",
+		justifyContent: "center",
+		overflow: "hidden",
+	},
+	avatarInitial: { fontSize: 17, fontFamily: Fonts.displayBold },
+	titleCol: { flex: 1 },
+	buyer: {
+		fontSize: 17,
+		lineHeight: 22,
+		letterSpacing: -0.2,
+		fontFamily: Fonts.displayBold,
+	},
+	listing: { fontSize: 13, lineHeight: 17, fontFamily: Fonts.body },
+	actionsRow: {
+		flexDirection: "row",
+		gap: 8,
+		paddingHorizontal: 16,
+		paddingTop: 2,
+	},
 	chip: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 6,
-		borderWidth: 1,
+		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 999,
-		paddingHorizontal: 12,
-		minHeight: 36,
+		paddingHorizontal: 14,
+		minHeight: 40,
 		flexShrink: 1,
 	},
-	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
 });

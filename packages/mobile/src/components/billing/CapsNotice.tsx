@@ -23,13 +23,13 @@ export function CapsNotice({
 				s.card,
 				{
 					backgroundColor: c.primarySoft,
-					borderColor: c.primary,
+					borderColor: c.primarySoft,
 					flexDirection: "row",
 					gap: 10,
 				},
 			]}
 		>
-			<Ionicons name="information-circle-outline" size={20} color={c.primary} />
+			<Ionicons name="information-circle-outline" size={20} color={c.link} />
 			<View style={{ flex: 1, gap: 4 }}>
 				<Text style={[s.cardTitle, { color: c.text }]}>
 					{t("billing.capsNotice")}

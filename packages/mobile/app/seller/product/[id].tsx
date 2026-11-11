@@ -9,17 +9,19 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { formStyles as f } from "@/src/components/seller/formStyles";
 import { ProductEditorContent } from "@/src/components/seller/ProductEditorContent";
 import { ProductFooter } from "@/src/components/seller/ProductFooter";
 import { ProductWizardContent } from "@/src/components/seller/ProductWizardContent";
+import { dangerInk } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { StatusTag } from "@/src/components/shop/Tags";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { StepSegments } from "@/src/components/ui/StepSegments";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -217,7 +219,10 @@ export default function ProductScreen() {
 
 	if (!creating && (detail.isLoading || !loaded)) {
 		return (
-			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
 				<SellerHeader title={t("product.editorTitle")} />
 				{detail.isError ? (
 					<EmptyState
@@ -227,18 +232,18 @@ export default function ProductScreen() {
 						onCta={() => detail.refetch()}
 					/>
 				) : (
-					<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+					<DetailSkeleton cards={3} />
 				)}
 			</SafeAreaView>
 		);
 	}
 
+	// Live is the one state worth a colour; draft and hidden stay neutral.
 	const draftPill = (
-		<View style={[styles.pill, { backgroundColor: c.neutralSoft }]}>
-			<Text style={[styles.pillText, { color: c.neutralText }]}>
-				{t(`catalogue.status_${form.status}`)}
-			</Text>
-		</View>
+		<StatusTag
+			label={t(`catalogue.status_${form.status}`)}
+			tone={form.status === "active" ? "success" : "neutral"}
+		/>
 	);
 
 	return (
@@ -254,9 +259,12 @@ export default function ProductScreen() {
 			/>
 			{creating ? <StepSegments count={3} current={step - 1} /> : null}
 			{readOnly ? (
-				<View style={[styles.banner, { backgroundColor: c.dangerSoft }]}>
-					<Ionicons name="ban" size={16} color={c.danger} />
-					<Text style={[f.hint, { color: c.dangerText, flex: 1 }]}>
+				<View
+					accessible
+					style={[styles.banner, { backgroundColor: c.dangerSoft }]}
+				>
+					<Ionicons name="ban" size={18} color={dangerInk(c)} />
+					<Text style={[f.hint, styles.bannerText, { color: c.dangerText }]}>
 						{t("product.readOnly")}
 					</Text>
 				</View>
@@ -264,7 +272,7 @@ export default function ProductScreen() {
 
 			<ScreenColumn width="reading">
 				<KeyboardAwareScrollView
-					contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}
+					contentContainerStyle={styles.content}
 					keyboardShouldPersistTaps="handled"
 				>
 					{creating ? (
@@ -304,15 +312,15 @@ export default function ProductScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	pill: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
-	pillText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	content: { padding: 16, gap: 16, paddingBottom: 120 },
 	banner: {
 		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
+		alignItems: "flex-start",
+		gap: 10,
 		margin: 16,
 		marginBottom: 0,
-		padding: 10,
-		borderRadius: 10,
+		padding: 12,
+		borderRadius: 12,
 	},
+	bannerText: { flex: 1, fontSize: 14, lineHeight: 20 },
 });

@@ -13,6 +13,8 @@ import {
 	returnRefundProofFormSchema,
 } from "../../../../api/src/contracts/returnInputs";
 import type { ReturnCaseView } from "../../../../api/src/contracts/returns";
+import { caseForm } from "../checkout/caseForm";
+import { fillOf } from "../checkout/fill";
 import { useShopTheme } from "../shop/theme";
 import { ReturnEvidenceUpload } from "./ReturnEvidenceUpload";
 
@@ -50,8 +52,13 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 	});
 	return (
 		<View style={{ gap: 12 }}>
-			<Text style={{ color: c.text }}>{t("returns.refundProof")}</Text>
-			<Text style={{ color: c.body }}>
+			<Text
+				style={[caseForm.heading, { color: c.text }]}
+				accessibilityRole="header"
+			>
+				{t("returns.refundProof")}
+			</Text>
+			<Text style={[caseForm.label, { color: c.body }]}>
 				{t("returns.refundProofInstructions")}
 			</Text>
 			<Controller
@@ -71,15 +78,17 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 								disabled={submit.isPending}
 								onPress={() => field.onChange(method)}
 								style={{
-									minHeight: 44,
+									minHeight: 48,
 									justifyContent: "center",
 									padding: 10,
-									borderWidth: 1,
+									borderWidth: 1.5,
 									borderColor: field.value === method ? c.primary : c.border,
-									borderRadius: 8,
+									backgroundColor:
+										field.value === method ? c.primarySoft : c.card,
+									borderRadius: 12,
 								}}
 							>
-								<Text style={{ color: c.text }}>
+								<Text style={[caseForm.body, { color: c.text }]}>
 									{t(REFUND_METHOD_LABELS[method])}
 								</Text>
 							</Pressable>
@@ -105,12 +114,14 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 						editable={!submit.isPending}
 						keyboardType="number-pad"
 						style={{
-							minHeight: 44,
+							minHeight: 48,
 							padding: 10,
 							borderWidth: 1,
 							borderColor: c.border,
-							borderRadius: 8,
+							borderRadius: 12,
 							color: c.text,
+							...caseForm.input,
+							backgroundColor: c.input,
 						}}
 					/>
 				)}
@@ -129,12 +140,14 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 						editable={!submit.isPending}
 						maxLength={200}
 						style={{
-							minHeight: 44,
+							minHeight: 48,
 							padding: 10,
 							borderWidth: 1,
 							borderColor: c.border,
-							borderRadius: 8,
+							borderRadius: 12,
 							color: c.text,
+							...caseForm.input,
+							backgroundColor: c.input,
 						}}
 					/>
 				)}
@@ -155,13 +168,19 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 			form.formState.errors.method ||
 			form.formState.errors.transactionId ||
 			form.formState.errors.evidenceIds ? (
-				<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+				<Text
+					accessibilityRole="alert"
+					style={[caseForm.error, { color: c.dangerText }]}
+				>
 					{form.formState.errors.amount?.message ??
 						t("returns.refundProofValidation")}
 				</Text>
 			) : null}
 			{form.formState.errors.root ? (
-				<Text accessibilityRole="alert" style={{ color: "#dc2626" }}>
+				<Text
+					accessibilityRole="alert"
+					style={[caseForm.error, { color: c.dangerText }]}
+				>
 					{form.formState.errors.root.message}
 				</Text>
 			) : null}
@@ -171,14 +190,15 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 				disabled={submit.isPending}
 				onPress={() => void send()}
 				style={{
-					minHeight: 44,
+					minHeight: 52,
 					justifyContent: "center",
 					alignItems: "center",
-					backgroundColor: c.primary,
-					borderRadius: 10,
+					opacity: submit.isPending ? 0.5 : 1,
+					backgroundColor: fillOf(c).bg,
+					borderRadius: 12,
 				}}
 			>
-				<Text style={{ color: "#fff" }}>
+				<Text style={[caseForm.buttonText, { color: fillOf(c).fg }]}>
 					{t("returns.action.refund_proof")}
 				</Text>
 			</Pressable>

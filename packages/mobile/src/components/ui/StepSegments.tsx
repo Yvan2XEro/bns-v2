@@ -12,7 +12,12 @@ export function StepSegments({
 }) {
 	const c = useShopTheme();
 	return (
-		<View style={styles.track}>
+		<View
+			style={styles.track}
+			accessible
+			accessibilityRole="progressbar"
+			accessibilityValue={{ min: 1, max: count, now: current + 1 }}
+		>
 			{Array.from({ length: count }, (_, index) => (
 				<View
 					key={index}

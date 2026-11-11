@@ -3,13 +3,14 @@ import type { Notification } from "@novu/js";
 import { useNotifications } from "@novu/react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	ActivityIndicator,
-	FlatList,
 	Linking,
+	Platform,
 	Pressable,
 	RefreshControl,
+	SectionList,
 	StyleSheet,
 	Text,
 	View,
@@ -23,23 +24,29 @@ import Reanimated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
-import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import { useGroupedColors } from "@/src/components/settings/Grouped";
+import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { notificationRoute } from "@/src/lib/deepLinks";
+import { appDateLocale, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { registerForPushNotificationsAsync } from "@/src/lib/notifications";
 import { compactTimeAgo } from "@/src/lib/timeAgo";
 
-const SWIPE_BTN_WIDTH = 72;
+const SWIPE_BTN_WIDTH = 76;
+/** The icon tile (36) and its gap (12) past the row's 16pt edge. */
+const TEXT_INSET = 16 + 36 + 12;
+
+type Palette = ReturnType<typeof useGroupedColors>;
+type Tone = "success" | "danger" | "brand" | "sun";
 
 function timeAgo(date: string, locale: string): string {
 	const parsed = new Date(date);
-	// A week on, the date reads better than "9 d".
+	// A week on, the date reads better than "9 j".
 	if (Date.now() - parsed.getTime() >= 7 * 86_400_000)
 		return parsed.toLocaleDateString(locale, {
 			day: "numeric",
@@ -48,39 +55,49 @@ function timeAgo(date: string, locale: string): string {
 	return compactTimeAgo(parsed) ?? "";
 }
 
-function notificationIcon(tags: string[]): {
+/** The tile's tint and ink for a tone, legible in both themes. */
+function toneOf(tone: Tone, c: Palette) {
+	switch (tone) {
+		case "success":
+			return { bg: c.successTint, color: c.successText };
+		case "danger":
+			return {
+				bg: c.dangerTint,
+				color: c.isDark ? c.dangerText : c.destructive,
+			};
+		case "sun":
+			return { bg: c.sunTint, color: c.warningText };
+		default:
+			return { bg: c.primaryTint, color: c.link };
+	}
+}
+
+function notificationIcon(
+	tags: string[],
+	c: Palette,
+): {
 	name: keyof typeof Ionicons.glyphMap;
 	color: string;
 	bg: string;
 } {
 	const tag = tags.join(" ");
+	const pick = (name: keyof typeof Ionicons.glyphMap, tone: Tone) => ({
+		name,
+		...toneOf(tone, c),
+	});
 	if (tag.includes("approved") || tag.includes("published"))
-		return {
-			name: "checkmark-circle-outline",
-			color: "#16a34a",
-			bg: "#dcfce7",
-		};
-	if (tag.includes("rejected"))
-		return { name: "close-circle-outline", color: "#dc2626", bg: "#fee2e2" };
-	if (tag.includes("message"))
-		return { name: "chatbubble-outline", color: "#1e40af", bg: "#dbeafe" };
-	if (tag.includes("boost"))
-		return { name: "rocket-outline", color: "#d97706", bg: "#fef3c7" };
+		return pick("checkmark-circle-outline", "success");
+	if (tag.includes("rejected")) return pick("close-circle-outline", "danger");
+	if (tag.includes("message")) return pick("chatbubble-outline", "brand");
+	if (tag.includes("boost")) return pick("rocket-outline", "sun");
 	if (tag.includes("alert") || tag.includes("search"))
-		return { name: "bookmark-outline", color: "#7c3aed", bg: "#ede9fe" };
-	if (tag.includes("sold"))
-		return { name: "cash-outline", color: "#16a34a", bg: "#dcfce7" };
-	if (tag.includes("expired"))
-		return { name: "time-outline", color: "#dc2626", bg: "#fee2e2" };
+		return pick("bookmark-outline", "brand");
+	if (tag.includes("sold")) return pick("cash-outline", "success");
+	if (tag.includes("expired")) return pick("time-outline", "danger");
 	if (tag.includes("verified"))
-		return {
-			name: "shield-checkmark-outline",
-			color: "#16a34a",
-			bg: "#dcfce7",
-		};
-	if (tag.includes("review"))
-		return { name: "star-outline", color: "#d97706", bg: "#fef3c7" };
-	return { name: "notifications-outline", color: "#1e40af", bg: "#dbeafe" };
+		return pick("shield-checkmark-outline", "success");
+	if (tag.includes("review")) return pick("star-outline", "sun");
+	return pick("notifications-outline", "brand");
 }
 
 function navigate(url: string) {
@@ -94,14 +111,67 @@ function navigate(url: string) {
 	}
 }
 
+/**
+ * Notifications grouped the way a person remembers them: today, yesterday,
+ * the rest of this week by day, then by month.
+ */
+function groupByDay(
+	items: Notification[],
+	t: (key: string) => string,
+): { key: string; title: string; data: Notification[] }[] {
+	const startOfToday = new Date();
+	startOfToday.setHours(0, 0, 0, 0);
+	const today = startOfToday.getTime();
+	const day = 86_400_000;
+	const locale = appDateLocale();
+	const sections: { key: string; title: string; data: Notification[] }[] = [];
+	const byKey = new Map<string, (typeof sections)[number]>();
+
+	for (const item of items) {
+		const date = parseDate(item.createdAt);
+		let key: string;
+		let title: string;
+		if (!date) {
+			key = "unknown";
+			title = "";
+		} else if (date.getTime() >= today) {
+			key = "today";
+			title = t("messages.today");
+		} else if (date.getTime() >= today - day) {
+			key = "yesterday";
+			title = t("messages.yesterday");
+		} else if (date.getTime() >= today - 6 * day) {
+			key = `d:${date.toDateString()}`;
+			const weekday = date.toLocaleDateString(locale, { weekday: "long" });
+			title = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+		} else {
+			key = `m:${date.getFullYear()}-${date.getMonth()}`;
+			const month = date.toLocaleDateString(locale, {
+				month: "long",
+				year: "numeric",
+			});
+			title = month.charAt(0).toUpperCase() + month.slice(1);
+		}
+		let section = byKey.get(key);
+		if (!section) {
+			section = { key, title, data: [] };
+			byKey.set(key, section);
+			sections.push(section);
+		}
+		section.data.push(item);
+	}
+	return sections;
+}
+
 // ─── Swipe action button ──────────────────────────────────────────────────────
-// Each button slides in independently with a staggered interpolation so the
-// reveal feels natural rather than all buttons snapping in at once.
+// Each button slides in on its own interpolation, so the reveal follows the
+// finger instead of both buttons snapping in at once.
 
 function SwipeActionButton({
 	label,
 	icon,
 	color,
+	ink,
 	onPress,
 	progress,
 	index,
@@ -110,6 +180,8 @@ function SwipeActionButton({
 	label: string;
 	icon: keyof typeof Ionicons.glyphMap;
 	color: string;
+	/** The label's colour on `color`: ink on the yellow, white on indigo. */
+	ink: string;
 	onPress: () => void;
 	progress: SharedValue<number>;
 	index: number;
@@ -131,10 +203,14 @@ function SwipeActionButton({
 		<Reanimated.View style={[{ width: SWIPE_BTN_WIDTH }, animStyle]}>
 			<Pressable
 				onPress={onPress}
+				accessibilityRole="button"
+				accessibilityLabel={label}
 				style={[styles.swipeBtn, { backgroundColor: color }]}
 			>
-				<Ionicons name={icon} size={20} color="#fff" />
-				<Text style={styles.swipeBtnLabel}>{label}</Text>
+				<Ionicons name={icon} size={20} color={ink} />
+				<Text style={[styles.swipeBtnLabel, { color: ink }]} numberOfLines={1}>
+					{label}
+				</Text>
 			</Pressable>
 		</Reanimated.View>
 	);
@@ -142,32 +218,16 @@ function SwipeActionButton({
 
 // ─── Notification row ─────────────────────────────────────────────────────────
 
-function NotificationRow({
-	item,
-	isDark,
-	borderColor,
-	textColor,
-	mutedColor,
-	primaryColor,
-	cardBg,
-}: {
-	item: Notification;
-	isDark: boolean;
-	borderColor: string;
-	textColor: string;
-	mutedColor: string;
-	primaryColor: string;
-	cardBg: string;
-}) {
+function NotificationRow({ item, c }: { item: Notification; c: Palette }) {
 	const { t, i18n } = useTranslation();
-	const icon = notificationIcon(item.tags ?? []);
-	const unreadBg = isDark ? "rgba(30,58,95,0.4)" : "#eff6ff";
-	const rowBg = item.isRead ? cardBg : unreadBg;
+	const icon = notificationIcon(item.tags ?? [], c);
+	// Unread rows sit on the soft brand tint, with a dot; no side stripe.
+	const rowBg = item.isRead ? c.card : c.primaryTint;
 	const data = item.data as Record<string, unknown> | undefined;
 	const listingId = data?.listingId as string | undefined;
-	const hasActions = !!(item.primaryAction || item.secondaryAction);
-
 	const conversationId = data?.conversationId as string | undefined;
+	const hasActions = !!(item.primaryAction || item.secondaryAction);
+	const when = timeAgo(item.createdAt, i18n.language);
 
 	const handleRowPress = async () => {
 		if (!item.isRead) await item.read();
@@ -207,6 +267,7 @@ function NotificationRow({
 			label: string;
 			icon: keyof typeof Ionicons.glyphMap;
 			color: string;
+			ink: string;
 			onPress: () => void;
 		}[] = [
 			{
@@ -214,7 +275,8 @@ function NotificationRow({
 					? t("notifications.unread")
 					: t("notifications.read"),
 				icon: item.isRead ? "mail-unread-outline" : "mail-open-outline",
-				color: "#3b82f6",
+				color: c.primaryFill,
+				ink: "#ffffff",
 				onPress: async () => {
 					methods.close();
 					if (item.isRead) await item.unread();
@@ -226,7 +288,8 @@ function NotificationRow({
 					? t("notifications.restore")
 					: t("notifications.archive"),
 				icon: item.isArchived ? "arrow-undo-outline" : "archive-outline",
-				color: "#f59e0b",
+				color: c.sun,
+				ink: c.sunForeground,
 				onPress: async () => {
 					methods.close();
 					if (item.isArchived) await item.unarchive();
@@ -236,13 +299,14 @@ function NotificationRow({
 		];
 
 		return (
-			<View style={{ flexDirection: "row" }}>
+			<View style={styles.swipeRow}>
 				{actions.map((action, i) => (
 					<SwipeActionButton
 						key={action.label}
 						label={action.label}
 						icon={action.icon}
 						color={action.color}
+						ink={action.ink}
 						onPress={action.onPress}
 						progress={progress}
 						index={i}
@@ -259,111 +323,224 @@ function NotificationRow({
 			overshootRight={false}
 			rightThreshold={SWIPE_BTN_WIDTH}
 			renderRightActions={renderRightActions}
-			containerStyle={{ backgroundColor: cardBg }}
+			containerStyle={{ backgroundColor: c.card }}
 		>
-			<AnimatedPressable
+			<Pressable
 				onPress={handleRowPress}
-				scaleTo={0.985}
-				style={[
+				accessibilityRole="button"
+				accessibilityLabel={[
+					item.isRead ? null : t("notifications.unread"),
+					item.subject,
+					item.body,
+					when,
+				]
+					.filter(Boolean)
+					.join(", ")}
+				accessibilityActions={[
+					{
+						name: "toggleRead",
+						label: item.isRead
+							? t("notifications.unread")
+							: t("notifications.read"),
+					},
+					{
+						name: "archive",
+						label: item.isArchived
+							? t("notifications.restore")
+							: t("notifications.archive"),
+					},
+				]}
+				onAccessibilityAction={(event) => {
+					if (event.nativeEvent.actionName === "toggleRead") {
+						void (item.isRead ? item.unread() : item.read());
+					} else if (event.nativeEvent.actionName === "archive") {
+						void (item.isArchived ? item.unarchive() : item.archive());
+					}
+				}}
+				android_ripple={{ color: c.well }}
+				style={({ pressed }) => [
 					styles.item,
-					{ borderBottomColor: borderColor, backgroundColor: rowBg },
-					!item.isRead && styles.itemUnread,
+					{ backgroundColor: rowBg },
+					pressed && Platform.OS === "ios" ? { backgroundColor: c.well } : null,
 				]}
 			>
-				{/* Unread indicator bar */}
-				{!item.isRead && (
-					<View style={[styles.unreadBar, { backgroundColor: primaryColor }]} />
-				)}
-
 				<View style={[styles.iconBox, { backgroundColor: icon.bg }]}>
 					<Ionicons name={icon.name} size={18} color={icon.color} />
 				</View>
 
-				<View style={{ flex: 1, gap: 3 }}>
-					{item.subject ? (
+				<View style={styles.itemText}>
+					<View style={styles.itemTop}>
 						<Text
 							style={[
 								styles.itemSubject,
-								{ color: textColor },
-								!item.isRead && { fontFamily: Fonts.bodySemibold },
+								{ color: c.foreground },
+								!item.isRead && styles.itemUnread,
 							]}
-							numberOfLines={1}
+							numberOfLines={item.subject ? 1 : 3}
 						>
-							{item.subject}
+							{item.subject || item.body}
+						</Text>
+						<Text style={[styles.itemTime, { color: c.mutedForeground }]}>
+							{when}
+						</Text>
+						{!item.isRead ? (
+							<View
+								style={[styles.unreadDot, { backgroundColor: c.primary }]}
+							/>
+						) : null}
+					</View>
+					{item.subject ? (
+						<Text
+							style={[styles.itemBody, { color: c.body }]}
+							numberOfLines={hasActions ? 2 : 3}
+						>
+							{item.body}
 						</Text>
 					) : null}
-					<Text
-						style={[
-							styles.itemBody,
-							{ color: item.subject ? mutedColor : textColor },
-							!item.isRead &&
-								!item.subject && { fontFamily: Fonts.bodySemibold },
-						]}
-						numberOfLines={hasActions ? 2 : 3}
-					>
-						{item.body}
-					</Text>
-					<Text style={[styles.itemTime, { color: mutedColor }]}>
-						{timeAgo(item.createdAt, i18n.language)}
-					</Text>
 
-					{hasActions && (
+					{hasActions ? (
 						<View style={styles.inlineActions}>
-							{item.primaryAction && (
+							{item.primaryAction ? (
 								<Pressable
 									onPress={handlePrimaryAction}
+									accessibilityRole="button"
+									accessibilityState={{
+										disabled: Boolean(item.primaryAction.isCompleted),
+									}}
 									style={[
 										styles.actionBtn,
 										item.primaryAction.isCompleted
-											? [styles.actionBtnDone, { borderColor }]
-											: [
-													styles.actionBtnPrimary,
-													{ borderColor: primaryColor },
-												],
+											? { borderColor: c.border, opacity: 0.6 }
+											: {
+													backgroundColor: c.primaryFill,
+													borderColor: c.primaryFill,
+												},
 									]}
 								>
-									{item.primaryAction.isCompleted && (
-										<Ionicons name="checkmark" size={11} color={mutedColor} />
-									)}
+									{item.primaryAction.isCompleted ? (
+										<Ionicons
+											name="checkmark"
+											size={14}
+											color={c.mutedForeground}
+										/>
+									) : null}
 									<Text
 										style={[
 											styles.actionBtnText,
 											{
 												color: item.primaryAction.isCompleted
-													? mutedColor
-													: primaryColor,
+													? c.mutedForeground
+													: "#ffffff",
 											},
 										]}
 									>
 										{item.primaryAction.label}
 									</Text>
 								</Pressable>
-							)}
-							{item.secondaryAction && (
+							) : null}
+							{item.secondaryAction ? (
 								<Pressable
 									onPress={handleSecondaryAction}
+									accessibilityRole="button"
+									accessibilityState={{
+										disabled: Boolean(item.secondaryAction.isCompleted),
+									}}
 									style={[
 										styles.actionBtn,
-										item.secondaryAction.isCompleted
-											? [styles.actionBtnDone, { borderColor }]
-											: [styles.actionBtnSecondary, { borderColor }],
+										{
+											backgroundColor: c.card,
+											borderColor: c.borderStrong,
+										},
+										item.secondaryAction.isCompleted ? { opacity: 0.6 } : null,
 									]}
 								>
-									{item.secondaryAction.isCompleted && (
-										<Ionicons name="checkmark" size={11} color={mutedColor} />
-									)}
-									<Text style={[styles.actionBtnText, { color: mutedColor }]}>
+									{item.secondaryAction.isCompleted ? (
+										<Ionicons
+											name="checkmark"
+											size={14}
+											color={c.mutedForeground}
+										/>
+									) : null}
+									<Text
+										style={[
+											styles.actionBtnText,
+											{
+												color: item.secondaryAction.isCompleted
+													? c.mutedForeground
+													: c.link,
+											},
+										]}
+									>
 										{item.secondaryAction.label}
 									</Text>
 								</Pressable>
-							)}
+							) : null}
 						</View>
-					)}
+					) : null}
 				</View>
-
-				{!item.isRead && <View style={styles.unreadDot} />}
-			</AnimatedPressable>
+			</Pressable>
 		</ReanimatedSwipeable>
+	);
+}
+
+// ─── Push permission card ─────────────────────────────────────────────────────
+
+function PushPermissionCard({
+	status,
+	onEnable,
+	c,
+}: {
+	status: "denied" | "undetermined";
+	onEnable: () => void;
+	c: Palette;
+}) {
+	const { t } = useTranslation();
+	const denied = status === "denied";
+	return (
+		<View
+			style={[
+				styles.permCard,
+				{ backgroundColor: c.card, borderColor: c.border },
+			]}
+		>
+			<View
+				style={[
+					styles.permIcon,
+					{ backgroundColor: denied ? c.warningTint : c.primaryTint },
+				]}
+			>
+				<Ionicons
+					name={denied ? "notifications-off-outline" : "notifications-outline"}
+					size={18}
+					color={denied ? c.warningText : c.link}
+				/>
+			</View>
+			<Text style={[styles.permText, { color: c.foreground }]}>
+				{denied
+					? t("notifications.deniedBannerText")
+					: t("notifications.undeterminedBannerText")}
+			</Text>
+			<Pressable
+				onPress={onEnable}
+				accessibilityRole="button"
+				accessibilityLabel={
+					denied
+						? t("settings.permissions.action.openSettings")
+						: t("notifications.enablePush")
+				}
+				hitSlop={8}
+				style={({ pressed }) => [
+					styles.permAction,
+					{ backgroundColor: c.primaryFill, opacity: pressed ? 0.88 : 1 },
+				]}
+			>
+				<Text style={styles.permActionText}>
+					{denied
+						? t("settings.permissions.action.openSettings")
+						: t("notifications.enablePush")}
+				</Text>
+			</Pressable>
+		</View>
 	);
 }
 
@@ -371,48 +548,27 @@ function NotificationRow({
 
 export function NotificationsScreen() {
 	const notificationReady = useNotificationReady();
-	const isDark = useColorScheme() === "dark";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
+	const c = useGroupedColors();
+	const { t } = useTranslation();
 
 	if (!notificationReady) {
 		return (
 			<SafeAreaView
 				edges={["top"]}
-				style={[styles.safe, { backgroundColor: accentBg }]}
+				style={[styles.safe, { backgroundColor: c.background }]}
 			>
-				<View style={styles.center}>
-					<ActivityIndicator color={primaryColor} />
-				</View>
+				<SettingsHeader title={t("notifications.title")} />
+				<OrderListSkeleton rows={6} />
 			</SafeAreaView>
 		);
 	}
 
-	return (
-		<NotificationsContent
-			isDark={isDark}
-			primaryColor={primaryColor}
-			accentBg={accentBg}
-		/>
-	);
+	return <NotificationsContent c={c} />;
 }
 
-function NotificationsContent({
-	isDark,
-	primaryColor,
-	accentBg,
-}: {
-	isDark: boolean;
-	primaryColor: string;
-	accentBg: string;
-}) {
+function NotificationsContent({ c }: { c: Palette }) {
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const borderColor = isDark ? "#1e293b" : "#f1f5f9";
 
 	const { notifications, isLoading, hasMore, fetchMore, readAll, refetch } =
 		useNotifications();
@@ -425,6 +581,7 @@ function NotificationsContent({
 
 	const items = notifications ?? [];
 	const unreadCount = items.filter((n) => !n.isRead).length;
+	const sections = useMemo(() => groupByDay(items, t), [items, t]);
 
 	useEffect(() => {
 		Notifications.setBadgeCountAsync(0);
@@ -452,6 +609,11 @@ function NotificationsContent({
 	};
 
 	const handleEnablePush = async () => {
+		// Once refused, only the system settings can turn them back on.
+		if (permissionStatus === "denied") {
+			void Linking.openSettings();
+			return;
+		}
 		const token = await registerForPushNotificationsAsync();
 		const perm = await Notifications.getPermissionsAsync();
 		setPermissionStatus(perm.status as "granted" | "denied" | "undetermined");
@@ -462,177 +624,196 @@ function NotificationsContent({
 		}
 	};
 
+	const markAll =
+		unreadCount > 0 ? (
+			<Pressable
+				onPress={handleMarkAllRead}
+				disabled={isMarkingRead}
+				accessibilityRole="button"
+				accessibilityLabel={t("notifications.markAllRead")}
+				accessibilityState={{ busy: isMarkingRead }}
+				hitSlop={4}
+				style={({ pressed }) => [
+					styles.headerAction,
+					pressed ? { backgroundColor: c.well } : null,
+				]}
+			>
+				{isMarkingRead ? (
+					<ActivityIndicator size="small" color={c.link} />
+				) : (
+					<Ionicons name="checkmark-done" size={22} color={c.link} />
+				)}
+			</Pressable>
+		) : null;
+
+	const permissionCard =
+		permissionStatus === "denied" || permissionStatus === "undetermined" ? (
+			<PushPermissionCard
+				status={permissionStatus}
+				onEnable={() => void handleEnablePush()}
+				c={c}
+			/>
+		) : null;
+
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: accentBg }]}
+			style={[styles.safe, { backgroundColor: c.background }]}
 		>
-			{/* Header */}
-			<View style={[styles.header, { backgroundColor: accentBg }]}>
-				<HeaderBackButton
-					color={isDark ? "#e2e8f0" : "#0f172a"}
-					fallback="/(tabs)/account"
-					inline
-					style={styles.backBtn}
-				/>
-				<Text style={[styles.title, { color: textColor }]}>
-					{t("notifications.title")}
-				</Text>
-				{unreadCount > 0 && (
-					<AnimatedPressable
-						onPress={handleMarkAllRead}
-						scaleTo={0.95}
-						style={styles.markAllBtn}
-					>
-						{isMarkingRead ? (
-							<ActivityIndicator size="small" color={primaryColor} />
-						) : (
-							<Text style={[styles.markAllText, { color: primaryColor }]}>
-								{t("notifications.markAllRead")}
-							</Text>
-						)}
-					</AnimatedPressable>
-				)}
-			</View>
+			<SettingsHeader title={t("notifications.title")} right={markAll} />
 
-			{/* Push permission banners */}
-			{permissionStatus === "denied" && (
-				<View
-					style={[
-						styles.permBanner,
-						{ backgroundColor: isDark ? "#1e293b" : "#fefce8" },
-					]}
-				>
-					<Ionicons name="warning-outline" size={18} color="#d97706" />
-					<Text
-						style={[styles.permText, { color: isDark ? "#fbbf24" : "#92400e" }]}
-					>
-						{t("notifications.deniedBannerText")}
-					</Text>
-					<Pressable onPress={handleEnablePush}>
-						<Text style={[styles.permLink, { color: primaryColor }]}>
-							{t("notifications.enablePush")}
-						</Text>
-					</Pressable>
-				</View>
-			)}
-			{permissionStatus === "undetermined" && (
-				<View
-					style={[
-						styles.permBanner,
-						{ backgroundColor: isDark ? "#1e3a5f" : "#eff6ff" },
-					]}
-				>
-					<Ionicons
-						name="notifications-outline"
-						size={18}
-						color={primaryColor}
-					/>
-					<Text
-						style={[styles.permText, { color: isDark ? "#93c5fd" : "#1e40af" }]}
-					>
-						{t("notifications.undeterminedBannerText")}
-					</Text>
-					<Pressable onPress={handleEnablePush}>
-						<Text style={[styles.permLink, { color: primaryColor }]}>
-							{t("notifications.enablePush")}
-						</Text>
-					</Pressable>
-				</View>
-			)}
-
-			{/* Content */}
-			<View style={[styles.body, { backgroundColor: bg }]}>
-				{isLoading ? (
-					<View style={styles.center}>
-						<ActivityIndicator color={primaryColor} />
-					</View>
-				) : items.length === 0 ? (
+			{isLoading ? (
+				<OrderListSkeleton rows={6} />
+			) : items.length === 0 ? (
+				<View style={styles.flex}>
+					{permissionCard ? (
+						<View style={[styles.permWrap, centeredContent]}>
+							{permissionCard}
+						</View>
+					) : null}
 					<EmptyState
 						icon="notifications-outline"
 						title={t("notifications.noNotifications")}
 						subtitle={t("notifications.noNotificationsSub")}
 					/>
-				) : (
-					<FlatList
-						data={items}
-						keyExtractor={(item) => item.id}
-						renderItem={({ item }) => (
-							<NotificationRow
-								item={item}
-								isDark={isDark}
-								borderColor={borderColor}
-								textColor={textColor}
-								mutedColor={mutedColor}
-								primaryColor={primaryColor}
-								cardBg={cardBg}
-							/>
-						)}
-						contentContainerStyle={[
-							styles.list,
-							{ backgroundColor: cardBg },
-							centeredContent,
-						]}
-						style={styles.flatList}
-						onEndReached={() => hasMore && fetchMore()}
-						onEndReachedThreshold={0.5}
-						refreshControl={
-							<RefreshControl
-								refreshing={isRefreshing}
-								onRefresh={handleRefresh}
-								tintColor={primaryColor}
-							/>
-						}
-						showsVerticalScrollIndicator={false}
-					/>
-				)}
-			</View>
+				</View>
+			) : (
+				<SectionList
+					sections={sections}
+					keyExtractor={(item) => item.id}
+					stickySectionHeadersEnabled={false}
+					ListHeaderComponent={
+						permissionCard ? (
+							<View style={styles.permWrap}>{permissionCard}</View>
+						) : null
+					}
+					renderSectionHeader={({ section }) =>
+						section.title ? (
+							<Text
+								accessibilityRole="header"
+								style={[
+									styles.sectionTitle,
+									{ color: c.mutedForeground, backgroundColor: c.background },
+								]}
+							>
+								{section.title}
+							</Text>
+						) : null
+					}
+					renderItem={({ item, index, section }) => (
+						<View
+							style={[
+								styles.groupRow,
+								{ borderColor: c.border, backgroundColor: c.card },
+								index === 0 && styles.groupFirst,
+								index === section.data.length - 1 && styles.groupLast,
+							]}
+						>
+							{index > 0 ? (
+								<View
+									style={[styles.separator, { backgroundColor: c.border }]}
+								/>
+							) : null}
+							<NotificationRow item={item} c={c} />
+						</View>
+					)}
+					contentContainerStyle={[styles.list, centeredContent]}
+					onEndReached={() => hasMore && fetchMore()}
+					onEndReachedThreshold={0.5}
+					refreshControl={
+						<RefreshControl
+							refreshing={isRefreshing}
+							onRefresh={handleRefresh}
+							tintColor={c.primary}
+							colors={[c.primary]}
+						/>
+					}
+					showsVerticalScrollIndicator={false}
+				/>
+			)}
 		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
+	flex: { flex: 1 },
 
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingTop: 4,
-		paddingBottom: 14,
-		gap: 12,
-	},
-	backBtn: { padding: 4 },
-	title: { flex: 1, fontSize: 20, fontFamily: Fonts.displayBold },
-	markAllBtn: { paddingHorizontal: 10, paddingVertical: 6 },
-	markAllText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-
-	permBanner: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		marginHorizontal: 16,
-		marginBottom: 8,
-		padding: 12,
-		borderRadius: 12,
-	},
-	permText: { flex: 1, fontSize: 13, fontFamily: Fonts.body },
-	permLink: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-
-	body: {
-		flex: 1,
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		overflow: "hidden",
-	},
-	center: {
-		flex: 1,
+	headerAction: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
 		alignItems: "center",
 		justifyContent: "center",
-		paddingTop: 80,
 	},
-	flatList: { flex: 1 },
-	list: { flexGrow: 1 },
+
+	// ── Push permission ──────────────────────────────────────────
+	permWrap: { paddingHorizontal: 16, paddingTop: 16 },
+	permCard: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		padding: 14,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
+	permIcon: {
+		width: 36,
+		height: 36,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	permText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 21,
+		fontFamily: Fonts.bodyMedium,
+	},
+	permAction: {
+		minHeight: 44,
+		borderRadius: 12,
+		paddingHorizontal: 16,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	permActionText: {
+		color: "#ffffff",
+		fontSize: 15,
+		fontFamily: Fonts.bodyBold,
+	},
+
+	// ── List ─────────────────────────────────────────────────────
+	list: { paddingBottom: 48 },
+	sectionTitle: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 13,
+		lineHeight: 18,
+		paddingHorizontal: 32,
+		paddingTop: 24,
+		paddingBottom: 8,
+	},
+	// The rows of a day read as one inset card: hairline sides, rounded ends.
+	groupRow: {
+		marginHorizontal: 16,
+		borderLeftWidth: StyleSheet.hairlineWidth,
+		borderRightWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
+	},
+	groupFirst: {
+		borderTopWidth: StyleSheet.hairlineWidth,
+		borderTopLeftRadius: 14,
+		borderTopRightRadius: 14,
+	},
+	groupLast: {
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		borderBottomLeftRadius: 14,
+		borderBottomRightRadius: 14,
+	},
+	separator: {
+		height: StyleSheet.hairlineWidth,
+		marginLeft: TEXT_INSET,
+	},
 
 	// ── Row ──────────────────────────────────────────────────────
 	item: {
@@ -640,81 +821,54 @@ const styles = StyleSheet.create({
 		alignItems: "flex-start",
 		paddingHorizontal: 16,
 		paddingVertical: 14,
-		borderBottomWidth: 1,
 		gap: 12,
 	},
-	itemUnread: {
-		paddingLeft: 12, // compensate for the 4px unread bar
-	},
-	unreadBar: {
-		position: "absolute",
-		left: 0,
-		top: 0,
-		bottom: 0,
-		width: 4,
-		borderTopRightRadius: 2,
-		borderBottomRightRadius: 2,
-	},
 	iconBox: {
-		width: 38,
-		height: 38,
-		borderRadius: 12,
+		width: 36,
+		height: 36,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
-		marginTop: 1,
 	},
+	itemText: { flex: 1, gap: 3 },
+	itemTop: { flexDirection: "row", alignItems: "center", gap: 8 },
 	itemSubject: {
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
-		lineHeight: 20,
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 21,
+		fontFamily: Fonts.bodyMedium,
 	},
-	itemBody: {
-		fontSize: 13,
-		fontFamily: Fonts.body,
-		lineHeight: 18,
-	},
-	itemTime: { fontSize: 12, fontFamily: Fonts.body },
-	unreadDot: {
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-		backgroundColor: "#3b82f6",
-		marginTop: 6,
-	},
+	itemUnread: { fontFamily: Fonts.bodyBold },
+	itemBody: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	itemTime: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
+	unreadDot: { width: 8, height: 8, borderRadius: 4 },
 
-	// ── Swipe actions ─────────────────────────────────────────────
+	// ── Swipe actions ────────────────────────────────────────────
+	swipeRow: { flexDirection: "row" },
 	swipeBtn: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 4,
+		paddingHorizontal: 4,
 	},
-	swipeBtnLabel: {
-		fontSize: 11,
-		fontFamily: Fonts.bodySemibold,
-		color: "#fff",
-	},
+	swipeBtnLabel: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 
-	// ── Inline Novu actions (primary / secondary) ─────────────────
+	// ── Inline Novu actions (primary / secondary) ────────────────
 	inlineActions: {
 		flexDirection: "row",
+		flexWrap: "wrap",
 		gap: 8,
-		marginTop: 6,
+		marginTop: 8,
 	},
 	actionBtn: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
-		paddingHorizontal: 12,
-		paddingVertical: 5,
-		borderRadius: 20,
+		paddingHorizontal: 14,
+		minHeight: 44,
+		borderRadius: 12,
 		borderWidth: 1,
 	},
-	actionBtnPrimary: { backgroundColor: "transparent" },
-	actionBtnSecondary: { backgroundColor: "transparent" },
-	actionBtnDone: { backgroundColor: "transparent", opacity: 0.5 },
-	actionBtnText: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-	},
+	actionBtnText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });
