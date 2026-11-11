@@ -1,24 +1,13 @@
-import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, {
-	cancelAnimation,
-	Easing,
-	useAnimatedStyle,
-	useReducedMotion,
-	useSharedValue,
-	withRepeat,
-	withTiming,
-} from "react-native-reanimated";
 import Svg, { Circle, Defs, Path, Pattern, Rect } from "react-native-svg";
 
 /**
  * The web's background patterns, carried over tile for tile
  * (see `.pattern-*` in packages/web/src/app/globals.css).
  *
- * The web paints these as a repeating background-image and slides the
- * background-position to make them drift. React Native has no tiling
- * background, so each one is an SVG <Pattern> instead, and the drift is a
- * translate on an oversized layer — same motion, same period.
+ * React Native has no tiling background, so each one is an SVG <Pattern>.
+ * The web makes them drift; here they hold still — DESIGN.md allows no
+ * ambient loops, and a ground that moves behind text only competes with it.
  *
  * Purely decorative: it sits under the content and never takes touches or
  * the screen reader.
@@ -43,51 +32,43 @@ const SPECS: Record<
 		tile: { w: number; h: number };
 		color: string;
 		opacity: number;
-		/** Drift period in ms and the distance travelled, from @keyframes. */
-		drift: { ms: number; x: number; y: number };
 	}
 > = {
-	// .pattern-grid — rgba(255,255,255,0.05), patternDrift 25s → 60px 60px
+	// .pattern-grid — rgba(255,255,255,0.05)
 	grid: {
 		tile: { w: 60, h: 60 },
 		color: "#ffffff",
 		opacity: 0.05,
-		drift: { ms: 25000, x: 60, y: 60 },
 	},
-	// .pattern-dots — rgba(30,64,175,0.06), patternDriftSlow 20s → 40px 40px
+	// .pattern-dots — rgba(30,64,175,0.06)
 	dots: {
 		tile: { w: 20, h: 20 },
 		color: "#1e40af",
 		opacity: 0.06,
-		drift: { ms: 20000, x: 40, y: 40 },
 	},
-	// .pattern-dots-light — rgba(255,255,255,0.08), patternDriftSlow 18s
+	// .pattern-dots-light — rgba(255,255,255,0.08)
 	dotsLight: {
 		tile: { w: 20, h: 20 },
 		color: "#ffffff",
 		opacity: 0.08,
-		drift: { ms: 18000, x: 40, y: 40 },
 	},
-	// .pattern-cross — rgba(30,64,175,0.06), patternDriftSlow 30s
+	// .pattern-cross — rgba(30,64,175,0.06)
 	cross: {
 		tile: { w: 40, h: 40 },
 		color: "#1e40af",
 		opacity: 0.06,
-		drift: { ms: 30000, x: 40, y: 40 },
 	},
-	// .pattern-diagonal — rgba(255,255,255,0.04), patternDriftDiag 22s → 80px -80px
+	// .pattern-diagonal — rgba(255,255,255,0.04)
 	diagonal: {
 		tile: { w: 40, h: 40 },
 		color: "#ffffff",
 		opacity: 0.04,
-		drift: { ms: 22000, x: 80, y: -80 },
 	},
-	// .pattern-hexagon — rgba(245,158,11,0.06), patternDrift 35s → 60px 60px
+	// .pattern-hexagon — rgba(245,158,11,0.06)
 	hexagon: {
 		tile: { w: 50, h: 43.3 },
 		color: "#f59e0b",
 		opacity: 0.06,
-		drift: { ms: 35000, x: 60, y: 60 },
 	},
 };
 
@@ -135,49 +116,16 @@ export function BackgroundPattern({
 	kind,
 	color,
 	opacity,
-	animated = true,
 }: {
 	kind: PatternKind;
 	/** Overrides the web's baked-in colour. */
 	color?: string;
 	/** Overrides the web's baked-in alpha. */
 	opacity?: number;
-	animated?: boolean;
 }) {
 	const spec = SPECS[kind];
 	const stroke = color ?? spec.color;
 	const alpha = opacity ?? spec.opacity;
-
-	const progress = useSharedValue(0);
-	// Honour the OS "reduce motion" switch — a drifting ground is exactly the
-	// kind of ambient motion that setting exists to stop.
-	const reducedMotion = useReducedMotion();
-	const moving = animated && !reducedMotion;
-
-	useEffect(() => {
-		if (!moving) {
-			progress.value = 0;
-			return;
-		}
-		progress.value = withRepeat(
-			withTiming(1, { duration: spec.drift.ms, easing: Easing.linear }),
-			-1,
-			false,
-		);
-		return () => cancelAnimation(progress);
-	}, [moving, progress, spec.drift.ms]);
-
-	const driftStyle = useAnimatedStyle(() => ({
-		transform: [
-			{ translateX: progress.value * spec.drift.x },
-			{ translateY: progress.value * spec.drift.y },
-		],
-	}));
-
-	// The layer is grown by the drift distance on each axis (and offset by the
-	// same) so the translate never exposes an unpainted edge.
-	const padX = Math.abs(spec.drift.x);
-	const padY = Math.abs(spec.drift.y);
 
 	return (
 		<View
@@ -186,51 +134,38 @@ export function BackgroundPattern({
 			accessibilityElementsHidden
 			importantForAccessibility="no-hide-descendants"
 		>
-			<Animated.View
-				style={[
-					{
-						position: "absolute",
-						left: -padX,
-						top: -padY,
-						right: -padX,
-						bottom: -padY,
-					},
-					driftStyle,
-				]}
-			>
-				<Svg width="100%" height="100%">
-					<Defs>
-						<Pattern
-							id={`bg-${kind}`}
-							width={spec.tile.w}
-							height={spec.tile.h}
-							patternUnits="userSpaceOnUse"
-						>
-							<Tile kind={kind} color={stroke} />
-						</Pattern>
-					</Defs>
-					<Rect
-						width="100%"
-						height="100%"
-						fill={`url(#bg-${kind})`}
-						opacity={alpha}
-					/>
-				</Svg>
-			</Animated.View>
+			<Svg width="100%" height="100%">
+				<Defs>
+					<Pattern
+						id={`bg-${kind}`}
+						width={spec.tile.w}
+						height={spec.tile.h}
+						patternUnits="userSpaceOnUse"
+					>
+						<Tile kind={kind} color={stroke} />
+					</Pattern>
+				</Defs>
+				<Rect
+					width="100%"
+					height="100%"
+					fill={`url(#bg-${kind})`}
+					opacity={alpha}
+				/>
+			</Svg>
 		</View>
 	);
 }
 
 /**
  * The pairing the web uses on every dark header: fine light dots with a
- * slower diagonal rake over them (see the public pages' `pattern-dots-light
- * absolute inset-0` + `pattern-diagonal absolute inset-0`).
+ * diagonal rake over them (see the public pages' `pattern-dots-light
+ * absolute inset-0` + `pattern-diagonal absolute inset-0`), held still.
  */
-export function ShellPattern({ animated = true }: { animated?: boolean }) {
+export function ShellPattern() {
 	return (
 		<>
-			<BackgroundPattern kind="dotsLight" animated={animated} />
-			<BackgroundPattern kind="diagonal" animated={animated} />
+			<BackgroundPattern kind="dotsLight" />
+			<BackgroundPattern kind="diagonal" />
 		</>
 	);
 }

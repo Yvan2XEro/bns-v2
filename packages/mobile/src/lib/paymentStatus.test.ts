@@ -256,19 +256,19 @@ describe("the payments namespace", () => {
 			"Protected payment available: your money is released to the seller only after delivery. Fee: {{rate}}% (min {{min}})",
 		);
 		expect(enNs.disclosure_holder).toBe(
-			"Your payment is collected and held by NotchPay, a payment provider. BuyNSellem never holds your money.",
+			"Your payment is collected and held by NotchPay, a payment provider. Buy'N'Sellem never holds your money.",
 		);
 		expect(enNs.disclosure_sellerLegend).toBe(
-			"Funds are held by NotchPay. BuyNSellem never holds your money.",
+			"Funds are held by NotchPay. Buy'N'Sellem never holds your money.",
 		);
 		expect(frNs.disclosure_listingBadge).toBe(
 			"Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : {{rate}} % (min. {{min}})",
 		);
 		expect(frNs.disclosure_holder).toBe(
-			"Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. BuyNSellem ne détient jamais votre argent.",
+			"Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. Buy'N'Sellem ne détient jamais votre argent.",
 		);
 		expect(frNs.disclosure_sellerLegend).toBe(
-			"Les fonds sont détenus par NotchPay. BuyNSellem ne détient jamais votre argent.",
+			"Les fonds sont détenus par NotchPay. Buy'N'Sellem ne détient jamais votre argent.",
 		);
 	});
 });

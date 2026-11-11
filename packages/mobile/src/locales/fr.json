@@ -1068,7 +1068,7 @@
 		"sections": {
 			"intro": {
 				"title": "1. À propos de cette politique",
-				"body": "Cette politique explique ce que l'application mobile BuyNSellem collecte, pourquoi elle le collecte et ce qu'il advient de ces données. Chaque point ci-dessous correspond à une fonctionnalité réellement présente dans l'application. Lorsqu'une fonctionnalité est facultative, nous le précisons."
+				"body": "Buy'N'Sellem est un produit de OverBrand SARL. Cette politique explique ce que l'application mobile Buy'N'Sellem collecte, pourquoi elle le collecte et ce qu'il advient de ces données. Chaque point ci-dessous correspond à une fonctionnalité réellement présente dans l'application. Lorsqu'une fonctionnalité est facultative, nous le précisons."
 			},
 			"account": {
 				"title": "2. Informations de compte",
@@ -1132,7 +1132,7 @@
 			},
 			"children": {
 				"title": "17. Âge requis",
-				"body": "BuyNSellem s'adresse aux adultes. L'application n'est pas destinée aux personnes de moins de 18 ans et nous ne collectons pas sciemment d'informations personnelles concernant des enfants. Si vous pensez qu'un enfant a créé un compte, contactez-nous à support@buynsellem.com."
+				"body": "Buy'N'Sellem s'adresse aux adultes. L'application n'est pas destinée aux personnes de moins de 18 ans et nous ne collectons pas sciemment d'informations personnelles concernant des enfants. Si vous pensez qu'un enfant a créé un compte, contactez-nous à support@buynsellem.com."
 			},
 			"security": {
 				"title": "18. Comment nous protégeons vos données",
@@ -1162,7 +1162,7 @@
 			},
 			"service": {
 				"title": "2. Description du service",
-				"body": "Buy'N'Sellem est une plateforme de petites annonces permettant aux utilisateurs d'acheter et vendre des articles entre particuliers au Cameroun et dans la sous-région."
+				"body": "Buy'N'Sellem est une plateforme de petites annonces permettant aux utilisateurs d'acheter et vendre des articles entre particuliers au Cameroun et dans la sous-région. Buy'N'Sellem est un produit de OverBrand SARL."
 			},
 			"eligibility": {
 				"title": "3. Qui peut utiliser le service",
@@ -2495,9 +2495,9 @@
 			"pageTitle": "Vérification d'identité",
 			"consent": {
 				"title": "Avant de commencer",
-				"intro": "Pour vérifier votre identité, BuyNSellem transmet votre pièce d'identité et un selfie à son partenaire de vérification d'identité. Merci de lire ce que cela implique avant de continuer.",
+				"intro": "Pour vérifier votre identité, Buy'N'Sellem transmet votre pièce d'identité et un selfie à son partenaire de vérification d'identité. Merci de lire ce que cela implique avant de continuer.",
 				"collects": "Ce que nous collectons : une pièce d'identité (carte nationale, passeport ou carte de séjour) et un selfie utilisé pour vérifier qu'il s'agit bien de vous.",
-				"vendor": "Ces informations sont traitées par le partenaire de vérification d'identité de BuyNSellem (actuellement Didit ou Smile ID), qui peut les traiter hors du Cameroun dans le cadre de garanties contractuelles de protection des données.",
+				"vendor": "Ces informations sont traitées par le partenaire de vérification d'identité de Buy'N'Sellem (actuellement Didit ou Smile ID), qui peut les traiter hors du Cameroun dans le cadre de garanties contractuelles de protection des données.",
 				"retention": "Le prestataire supprime sa propre copie dans les 30 jours suivant une décision. Nous conservons le dossier de vérification pendant 90 jours après une décision définitive (jusqu'à un an en cas de révocation pour fraude), et la trace qu'une vérification a eu lieu pendant 5 ans, comme la loi l'exige.",
 				"rights": "Vous pouvez demander à consulter ou supprimer ces informations à tout moment, sauf ce que la loi nous oblige à conserver.",
 				"contact": "Contact : privacy@buynsellem.com",
@@ -4031,8 +4031,8 @@
 	},
 	"payments": {
 		"disclosure_listingBadge": "Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : {{rate}} % (min. {{min}})",
-		"disclosure_holder": "Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. BuyNSellem ne détient jamais votre argent.",
-		"disclosure_sellerLegend": "Les fonds sont détenus par NotchPay. BuyNSellem ne détient jamais votre argent.",
+		"disclosure_holder": "Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. Buy'N'Sellem ne détient jamais votre argent.",
+		"disclosure_sellerLegend": "Les fonds sont détenus par NotchPay. Buy'N'Sellem ne détient jamais votre argent.",
 		"method_title": "Mode de paiement",
 		"method_cod": "Paiement à la livraison",
 		"method_codBody": "Payez à la réception de votre commande.",

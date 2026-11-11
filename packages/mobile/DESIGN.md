@@ -29,7 +29,7 @@ Navigation, controls, sheets and gestures stay native. The world never supplies 
 | primaryFill | `#2f5bd4` | `#2448ab` | behind a white label: buttons, selected chips |
 | link | `#2f5bd4` | `#9ec5fe` | brand-coloured words on a card |
 | primaryTint | `#e3e9fb` | `#16265c` | selected chip, soft fills (a surface: words on it use link) |
-| shell | `#2a51c0` | `#13183e` | home header, auth band, guest card |
+| shell | `#2a51c0` | `#13183e` | home header, seller hub header, auth band, onboarding, guest card |
 | ownBubble | `#2448ab` | `#2448ab` | own chat bubbles, sheet actions, unread badges |
 | sun | `#ffb81c` | `#ffc94a` | price tags, sell plaque, boosted frame |
 | success | `#1e8a4f` | `#34b26a` | |
@@ -39,7 +39,7 @@ Navigation, controls, sheets and gestures stay native. The world never supplies 
 Rules:
 - The brand blue is the web's: `primary` is `#2f5bd4` by day and `#3b82f6` by night. The night value is too light behind a white label (3.7:1) and too dark for words on a night card (4.3:1), so filled actions use `primaryFill` and brand words use `link`. Never use `primary` for either job.
 - Text on yellow is always ink `#12163a`, never white.
-- The shell indigo appears only on the home header, the auth band and the guest invitation. Everywhere else the ground is light (or night-indigo in dark mode).
+- The shell means "you are home": it appears only on the landing screen of each mode (the buyer home header and the seller hub header) and on the ways in (the auth band, onboarding, the guest invitation). Every other screen, seller screens included, sits on the light ground (or night-indigo in dark mode).
 - Own chat bubbles use `ownBubble` (`#2448ab`) in both themes, so white text stays legible.
 - No coloured glows. A shadow is an ink shadow with an offset.
 
@@ -70,7 +70,7 @@ Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.
 - **Cart count:** hops once when it goes up.
 - **The one authored moment is the publish stamp** (`PublishedStamp`). When a listing goes live, a yellow price tag is stamped onto the screen with an ink ring.
 - **Reduce Motion:** the stamp, the sheet and the toast fade instead of moving.
-- **Loops:** none, except skeletons.
+- **Loops:** none, except skeletons. Background patterns (`NdopPattern`, `ShellPattern`) are static.
 
 ## Alerts
 - **Toast:** news that needs no answer ("Saved", "Link copied"). It is an ink card at the top that leaves after 3–5 s and is announced to screen readers. `showSuccess` always routes here.

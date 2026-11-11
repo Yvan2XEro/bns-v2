@@ -1156,7 +1156,7 @@
 		"sections": {
 			"intro": {
 				"title": "1. About this policy",
-				"body": "This policy explains what the BuyNSellem mobile app collects, why it collects it, and what happens to it. Every item below matches a feature you can actually use in the app. Where a feature is optional, we say so."
+				"body": "Buy'N'Sellem is a product of OverBrand SARL. This policy explains what the Buy'N'Sellem mobile app collects, why it collects it, and what happens to it. Every item below matches a feature you can actually use in the app. Where a feature is optional, we say so."
 			},
 			"account": {
 				"title": "2. Account information",
@@ -1220,7 +1220,7 @@
 			},
 			"children": {
 				"title": "17. Age requirement",
-				"body": "BuyNSellem is intended for adults. The app is not meant for anyone under 18 and we do not knowingly collect personal information from children. If you believe a child has created an account, contact us at support@buynsellem.com."
+				"body": "Buy'N'Sellem is intended for adults. The app is not meant for anyone under 18 and we do not knowingly collect personal information from children. If you believe a child has created an account, contact us at support@buynsellem.com."
 			},
 			"security": {
 				"title": "18. How we protect your data",
@@ -1250,7 +1250,7 @@
 			},
 			"service": {
 				"title": "2. What the service is",
-				"body": "Buy'N'Sellem is a classifieds platform that lets people buy and sell items directly with each other in Cameroon and the surrounding region."
+				"body": "Buy'N'Sellem is a classifieds platform that lets people buy and sell items directly with each other in Cameroon and the surrounding region. Buy'N'Sellem is a product of OverBrand SARL."
 			},
 			"eligibility": {
 				"title": "3. Who can use it",
@@ -2492,9 +2492,9 @@
 			"pageTitle": "Identity verification",
 			"consent": {
 				"title": "Before you start",
-				"intro": "To verify your identity, BuyNSellem sends your identification document and a live selfie to its identity verification partner. Please read what this involves before you continue.",
+				"intro": "To verify your identity, Buy'N'Sellem sends your identification document and a live selfie to its identity verification partner. Please read what this involves before you continue.",
 				"collects": "What we collect: an identity document (national ID, passport or residence permit) and a selfie used to match your face to it.",
-				"vendor": "This information is processed by BuyNSellem's identity verification partner (currently Didit or Smile ID), which may process it outside Cameroon under contractual data-protection safeguards.",
+				"vendor": "This information is processed by Buy'N'Sellem's identity verification partner (currently Didit or Smile ID), which may process it outside Cameroon under contractual data-protection safeguards.",
 				"retention": "The vendor deletes its own copy within 30 days of a decision. We keep the verification file for 90 days after a final decision (up to a year if the request was revoked for fraud), and a record that verification took place for 5 years, as the law requires.",
 				"rights": "You can ask to see or delete this information at any time, except for what the law requires us to keep.",
 				"contact": "Contact: privacy@buynsellem.com",
@@ -4028,8 +4028,8 @@
 	},
 	"payments": {
 		"disclosure_listingBadge": "Protected payment available: your money is released to the seller only after delivery. Fee: {{rate}}% (min {{min}})",
-		"disclosure_holder": "Your payment is collected and held by NotchPay, a payment provider. BuyNSellem never holds your money.",
-		"disclosure_sellerLegend": "Funds are held by NotchPay. BuyNSellem never holds your money.",
+		"disclosure_holder": "Your payment is collected and held by NotchPay, a payment provider. Buy'N'Sellem never holds your money.",
+		"disclosure_sellerLegend": "Funds are held by NotchPay. Buy'N'Sellem never holds your money.",
 		"method_title": "Payment method",
 		"method_cod": "Pay on delivery",
 		"method_codBody": "Pay when you receive your order.",
