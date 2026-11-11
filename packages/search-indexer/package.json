@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "bun run --hot src/index.ts",
 		"reindex": "bun run src/reindex.ts",
-		"test": "bun test",
+		"test": "bun test --isolate",
 		"check-types": "tsc --noEmit"
 	},
 	"dependencies": {
