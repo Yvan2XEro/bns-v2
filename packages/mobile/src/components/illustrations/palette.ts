@@ -65,7 +65,7 @@ const LIGHT: IllustrationPalette = {
 	edgeSoft: "#141d58",
 	spec: "#ffffff",
 	shadow: "#1a2672",
-	weave: { strong: 0.15, soft: 0.1 },
+	weave: { strong: 0.1, soft: 0.065 },
 	isDark: false,
 };
 
@@ -92,7 +92,7 @@ const DARK: IllustrationPalette = {
 	spec: "#d8ddf7",
 	shadow: "#04061a",
 	// The weave needs a little more to survive on a dark side panel.
-	weave: { strong: 0.2, soft: 0.13 },
+	weave: { strong: 0.13, soft: 0.085 },
 	isDark: true,
 };
 
