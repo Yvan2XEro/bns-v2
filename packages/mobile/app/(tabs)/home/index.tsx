@@ -794,6 +794,7 @@ export default function HomeScreen() {
 				/* ── MODE ACCUEIL ── */
 				<AnimatedScrollView
 					style={{ flex: 1 }}
+					contentContainerStyle={{ flexGrow: 1 }}
 					showsVerticalScrollIndicator={false}
 					onScroll={scrollHandler}
 					scrollEventThrottle={16}
@@ -1059,107 +1060,109 @@ export default function HomeScreen() {
 								</Pressable>
 							)}
 						</View>
-					</View>
 
-					{/* ── Annonces proches de vous ── */}
-					<View style={styles.section}>
-						<View style={styles.sectionHeader}>
-							<View style={styles.sectionTitleRow}>
-								<Ionicons name="navigate" size={16} color={primaryColor} />
-								<Text style={[styles.sectionTitle, { color: textColor }]}>
-									{t("home.nearbySection")}
-								</Text>
-							</View>
-						</View>
-						{showLocationPrompt ? (
-							<Pressable
-								// The single permission request in this screen, and it only
-								// runs from this explicit press. A refusal or a dead geocoder
-								// resolves normally — the card just stays put.
-								disabled={locationDetecting}
-								onPress={() => {
-									void requestDetection();
-								}}
-								style={[
-									styles.locationPrompt,
-									{
-										backgroundColor: isDark ? "#1a1f4a" : "#e9ecfa",
-										borderColor: isDark ? "#2a3170" : "#c5ccf0",
-									},
-								]}
-							>
-								<Ionicons
-									name="location-outline"
-									size={20}
-									color={primaryColor}
-								/>
-								<View style={{ flex: 1 }}>
-									<Text
-										style={[styles.locationPromptTitle, { color: textColor }]}
-									>
-										{t("home.enableLocation")}
+						{/* ── Annonces proches de vous ── */}
+						<View style={styles.section}>
+							<View style={styles.sectionHeader}>
+								<View style={styles.sectionTitleRow}>
+									<Ionicons name="navigate" size={16} color={primaryColor} />
+									<Text style={[styles.sectionTitle, { color: textColor }]}>
+										{t("home.nearbySection")}
 									</Text>
+								</View>
+							</View>
+							{showLocationPrompt ? (
+								<Pressable
+									// The single permission request in this screen, and it only
+									// runs from this explicit press. A refusal or a dead geocoder
+									// resolves normally — the card just stays put.
+									disabled={locationDetecting}
+									onPress={() => {
+										void requestDetection();
+									}}
+									style={[
+										styles.locationPrompt,
+										{
+											backgroundColor: isDark ? "#1a1f4a" : "#e9ecfa",
+											borderColor: isDark ? "#2a3170" : "#c5ccf0",
+										},
+									]}
+								>
+									<Ionicons
+										name="location-outline"
+										size={20}
+										color={primaryColor}
+									/>
+									<View style={{ flex: 1 }}>
+										<Text
+											style={[styles.locationPromptTitle, { color: textColor }]}
+										>
+											{t("home.enableLocation")}
+										</Text>
+										<Text
+											style={[styles.locationPromptSub, { color: mutedColor }]}
+										>
+											{locationRefused
+												? t("errors.locationPermission")
+												: t("home.enableLocationSub")}
+										</Text>
+									</View>
+									{locationDetecting ? (
+										<ActivityIndicator size="small" color={primaryColor} />
+									) : (
+										<Ionicons
+											name="chevron-forward"
+											size={16}
+											color={mutedColor}
+										/>
+									)}
+								</Pressable>
+							) : !userCoords && locationPending ? (
+								<ScrollView
+									horizontal
+									showsHorizontalScrollIndicator={false}
+									contentContainerStyle={styles.nearbyList}
+								>
+									{Array.from({ length: columns + 2 }).map((_, i) => (
+										<SkeletonCard key={i} cardWidth={cardWidth} />
+									))}
+								</ScrollView>
+							) : nearbyListings.length === 0 ? (
+								<View
+									style={[
+										styles.locationPrompt,
+										{
+											backgroundColor: isDark ? "#1a1f4a" : "#f4f5f9",
+											borderColor,
+										},
+									]}
+								>
+									<Ionicons name="map-outline" size={20} color={mutedColor} />
 									<Text
 										style={[styles.locationPromptSub, { color: mutedColor }]}
 									>
-										{locationRefused
-											? t("errors.locationPermission")
-											: t("home.enableLocationSub")}
+										{t("home.noNearby")}
 									</Text>
 								</View>
-								{locationDetecting ? (
-									<ActivityIndicator size="small" color={primaryColor} />
-								) : (
-									<Ionicons
-										name="chevron-forward"
-										size={16}
-										color={mutedColor}
-									/>
-								)}
-							</Pressable>
-						) : !userCoords && locationPending ? (
-							<ScrollView
-								horizontal
-								showsHorizontalScrollIndicator={false}
-								contentContainerStyle={styles.nearbyList}
-							>
-								{Array.from({ length: columns + 2 }).map((_, i) => (
-									<SkeletonCard key={i} cardWidth={cardWidth} />
-								))}
-							</ScrollView>
-						) : nearbyListings.length === 0 ? (
-							<View
-								style={[
-									styles.locationPrompt,
-									{
-										backgroundColor: isDark ? "#1a1f4a" : "#f4f5f9",
-										borderColor,
-									},
-								]}
-							>
-								<Ionicons name="map-outline" size={20} color={mutedColor} />
-								<Text style={[styles.locationPromptSub, { color: mutedColor }]}>
-									{t("home.noNearby")}
-								</Text>
-							</View>
-						) : (
-							<ScrollView
-								horizontal
-								showsHorizontalScrollIndicator={false}
-								contentContainerStyle={styles.nearbyList}
-							>
-								{nearbyListings.map((listing: any) => (
-									<ListingCard
-										key={listing.id}
-										listing={listing}
-										width={cardWidth}
-										isFavorite={favoriteIds.has(listing.id)}
-										onToggleFavorite={() => toggleFavorite(listing)}
-										onPress={(id) => router.push(`/listing/${id}`)}
-									/>
-								))}
-							</ScrollView>
-						)}
+							) : (
+								<ScrollView
+									horizontal
+									showsHorizontalScrollIndicator={false}
+									contentContainerStyle={styles.nearbyList}
+								>
+									{nearbyListings.map((listing: any) => (
+										<ListingCard
+											key={listing.id}
+											listing={listing}
+											width={cardWidth}
+											isFavorite={favoriteIds.has(listing.id)}
+											onToggleFavorite={() => toggleFavorite(listing)}
+											onPress={(id) => router.push(`/listing/${id}`)}
+										/>
+									))}
+								</ScrollView>
+							)}
+						</View>
 					</View>
 				</AnimatedScrollView>
 			)}
@@ -1359,6 +1362,7 @@ const styles = StyleSheet.create({
 
 	/* ── Home content ── */
 	homeContent: {
+		flexGrow: 1,
 		borderTopLeftRadius: 22,
 		borderTopRightRadius: 22,
 		paddingTop: 4,

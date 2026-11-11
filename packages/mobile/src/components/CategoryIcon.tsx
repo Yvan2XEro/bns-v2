@@ -90,6 +90,9 @@ export function CategoryIcon({
 			<Text
 				style={[styles.label, { color: isDark ? "#a3a7c8" : "#3a3f66" }]}
 				numberOfLines={2}
+				// Android otherwise breaks a long word anywhere ("par / apharmacie").
+				android_hyphenationFrequency="normal"
+				textBreakStrategy="balanced"
 			>
 				{category.name}
 			</Text>
@@ -98,7 +101,7 @@ export function CategoryIcon({
 }
 
 const styles = StyleSheet.create({
-	container: { alignItems: "center", width: 72 },
+	container: { alignItems: "center", width: "100%", paddingHorizontal: 4 },
 	circle: {
 		overflow: "hidden",
 		alignItems: "center",
