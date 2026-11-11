@@ -58,12 +58,7 @@ function AccountTabIcon({
 	const notificationReady = useNotificationReady();
 	return (
 		<View>
-			<AnimatedTabIcon
-				name="person-outline"
-				focusedName="person"
-				color={color}
-				focused={focused}
-			/>
+			<AnimatedTabIcon name="person" color={color} focused={focused} />
 			{notificationReady && <NotificationsCount />}
 		</View>
 	);
@@ -71,21 +66,28 @@ function AccountTabIcon({
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
-/** Tab icon with bounce animation using React Native Animated (more reliable in tab bar) */
+/**
+ * Tab icon: solid at every state, the way a painted sign is solid.
+ *
+ * Outline icons went thin and papery next to the sell plaque and the ndop
+ * shell, so both states are filled now. That costs the old silhouette cue
+ * between selected and not, so selection is carried by a tinted plaque behind
+ * the glyph plus the colour — not by colour alone, which is thin on a white
+ * bar and thinner on #0c1030.
+ */
 function AnimatedTabIcon({
 	name,
-	focusedName,
 	color,
 	focused,
 	size = 24,
 }: {
 	name: IoniconsName;
-	focusedName: IoniconsName;
 	color: ColorValue;
 	focused: boolean;
 	size?: number;
 }) {
 	const scale = useRef(new Animated.Value(1)).current;
+	const plaque = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
 	useEffect(() => {
 		if (focused) {
@@ -103,7 +105,12 @@ function AnimatedTabIcon({
 				}),
 			]).start();
 		}
-	}, [focused, scale]);
+		Animated.timing(plaque, {
+			toValue: focused ? 1 : 0,
+			duration: focused ? 180 : 120,
+			useNativeDriver: true,
+		}).start();
+	}, [focused, scale, plaque]);
 
 	return (
 		<Animated.View
@@ -115,7 +122,28 @@ function AnimatedTabIcon({
 				transform: [{ scale }],
 			}}
 		>
-			<Ionicons name={focused ? focusedName : name} size={size} color={color} />
+			<Animated.View
+				pointerEvents="none"
+				style={[
+					styles.plaque,
+					{
+						backgroundColor: color as string,
+						opacity: plaque.interpolate({
+							inputRange: [0, 1],
+							outputRange: [0, 0.14],
+						}),
+						transform: [
+							{
+								scale: plaque.interpolate({
+									inputRange: [0, 1],
+									outputRange: [0.7, 1],
+								}),
+							},
+						],
+					},
+				]}
+			/>
+			<Ionicons name={name} size={size} color={color} />
 		</Animated.View>
 	);
 }
@@ -161,7 +189,7 @@ export default function TabLayout() {
 
 	const unreadCount = unreadData?.count ?? 0;
 
-	const tabOptions = useTabNavigatorOptions(isDark ? "#ffc94a" : "#23338f");
+	const tabOptions = useTabNavigatorOptions(isDark ? "#ffc94a" : "#2f5bd4");
 
 	return (
 		<Tabs screenOptions={tabOptions}>
@@ -170,12 +198,7 @@ export default function TabLayout() {
 				options={{
 					title: t("navigation.home"),
 					tabBarIcon: ({ color, focused }) => (
-						<AnimatedTabIcon
-							name="home-outline"
-							focusedName="home"
-							color={color}
-							focused={focused}
-						/>
+						<AnimatedTabIcon name="home" color={color} focused={focused} />
 					),
 				}}
 			/>
@@ -184,12 +207,7 @@ export default function TabLayout() {
 				options={{
 					title: t("navigation.favorites"),
 					tabBarIcon: ({ color, focused }) => (
-						<AnimatedTabIcon
-							name="heart-outline"
-							focusedName="heart"
-							color={color}
-							focused={focused}
-						/>
+						<AnimatedTabIcon name="heart" color={color} focused={focused} />
 					),
 				}}
 			/>
@@ -208,8 +226,7 @@ export default function TabLayout() {
 					tabBarIcon: ({ color, focused }) => (
 						<View>
 							<AnimatedTabIcon
-								name="chatbubbles-outline"
-								focusedName="chatbubbles"
+								name="chatbubbles"
 								color={color}
 								focused={focused}
 							/>
@@ -244,6 +261,14 @@ const styles = StyleSheet.create({
 		marginTop: -6,
 	},
 	sellWrapRail: { marginTop: 0 },
+	// Sits behind the selected glyph so the state reads by shape, not only
+	// by hue. Tinted from the active colour, so it follows the theme.
+	plaque: {
+		position: "absolute",
+		width: 40,
+		height: 30,
+		borderRadius: 10,
+	},
 	// A painted sign plaque: yellow, squared, an ink edge along its foot.
 	sellBtn: {
 		width: 56,
