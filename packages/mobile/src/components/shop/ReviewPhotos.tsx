@@ -137,5 +137,10 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		backgroundColor: "rgba(255,255,255,0.15)",
 	},
-	counter: { color: "#fff", fontSize: 14, fontFamily: Fonts.bodySemibold },
+	counter: {
+		color: "#fff",
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

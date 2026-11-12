@@ -104,11 +104,14 @@ export default function StockAdjustSheet() {
 												onPress={() =>
 													field.onChange(String(Math.max(0, value - 1)))
 												}
+												disabled={value === 0}
 												accessibilityRole="button"
 												accessibilityLabel={t("stock.decrease")}
+												accessibilityState={{ disabled: value === 0 }}
 												style={[
 													styles.stepButton,
 													{ backgroundColor: c.card, borderColor: c.border },
+													value === 0 && { opacity: 0.4 },
 												]}
 											>
 												<Ionicons name="remove" size={22} color={c.text} />
@@ -143,50 +146,53 @@ export default function StockAdjustSheet() {
 							/>
 						</View>
 						{amountError ? (
-							<Text style={[styles.meta, { color: dangerInk(c) }]}>
+							<Text
+								accessibilityRole="alert"
+								style={[styles.error, { color: dangerInk(c) }]}
+							>
 								{t(amountError, { reserved, count: current })}
 							</Text>
 						) : null}
 
 						<View style={styles.boxes}>
 							{type === "receipt" ? (
-								<View
-									style={[
-										styles.box,
-										{
-											backgroundColor: c.card,
-											borderColor: unitCostError ? c.danger : c.border,
-										},
-									]}
-								>
-									<Text style={[styles.boxLabel, { color: c.muted }]}>
+								<View style={styles.box}>
+									<Text style={[styles.boxLabel, { color: c.body }]}>
 										{t("stock.unitCost")}
 									</Text>
-									<Controller
-										control={form.control}
-										name="unitCost"
-										render={({ field }) => (
-											<TextInput
-												value={field.value}
-												onChangeText={field.onChange}
-												onBlur={field.onBlur}
-												keyboardType="number-pad"
-												placeholder="XAF"
-												placeholderTextColor={c.muted}
-												accessibilityLabel={t("stock.unitCost")}
-												style={[styles.boxInput, { color: c.text }]}
-											/>
-										)}
-									/>
+									<View
+										style={[
+											styles.boxField,
+											{
+												backgroundColor: c.input,
+												borderColor: unitCostError ? c.danger : c.border,
+											},
+										]}
+									>
+										<Controller
+											control={form.control}
+											name="unitCost"
+											render={({ field }) => (
+												<TextInput
+													value={field.value}
+													onChangeText={field.onChange}
+													onBlur={field.onBlur}
+													keyboardType="number-pad"
+													placeholder="0"
+													placeholderTextColor={c.muted}
+													accessibilityLabel={`${t("stock.unitCost")} (FCFA)`}
+													style={[styles.boxInput, { color: c.text }]}
+												/>
+											)}
+										/>
+										<Text style={[styles.suffix, { color: c.muted }]}>
+											FCFA
+										</Text>
+									</View>
 								</View>
 							) : null}
-							<View
-								style={[
-									styles.box,
-									{ backgroundColor: c.card, borderColor: c.border },
-								]}
-							>
-								<Text style={[styles.boxLabel, { color: c.muted }]}>
+							<View style={styles.box}>
+								<Text style={[styles.boxLabel, { color: c.body }]}>
 									{t("stock.note")}
 								</Text>
 								<Controller
@@ -201,14 +207,24 @@ export default function StockAdjustSheet() {
 											placeholder={t("stock.notePlaceholder")}
 											placeholderTextColor={c.muted}
 											accessibilityLabel={t("stock.note")}
-											style={[styles.boxInput, { color: c.text }]}
+											style={[
+												styles.noteInput,
+												{
+													color: c.text,
+													backgroundColor: c.input,
+													borderColor: c.border,
+												},
+											]}
 										/>
 									)}
 								/>
 							</View>
 						</View>
 						{unitCostError ? (
-							<Text style={[styles.meta, { color: dangerInk(c) }]}>
+							<Text
+								accessibilityRole="alert"
+								style={[styles.error, { color: dangerInk(c) }]}
+							>
 								{t(unitCostError)}
 							</Text>
 						) : null}
@@ -227,6 +243,10 @@ export default function StockAdjustSheet() {
 							disabled={!result || Boolean(unitCostError) || isPending}
 							accessibilityRole="button"
 							accessibilityLabel={t(`stock.submit_${type}`)}
+							accessibilityState={{
+								disabled: !result || Boolean(unitCostError) || isPending,
+								busy: isPending,
+							}}
 							style={[
 								styles.submit,
 								{
@@ -252,8 +272,8 @@ export default function StockAdjustSheet() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
+	label: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	after: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -261,8 +281,12 @@ const styles = StyleSheet.create({
 		padding: 14,
 		borderRadius: 12,
 	},
-	afterLabel: { fontSize: 14, fontFamily: Fonts.body },
-	afterValue: { fontSize: 22, fontFamily: Fonts.displayExtrabold },
+	afterLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	afterValue: {
+		fontSize: 24,
+		lineHeight: 32,
+		fontFamily: Fonts.displayExtrabold,
+	},
 	flex: { flex: 1 },
 	amountRow: { flexDirection: "row", alignItems: "center", gap: 12 },
 	stepper: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -277,30 +301,54 @@ const styles = StyleSheet.create({
 	amountInput: {
 		width: 72,
 		textAlign: "center",
-		fontSize: 28,
+		fontSize: 30,
 		fontFamily: Fonts.displayExtrabold,
 		paddingVertical: 4,
 	},
-	boxes: { flexDirection: "row", gap: 10 },
-	box: {
-		flex: 1,
-		borderRadius: 14,
-		borderWidth: StyleSheet.hairlineWidth,
+	// Stacked full width: two side-by-side boxes cut the note placeholder and
+	// left inputs too short for a thumb.
+	boxes: { gap: 14 },
+	box: { gap: 6 },
+	boxLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	boxField: {
+		flexDirection: "row",
+		alignItems: "center",
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
 		paddingHorizontal: 12,
-		paddingVertical: 8,
-		gap: 2,
 	},
-	boxLabel: { fontSize: 12, fontFamily: Fonts.body },
 	boxInput: {
-		fontSize: 15,
-		fontFamily: Fonts.bodySemibold,
-		paddingVertical: 2,
+		flex: 1,
+		fontSize: 16,
+		fontFamily: Fonts.body,
+		paddingVertical: 10,
 	},
+	noteInput: {
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 12,
+		fontSize: 16,
+		fontFamily: Fonts.body,
+	},
+	suffix: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		marginLeft: 8,
+	},
+	error: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	submit: {
 		minHeight: 52,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

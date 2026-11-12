@@ -185,11 +185,13 @@ const styles = StyleSheet.create({
 	},
 	value: {
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		fontVariant: ["tabular-nums"],
 	},
 	price: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -201,5 +203,5 @@ const styles = StyleSheet.create({
 		paddingTop: 12,
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
-	totalLabel: { fontSize: 17, fontFamily: Fonts.displayBold },
+	totalLabel: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 });

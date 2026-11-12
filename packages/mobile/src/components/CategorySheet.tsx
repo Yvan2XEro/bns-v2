@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
 	sheetTitle: {
 		flex: 1,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},
@@ -638,12 +638,13 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	rowText: { flex: 1, gap: 2 },
-	rowName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	rowName: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	rowSub: { fontSize: 13, lineHeight: 17, fontFamily: Fonts.body },
 	empty: {
 		textAlign: "center",
 		paddingVertical: 32,
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 	},
 	trigger: {
@@ -663,5 +664,9 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	triggerValue: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	triggerValue: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

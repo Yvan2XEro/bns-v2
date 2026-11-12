@@ -9,8 +9,8 @@ export const billingStyles = StyleSheet.create({
 		gap: 6,
 	},
 	cardTitle: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},
@@ -18,7 +18,7 @@ export const billingStyles = StyleSheet.create({
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	amount: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
 		fontVariant: ["tabular-nums"],
@@ -32,5 +32,10 @@ export const billingStyles = StyleSheet.create({
 		flexDirection: "row",
 		gap: 6,
 	},
-	buttonText: { fontSize: 16, fontFamily: Fonts.bodyBold, color: "#fff" },
+	buttonText: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+		color: "#fff",
+	},
 });

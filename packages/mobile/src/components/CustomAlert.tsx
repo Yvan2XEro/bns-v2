@@ -325,8 +325,8 @@ const styles = StyleSheet.create({
 		marginBottom: 16,
 	},
 	title: {
-		fontSize: 22,
-		lineHeight: 27,
+		fontSize: 24,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
 		textAlign: "center",
@@ -361,6 +361,7 @@ const styles = StyleSheet.create({
 	buttonFull: { width: "100%" },
 	buttonText: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 });

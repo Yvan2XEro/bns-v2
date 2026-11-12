@@ -95,6 +95,8 @@ export interface SellerTileCounts {
 	toAccept?: number;
 	/** The payments view's own `holds.length` — see `sellerPaymentsActionCount`. */
 	paymentsHolds?: number;
+	/** `awaitingCount` off the shop's returns list. */
+	returnsAwaiting?: number;
 }
 
 /** A zero badge is omitted, not rendered: "0" beside a tile reads as broken. */
@@ -116,6 +118,7 @@ export function visibleSellerTiles(
 		stock: counts.lowStock,
 		orders: counts.toAccept ?? 0,
 		payments: counts.paymentsHolds ?? 0,
+		returns: counts.returnsAwaiting ?? 0,
 	};
 	return TILES.filter(
 		(tile) =>

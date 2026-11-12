@@ -2,7 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+	AccessibilityInfo,
+	Pressable,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { CartLineRow } from "@/src/components/cart/CartLineRow";
@@ -49,11 +55,24 @@ export function CartScreen() {
 	const busy = groupRemoving;
 	// The last line removed, offered back for a few seconds.
 	const [removed, setRemoved] = useState<CartLineView | null>(null);
+	// A screen-reader user needs longer to reach the Undo button.
+	const [readerOn, setReaderOn] = useState(false);
+	useEffect(() => {
+		void AccessibilityInfo.isScreenReaderEnabled().then(setReaderOn);
+		const sub = AccessibilityInfo.addEventListener(
+			"screenReaderChanged",
+			setReaderOn,
+		);
+		return () => sub.remove();
+	}, []);
 	useEffect(() => {
 		if (!removed) return;
-		const timer = setTimeout(() => setRemoved(null), 5000);
+		AccessibilityInfo.announceForAccessibility(
+			t("cart.removed", { title: removed.title }),
+		);
+		const timer = setTimeout(() => setRemoved(null), readerOn ? 8000 : 5000);
 		return () => clearTimeout(timer);
-	}, [removed]);
+	}, [removed, readerOn, t]);
 	const removeLine = (line: CartLineView) => {
 		setRemoved(line);
 		remove.mutate(line.id, {
@@ -99,6 +118,28 @@ export function CartScreen() {
 		}
 	};
 
+	const undoBar = removed ? (
+		<View
+			accessibilityLiveRegion="polite"
+			style={[styles.undoBar, { backgroundColor: c.text }]}
+		>
+			<Text style={[styles.undoText, { color: c.bg }]} numberOfLines={1}>
+				{t("cart.removed", { title: removed.title })}
+			</Text>
+			<Pressable
+				onPress={undoRemove}
+				accessibilityRole="button"
+				accessibilityLabel={t("cart.undo")}
+				style={styles.undoButton}
+			>
+				<Text style={[styles.undoAction, { color: c.bg }]}>
+					{t("cart.undo")}
+				</Text>
+			</Pressable>
+		</View>
+	) : null;
+	const split = cart.data && isSplitCart(cart.data) ? cart.data : null;
+
 	const body = !ordersEnabled ? (
 		<EmptyState illustration="notFound" title={t("cart.ordersClosed")} />
 	) : !user ? (
@@ -137,6 +178,7 @@ export function CartScreen() {
 				if (line) removeLine(line);
 			}}
 			onRemoveGroup={(group) => void removeGroup(group)}
+			aboveBar={undoBar}
 		/>
 	) : (
 		<ScreenColumn width="wide">
@@ -174,29 +216,20 @@ export function CartScreen() {
 			<SellerHeader
 				title={t("cart.title")}
 				subtitle={
-					lines.length > 0
-						? t("cart.headerSummary", { count: itemCount })
-						: null
+					lines.length === 0
+						? null
+						: split && split.groups.length > 1
+							? t("cart.headerSummaryShops", {
+									count: itemCount,
+									shops: split.groups.length,
+								})
+							: t("cart.headerSummary", { count: itemCount })
 				}
 			/>
 			<View style={styles.body}>{body}</View>
-			{removed ? (
-				<View style={[styles.undoBar, { backgroundColor: c.text }]}>
-					<Text style={[styles.undoText, { color: c.bg }]} numberOfLines={1}>
-						{t("cart.removed", { title: removed.title })}
-					</Text>
-					<Pressable
-						onPress={undoRemove}
-						accessibilityRole="button"
-						accessibilityLabel={t("cart.undo")}
-						style={styles.undoButton}
-					>
-						<Text style={[styles.undoAction, { color: c.bg }]}>
-							{t("cart.undo")}
-						</Text>
-					</Pressable>
-				</View>
-			) : null}
+			{/* A split cart pins its own bar inside the body; the undo bar sits
+			    above it there (aboveBar), and above the checkout bar here. */}
+			{split ? null : undoBar}
 			{ordersEnabled && user && flatCart && lines.length > 0 ? (
 				<CartCheckoutBar cart={flatCart} locale={locale} />
 			) : null}
@@ -256,7 +289,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	undoAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	undoAction: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	safe: { flex: 1 },
 	body: { flex: 1 },
 	list: { padding: 16 },
@@ -269,6 +302,6 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		marginBottom: 10,
 	},
-	shopName: { fontSize: 15, fontFamily: Fonts.displayBold },
+	shopName: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 	shopMeta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 });

@@ -79,7 +79,12 @@ const styles = StyleSheet.create({
 		paddingLeft: 14,
 		maxWidth: 260,
 	},
-	chipText: { flexShrink: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
+	chipText: {
+		flexShrink: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	remove: {
 		width: 40,
 		height: 40,

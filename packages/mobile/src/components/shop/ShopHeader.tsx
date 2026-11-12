@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
 	body: { paddingHorizontal: 16, marginTop: -36, gap: 10 },
 	logoRing: { alignSelf: "flex-start", borderWidth: 4, borderRadius: 22 },
 	name: {
-		fontSize: 26,
-		lineHeight: 31,
+		fontSize: 24,
+		lineHeight: 32,
 		letterSpacing: -0.6,
 		fontFamily: Fonts.displayExtrabold,
 	},
@@ -131,7 +131,12 @@ const styles = StyleSheet.create({
 		flexShrink: 1,
 	},
 	pressed: { opacity: 0.6 },
-	link: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	link: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	trust: {
 		flexDirection: "row",

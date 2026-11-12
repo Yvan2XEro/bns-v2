@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
@@ -29,6 +30,13 @@ const SUBJECT_KEYS = [
 
 type SubjectKey = (typeof SUBJECT_KEYS)[number];
 
+const isSubjectKey = (value: unknown): value is SubjectKey =>
+	typeof value === "string" &&
+	(SUBJECT_KEYS as readonly string[]).includes(value);
+
+/** Loose on purpose: the server has the last word; this catches typos. */
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 export function ContactScreen() {
 	const c = useGroupedColors();
 	const { centeredContent } = useResponsive();
@@ -39,7 +47,11 @@ export function ContactScreen() {
 
 	const [name, setName] = useState(user?.name ?? "");
 	const [email, setEmail] = useState(user?.email ?? "");
-	const [subject, setSubject] = useState<SubjectKey>("subjectGeneral");
+	// Opened from Safety's "report abuse", the subject is already chosen.
+	const params = useLocalSearchParams<{ subject?: string }>();
+	const [subject, setSubject] = useState<SubjectKey>(
+		isSubjectKey(params.subject) ? params.subject : "subjectGeneral",
+	);
 	const [message, setMessage] = useState("");
 	const [sent, setSent] = useState(false);
 	// Empty fields are said on the form, not in a sheet.
@@ -58,8 +70,23 @@ export function ContactScreen() {
 			showError(t("contact.errorTitle"), resolveErrorMessage(err, t)),
 	});
 
+	const emailInvalid = email.trim() !== "" && !EMAIL_SHAPE.test(email.trim());
+	const required = t("common.required");
+	const nameError = missing && !name.trim() ? required : null;
+	const emailError = missing
+		? !email.trim()
+			? required
+			: emailInvalid
+				? t("contact.emailInvalid", {
+						defaultValue:
+							"Indiquez un e-mail valide, par exemple nom@exemple.com",
+					})
+				: null
+		: null;
+	const messageError = missing && !message.trim() ? required : null;
+
 	const submit = () => {
-		if (!name.trim() || !email.trim() || !message.trim()) {
+		if (!name.trim() || !email.trim() || !message.trim() || emailInvalid) {
 			setMissing(true);
 			return;
 		}
@@ -73,6 +100,7 @@ export function ContactScreen() {
 				edges={["top"]}
 				style={[styles.safe, { backgroundColor: c.background }]}
 			>
+				<SettingsHeader title={t("contact.title")} />
 				<View style={[styles.done, centeredContent]}>
 					<View style={[styles.doneTile, { backgroundColor: c.successTint }]}>
 						<Ionicons name="checkmark" size={30} color={c.successText} />
@@ -84,7 +112,10 @@ export function ContactScreen() {
 						{t("contact.successTitle")}
 					</Text>
 					<Text style={[styles.doneBody, { color: c.body }]}>
-						{t("contact.successMessage")}
+						{t("contact.successReplyTo", {
+							email: email.trim(),
+							defaultValue: "Nous vous répondrons par e-mail à {{email}}.",
+						})}
 					</Text>
 					<FormButton label={t("contact.backBtn")} onPress={close} />
 				</View>
@@ -110,7 +141,7 @@ export function ContactScreen() {
 					placeholder={t("contact.namePlaceholder")}
 					autoCapitalize="words"
 					autoComplete="name"
-					error={missing && !name.trim()}
+					error={nameError}
 				/>
 				<FormField
 					label={t("contact.emailLabel")}
@@ -120,7 +151,7 @@ export function ContactScreen() {
 					keyboardType="email-address"
 					autoCapitalize="none"
 					autoComplete="email"
-					error={missing && !email.trim()}
+					error={emailError}
 				/>
 				<ChoiceChips
 					label={t("contact.subjectLabel")}
@@ -137,9 +168,15 @@ export function ContactScreen() {
 					onChangeText={setMessage}
 					placeholder={t("contact.messagePlaceholder")}
 					multiline
-					error={missing && !message.trim()}
+					error={messageError}
 				/>
-				<FormError message={missing ? t("contact.fillAllFields") : null} />
+				<FormError
+					message={
+						nameError || emailError || messageError
+							? t("contact.fillAllFields")
+							: null
+					}
+				/>
 				<FormButton
 					label={t("contact.send")}
 					onPress={submit}
@@ -162,8 +199,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	doneTitle: {
-		fontSize: 28,
-		lineHeight: 33,
+		fontSize: 30,
+		lineHeight: 38,
 		letterSpacing: -0.6,
 		fontFamily: Fonts.displayExtrabold,
 		marginTop: 20,

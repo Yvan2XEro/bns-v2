@@ -44,7 +44,10 @@ export async function registerForPushNotificationsAsync({
 			await Notifications.setNotificationChannelAsync(PUSH_CHANNELS.orders, {
 				name: i18n.t("notifications.channelOrders"),
 				importance: Notifications.AndroidImportance.MAX,
-				sound: "default",
+				// No `sound`: a string here names a custom file bundled through the
+				// config plugin, so "default" was looked up as a file, the call
+				// threw, and the push token was never read on Android. Leaving it
+				// out gives the system's default notification sound.
 				vibrationPattern: [0, 400, 200, 400, 200, 400],
 				lightColor: "#ffb81c",
 				lockscreenVisibility:

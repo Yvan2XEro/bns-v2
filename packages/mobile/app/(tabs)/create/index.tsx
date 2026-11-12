@@ -4,8 +4,9 @@ import { Image } from "expo-image";
 import { router, usePathname } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+	AccessibilityInfo,
 	ActivityIndicator,
-	Linking,
+	findNodeHandle,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -32,7 +33,10 @@ import {
 	priceUnitToSend,
 } from "@/src/components/listing/PriceUnitChips";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
-import { PendingPhotoTile } from "@/src/components/PendingPhotoTile";
+import {
+	PendingPhotoErrors,
+	PendingPhotoTile,
+} from "@/src/components/PendingPhotoTile";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
 import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
@@ -46,7 +50,10 @@ import {
 	CATEGORIES_STALE_TIME_MS,
 } from "@/src/hooks/useListings";
 import { usePhoneGate } from "@/src/hooks/usePhoneGate";
-import { usePhotoUploads } from "@/src/hooks/usePhotoUploads";
+import {
+	type PhotoUploads,
+	usePhotoUploads,
+} from "@/src/hooks/usePhotoUploads";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
@@ -61,7 +68,12 @@ import {
 	loadCreateDraft,
 	saveCreateDraft,
 } from "@/src/lib/createDraft";
-import { type FieldIssue, serverFieldIssues } from "@/src/lib/formIssues";
+import {
+	type FieldIssue,
+	issueAt,
+	issueMessage,
+	serverFieldIssues,
+} from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	type AttributeIssue,
@@ -81,6 +93,7 @@ import {
 	serializeAttributeValues,
 } from "@/src/lib/listingForm";
 import { defaultPriceUnit, kindPriceText } from "@/src/lib/listingKind";
+import { formatPrice as formatMarketPrice } from "@/src/lib/market";
 import { isSuspended } from "@/src/lib/moderation";
 import { track } from "@/src/lib/monitoring";
 import { canAddPhoto } from "@/src/lib/photoLimit";
@@ -89,7 +102,6 @@ import type { Place } from "@/src/lib/places";
 import { useUserLocation } from "@/src/lib/useUserLocation";
 import { listingIssueStep } from "../../../../api/src/contracts/listingValidation";
 import { ANALYTICS_EVENTS } from "../../../../api/src/contracts/monitoring";
-import { whatsappShareUrl } from "../../../../api/src/contracts/whatsapp";
 
 const DURATIONS = [30, 60, 90];
 /** Space between photo tiles; three tiles and two gaps fill the row. */
@@ -106,6 +118,19 @@ const PHOTO_GAP = 10;
  * from the title and shown on every step that can change it.
  */
 type StepId = "attributes" | "describe" | "details" | "photos" | "review";
+
+/**
+ * The step that asks for a field. The description is asked with the price and
+ * the place rather than on the opening step: a seller holding the item takes
+ * its picture before writing a paragraph about it, so the first step only
+ * needs a title and the category guessed from it. The server rule is the
+ * same; only where the wizard asks for it moved.
+ */
+function issueStep(path: string): StepId {
+	return path.split(".")[0] === "description"
+		? "details"
+		: listingIssueStep(path);
+}
 
 interface UploadedImage {
 	id: string; // Payload media document ID
@@ -159,11 +184,26 @@ export default function CreateScreen() {
 	const { width: SCREEN_W, centeredContent } = useResponsive();
 	const { asPlace: rememberedPlace, hydrated: locationHydrated } =
 		useUserLocation();
-	const { showAlert, showError } = useAlert();
+	const { showAlert, showError, showWarning } = useAlert();
 	const didPrefillLocationRef = useRef(false);
 	const [step, setStep] = useState<StepId>("describe");
 	const [form, setForm] = useState<FormData>(createEmptyForm);
 	const { photosIncluded } = useAppConfig();
+	/**
+	 * Set when the seller leaves the review to change one thing: the step's
+	 * button then takes them straight back instead of through every step after.
+	 */
+	const [returnToReview, setReturnToReview] = useState(false);
+
+	// The upload queue belongs to the wizard, not to the photo step: photos
+	// still sending survive a step change, and a reset can cancel them before
+	// they land in the next ad.
+	const uploads = usePhotoUploads({
+		alt: form.title,
+		onUploaded: (photo) =>
+			setForm((f) => ({ ...f, images: [...f.images, photo] })),
+	});
+	const cancelUploads = uploads.cancelAll;
 
 	// Owned by the wizard rather than by a step: the category drives which steps
 	// exist, the header, and the guess made from the title.
@@ -278,6 +318,10 @@ export default function CreateScreen() {
 	const stepRef = useRef<StepId>("describe");
 	// Reduce Motion: the step fades in place instead of sliding.
 	const reduceMotion = useReducedMotion();
+	// The step line in the header. After a step change a screen reader is
+	// moved there, so it reads the new step instead of staying where the
+	// Continue button was.
+	const stepHeaderRef = useRef<Text>(null);
 
 	const goToStep = (next: StepId) => {
 		const target = steps.includes(next) ? next : "describe";
@@ -288,6 +332,13 @@ export default function CreateScreen() {
 		opacity.value = 0;
 		stepRef.current = target;
 		setStep(target);
+		if (target === "review") setReturnToReview(false);
+		setTimeout(() => {
+			const node = stepHeaderRef.current
+				? findNodeHandle(stepHeaderRef.current)
+				: null;
+			if (node) AccessibilityInfo.setAccessibilityFocus(node);
+		}, 350);
 		// The system's decelerating ease (0.16, 1, 0.3, 1), as everywhere else.
 		const ease = Easing.bezier(0.16, 1, 0.3, 1);
 		translateX.value = withTiming(0, { duration: 300, easing: ease });
@@ -354,7 +405,17 @@ export default function CreateScreen() {
 		draftCheckedRef.current = userId;
 		void loadCreateDraft<FormData>(userId).then((saved) => {
 			if (!saved || !isDraftWorthKeeping(saved)) return;
-			showAlert(t("create.resumeTitle"), t("create.resumeMsg"), [
+			// Naming the ad lets the seller decide before "start over" deletes it.
+			const savedTitle =
+				typeof saved.title === "string" ? saved.title.trim() : "";
+			const message = savedTitle
+				? t("create.resumeMsgWithTitle", {
+						title: savedTitle,
+						defaultValue:
+							"Votre annonce « {{title}} » n’est pas terminée. La reprendre ?",
+					})
+				: t("create.resumeMsg");
+			showAlert(t("create.resumeTitle"), message, [
 				{
 					text: t("create.resumeDiscard"),
 					style: "destructive",
@@ -399,23 +460,31 @@ export default function CreateScreen() {
 	 * seller — keeping either would submit answers to questions this
 	 * category never asked.
 	 */
-	const applyCategory = useCallback((next: any, guessed: boolean) => {
-		setCategoryWasGuessed(guessed);
-		setForm((f: any) => {
-			if (f.category?.id === next?.id) return f;
-			const nextPreset = getListingFormPreset(next);
-			return {
-				...f,
-				category: next,
-				price: nextPreset.fields.price.enabled ? f.price : "",
-				priceUnit: defaultPriceUnit(nextPreset.categoryType),
-				attributes: {},
-				// The photo step disappears with the category, so keeping the files
-				// would attach pictures the seller can no longer see or remove.
-				images: nextPreset.fields.photos?.enabled === false ? [] : f.images,
-			};
-		});
-	}, []);
+	const applyCategory = useCallback(
+		(next: any, guessed: boolean) => {
+			setCategoryWasGuessed(guessed);
+			// Photos still sending would land in an ad that no longer has a photo
+			// step, where they could be neither seen nor removed.
+			if (getListingFormPreset(next).fields.photos?.enabled === false) {
+				cancelUploads();
+			}
+			setForm((f: any) => {
+				if (f.category?.id === next?.id) return f;
+				const nextPreset = getListingFormPreset(next);
+				return {
+					...f,
+					category: next,
+					price: nextPreset.fields.price.enabled ? f.price : "",
+					priceUnit: defaultPriceUnit(nextPreset.categoryType),
+					attributes: {},
+					// The photo step disappears with the category, so keeping the files
+					// would attach pictures the seller can no longer see or remove.
+					images: nextPreset.fields.photos?.enabled === false ? [] : f.images,
+				};
+			});
+		},
+		[cancelUploads],
+	);
 
 	const handleCategoryPick = useCallback(
 		(next: any) => {
@@ -559,6 +628,25 @@ export default function CreateScreen() {
 						>
 							<Text style={styles.loginBtnText}>{t("auth.login")}</Text>
 						</Pressable>
+						{/* A first-time seller has no account yet: signing up is the
+						    step they need, not one to discover behind "log in". */}
+						<Pressable
+							onPress={() =>
+								router.push({
+									pathname: "/auth/register",
+									params: getAuthModalParams(pathname),
+								})
+							}
+							accessibilityRole="button"
+							style={({ pressed }) => [
+								styles.textBtn,
+								{ opacity: pressed ? 0.6 : 1 },
+							]}
+						>
+							<Text style={[styles.textBtnText, { color: primary }]}>
+								{t("auth.createAccount")}
+							</Text>
+						</Pressable>
 					</View>
 				</View>
 			</SafeAreaView>
@@ -580,7 +668,7 @@ export default function CreateScreen() {
 	};
 
 	const issuesOn = (id: StepId): FieldIssue[] => {
-		const onStep = (issue: FieldIssue) => listingIssueStep(issue.path) === id;
+		const onStep = (issue: FieldIssue) => issueStep(issue.path) === id;
 		const server = serverIssues.filter(onStep);
 		const local = attempted
 			? draftIssues.filter(
@@ -591,28 +679,75 @@ export default function CreateScreen() {
 		return [...server, ...local];
 	};
 	const blockedOn = (id: StepId) =>
-		draftIssues.some((issue) => listingIssueStep(issue.path) === id);
+		draftIssues.some((issue) => issueStep(issue.path) === id);
 	const firstStepWith = (issues: FieldIssue[]) =>
-		steps.find((id) =>
-			issues.some((issue) => listingIssueStep(issue.path) === id),
-		);
+		steps.find((id) => issues.some((issue) => issueStep(issue.path) === id));
+
+	/**
+	 * A photo still sending, or one that failed, has no media id yet. Moving on
+	 * used to let it vanish from view, and publishing dropped it without a word.
+	 */
+	const photosSettled = () => {
+		if (uploads.uploading) {
+			showWarning(t("create.photosStillUploading"));
+			return false;
+		}
+		if (uploads.failed) {
+			showWarning(
+				t("create.photosFailedOnNext", {
+					defaultValue:
+						"Une photo n’a pas été envoyée. Réessayez-la ou retirez-la pour continuer.",
+				}),
+			);
+			return false;
+		}
+		return true;
+	};
+
+	const onBlocked = () => {
+		setAttempted(true);
+		AccessibilityInfo.announceForAccessibility(t("formIssues.fixStep"));
+	};
 
 	const goNext = () => {
 		if (blockedOn(currentStep)) {
-			setAttempted(true);
+			onBlocked();
 			return;
 		}
+		if (currentStep === "photos" && !photosSettled()) return;
 		setAttempted(false);
+		if (returnToReview) {
+			// Back to the review, unless the change left a later step incomplete
+			// (a new category clears its characteristics, for one).
+			const later = steps
+				.slice(stepIndex + 1)
+				.find((id) => id !== "review" && blockedOn(id));
+			goToStep(later ?? "review");
+			return;
+		}
 		goToStep(steps[stepIndex + 1] ?? "review");
 	};
 	const stepGate = {
 		issues: issuesOn(currentStep),
 		blocked: blockedOn(currentStep),
-		onBlocked: () => setAttempted(true),
+		onBlocked,
+		label: returnToReview
+			? t("create.backToReview", { defaultValue: "Revenir à la vérification" })
+			: undefined,
+	};
+
+	/** From the review, "Modifier" opens the step and comes straight back. */
+	const editFromReview = (target: StepId) => {
+		goToStep(target);
+		setReturnToReview(true);
 	};
 
 	/** The last gate before sending: rewinds to the step that owns a problem. */
 	const readyToSubmit = () => {
+		if (!photosSettled()) {
+			if (steps.includes("photos")) goToStep("photos");
+			return false;
+		}
 		const blocking = firstStepWith(draftIssues);
 		if (!blocking) return true;
 		setAttempted(true);
@@ -642,6 +777,9 @@ export default function CreateScreen() {
 					: null;
 		}
 		setForm(blank);
+		// Nothing still sending may land in the next ad.
+		cancelUploads();
+		setReturnToReview(false);
 		if (userId) void clearCreateDraft(userId);
 		categoryChosenRef.current = false;
 		dismissedTitleRef.current = null;
@@ -678,24 +816,29 @@ export default function CreateScreen() {
 		>
 			{/* ── Header ── */}
 			<View style={[styles.header, { backgroundColor: accentBg }]}>
-				<Pressable
-					onPress={() =>
-						stepIndex > 0 ? goToStep(steps[stepIndex - 1]) : router.back()
-					}
-					hitSlop={4}
-					accessibilityRole="button"
-					accessibilityLabel={t("common.back")}
-					style={({ pressed }) => [
-						styles.backBtn,
-						{
-							backgroundColor: cardBg,
-							borderColor: border,
-							opacity: pressed ? 0.7 : 1,
-						},
-					]}
-				>
-					<Ionicons name="arrow-back" size={20} color={textColor} />
-				</Pressable>
+				{/* On the first step there is nowhere to go back to: inside a tab,
+				    router.back() did nothing or jumped to another tab. The bin on
+				    the right is the way out of a started ad. */}
+				{stepIndex > 0 ? (
+					<Pressable
+						onPress={() => goToStep(steps[stepIndex - 1])}
+						hitSlop={4}
+						accessibilityRole="button"
+						accessibilityLabel={t("common.back")}
+						style={({ pressed }) => [
+							styles.backBtn,
+							{
+								backgroundColor: cardBg,
+								borderColor: border,
+								opacity: pressed ? 0.7 : 1,
+							},
+						]}
+					>
+						<Ionicons name="arrow-back" size={20} color={textColor} />
+					</Pressable>
+				) : (
+					<View style={styles.headerSpacer} />
+				)}
 
 				{/* Four steps in, "Nouvelle annonce" tells the seller nothing they do
 				    not know, while the thing they are describing has long left the
@@ -710,6 +853,8 @@ export default function CreateScreen() {
 						{form.title.trim() || t("create.newListing")}
 					</Text>
 					<Text
+						ref={stepHeaderRef}
+						accessible
 						style={[styles.headerStep, { color: mutedColor }]}
 						numberOfLines={1}
 					>
@@ -797,6 +942,7 @@ export default function CreateScreen() {
 						<PhotosStep
 							form={form}
 							setForm={setForm}
+							uploads={uploads}
 							onNext={goNext}
 							gate={stepGate}
 							colors={colors}
@@ -807,7 +953,8 @@ export default function CreateScreen() {
 						<ReviewStep
 							form={form}
 							attributes={categoryAttributes}
-							setStep={goToStep}
+							availableTags={categoryTags}
+							setStep={editFromReview}
 							onPublished={(listing: { id: string; title: string } | null) => {
 								resetForm();
 								if (listing) setPublished(listing);
@@ -853,9 +1000,9 @@ function DescribeStep({
 
 	// The category is the whole point of this step's second half, so moving on
 	// without one is not allowed — but it is usually already filled by then.
-	const canProceed = Boolean(
-		form.title.trim() && form.description.trim() && form.category,
-	);
+	// The description is asked on the details step, after the photos.
+	const canProceed = Boolean(form.title.trim() && form.category);
+	const titleIssue = issueAt(gate.issues, "title");
 
 	return (
 		<KeyboardAwareScrollView
@@ -898,44 +1045,24 @@ function DescribeStep({
 					placeholderTextColor={mutedColor}
 					style={[
 						styles.fieldInput,
-						{ color: textColor, borderColor: border, backgroundColor: inputBg },
+						{
+							color: textColor,
+							borderColor: titleIssue ? C.destructive : border,
+							backgroundColor: inputBg,
+						},
 					]}
 					maxLength={100}
 					autoFocus
+					// Without a name TalkBack read the placeholder as if it were typed.
+					accessibilityLabel={`${t("create.titleFieldLabel")}, ${t("common.required")}`}
 				/>
+				<FieldIssueLine issue={titleIssue} colors={colors} />
 				<Text
 					style={[styles.charCount, { color: mutedColor }]}
 					importantForAccessibility="no"
 				>
 					{form.title.length}/100
 				</Text>
-
-				<View style={[styles.fieldDivider, { backgroundColor: border }]} />
-
-				<FieldHeader
-					icon="document-text-outline"
-					label={t("create.descriptionFieldLabel")}
-					required
-					colors={colors}
-				/>
-				<TextInput
-					value={form.description}
-					onChangeText={(v) => update("description", v)}
-					placeholder={
-						isProductCategory
-							? t("create.descriptionPlaceholder")
-							: t("create.descriptionPlaceholderGeneric")
-					}
-					placeholderTextColor={mutedColor}
-					style={[
-						styles.fieldInput,
-						styles.multiline,
-						{ color: textColor, borderColor: border, backgroundColor: inputBg },
-					]}
-					multiline
-					numberOfLines={5}
-					textAlignVertical="top"
-				/>
 			</View>
 
 			<View
@@ -968,11 +1095,13 @@ function DescribeStep({
 				/>
 			</View>
 
-			<FieldIssueList issues={gate.issues} attributes={[]} />
+			<FieldIssueLine
+				issue={issueAt(gate.issues, "category")}
+				colors={colors}
+			/>
 			<NextButton
-				label={t("common.next")}
+				label={gate.label ?? t("common.next")}
 				onPress={canProceed && !gate.blocked ? onNext : gate.onBlocked}
-				active={canProceed && !gate.blocked}
 				colors={colors}
 			/>
 		</KeyboardAwareScrollView>
@@ -1038,6 +1167,9 @@ function DetailsStep({
 		form.category &&
 		(!requiresPrice || form.price) &&
 		form.location.trim();
+	const descriptionIssue = issueAt(gate.issues, "description");
+	const priceIssue = issueAt(gate.issues, "price");
+	const locationIssue = issueAt(gate.issues, "location");
 
 	return (
 		<KeyboardAwareScrollView
@@ -1062,6 +1194,44 @@ function DetailsStep({
 			{/* The category is not repeated here: it is chosen on the previous step
 			    and the header carries it on every step, so a second copy of the
 			    same field only added a row to scroll past. */}
+
+			<View
+				style={[
+					styles.fieldCard,
+					{ backgroundColor: cardBg, borderColor: border },
+				]}
+			>
+				<FieldHeader
+					icon="document-text-outline"
+					label={t("create.descriptionFieldLabel")}
+					required
+					colors={colors}
+				/>
+				<TextInput
+					value={form.description}
+					onChangeText={(v) => update("description", v)}
+					placeholder={
+						isProductCategory
+							? t("create.descriptionPlaceholder")
+							: t("create.descriptionPlaceholderGeneric")
+					}
+					placeholderTextColor={mutedColor}
+					style={[
+						styles.fieldInput,
+						styles.multiline,
+						{
+							color: textColor,
+							borderColor: descriptionIssue ? C.destructive : border,
+							backgroundColor: inputBg,
+						},
+					]}
+					multiline
+					numberOfLines={5}
+					textAlignVertical="top"
+					accessibilityLabel={`${t("create.descriptionFieldLabel")}, ${t("common.required")}`}
+				/>
+				<FieldIssueLine issue={descriptionIssue} colors={colors} />
+			</View>
 
 			{showsPrice && (
 				<View
@@ -1089,12 +1259,16 @@ function DetailsStep({
 								styles.priceInput,
 								{
 									color: textColor,
-									borderColor: border,
+									borderColor: priceIssue ? C.destructive : border,
 									backgroundColor: inputBg,
 								},
 							]}
 							keyboardType="number-pad"
-							accessibilityLabel={priceLabel}
+							accessibilityLabel={
+								requiresPrice
+									? `${priceLabel}, ${t("common.required")}`
+									: priceLabel
+							}
 						/>
 						{/* The currency sits on the yellow tag every price wears, so
 						    the field already reads as the price it will become. */}
@@ -1107,6 +1281,7 @@ function DetailsStep({
 							</Text>
 						</View>
 					</View>
+					<FieldIssueLine issue={priceIssue} colors={colors} />
 					<PriceUnitChips
 						kind={categoryPreset.categoryType}
 						value={form.priceUnit}
@@ -1160,10 +1335,11 @@ function DetailsStep({
 					onSelect={handleCitySelect}
 					onClear={handleCityClear}
 					inputBg={inputBg}
-					borderColor={border}
+					borderColor={locationIssue ? C.destructive : border}
 					textColor={textColor}
 					mutedColor={mutedColor}
 				/>
+				<FieldIssueLine issue={locationIssue} colors={colors} />
 			</View>
 
 			{/* Card: Durée */}
@@ -1217,13 +1393,20 @@ function DetailsStep({
 						);
 					})}
 				</View>
+				{/* What the number means, so a choice that matters little is
+				    not one to hesitate over. */}
+				<Text style={[styles.attrHint, { color: mutedColor }]}>
+					{t("create.durationHint", {
+						defaultValue:
+							"Ensuite, l’annonce expire. Vous pourrez la renouveler depuis Mes annonces.",
+					})}
+				</Text>
 			</View>
 
 			<FieldIssueList issues={gate.issues} attributes={[]} />
 			<NextButton
-				label={t("create.continue")}
+				label={gate.label ?? t("create.continue")}
 				onPress={canProceed && !gate.blocked ? onNext : gate.onBlocked}
-				active={!!canProceed && !gate.blocked}
 				colors={colors}
 			/>
 		</KeyboardAwareScrollView>
@@ -1240,7 +1423,7 @@ function AttributesStep({
 	gate,
 	colors,
 }: any) {
-	const { bg, textColor, mutedColor, border } = colors;
+	const { bg, cardBg, textColor, mutedColor, border } = colors;
 	const { t } = useTranslation();
 	const list: ListingAttribute[] = attributes ?? [];
 
@@ -1288,23 +1471,34 @@ function AttributesStep({
 						</View>
 					) : null}
 
-					{section.attributes.map((attr) => (
-						<AttributeField
-							key={attr.slug}
-							attribute={attr}
-							value={form.attributes?.[attr.slug] ?? ""}
-							onChange={(v: string) => updateAttr(attr.slug, v)}
-							colors={colors}
-						/>
-					))}
+					{/* One card per section, the questions separated by hairlines:
+					    a card and an icon per attribute turned eight answers into
+					    a long, repetitive scroll. */}
+					<View
+						style={[
+							styles.fieldCard,
+							styles.attrCard,
+							{ backgroundColor: cardBg, borderColor: border },
+						]}
+					>
+						{section.attributes.map((attr, index) => (
+							<AttributeField
+								key={attr.slug}
+								attribute={attr}
+								first={index === 0}
+								value={form.attributes?.[attr.slug] ?? ""}
+								onChange={(v: string) => updateAttr(attr.slug, v)}
+								colors={colors}
+							/>
+						))}
+					</View>
 				</View>
 			))}
 
 			<FieldIssueList issues={gate.issues} attributes={list} />
 			<NextButton
-				label={t("create.continue")}
+				label={gate.label ?? t("create.continue")}
 				onPress={canProceed && !gate.blocked ? onNext : gate.onBlocked}
-				active={canProceed && !gate.blocked}
 				colors={colors}
 			/>
 		</KeyboardAwareScrollView>
@@ -1316,8 +1510,8 @@ function AttributesStep({
  * a type this does not know about would silently vanish from the form, which is
  * exactly how `date` went missing.
  */
-function AttributeField({ attribute, value, onChange, colors }: any) {
-	const { cardBg, textColor, mutedColor, fill, border, inputBg, C } = colors;
+function AttributeField({ attribute, first, value, onChange, colors }: any) {
+	const { textColor, mutedColor, fill, border, inputBg, C } = colors;
 	const { t } = useTranslation();
 	const attr: ListingAttribute = attribute;
 	const issue = getAttributeIssue(attr, value);
@@ -1336,19 +1530,22 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 		.filter(Boolean)
 		.join(" · ");
 
+	// A required answer cannot be cleared by tapping it again: a tap meant to
+	// confirm the choice used to erase it. Optional ones still toggle off.
+	const pick = (option: string, active: boolean) =>
+		onChange(active && !attr.required ? "" : option);
+
 	return (
 		<View
 			style={[
-				styles.fieldCard,
-				{ backgroundColor: cardBg, borderColor: border },
+				styles.attrRow,
+				!first && {
+					borderTopWidth: StyleSheet.hairlineWidth,
+					borderTopColor: border,
+				},
 			]}
 		>
-			<FieldHeader
-				icon="pricetag-outline"
-				label={attr.name}
-				required={attr.required}
-				colors={colors}
-			/>
+			<FieldHeader label={attr.name} required={attr.required} colors={colors} />
 
 			{attr.type === "select" && attr.options.length > 0 ? (
 				<View style={styles.conditionWrap} accessibilityRole="radiogroup">
@@ -1357,7 +1554,7 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 						return (
 							<Pressable
 								key={opt.value}
-								onPress={() => onChange(active ? "" : opt.value)}
+								onPress={() => pick(opt.value, active)}
 								accessibilityRole="radio"
 								accessibilityState={{ checked: active }}
 								style={[
@@ -1393,7 +1590,7 @@ function AttributeField({ attribute, value, onChange, colors }: any) {
 						return (
 							<Pressable
 								key={opt.value}
-								onPress={() => onChange(active ? "" : opt.value)}
+								onPress={() => pick(opt.value, active)}
 								accessibilityRole="radio"
 								accessibilityState={{ checked: active }}
 								style={[
@@ -1515,7 +1712,15 @@ function attributeIssueMessage(
 
 // ─── Photos Step ───────────────────────────────────────────────────────────────
 
-function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
+function PhotosStep({
+	form,
+	setForm,
+	uploads,
+	onNext,
+	gate,
+	colors,
+	photoLimit,
+}: any) {
 	const { bg, cardBg, textColor, mutedColor, primary, fill, border, C } =
 		colors;
 	const { t } = useTranslation();
@@ -1529,16 +1734,13 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 	const photosRequired = getListingFormPreset(form.category).fields.photos
 		.required;
 	const { showAlert, showWarning } = useAlert();
-	const uploads = usePhotoUploads({
-		alt: form.title,
-		onUploaded: (photo) =>
-			setForm((f: any) => ({ ...f, images: [...f.images, photo] })),
-	});
-	const taken = form.images.length + uploads.pending.length;
+	// Owned by the wizard (see CreateScreen), so it survives this step.
+	const queue: PhotoUploads = uploads;
+	const taken = form.images.length + queue.pending.length;
 	const full = !canAddPhoto(taken, photoLimit);
 	const remaining = Math.max(0, photoLimit - taken);
 	const pickImage = (fromCamera: boolean) =>
-		void uploads.pick(fromCamera, remaining);
+		void queue.pick(fromCamera, remaining);
 
 	const showPicker = () => {
 		if (full) {
@@ -1644,12 +1846,12 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 						</Pressable>
 					</View>
 				))}
-				{uploads.pending.map((photo) => (
+				{queue.pending.map((photo) => (
 					<PendingPhotoTile
 						key={photo.key}
 						photo={photo}
-						onRetry={() => uploads.retry(photo.key)}
-						onRemove={() => uploads.remove(photo.key)}
+						onRetry={() => queue.retry(photo.key)}
+						onRemove={() => queue.remove(photo.key)}
 						style={[
 							styles.photoThumb,
 							tileSize,
@@ -1687,19 +1889,19 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 					</Text>
 				</Pressable>
 			</View>
-			<PhotoLimitNote
-				count={form.images.length}
-				limit={photoLimit}
-				color={mutedColor}
-			/>
+			{/* Counts the photos still sending too, as the add button does. */}
+			<PhotoLimitNote count={taken} limit={photoLimit} color={mutedColor} />
+			<PendingPhotoErrors photos={queue.pending} />
 
-			{photosRequired && form.images.length === 0 && (
-				<Text style={[styles.photoRequired, { color: C.dangerText }]}>
+			{/* Required is where the step starts, not a mistake: a hint until a
+			    blocked Continue, after which the issue list below says it. */}
+			{photosRequired && taken === 0 && gate.issues.length === 0 && (
+				<Text style={[styles.photoRequired, { color: mutedColor }]}>
 					{t("create.photoRequired")}
 				</Text>
 			)}
 			<FieldIssueList issues={gate.issues} attributes={[]} />
-			{uploads.uploading && (
+			{queue.uploading && (
 				<Text
 					style={[styles.stepSub, styles.uploadingNote, { color: mutedColor }]}
 					accessibilityLiveRegion="polite"
@@ -1708,9 +1910,8 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 				</Text>
 			)}
 			<NextButton
-				label={t("create.continue")}
+				label={gate.label ?? t("create.continue")}
 				onPress={gate.blocked ? gate.onBlocked : onNext}
-				active={(!photosRequired || form.images.length > 0) && !gate.blocked}
 				colors={colors}
 			/>
 		</ScrollView>
@@ -1722,6 +1923,7 @@ function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 function ReviewStep({
 	form,
 	attributes,
+	availableTags,
 	setStep,
 	onPublished,
 	readyToSubmit,
@@ -1730,7 +1932,7 @@ function ReviewStep({
 	colors,
 }: any) {
 	const { user } = useAuth();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const { showSuccess, showError } = useAlert();
 	const { bg, cardBg, textColor, mutedColor, primary, border, C } = colors;
 	const { data: myShop } = useMyShop();
@@ -1782,7 +1984,12 @@ function ReviewStep({
 			if (status === "draft") {
 				showSuccess(t("create.draftSavedTitle"), t("create.draftSavedMsg"));
 				onPublished?.(null);
-				router.push("/(tabs)/account");
+				// Straight to the list that holds the draft, rather than the busy
+				// account screen with no pointer to it.
+				router.push({
+					pathname: "/account/listings",
+					params: { filter: "draft" },
+				});
 				return;
 			}
 			const id = data?.doc?.id ?? data?.id;
@@ -1840,6 +2047,28 @@ function ReviewStep({
 			step: "attributes",
 		}));
 
+	const tagNames: string[] = (form.tags ?? [])
+		.map(
+			(id: string) =>
+				(availableTags ?? []).find((tag: any) => String(tag.id) === id)?.name,
+		)
+		.filter(Boolean);
+	const showsPhotos = categoryPreset.fields.photos?.enabled !== false;
+	const cover: UploadedImage | undefined = form.images[0];
+	const priceText = showsPrice
+		? kindPriceText(
+				form.price ? formatPrice(form.price, i18n.language) : null,
+				{
+					kind: categoryPreset.categoryType,
+					priceUnit: priceUnitToSend(
+						categoryPreset.categoryType,
+						form.priceUnit,
+					),
+				},
+				(key) => t(`listingKind.${key}`),
+			)
+		: null;
+
 	const rows: {
 		id: string;
 		label: string;
@@ -1847,6 +2076,7 @@ function ReviewStep({
 		value: string;
 		step: string;
 		tag?: boolean;
+		lines?: number;
 	}[] = [
 		{
 			id: "category",
@@ -1870,7 +2100,7 @@ function ReviewStep({
 							categoryPreset.fields.price.label ?? t("create.priceRowLabel"),
 						icon: "cash-outline",
 						value: kindPriceText(
-							form.price ? formatPrice(form.price, t) : null,
+							form.price ? formatPrice(form.price, i18n.language) : null,
 							{
 								kind: categoryPreset.categoryType,
 								priceUnit: priceUnitToSend(
@@ -1886,20 +2116,50 @@ function ReviewStep({
 				]
 			: []),
 		{
+			id: "description",
+			label: t("create.descriptionFieldLabel"),
+			icon: "document-text-outline",
+			value: form.description.trim() || "—",
+			step: "details",
+			lines: 3,
+		},
+		{
 			id: "location",
 			label: t("create.locationRowLabel"),
 			icon: "location-outline",
 			value: form.location || "—",
 			step: "details",
 		},
-		...attrRows,
+		...(tagNames.length > 0
+			? [
+					{
+						id: "tags",
+						label: t("create.tagsFieldLabel", { defaultValue: "Tags" }),
+						icon: "pricetags-outline",
+						value: tagNames.join(", "),
+						step: "details",
+					},
+				]
+			: []),
 		{
-			id: "photos",
-			label: t("create.photosRowLabel"),
-			icon: "camera-outline",
-			value: t("create.photoCount", { count: form.images.length }),
-			step: "photos",
+			id: "duration",
+			label: t("create.durationFieldLabel"),
+			icon: "time-outline",
+			value: `${form.duration} ${t("create.days")}`,
+			step: "details",
 		},
+		...attrRows,
+		...(showsPhotos
+			? [
+					{
+						id: "photos",
+						label: t("create.photosRowLabel"),
+						icon: "camera-outline",
+						value: t("create.photoCount", { count: form.images.length }),
+						step: "photos",
+					},
+				]
+			: []),
 	];
 
 	return (
@@ -1916,6 +2176,69 @@ function ReviewStep({
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
 				{t("create.stepReviewHint")}
 			</Text>
+
+			{/* The ad as a buyer meets it first: cover photo, title, price tag
+			    and place. This is what the seller checks before sending. */}
+			<View
+				style={[
+					styles.previewCard,
+					{ backgroundColor: cardBg, borderColor: border },
+				]}
+				accessible
+				accessibilityLabel={[form.title, priceText, form.location]
+					.filter(Boolean)
+					.join(", ")}
+			>
+				{showsPhotos ? (
+					cover ? (
+						<Image
+							source={{ uri: cover.uri }}
+							style={styles.previewImage}
+							contentFit="cover"
+							accessibilityIgnoresInvertColors
+						/>
+					) : (
+						<View
+							style={[
+								styles.previewImage,
+								styles.previewImageEmpty,
+								{ backgroundColor: C.well },
+							]}
+						>
+							<Ionicons name="image-outline" size={24} color={mutedColor} />
+						</View>
+					)
+				) : null}
+				<View style={styles.previewText}>
+					<Text
+						style={[styles.previewTitle, { color: textColor }]}
+						numberOfLines={2}
+					>
+						{form.title || "—"}
+					</Text>
+					{priceText && form.price ? (
+						<View style={[styles.reviewPriceTag, { backgroundColor: C.sun }]}>
+							<Text
+								style={[styles.reviewPriceText, { color: C.sunForeground }]}
+								numberOfLines={1}
+							>
+								{priceText}
+							</Text>
+						</View>
+					) : null}
+					{form.location ? (
+						<View style={styles.previewPlace}>
+							<Ionicons name="location-outline" size={14} color={mutedColor} />
+							<Text
+								style={[styles.previewPlaceText, { color: mutedColor }]}
+								numberOfLines={1}
+							>
+								{form.location}
+							</Text>
+						</View>
+					) : null}
+				</View>
+			</View>
 
 			<View
 				style={[
@@ -1962,7 +2285,7 @@ function ReviewStep({
 							) : (
 								<Text
 									style={[styles.reviewValue, { color: textColor }]}
-									numberOfLines={2}
+									numberOfLines={row.lines ?? 2}
 								>
 									{row.value}
 								</Text>
@@ -2051,22 +2374,23 @@ function ReviewStep({
 	);
 }
 
-/** Grouped amount plus the currency, or an em dash when nothing was entered. */
-function formatPrice(
-	raw: string,
-	t: (key: string, options?: any) => string,
-): string {
+/**
+ * The amount in the market's format, as every price in the app reads — the
+ * bare `toLocaleString()` it replaced gave "150,000" on an English device.
+ */
+function formatPrice(raw: string, lang: string): string {
 	const amount = Number.parseInt(raw, 10);
 	if (!Number.isFinite(amount)) return "—";
-	return `${amount.toLocaleString()} ${t("common.currency", { defaultValue: "XAF" })}`;
+	return formatMarketPrice(amount, lang);
 }
 
 // ─── Published ─────────────────────────────────────────────────────────────────
 
 /**
- * After sending: the ad is under review, not live, and the next useful step
- * is right here — see it, share it on WhatsApp, or post another — instead of
- * landing on the account screen.
+ * After sending: the ad is under review, not live. One filled action (see it)
+ * and a quiet one (post another). There is no share button here: a link to a
+ * listing still under review opens "not found" for everyone but its owner, so
+ * sharing waits for the notification that says it is online.
  */
 function PublishedView({
 	listing,
@@ -2079,20 +2403,12 @@ function PublishedView({
 		textColor: string;
 		mutedColor: string;
 		fill: string;
-		cardBg: string;
-		border: string;
+		primary: string;
 	};
 	onAnother: () => void;
 }) {
 	const { t } = useTranslation();
-	const { webUrl } = useAppConfig();
-	const { bg, textColor, mutedColor, fill, cardBg, border } = colors;
-	const share = () => {
-		const url = `${webUrl ?? ""}/listing/${listing.id}`;
-		void Linking.openURL(whatsappShareUrl(`${listing.title} ${url}`)).catch(
-			() => undefined,
-		);
-	};
+	const { bg, textColor, mutedColor, fill, primary } = colors;
 	return (
 		<SafeAreaView
 			edges={["top"]}
@@ -2109,34 +2425,39 @@ function PublishedView({
 				<Text style={[styles.noUserSub, { color: mutedColor }]}>
 					{t("create.publishSuccessMsg")}
 				</Text>
+				<View style={styles.publishedNotice}>
+					<Ionicons
+						name="notifications-outline"
+						size={18}
+						color={primary}
+						importantForAccessibility="no"
+					/>
+					<Text style={[styles.publishedNoticeText, { color: textColor }]}>
+						{t("create.publishedNotify", {
+							defaultValue:
+								"Vous recevrez une notification dès qu’elle sera en ligne. Vous pourrez alors la partager.",
+						})}
+					</Text>
+				</View>
 				<Pressable
 					onPress={() => router.push(`/listing/${listing.id}`)}
 					accessibilityRole="button"
-					style={[styles.loginBtn, { backgroundColor: fill }]}
+					style={({ pressed }) => [
+						styles.loginBtn,
+						{ backgroundColor: fill, opacity: pressed ? 0.85 : 1 },
+					]}
 				>
 					<Text style={styles.loginBtnText}>{t("create.viewListing")}</Text>
-				</Pressable>
-				{/* WhatsApp's own green with ink on it (8:1): sellers know the
-				    button before they read it. */}
-				<Pressable
-					onPress={share}
-					accessibilityRole="button"
-					style={[styles.loginBtn, { backgroundColor: "#25D366" }]}
-				>
-					<Ionicons name="logo-whatsapp" size={20} color="#12163a" />
-					<Text style={[styles.loginBtnText, { color: "#12163a" }]}>
-						{t("create.shareWhatsApp")}
-					</Text>
 				</Pressable>
 				<Pressable
 					onPress={onAnother}
 					accessibilityRole="button"
-					style={[
-						styles.loginBtn,
-						{ backgroundColor: cardBg, borderWidth: 1, borderColor: border },
+					style={({ pressed }) => [
+						styles.textBtn,
+						{ opacity: pressed ? 0.6 : 1 },
 					]}
 				>
-					<Text style={[styles.loginBtnText, { color: textColor }]}>
+					<Text style={[styles.textBtnText, { color: primary }]}>
 						{t("create.postAnother")}
 					</Text>
 				</Pressable>
@@ -2149,15 +2470,24 @@ function PublishedView({
 
 function FieldHeader({ icon, label, required, colors }: any) {
 	const { textColor, primary } = colors;
+	const { t } = useTranslation();
 	return (
 		<View style={styles.fieldHeaderRow}>
-			<Ionicons
-				name={icon}
-				size={16}
-				color={primary}
-				importantForAccessibility="no"
-			/>
-			<Text style={[styles.fieldLabel, { color: textColor }]}>
+			{icon ? (
+				<Ionicons
+					name={icon}
+					size={16}
+					color={primary}
+					importantForAccessibility="no"
+				/>
+			) : null}
+			{/* Read as "Titre, obligatoire" rather than "Titre étoile". */}
+			<Text
+				style={[styles.fieldLabel, { color: textColor }]}
+				accessibilityLabel={
+					required ? `${label}, ${t("common.required")}` : label
+				}
+			>
 				{label}
 				{required && <Text style={{ color: colors.C.dangerText }}> *</Text>}
 			</Text>
@@ -2165,33 +2495,48 @@ function FieldHeader({ icon, label, required, colors }: any) {
 	);
 }
 
-/** Pressing it while inactive still calls `onPress`, so a step can say why it is blocked. */
-function NextButton({ label, onPress, active, colors }: any) {
-	const { fill, mutedColor, C } = colors;
+/** What the server or the form refuses on a field, right under it. */
+function FieldIssueLine({
+	issue,
+	colors,
+}: {
+	issue: FieldIssue | undefined;
+	colors: { C: { dangerText: string } };
+}) {
+	const { t } = useTranslation();
+	if (!issue) return null;
+	return (
+		<Text
+			style={[styles.attrError, { color: colors.C.dangerText }]}
+			accessibilityRole="alert"
+		>
+			{issueMessage(t, issue)}
+		</Text>
+	);
+}
+
+/**
+ * Always drawn as the step's primary action. It used to turn grey (and say
+ * "disabled" to screen readers) while a field was missing, so sellers never
+ * tapped it and never learned what was missing; a tap now flags the fields.
+ */
+function NextButton({ label, onPress, colors }: any) {
+	const { fill } = colors;
 	return (
 		<Pressable
 			onPress={onPress}
 			accessibilityRole="button"
-			accessibilityState={{ disabled: !active }}
 			style={({ pressed }) => [
 				styles.nextBtn,
 				{
-					backgroundColor: active ? fill : C.well,
-					borderColor: active ? fill : C.border,
-					transform: [{ scale: active && pressed ? 0.98 : 1 }],
+					backgroundColor: fill,
+					borderColor: fill,
+					transform: [{ scale: pressed ? 0.98 : 1 }],
 				},
 			]}
 		>
-			<Text
-				style={[styles.nextBtnText, { color: active ? "#ffffff" : mutedColor }]}
-			>
-				{label}
-			</Text>
-			<Ionicons
-				name="arrow-forward"
-				size={18}
-				color={active ? "#ffffff" : mutedColor}
-			/>
+			<Text style={[styles.nextBtnText, { color: "#ffffff" }]}>{label}</Text>
+			<Ionicons name="arrow-forward" size={18} color="#ffffff" />
 		</Pressable>
 	);
 }
@@ -2207,6 +2552,26 @@ const styles = StyleSheet.create({
 		gap: 12,
 	},
 	safe: { flex: 1 },
+	publishedNotice: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		gap: 10,
+		marginBottom: 12,
+		maxWidth: 360,
+		alignSelf: "center",
+	},
+	publishedNoticeText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+	},
+	textBtn: {
+		minHeight: 48,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	textBtnText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 
 	/* ── No-user ── */
 	noUserHeader: {
@@ -2229,6 +2594,7 @@ const styles = StyleSheet.create({
 	},
 	noUserTitle: {
 		fontSize: 24,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.4,
 	},
@@ -2253,7 +2619,8 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 	},
 	noUserHeading: {
-		fontSize: 22,
+		fontSize: 24,
+		lineHeight: 32,
 		fontFamily: Fonts.displayBold,
 		marginBottom: 8,
 		textAlign: "center",
@@ -2280,6 +2647,7 @@ const styles = StyleSheet.create({
 	loginBtnText: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 
@@ -2292,6 +2660,7 @@ const styles = StyleSheet.create({
 		paddingTop: 6,
 		paddingBottom: 12,
 	},
+	headerSpacer: { width: 44, height: 44 },
 	backBtn: {
 		width: 44,
 		height: 44,
@@ -2303,6 +2672,7 @@ const styles = StyleSheet.create({
 	headerCenter: { flex: 1 },
 	headerTitle: {
 		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},
@@ -2351,7 +2721,8 @@ const styles = StyleSheet.create({
 		gap: 6,
 	},
 	fieldLabel: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	fieldDivider: {
@@ -2374,6 +2745,7 @@ const styles = StyleSheet.create({
 	},
 	charCount: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.body,
 		fontVariant: ["tabular-nums"],
 		textAlign: "right",
@@ -2381,6 +2753,8 @@ const styles = StyleSheet.create({
 	},
 
 	/* ── Category attributes ── */
+	attrCard: { gap: 0, paddingVertical: 4 },
+	attrRow: { gap: 10, paddingVertical: 12 },
 	groupHeadingRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -2404,7 +2778,8 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	attrUnit: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	attrError: {
@@ -2444,6 +2819,7 @@ const styles = StyleSheet.create({
 	},
 	priceBadgeText: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayExtrabold,
 	},
 
@@ -2463,7 +2839,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	conditionText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -2504,6 +2881,7 @@ const styles = StyleSheet.create({
 	},
 	durationUnit: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyMedium,
 	},
 
@@ -2518,9 +2896,9 @@ const styles = StyleSheet.create({
 	},
 	tipText: {
 		flex: 1,
-		fontSize: 14,
+		fontSize: 15,
 		fontFamily: Fonts.body,
-		lineHeight: 20,
+		lineHeight: 22,
 	},
 
 	/* ── Photos ── */
@@ -2541,6 +2919,7 @@ const styles = StyleSheet.create({
 	},
 	photoIndex: {
 		fontSize: 20,
+		lineHeight: 28,
 		fontFamily: Fonts.displayBold,
 	},
 	addPhotoBtn: {
@@ -2563,11 +2942,13 @@ const styles = StyleSheet.create({
 	},
 	addPhotoText: {
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
 	photoRequired: {
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 		marginTop: 8,
@@ -2583,6 +2964,7 @@ const styles = StyleSheet.create({
 	photoPrimaryText: {
 		color: "#ffffff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyBold,
 	},
 	photoMakeMainBtn: {
@@ -2619,10 +3001,34 @@ const styles = StyleSheet.create({
 	},
 	gpsBtnText: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 	},
 
 	/* ── Review ── */
+	previewCard: {
+		flexDirection: "row",
+		gap: 12,
+		padding: 12,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		marginBottom: 12,
+	},
+	previewImage: { width: 88, height: 88, borderRadius: 12 },
+	previewImageEmpty: { alignItems: "center", justifyContent: "center" },
+	previewText: { flex: 1, gap: 6, justifyContent: "center" },
+	previewTitle: {
+		fontSize: 16,
+		lineHeight: 21,
+		fontFamily: Fonts.displaySemibold,
+	},
+	previewPlace: { flexDirection: "row", alignItems: "center", gap: 4 },
+	previewPlaceText: {
+		flex: 1,
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+	},
 	reviewCard: {
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -2665,8 +3071,8 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	reviewPriceText: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.3,
 	},
@@ -2677,7 +3083,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	editPillText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	publishBtn: {
@@ -2695,6 +3102,7 @@ const styles = StyleSheet.create({
 	publishBtnText: {
 		color: "#12163a",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 	draftBtn: {
@@ -2708,6 +3116,7 @@ const styles = StyleSheet.create({
 	draftBtnText: {
 		fontFamily: Fonts.bodySemibold,
 		fontSize: 15,
+		lineHeight: 22,
 	},
 	publishNote: {
 		fontSize: 13,
@@ -2731,6 +3140,7 @@ const styles = StyleSheet.create({
 	},
 	nextBtnText: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 });

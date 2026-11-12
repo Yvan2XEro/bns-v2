@@ -60,7 +60,7 @@ export function SegmentedControl<K extends string>({
 						]}
 					>
 						<Text
-							style={[styles.text, { color: selected ? c.primary : c.muted }]}
+							style={[styles.text, { color: selected ? c.link : c.muted }]}
 							numberOfLines={1}
 						>
 							{label}
@@ -75,7 +75,7 @@ export function SegmentedControl<K extends string>({
 								<Text
 									style={[
 										styles.countText,
-										{ color: selected ? c.primary : c.muted },
+										{ color: selected ? c.link : c.muted },
 									]}
 								>
 									{count}
@@ -108,12 +108,17 @@ const styles = StyleSheet.create({
 		shadowRadius: 3,
 		elevation: 1,
 	},
-	text: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	text: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 	count: {
 		minWidth: 20,
 		paddingHorizontal: 6,
 		borderRadius: 999,
 		alignItems: "center",
 	},
-	countText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	countText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

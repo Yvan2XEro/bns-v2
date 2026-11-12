@@ -23,7 +23,7 @@ describe("orderHelpActions", () => {
 	});
 
 	test("labels exist in both locales", () => {
-		expect(fr.purchases.helpProblem).toBe("Un problème ?");
+		expect(fr.purchases.helpProblem).toBe("Signaler un problème");
 		expect(fr.purchases.helpMessageShop).toBe("Écrire à la boutique");
 		expect(typeof en.purchases.helpProblem).toBe("string");
 		expect(typeof en.purchases.helpMessageShop).toBe("string");

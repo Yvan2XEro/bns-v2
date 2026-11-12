@@ -1,15 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useReducer } from "react";
+import { useReducer, useRef } from "react";
 import {
 	Pressable,
-	ScrollView,
 	StyleSheet,
 	Switch,
 	Text,
 	TextInput,
 	View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { Colors, Fonts } from "@/constants/theme";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import {
@@ -30,9 +30,11 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	useModerationDispute,
 	useModerationDisputeAction,
+	useModerationDisputes,
 	usePreviewDisputeOutcome,
 } from "@/src/hooks/useModerationDisputes";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { useAuth } from "@/src/lib/auth";
 import {
 	DISPUTE_REASON_LABELS,
 	DISPUTE_STATUS_LABELS,
@@ -71,24 +73,27 @@ const reasonCodes = [
 ] as const;
 
 type FormState = {
-	outcome: (typeof outcomes)[number];
+	outcome: (typeof outcomes)[number] | null;
 	refund: string;
 	returnRequired: boolean;
 	returnShippingPaidBy: "seller" | "buyer";
-	liableParty: (typeof liabilities)[number];
-	reasonCode: (typeof reasonCodes)[number];
+	liableParty: (typeof liabilities)[number] | null;
+	reasonCode: (typeof reasonCodes)[number] | null;
 	statementFr: string;
 	statementEn: string;
 	note: string;
 };
 
+// Nothing that moves money starts selected: the outcome, the liable party
+// and the reason are each a choice the moderator makes, never a default
+// they confirm without reading (the same rule DecisionSheet keeps).
 const initialState: FormState = {
-	outcome: "resolved_split",
+	outcome: null,
 	refund: "",
 	returnRequired: false,
 	returnShippingPaidBy: "seller",
-	liableParty: "seller",
-	reasonCode: "other",
+	liableParty: null,
+	reasonCode: null,
 	statementFr: "",
 	statementEn: "",
 	note: "",
@@ -103,7 +108,11 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 	const k = tonesOf(c);
 	const { t, i18n } = useTranslation();
 	const { showConfirm, showSuccess } = useAlert();
+	const { user } = useAuth();
 	const detail = useModerationDispute(id);
+	// The sheet carries no assignee; the queue row does, and is cached.
+	const queue = useModerationDisputes();
+	const refundInput = useRef<TextInput>(null);
 	const action = useModerationDisputeAction(id ?? "");
 	const preview = usePreviewDisputeOutcome(id ?? "");
 	const [form, patch] = useReducer(reducer, initialState);
@@ -120,6 +129,7 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 					<LoadError
 						title={t("moderationDisputes.loadError")}
 						message={resolveErrorMessage(detail.error, t)}
+						error={detail.error}
 						onRetry={() => void detail.refetch()}
 					/>
 				) : (
@@ -133,18 +143,53 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 	const dispute = sheet.dispute;
 	const locale = i18n.language === "en" ? "en" : "fr";
 	const sun = c.isDark ? Colors.dark.sun : Colors.light.sun;
-	const refundValid = Number.isSafeInteger(refundAmount) && refundAmount >= 0;
-	const formComplete =
-		Boolean(form.note.trim()) &&
-		Boolean(form.statementFr.trim()) &&
-		Boolean(form.statementEn.trim());
+	const maxRefund = sheet.refundable;
+	const refundTyped = form.refund.trim().length > 0;
+	const refundOverCap =
+		Number.isSafeInteger(refundAmount) && refundAmount > maxRefund;
+	const refundValid =
+		Number.isSafeInteger(refundAmount) && refundAmount >= 0 && !refundOverCap;
+	const required = (label: string) =>
+		`${label} (${t("common.required").toLowerCase()})`;
+	// What still blocks the ruling, named, so a grey button explains itself.
+	const missing = [
+		form.outcome ? null : t("moderationDisputes.outcome"),
+		refundValid ? null : t("moderationDisputes.refundAmount"),
+		form.liableParty ? null : t("moderationDisputes.liableParty"),
+		form.reasonCode ? null : t("moderationDisputes.reasonCodeLabel"),
+		form.statementFr.trim() ? null : t("moderationDisputes.statementFr"),
+		form.statementEn.trim() ? null : t("moderationDisputes.statementEn"),
+		form.note.trim() ? null : t("moderationDisputes.internalNote"),
+	].filter((item): item is string => Boolean(item));
+	const formComplete = missing.length === 0;
+	const queueRow = queue.data?.find((row) => row.id === dispute.id);
+	const assignedTo = queueRow?.assignedTo ?? null;
+	const assignedToMe = Boolean(user?.id) && assignedTo === user?.id;
+	const failure = action.error ?? preview.error;
+	const failureText = failure
+		? resolveErrorMessage(failure, t, t("moderationDisputes.actionError"))
+		: null;
 	const onSaved = () => showSuccess(t("moderationDisputes.actionSaved"));
 	const previewDecision = () => {
-		if (!Number.isSafeInteger(refundAmount) || refundAmount < 0) return;
+		if (!refundValid) return;
 		preview.mutate(refundAmount);
 	};
+	// The outcome sets the refund it implies: everything to the buyer, nothing,
+	// or a split the moderator types. The amount stays editable either way.
+	const chooseOutcome = (outcome: (typeof outcomes)[number]) => {
+		const refund =
+			outcome === "resolved_buyer"
+				? String(maxRefund)
+				: outcome === "resolved_seller"
+					? "0"
+					: "";
+		patch({ outcome, refund });
+		preview.reset();
+		if (outcome === "resolved_split") refundInput.current?.focus();
+	};
 	const resolve = () => {
-		if (!previewCurrent) return;
+		if (!previewCurrent || !form.outcome || !form.liableParty) return;
+		if (!form.reasonCode) return;
 		action.mutate(
 			{
 				action: "resolve",
@@ -167,19 +212,38 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 	};
 	// The ruling moves money and is published to both parties: it is read
 	// back, with the refund the preview computed, before it leaves.
+	// Every choice is read back, not only the outcome and the amount.
 	const confirmResolve = () => {
-		if (!previewCurrent || !preview.data) return;
+		if (!previewCurrent || !preview.data || !formComplete) return;
+		if (!form.outcome || !form.liableParty || !form.reasonCode) return;
 		showConfirm(
 			t("moderationDisputes.confirmResolve"),
-			`${t(DISPUTE_STATUS_LABELS[form.outcome])} · ${t(
-				"moderationDisputes.previewRefund",
-				{ amount: formatPrice(preview.data.refundAmount, locale) },
-			)}`,
+			t("moderationDisputes.confirmSummary", {
+				outcome: t(DISPUTE_STATUS_LABELS[form.outcome]),
+				refund: formatPrice(preview.data.refundAmount, locale),
+				liable: t(`moderationDisputes.liability.${form.liableParty}`),
+				reason: t(`moderationDisputes.reasonCode.${form.reasonCode}`),
+				returnItem: form.returnRequired
+					? t("moderation.verifCommonYes")
+					: t("moderation.verifCommonNo"),
+			}),
 			resolve,
 		);
 	};
 	const assign = () =>
 		action.mutate({ action: "assign" }, { onSuccess: onSaved });
+	// Taking a case from a colleague is a decision of its own: ask first.
+	const requestAssign = () => {
+		if (assignedTo && !assignedToMe) {
+			showConfirm(
+				t("moderationDisputes.reassignTitle"),
+				t("moderationDisputes.reassignMessage"),
+				assign,
+			);
+			return;
+		}
+		assign();
+	};
 
 	return (
 		<ModerationScreen
@@ -187,13 +251,16 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 			subtitle={dispute.number}
 		>
 			<ScreenColumn width="reading">
-				<ScrollView
+				<KeyboardAwareScrollView
 					contentContainerStyle={styles.content}
 					keyboardShouldPersistTaps="handled"
 					keyboardDismissMode="on-drag"
+					bottomOffset={24}
 				>
-					{action.isError || preview.isError ? (
-						<InlineNotice text={t("moderationDisputes.actionError")} />
+					{/* Under review, the failure shows beside the buttons that
+					    caused it; otherwise only "assign" can fail, up here. */}
+					{failureText && dispute.status !== "under_review" ? (
+						<InlineNotice text={failureText} />
 					) : null}
 
 					<ModerationCard
@@ -210,9 +277,35 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 						<Text style={[styles.lead, { color: c.text }]}>
 							{t(DISPUTE_REASON_LABELS[dispute.reason])}
 						</Text>
+						<View style={styles.metaLine}>
+							<Pressable
+								accessibilityRole="link"
+								accessibilityLabel={t("disputes.order", {
+									number: dispute.orderNumber,
+								})}
+								hitSlop={12}
+								onPress={() =>
+									router.push({
+										pathname: "/moderation/order/[id]",
+										params: { id: dispute.orderId },
+									})
+								}
+							>
+								<Text style={[styles.link, { color: k.linkText }]}>
+									{t("disputes.order", { number: dispute.orderNumber })}
+								</Text>
+							</Pressable>
+							<Text style={[styles.meta, { color: c.muted }]}>
+								{" · "}
+								{t(DISPUTE_STATUS_LABELS[dispute.status])}
+							</Text>
+						</View>
 						<Text style={[styles.meta, { color: c.muted }]}>
-							{t("disputes.order", { number: dispute.orderNumber })} ·{" "}
-							{t(DISPUTE_STATUS_LABELS[dispute.status])}
+							{assignedToMe
+								? t("moderationDisputes.assignedToYou")
+								: assignedTo
+									? t("moderationDisputes.assignedToOther")
+									: t("moderationDisputes.unassigned")}
 						</Text>
 						<View style={[styles.rule, { backgroundColor: c.border }]} />
 						<FactRow
@@ -244,14 +337,16 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 								}
 								grow={0}
 							/>
-							<DecisionButton
-								variant="secondary"
-								icon="person-add-outline"
-								label={t("moderationDisputes.assignToMe")}
-								onPress={assign}
-								disabled={action.isPending}
-								grow={0}
-							/>
+							{assignedToMe ? null : (
+								<DecisionButton
+									variant="secondary"
+									icon="person-add-outline"
+									label={t("moderationDisputes.assignToMe")}
+									onPress={requestAssign}
+									disabled={action.isPending}
+									grow={0}
+								/>
+							)}
 						</View>
 					</ModerationCard>
 
@@ -298,25 +393,36 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 						<ModerationCard title={t("moderationDisputes.resolveTitle")}>
 							<View style={styles.form}>
 								<Choice
-									title={t("moderationDisputes.outcome")}
+									title={required(t("moderationDisputes.outcome"))}
 									values={outcomes}
 									selected={form.outcome}
 									label={(value) => t(DISPUTE_STATUS_LABELS[value])}
-									onSelect={(outcome) => patch({ outcome })}
+									onSelect={chooseOutcome}
 									c={c}
 								/>
 								<Field
-									label={t("moderationDisputes.refundAmount")}
+									inputRef={refundInput}
+									label={required(t("moderationDisputes.refundAmount"))}
 									value={form.refund}
 									keyboardType="number-pad"
 									suffix="FCFA"
+									hint={t("moderationDisputes.refundMax", {
+										amount: formatPrice(maxRefund, locale),
+									})}
+									error={
+										refundOverCap
+											? t("moderationDisputes.refundOverMax", {
+													amount: formatPrice(maxRefund, locale),
+												})
+											: null
+									}
 									onChangeText={(refund) => {
-										patch({ refund });
+										patch({ refund: refund.replace(/[^0-9]/g, "") });
 										preview.reset();
 									}}
 								/>
 								<Choice
-									title={t("moderationDisputes.liableParty")}
+									title={required(t("moderationDisputes.liableParty"))}
 									values={liabilities}
 									selected={form.liableParty}
 									label={(value) => t(`moderationDisputes.liability.${value}`)}
@@ -324,7 +430,7 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 									c={c}
 								/>
 								<Choice
-									title={t("moderationDisputes.reasonCodeLabel")}
+									title={required(t("moderationDisputes.reasonCodeLabel"))}
 									values={reasonCodes}
 									selected={form.reasonCode}
 									label={(value) => t(`moderationDisputes.reasonCode.${value}`)}
@@ -354,20 +460,22 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 									/>
 								) : null}
 								<Field
-									label={t("moderationDisputes.statementFr")}
+									label={required(t("moderationDisputes.statementFr"))}
 									value={form.statementFr}
 									onChangeText={(statementFr) => patch({ statementFr })}
 								/>
 								<Field
-									label={t("moderationDisputes.statementEn")}
+									label={required(t("moderationDisputes.statementEn"))}
 									value={form.statementEn}
 									onChangeText={(statementEn) => patch({ statementEn })}
 								/>
 								<Field
-									label={t("moderationDisputes.internalNote")}
+									label={required(t("moderationDisputes.internalNote"))}
 									value={form.note}
 									onChangeText={(note) => patch({ note })}
 								/>
+
+								{failureText ? <InlineNotice text={failureText} /> : null}
 
 								{/* Two steps, in order: compute the allocation, then rule
 								    on it. Changing the refund clears the preview. */}
@@ -377,9 +485,19 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 									label={t("moderationDisputes.preview")}
 									onPress={previewDecision}
 									pending={preview.isPending}
-									disabled={!refundValid}
+									disabled={!refundValid || !refundTyped}
 									grow={0}
 								/>
+								{!formComplete ? (
+									<Text
+										accessibilityLiveRegion="polite"
+										style={[styles.meta, { color: c.muted }]}
+									>
+										{t("moderationDisputes.stillMissing", {
+											fields: missing.join(", "),
+										})}
+									</Text>
+								) : null}
 								{preview.data ? (
 									<View
 										style={[
@@ -422,7 +540,7 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 							</View>
 						</ModerationCard>
 					) : null}
-				</ScrollView>
+				</KeyboardAwareScrollView>
 			</ScreenColumn>
 		</ModerationScreen>
 	);
@@ -434,14 +552,21 @@ function Field({
 	onChangeText,
 	keyboardType,
 	suffix,
+	hint,
+	error,
+	inputRef,
 }: {
 	label: string;
 	value: string;
 	onChangeText: (value: string) => void;
 	keyboardType?: "number-pad";
 	suffix?: string;
+	hint?: string;
+	error?: string | null;
+	inputRef?: React.RefObject<TextInput | null>;
 }): React.JSX.Element {
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const multiline = keyboardType === undefined;
 	return (
 		<View style={styles.field}>
@@ -449,11 +574,16 @@ function Field({
 			<View
 				style={[
 					styles.inputWrap,
-					{ backgroundColor: c.bg, borderColor: c.border },
+					{
+						backgroundColor: c.bg,
+						borderColor: error ? k.dangerText : c.border,
+					},
 				]}
 			>
 				<TextInput
+					ref={inputRef}
 					accessibilityLabel={label}
+					accessibilityHint={error ?? hint}
 					multiline={multiline}
 					keyboardType={keyboardType}
 					value={value}
@@ -468,6 +598,16 @@ function Field({
 					<Text style={[styles.suffix, { color: c.muted }]}>{suffix}</Text>
 				) : null}
 			</View>
+			{error ? (
+				<Text
+					accessibilityRole="alert"
+					style={[styles.fieldNote, { color: k.dangerText }]}
+				>
+					{error}
+				</Text>
+			) : hint ? (
+				<Text style={[styles.fieldNote, { color: c.muted }]}>{hint}</Text>
+			) : null}
 		</View>
 	);
 }
@@ -482,7 +622,7 @@ function Choice<T extends string>({
 }: {
 	title: string;
 	values: readonly T[];
-	selected: T;
+	selected: T | null;
 	label: (value: T) => string;
 	onSelect: (value: T) => void;
 	c: ModerationPalette;
@@ -583,6 +723,14 @@ const styles = StyleSheet.create({
 	lead: { fontFamily: Fonts.bodySemibold, fontSize: 16, lineHeight: 22 },
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 21 },
 	meta: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
+	metaLine: { flexDirection: "row", flexWrap: "wrap", alignItems: "center" },
+	link: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 13,
+		lineHeight: 18,
+		textDecorationLine: "underline",
+	},
+	fieldNote: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 	rule: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
 	buttons: { gap: 8, marginTop: 4 },
 	proofRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
@@ -605,7 +753,12 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 	},
 	inputMultiline: { minHeight: 72, textAlignVertical: "top" },
-	suffix: { fontFamily: Fonts.bodySemibold, fontSize: 14, marginLeft: 8 },
+	suffix: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 22,
+		marginLeft: 8,
+	},
 	choices: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	choice: {
 		flexDirection: "row",
@@ -617,7 +770,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},
-	choiceLabel: { fontSize: 14, lineHeight: 19 },
+	choiceLabel: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	toggle: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -635,5 +788,5 @@ const styles = StyleSheet.create({
 		lineHeight: 20,
 	},
 	preview: { borderRadius: 12, borderWidth: 1, gap: 10, padding: 14 },
-	previewTotal: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	previewTotal: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 });

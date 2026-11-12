@@ -4,7 +4,8 @@ import * as Linking from "expo-linking";
 import * as Location from "expo-location";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { FormRow } from "@/src/components/layout/FormRow";
 import {
 	FieldError,
@@ -22,6 +23,9 @@ import {
 import { LAUNCH_CITY_KEYS, ZONE_DAYS } from "@/src/lib/deliveryZoneForm";
 import { useTranslation } from "@/src/lib/i18n";
 import { ChoiceField, TextField, ToggleField } from "./FormFields";
+
+/** A GPS fix indoors can take half a minute; past this, ask to retry outside. */
+const LOCATE_TIMEOUT_MS = 20_000;
 
 export function LocationForm({
 	initial,
@@ -41,7 +45,12 @@ export function LocationForm({
 		defaultValues: initial,
 	});
 	const { control, watch, setValue, formState } = form;
-	const [denied, setDenied] = useState(false);
+	// "denied" is a refused permission; "unavailable" is a GPS that found
+	// nothing in time (often indoors), which needs a different next step.
+	const [positionIssue, setPositionIssue] = useState<
+		"denied" | "unavailable" | null
+	>(null);
+	const [locating, setLocating] = useState(false);
 	const hours = watch("openingHours");
 	const lat = watch("lat");
 	const lng = watch("lng");
@@ -51,17 +60,37 @@ export function LocationForm({
 	};
 
 	const locate = async () => {
+		if (locating) return;
+		setLocating(true);
 		try {
 			const { status } = await Location.requestForegroundPermissionsAsync();
-			if (status !== "granted") return setDenied(true);
-			const { coords } = await Location.getCurrentPositionAsync({
-				accuracy: Location.Accuracy.High,
+			if (status !== "granted") {
+				setPositionIssue("denied");
+				return;
+			}
+			const position = await Promise.race([
+				Location.getCurrentPositionAsync({
+					accuracy: Location.Accuracy.Balanced,
+				}),
+				new Promise<null>((resolve) =>
+					setTimeout(() => resolve(null), LOCATE_TIMEOUT_MS),
+				),
+			]);
+			if (!position) {
+				setPositionIssue("unavailable");
+				return;
+			}
+			setPositionIssue(null);
+			setValue("lat", String(position.coords.latitude), {
+				shouldValidate: true,
 			});
-			setDenied(false);
-			setValue("lat", String(coords.latitude), { shouldValidate: true });
-			setValue("lng", String(coords.longitude), { shouldValidate: true });
+			setValue("lng", String(position.coords.longitude), {
+				shouldValidate: true,
+			});
 		} catch {
-			setDenied(true);
+			setPositionIssue("unavailable");
+		} finally {
+			setLocating(false);
 		}
 	};
 
@@ -123,16 +152,36 @@ export function LocationForm({
 			{text("landmark", "deliverySettings.fieldLandmark")}
 			<Pressable
 				onPress={() => void locate()}
+				disabled={locating}
 				accessibilityRole="button"
 				accessibilityLabel={t("deliverySettings.useMyPosition")}
-				style={{ minHeight: 48, justifyContent: "center" }}
+				accessibilityState={{ busy: locating, disabled: locating }}
+				style={{
+					minHeight: 48,
+					flexDirection: "row",
+					alignItems: "center",
+					gap: 8,
+				}}
 			>
-				<Text style={{ color: c.link }}>
-					{t("deliverySettings.useMyPosition")}
+				{locating ? (
+					<ActivityIndicator size="small" color={c.link} />
+				) : (
+					<Ionicons name="locate-outline" size={18} color={c.link} />
+				)}
+				<Text style={{ fontFamily: Fonts.body, color: c.link }}>
+					{locating
+						? t("deliverySettings.locating")
+						: t("deliverySettings.useMyPosition")}
 				</Text>
 			</Pressable>
-			{denied ? (
-				<FieldError message={t("deliverySettings.positionDenied")} />
+			{positionIssue ? (
+				<FieldError
+					message={
+						positionIssue === "denied"
+							? t("deliverySettings.positionDenied")
+							: t("deliverySettings.positionUnavailable")
+					}
+				/>
 			) : null}
 			<FormRow>
 				<Controller
@@ -174,7 +223,7 @@ export function LocationForm({
 					accessibilityLabel={t("deliverySettings.openInMaps")}
 					style={{ minHeight: 48, justifyContent: "center" }}
 				>
-					<Text style={{ color: c.link }}>
+					<Text style={{ fontFamily: Fonts.body, color: c.link }}>
 						{t("deliverySettings.openInMaps")}
 					</Text>
 				</Pressable>
@@ -183,13 +232,15 @@ export function LocationForm({
 			{toggle("pickupEnabled", "deliverySettings.fieldPickupEnabled")}
 			{text("pickupFee", "deliverySettings.fieldPickupFee", "number-pad")}
 			{text("holdDays", "deliverySettings.fieldHoldDays", "number-pad")}
-			<Text style={{ color: c.body }}>{t("deliverySettings.fieldHours")}</Text>
+			<Text style={{ fontFamily: Fonts.body, color: c.body }}>
+				{t("deliverySettings.fieldHours")}
+			</Text>
 			{hours.map((row, index) => (
 				<View
 					key={row.day}
 					style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}
 				>
-					<Text style={{ width: 40, color: c.text }}>
+					<Text style={{ fontFamily: Fonts.body, width: 40, color: c.text }}>
 						{t(`deliverySettings.days.${row.day}`)}
 					</Text>
 					<View style={{ flex: 1 }}>
@@ -263,7 +314,7 @@ export function LocationForm({
 								borderColor: c.border,
 							}}
 						>
-							<Text style={{ color: c.link }}>
+							<Text style={{ fontFamily: Fonts.body, color: c.link }}>
 								+ {t(`deliverySettings.days.${day}`)}
 							</Text>
 						</Pressable>
@@ -286,7 +337,10 @@ export function LocationForm({
 			/>
 			{toggle("active", "deliverySettings.fieldActive")}
 			{error ? (
-				<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
+				<Text
+					accessibilityRole="alert"
+					style={{ fontFamily: Fonts.body, color: dangerInk(c) }}
+				>
 					{resolveErrorMessage(error, t, t("deliverySettings.saveFailed"))}
 				</Text>
 			) : null}

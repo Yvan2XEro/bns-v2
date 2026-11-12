@@ -143,6 +143,19 @@ describe("the order tiles", () => {
 		).toBeUndefined();
 	});
 
+	test("carries the awaiting-returns count as the returns badge, and no zero", () => {
+		expect(
+			visibleSellerTiles("owner", { ...counts, returnsAwaiting: 3 }, on).find(
+				(t) => t.key === "returns",
+			)?.badge,
+		).toBe(3);
+		expect(
+			visibleSellerTiles("owner", { ...counts, returnsAwaiting: 0 }, on).find(
+				(t) => t.key === "returns",
+			)?.badge,
+		).toBeUndefined();
+	});
+
 	test("read the order list only when the orders tile shows", () => {
 		expect(showsOrdersTile("staff", true)).toBe(true);
 		expect(showsOrdersTile("owner", false)).toBe(false);

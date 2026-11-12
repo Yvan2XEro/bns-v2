@@ -10,7 +10,7 @@ import { useLocaleKey } from "./useLocaleKey";
 
 /**
  * The amounts and lines exactly as the billing view states them. Amounts are
- * set in Outfit with tabular figures so a column of them lines up; the total
+ * set in Poppins with tabular figures so a column of them lines up; the total
  * due stays plain ink, not a yellow tag, because it is money the shop owes.
  */
 export function InvoiceSummaryCard({
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
 	},
 	totalAmount: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.3,
 		fontVariant: ["tabular-nums"],

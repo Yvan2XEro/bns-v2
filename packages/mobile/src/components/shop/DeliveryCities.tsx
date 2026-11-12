@@ -26,8 +26,8 @@ export function DeliveryCities({ shopId }: { shopId: string }) {
 			style={{
 				color: c.body,
 				fontFamily: Fonts.body,
-				fontSize: 14,
-				lineHeight: 20,
+				fontSize: 15,
+				lineHeight: 22,
 			}}
 		>
 			{t("shop.deliveryCities", { cities: cities.join(", ") })}

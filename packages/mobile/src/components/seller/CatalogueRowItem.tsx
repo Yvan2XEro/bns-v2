@@ -41,12 +41,58 @@ export function CatalogueRowItem({
 						price: formatPrice(row.priceMin, i18n.language),
 					})
 				: formatPrice(row.priceMin, i18n.language);
+	// A variant product says its range once, in the subtitle: "3 variantes ·
+	// 5 000 – 9 000". The chip row used to repeat it.
+	const range =
+		row.variantCount > 1 &&
+		row.priceMin !== null &&
+		row.priceMax !== null &&
+		row.priceMax !== row.priceMin
+			? formatPriceRange(row.priceMin, row.priceMax, i18n.language)
+			: null;
 	const subtitle =
 		row.variantCount > 1
-			? t("catalogue.variantsPrice", { count: row.variantCount, price })
+			? t("catalogue.variantsPrice", {
+					count: row.variantCount,
+					price: range ?? price,
+				})
 			: price;
 	const quickStep =
 		Boolean(onStep) && row.variantCount === 1 && row.trackInventory;
+	const canDecrease = !disabled && !stepping && row.stockOnHand > 0;
+	const canIncrease = !disabled && !stepping;
+	// The row is one button for a screen reader, so it carries what a sighted
+	// seller reads on it — price, stock or status — and the stepper becomes two
+	// actions on it, which the nested buttons were not reachable as.
+	const statusText =
+		row.status === "active"
+			? row.trackInventory
+				? t("product.unitsInStock", { count: row.available })
+				: null
+			: t(`catalogue.status_${row.status}`);
+	const a11yLabel = [row.title, subtitle, statusText]
+		.filter(Boolean)
+		.join(", ");
+	const a11yActions = quickStep
+		? [
+				...(canIncrease
+					? [
+							{
+								name: "increment",
+								label: t("catalogue.increaseStockFor", { title: row.title }),
+							},
+						]
+					: []),
+				...(canDecrease
+					? [
+							{
+								name: "decrement",
+								label: t("catalogue.decreaseStockFor", { title: row.title }),
+							},
+						]
+					: []),
+			]
+		: undefined;
 
 	return (
 		<Pressable
@@ -59,7 +105,18 @@ export function CatalogueRowItem({
 				},
 			]}
 			accessibilityRole="button"
-			accessibilityLabel={row.title}
+			accessibilityLabel={a11yLabel}
+			accessibilityActions={a11yActions}
+			onAccessibilityAction={(event) => {
+				if (event.nativeEvent.actionName === "increment" && canIncrease) {
+					onStep?.(1);
+				} else if (
+					event.nativeEvent.actionName === "decrement" &&
+					canDecrease
+				) {
+					onStep?.(-1);
+				}
+			}}
 		>
 			{uri ? (
 				<Image
@@ -101,21 +158,20 @@ export function CatalogueRowItem({
 							</Text>
 						</View>
 					)}
-					{row.priceMax !== null &&
-					row.priceMin !== null &&
-					row.variantCount > 1 ? (
-						<Text style={[styles.meta, { color: c.muted }]}>
-							{formatPriceRange(row.priceMin, row.priceMax, i18n.language)}
-						</Text>
-					) : null}
 				</View>
 			</View>
 			{quickStep ? (
-				<View style={[styles.stepper, { borderColor: c.border }]}>
+				<View
+					style={[styles.stepper, { borderColor: c.border }]}
+					// Reached through the row's actions; separate stops would be
+					// hidden inside the row's own button anyway.
+					importantForAccessibility="no-hide-descendants"
+					accessibilityElementsHidden
+				>
 					<Pressable
-						disabled={disabled || stepping || row.stockOnHand <= 0}
+						disabled={!canDecrease}
 						onPress={() => onStep?.(-1)}
-						hitSlop={9}
+						hitSlop={4}
 						style={styles.stepBtn}
 						accessibilityRole="button"
 						accessibilityLabel={t("catalogue.decreaseStockFor", {
@@ -124,7 +180,7 @@ export function CatalogueRowItem({
 					>
 						<Ionicons
 							name="remove"
-							size={16}
+							size={18}
 							color={row.stockOnHand <= 0 ? c.muted : c.text}
 						/>
 					</Pressable>
@@ -136,16 +192,16 @@ export function CatalogueRowItem({
 						</Text>
 					)}
 					<Pressable
-						disabled={disabled || stepping}
+						disabled={!canIncrease}
 						onPress={() => onStep?.(1)}
-						hitSlop={9}
+						hitSlop={4}
 						style={styles.stepBtn}
 						accessibilityRole="button"
 						accessibilityLabel={t("catalogue.increaseStockFor", {
 							title: row.title,
 						})}
 					>
-						<Ionicons name="add" size={16} color={c.text} />
+						<Ionicons name="add" size={18} color={c.text} />
 					</Pressable>
 				</View>
 			) : (
@@ -166,29 +222,30 @@ const styles = StyleSheet.create({
 	},
 	thumb: { width: 56, height: 56, borderRadius: 10 },
 	thumbEmpty: { alignItems: "center", justifyContent: "center" },
-	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	title: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	// The amount is what a seller scans the catalogue for: display face, ink.
 	price: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},
 	chips: { flexDirection: "row", alignItems: "center", gap: 8 },
 	status: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
-	statusText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	statusText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
+	// 40pt buttons plus a 4pt slop make a 48pt target each: outdoors a near
+	// miss must not step the wrong way or open the product instead.
 	stepper: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 6,
+		gap: 2,
 		borderWidth: 1,
-		borderRadius: 10,
-		paddingHorizontal: 4,
-		height: 34,
+		borderRadius: 12,
+		height: 44,
 	},
 	stepBtn: {
-		width: 26,
-		height: 26,
+		width: 40,
+		height: 40,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -196,6 +253,7 @@ const styles = StyleSheet.create({
 		minWidth: 22,
 		textAlign: "center",
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},

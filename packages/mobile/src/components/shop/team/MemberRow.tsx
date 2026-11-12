@@ -81,12 +81,17 @@ const styles = StyleSheet.create({
 	pressed: { opacity: 0.85 },
 	body: { flex: 1, gap: 2 },
 	nameLine: { flexDirection: "row", alignItems: "center", gap: 8 },
-	name: { fontSize: 16, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	name: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	chip: {
 		borderRadius: 999,
 		paddingHorizontal: 8,
 		paddingVertical: 2,
 	},
-	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

@@ -160,7 +160,7 @@ function ActivityRow({
 const styles = StyleSheet.create({
 	flex: { flex: 1 },
 	section: { gap: 8 },
-	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	empty: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	group: {
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -181,5 +181,9 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 4,
 	},
-	roleChipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	roleChipText: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

@@ -5,12 +5,12 @@ import { useReducer } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
-	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
 	View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
@@ -136,7 +136,11 @@ export default function ResalePurchaseOrderDetailScreen() {
 		>
 			<SellerHeader title={order.number} subtitle={translatedSide} />
 			<ScreenColumn width="reading">
-				<ScrollView contentContainerStyle={styles.content}>
+				<KeyboardAwareScrollView
+					contentContainerStyle={styles.content}
+					keyboardShouldPersistTaps="handled"
+					bottomOffset={24}
+				>
 					<Card title={t(`sellerResale.status_${order.status}`)} c={c}>
 						<Text style={[styles.body, { color: c.body }]}>
 							{order.status === "sent"
@@ -265,20 +269,40 @@ export default function ResalePurchaseOrderDetailScreen() {
 									</Pressable>
 								))}
 							</View>
+							<Text style={[styles.fieldLabel, { color: c.body }]}>
+								{t("sellerResale.trackingNumber")}
+							</Text>
 							<TextInput
+								placeholderTextColor={c.muted}
 								value={form.trackingNumber}
 								onChangeText={(trackingNumber) => patch({ trackingNumber })}
-								placeholder={t("sellerResale.trackingNumber")}
 								accessibilityLabel={t("sellerResale.trackingNumber")}
-								style={[styles.input, { color: c.text, borderColor: c.border }]}
+								style={[
+									styles.input,
+									{
+										color: c.text,
+										borderColor: c.border,
+										backgroundColor: c.input,
+									},
+								]}
 							/>
+							<Text style={[styles.fieldLabel, { color: c.body }]}>
+								{t("sellerResale.trackingUrl")}
+							</Text>
 							<TextInput
+								placeholderTextColor={c.muted}
 								value={form.trackingUrl}
 								onChangeText={(trackingUrl) => patch({ trackingUrl })}
-								placeholder={t("sellerResale.trackingUrl")}
 								accessibilityLabel={t("sellerResale.trackingUrl")}
 								autoCapitalize="none"
-								style={[styles.input, { color: c.text, borderColor: c.border }]}
+								style={[
+									styles.input,
+									{
+										color: c.text,
+										borderColor: c.border,
+										backgroundColor: c.input,
+									},
+								]}
 							/>
 							<ActionButton
 								label={t("sellerResale.ship")}
@@ -300,14 +324,25 @@ export default function ResalePurchaseOrderDetailScreen() {
 					) : null}
 					{side === "supplier" && order.status === "shipped" ? (
 						<Card title={t("sellerResale.handover")} c={c}>
+							<Text style={[styles.fieldLabel, { color: c.body }]}>
+								{t("sellerResale.handoverCode")}
+							</Text>
 							<TextInput
+								placeholderTextColor={c.muted}
 								value={form.handoverCode}
 								onChangeText={(handoverCode) => patch({ handoverCode })}
 								keyboardType="number-pad"
 								maxLength={8}
 								placeholder="••••••"
 								accessibilityLabel={t("sellerResale.handoverCode")}
-								style={[styles.input, { color: c.text, borderColor: c.border }]}
+								style={[
+									styles.input,
+									{
+										color: c.text,
+										borderColor: c.border,
+										backgroundColor: c.input,
+									},
+								]}
 							/>
 							<ActionButton
 								label={t("sellerResale.handover")}
@@ -325,13 +360,23 @@ export default function ResalePurchaseOrderDetailScreen() {
 					) : null}
 					{canDeclareDelivered ? (
 						<Card title={t("sellerResale.declareDelivered")} c={c}>
+							<Text style={[styles.fieldLabel, { color: c.body }]}>
+								{t("sellerResale.declareDeliveredNote")}
+							</Text>
 							<TextInput
+								placeholderTextColor={c.muted}
 								value={form.deliveryNote}
 								onChangeText={(deliveryNote) => patch({ deliveryNote })}
-								placeholder={t("sellerResale.declareDeliveredNote")}
 								accessibilityLabel={t("sellerResale.declareDeliveredNote")}
 								maxLength={500}
-								style={[styles.input, { color: c.text, borderColor: c.border }]}
+								style={[
+									styles.input,
+									{
+										color: c.text,
+										borderColor: c.border,
+										backgroundColor: c.input,
+									},
+								]}
 							/>
 							<ActionButton
 								label={t("sellerResale.declareDelivered")}
@@ -385,7 +430,13 @@ export default function ResalePurchaseOrderDetailScreen() {
 									</Text>
 								</Pressable>
 							))}
+							<Text style={[styles.fieldLabel, { color: c.body }]}>
+								{t("sellerResale.failedDeliveryCost", {
+									max: formatPrice(order.deliveryFee, locale),
+								})}
+							</Text>
 							<TextInput
+								placeholderTextColor={c.muted}
 								value={form.failedDeliveryCost}
 								onChangeText={(value) =>
 									patch({
@@ -393,27 +444,38 @@ export default function ResalePurchaseOrderDetailScreen() {
 									})
 								}
 								keyboardType="number-pad"
-								placeholder={t("sellerResale.failedDeliveryCost", {
-									max: formatPrice(order.deliveryFee, locale),
-								})}
 								accessibilityLabel={t("sellerResale.failedDeliveryCost", {
 									max: formatPrice(order.deliveryFee, locale),
 								})}
-								style={[styles.input, { color: c.text, borderColor: c.border }]}
+								style={[
+									styles.input,
+									{
+										color: c.text,
+										borderColor: c.border,
+										backgroundColor: c.input,
+									},
+								]}
 							/>
+							<Text style={[styles.fieldLabel, { color: c.body }]}>
+								{t("sellerResale.deliveryFailureNote")}
+							</Text>
 							<TextInput
+								placeholderTextColor={c.muted}
 								value={form.deliveryFailureNote}
 								onChangeText={(deliveryFailureNote) =>
 									patch({ deliveryFailureNote })
 								}
-								placeholder={t("sellerResale.deliveryFailureNote")}
 								accessibilityLabel={t("sellerResale.deliveryFailureNote")}
 								multiline
 								maxLength={500}
 								style={[
 									styles.input,
 									styles.note,
-									{ color: c.text, borderColor: c.border },
+									{
+										color: c.text,
+										borderColor: c.border,
+										backgroundColor: c.input,
+									},
 								]}
 							/>
 							<ActionButton
@@ -499,18 +561,27 @@ export default function ResalePurchaseOrderDetailScreen() {
 								</Pressable>
 							))}
 							{form.cancelReason === "seller_other" ? (
-								<TextInput
-									value={form.cancelNote}
-									onChangeText={(cancelNote) => patch({ cancelNote })}
-									placeholder={t("sellerResale.cancelNote")}
-									accessibilityLabel={t("sellerResale.cancelNote")}
-									multiline
-									style={[
-										styles.input,
-										styles.note,
-										{ color: c.text, borderColor: c.border },
-									]}
-								/>
+								<>
+									<Text style={[styles.fieldLabel, { color: c.body }]}>
+										{t("sellerResale.cancelNote")}
+									</Text>
+									<TextInput
+										placeholderTextColor={c.muted}
+										value={form.cancelNote}
+										onChangeText={(cancelNote) => patch({ cancelNote })}
+										accessibilityLabel={t("sellerResale.cancelNote")}
+										multiline
+										style={[
+											styles.input,
+											styles.note,
+											{
+												color: c.text,
+												borderColor: c.border,
+												backgroundColor: c.input,
+											},
+										]}
+									/>
+								</>
 							) : null}
 							<ActionButton
 								label={t("sellerResale.cancel")}
@@ -553,7 +624,7 @@ export default function ResalePurchaseOrderDetailScreen() {
 						</Text>
 					) : null}
 					{pending ? <ActivityIndicator color={c.primary} /> : null}
-				</ScrollView>
+				</KeyboardAwareScrollView>
 			</ScreenColumn>
 		</SafeAreaView>
 	);
@@ -630,7 +701,7 @@ const styles = StyleSheet.create({
 		minHeight: 52,
 		paddingHorizontal: 14,
 	},
-	writeText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	writeText: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	safe: { flex: 1 },
 	content: { padding: 16, gap: 16, paddingBottom: 40 },
 	card: {
@@ -639,13 +710,15 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 10,
 	},
-	heading: { fontSize: 17, lineHeight: 22, fontFamily: Fonts.displayBold },
-	body: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	heading: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
+	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	amount: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},
+	fieldLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	input: {
 		minHeight: 48,
 		borderWidth: 1,
@@ -673,6 +746,6 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	buttonText: { fontFamily: Fonts.bodyBold, fontSize: 16 },
-	error: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	buttonText: { fontFamily: Fonts.bodyBold, fontSize: 16, lineHeight: 22 },
+	error: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

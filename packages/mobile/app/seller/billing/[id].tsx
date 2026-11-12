@@ -18,12 +18,14 @@ import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { AmountTag } from "@/src/components/shop/Tags";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useBilling, useInvoiceDocument } from "@/src/hooks/useBilling";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { findInvoice, isPayable } from "@/src/lib/billing";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { formatOrderDate } from "@/src/lib/orderMoney";
 import { shareHtmlDocument } from "@/src/lib/shareHtmlDocument";
 
@@ -106,11 +108,21 @@ function InvoiceContent({
 					<View style={styles.head}>
 						<Text
 							accessibilityRole="header"
-							style={[s.cardTitle, { color: c.text, fontSize: 18 }]}
+							style={[
+								s.cardTitle,
+								{ color: c.text, fontSize: 18, lineHeight: 24 },
+							]}
 						>
 							{number}
 						</Text>
 						<InvoiceStatusBadge status={invoice.status} />
+					</View>
+					{/* The amount comes before "Payer": the seller sees what they pay. */}
+					<View style={styles.amount}>
+						<AmountTag
+							label={formatPrice(invoice.totalDue, locale)}
+							size="lg"
+						/>
 					</View>
 					<Text style={[s.meta, { color: c.muted }]}>
 						{t("billing.periodRange", {
@@ -134,6 +146,7 @@ function InvoiceContent({
 							<PayInvoiceButton
 								shopId={shopId}
 								invoiceId={invoice.id}
+								amountLabel={formatPrice(invoice.totalDue, locale)}
 								onSettled={refresh}
 							/>
 							<Text style={[s.meta, { color: c.muted }]}>
@@ -192,6 +205,7 @@ export default function InvoiceScreen() {
 
 const styles = StyleSheet.create({
 	content: { padding: 16, gap: 12, paddingBottom: 32 },
+	amount: { flexDirection: "row", marginVertical: 4 },
 	head: {
 		flexDirection: "row",
 		alignItems: "center",

@@ -69,19 +69,28 @@ const styles = StyleSheet.create({
 	},
 	head: { flexDirection: "row", alignItems: "center", gap: 8 },
 	stars: { flexDirection: "row", gap: 1 },
-	name: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
-	date: { fontSize: 12, fontFamily: Fonts.body },
+	name: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
+	date: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	verified: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
 		marginTop: 4,
 	},
-	verifiedText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	verifiedText: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodySemibold,
+	},
 	comment: {
-		fontSize: 14,
+		fontSize: 15,
 		fontFamily: Fonts.body,
-		lineHeight: 20,
+		lineHeight: 22,
 		marginTop: 8,
 	},
 });

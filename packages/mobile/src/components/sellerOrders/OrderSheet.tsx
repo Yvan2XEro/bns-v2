@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 20,
 	},
 	headerText: { flex: 1, gap: 4 },
-	title: { fontSize: 18, fontFamily: Fonts.displayBold },
+	title: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	subtitle: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	close: {
 		width: 48,

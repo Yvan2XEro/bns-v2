@@ -73,6 +73,7 @@ const styles = StyleSheet.create({
 	schedule: {
 		color: ON_INK.text,
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	grid: { flexDirection: "row", flexWrap: "wrap", rowGap: 12 },

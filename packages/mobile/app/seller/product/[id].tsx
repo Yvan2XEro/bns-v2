@@ -12,6 +12,7 @@ import {
 import { StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
@@ -26,6 +27,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { StepSegments } from "@/src/components/ui/StepSegments";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
+import { usePhotoUploads } from "@/src/hooks/usePhotoUploads";
 import { useProductSubmit } from "@/src/hooks/useProductSubmit";
 import { useMyShop, useProductDetail } from "@/src/hooks/useShops";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -74,10 +76,13 @@ export default function ProductScreen() {
 	useEffect(() => {
 		if (savedId) router.replace(`/seller/product/${savedId}` as never);
 	}, [savedId]);
-	const dirty =
-		creating &&
-		!savedId &&
-		JSON.stringify(form) !== JSON.stringify(emptyProductForm());
+	// Editing an existing product is guarded too: the form as last loaded or
+	// saved is the baseline, and any difference from it asks before leaving.
+	const [baseline, setBaseline] = useState<string | null>(null);
+	const formJson = JSON.stringify(form);
+	const dirty = creating
+		? !savedId && formJson !== JSON.stringify(emptyProductForm())
+		: baseline !== null && formJson !== baseline;
 	// `beforeRemove` through expo-router's own navigation: the separate
 	// @react-navigation package reads a provider that is never mounted.
 	useEffect(() => {
@@ -105,6 +110,14 @@ export default function ProductScreen() {
 		[],
 	);
 
+	// Owned by the screen, not the photo card: a photo still sending when the
+	// seller changes step is kept, and a save waits for the queue.
+	const uploads = usePhotoUploads({
+		alt: form.title,
+		onUploaded: (photo) =>
+			editForm((s) => ({ ...s, images: [...s.images, photo] })),
+	});
+
 	// A new product starts from the shop's default return policy, once.
 	const returnPolicyPrefilled = useRef(false);
 	const defaultReturnPolicy = shop?.returnPolicy;
@@ -121,7 +134,9 @@ export default function ProductScreen() {
 
 	useEffect(() => {
 		if (!creating && detail.data && !loaded) {
-			setForm(fromProductDetail(detail.data));
+			const initial = fromProductDetail(detail.data);
+			setForm(initial);
+			setBaseline(JSON.stringify(initial));
 			setLoaded(true);
 		}
 	}, [creating, detail.data, loaded]);
@@ -157,6 +172,17 @@ export default function ProductScreen() {
 	);
 
 	const submit = () => {
+		// A product saved now would silently lose the photo still sending,
+		// or the one that failed.
+		if (uploads.uploading) {
+			showError(t("product.saveError"), t("create.photosStillUploading"));
+			return;
+		}
+		if (uploads.failed) {
+			if (creating) setStep(1);
+			showError(t("product.saveError"), t("edit.photosFailedOnSave"));
+			return;
+		}
 		setShowErrors(true);
 		const blocking = firstProductIssueStep(formIssues);
 		if (blocking) {
@@ -197,13 +223,15 @@ export default function ProductScreen() {
 				// rejected — rebuild from the response so trimmed/normalised
 				// values (and new variant ids/stock) are what the seller sees.
 				if (detail.data) {
-					setForm(
-						fromProductDetail({
-							...detail.data,
-							product: result.product,
-							variants: result.variants,
-						}),
-					);
+					const saved = fromProductDetail({
+						...detail.data,
+						product: result.product,
+						variants: result.variants,
+					});
+					setForm(saved);
+					setBaseline(JSON.stringify(saved));
+				} else {
+					setBaseline(JSON.stringify(form));
 				}
 				showSuccess(t("product.savedTitle"), t("product.savedMessage"));
 			},
@@ -279,6 +307,7 @@ export default function ProductScreen() {
 						<ProductWizardContent
 							form={form}
 							setForm={editForm}
+							uploads={uploads}
 							step={step}
 							issues={visibleIssues}
 							canManageCost={canManageCost}
@@ -288,6 +317,7 @@ export default function ProductScreen() {
 						<ProductEditorContent
 							form={form}
 							setForm={editForm}
+							uploads={uploads}
 							issues={visibleIssues}
 							readOnly={readOnly}
 							canManageCost={canManageCost}
@@ -322,5 +352,5 @@ const styles = StyleSheet.create({
 		padding: 12,
 		borderRadius: 12,
 	},
-	bannerText: { flex: 1, fontSize: 14, lineHeight: 20 },
+	bannerText: { flex: 1, fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 });

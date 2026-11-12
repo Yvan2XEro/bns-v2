@@ -81,7 +81,7 @@ export function priceUnitToSend(
 
 const styles = StyleSheet.create({
 	wrap: { marginTop: 12, gap: 8 },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	chip: {
 		minHeight: 38,
@@ -90,5 +90,5 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 		justifyContent: "center",
 	},
-	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

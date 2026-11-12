@@ -1,17 +1,17 @@
 import "../src/lib/i18n";
 import { Ionicons } from "@expo/vector-icons";
 import {
-	DMSans_400Regular,
-	DMSans_500Medium,
-	DMSans_600SemiBold,
-	DMSans_700Bold,
-} from "@expo-google-fonts/dm-sans";
+	Inter_400Regular,
+	Inter_500Medium,
+	Inter_600SemiBold,
+	Inter_700Bold,
+} from "@expo-google-fonts/inter";
 import {
-	Outfit_500Medium,
-	Outfit_600SemiBold,
-	Outfit_700Bold,
-	Outfit_800ExtraBold,
-} from "@expo-google-fonts/outfit";
+	Poppins_500Medium,
+	Poppins_600SemiBold,
+	Poppins_700Bold,
+	Poppins_800ExtraBold,
+} from "@expo-google-fonts/poppins";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -149,7 +149,7 @@ const errorStyles = StyleSheet.create({
 	title: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		textAlign: "center",
 	},
 	message: {
@@ -171,6 +171,7 @@ const errorStyles = StyleSheet.create({
 		color: Colors.light.primaryForeground,
 		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
+		lineHeight: 22,
 	},
 });
 
@@ -243,14 +244,14 @@ export default function RootLayout() {
 
 	const [fontsLoaded, fontError] = useFonts({
 		...Ionicons.font,
-		DMSans_400Regular,
-		DMSans_500Medium,
-		DMSans_600SemiBold,
-		DMSans_700Bold,
-		Outfit_500Medium,
-		Outfit_600SemiBold,
-		Outfit_700Bold,
-		Outfit_800ExtraBold,
+		Inter_400Regular,
+		Inter_500Medium,
+		Inter_600SemiBold,
+		Inter_700Bold,
+		Poppins_500Medium,
+		Poppins_600SemiBold,
+		Poppins_700Bold,
+		Poppins_800ExtraBold,
 	});
 
 	// A font that fails to resolve must not strand the user on the splash
@@ -475,7 +476,14 @@ function RootLayoutNav() {
 	return (
 		<ThemeProvider value={colorScheme === "dark" ? NdopDark : NdopLight}>
 			<SellerBrandProvider>
-				<Stack>
+				<Stack
+					// Every screen draws its own header today; a native one shown by
+					// mistake would still speak the app's type, not the system's.
+					screenOptions={{
+						headerTitleStyle: { fontFamily: Fonts.displayBold },
+						headerBackTitleStyle: { fontFamily: Fonts.body },
+					}}
+				>
 					<Stack.Screen name="onboarding" options={{ headerShown: false }} />
 					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 					<Stack.Screen name="(seller-tabs)" options={{ headerShown: false }} />

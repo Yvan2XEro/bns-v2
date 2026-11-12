@@ -1,9 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	useInfiniteQuery,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+	ActivityIndicator,
 	FlatList,
 	Platform,
 	Pressable,
@@ -27,6 +33,7 @@ import {
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { withContentLocale } from "@/src/lib/contentLocale";
 import { appDateLocale, parseDate } from "@/src/lib/formatDate";
@@ -34,8 +41,45 @@ import i18n, { useTranslation } from "@/src/lib/i18n";
 import { kindPriceText, listingKindRules } from "@/src/lib/listingKind";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
+import { rejectionText } from "../../../../api/src/contracts/listingRejection";
 
-type FilterKey = "all" | "published" | "pending" | "sold" | "expired";
+type FilterKey =
+	| "all"
+	| "published"
+	| "pending"
+	| "rejected"
+	| "sold"
+	| "expired";
+
+const FILTER_KEYS: FilterKey[] = [
+	"all",
+	"published",
+	"pending",
+	"rejected",
+	"sold",
+	"expired",
+];
+
+/** `?filter=` opens on one chip; a draft waits with the pending ones. */
+function initialFilter(param: string | string[] | undefined): FilterKey {
+	const value = Array.isArray(param) ? param[0] : param;
+	if (value === "draft") return "pending";
+	return FILTER_KEYS.includes(value as FilterKey)
+		? (value as FilterKey)
+		: "all";
+}
+
+const PAGE_SIZE = 20;
+const WAITING_STATUSES = ["pending", "review", "draft"];
+
+/** The server-side filter for one chip: lists are paged, so it cannot be local. */
+function statusWhere(filter: FilterKey): string {
+	if (filter === "all") return "";
+	if (filter === "pending") {
+		return `&where[status][in]=${WAITING_STATUSES.join(",")}`;
+	}
+	return `&where[status][equals]=${filter}`;
+}
 type Palette = ReturnType<typeof useGroupedColors>;
 
 const isWaiting = (status: string | undefined) =>
@@ -88,6 +132,7 @@ function RowAction({
 	color,
 	onPress,
 	accessibilityLabel,
+	disabled,
 	c,
 }: {
 	icon: keyof typeof Ionicons.glyphMap;
@@ -95,13 +140,16 @@ function RowAction({
 	color: string;
 	onPress: () => void;
 	accessibilityLabel: string;
+	disabled?: boolean;
 	c: Palette;
 }) {
 	return (
 		<Pressable
 			onPress={onPress}
+			disabled={disabled}
 			accessibilityRole="button"
 			accessibilityLabel={accessibilityLabel}
+			accessibilityState={{ disabled: Boolean(disabled) }}
 			android_ripple={{ color: c.well }}
 			style={({ pressed }) => [
 				styles.rowAction,
@@ -123,41 +171,68 @@ export function MyListingsScreen() {
 	const { centeredContent } = useResponsive();
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
-	const { showConfirm } = useAlert();
+	const { showConfirm, showError, showSuccess, confirm } = useAlert();
 	const { t } = useTranslation();
-	const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
+	const params = useLocalSearchParams<{ filter?: string }>();
+	const [activeFilter, setActiveFilter] = useState<FilterKey>(() =>
+		initialFilter(params.filter),
+	);
 	const danger = c.isDark ? c.dangerText : c.destructive;
 
-	const { data, isLoading, isError, refetch } = useQuery({
-		queryKey: ["my-listings"],
-		queryFn: () =>
-			api.get<{ docs: any[]; totalDocs: number }>(
+	// Paged by the server and filtered there, so a shop with 200 listings
+	// sees all of them, page by page, in every chip.
+	const {
+		data,
+		isLoading,
+		isError,
+		refetch,
+		hasNextPage,
+		fetchNextPage,
+		isFetchingNextPage,
+	} = useInfiniteQuery({
+		queryKey: ["my-listings", activeFilter],
+		queryFn: ({ pageParam = 1 }) =>
+			api.get<{
+				docs: any[];
+				totalDocs: number;
+				hasNextPage: boolean;
+				nextPage: number | null;
+			}>(
 				withContentLocale(
-					`/api/listings?where[seller][equals]=${user?.id}&limit=50&sort=-createdAt&depth=1&draft=true`,
+					`/api/listings?where[seller][equals]=${user?.id}${statusWhere(activeFilter)}&limit=${PAGE_SIZE}&page=${pageParam}&sort=-createdAt&depth=1&draft=true`,
 				),
 			),
+		getNextPageParam: (lastPage) =>
+			lastPage?.hasNextPage ? lastPage.nextPage : undefined,
+		initialPageParam: 1,
 		enabled: !!user,
 	});
 
-	const listings = data?.docs ?? [];
-
-	const counts = useMemo(
-		() => ({
-			all: listings.length,
-			published: listings.filter((l: any) => l.status === "published").length,
-			pending: listings.filter((l: any) => isWaiting(l.status)).length,
-			sold: listings.filter((l: any) => l.status === "sold").length,
-			expired: listings.filter((l: any) => l.status === "expired").length,
-		}),
-		[listings],
+	const filtered = useMemo(
+		() => data?.pages.flatMap((page) => page?.docs ?? []) ?? [],
+		[data],
 	);
 
-	const filtered = useMemo(() => {
-		if (activeFilter === "all") return listings;
-		if (activeFilter === "pending")
-			return listings.filter((l: any) => isWaiting(l.status));
-		return listings.filter((l: any) => l.status === activeFilter);
-	}, [listings, activeFilter]);
+	// The chips' counts come from every listing's status alone (a few bytes
+	// each), not from the page loaded so far.
+	const { data: statusData } = useQuery({
+		queryKey: ["my-listings", "counts"],
+		queryFn: () =>
+			api.get<{ docs: { status?: string }[]; totalDocs: number }>(
+				`/api/listings?where[seller][equals]=${user?.id}&select[status]=true&depth=0&limit=1000&draft=true`,
+			),
+		enabled: !!user,
+	});
+	const statuses = statusData?.docs ?? [];
+	const counts: Record<FilterKey, number> = {
+		all: statusData?.totalDocs ?? statuses.length,
+		published: statuses.filter((l) => l.status === "published").length,
+		pending: statuses.filter((l) => isWaiting(l.status)).length,
+		rejected: statuses.filter((l) => l.status === "rejected").length,
+		sold: statuses.filter((l) => l.status === "sold").length,
+		expired: statuses.filter((l) => l.status === "expired").length,
+	};
+	const hasAny = counts.all > 0 || filtered.length > 0;
 
 	// One row of filters that also carries the counts; a filter with nothing
 	// in it stays hidden, unless it is the one selected.
@@ -165,6 +240,10 @@ export function MyListingsScreen() {
 		{ key: "all", label: t("listings.filterAll") },
 		{ key: "published", label: t("listings.filterPublished") },
 		{ key: "pending", label: t("listings.filterPending") },
+		{
+			key: "rejected",
+			label: t("listings.filterRejected", { defaultValue: "Refusées" }),
+		},
 		{ key: "sold", label: t("listings.filterSold") },
 		{ key: "expired", label: t("listings.filterExpired") },
 	];
@@ -172,18 +251,44 @@ export function MyListingsScreen() {
 		(f) => f.key === "all" || counts[f.key] > 0 || f.key === activeFilter,
 	);
 
-	const { mutate: markSold } = useMutation({
+	// Offline or on a timeout, a confirmed action says so instead of leaving
+	// the card as it was; while it runs, the card is dimmed and its actions
+	// are off.
+	const onActionError = (err: unknown) =>
+		showError(t("common.error"), resolveErrorMessage(err, t));
+
+	const {
+		mutate: markSold,
+		isPending: markingSold,
+		variables: soldId,
+	} = useMutation({
 		mutationFn: (id: string) =>
 			api.patch(`/api/listings/${id}`, { status: "sold" }),
-		onSuccess: () =>
-			queryClient.invalidateQueries({ queryKey: ["my-listings"] }),
+		onSuccess: () => {
+			showSuccess(
+				t("listings.markedSold", {
+					defaultValue: "Annonce marquée comme vendue",
+				}),
+			);
+			return queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+		},
+		onError: onActionError,
 	});
 
-	const { mutate: deleteListing } = useMutation({
+	const {
+		mutate: deleteListing,
+		isPending: deletingListing,
+		variables: deletedId,
+	} = useMutation({
 		mutationFn: (id: string) => api.delete(`/api/listings/${id}`),
-		onSuccess: () =>
-			queryClient.invalidateQueries({ queryKey: ["my-listings"] }),
+		onSuccess: () => {
+			showSuccess(t("listings.deleted", { defaultValue: "Annonce supprimée" }));
+			return queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+		},
+		onError: onActionError,
 	});
+
+	const busyId = markingSold ? soldId : deletingListing ? deletedId : null;
 
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
@@ -202,6 +307,11 @@ export function MyListingsScreen() {
 		const closeLabel = t(
 			`listingKind.markClosed.${listingKindRules(item.kind).closedAs}`,
 		);
+		const busy = busyId === item.id;
+		const rejected = item.status === "rejected";
+		const reason = rejected
+			? rejectionText(item, (code) => t(`listingRejection.${code}`))
+			: null;
 		const price = kindPriceText(
 			item.price ? formatPrice(item.price, i18n.language) : null,
 			item,
@@ -213,12 +323,14 @@ export function MyListingsScreen() {
 				style={[
 					styles.card,
 					{ backgroundColor: c.card, borderColor: c.border },
+					busy ? styles.cardBusy : null,
 				]}
+				accessibilityState={{ busy }}
 			>
 				<Pressable
 					onPress={() => router.push(`/listing/${item.id}`)}
 					accessibilityRole="button"
-					accessibilityLabel={[item.title, price, status.label, date]
+					accessibilityLabel={[item.title, price, status.label, reason, date]
 						.filter(Boolean)
 						.join(", ")}
 					android_ripple={{ color: c.well }}
@@ -274,17 +386,40 @@ export function MyListingsScreen() {
 									{date}
 								</Text>
 							) : null}
+							{busy ? <ActivityIndicator size="small" color={c.link} /> : null}
 						</View>
+						{/* A refused listing says why, so the fix is obvious. */}
+						{reason ? (
+							<Text
+								style={[styles.reason, { color: c.dangerText }]}
+								numberOfLines={3}
+							>
+								{reason}
+							</Text>
+						) : null}
 					</View>
 				</Pressable>
 
 				<View style={[styles.actions, { borderTopColor: c.border }]}>
 					<RowAction
 						c={c}
-						icon="pencil-outline"
-						label={t("common.edit")}
+						icon={rejected ? "refresh-outline" : "pencil-outline"}
+						label={
+							rejected
+								? t("listings.fixAndResubmit", {
+										defaultValue: "Corriger et renvoyer",
+									})
+								: t("common.edit")
+						}
 						color={c.link}
-						accessibilityLabel={`${t("common.edit")}, ${item.title}`}
+						disabled={busy}
+						accessibilityLabel={`${
+							rejected
+								? t("listings.fixAndResubmit", {
+										defaultValue: "Corriger et renvoyer",
+									})
+								: t("common.edit")
+						}, ${item.title}`}
 						onPress={() => router.push(`/listing/${item.id}/edit`)}
 					/>
 					{item.status === "published" ? (
@@ -294,6 +429,7 @@ export function MyListingsScreen() {
 							label={closeLabel}
 							color={c.successText}
 							accessibilityLabel={`${closeLabel}, ${item.title}`}
+							disabled={busy}
 							onPress={() =>
 								showConfirm(closeLabel, t("listings.markAsSoldConfirm"), () =>
 									markSold(item.id),
@@ -307,11 +443,22 @@ export function MyListingsScreen() {
 						label={t("common.delete")}
 						color={danger}
 						accessibilityLabel={`${t("common.delete")}, ${item.title}`}
-						onPress={() =>
-							showConfirm(t("common.delete"), t("listings.deleteConfirm"), () =>
-								deleteListing(item.id),
-							)
-						}
+						disabled={busy}
+						onPress={async () => {
+							// Named, so two near-identical titles cannot be confused.
+							const ok = await confirm(
+								t("listings.deleteNamedConfirm", {
+									title: item.title,
+									defaultValue: "Supprimer « {{title}} » ?",
+								}),
+								t("listings.deleteNamedMessage", {
+									defaultValue:
+										"L'annonce disparaît pour les acheteurs. Vous ne pourrez pas la récupérer.",
+								}),
+								{ destructive: true, confirmText: t("common.delete") },
+							);
+							if (ok) deleteListing(item.id);
+						}}
 					/>
 				</View>
 			</View>
@@ -343,7 +490,7 @@ export function MyListingsScreen() {
 
 			{isLoading ? (
 				<OrderListSkeleton rows={5} />
-			) : isError && listings.length === 0 ? (
+			) : isError && filtered.length === 0 ? (
 				<EmptyState
 					icon="alert-circle-outline"
 					title={t("common.error")}
@@ -362,8 +509,17 @@ export function MyListingsScreen() {
 							colors={[c.primary]}
 						/>
 					}
+					onEndReached={() => {
+						if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+					}}
+					onEndReachedThreshold={0.5}
+					ListFooterComponent={
+						isFetchingNextPage ? (
+							<ActivityIndicator style={styles.footer} color={c.link} />
+						) : null
+					}
 					ListHeaderComponent={
-						listings.length > 0 ? (
+						hasAny ? (
 							<ScrollView
 								horizontal
 								showsHorizontalScrollIndicator={false}
@@ -450,6 +606,14 @@ export function MyListingsScreen() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 
+	cardBusy: { opacity: 0.55 },
+	reason: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyMedium,
+		marginTop: 4,
+	},
+	footer: { paddingVertical: 16 },
 	newBtn: {
 		width: 44,
 		height: 44,
@@ -475,8 +639,8 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		paddingHorizontal: 14,
 	},
-	filterText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	filterCount: { fontSize: 14, fontFamily: Fonts.displayBold },
+	filterText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	filterCount: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 
 	/* List */
 	listContent: {
@@ -534,5 +698,9 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		paddingHorizontal: 8,
 	},
-	rowActionText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	rowActionText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { TextStyles } from "@/constants/theme";
 import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
+import type { PhotoUploads } from "@/src/hooks/usePhotoUploads";
 import type { FieldIssue } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -19,6 +20,7 @@ import { VariantsStep } from "./VariantsStep";
 export function ProductWizardContent({
 	form,
 	setForm,
+	uploads,
 	step,
 	issues,
 	canManageCost,
@@ -26,6 +28,8 @@ export function ProductWizardContent({
 }: {
 	form: ProductFormState;
 	setForm: Dispatch<SetStateAction<ProductFormState>>;
+	/** The screen owns the photo queue, so it survives step changes and can block a save. */
+	uploads: PhotoUploads;
 	step: 1 | 2 | 3;
 	/** The issues to show; empty until the seller tries to move on or the server refuses. */
 	issues: FieldIssue[];
@@ -52,7 +56,33 @@ export function ProductWizardContent({
 				</Text>
 			</View>
 			{step === 1 ? (
-				<ProductInfoStep form={form} setForm={setForm} issues={stepIssues} />
+				<ProductInfoStep
+					form={form}
+					setForm={setForm}
+					uploads={uploads}
+					issues={stepIssues}
+				/>
+			) : null}
+			{/* Off the photo step, the queue is out of sight: say what it is
+			    doing, and that a failed photo will not be saved. */}
+			{step > 1 && uploads.uploading ? (
+				<Text
+					style={[f.hint, { color: c.muted }]}
+					accessibilityLiveRegion="polite"
+				>
+					{t("create.photosStillUploading")}
+				</Text>
+			) : null}
+			{step > 1 && uploads.failed ? (
+				<Text
+					style={[f.error, { color: dangerInk(c) }]}
+					accessibilityRole="alert"
+				>
+					{t("product.photosFailedElsewhere", {
+						defaultValue:
+							"Une photo n’a pas été envoyée. Revenez à l’étape 1 pour la réessayer ou la retirer.",
+					})}
+				</Text>
 			) : null}
 			{step === 2 ? (
 				<VariantsStep

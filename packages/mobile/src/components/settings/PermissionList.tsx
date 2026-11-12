@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
 		gap: 5,
 		marginTop: 3,
 	},
-	statusText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	statusText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	skeleton: { height: 12, width: "60%", borderRadius: 6, marginTop: 6 },
 	button: {
 		minHeight: 36,
@@ -169,5 +169,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		alignSelf: "center",
 	},
-	buttonText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	buttonText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

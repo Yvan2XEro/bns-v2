@@ -191,6 +191,7 @@ export function ShopDetailsForm({ phone }: { phone: PhoneStatus }) {
 				disabled={!canSubmit}
 				accessibilityRole="button"
 				accessibilityLabel={t("shop.createSubmit")}
+				accessibilityState={{ disabled: !canSubmit, busy: isPending }}
 				style={[
 					styles.submit,
 					{ backgroundColor: c.sell, opacity: canSubmit ? 1 : 0.5 },
@@ -219,8 +220,8 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
 	},
-	previewName: { fontSize: 17, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	previewName: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	input: {
 		height: 50,
 		borderRadius: 12,
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		fontFamily: Fonts.body,
 	},
-	hint: { fontSize: 12, fontFamily: Fonts.body },
+	hint: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	phoneRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -237,12 +238,22 @@ const styles = StyleSheet.create({
 		padding: 12,
 		borderRadius: 12,
 	},
-	phoneText: { flex: 1, fontSize: 13, fontFamily: Fonts.bodySemibold },
+	phoneText: {
+		flex: 1,
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+	},
 	submit: {
 		height: 54,
 		borderRadius: 14,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#12163a", fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: {
+		color: "#12163a",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

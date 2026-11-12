@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { isPayable } from "@/src/lib/billing";
 import { useTranslation } from "@/src/lib/i18n";
@@ -78,7 +79,12 @@ export function InvoiceRow({
 const styles = StyleSheet.create({
 	row: { gap: 10 },
 	main: { gap: 4, minHeight: 48 },
-	total: { fontSize: 20, lineHeight: 25, marginTop: 2 },
+	total: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 20,
+		lineHeight: 28,
+		marginTop: 2,
+	},
 	head: {
 		flexDirection: "row",
 		alignItems: "center",

@@ -736,6 +736,16 @@ export default function ShopScreen() {
 										? t("shop.noListingsFiltered")
 										: t("shop.noListings")
 								}
+								// A filtered dead end gets its way back to the whole shop.
+								{...(activeQuery || category
+									? {
+											ctaLabel: t("shop.showWholeShop"),
+											onCta: () => {
+												setCategory(null);
+												closeSearch();
+											},
+										}
+									: {})}
 								size={140}
 							/>
 						)
@@ -750,10 +760,16 @@ export default function ShopScreen() {
 							) : null}
 							<Pressable
 								onPress={() =>
-									router.push({
-										pathname: "/report",
-										params: { targetType: "shop", targetId: shop.id },
-									})
+									// Reporting needs an account: ask before the form.
+									user
+										? router.push({
+												pathname: "/report",
+												params: { targetType: "shop", targetId: shop.id },
+											})
+										: router.push({
+												pathname: "/auth/login",
+												params: getAuthModalParams(pathname),
+											})
 								}
 								style={({ pressed }) => [
 									styles.report,
@@ -792,7 +808,7 @@ export default function ShopScreen() {
 						onSearchEverywhere={() =>
 							router.push({
 								pathname: "/(tabs)/search",
-								params: { q: activeQuery },
+								params: { q: activeQuery, entry: String(Date.now()) },
 							})
 						}
 					/>
@@ -863,7 +879,7 @@ const styles = StyleSheet.create({
 	sticky: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 },
 	section: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},
@@ -880,7 +896,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		borderWidth: 1,
 	},
-	retryText: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	retryText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	about: { gap: 20 },
 	aboutBlock: { gap: 6 },
 	row: { flexDirection: "row", marginBottom: 16 },
@@ -901,7 +917,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		marginVertical: 12,
 	},
-	reportText: { fontSize: 14, fontFamily: Fonts.bodyMedium },
+	reportText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyMedium },
 	pressed: { opacity: 0.6 },
 	hint: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 19 },
 	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
@@ -916,7 +932,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 12,
 	},
-	primaryText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	primaryText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	iconBtn: {
 		width: 52,
 		height: 52,

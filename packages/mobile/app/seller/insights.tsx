@@ -1,7 +1,7 @@
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -9,6 +9,7 @@ import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import {
 	InsightProductRow,
+	InsightsActions,
 	InsightsFooter,
 	InsightsHeader,
 } from "@/src/components/shop/SellerInsightsPanels";
@@ -33,8 +34,13 @@ export default function SellerInsightsScreen() {
 	const role = mine.data?.role;
 	const allowed = insightsEnabled && can(role, "costs.view");
 	const insights = useShopInsights(allowed ? shop?.id : undefined, period);
+	// Switching 7 j / 30 j keeps the last figures on screen, dimmed, while the
+	// new period loads (the hook keeps the previous period as placeholder),
+	// instead of blanking the screen and its period tabs.
+	const shown = insights.data;
+	const switching = insights.isPlaceholderData;
 
-	if (mine.isLoading || (allowed && insights.isLoading)) {
+	if (mine.isLoading || (allowed && insights.isLoading && !shown)) {
 		return (
 			<SafeAreaView
 				edges={["top"]}
@@ -46,7 +52,7 @@ export default function SellerInsightsScreen() {
 		);
 	}
 
-	if (!shop || !allowed || insights.isError || !insights.data) {
+	if (!shop || !allowed || (insights.isError && !insights.data) || !shown) {
 		return (
 			<SafeAreaView
 				edges={["top"]}
@@ -63,7 +69,7 @@ export default function SellerInsightsScreen() {
 		);
 	}
 
-	const view = insights.data;
+	const view = shown;
 	const handleAction = (action: ShopInsightAction) => {
 		switch (action.type) {
 			case "awaiting_reply":
@@ -104,14 +110,35 @@ export default function SellerInsightsScreen() {
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
 			<SellerHeader title={t("sellerInsights.title")} subtitle={shop.name} />
-			<ScreenColumn width="wide">
+			<ScreenColumn
+				width="wide"
+				style={switching ? styles.switching : undefined}
+			>
 				<FlashList
+					refreshControl={
+						<RefreshControl
+							refreshing={insights.isRefetching && !switching}
+							onRefresh={() => void insights.refetch()}
+							tintColor={c.primary}
+							colors={[c.primary]}
+							progressBackgroundColor={c.card}
+						/>
+					}
 					data={view.topProducts}
 					keyExtractor={(item) => item.productId}
 					contentContainerStyle={styles.list}
 					ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
 					ListHeaderComponent={
-						<InsightsHeader view={view} period={period} onPeriod={setPeriod} />
+						<InsightsHeader
+							view={view}
+							period={period}
+							onPeriod={setPeriod}
+							actions={
+								<View style={styles.actions}>
+									<InsightsActions view={view} onAction={handleAction} />
+								</View>
+							}
+						/>
 					}
 					ListEmptyComponent={
 						<View style={styles.emptyProducts}>
@@ -124,7 +151,11 @@ export default function SellerInsightsScreen() {
 						</View>
 					}
 					ListFooterComponent={
-						<InsightsFooter view={view} onAction={handleAction} />
+						<InsightsFooter
+							view={view}
+							onAction={handleAction}
+							showActions={false}
+						/>
 					}
 					renderItem={({ item }) => <InsightProductRow product={item} />}
 				/>
@@ -137,4 +168,6 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	list: { paddingBottom: 20 },
 	emptyProducts: { paddingVertical: 8 },
+	switching: { opacity: 0.55 },
+	actions: { marginTop: 4 },
 });

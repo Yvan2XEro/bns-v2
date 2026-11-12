@@ -39,7 +39,12 @@ export function HoldsList({ holds }: { holds: PaymentHoldView[] }) {
 						{ backgroundColor: c.warningSoft, borderColor: c.warningSoft },
 					]}
 				>
-					<Text style={[s.cardTitle, { color: c.warningText, fontSize: 13 }]}>
+					<Text
+						style={[
+							s.cardTitle,
+							{ color: c.warningText, fontSize: 13, lineHeight: 18 },
+						]}
+					>
 						{t(HOLD_CATEGORY_LABELS[hold.reasonCategory])}
 					</Text>
 					<Text style={[s.meta, { color: c.body }]}>

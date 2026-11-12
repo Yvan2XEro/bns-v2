@@ -35,7 +35,7 @@ import type {
 export default function TeamScreen() {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const { showError, showConfirm } = useAlert();
+	const { showError, showConfirm, showSuccess } = useAlert();
 	const myShop = useMyShop();
 	const shop = myShop.data?.shop;
 	const role = myShop.data?.role ?? null;
@@ -59,7 +59,11 @@ export default function TeamScreen() {
 			onSuccess: (result) => {
 				if (!result.delivered) {
 					showError(t("team.inviteFailedTitle"), t("team.deliveredFalse"));
+					return;
 				}
+				showSuccess(
+					t("team.inviteResent", { target: invitation.maskedTarget }),
+				);
 			},
 			onError: (error) =>
 				showError(t("team.actionErrorTitle"), resolveErrorMessage(error, t)),
@@ -262,13 +266,13 @@ const styles = StyleSheet.create({
 	header: { gap: 12, marginBottom: 16 },
 	footer: { marginTop: 28, gap: 10 },
 	sectionTitle: {
-		fontSize: 19,
-		lineHeight: 24,
+		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 	},
 	matrix: { marginTop: 28 },
-	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	inviteWrap: { gap: 8 },
 	inviteBtn: {
 		flexDirection: "row",
@@ -278,5 +282,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	inviteText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	inviteText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

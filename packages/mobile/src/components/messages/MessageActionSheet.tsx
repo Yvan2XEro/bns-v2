@@ -26,11 +26,15 @@ export interface MessageAction {
 	label: string;
 	icon: keyof typeof Ionicons.glyphMap;
 	onPress: () => void;
+	/** For what removes or blocks: drawn in the danger text tone. */
+	tone?: "danger";
 }
 
 interface MessageActionSheetProps {
-	/** The message the actions apply to; null closes the sheet. */
+	/** The message the actions apply to; null closes the sheet unless `visible` is given. */
 	preview: string | null;
+	/** Opens the sheet with no message preview (the thread's own menu). */
+	visible?: boolean;
 	actions: MessageAction[];
 	onClose: () => void;
 }
@@ -47,6 +51,7 @@ const EXIT_DELAY = 200;
  */
 export function MessageActionSheet({
 	preview,
+	visible: visibleProp,
 	actions,
 	onClose,
 }: MessageActionSheetProps) {
@@ -56,7 +61,7 @@ export function MessageActionSheet({
 	const reduced = useReducedMotion();
 	const insets = useSafeAreaInsets();
 	const { isTablet, width, dialogMaxWidth } = useResponsive();
-	const visible = preview !== null;
+	const visible = visibleProp ?? preview !== null;
 
 	// The text stays on screen while the sheet slides away.
 	const [shown, setShown] = useState<string | null>(preview);
@@ -146,9 +151,16 @@ export function MessageActionSheet({
 				<View style={[styles.handle, { backgroundColor: C.border }]} />
 
 				{shown ? (
-					<View style={[styles.preview, { backgroundColor: C.well }]}>
+					<View
+						style={[styles.preview, { backgroundColor: C.well }]}
+						accessible
+						accessibilityRole="summary"
+						accessibilityLabel={t("messages.actionsPreview", {
+							text: shown.slice(0, 160),
+						})}
+					>
 						<Text
-							style={[styles.previewText, { color: C.mutedForeground }]}
+							style={[styles.previewText, { color: C.body }]}
 							numberOfLines={3}
 						>
 							{shown}
@@ -157,22 +169,31 @@ export function MessageActionSheet({
 				) : null}
 
 				<View style={styles.actions}>
-					{rows.map((action) => (
-						<Pressable
-							key={action.key}
-							onPress={() => choose(action)}
-							accessibilityRole="button"
-							style={({ pressed }) => [
-								styles.action,
-								{ backgroundColor: pressed ? C.well : "transparent" },
-							]}
-						>
-							<Ionicons name={action.icon} size={22} color={C.foreground} />
-							<Text style={[styles.actionText, { color: C.foreground }]}>
-								{action.label}
-							</Text>
-						</Pressable>
-					))}
+					{rows.map((action) => {
+						const tint = action.tone === "danger" ? C.dangerText : C.foreground;
+						return (
+							<Pressable
+								key={action.key}
+								onPress={() => choose(action)}
+								accessibilityRole="button"
+								// Which message the action applies to, for a screen reader.
+								accessibilityLabel={
+									shown
+										? `${action.label}, ${shown.slice(0, 80)}`
+										: action.label
+								}
+								style={({ pressed }) => [
+									styles.action,
+									{ backgroundColor: pressed ? C.well : "transparent" },
+								]}
+							>
+								<Ionicons name={action.icon} size={22} color={tint} />
+								<Text style={[styles.actionText, { color: tint }]}>
+									{action.label}
+								</Text>
+							</Pressable>
+						);
+					})}
 				</View>
 
 				<Pressable
@@ -223,7 +244,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 		marginBottom: 8,
 	},
-	previewText: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	previewText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	actions: { paddingVertical: 4 },
 	action: {
 		flexDirection: "row",
@@ -233,7 +254,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		borderRadius: 12,
 	},
-	actionText: { fontSize: 16, fontFamily: Fonts.bodySemibold },
+	actionText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	cancel: {
 		minHeight: 52,
 		borderRadius: 12,
@@ -242,5 +263,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 8,
 	},
-	cancelText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	cancelText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

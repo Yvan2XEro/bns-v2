@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
@@ -18,13 +18,17 @@ import { Colors, Fonts, TextStyles } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
+import { EmptyState } from "@/src/components/EmptyState";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
 import {
 	PriceUnitChips,
 	priceUnitToSend,
 } from "@/src/components/listing/PriceUnitChips";
 import { SkeletonBox } from "@/src/components/listing/Skeletons";
-import { PendingPhotoTile } from "@/src/components/PendingPhotoTile";
+import {
+	PendingPhotoErrors,
+	PendingPhotoTile,
+} from "@/src/components/PendingPhotoTile";
 import { FieldIssueText } from "@/src/components/seller/FieldIssueText";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { StatusTag, type StatusTone } from "@/src/components/shop/Tags";
@@ -55,6 +59,7 @@ import {
 	getCategoryAttributes,
 	getListingFormPreset,
 	groupListingAttributes,
+	groupPriceDigits,
 	isProductListingCategory,
 	type ListingAttribute,
 	listingDraftIssues,
@@ -362,7 +367,7 @@ export default function EditListingScreen() {
 	const borderColor = C.border;
 	const inputBg = C.well;
 
-	const { data, isLoading } = useQuery({
+	const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
 		queryKey: ["listing", id],
 		queryFn: () => api.get<any>(`/api/listings/${id}?depth=2`),
 		enabled: !!id,
@@ -437,9 +442,15 @@ export default function EditListingScreen() {
 	);
 	const wasInShop = Boolean(listing?.shop);
 
+	// The form as loaded, to tell an edit from what the server sent. Bumped by
+	// each hydration below; the snapshot is taken on the render after it.
+	const [hydration, setHydration] = useState(0);
+	const [baseline, setBaseline] = useState<string | null>(null);
+
 	// Initialize once listing is loaded
 	useEffect(() => {
 		if (!listing) return;
+		setHydration((n) => n + 1);
 		const s = listing.status ?? "pending";
 		setNextStatus(s === "draft" ? "draft" : "pending");
 		setTitle(listing.title ?? "");
@@ -499,6 +510,7 @@ export default function EditListingScreen() {
 	useEffect(() => {
 		if (!applicableTagIds) return;
 		setSelectedTagIds((ids) => pruneTagIds(ids, applicableTagIds));
+		setHydration((n) => n + 1);
 	}, [applicableTagIds]);
 
 	const categoryAttributes = useMemo(
@@ -530,6 +542,19 @@ export default function EditListingScreen() {
 		photoLimit: photosIncluded,
 	});
 	const draftKey = JSON.stringify(draft);
+	// Everything the save sends, for the leave guard.
+	const formKey = JSON.stringify([
+		draftKey,
+		duration,
+		priceUnit,
+		nextStatus,
+		inShop,
+		coordinates,
+	]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: the snapshot is taken once per hydration, never on a keystroke
+	useEffect(() => {
+		if (hydration > 0) setBaseline(formKey);
+	}, [hydration]);
 	const [attempted, setAttempted] = useState(false);
 	const [refused, setRefused] = useState<{
 		key: string;
@@ -555,6 +580,7 @@ export default function EditListingScreen() {
 		if (!listing) return;
 		if (hydratedAttributesRef.current === attributesKey) return;
 		hydratedAttributesRef.current = attributesKey;
+		setHydration((n) => n + 1);
 		setAttributes(
 			deserializeAttributeValues(categoryAttributes, listing.attributes),
 		);
@@ -625,6 +651,7 @@ export default function EditListingScreen() {
 					: {}),
 			}),
 		onSuccess: () => {
+			savedRef.current = true;
 			queryClient.invalidateQueries({ queryKey: ["listing", id] });
 			queryClient.invalidateQueries({ queryKey: ["my-listings"] });
 			showSuccess(t("edit.saveSuccess"), t("edit.saveSuccessMsg"));
@@ -643,6 +670,30 @@ export default function EditListingScreen() {
 
 	const updateAttr = (slug: string, value: any) =>
 		setAttributes((prev) => ({ ...prev, [slug]: value }));
+
+	// Back, or the Android back gesture, used to throw every edit away without
+	// a word. Leaving with changes now asks first, as the product editor does.
+	const navigation = useNavigation();
+	const savedRef = useRef(false);
+	const dirty =
+		baseline !== null && (formKey !== baseline || uploads.pending.length > 0);
+	useEffect(() => {
+		if (!dirty) return;
+		return navigation.addListener("beforeRemove", (event) => {
+			if (savedRef.current) return;
+			event.preventDefault();
+			showAlert(t("create.discardTitle"), t("create.discardMsg"), [
+				{ text: t("common.cancel"), style: "cancel" },
+				{
+					text: t("create.discardConfirm"),
+					style: "destructive",
+					onPress: () => navigation.dispatch(event.data.action),
+				},
+			]);
+		});
+	}, [dirty, navigation, showAlert, t]);
+
+	const scrollRef = useRef<any>(null);
 	const { requirePhone } = usePhoneGate();
 	const handleSavePress = () => {
 		// Sending the ad (back) to review needs a verified phone.
@@ -668,7 +719,32 @@ export default function EditListingScreen() {
 		// price is never "required", which `listingDraftIssues` already knows.
 		if (draftIssues.length > 0) {
 			setAttempted(true);
+			// The list of what to fix sits at the top of the form.
+			scrollRef.current?.scrollTo?.({ y: 0, animated: true });
 			showError(t("edit.errorTitle"), t("formIssues.fixStep"));
+			return;
+		}
+		// A live ad goes back to review and leaves the feed until it is
+		// approved: said before the save, not in the last card of the form.
+		if (listing?.status === "published" && nextStatus === "pending") {
+			showAlert(
+				t("edit.resubmitTitle", {
+					defaultValue: "Renvoyer l’annonce en vérification ?",
+				}),
+				t("edit.resubmitMsg", {
+					defaultValue:
+						"Vos modifications seront vérifiées (moins de 24 h). L’annonce restera hors ligne pendant ce temps.",
+				}),
+				[
+					{ text: t("common.cancel"), style: "cancel" },
+					{
+						text: t("edit.resubmitConfirm", {
+							defaultValue: "Enregistrer et soumettre",
+						}),
+						onPress: () => save(),
+					},
+				],
+			);
 			return;
 		}
 		save();
@@ -709,6 +785,47 @@ export default function EditListingScreen() {
 			</SafeAreaView>
 		);
 	}
+
+	// Offline or gone: say so, rather than an empty form the seller might
+	// start retyping the ad into.
+	if (!listing) {
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: bg }]}
+			>
+				<View style={[styles.header, { borderBottomColor: borderColor }]}>
+					<HeaderBackButton
+						color={textColor}
+						fallback="/(tabs)/account"
+						style={styles.backBtn}
+					/>
+					<Text
+						style={[styles.headerTitle, { color: textColor }]}
+						accessibilityRole="header"
+					>
+						{t("edit.title")}
+					</Text>
+					<View style={styles.backBtn} />
+				</View>
+				<EmptyState
+					illustration="notFound"
+					title={t("edit.loadError", {
+						defaultValue: "Impossible de charger l’annonce",
+					})}
+					subtitle={
+						isError
+							? resolveErrorMessage(error, t, t("create.publishErrorMsg"))
+							: undefined
+					}
+					ctaLabel={isRefetching ? undefined : t("common.retry")}
+					onCta={() => void refetch()}
+				/>
+			</SafeAreaView>
+		);
+	}
+
+	const status: string = listing.status ?? "";
 
 	const sharedSection = {
 		cardBg,
@@ -761,6 +878,7 @@ export default function EditListingScreen() {
 			</View>
 
 			<KeyboardAwareScrollView
+				ref={scrollRef}
 				style={{ flex: 1 }}
 				contentContainerStyle={[
 					styles.scroll,
@@ -771,6 +889,44 @@ export default function EditListingScreen() {
 				bottomOffset={20}
 				showsVerticalScrollIndicator={false}
 			>
+				{/* What the seller came to fix comes first: a rejected ad's reason
+				    used to sit in the last card, after every field. */}
+				{status === "rejected" ? (
+					<View
+						style={[styles.notice, { backgroundColor: C.dangerTint }]}
+						accessibilityRole="alert"
+					>
+						<Ionicons
+							name="alert-circle-outline"
+							size={18}
+							color={C.dangerText}
+							importantForAccessibility="no"
+						/>
+						<View style={styles.noticeBody}>
+							<Text style={[styles.noticeTitle, { color: C.dangerText }]}>
+								{t("edit.statusRejectedNotice")}
+							</Text>
+							{rejection ? (
+								<Text style={[styles.noticeText, { color: C.dangerText }]}>
+									{t("edit.statusRejectionReason", { reason: rejection })}
+								</Text>
+							) : null}
+						</View>
+					</View>
+				) : null}
+				{status === "published" && nextStatus === "pending" ? (
+					<View style={[styles.notice, { backgroundColor: C.warningTint }]}>
+						<Ionicons
+							name="warning-outline"
+							size={18}
+							color={C.warningText}
+							importantForAccessibility="no"
+						/>
+						<Text style={[styles.noticeText, { color: C.warningText }]}>
+							{t("edit.statusPublishedNotice")}
+						</Text>
+					</View>
+				) : null}
 				<FieldIssueList
 					issues={visibleIssues}
 					attributes={categoryAttributes}
@@ -896,10 +1052,11 @@ export default function EditListingScreen() {
 						</Pressable>
 					</ScrollView>
 					<PhotoLimitNote
-						count={images.length}
+						count={photosTaken}
 						limit={photosIncluded}
 						color={mutedColor}
 					/>
+					<PendingPhotoErrors photos={uploads.pending} />
 					<FieldIssueText issue={issueAt(visibleIssues, "images")} />
 					{uploads.uploading && (
 						<Text
@@ -935,11 +1092,18 @@ export default function EditListingScreen() {
 							placeholderTextColor={mutedColor}
 							style={[
 								styles.input,
-								{ backgroundColor: inputBg, borderColor, color: textColor },
+								{
+									backgroundColor: inputBg,
+									borderColor: issueAt(visibleIssues, "title")
+										? C.destructive
+										: borderColor,
+									color: textColor,
+								},
 							]}
 							maxLength={100}
-							accessibilityLabel={t("edit.titleLabel")}
+							accessibilityLabel={`${t("edit.titleLabel")}, ${t("common.required")}`}
 						/>
+						<FieldIssueText issue={issueAt(visibleIssues, "title")} />
 						<Text
 							style={[styles.charCount, { color: mutedColor }]}
 							importantForAccessibility="no"
@@ -967,13 +1131,40 @@ export default function EditListingScreen() {
 							style={[
 								styles.input,
 								styles.multiline,
-								{ backgroundColor: inputBg, borderColor, color: textColor },
+								{
+									backgroundColor: inputBg,
+									borderColor: issueAt(visibleIssues, "description")
+										? C.destructive
+										: borderColor,
+									color: textColor,
+								},
 							]}
 							multiline
 							numberOfLines={5}
-							accessibilityLabel={t("edit.descriptionLabel")}
+							accessibilityLabel={`${t("edit.descriptionLabel")}, ${t("common.required")}`}
 						/>
+						<FieldIssueText issue={issueAt(visibleIssues, "description")} />
 					</View>
+
+					{/* The category is fixed once the ad exists; saying so spares a
+					    seller the search for a field that is not there. */}
+					{category?.name ? (
+						<View style={styles.fieldGroup}>
+							<FieldLabel
+								label={t("create.categoryFieldLabel")}
+								mutedColor={mutedColor}
+							/>
+							<Text style={[styles.categoryValue, { color: textColor }]}>
+								{category.name}
+							</Text>
+							<Text style={[styles.hint, { color: mutedColor }]}>
+								{t("edit.categoryLocked", {
+									defaultValue:
+										"Pour changer de catégorie, créez une nouvelle annonce.",
+								})}
+							</Text>
+						</View>
+					) : null}
 				</SectionCard>
 
 				{/* ── Attributs dynamiques ── */}
@@ -1028,11 +1219,18 @@ export default function EditListingScreen() {
 							<View
 								style={[
 									styles.inputRow,
-									{ backgroundColor: inputBg, borderColor },
+									{
+										backgroundColor: inputBg,
+										borderColor: issueAt(visibleIssues, "price")
+											? C.destructive
+											: borderColor,
+									},
 								]}
 							>
 								<TextInput
-									value={price}
+									// Grouped ("1 500 000") as on the create form, so a zero
+									// too many is seen; stored as digits.
+									value={groupPriceDigits(price)}
 									// Whole XAF amounts only: a separator typed on the numeric
 									// keypad reached the API as NaN.
 									onChangeText={(v) => setPrice(sanitizePriceInput(v))}
@@ -1052,6 +1250,7 @@ export default function EditListingScreen() {
 									</Text>
 								</View>
 							</View>
+							<FieldIssueText issue={issueAt(visibleIssues, "price")} />
 							<PriceUnitChips
 								kind={categoryPreset.categoryType}
 								value={priceUnit}
@@ -1108,10 +1307,13 @@ export default function EditListingScreen() {
 								setCoordinates(null);
 							}}
 							inputBg={inputBg}
-							borderColor={borderColor}
+							borderColor={
+								issueAt(visibleIssues, "location") ? C.destructive : borderColor
+							}
 							textColor={textColor}
 							mutedColor={mutedColor}
 						/>
+						<FieldIssueText issue={issueAt(visibleIssues, "location")} />
 					</View>
 
 					{/* Duration */}
@@ -1198,56 +1400,6 @@ export default function EditListingScreen() {
 											tone={STATUS_TONE[s] ?? "neutral"}
 										/>
 									</View>
-
-									{s === "published" && (
-										<View
-											style={[
-												styles.notice,
-												{ backgroundColor: C.warningTint },
-											]}
-										>
-											<Ionicons
-												name="warning-outline"
-												size={18}
-												color={C.warningText}
-												importantForAccessibility="no"
-											/>
-											<Text
-												style={[styles.noticeText, { color: C.warningText }]}
-											>
-												{t("edit.statusPublishedNotice")}
-											</Text>
-										</View>
-									)}
-
-									{s === "rejected" && (
-										<View
-											style={[styles.notice, { backgroundColor: C.dangerTint }]}
-										>
-											<Ionicons
-												name="alert-circle-outline"
-												size={18}
-												color={C.dangerText}
-												importantForAccessibility="no"
-											/>
-											<View style={styles.noticeBody}>
-												<Text
-													style={[styles.noticeTitle, { color: C.dangerText }]}
-												>
-													{t("edit.statusRejectedNotice")}
-												</Text>
-												{rejection ? (
-													<Text
-														style={[styles.noticeText, { color: C.dangerText }]}
-													>
-														{t("edit.statusRejectionReason", {
-															reason: rejection,
-														})}
-													</Text>
-												) : null}
-											</View>
-										</View>
-									)}
 								</View>
 							);
 						})()}
@@ -1330,10 +1482,6 @@ export default function EditListingScreen() {
 					</View>
 				</SectionCard>
 
-				<FieldIssueList
-					issues={visibleIssues}
-					attributes={categoryAttributes}
-				/>
 				{/* Submit */}
 				<AnimatedPressable
 					// Goes through the same guard as the header button — this one used
@@ -1342,7 +1490,7 @@ export default function EditListingScreen() {
 					disabled={isPending}
 					scaleTo={0.97}
 					accessibilityRole="button"
-					accessibilityLabel={t("edit.saveChanges")}
+					accessibilityLabel={t("edit.save")}
 					accessibilityState={{ busy: isPending, disabled: isPending }}
 					style={[
 						styles.submitBtn,
@@ -1358,7 +1506,7 @@ export default function EditListingScreen() {
 								size={20}
 								color="#ffffff"
 							/>
-							<Text style={styles.submitText}>{t("edit.saveChanges")}</Text>
+							<Text style={styles.submitText}>{t("edit.save")}</Text>
 						</>
 					)}
 				</AnimatedPressable>
@@ -1387,6 +1535,7 @@ const styles = StyleSheet.create({
 	headerTitle: {
 		flex: 1,
 		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		textAlign: "center",
 	},
@@ -1401,6 +1550,7 @@ const styles = StyleSheet.create({
 	saveBtnText: {
 		color: "#ffffff",
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 
@@ -1439,12 +1589,18 @@ const styles = StyleSheet.create({
 
 	/* Fields */
 	fieldGroup: { gap: 6 },
+	categoryValue: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	attrSection: { gap: 14 },
 	groupHeading: {
 		...TextStyles.h4,
 	},
 	attrUnit: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		marginLeft: 8,
 	},
@@ -1459,7 +1615,8 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.body,
 	},
 	fieldLabel: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	hint: {
@@ -1483,6 +1640,7 @@ const styles = StyleSheet.create({
 	},
 	charCount: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.body,
 		fontVariant: ["tabular-nums"],
 		alignSelf: "flex-end",
@@ -1509,12 +1667,13 @@ const styles = StyleSheet.create({
 		marginLeft: 8,
 	},
 	currency: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.displayExtrabold,
 	},
 	priceInput: {
 		flex: 1,
-		fontSize: 22,
+		fontSize: 24,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.4,
 		fontVariant: ["tabular-nums"],
@@ -1532,8 +1691,8 @@ const styles = StyleSheet.create({
 		padding: 12,
 	},
 	noticeBody: { flex: 1, gap: 4 },
-	noticeTitle: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.bodySemibold },
-	noticeText: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	noticeTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	noticeText: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	statusOptions: { gap: 10 },
 	statusOption: {
 		minHeight: 64,
@@ -1554,7 +1713,11 @@ const styles = StyleSheet.create({
 	},
 	radioDot: { width: 10, height: 10, borderRadius: 5 },
 	statusOptionText: { flex: 1, gap: 2 },
-	statusOptionLabel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	statusOptionLabel: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	statusOptionDesc: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 
 	/* Pills */
@@ -1573,7 +1736,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	pillText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -1595,6 +1759,7 @@ const styles = StyleSheet.create({
 	},
 	durationUnit: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyMedium,
 	},
 
@@ -1621,6 +1786,7 @@ const styles = StyleSheet.create({
 	mainBadgeText: {
 		color: "#ffffff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyBold,
 	},
 	makeMainBtn: {
@@ -1666,6 +1832,7 @@ const styles = StyleSheet.create({
 	},
 	addImageText: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
@@ -1685,6 +1852,7 @@ const styles = StyleSheet.create({
 	submitText: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 });

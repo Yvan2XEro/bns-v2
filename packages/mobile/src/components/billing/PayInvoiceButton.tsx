@@ -1,5 +1,6 @@
 import * as WebBrowser from "expo-web-browser";
-import { ActivityIndicator, Pressable, Text } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { fillOf } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -19,21 +20,32 @@ import { billingStyles as s } from "./billingStyles";
 export function PayInvoiceButton({
 	shopId,
 	invoiceId,
+	amountLabel,
 	onSettled,
 }: {
 	shopId: string;
 	invoiceId: string;
+	/** The formatted total, so the button reads "Payer 12 500 FCFA". */
+	amountLabel?: string;
 	onSettled: () => void;
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const { showError } = useAlert();
+	const { showError, showSuccess } = useAlert();
 	const pay = usePayInvoice(shopId);
+	// Set once the checkout closes: the provider confirms later, so the screen
+	// says the payment is on its way instead of inviting a second one.
+	const [confirming, setConfirming] = useState(false);
+	const label = amountLabel
+		? t("billing.payAmount", { amount: amountLabel })
+		: t("billing.pay");
 
 	const onPay = () =>
 		pay.mutate(invoiceId, {
 			onSuccess: async ({ checkoutUrl }) => {
 				await WebBrowser.openBrowserAsync(checkoutUrl);
+				setConfirming(true);
+				showSuccess(t("billing.payConfirming"));
 				onSettled();
 			},
 			onError: (error) => {
@@ -43,18 +55,33 @@ export function PayInvoiceButton({
 		});
 
 	return (
-		<Pressable
-			accessibilityRole="button"
-			accessibilityLabel={t("billing.pay")}
-			accessibilityState={{ busy: pay.isPending, disabled: pay.isPending }}
-			onPress={onPay}
-			disabled={pay.isPending}
-			style={[s.button, { backgroundColor: fillOf(c) }]}
-		>
-			{pay.isPending ? <ActivityIndicator color="#fff" /> : null}
-			<Text style={s.buttonText}>
-				{pay.isPending ? t("billing.payOpening") : t("billing.pay")}
-			</Text>
-		</Pressable>
+		<View style={{ gap: 8 }}>
+			{confirming ? (
+				<Text
+					accessibilityRole="alert"
+					style={[s.body, { color: c.warningText }]}
+				>
+					{t("billing.payConfirming")}
+				</Text>
+			) : null}
+			<Pressable
+				accessibilityRole="button"
+				accessibilityLabel={label}
+				accessibilityState={{ busy: pay.isPending, disabled: pay.isPending }}
+				onPress={onPay}
+				disabled={pay.isPending}
+				style={[
+					s.button,
+					confirming
+						? { backgroundColor: c.card, borderColor: c.border, borderWidth: 1 }
+						: { backgroundColor: fillOf(c) },
+				]}
+			>
+				{pay.isPending ? <ActivityIndicator color="#fff" /> : null}
+				<Text style={[s.buttonText, confirming && { color: c.link }]}>
+					{pay.isPending ? t("billing.payOpening") : label}
+				</Text>
+			</Pressable>
+		</View>
 	);
 }

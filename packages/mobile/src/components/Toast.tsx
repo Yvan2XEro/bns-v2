@@ -15,7 +15,7 @@ import Animated, {
 	withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { type FeedbackKind, feedback } from "@/src/lib/feedback";
@@ -27,10 +27,21 @@ import { type FeedbackKind, feedback } from "@/src/lib/feedback";
  */
 export type ToastType = "success" | "info";
 
+export interface ToastAction {
+	/** One short verb: "Annuler", "Voir". */
+	label: string;
+	onPress: () => void;
+}
+
 interface ToastRequest {
 	type: ToastType;
 	title: string;
 	message?: string;
+	/**
+	 * A way back or a shortcut, never the only path: whatever it does must
+	 * stay reachable from the screen itself, since the toast leaves alone.
+	 */
+	action?: ToastAction;
 }
 
 let listener: ((request: ToastRequest) => void) | null = null;
@@ -81,12 +92,11 @@ export function ToastHost() {
 			AccessibilityInfo.announceForAccessibility(
 				[request.title, request.message].filter(Boolean).join(". "),
 			);
-			// Three to five seconds: long enough to read, never in the way.
+			// Three to five seconds: long enough to read, never in the way. An
+			// action gets longer, so a thumb can reach it.
 			const chars = `${request.title} ${request.message ?? ""}`.length;
-			timer.current = setTimeout(
-				hide,
-				Math.max(3000, Math.min(5000, 2000 + chars * 30)),
-			);
+			const read = Math.max(3000, Math.min(5000, 2000 + chars * 30));
+			timer.current = setTimeout(hide, request.action ? 7000 : read);
 		};
 		return () => {
 			listener = null;
@@ -112,23 +122,49 @@ export function ToastHost() {
 			style={[styles.host, { top: insets.top + 8 }]}
 		>
 			<Animated.View style={[styles.wrap, { maxWidth: dialogMaxWidth }, style]}>
-				<Pressable onPress={hide} accessibilityRole="alert" style={styles.card}>
-					<View
-						style={[styles.glyph, { backgroundColor: GLYPH_BG[current.type] }]}
+				<View style={styles.card}>
+					<Pressable
+						onPress={hide}
+						accessibilityRole="alert"
+						style={styles.body}
 					>
-						<Ionicons name={GLYPH[current.type]} size={16} color="#ffffff" />
-					</View>
-					<View style={styles.words}>
-						<Text style={styles.title} numberOfLines={2}>
-							{current.title}
-						</Text>
-						{current.message ? (
-							<Text style={styles.message} numberOfLines={3}>
-								{current.message}
+						<View
+							style={[
+								styles.glyph,
+								{ backgroundColor: GLYPH_BG[current.type] },
+							]}
+						>
+							<Ionicons name={GLYPH[current.type]} size={16} color="#ffffff" />
+						</View>
+						<View style={styles.words}>
+							<Text style={styles.title} numberOfLines={2}>
+								{current.title}
 							</Text>
-						) : null}
-					</View>
-				</Pressable>
+							{current.message ? (
+								<Text style={styles.message} numberOfLines={3}>
+									{current.message}
+								</Text>
+							) : null}
+						</View>
+					</Pressable>
+					{current.action ? (
+						<Pressable
+							accessibilityRole="button"
+							onPress={() => {
+								const run = current.action?.onPress;
+								hide();
+								run?.();
+							}}
+							hitSlop={4}
+							style={({ pressed }) => [
+								styles.action,
+								{ opacity: pressed ? 0.7 : 1 },
+							]}
+						>
+							<Text style={styles.actionLabel}>{current.action.label}</Text>
+						</Pressable>
+					) : null}
+				</View>
 			</Animated.View>
 		</View>
 	);
@@ -148,7 +184,7 @@ const styles = StyleSheet.create({
 	card: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 12,
+		gap: 8,
 		paddingVertical: 12,
 		paddingLeft: 12,
 		paddingRight: 16,
@@ -162,6 +198,21 @@ const styles = StyleSheet.create({
 		shadowRadius: 18,
 		elevation: 12,
 	},
+	body: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
+	action: {
+		minHeight: 44,
+		minWidth: 44,
+		paddingHorizontal: 8,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	// The toast is ink in both themes: the night link colour is drawn for it.
+	actionLabel: {
+		color: Colors.dark.link,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	glyph: {
 		width: 30,
 		height: 30,
@@ -170,7 +221,12 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	words: { flex: 1, gap: 2 },
-	title: { color: "#ffffff", fontSize: 15, fontFamily: Fonts.bodySemibold },
+	title: {
+		color: "#ffffff",
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	message: {
 		color: "#c5ccf0",
 		fontSize: 13,

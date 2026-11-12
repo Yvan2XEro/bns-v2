@@ -9,6 +9,11 @@ export interface DecisionSchemaOptions {
 	singleDuration: boolean;
 	/** Whether the free-text field must be filled before confirming. */
 	textRequired: boolean;
+	/**
+	 * Some choices need the note even when the action does not ("Autre motif"
+	 * must say which). Asked per choice, at validation time.
+	 */
+	textRequiredFor?: (choice: string | null) => boolean;
 }
 
 /**
@@ -44,7 +49,10 @@ export function buildDecisionSchema(options: DecisionSchemaOptions) {
 					message: "moderation.decisionDurationRequired",
 				});
 			}
-			if (options.textRequired && values.text.trim().length === 0) {
+			const textRequired =
+				options.textRequired ||
+				Boolean(options.textRequiredFor?.(values.choice));
+			if (textRequired && values.text.trim().length === 0) {
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
 					path: ["text"],

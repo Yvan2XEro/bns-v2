@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 2,
 		borderBottomColor: "transparent",
 	},
-	segmentText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	segmentText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	segmentTextActive: { fontFamily: Fonts.bodyBold },
 	badge: {
 		minWidth: 22,

@@ -25,6 +25,7 @@ export function VariantRowCard({
 	options,
 	readOnly,
 	canManageCost,
+	sharedPrice,
 	onChange,
 }: {
 	row: VariantRow;
@@ -33,6 +34,8 @@ export function VariantRowCard({
 	options: ProductOption[];
 	readOnly?: boolean;
 	canManageCost: boolean;
+	/** "Même prix pour toutes": the first row sets it, the others copy it. */
+	sharedPrice?: "source" | "copy";
 	onChange: (patch: Partial<VariantRow>) => void;
 }) {
 	const c = useShopTheme();
@@ -59,6 +62,17 @@ export function VariantRowCard({
 		issueOf(field) ? { borderColor: ISSUE_BORDER } : null;
 	const price = parseAmount(row.price);
 	const stockValue = row.trackInventory ? String(row.stockOnHand ?? 0) : "—";
+	const priceLocked = readOnly || sharedPrice === "copy";
+	const lockedStyle = priceLocked
+		? { color: c.muted, backgroundColor: c.neutralSoft }
+		: null;
+	const priceLabel =
+		sharedPrice === "source"
+			? t("product.priceForAll", { defaultValue: "Prix (toutes)" })
+			: t("product.price");
+	// Every row has the same four fields: the variant's name tells them apart
+	// for a screen reader, which otherwise read "Prix" twelve times.
+	const named = (field: string) => `${field}, ${label}`;
 
 	return (
 		<View style={[styles.variant, { borderTopColor: c.border }]}>
@@ -85,14 +99,14 @@ export function VariantRowCard({
 
 			{/* The money and the stock first: what a seller fills on every row. */}
 			<View style={styles.grid}>
-				<Cell label={t("product.price")}>
+				<Cell label={priceLabel}>
 					<TextInput
 						value={row.price}
-						editable={!readOnly}
+						editable={!priceLocked}
 						onChangeText={(v) => onChange({ price: v.replace(/\D/g, "") })}
 						keyboardType="number-pad"
-						style={[...numberInput, flagged("price")]}
-						accessibilityLabel={t("product.price")}
+						style={[...numberInput, lockedStyle, flagged("price")]}
+						accessibilityLabel={named(priceLabel)}
 					/>
 					{/* The amount as buyers will read it, right under what was typed. */}
 					{row.price && price !== null ? (
@@ -110,11 +124,11 @@ export function VariantRowCard({
 					<Cell label={t("product.cost")}>
 						<TextInput
 							value={row.cost}
-							editable={!readOnly}
+							editable={!priceLocked}
 							onChangeText={(v) => onChange({ cost: v.replace(/\D/g, "") })}
 							keyboardType="number-pad"
-							style={[...numberInput, flagged("cost")]}
-							accessibilityLabel={t("product.cost")}
+							style={[...numberInput, lockedStyle, flagged("cost")]}
+							accessibilityLabel={named(t("product.cost"))}
 						/>
 						<FieldIssueText issue={issueOf("cost")} />
 					</Cell>
@@ -137,7 +151,7 @@ export function VariantRowCard({
 								pressed && { backgroundColor: c.primarySoft },
 							]}
 							accessibilityRole="button"
-							accessibilityLabel={`${t("product.stock")} ${stockValue}`}
+							accessibilityLabel={`${named(t("product.stock"))} ${stockValue}`}
 							accessibilityState={{ disabled: !!readOnly }}
 						>
 							<Text
@@ -166,7 +180,7 @@ export function VariantRowCard({
 							}
 							keyboardType="number-pad"
 							style={[...numberInput, flagged("initialStock")]}
-							accessibilityLabel={t("product.initialStock")}
+							accessibilityLabel={named(t("product.initialStock"))}
 						/>
 					)}
 					<FieldIssueText issue={issueOf("initialStock")} />
@@ -180,7 +194,7 @@ export function VariantRowCard({
 						}
 						keyboardType="number-pad"
 						style={[...numberInput, flagged("lowStockThreshold")]}
-						accessibilityLabel={t("product.threshold")}
+						accessibilityLabel={named(t("product.threshold"))}
 					/>
 					<FieldIssueText issue={issueOf("lowStockThreshold")} />
 				</Cell>
@@ -197,7 +211,7 @@ export function VariantRowCard({
 					placeholder={t("product.skuPlaceholder")}
 					placeholderTextColor={c.muted}
 					style={[...inputStyle, flagged("sku")]}
-					accessibilityLabel={t("product.skuPlaceholder")}
+					accessibilityLabel={named(t("product.skuPlaceholder"))}
 				/>
 				<FieldIssueText issue={issueOf("sku")} />
 				<TextInput
@@ -210,7 +224,7 @@ export function VariantRowCard({
 					placeholder={t("product.barcodePlaceholder")}
 					placeholderTextColor={c.muted}
 					style={[...inputStyle, styles.number, flagged("barcode")]}
-					accessibilityLabel={t("product.barcodePlaceholder")}
+					accessibilityLabel={named(t("product.barcodePlaceholder"))}
 				/>
 				<FieldIssueText issue={issueOf("barcode")} />
 			</View>
@@ -253,6 +267,7 @@ const styles = StyleSheet.create({
 	},
 	marginText: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -275,6 +290,7 @@ const styles = StyleSheet.create({
 	},
 	stockValue: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displaySemibold,
 		fontVariant: ["tabular-nums"],
 	},

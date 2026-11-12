@@ -103,8 +103,18 @@ export function ReturnOutcome({
 }
 
 const styles = StyleSheet.create({
-	title: { fontSize: 17, fontFamily: Fonts.displayBold, textAlign: "center" },
-	body: { fontSize: 14, fontFamily: Fonts.body, textAlign: "center" },
+	title: {
+		fontSize: 18,
+		lineHeight: 26,
+		fontFamily: Fonts.displayBold,
+		textAlign: "center",
+	},
+	body: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+		textAlign: "center",
+	},
 	button: {
 		minHeight: 48,
 		minWidth: 44,
@@ -117,6 +127,7 @@ const styles = StyleSheet.create({
 	buttonLabel: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 });

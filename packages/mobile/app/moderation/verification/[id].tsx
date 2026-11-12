@@ -20,7 +20,6 @@ import {
 	DecisionButton,
 	type DecisionVariant,
 	DetailSkeleton,
-	InlineNotice,
 	LoadError,
 } from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
@@ -28,6 +27,7 @@ import { SignalsPanel } from "@/src/components/moderation/SignalsPanel";
 import { useModerationTheme } from "@/src/components/moderation/theme";
 import { tonesOf } from "@/src/components/moderation/tones";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
+import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	moderationVerificationKeys,
 	useVerificationDecision,
@@ -101,6 +101,7 @@ export default function VerificationReviewScreen() {
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const queryClient = useQueryClient();
+	const { showSuccess } = useAlert();
 	const query = useVerificationRequest(requestId);
 	const decide = useVerificationDecision();
 	const [state, patch] = useReducer(reducer, {
@@ -133,9 +134,22 @@ export default function VerificationReviewScreen() {
 
 	function selectAction(action: ReviewerAction) {
 		if (action === "claim" || action === "release") {
-			decide.mutate({ id: requestId, action }, { onError: invalidate });
+			decide.mutate(
+				{ id: requestId, action },
+				{
+					onSuccess: () =>
+						showSuccess(
+							action === "claim"
+								? t("moderation.verifClaimed")
+								: t("moderation.verifReleased"),
+						),
+					onError: invalidate,
+				},
+			);
 			return;
 		}
+		// A fresh sheet starts without the previous attempt's error.
+		decide.reset();
 		patch({ activeAction: action });
 	}
 
@@ -165,7 +179,19 @@ export default function VerificationReviewScreen() {
 						: undefined,
 			},
 			{
-				onSuccess: () => patch({ activeAction: null }),
+				onSuccess: () => {
+					patch({ activeAction: null });
+					showSuccess(
+						t(`moderation.verifDone_${action}`),
+						action === "approve"
+							? t("moderation.verifDoneApproveMessage", {
+									level: request.requestedLevel,
+								})
+							: undefined,
+					);
+					// Back to the Vérification tab: the request has left the queue.
+					if (router.canGoBack()) router.back();
+				},
 				onError: invalidate,
 			},
 		);
@@ -193,15 +219,12 @@ export default function VerificationReviewScreen() {
 					message={
 						query.error ? resolveErrorMessage(query.error, t) : undefined
 					}
+					error={query.error}
 					onRetry={() => void query.refetch()}
 				/>
 			) : (
 				<>
 					<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
-						{decide.isError ? (
-							<InlineNotice text={resolveErrorMessage(decide.error, t)} />
-						) : null}
-
 						{/* Who is asking, one tap from their account sheet: a refusal
 						    is often decided by what else that account has done. */}
 						{detail.owner ? (
@@ -247,25 +270,33 @@ export default function VerificationReviewScreen() {
 							business={request.business}
 							signals={request.reviewSignals}
 						/>
+						<DocumentList documents={request.documents} />
+						{/* The checklist confirms what the documents show, so it
+						    comes after them, last, right above the bar. */}
 						{request.requestedLevel === 3 ? (
 							<ChecklistSwitches
 								value={state.checklist}
 								onChange={(checklist) => patch({ checklist })}
 							/>
 						) : null}
-						<DocumentList documents={request.documents} />
 					</ScrollView>
 
 					{actions.length > 0 ? (
 						<DecisionBar
 							wrap
 							note={
-								approveDisabled
+								// A claim or release failure has no sheet to show in.
+								decide.isError && state.activeAction === null
 									? {
-											text: t("moderation.verifApproveChecklistIncomplete"),
-											tone: "warning",
+											text: resolveErrorMessage(decide.error, t),
+											tone: "negative",
 										}
-									: null
+									: approveDisabled
+										? {
+												text: t("moderation.verifApproveChecklistIncomplete"),
+												tone: "warning",
+											}
+										: null
 							}
 						>
 							{actions.map((action) => {
@@ -332,6 +363,7 @@ export default function VerificationReviewScreen() {
 								: false
 						}
 						pending={decide.isPending}
+						error={decide.isError ? resolveErrorMessage(decide.error, t) : null}
 						onConfirm={confirmDecision}
 						onClose={() => patch({ activeAction: null })}
 					/>

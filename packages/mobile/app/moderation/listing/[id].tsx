@@ -1,5 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import {
+	type InfiniteData,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -11,6 +15,7 @@ import {
 	DecisionBar,
 	DecisionButton,
 	DetailSkeleton,
+	FactRow,
 	InlineNotice,
 	LoadError,
 	ModerationCard,
@@ -20,17 +25,27 @@ import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
 import { type Tone, tonesOf } from "@/src/components/moderation/tones";
 import { useAlert } from "@/src/contexts/AlertContext";
-import { useListingDecision } from "@/src/hooks/useModeration";
+import {
+	moderationKeys,
+	useListingDecision,
+	useModerationUser,
+} from "@/src/hooks/useModeration";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
+import {
+	conditionLabelKey,
+	listingConditionValue,
+} from "@/src/lib/listingCondition";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import type {
 	Category,
 	ListingDoc,
 	ListingStatus,
+	PayloadPage,
 	UserDoc,
 } from "@/src/types/api";
 import {
@@ -50,6 +65,20 @@ const STATUS_LOOK: Record<ListingStatus, { key: string; tone: Tone }> = {
 	deleted: { key: "moderation.listingStatusDeleted", tone: "neutral" },
 };
 
+/**
+ * The next listing still waiting after this one, read from the queue the hub
+ * already loaded: a review session moves on without a trip back to the list.
+ */
+function nextPendingId(
+	pages: InfiniteData<PayloadPage<ListingDoc>> | undefined,
+	currentId: string,
+): string | null {
+	const docs = (pages?.pages ?? []).flatMap((page) => page.docs);
+	const index = docs.findIndex((doc) => doc.id === currentId);
+	const rest = index >= 0 ? docs.slice(index + 1) : docs;
+	return rest.find((doc) => doc.id !== currentId)?.id ?? null;
+}
+
 export default function ModerateListingScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const c = useModerationTheme();
@@ -57,8 +86,10 @@ export default function ModerateListingScreen() {
 	const { t, i18n } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const { showError, showSuccess } = useAlert();
+	const queryClient = useQueryClient();
 	const [rejecting, setRejecting] = useState(false);
 	const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+	const [photoIndex, setPhotoIndex] = useState(0);
 
 	const { data, isLoading, isError, error, refetch } = useQuery({
 		queryKey: ["moderation", "listing", id],
@@ -66,7 +97,21 @@ export default function ModerateListingScreen() {
 		enabled: Boolean(id),
 	});
 
-	const { mutate: decide, isPending } = useListingDecision();
+	const {
+		mutate: decide,
+		isPending,
+		error: decisionError,
+		reset: resetDecision,
+	} = useListingDecision();
+
+	const sellerId =
+		data?.seller && typeof data.seller === "object"
+			? (data.seller as UserDoc).id
+			: typeof data?.seller === "string"
+				? data.seller
+				: undefined;
+	// The seller's record, so a borderline listing is judged with it.
+	const sellerSheet = useModerationUser(sellerId);
 
 	const run = (
 		action: "approve" | "reject",
@@ -78,24 +123,41 @@ export default function ModerateListingScreen() {
 			{
 				onSuccess: () => {
 					setRejecting(false);
+					// Read before the invalidation refetches the queue without it.
+					const next = nextPendingId(
+						queryClient.getQueryData<InfiniteData<PayloadPage<ListingDoc>>>(
+							moderationKeys.listings,
+						),
+						String(id),
+					);
 					showSuccess(
 						action === "approve"
 							? t("moderation.approvedTitle")
 							: t("moderation.rejectedTitle"),
-						action === "approve"
-							? t("moderation.approvedMessage")
-							: t("moderation.rejectedMessage"),
+						next
+							? t("moderation.nextListing")
+							: action === "approve"
+								? t("moderation.approvedMessage")
+								: t("moderation.rejectedMessage"),
 					);
-					// The queue is the moderator's place of work; sending them back
-					// there keeps a review session moving instead of stranding them on
-					// a listing they have just decided.
-					if (router.canGoBack()) router.back();
+					// The next pending listing, straight away; the queue when
+					// none is left.
+					if (next) {
+						router.replace(`/moderation/listing/${next}` as never);
+					} else if (router.canGoBack()) {
+						router.back();
+					}
 				},
-				onError: (error) =>
-					showError(
-						t("moderation.actionFailed"),
-						resolveErrorMessage(error, t),
-					),
+				// A refusal fails inside its sheet (an alert cannot open over
+				// it); an approval has no sheet, so the alert is safe.
+				onError: (error) => {
+					if (action === "approve") {
+						showError(
+							t("moderation.actionFailed"),
+							resolveErrorMessage(error, t),
+						);
+					}
+				},
 			},
 		);
 	};
@@ -120,6 +182,14 @@ export default function ModerateListingScreen() {
 	// rejecting what is already rejected. The bar never offers them.
 	const canApprove = data?.status !== "published";
 	const canReject = data?.status !== "rejected";
+	const conditionKey = conditionLabelKey(
+		listingConditionValue(data?.attributes),
+	);
+	const sellerCounts = sellerSheet.data?.counts;
+	const sellerSince = formatDate(
+		sellerSheet.data?.user.createdAt ?? seller?.createdAt,
+		{ month: "long", year: "numeric" },
+	);
 
 	return (
 		<ModerationScreen
@@ -132,6 +202,7 @@ export default function ModerateListingScreen() {
 				<LoadError
 					title={t("common.error")}
 					message={error ? resolveErrorMessage(error, t) : undefined}
+					error={error}
 					onRetry={() => void refetch()}
 				/>
 			) : (
@@ -140,31 +211,53 @@ export default function ModerateListingScreen() {
 						{photos.length ? (
 							// The photos are the evidence: each opens full screen, where a
 							// moderator can zoom on a logo, a label or a serial number.
-							<ScrollView
-								horizontal
-								showsHorizontalScrollIndicator={false}
-								contentContainerStyle={styles.photos}
-							>
-								{photos.map((photo, index) => (
-									<Pressable
-										key={photo.thumb}
-										accessibilityRole="imagebutton"
-										accessibilityLabel={t("shop.openPhoto", {
-											index: index + 1,
-											count: photos.length,
-										})}
-										onPress={() => setViewerIndex(index)}
-										style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+							<View>
+								<ScrollView
+									horizontal
+									showsHorizontalScrollIndicator={false}
+									contentContainerStyle={styles.photos}
+									scrollEventThrottle={64}
+									onScroll={(event) => {
+										const x = event.nativeEvent.contentOffset.x;
+										const index = Math.round(x / (PHOTO_WIDTH + PHOTO_GAP));
+										setPhotoIndex(
+											Math.min(Math.max(index, 0), photos.length - 1),
+										);
+									}}
+								>
+									{photos.map((photo, index) => (
+										<Pressable
+											key={photo.thumb}
+											accessibilityRole="imagebutton"
+											accessibilityLabel={t("shop.openPhoto", {
+												index: index + 1,
+												count: photos.length,
+											})}
+											onPress={() => setViewerIndex(index)}
+											style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+										>
+											<Image
+												source={{ uri: photo.thumb }}
+												style={[styles.photo, { backgroundColor: ink.well }]}
+												contentFit="cover"
+												transition={150}
+											/>
+										</Pressable>
+									))}
+								</ScrollView>
+								{/* How many photos there are, before any scrolling. */}
+								{photos.length > 1 ? (
+									<View
+										style={[styles.counter, { backgroundColor: c.overlay }]}
+										accessible={false}
+										importantForAccessibility="no-hide-descendants"
 									>
-										<Image
-											source={{ uri: photo.thumb }}
-											style={[styles.photo, { backgroundColor: ink.well }]}
-											contentFit="cover"
-											transition={150}
-										/>
-									</Pressable>
-								))}
-							</ScrollView>
+										<Text style={styles.counterText}>
+											{`${photoIndex + 1}/${photos.length}`}
+										</Text>
+									</View>
+								) : null}
+							</View>
 						) : (
 							<View
 								style={[
@@ -222,6 +315,26 @@ export default function ModerateListingScreen() {
 									label={t(status.key, { defaultValue: data.status })}
 								/>
 							) : null}
+							{/* What a fake or misleading listing is judged on, besides
+							    the photos: its stated condition, where, and since when. */}
+							<View style={styles.facts}>
+								{conditionKey ? (
+									<FactRow
+										label={t("moderation.factCondition")}
+										value={t(conditionKey)}
+									/>
+								) : null}
+								<FactRow label={t("listing.location")} value={data.location} />
+								<FactRow
+									label={t("moderation.factSubmitted")}
+									value={formatDate(data.createdAt, {
+										day: "numeric",
+										month: "short",
+										hour: "2-digit",
+										minute: "2-digit",
+									})}
+								/>
+							</View>
 							{data.description ? (
 								<Text style={[styles.description, { color: ink.body }]}>
 									{data.description}
@@ -270,6 +383,38 @@ export default function ModerateListingScreen() {
 									<Text style={[styles.sellerName, { color: c.text }]}>
 										{seller.name || seller.email}
 									</Text>
+									{sellerSince || sellerCounts ? (
+										<Text style={[styles.sellerFacts, { color: c.muted }]}>
+											{[
+												sellerSince
+													? t("moderation.memberSince", { date: sellerSince })
+													: null,
+												sellerCounts
+													? t("moderation.sellerOnline", {
+															count: sellerCounts.publishedListings,
+														})
+													: null,
+											]
+												.filter(Boolean)
+												.join(" · ")}
+											{sellerCounts ? (
+												<Text
+													style={
+														sellerCounts.reportsAgainst > 0
+															? {
+																	color: k.dangerText,
+																	fontFamily: Fonts.bodySemibold,
+																}
+															: null
+													}
+												>
+													{` · ${t("moderation.sellerReports", {
+														count: sellerCounts.reportsAgainst,
+													})}`}
+												</Text>
+											) : null}
+										</Text>
+									) : null}
 									<Text style={[styles.sellerMeta, { color: k.linkText }]}>
 										{t("moderation.openAccount")}
 									</Text>
@@ -299,7 +444,10 @@ export default function ModerateListingScreen() {
 								variant="dangerOutline"
 								icon="close"
 								label={t("moderation.reject")}
-								onPress={() => setRejecting(true)}
+								onPress={() => {
+									resetDecision();
+									setRejecting(true);
+								}}
 								disabled={isPending}
 							/>
 						) : null}
@@ -327,22 +475,24 @@ export default function ModerateListingScreen() {
 						choicesLabel={t("moderation.rejectReasonLabel")}
 						textLabel={t("moderation.rejectMessageLabel")}
 						textPlaceholder={t("moderation.rejectReasonPlaceholder")}
+						// "Other reason" says nothing by itself: the message becomes
+						// required the moment it is picked, and the sheet says so.
+						textRequiredFor={(choice) => {
+							const code = LISTING_REJECTION_REASONS.find(
+								(reason) => reason === choice,
+							);
+							return code ? rejectionNeedsMessage(code) : false;
+						}}
 						confirmLabel={t("moderation.confirmReject")}
 						destructive
 						pending={isPending}
+						error={decisionError ? resolveErrorMessage(decisionError, t) : null}
 						onConfirm={({ choice, text }) => {
 							const code = LISTING_REJECTION_REASONS.find(
 								(reason) => reason === choice,
 							);
 							if (!code) return;
-							// "Other reason" says nothing by itself.
-							if (rejectionNeedsMessage(code) && !text) {
-								showError(
-									t("moderation.actionFailed"),
-									t("moderation.rejectMessageRequired"),
-								);
-								return;
-							}
+							if (rejectionNeedsMessage(code) && !text) return;
 							run("reject", code, text || undefined);
 						}}
 						onClose={() => setRejecting(false)}
@@ -360,11 +510,30 @@ export default function ModerateListingScreen() {
 	);
 }
 
+const PHOTO_WIDTH = 240;
+const PHOTO_GAP = 8;
+
 const styles = StyleSheet.create({
 	flex: { flex: 1 },
 	content: { padding: 16, gap: 14, paddingBottom: 24 },
-	photos: { gap: 8 },
-	photo: { width: 240, height: 180, borderRadius: 14 },
+	photos: { gap: PHOTO_GAP },
+	photo: { width: PHOTO_WIDTH, height: 180, borderRadius: 14 },
+	counter: {
+		position: "absolute",
+		top: 8,
+		left: 8,
+		borderRadius: 8,
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+	},
+	counterText: {
+		color: "#ffffff",
+		fontSize: 13,
+		lineHeight: 17,
+		fontFamily: Fonts.bodySemibold,
+		fontVariant: ["tabular-nums"],
+	},
+	facts: { gap: 6 },
 	noPhoto: {
 		height: 112,
 		borderRadius: 14,
@@ -373,10 +542,10 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 6,
 	},
-	noPhotoText: { fontSize: 13, fontFamily: Fonts.body },
+	noPhotoText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	listingTitle: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},
@@ -394,7 +563,7 @@ const styles = StyleSheet.create({
 	priceText: {
 		color: Colors.light.sunForeground,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.3,
 		fontFamily: Fonts.displayExtrabold,
 	},
@@ -403,7 +572,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 5,
 	},
-	pillText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	pillText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	sellerCard: {
 		flexDirection: "row",
@@ -421,6 +590,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	sellerName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	sellerMeta: { fontSize: 13, fontFamily: Fonts.bodySemibold, marginTop: 1 },
+	sellerName: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	sellerFacts: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	sellerMeta: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+		marginTop: 1,
+	},
 });

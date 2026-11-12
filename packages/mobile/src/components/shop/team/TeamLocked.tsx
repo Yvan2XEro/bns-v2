@@ -51,7 +51,8 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 	},
 	message: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 		textAlign: "center",
 		maxWidth: 320,
@@ -64,5 +65,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	ctaText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

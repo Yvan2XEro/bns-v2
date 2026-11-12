@@ -1,14 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { type ComponentProps, useEffect } from "react";
+import { type ComponentProps, useEffect, useRef } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
-	ScrollView,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
@@ -51,10 +51,18 @@ export default function CheckoutConfirmationScreen() {
 			(isConfirmationRequired(hint) ? hint : null),
 	);
 	const leave = () => router.replace("/(tabs)/home");
-	// The order went through: the one moment of the purchase worth feeling.
+	// Felt when the order is actually through: at once for a confirmed one,
+	// or the moment a code moves it to confirmed.
+	const feltRef = useRef(false);
+	const confirmedNow = outcome === "confirmed" && Boolean(order);
 	useEffect(() => {
+		if (!confirmedNow || feltRef.current) return;
+		feltRef.current = true;
 		hapticOutcome("success");
-	}, []);
+	}, [confirmedNow]);
+	// With a code to type, the two pinned buttons would sit on the keyboard
+	// over the field; they move into the scroll instead.
+	const pinned = outcome !== "code";
 	const heroColor = outcome === "confirmed" ? c.successText : inkOf(c);
 	const heroSoft = outcome === "confirmed" ? c.successSoft : c.primarySoft;
 	const total = order ? formatPrice(order.amounts.total, locale) : "";
@@ -63,6 +71,37 @@ export default function CheckoutConfirmationScreen() {
 				.filter(Boolean)
 				.join(", ")
 		: "";
+	const actions = order ? (
+		<>
+			<CheckoutButton
+				icon="cube-outline"
+				// While a code is owed, confirming it is the screen's one
+				// filled action; tracking steps back to a quiet button.
+				variant={outcome === "code" ? "outline" : "primary"}
+				label={t("checkout.trackOrder")}
+				onPress={() =>
+					router.replace({
+						pathname: "/purchases/[id]",
+						params: { id: order.id },
+					})
+				}
+			/>
+			{order.conversationId ? (
+				<CheckoutButton
+					variant="outline"
+					icon="chatbubble-outline"
+					label={t("checkout.writeToShop")}
+					onPress={() => router.replace(`/messages/${order.conversationId}`)}
+				/>
+			) : (
+				<CheckoutButton
+					variant="outline"
+					label={t("checkout.continueShopping")}
+					onPress={leave}
+				/>
+			)}
+		</>
+	) : null;
 
 	return (
 		<SafeAreaView
@@ -82,7 +121,11 @@ export default function CheckoutConfirmationScreen() {
 			) : (
 				<>
 					<ScreenColumn width="reading">
-						<ScrollView contentContainerStyle={styles.scroll}>
+						<KeyboardAwareScrollView
+							contentContainerStyle={styles.scroll}
+							keyboardShouldPersistTaps="handled"
+							bottomOffset={24}
+						>
 							<View style={styles.hero}>
 								<View style={[styles.heroTile, { backgroundColor: heroSoft }]}>
 									<Ionicons
@@ -95,7 +138,9 @@ export default function CheckoutConfirmationScreen() {
 									style={[styles.title, { color: c.text }]}
 									accessibilityRole="header"
 								>
-									{t("checkout.orderPlaced")}
+									{outcome === "confirmed"
+										? t("checkout.orderPlaced")
+										: t("checkout.oneMoreStep")}
 								</Text>
 								<Text style={[styles.number, { color: c.body }]}>
 									{t("checkout.orderNumberLine", { number: order.orderNumber })}
@@ -190,44 +235,19 @@ export default function CheckoutConfirmationScreen() {
 									},
 								]}
 							/>
-						</ScrollView>
+							{pinned ? null : <View style={styles.inline}>{actions}</View>}
+						</KeyboardAwareScrollView>
 					</ScreenColumn>
-					<View
-						style={[
-							styles.bar,
-							{ backgroundColor: c.card, borderColor: c.border },
-						]}
-					>
-						<CheckoutButton
-							icon="cube-outline"
-							// While a code is owed, confirming it is the screen's one
-							// filled action; tracking steps back to a quiet button.
-							variant={outcome === "code" ? "outline" : "primary"}
-							label={t("checkout.trackOrder")}
-							onPress={() =>
-								router.replace({
-									pathname: "/purchases/[id]",
-									params: { id: order.id },
-								})
-							}
-						/>
-						{order.conversationId ? (
-							<CheckoutButton
-								variant="outline"
-								icon="chatbubble-outline"
-								label={t("checkout.writeToShop")}
-								onPress={() =>
-									router.replace(`/messages/${order.conversationId}`)
-								}
-							/>
-						) : (
-							<CheckoutButton
-								variant="outline"
-								label={t("checkout.continueShopping")}
-								onPress={leave}
-							/>
-						)}
-					</View>
+					{pinned ? (
+						<View
+							style={[
+								styles.bar,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							{actions}
+						</View>
+					) : null}
 				</>
 			)}
 		</SafeAreaView>
@@ -379,8 +399,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	title: {
-		fontSize: 28,
-		lineHeight: 33,
+		fontSize: 30,
+		lineHeight: 38,
 		letterSpacing: -0.6,
 		fontFamily: Fonts.displayExtrabold,
 		textAlign: "center",
@@ -392,9 +412,9 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		gap: 12,
 	},
-	totalLabel: { fontSize: 17, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 14, fontFamily: Fonts.body },
-	number: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	totalLabel: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
+	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	number: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	card: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 16,
@@ -416,11 +436,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	infoTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	infoBody: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
+	infoTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	infoBody: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	section: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayBold,
 		marginTop: 8,
 	},
@@ -434,10 +454,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	dotText: { fontSize: 13, fontFamily: Fonts.displayBold },
+	dotText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.displayBold },
 	line: { flex: 1, width: 2, marginVertical: 2 },
 	stepText: { flex: 1, gap: 2, paddingBottom: 16, paddingTop: 3 },
-	stepTitle: { fontSize: 16, fontFamily: Fonts.bodySemibold },
+	stepTitle: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	inline: { gap: 10, marginTop: 8 },
 	bar: {
 		padding: 16,
 		gap: 10,

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -18,6 +18,7 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
 const REASON_KEYS = [
@@ -40,6 +41,23 @@ export default function ReportModal() {
 	const { showSuccess, showError } = useAlert();
 	const [reason, setReason] = useState("");
 	const [description, setDescription] = useState("");
+	const { user, isLoading: authLoading } = useAuth();
+
+	// Reports need an account. The entry points ask first; this is the
+	// backstop for a deep link, and it comes back here after signing in.
+	useEffect(() => {
+		if (authLoading || user) return;
+		const back = `/report?${new URLSearchParams({
+			targetType: targetType ?? "",
+			targetId: targetId ?? "",
+		}).toString()}`;
+		router.replace({ pathname: "/auth/login", params: { redirect: back } });
+	}, [authLoading, user, targetType, targetId]);
+
+	// "Other" says nothing by itself: it needs a few words to act on.
+	const needsDetails = reason === "other";
+	const detailsMissing = needsDetails && description.trim().length < 10;
+	const canSubmit = !!reason && !detailsMissing;
 
 	const c = isDark ? Colors.dark : Colors.light;
 	const bg = c.background;
@@ -54,7 +72,9 @@ export default function ReportModal() {
 			? t("report.listingTitle")
 			: targetType === "user"
 				? t("report.userTitle")
-				: t("report.title");
+				: targetType === "shop"
+					? t("report.shopTitle")
+					: t("report.title");
 
 	const { mutate: submit, isPending } = useMutation({
 		mutationFn: () =>
@@ -151,11 +171,14 @@ export default function ReportModal() {
 				</View>
 
 				<Text style={[styles.label, styles.labelSpaced, { color: textColor }]}>
-					{t("report.descriptionLabel")}
+					{needsDetails ? t("report.otherHint") : t("report.descriptionLabel")}
 				</Text>
 				<TextInput
 					value={description}
 					onChangeText={setDescription}
+					accessibilityLabel={
+						needsDetails ? t("report.otherHint") : t("report.descriptionLabel")
+					}
 					placeholder={t("report.descriptionPlaceholder")}
 					placeholderTextColor={c.mutedForeground}
 					style={[
@@ -167,11 +190,11 @@ export default function ReportModal() {
 				/>
 
 				<Pressable
-					onPress={() => reason && submit()}
-					disabled={!reason || isPending}
+					onPress={() => canSubmit && submit()}
+					disabled={!canSubmit || isPending}
 					accessibilityRole="button"
 					accessibilityState={{
-						disabled: !reason || isPending,
+						disabled: !canSubmit || isPending,
 						busy: isPending,
 					}}
 					style={({ pressed }) => [
@@ -179,8 +202,8 @@ export default function ReportModal() {
 						{
 							// The light destructive red in both themes: white on the
 							// dark-mode red falls under 4.5:1.
-							backgroundColor: !reason ? c.well : Colors.light.destructive,
-							opacity: pressed && reason ? 0.85 : 1,
+							backgroundColor: !canSubmit ? c.well : Colors.light.destructive,
+							opacity: pressed && canSubmit ? 0.85 : 1,
 						},
 					]}
 				>
@@ -190,7 +213,7 @@ export default function ReportModal() {
 						<Text
 							style={[
 								styles.submitText,
-								{ color: !reason ? mutedColor : "#ffffff" },
+								{ color: !canSubmit ? mutedColor : "#ffffff" },
 							]}
 						>
 							{t("report.submit")}
@@ -213,7 +236,12 @@ const styles = StyleSheet.create({
 		minHeight: 60,
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	title: { flex: 1, fontSize: 20, fontFamily: Fonts.displayBold },
+	title: {
+		flex: 1,
+		fontSize: 20,
+		lineHeight: 28,
+		fontFamily: Fonts.displayBold,
+	},
 	closeBtn: {
 		width: 48,
 		height: 48,
@@ -221,7 +249,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	body: { padding: 20, gap: 10, paddingBottom: 40 },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	labelSpaced: { marginTop: 14 },
 	reasonList: {
 		borderRadius: 14,
@@ -237,7 +265,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 	},
-	reasonText: { flex: 1, fontSize: 15, lineHeight: 20 },
+	reasonText: { flex: 1, fontFamily: Fonts.body, fontSize: 15, lineHeight: 20 },
 	textarea: {
 		borderRadius: 12,
 		borderWidth: 1,
@@ -257,5 +285,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 10,
 	},
-	submitText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

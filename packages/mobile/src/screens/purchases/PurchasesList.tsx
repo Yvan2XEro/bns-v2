@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -25,6 +25,7 @@ import { usePurchases } from "@/src/hooks/usePurchases";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { withGroupHeaders } from "@/src/lib/checkoutGroupFlow";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatOrderDate } from "@/src/lib/orderMoney";
 import {
 	PURCHASE_TAB_LABEL_KEYS,
 	PURCHASE_TABS,
@@ -32,9 +33,25 @@ import {
 	purchaseTab,
 } from "@/src/lib/purchaseActions";
 
-function GroupHeader({ checkoutGroup }: { checkoutGroup: string }) {
+function GroupHeader({
+	checkoutGroup,
+	count,
+	placedAt,
+}: {
+	checkoutGroup: string;
+	count: number;
+	placedAt: string | null;
+}) {
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
+	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
+	// Several groups must not sound the same to a screen reader.
+	const label = placedAt
+		? t("checkoutGroup.openGroupDetail", {
+				date: formatOrderDate(placedAt, lang),
+				count,
+			})
+		: t("checkoutGroup.openGroup");
 	return (
 		<Pressable
 			onPress={() =>
@@ -44,7 +61,7 @@ function GroupHeader({ checkoutGroup }: { checkoutGroup: string }) {
 				})
 			}
 			accessibilityRole="button"
-			accessibilityLabel={t("checkoutGroup.openGroup")}
+			accessibilityLabel={label}
 			style={styles.groupHeader}
 		>
 			<Ionicons name="layers-outline" size={16} color={inkOf(c)} />
@@ -72,6 +89,23 @@ export function PurchasesList({ selectedId, onOpen }: SplitListProps) {
 			? undefined
 			: all.filter((entry) => purchaseTab(entry.status) === key).length;
 	const items = withGroupHeaders(entries);
+	const groupFacts = (checkoutGroup: string) => {
+		const members = entries.filter(
+			(entry) => entry.checkoutGroup === checkoutGroup,
+		);
+		return { count: members.length, placedAt: members[0]?.placedAt ?? null };
+	};
+	// Tabs filter the pages loaded so far: while a tab is empty and more
+	// pages exist, keep loading instead of saying "nothing here" over a
+	// "load more" button.
+	const searching =
+		entries.length === 0 &&
+		Boolean(purchases.hasNextPage) &&
+		!purchases.isFetchNextPageError;
+	const { fetchNextPage, isFetchingNextPage } = purchases;
+	useEffect(() => {
+		if (searching && !isFetchingNextPage) void fetchNextPage();
+	}, [searching, isFetchingNextPage, fetchNextPage]);
 	const nothingYet =
 		purchases.isSuccess &&
 		!purchases.hasNextPage &&
@@ -125,7 +159,10 @@ export function PurchasesList({ selectedId, onOpen }: SplitListProps) {
 						getItemType={(item) => item.kind}
 						renderItem={({ item }) =>
 							item.kind === "header" ? (
-								<GroupHeader checkoutGroup={item.checkoutGroup} />
+								<GroupHeader
+									checkoutGroup={item.checkoutGroup}
+									{...groupFacts(item.checkoutGroup)}
+								/>
 							) : (
 								<PurchaseRow
 									entry={item.entry}
@@ -149,15 +186,19 @@ export function PurchasesList({ selectedId, onOpen }: SplitListProps) {
 							}
 						}}
 						ListEmptyComponent={
-							<View style={styles.emptyWrap}>
-								<Ionicons name="receipt-outline" size={28} color={c.muted} />
-								<Text style={[styles.empty, { color: c.body }]}>
-									{t("purchases.tabEmpty")}
-								</Text>
-							</View>
+							searching ? (
+								<OrderListSkeleton rows={2} />
+							) : (
+								<View style={styles.emptyWrap}>
+									<Ionicons name="receipt-outline" size={28} color={c.muted} />
+									<Text style={[styles.empty, { color: c.body }]}>
+										{t("purchases.tabEmpty")}
+									</Text>
+								</View>
+							)
 						}
 						ListFooterComponent={
-							purchases.hasNextPage ? (
+							purchases.hasNextPage && !searching ? (
 								<Pressable
 									onPress={() => void purchases.fetchNextPage()}
 									disabled={purchases.isFetchingNextPage}
@@ -205,6 +246,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 6,
 	},
-	groupHeaderText: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
-	moreText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	groupHeaderText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
+	moreText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

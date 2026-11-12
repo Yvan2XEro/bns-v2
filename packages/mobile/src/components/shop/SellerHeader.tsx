@@ -81,9 +81,14 @@ const styles = StyleSheet.create({
 	edge: { width: 4 },
 	title: {
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},
-	subtitle: { fontSize: 13, fontFamily: Fonts.body, marginTop: 1 },
+	subtitle: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+		marginTop: 1,
+	},
 });

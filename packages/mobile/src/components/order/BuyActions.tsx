@@ -208,7 +208,12 @@ export function BuyActions({
 const styles = StyleSheet.create({
 	wrap: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 14, gap: 12 },
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold, flex: 1 },
+	label: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flex: 1,
+	},
 	step: {
 		width: 44,
 		height: 44,
@@ -221,6 +226,7 @@ const styles = StyleSheet.create({
 		minWidth: 28,
 		textAlign: "center",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	button: {
@@ -234,12 +240,13 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	buttonText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	buttonText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	added: { minHeight: 44, justifyContent: "center" },
-	small: { fontSize: 13, fontFamily: Fonts.body },
+	small: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	badges: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	badge: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 		paddingHorizontal: 10,
 		paddingVertical: 4,

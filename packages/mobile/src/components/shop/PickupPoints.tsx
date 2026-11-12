@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
 		gap: 12,
 	},
 	point: { gap: 5, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 12 },
-	title: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
-	copy: { fontFamily: Fonts.body, fontSize: 13 },
+	title: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
+	copy: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 	link: { minHeight: 48, justifyContent: "center" },
 });

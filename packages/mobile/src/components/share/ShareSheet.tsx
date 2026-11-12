@@ -206,10 +206,10 @@ const styles = StyleSheet.create({
 	title: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 	},
-	subtitle: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 19 },
+	subtitle: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -226,6 +226,6 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	rowText: { flex: 1, gap: 2 },
-	rowTitle: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	rowTitle: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	rowHint: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 17 },
 });

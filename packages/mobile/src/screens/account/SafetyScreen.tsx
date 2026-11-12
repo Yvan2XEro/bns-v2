@@ -1,8 +1,10 @@
 import type { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import {
+	GroupedRow,
 	GroupedSection,
 	RowIcon,
 	useGroupedColors,
@@ -73,6 +75,31 @@ export function SafetyScreen() {
 						</View>
 					))}
 				</GroupedSection>
+
+				{/* Advice, then the way forward for someone it is already too
+				    late for. */}
+				<GroupedSection
+					title={t("safety.actionsTitle", { defaultValue: "Un problème ?" })}
+				>
+					<GroupedRow
+						icon="chatbubble-ellipses-outline"
+						iconTone="brand"
+						label={t("disputes.title")}
+						detail={t("disputes.subtitle")}
+						onPress={() => router.push("/account/disputes")}
+					/>
+					<GroupedRow
+						icon="flag-outline"
+						iconTone="danger"
+						label={t("contact.subjectAbuse")}
+						onPress={() =>
+							router.push({
+								pathname: "/contact",
+								params: { subject: "subjectAbuse" },
+							})
+						}
+					/>
+				</GroupedSection>
 			</ScrollView>
 		</SafeAreaView>
 	);
@@ -83,8 +110,8 @@ const styles = StyleSheet.create({
 	scroll: { padding: 16, paddingTop: 24, gap: 24, paddingBottom: 48 },
 	lead: { gap: 8, paddingHorizontal: 4, maxWidth: 600 },
 	heading: {
-		fontSize: 23,
-		lineHeight: 28,
+		fontSize: 24,
+		lineHeight: 32,
 		letterSpacing: -0.5,
 		fontFamily: Fonts.displayBold,
 	},
@@ -98,5 +125,5 @@ const styles = StyleSheet.create({
 	},
 	tipText: { flex: 1, gap: 3 },
 	tipTitle: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.bodySemibold },
-	tipDesc: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	tipDesc: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 });

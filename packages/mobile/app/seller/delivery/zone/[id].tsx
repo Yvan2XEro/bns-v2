@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
 import { ZoneForm } from "@/src/components/delivery/ZoneForm";
@@ -89,9 +90,10 @@ function ZoneEditor({
 
 	return (
 		<ScreenColumn width="reading">
-			<ScrollView
+			<KeyboardAwareScrollView
 				contentContainerStyle={styles.content}
 				keyboardShouldPersistTaps="handled"
+				bottomOffset={24}
 			>
 				<ZoneForm
 					key={zone?.updatedAt ?? "new"}
@@ -99,18 +101,26 @@ function ZoneEditor({
 					pending={save.isPending}
 					error={save.error}
 					onSubmit={(values) =>
-						save.mutate(toZoneInput(values), { onSuccess: () => router.back() })
+						save.mutate(toZoneInput(values), {
+							onSuccess: () => {
+								alerts.showSuccess(t("deliverySettings.saved"));
+								router.back();
+							},
+						})
 					}
 				/>
 				{zoneId ? (
-					<SheetButton
-						label={t("deliverySettings.delete")}
-						tone="danger"
-						pending={remove.isPending}
-						onPress={confirmDelete}
-					/>
+					<View style={styles.danger}>
+						<SheetButton
+							label={t("deliverySettings.delete")}
+							tone="danger"
+							outline
+							pending={remove.isPending}
+							onPress={confirmDelete}
+						/>
+					</View>
 				) : null}
-			</ScrollView>
+			</KeyboardAwareScrollView>
 		</ScreenColumn>
 	);
 }
@@ -132,4 +142,6 @@ export default function ZoneScreen() {
 
 const styles = StyleSheet.create({
 	content: { padding: 16, gap: 16, paddingBottom: 48 },
+	// Kept apart from Save so a slip does not land on the destructive action.
+	danger: { marginTop: 24 },
 });

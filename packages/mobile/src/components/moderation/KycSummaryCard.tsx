@@ -112,5 +112,5 @@ const styles = StyleSheet.create({
 		borderTopWidth: StyleSheet.hairlineWidth,
 		marginTop: 2,
 	},
-	link: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	link: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

@@ -1,17 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Redirect, Tabs } from "expo-router";
-import { useEffect, useRef } from "react";
-import {
-	Animated,
-	type ColorValue,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
-import { Colors, Fonts } from "@/constants/theme";
+import { useEffect } from "react";
+import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
+import { QuietTabBar, TabGlyph } from "@/src/components/navigation/QuietTabBar";
 import { sellerBrandPalette } from "@/src/components/shop/brandTones";
 import {
 	SellerAreaContext,
@@ -25,6 +18,7 @@ import {
 	useHasShopMembership,
 	useStoredAppMode,
 } from "@/src/hooks/useAppMode";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { useSellerOrders } from "@/src/hooks/useSellerOrders";
 import { shopKeys } from "@/src/hooks/useShops";
 import { useTabNavigatorOptions } from "@/src/hooks/useTabNavigatorOptions";
@@ -33,67 +27,6 @@ import { useTranslation } from "@/src/lib/i18n";
 import { shopProfileRules } from "@/src/lib/listingKind";
 import { showsOrdersTile } from "@/src/lib/sellerTiles";
 import { can } from "@/src/lib/shopRoles";
-
-type IoniconsName = keyof typeof Ionicons.glyphMap;
-
-/**
- * Solid at every state, matching the buyer tabs. Selection reads from the
- * tinted plaque behind the glyph as well as the colour, since two solid
- * glyphs separated only by hue are hard to tell apart on either ground.
- */
-function TabIcon({
-	name,
-	color,
-	focused,
-	badge = 0,
-}: {
-	name: IoniconsName;
-	color: ColorValue;
-	focused: boolean;
-	badge?: number;
-}) {
-	const plaque = useRef(new Animated.Value(focused ? 1 : 0)).current;
-
-	useEffect(() => {
-		Animated.timing(plaque, {
-			toValue: focused ? 1 : 0,
-			duration: focused ? 180 : 120,
-			useNativeDriver: true,
-		}).start();
-	}, [focused, plaque]);
-
-	return (
-		<View style={styles.icon}>
-			<Animated.View
-				pointerEvents="none"
-				style={[
-					styles.plaque,
-					{
-						backgroundColor: color as string,
-						opacity: plaque.interpolate({
-							inputRange: [0, 1],
-							outputRange: [0, 0.14],
-						}),
-						transform: [
-							{
-								scale: plaque.interpolate({
-									inputRange: [0, 1],
-									outputRange: [0.7, 1],
-								}),
-							},
-						],
-					},
-				]}
-			/>
-			<Ionicons name={name} size={26} color={color} />
-			{badge > 0 ? (
-				<View style={styles.badge}>
-					<Text style={styles.badgeText}>{badge > 9 ? "9+" : badge}</Text>
-				</View>
-			) : null}
-		</View>
-	);
-}
 
 export default function SellerTabLayout() {
 	const isDark = useColorScheme() === "dark";
@@ -125,6 +58,7 @@ export default function SellerTabLayout() {
 		: // The buyer tabs' own selection colour, so switching mode keeps the bar.
 			Colors[isDark ? "dark" : "light"].tabIconSelected;
 	const tabOptions = useTabNavigatorOptions(activeColor);
+	const { isExpanded } = useResponsive();
 	// The counts are drawn inside the icons; screen readers get them here.
 	const ordersBadge = useOrdersBadge();
 	const inboxBadge = useInboxBadge();
@@ -134,13 +68,22 @@ export default function SellerTabLayout() {
 
 	return (
 		<SellerAreaContext.Provider value={true}>
-			<Tabs screenOptions={tabOptions}>
+			<Tabs
+				screenOptions={tabOptions}
+				// The quiet bar at the bottom, its mark in the shop's colour; the
+				// tablet rail keeps the navigator's own bar.
+				tabBar={
+					isExpanded
+						? undefined
+						: (props) => <QuietTabBar {...props} markColor={activeColor} />
+				}
+			>
 				<Tabs.Screen
 					name="sell/dashboard"
 					options={{
 						title: t("sellerMode.tabs.dashboard"),
 						tabBarIcon: ({ color, focused }) => (
-							<TabIcon name="grid" color={color} focused={focused} />
+							<TabGlyph name="grid" color={color as string} focused={focused} />
 						),
 					}}
 				/>
@@ -154,9 +97,9 @@ export default function SellerTabLayout() {
 								? t("sellerMode.tabs.ordersWithCount", { count: ordersBadge })
 								: undefined,
 						tabBarIcon: ({ color, focused }) => (
-							<TabIcon
+							<TabGlyph
 								name="receipt"
-								color={color}
+								color={color as string}
 								focused={focused}
 								badge={ordersBadge}
 							/>
@@ -170,9 +113,9 @@ export default function SellerTabLayout() {
 							? t("sellerMode.tabs.catalogue")
 							: t("sellerAds.title"),
 						tabBarIcon: ({ color, focused }) => (
-							<TabIcon
+							<TabGlyph
 								name={retail ? "cube" : "megaphone"}
-								color={color}
+								color={color as string}
 								focused={focused}
 							/>
 						),
@@ -187,9 +130,9 @@ export default function SellerTabLayout() {
 								? t("sellerMode.tabs.messagesWithCount", { count: inboxBadge })
 								: undefined,
 						tabBarIcon: ({ color, focused }) => (
-							<TabIcon
+							<TabGlyph
 								name="chatbubbles"
-								color={color}
+								color={color as string}
 								focused={focused}
 								badge={inboxBadge}
 							/>
@@ -201,7 +144,11 @@ export default function SellerTabLayout() {
 					options={{
 						title: t("sellerMode.tabs.shop"),
 						tabBarIcon: ({ color, focused }) => (
-							<TabIcon name="storefront" color={color} focused={focused} />
+							<TabGlyph
+								name="storefront"
+								color={color as string}
+								focused={focused}
+							/>
 						),
 					}}
 				/>
@@ -239,39 +186,3 @@ function useInboxBadge(): number {
 
 	return can(shop?.role, "inbox.reply") ? (shop?.inboxUnread ?? 0) : 0;
 }
-
-const styles = StyleSheet.create({
-	icon: {
-		width: 44,
-		height: 32,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	// Behind the selected glyph, tinted from the active colour.
-	plaque: {
-		position: "absolute",
-		width: 44,
-		height: 32,
-		borderRadius: 11,
-	},
-	badge: {
-		position: "absolute",
-		// The glyph is 26 wide inside a 44x32 box, so the corner it wants is
-		// inset from the box edge, not outside it.
-		top: 0,
-		right: 4,
-		backgroundColor: "#d23a2e",
-		borderRadius: 10,
-		minWidth: 18,
-		height: 18,
-		alignItems: "center",
-		justifyContent: "center",
-		paddingHorizontal: 4,
-	},
-	badgeText: {
-		color: "#ffffff",
-		fontSize: 11,
-		fontFamily: Fonts.displayExtrabold,
-		fontVariant: ["tabular-nums"],
-	},
-});

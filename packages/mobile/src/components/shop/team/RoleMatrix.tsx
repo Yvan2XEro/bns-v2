@@ -98,7 +98,7 @@ export function RoleCard({
 				/>
 				<View style={{ flex: 1 }}>
 					<Text
-						style={[styles.roleName, { color: selected ? c.primary : c.text }]}
+						style={[styles.roleName, { color: selected ? c.link : c.text }]}
 					>
 						{t(ROLE_LABEL_KEYS[role])}
 					</Text>
@@ -163,11 +163,12 @@ const styles = StyleSheet.create({
 	row: { flexDirection: "row", alignItems: "center", minHeight: 30 },
 	line: { borderTopWidth: StyleSheet.hairlineWidth },
 	areaCol: { flex: 1.4 },
-	area: { flex: 1.4, fontSize: 13, fontFamily: Fonts.body },
+	area: { flex: 1.4, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	head: {
 		flex: 1,
 		textAlign: "center",
 		fontSize: 11,
+		lineHeight: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 	cellCol: { flex: 1, alignItems: "center" },
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
 	},
 	roleCard: { borderRadius: 16, padding: 14, gap: 10 },
 	roleHead: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
-	roleName: { fontSize: 15, fontFamily: Fonts.displayBold },
+	roleName: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 	rights: {
 		flexDirection: "row",
 		flexWrap: "wrap",

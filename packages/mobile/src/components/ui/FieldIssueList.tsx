@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { type FieldIssue, issueMessage } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ListingAttribute } from "@/src/lib/listingForm";
@@ -27,6 +28,7 @@ export function FieldIssueList({
 	attributes: ListingAttribute[];
 }) {
 	const { t } = useTranslation();
+	const C = Colors[useColorScheme() === "dark" ? "dark" : "light"];
 	if (issues.length === 0) return null;
 
 	const labelOf = (path: string) => {
@@ -39,11 +41,17 @@ export function FieldIssueList({
 	};
 
 	return (
-		<View style={styles.box} accessibilityRole="alert">
+		<View
+			style={[
+				styles.box,
+				{ backgroundColor: C.dangerTint, borderColor: C.destructive },
+			]}
+			accessibilityRole="alert"
+		>
 			{issues.map((issue) => (
 				<View key={`${issue.path}:${issue.rule}`} style={styles.row}>
-					<Ionicons name="alert-circle" size={14} color="#d23a2e" />
-					<Text style={styles.text}>
+					<Ionicons name="alert-circle" size={14} color={C.dangerText} />
+					<Text style={[styles.text, { color: C.dangerText }]}>
 						<Text style={styles.label}>{labelOf(issue.path)} — </Text>
 						{issueMessage(t, issue)}
 					</Text>
@@ -58,12 +66,10 @@ const styles = StyleSheet.create({
 		gap: 6,
 		padding: 12,
 		borderRadius: 12,
-		borderWidth: 1,
-		borderColor: "#f2a79f",
-		backgroundColor: "#fdf1ef",
+		borderWidth: StyleSheet.hairlineWidth,
 		marginVertical: 8,
 	},
 	row: { flexDirection: "row", gap: 6, alignItems: "flex-start" },
-	text: { flex: 1, fontSize: 13, fontFamily: Fonts.body, color: "#8e2219" },
+	text: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	label: { fontFamily: Fonts.bodySemibold },
 });

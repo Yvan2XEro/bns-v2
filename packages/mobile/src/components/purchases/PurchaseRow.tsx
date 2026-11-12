@@ -74,12 +74,20 @@ export function PurchaseRow({
 	const number = t("purchases.orderNumber", { number: entry.orderNumber });
 	const paymentKey = purchasePaymentKey(entry);
 	const liveArrival = purchaseLiveArrival(entry);
+	// The one buyer task the list can see: a protected order still to pay
+	// before it lapses. Flagged on the row so nobody has to open each order.
+	const mustPay =
+		entry.paymentMethod === "mobile_money" &&
+		entry.status === "placed" &&
+		(entry.paymentStatus === "unpaid" ||
+			entry.paymentStatus === "awaiting_payment");
+	const todo = mustPay ? t("purchases.todoPay") : null;
 
 	return (
 		<Pressable
 			onPress={onPress}
 			accessibilityRole="button"
-			accessibilityLabel={`${entry.firstItemTitle}, ${number}, ${t(purchaseStatusKey(entry.status))}, ${formatPrice(entry.total, lang)}`}
+			accessibilityLabel={`${todo ? `${todo}, ` : ""}${entry.firstItemTitle}, ${number}, ${t(purchaseStatusKey(entry.status))}, ${formatPrice(entry.total, lang)}`}
 			accessibilityState={{ selected: Boolean(selected) }}
 			style={({ pressed }) => [
 				styles.card,
@@ -142,6 +150,14 @@ export function PurchaseRow({
 						{paymentKey ? ` · ${t(paymentKey)}` : ""}
 					</Text>
 				</View>
+				{todo ? (
+					<View style={styles.arrival}>
+						<Ionicons name="alert-circle" size={14} color={c.warningText} />
+						<Text style={[styles.arrivalText, { color: c.warningText }]}>
+							{todo}
+						</Text>
+					</View>
+				) : null}
 				{liveArrival ? (
 					<View style={styles.arrival}>
 						<Ionicons name="time-outline" size={14} color={inkOf(c)} />
@@ -175,7 +191,12 @@ const styles = StyleSheet.create({
 		marginBottom: 2,
 	},
 	shop: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
-	shopName: { fontSize: 13, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	shopName: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 	pill: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -185,9 +206,9 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 	},
 	dot: { width: 6, height: 6, borderRadius: 3 },
-	pillText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	pillText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 	title: { fontSize: 15, fontFamily: Fonts.bodySemibold, lineHeight: 20 },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	totalRow: {
 		flexDirection: "row",
 		alignItems: "baseline",
@@ -195,12 +216,13 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	total: {
-		fontSize: 17,
+		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.3,
 		fontVariant: ["tabular-nums"],
 	},
 	totalMeta: { flexShrink: 1 },
 	arrival: { flexDirection: "row", alignItems: "center", gap: 4 },
-	arrivalText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	arrivalText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 });

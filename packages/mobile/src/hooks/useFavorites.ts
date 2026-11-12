@@ -5,6 +5,7 @@ import { useAlert } from "../contexts/AlertContext";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { getAuthModalParams } from "../lib/authRedirect";
+import i18n from "../lib/i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -202,7 +203,10 @@ export function useFavoriteActions() {
 				{
 					onError: (err) => {
 						console.error(err);
-						showError("Favoris", "Impossible de mettre a jour les favoris.");
+						showError(
+							i18n.t("favorites.title"),
+							i18n.t("favorites.updateError"),
+						);
 					},
 				},
 			);

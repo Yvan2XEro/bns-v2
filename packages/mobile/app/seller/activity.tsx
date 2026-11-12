@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		justifyContent: "center",
 	},
-	filterText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	filterText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	list: { padding: 16, paddingBottom: 40 },
 	separator: { height: 10 },
 	footerSpinner: { marginVertical: 16 },

@@ -51,6 +51,26 @@ export const SHIPMENT_STATUS_LABELS: Record<
 	},
 };
 
+/**
+ * The rider's and the dispatcher's words: a parcel the shop still holds is one
+ * to pick up, not one "to ship". Kept out of `ShipmentAudience` on purpose:
+ * the buyer and seller tables are held to web cell for cell by the API's
+ * parity spec, and web has no courier screens.
+ */
+export const COURIER_STATUS_LABELS: Record<ShipmentStatus, string> = {
+	pending: "delivery.statusCourier.pending",
+	picked_up: "delivery.statusCourier.picked_up",
+	in_transit: "delivery.statusCourier.in_transit",
+	delivered: "delivery.statusCourier.delivered",
+	failed: "delivery.statusCourier.failed",
+	returned: "delivery.statusCourier.returned",
+	cancelled: "delivery.statusCourier.cancelled",
+};
+
+export function courierStatusLabel(status: ShipmentStatus): string {
+	return COURIER_STATUS_LABELS[status];
+}
+
 /** A `pending` shipment the buyer collects shows this instead of the preparing label (`readyForPickupAt` present). */
 export const READY_FOR_PICKUP_LABELS: Record<ShipmentAudience, string> = {
 	buyer: "delivery.pendingReadyBuyer",

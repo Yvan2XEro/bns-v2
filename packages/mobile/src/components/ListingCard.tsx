@@ -322,6 +322,7 @@ const styles = StyleSheet.create({
 	boostText: {
 		color: "#ffffff",
 		fontSize: 11,
+		lineHeight: 14,
 		fontFamily: Fonts.bodyBold,
 		letterSpacing: 0.2,
 	},
@@ -336,6 +337,7 @@ const styles = StyleSheet.create({
 	},
 	chipText: {
 		fontSize: 11,
+		lineHeight: 14,
 		fontFamily: Fonts.bodyBold,
 		color: "#12163a",
 	},
@@ -399,6 +401,7 @@ const styles = StyleSheet.create({
 	photoText: {
 		color: "#fff",
 		fontSize: 11,
+		lineHeight: 14,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -411,8 +414,8 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		fontFamily: Fonts.bodyMedium,
-		fontSize: 14,
-		lineHeight: 19,
+		fontSize: 15,
+		lineHeight: 22,
 	},
 	metaText: {
 		fontFamily: Fonts.body,
@@ -422,6 +425,7 @@ const styles = StyleSheet.create({
 	shopRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 1 },
 	shopText: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 		flexShrink: 1,
 	},

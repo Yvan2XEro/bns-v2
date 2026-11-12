@@ -15,7 +15,6 @@ import { shopApi } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { orderHelpActions, shopMessageTarget } from "@/src/lib/orderHelpBar";
-import { fillOf } from "../checkout/fill";
 import { useShopTheme } from "../shop/theme";
 
 export function OrderHelpBar({
@@ -36,7 +35,6 @@ export function OrderHelpBar({
 	const start = useMutation({
 		mutationFn: (id: string) => shopApi.startShopConversation(id),
 	});
-	const fill = fillOf(c);
 	const actions = orderHelpActions({ canReportProblem, shopId });
 	if (actions.length === 0) return null;
 
@@ -80,7 +78,7 @@ export function OrderHelpBar({
 					]}
 				>
 					<Ionicons name="warning-outline" size={18} color={c.text} />
-					<Text style={[styles.text, { color: c.text }]} numberOfLines={1}>
+					<Text style={[styles.text, { color: c.text }]} numberOfLines={2}>
 						{t("purchases.helpProblem")}
 					</Text>
 				</Pressable>
@@ -93,15 +91,20 @@ export function OrderHelpBar({
 					onPress={messageShop}
 					style={({ pressed }) => [
 						styles.button,
-						{ backgroundColor: fill.bg, opacity: pressed ? 0.85 : 1 },
+						styles.outline,
+						{
+							borderColor: c.border,
+							backgroundColor: c.card,
+							opacity: pressed ? 0.85 : 1,
+						},
 					]}
 				>
 					{start.isPending ? (
-						<ActivityIndicator color={fill.fg} />
+						<ActivityIndicator color={c.text} />
 					) : (
-						<Ionicons name="chatbubble-outline" size={18} color={fill.fg} />
+						<Ionicons name="chatbubble-outline" size={18} color={c.text} />
 					)}
-					<Text style={[styles.text, { color: fill.fg }]} numberOfLines={1}>
+					<Text style={[styles.text, { color: c.text }]} numberOfLines={2}>
 						{t("purchases.helpMessageShop")}
 					</Text>
 				</Pressable>
@@ -129,5 +132,13 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 	},
 	outline: { borderWidth: 1 },
-	text: { fontSize: 16, fontFamily: Fonts.bodyBold, flexShrink: 1 },
+	// Two half-width buttons leave about 110pt for a label at 360dp, so a
+	// long one wraps to a second line instead of losing its end.
+	text: {
+		fontSize: 15,
+		lineHeight: 19,
+		fontFamily: Fonts.bodyBold,
+		flexShrink: 1,
+		textAlign: "center",
+	},
 });

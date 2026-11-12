@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
+import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	moderationVerificationKeys,
 	useVerificationDecision,
@@ -38,15 +39,25 @@ export function VerificationCard({
 	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const claim = useVerificationDecision();
+	const { showSuccess } = useAlert();
 
 	const age = relativeAge(item.submittedAt);
 	const claimable = item.status === "submitted" && !item.assignee;
 	const tone = statusToneKey(item.status);
 	const k = tonesOf(c);
 	const status = toneColors(tone, c);
-	const shopLabel = t("moderation.verifRowShop", {
-		id: item.shopId ?? item.id,
-	});
+	// A shop name is what a reviewer scans for; the database ID is only the
+	// fallback until the queue route sends `shopName` with every row.
+	const shopName = (
+		item as ModerationVerificationQueueItem & {
+			shopName?: string | null;
+		}
+	).shopName;
+	const shopLabel =
+		shopName ||
+		t("moderation.verifRowShop", {
+			id: item.shopId ?? item.id,
+		});
 
 	return (
 		<Pressable
@@ -103,6 +114,7 @@ export function VerificationCard({
 						claim.mutate(
 							{ id: item.id, action: "claim" },
 							{
+								onSuccess: () => showSuccess(t("moderation.verifClaimed")),
 								onError: () => {
 									queryClient.invalidateQueries({
 										queryKey: moderationVerificationKeys.root,
@@ -159,7 +171,7 @@ const styles = StyleSheet.create({
 	},
 	statusPill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
 	status: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
-	age: { fontSize: 13, fontFamily: Fonts.body },
+	age: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	signals: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
 	claimBtn: {
 		alignSelf: "flex-start",
@@ -171,5 +183,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	claimText: { fontSize: 15, fontFamily: Fonts.bodyBold, color: "#ffffff" },
+	claimText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+		color: "#ffffff",
+	},
 });

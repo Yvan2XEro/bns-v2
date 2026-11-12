@@ -154,13 +154,13 @@ const styles = StyleSheet.create({
 		marginBottom: 4,
 	},
 	recentTitle: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
 	clearBtn: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },
-	clear: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	clear: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	recentCard: {
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
 		paddingLeft: 14,
 		minHeight: 52,
 	},
-	recentText: { flex: 1, fontSize: 16, fontFamily: Fonts.body },
+	recentText: { flex: 1, fontSize: 16, lineHeight: 22, fontFamily: Fonts.body },
 	removeBtn: {
 		width: 48,
 		height: 48,
@@ -191,5 +191,5 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		maxWidth: 260,
 	},
-	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

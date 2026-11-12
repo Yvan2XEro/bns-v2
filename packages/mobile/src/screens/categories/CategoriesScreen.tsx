@@ -36,9 +36,15 @@ import {
 const GROUP_CHIPS = 8;
 const RAIL_WIDTH = 96;
 
-/** The one search of the app, filtered on the category itself. */
+/**
+ * The one search of the app, filtered on the category itself. `entry` makes
+ * it a fresh search: no text or sort left over from the last one.
+ */
 function openCategory(id: string) {
-	router.push({ pathname: "/(tabs)/search", params: { category: id } });
+	router.push({
+		pathname: "/(tabs)/search",
+		params: { category: id, entry: String(Date.now()) },
+	});
 }
 
 function Thumb({
@@ -219,7 +225,7 @@ export function CategoriesScreen() {
 										numberOfLines={2}
 										style={[
 											styles.railLabel,
-											{ color: active ? c.link : c.body },
+											{ color: active ? c.link : c.foreground },
 											active && styles.railLabelActive,
 										]}
 										android_hyphenationFrequency="normal"
@@ -441,7 +447,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		textAlign: "center",
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -457,8 +463,8 @@ const styles = StyleSheet.create({
 		gap: 6,
 	},
 	railLabel: {
-		fontSize: 12,
-		lineHeight: 15,
+		fontSize: 13,
+		lineHeight: 16,
 		textAlign: "center",
 		fontFamily: Fonts.bodySemibold,
 	},
@@ -474,7 +480,7 @@ const styles = StyleSheet.create({
 	paneContent: { padding: 12, gap: 12, paddingBottom: 40 },
 	paneTitle: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 		paddingHorizontal: 2,
@@ -489,7 +495,12 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 14,
 	},
-	allLabel: { flexShrink: 1, fontSize: 15, fontFamily: Fonts.bodyBold },
+	allLabel: {
+		flexShrink: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	group: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 14,
@@ -502,7 +513,12 @@ const styles = StyleSheet.create({
 		gap: 10,
 		minHeight: 44,
 	},
-	groupName: { flex: 1, fontSize: 15, fontFamily: Fonts.bodyBold },
+	groupName: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	chip: {
 		minHeight: 40,
@@ -511,7 +527,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		maxWidth: "100%",
 	},
-	chipLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	chipLabel: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	tiles: {
 		flexDirection: "row",
 		flexWrap: "wrap",

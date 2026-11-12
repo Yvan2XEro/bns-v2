@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { fillOf } from "@/src/components/shop/ink";
@@ -27,8 +28,23 @@ export function OrderTabs({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	// A tab opened from a notification (`tab=failed`) may sit off screen:
+	// bring the active one into view at mount and on every change.
+	const scrollRef = useRef<ScrollView>(null);
+	const offsets = useRef<Partial<Record<ShopOrderTab, number>>>({});
+	const reveal = (tab: ShopOrderTab, animated: boolean) => {
+		const x = offsets.current[tab];
+		if (x === undefined) return;
+		scrollRef.current?.scrollTo({ x: Math.max(0, x - 16), animated });
+	};
+	useEffect(() => {
+		const x = offsets.current[active];
+		if (x === undefined) return;
+		scrollRef.current?.scrollTo({ x: Math.max(0, x - 16), animated: true });
+	}, [active]);
 	return (
 		<ScrollView
+			ref={scrollRef}
 			horizontal
 			showsHorizontalScrollIndicator={false}
 			style={styles.scroll}
@@ -46,6 +62,10 @@ export function OrderTabs({
 					<Pressable
 						key={tab}
 						onPress={() => onChange(tab)}
+						onLayout={(event) => {
+							offsets.current[tab] = event.nativeEvent.layout.x;
+							if (tab === active) reveal(tab, false);
+						}}
 						accessibilityRole="tab"
 						accessibilityState={{ selected }}
 						accessibilityLabel={
@@ -112,7 +132,7 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 	},
 	pressed: { opacity: 0.7 },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	count: {
 		minWidth: 22,
 		alignItems: "center",
@@ -122,6 +142,7 @@ const styles = StyleSheet.create({
 	},
 	countText: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},

@@ -54,8 +54,8 @@ const styles = StyleSheet.create({
 	main: { flex: 1, gap: 4 },
 	date: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodySemibold },
 	amount: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.3,
 		fontVariant: ["tabular-nums"],

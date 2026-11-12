@@ -69,5 +69,5 @@ export function DocumentSlots({
 }
 
 const styles = StyleSheet.create({
-	title: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	title: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

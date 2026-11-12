@@ -59,6 +59,18 @@ function Stepper({
 	);
 }
 
+/**
+ * One line of one unit is the whole order: it starts selected, so the
+ * buyer does not have to find "+" before the button works.
+ */
+function startingValues(items: Pick<OrderView, "items">["items"]) {
+	const values = withdrawalDefaults(items);
+	if (values.items.length === 1 && values.items[0].max === 1) {
+		values.items[0] = { ...values.items[0], quantity: 1 };
+	}
+	return values;
+}
+
 /** The item picker, the method in words and the reason, over one zod schema. */
 export function WithdrawalForm({
 	order,
@@ -73,7 +85,7 @@ export function WithdrawalForm({
 	const { control, formState, handleSubmit, setError } =
 		useForm<WithdrawalValues>({
 			resolver: zodResolver(withdrawalSchema),
-			defaultValues: withdrawalDefaults(order.items),
+			defaultValues: startingValues(order.items),
 		});
 	const { fields } = useFieldArray({ control, name: "items" });
 
@@ -140,7 +152,7 @@ export function WithdrawalForm({
 				</Text>
 			</Card>
 
-			<Card title={t("purchases.withdrawalReason")}>
+			<Card title={t("purchases.withdrawalReasonOptional")}>
 				<Controller
 					control={control}
 					name="reasonText"
@@ -151,7 +163,8 @@ export function WithdrawalForm({
 							onBlur={field.onBlur}
 							multiline
 							maxLength={2000}
-							accessibilityLabel={t("purchases.withdrawalReason")}
+							accessibilityLabel={t("purchases.withdrawalReasonOptional")}
+							placeholder={t("purchases.withdrawalReasonPlaceholder")}
 							placeholderTextColor={c.muted}
 							style={[
 								styles.input,
@@ -192,6 +205,7 @@ const styles = StyleSheet.create({
 		minWidth: 28,
 		textAlign: "center",
 		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},

@@ -102,5 +102,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	actionText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	actionText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

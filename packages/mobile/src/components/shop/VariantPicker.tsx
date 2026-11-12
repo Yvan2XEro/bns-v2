@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
 		gap: 14,
 		marginBottom: 12,
 	},
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	chip: {
 		minHeight: 48,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	summary: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -192,5 +192,5 @@ const styles = StyleSheet.create({
 		padding: 12,
 		borderRadius: 12,
 	},
-	price: { fontSize: 16, fontFamily: Fonts.displayBold },
+	price: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
 });

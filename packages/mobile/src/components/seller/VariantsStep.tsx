@@ -120,6 +120,16 @@ export function VariantsStep({
 						options={form.options}
 						readOnly={readOnly}
 						canManageCost={canManageCost}
+						// With one price for all, only the first row's price and
+						// cost are typed; the others show it. Editing row 3 used to
+						// break the shared price while the box still said "same".
+						sharedPrice={
+							form.hasVariants && form.samePrice && form.variants.length > 1
+								? index === 0
+									? "source"
+									: "copy"
+								: undefined
+						}
 						onChange={(patch) => setRow(row.key, patch)}
 					/>
 				))}

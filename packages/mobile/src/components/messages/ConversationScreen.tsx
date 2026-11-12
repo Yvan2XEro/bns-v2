@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -37,6 +38,7 @@ import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { getAuthModalParams } from "@/src/lib/authRedirect";
 import {
 	conversationHeader,
 	messageAuthorLabel,
@@ -59,11 +61,13 @@ import {
 	attachedListingOf,
 	ComposerListingChip,
 	MessageListingCard,
+	ThreadListingStrip,
 } from "./ListingAttachment";
 import { type MessageAction, MessageActionSheet } from "./MessageActionSheet";
 import {
 	fetchLatestMessages,
 	fetchOlderMessages,
+	lastStoredMessageId,
 	type MessagePage,
 	messagesKey,
 } from "./messageHistory";
@@ -145,9 +149,16 @@ export function ConversationScreen({
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const { chatClient, onlineUsers } = useChatClient();
-	const { showAlert, showSuccess } = useAlert();
+	const { showAlert, showSuccess, showError, confirm } = useAlert();
 	const queryClient = useQueryClient();
+	const pathname = usePathname();
 	const [text, setText] = useState(initialDraft);
+	/** Messages sent over HTTP while the chat socket does not exist yet; their bubbles show as sending. */
+	const restInFlightRef = useRef(new Set<string>());
+	/** Replies that arrived while the reader was up in the history. */
+	const [unseenBelow, setUnseenBelow] = useState(0);
+	/** The thread menu (⋯), in the same sheet as a message's actions. */
+	const [optionsOpen, setOptionsOpen] = useState(false);
 	const [isOtherTyping, setIsOtherTyping] = useState(false);
 	const [readByOther, setReadByOther] = useState<Set<string>>(new Set());
 	const listRef = useRef<FlashListRef<any>>(null);
@@ -245,24 +256,47 @@ export function ConversationScreen({
 
 	const { isBlocked, blockId } = useIsBlocked(otherUser?.id);
 	const { block, unblock } = useToggleBlock();
+	/** A buyer talking to a shop: the thread menu acts on the shop, never on the person who owns it. */
+	const buyerSeesShop = Boolean(shop) && !viewerIsShopSide;
 
 	function confirmToggleBlock() {
 		if (!otherUser?.id) return;
+		const name = header?.title || t("messages.user");
 
 		if (isBlocked) {
-			if (blockId) unblock.mutate(blockId);
+			if (!blockId) return;
+			void confirm(t("messages.unblockUserConfirm", { name }), undefined, {
+				confirmText: buyerSeesShop
+					? t("messages.unblockShop")
+					: t("messages.unblock"),
+			}).then((ok) => {
+				if (!ok) return;
+				unblock.mutate(blockId, {
+					onSuccess: () => showSuccess(t("messages.unblockedToast", { name })),
+					onError: () => showError(t("common.error")),
+				});
+			});
 			return;
 		}
 
 		showAlert(
-			t("messages.blockConfirmTitle"),
-			t("messages.blockConfirmBody"),
+			buyerSeesShop
+				? t("messages.blockShopConfirmTitle", { name })
+				: t("messages.blockConfirmTitle"),
+			buyerSeesShop
+				? t("messages.blockShopConfirmBody")
+				: t("messages.blockConfirmBody"),
 			[
 				{ text: t("common.cancel"), style: "cancel" },
 				{
-					text: t("messages.block"),
+					text: buyerSeesShop ? t("messages.blockShop") : t("messages.block"),
 					style: "destructive",
-					onPress: () => block.mutate(otherUser.id),
+					onPress: () =>
+						block.mutate(otherUser.id, {
+							onSuccess: () =>
+								showSuccess(t("messages.blockedToast", { name })),
+							onError: () => showError(t("common.error")),
+						}),
 				},
 			],
 			"warning",
@@ -294,7 +328,7 @@ export function ConversationScreen({
 	// re-fire it — that looped into "Maximum update depth exceeded".
 	const onLatestRef = useRef(onLatestMessage);
 	onLatestRef.current = onLatestMessage;
-	const lastMessageId = messages.at(-1)?.id;
+	const lastMessageId = lastStoredMessageId(messages);
 	useEffect(() => {
 		if (lastMessageId) onLatestRef.current?.(lastMessageId);
 	}, [lastMessageId]);
@@ -306,45 +340,36 @@ export function ConversationScreen({
 		chatClient.joinConversation(conversationId);
 
 		const onNewMessage = (msg: any) => {
-			queryClient.setQueryData(["messages", conversationId], (old: any) => {
-				if (!old) return old;
-				// Replace optimistic message by tempId if present
-				if (msg.tempId) {
-					const idx = old.docs.findIndex((m: any) => m.id === msg.tempId);
-					if (idx !== -1) {
-						const next = [...old.docs];
-						next[idx] = msg;
-						return { ...old, docs: next };
-					}
-				}
-				const exists = old.docs.some((m: any) => m.id === msg.id);
-				if (exists) return old;
-				return { ...old, docs: [...old.docs, msg] };
-			});
-			queryClient.invalidateQueries({ queryKey: ["conversations"] });
+			// Socket events are not scoped to this thread: the list screen hears
+			// every conversation's messages through the same client.
+			if (msg.conversationId && msg.conversationId !== conversationId) return;
+			queryClient.setQueryData(["messages", conversationId], (old: any) =>
+				placeMessage(old, msg, msg.tempId),
+			);
+			// The list patches its own row from this same event; no refetch.
 			// The other person's words arrive with a soft two-note strike; our
 			// own echo (it carries the tempId) and system notes stay silent.
 			const senderId = msg.sender?.id ?? msg.sender;
-			if (
+			const fromOther =
 				!msg.tempId &&
-				senderId &&
+				Boolean(senderId) &&
 				senderId !== user?.id &&
-				!isSystemMessage(msg)
-			)
+				!isSystemMessage(msg);
+			if (fromOther) {
 				feedback("receive");
+				// Read further up, the reader would not see it land: count it
+				// for the "new message" pill instead.
+				if (!nearBottomRef.current) setUnseenBelow((n) => n + 1);
+			}
 			// Mark as read immediately since we're viewing the conversation
 			chatClient.markRead(conversationId, [msg.id]);
 			chatClient.markDelivered(conversationId, msg.id);
 		};
 
 		const onConfirmed = ({ tempId, message }: any) => {
-			queryClient.setQueryData(["messages", conversationId], (old: any) => {
-				if (!old) return old;
-				return {
-					...old,
-					docs: old.docs.map((m: any) => (m.id === tempId ? message : m)),
-				};
-			});
+			queryClient.setQueryData(["messages", conversationId], (old: any) =>
+				placeMessage(old, message, tempId),
+			);
 		};
 
 		// Kept on screen, marked as not sent, so the text can be retried.
@@ -393,13 +418,7 @@ export function ConversationScreen({
 			chatClient.off("message:read", onMessageRead);
 			chatClient.leaveConversation(conversationId);
 		};
-	}, [
-		chatClient,
-		conversationId,
-		queryClient.invalidateQueries,
-		queryClient.setQueryData,
-		user?.id,
-	]);
+	}, [chatClient, conversationId, queryClient.setQueryData, user?.id]);
 
 	// Mark the other side's unread messages read once they are loaded — the
 	// socket effect above runs before the history arrives, so it cannot.
@@ -419,7 +438,8 @@ export function ConversationScreen({
 		if (unreadIds.length === 0) return;
 		for (const id of unreadIds) markedReadRef.current.add(id);
 		chatClient.markRead(conversationId, unreadIds);
-		queryClient.invalidateQueries({ queryKey: ["conversations"] });
+		// Only the list's unread counts change; its rows do not.
+		queryClient.invalidateQueries({ queryKey: ["conversations", "unread"] });
 	}, [chatClient, conversationId, lastMessageId, queryClient, user?.id]);
 
 	// New messages land at the bottom through the list's own
@@ -443,7 +463,51 @@ export function ConversationScreen({
 		nearBottomRef.current =
 			contentOffset.y + layoutMeasurement.height >=
 			contentSize.height - Math.max(80, layoutMeasurement.height * 0.2);
+		if (nearBottomRef.current) setUnseenBelow(0);
 	};
+
+	function jumpToLatest() {
+		nearBottomRef.current = true;
+		setUnseenBelow(0);
+		listRef.current?.scrollToEnd({ animated: !reducedMotion });
+	}
+
+	// The half-typed message survives leaving the thread (a call, the ad, the
+	// app killed in the background): kept per conversation on the phone.
+	const draftKey = `bns.messageDraft.v1.${conversationId}`;
+	const draftLoadedRef = useRef(false);
+	useEffect(() => {
+		draftLoadedRef.current = false;
+		if (!conversationId) return;
+		let cancelled = false;
+		AsyncStorage.getItem(draftKey)
+			.then((saved) => {
+				if (cancelled) return;
+				// A draft handed in by "contact the seller" wins over an old one.
+				if (saved && !initialDraft) setText((current) => current || saved);
+			})
+			.catch(() => {
+				// A draft is a convenience: storage failing loses only the draft.
+			})
+			.finally(() => {
+				if (!cancelled) draftLoadedRef.current = true;
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [conversationId, draftKey, initialDraft]);
+	useEffect(() => {
+		if (!conversationId || !draftLoadedRef.current) return;
+		const id = setTimeout(() => {
+			const write = text.trim()
+				? AsyncStorage.setItem(draftKey, text)
+				: AsyncStorage.removeItem(draftKey);
+			write.catch(() => {
+				// As above: a draft that cannot be kept is not an error to show.
+			});
+		}, 300);
+		return () => clearTimeout(id);
+	}, [text, conversationId, draftKey]);
 
 	// Typing indicator: emit start/stop as user types
 	const handleTextChange = (val: string) => {
@@ -475,24 +539,95 @@ export function ConversationScreen({
 			chatClient.off("connection:change", onChange);
 		};
 	}, [chatClient]);
+	// The socket handshake takes a moment on every open: "offline" only after
+	// a sustained loss, so a slow network does not flash an error each visit.
+	const [showOfflineHint, setShowOfflineHint] = useState(false);
+	useEffect(() => {
+		if (!chatClient || chatConnected) {
+			setShowOfflineHint(false);
+			return;
+		}
+		const id = setTimeout(() => setShowOfflineHint(true), OFFLINE_HINT_DELAY);
+		return () => clearTimeout(id);
+	}, [chatClient, chatConnected]);
+
+	/**
+	 * With no chat client yet (a cold start before the chat address is known,
+	 * or that request failed), the message goes over HTTP: the send button
+	 * used to look active and do nothing.
+	 */
+	function sendOverHttp(doc: {
+		id: string;
+		content: string;
+		listing?: { id: string } | null;
+	}) {
+		restInFlightRef.current.add(doc.id);
+		api
+			.post<{ doc?: any }>("/api/messages", {
+				conversation: conversationId,
+				content: doc.content,
+				...(doc.listing ? { listing: doc.listing.id } : {}),
+			})
+			.then((res) => {
+				const saved = res?.doc;
+				if (saved)
+					queryClient.setQueryData(["messages", conversationId], (old: any) =>
+						placeMessage(
+							old,
+							{ ...saved, listing: doc.listing ?? null },
+							doc.id,
+						),
+					);
+				// No document in the answer: the stored copy comes with a refetch,
+				// which drops the local one.
+				else
+					queryClient.invalidateQueries({
+						queryKey: messagesKey(conversationId),
+					});
+				queryClient.invalidateQueries({ queryKey: ["conversations", "list"] });
+			})
+			.catch((error: unknown) => {
+				feedback("error", { sound: false });
+				track(ANALYTICS_EVENTS.messageFailed, {
+					platform: "mobile",
+					reason: error instanceof Error ? error.message : "http",
+				});
+				queryClient.setQueryData(["messages", conversationId], (old: any) =>
+					old
+						? {
+								...old,
+								docs: old.docs.map((m: any) =>
+									m.id === doc.id ? { ...m, failed: true } : m,
+								),
+							}
+						: old,
+				);
+			})
+			.finally(() => {
+				restInFlightRef.current.delete(doc.id);
+			});
+	}
 
 	function sendMessage() {
 		const content = text.trim();
-		if (!content || !chatClient || !conversationId || !user) return;
+		if (!content || !conversationId || !user) return;
 
 		const listing = attachedListing;
 		setSending(true);
 		setText("");
 		setAttachedListing(null);
 		if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-		chatClient.stopTyping(conversationId);
+		chatClient?.stopTyping(conversationId);
 
-		// Offline, the chat client keeps the message and sends it on reconnect.
-		const tempId = chatClient.sendMessage({
-			conversationId,
-			content,
-			...(listing ? { listing: listing.id } : {}),
-		});
+		// Offline, the chat client keeps the message and sends it on reconnect;
+		// with no client at all, it goes over HTTP.
+		const tempId = chatClient
+			? chatClient.sendMessage({
+					conversationId,
+					content,
+					...(listing ? { listing: listing.id } : {}),
+				})
+			: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 		queryClient.setQueryData(["messages", conversationId], (old: any) => {
 			if (!old) return old;
 			return {
@@ -505,12 +640,15 @@ export function ConversationScreen({
 						sender: user.id,
 						content,
 						createdAt: new Date().toISOString(),
+						// Not stored yet: kept through a refetch, and shown as
+						// not sent if the app restarts before it leaves.
+						optimistic: true,
 						...(listing ? { listing } : {}),
 					},
 				],
 			};
 		});
-		queryClient.invalidateQueries({ queryKey: ["conversations"] });
+		if (!chatClient) sendOverHttp({ id: tempId, content, listing });
 		setSending(false);
 		// Read further up, the reader is brought to what they just sent; at the
 		// bottom already, the list's own autoscroll does it.
@@ -530,16 +668,20 @@ export function ConversationScreen({
 		content: string;
 		listing?: { id: string };
 	}) {
-		if (!chatClient || !conversationId) return;
+		if (!conversationId) return;
 		queryClient.setQueryData(["messages", conversationId], (old: any) => {
 			if (!old) return old;
 			return {
 				...old,
 				docs: old.docs.map((m: any) =>
-					m.id === item.id ? { ...m, failed: false } : m,
+					m.id === item.id ? { ...m, failed: false, optimistic: true } : m,
 				),
 			};
 		});
+		if (!chatClient) {
+			sendOverHttp(item);
+			return;
+		}
 		chatClient.sendMessage({
 			conversationId,
 			content: item.content,
@@ -548,12 +690,37 @@ export function ConversationScreen({
 		});
 	}
 
+	/** A message that never left: removed from the thread for good. */
+	function discardMessage(id: string) {
+		queryClient.setQueryData(["messages", conversationId], (old: any) =>
+			old ? { ...old, docs: old.docs.filter((m: any) => m.id !== id) } : old,
+		);
+	}
+
+	/**
+	 * Not stored by the server, and not on its way: sent from an earlier run
+	 * of the app (the queue lived in memory and died with it) or by a client
+	 * that has since been replaced. It reads as not sent, with a retry.
+	 */
+	function isStranded(item: any): boolean {
+		if (!item?.optimistic || item.failed) return false;
+		const id = String(item.id);
+		if (restInFlightRef.current.has(id)) return false;
+		return !chatClient?.isPending(id);
+	}
+
 	function openMessageActions(item: any) {
 		if (!item?.content) return;
 		feedback("tap");
 		setActionTarget(item);
 	}
 
+	const targetIsMine = actionTarget
+		? senderIdOf(actionTarget) === user?.id
+		: false;
+	const targetNotSent = actionTarget
+		? Boolean(actionTarget.failed) || isStranded(actionTarget)
+		: false;
 	const messageActions: MessageAction[] = actionTarget
 		? [
 				{
@@ -562,12 +729,15 @@ export function ConversationScreen({
 					icon: "copy-outline",
 					onPress: () => {
 						const content = String(actionTarget.content);
-						void Clipboard.setStringAsync(content).then(() =>
-							showSuccess(t("messages.copied")),
-						);
+						void Clipboard.setStringAsync(content).then(() => {
+							// Android 13 and later show their own "copied" chip.
+							if (Platform.OS === "android" && Number(Platform.Version) >= 33)
+								return;
+							showSuccess(t("messages.copied"));
+						});
 					},
 				},
-				...(actionTarget.failed && senderIdOf(actionTarget) === user?.id
+				...(targetNotSent && targetIsMine
 					? [
 							{
 								key: "retry",
@@ -575,9 +745,91 @@ export function ConversationScreen({
 								icon: "refresh" as const,
 								onPress: () => retryMessage(actionTarget),
 							},
+							{
+								key: "discard",
+								label: t("common.delete"),
+								icon: "trash-outline" as const,
+								tone: "danger" as const,
+								onPress: () => discardMessage(String(actionTarget.id)),
+							},
+						]
+					: []),
+				// Moderators need the message itself as evidence, not just the
+				// account: offered on the other side's words only.
+				...(!targetIsMine && !isSystemMessage(actionTarget)
+					? [
+							{
+								key: "report",
+								label: t("messages.reportMessage"),
+								icon: "flag-outline" as const,
+								onPress: () =>
+									router.push({
+										pathname: "/report",
+										params: {
+											targetType: "message",
+											targetId: String(actionTarget.id),
+										},
+									}),
+							},
 						]
 					: []),
 			]
+		: [];
+
+	// The thread menu: for a buyer in a shop thread it names and acts on the
+	// shop — the owner's own profile and account stay out of it, since a
+	// buyer is never told which member answers.
+	const shopHandle = (shop as { handle?: string } | null)?.handle ?? null;
+	const threadActions: MessageAction[] = otherUser?.id
+		? [
+				buyerSeesShop
+					? {
+							key: "view",
+							label: t("messages.viewShop"),
+							icon: "storefront-outline" as const,
+							onPress: () => {
+								if (shopHandle) router.push(`/s/${shopHandle}` as never);
+							},
+						}
+					: {
+							key: "view",
+							label: t("messages.viewProfile"),
+							icon: "person-outline" as const,
+							onPress: () => router.push(`/profile/${otherUser.id}`),
+						},
+				{
+					key: "report",
+					label: buyerSeesShop
+						? t("messages.reportShop")
+						: t("messages.report"),
+					icon: "flag-outline" as const,
+					onPress: () =>
+						router.push({
+							pathname: "/report",
+							params:
+								buyerSeesShop && shop
+									? { targetType: "shop", targetId: shop.id }
+									: { targetType: "user", targetId: otherUser.id },
+						}),
+				},
+				{
+					key: "block",
+					label: isBlocked
+						? buyerSeesShop
+							? t("messages.unblockShop")
+							: t("messages.unblock")
+						: buyerSeesShop
+							? t("messages.blockShop")
+							: t("messages.block"),
+					icon: isBlocked
+						? ("lock-open-outline" as const)
+						: ("ban-outline" as const),
+					tone: isBlocked ? undefined : ("danger" as const),
+					onPress: confirmToggleBlock,
+				},
+			].filter(
+				(action) => action.key !== "view" || !buyerSeesShop || shopHandle,
+			)
 		: [];
 
 	const formatTime = (dateStr: string) =>
@@ -646,8 +898,15 @@ export function ConversationScreen({
 		);
 	}
 
+	/** Read from the shop, every shop-side message is "ours": the team on the right, the buyer alone on the left. */
+	function isOwnSide(item: any): boolean {
+		if (senderIdOf(item) === user?.id) return true;
+		return viewerIsShopSide && item?.senderSide === "shop";
+	}
+
 	const renderMessage = ({ item, index }: { item: any; index: number }) => {
 		const isMe = senderIdOf(item) === user?.id;
+		const ownSide = isOwnSide(item);
 		const prev = messages[index - 1];
 		const next = messages[index + 1];
 		const showDate =
@@ -700,29 +959,65 @@ export function ConversationScreen({
 		const endsRun = !sameRun(item, next);
 
 		const isRead = readByOther.has(item.id) || item.read;
+		const notSent = isMe && (Boolean(item.failed) || isStranded(item));
 		const isPending =
-			isMe && !item.failed && Boolean(chatClient?.isPending(String(item.id)));
+			isMe &&
+			!notSent &&
+			(restInFlightRef.current.has(String(item.id)) ||
+				Boolean(chatClient?.isPending(String(item.id))));
 		// Only a shop conversation needs attribution per message — more than
 		// one person can answer from that side. A classic 1:1 thread has
 		// exactly one "other" person, already named in the header.
 		const senderObj = typeof item.sender === "object" ? item.sender : null;
+		const senderFirstName: string | null =
+			senderObj?.name?.split(" ")[0] ?? null;
 		const authorLabel =
-			!isMe && shop && startsRun
+			!ownSide && shop && startsRun
 				? messageAuthorLabel({
 						senderSide: item.senderSide ?? null,
 						shopName: shop.name,
-						senderFirstName: senderObj?.name?.split(" ")[0] ?? null,
+						senderFirstName,
 						formerMemberAuthor: Boolean(item.formerMemberAuthor),
 						viewerIsShopSide,
 					})
 				: null;
+		// A teammate's run, on the shop's side of the thread: their first name
+		// above it, so the team can tell who answered.
+		const teammateName =
+			ownSide && !isMe
+				? item.formerMemberAuthor
+					? `${senderFirstName ?? shop?.name ?? ""} ${t("messages.formerMember")}`.trim()
+					: (senderFirstName ?? shop?.name ?? "")
+				: null;
 		const listing = attachedListingOf(item.listing);
+		const time = formatTime(item.createdAt);
+		const status = isMe
+			? notSent
+				? t("messages.notSent")
+				: isPending
+					? t("messages.sending")
+					: isRead
+						? t("messages.messageRead")
+						: t("messages.messageSent")
+			: null;
+		// Who wrote it, aloud: position and colour say it only to the eye.
+		const bubbleLabel = isMe
+			? `${t("messages.bubbleMine", { time, text: item.content })}${status ? `, ${status}` : ""}`
+			: t("messages.bubbleFrom", {
+					name: teammateName || authorLabel?.primary || peerName,
+					time,
+					text: item.content,
+				});
 
 		return (
 			<>
 				{dateSeparator}
 				{authorLabel ? (
-					<Text style={[styles.authorLabel, { color: C.mutedForeground }]}>
+					<Text
+						style={[styles.authorLabel, { color: C.mutedForeground }]}
+						importantForAccessibility="no"
+						accessibilityElementsHidden
+					>
 						{authorLabel.primary}
 						{authorLabel.secondary ? (
 							<Text style={{ color: C.mutedForeground }}>
@@ -734,14 +1029,24 @@ export function ConversationScreen({
 						) : null}
 					</Text>
 				) : null}
+				{teammateName && startsRun ? (
+					<Text
+						style={[styles.teammateLabel, { color: C.mutedForeground }]}
+						importantForAccessibility="no"
+						accessibilityElementsHidden
+						numberOfLines={1}
+					>
+						{teammateName}
+					</Text>
+				) : null}
 				<View
 					style={[
 						styles.msgRow,
-						isMe ? styles.msgRight : styles.msgLeft,
+						ownSide ? styles.msgRight : styles.msgLeft,
 						{ marginBottom: endsRun ? 10 : 2 },
 					]}
 				>
-					{isMe ? null : endsRun ? (
+					{ownSide ? null : endsRun ? (
 						renderAvatar(avatarFor(item))
 					) : (
 						<View style={styles.avatarSpacer} />
@@ -753,6 +1058,7 @@ export function ConversationScreen({
 						// keeps its own button for a screen reader; a plain bubble
 						// reads as one element that offers the same menu.
 						accessible={!listing}
+						accessibilityLabel={listing ? undefined : bubbleLabel}
 						accessibilityHint={listing ? undefined : t("messages.actionsHint")}
 						accessibilityActions={
 							listing
@@ -768,19 +1074,23 @@ export function ConversationScreen({
 							{
 								// Own messages in deep indigo in both themes: white text
 								// keeps its contrast where the dark primary would not.
-								backgroundColor: isMe ? FILLED : C.card,
-								borderColor: isMe ? FILLED : C.border,
+								backgroundColor: ownSide ? FILLED : C.card,
+								borderColor: ownSide ? FILLED : C.border,
 								opacity:
-									actionTarget?.id === item.id ? 0.6 : item.failed ? 0.72 : 1,
+									actionTarget?.id === item.id ? 0.6 : notSent ? 0.72 : 1,
 							},
-							endsRun ? (isMe ? styles.bubbleMine : styles.bubbleTheirs) : null,
+							endsRun
+								? ownSide
+									? styles.bubbleMine
+									: styles.bubbleTheirs
+								: null,
 							listing ? styles.bubbleWithListing : null,
 						]}
 					>
 						{listing ? (
 							<MessageListingCard
 								listing={listing}
-								mine={isMe}
+								mine={ownSide}
 								onPress={() => router.push(`/listing/${listing.id}` as never)}
 							/>
 						) : null}
@@ -788,7 +1098,7 @@ export function ConversationScreen({
 							style={[
 								styles.bubbleText,
 								listing ? styles.bubbleTextUnderCard : null,
-								{ color: isMe ? "#ffffff" : C.foreground },
+								{ color: ownSide ? "#ffffff" : C.foreground },
 							]}
 						>
 							{item.content}
@@ -798,16 +1108,21 @@ export function ConversationScreen({
 								styles.bubbleMeta,
 								listing ? styles.bubbleTextUnderCard : null,
 							]}
+							// The bubble's own label already says the time and status.
+							importantForAccessibility={
+								listing ? "auto" : "no-hide-descendants"
+							}
+							accessibilityElementsHidden={!listing}
 						>
 							<Text
 								style={[
 									styles.bubbleTime,
-									{ color: isMe ? OWN_META : C.mutedForeground },
+									{ color: ownSide ? OWN_META : C.mutedForeground },
 								]}
 							>
-								{formatTime(item.createdAt)}
+								{time}
 							</Text>
-							{isMe && item.failed ? (
+							{notSent ? (
 								<Ionicons
 									name="alert-circle"
 									size={15}
@@ -815,7 +1130,7 @@ export function ConversationScreen({
 									accessibilityLabel={t("messages.notSent")}
 								/>
 							) : null}
-							{isMe && !item.failed ? (
+							{isMe && !notSent ? (
 								<Ionicons
 									name={
 										isPending
@@ -826,19 +1141,13 @@ export function ConversationScreen({
 									}
 									size={15}
 									color={isRead && !isPending ? "#ffffff" : OWN_META}
-									accessibilityLabel={
-										isPending
-											? t("messages.sending")
-											: isRead
-												? t("messages.messageRead")
-												: t("messages.messageSent")
-									}
+									accessibilityLabel={status ?? undefined}
 								/>
 							) : null}
 						</View>
 					</Pressable>
 				</View>
-				{isMe && item.failed ? (
+				{notSent ? (
 					<Pressable
 						onPress={() => retryMessage(item)}
 						accessibilityRole="button"
@@ -860,10 +1169,37 @@ export function ConversationScreen({
 	};
 
 	if (!user) {
+		// An expired session on a deep-linked thread: a way back, and a way in.
 		return (
-			<View style={[styles.safe, { backgroundColor: C.background }]}>
-				<EmptyState illustration="auth" title={t("auth.loginRequired")} />
-			</View>
+			<SafeAreaView
+				edges={["top", "bottom"]}
+				style={[styles.safe, { backgroundColor: C.background }]}
+			>
+				<View
+					style={[
+						styles.header,
+						{ backgroundColor: C.card, borderBottomColor: C.border },
+					]}
+				>
+					<HeaderBackButton
+						color={C.foreground}
+						fallback="/(tabs)/messages"
+						style={styles.backBtn}
+					/>
+				</View>
+				<EmptyState
+					illustration="auth"
+					title={t("auth.loginRequired")}
+					subtitle={t("auth.loginToAccess")}
+					ctaLabel={t("auth.signIn")}
+					onCta={() =>
+						router.push({
+							pathname: "/auth/login",
+							params: getAuthModalParams(pathname),
+						})
+					}
+				/>
+			</SafeAreaView>
 		);
 	}
 
@@ -889,6 +1225,7 @@ export function ConversationScreen({
 		</View>
 	) : null;
 
+	const threadListing = attachedListingOf(conv?.listing);
 	const canSend = text.trim().length > 0 && !sending;
 	const nearLimit = text.length >= MAX_LENGTH - 100;
 
@@ -942,21 +1279,6 @@ export function ConversationScreen({
 								>
 									{header.subtitle}
 								</Text>
-							) : attachedListing ? (
-								<Pressable
-									onPress={() =>
-										router.push(`/listing/${attachedListing.id}` as never)
-									}
-									accessibilityRole="link"
-									hitSlop={{ top: 6, bottom: 6 }}
-								>
-									<Text
-										style={[styles.headerSub, { color: link }]}
-										numberOfLines={1}
-									>
-										{attachedListing.title}
-									</Text>
-								</Pressable>
 							) : null}
 						</View>
 					</View>
@@ -968,38 +1290,7 @@ export function ConversationScreen({
 								styles.optionsBtn,
 								{ opacity: pressed ? 0.6 : 1 },
 							]}
-							onPress={() =>
-								showAlert(
-									t("messages.options"),
-									"",
-									[
-										{
-											text: t("messages.viewProfile"),
-											onPress: () => router.push(`/profile/${otherUser?.id}`),
-										},
-										{
-											text: t("messages.report"),
-											onPress: () =>
-												router.push({
-													pathname: "/report",
-													params: {
-														targetType: "user",
-														targetId: otherUser?.id,
-													},
-												}),
-										},
-										{
-											text: isBlocked
-												? t("messages.unblock")
-												: t("messages.block"),
-											style: isBlocked ? "default" : "destructive",
-											onPress: confirmToggleBlock,
-										},
-										{ text: t("common.cancel"), style: "cancel" },
-									],
-									"info",
-								)
-							}
+							onPress={() => setOptionsOpen(true)}
 						>
 							<Ionicons
 								name={
@@ -1014,6 +1305,14 @@ export function ConversationScreen({
 					) : null}
 				</View>
 			)}
+			{/* What this chat is about stays in view after the first message
+			    goes: the buyer comparing sellers sees which ad and which price. */}
+			{!renderHeader && threadListing ? (
+				<ThreadListingStrip
+					listing={threadListing}
+					onPress={() => router.push(`/listing/${threadListing.id}` as never)}
+				/>
+			) : null}
 
 			<KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
 				{isLoading ? (
@@ -1057,7 +1356,7 @@ export function ConversationScreen({
 									? "system"
 									: item.listing
 										? "listing"
-										: senderIdOf(item) === user.id
+										: isOwnSide(item)
 											? "mine"
 											: "theirs"
 							}
@@ -1089,6 +1388,28 @@ export function ConversationScreen({
 							}
 							ListFooterComponent={typingBubble}
 						/>
+						{/* A reply landed while the reader was up in the history. */}
+						{unseenBelow > 0 ? (
+							<Pressable
+								onPress={jumpToLatest}
+								accessibilityRole="button"
+								accessibilityLabel={t("messages.newMessage")}
+								accessibilityLiveRegion="polite"
+								style={({ pressed }) => [
+									styles.newPill,
+									{
+										backgroundColor: C.card,
+										borderColor: C.border,
+										opacity: pressed ? 0.85 : 1,
+									},
+								]}
+							>
+								<Ionicons name="arrow-down" size={16} color={link} />
+								<Text style={[styles.newPillText, { color: link }]}>
+									{t("messages.newMessage")}
+								</Text>
+							</Pressable>
+						) : null}
 					</View>
 				)}
 
@@ -1099,7 +1420,7 @@ export function ConversationScreen({
 						{ backgroundColor: C.card, borderTopColor: C.border },
 					]}
 				>
-					{attachedListing ? (
+					{attachedListing && !isBlocked ? (
 						<View style={centeredContent}>
 							<ComposerListingChip
 								listing={attachedListing}
@@ -1128,13 +1449,15 @@ export function ConversationScreen({
 								]}
 							>
 								<Text style={[styles.blockedAction, { color: link }]}>
-									{t("messages.unblock")}
+									{buyerSeesShop
+										? t("messages.unblockShop")
+										: t("messages.unblock")}
 								</Text>
 							</Pressable>
 						</View>
 					) : (
 						<View style={centeredContent}>
-							{!chatConnected ? (
+							{showOfflineHint ? (
 								<View
 									style={styles.offlineHint}
 									accessibilityLiveRegion="polite"
@@ -1210,6 +1533,15 @@ export function ConversationScreen({
 				actions={messageActions}
 				onClose={() => setActionTarget(null)}
 			/>
+			{/* The thread menu: same sheet, no preview, so the screen has one
+			    way to offer choices; the alert sheet stays for the block
+			    decision itself. */}
+			<MessageActionSheet
+				visible={optionsOpen}
+				preview={null}
+				actions={threadActions}
+				onClose={() => setOptionsOpen(false)}
+			/>
 		</SafeAreaView>
 	);
 }
@@ -1255,7 +1587,8 @@ function SendButton({
 	return (
 		<AnimatedPressable
 			onPress={onPress}
-			onPressIn={() => springTo(0.88)}
+			// DESIGN's 0.97 press, a touch deeper for a 48pt target.
+			onPressIn={() => springTo(0.94)}
 			onPressOut={() => springTo(1)}
 			accessibilityRole="button"
 			accessibilityLabel={label}
@@ -1290,8 +1623,31 @@ interface PeerAvatar {
 
 /** Own bubbles and the send button: deep indigo in both themes, so white stays legible. */
 const FILLED = Colors.light.ownBubble;
-/** Time and ticks on an own bubble: white at 80% keeps 4.5:1 on `FILLED`. */
-const OWN_META = "rgba(255,255,255,0.8)";
+/** Time and ticks on an own bubble: white at 85%, readable on `FILLED` in daylight. */
+const OWN_META = "rgba(255,255,255,0.85)";
+/** How long the socket may be down before the composer says so. */
+const OFFLINE_HINT_DELAY = 1500;
+
+/**
+ * Puts a stored message in the thread: in place of its temporary copy when
+ * there is one, never twice — a refetch can bring the stored copy in before
+ * the socket confirms the temporary one.
+ */
+function placeMessage(old: any, msg: any, tempId?: string): any {
+	if (!old) return old;
+	const docs: any[] = old.docs ?? [];
+	const already = docs.some((m) => m.id === msg.id);
+	if (tempId && docs.some((m) => m.id === tempId)) {
+		return {
+			...old,
+			docs: already
+				? docs.filter((m) => m.id !== tempId)
+				: docs.map((m) => (m.id === tempId ? msg : m)),
+		};
+	}
+	if (already) return old;
+	return { ...old, docs: [...docs, msg] };
+}
 const MAX_LENGTH = 1000;
 /** A stable empty thread, so effects keyed on the list do not re-run every render. */
 const EMPTY: any[] = [];
@@ -1342,8 +1698,8 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 	},
 	headerName: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -1366,7 +1722,7 @@ const styles = StyleSheet.create({
 	threadEmpty: { alignItems: "center", gap: 8, paddingHorizontal: 32 },
 	threadEmptyName: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 		marginTop: 4,
@@ -1427,7 +1783,34 @@ const styles = StyleSheet.create({
 		justifyContent: "flex-end",
 		gap: 3,
 	},
-	bubbleTime: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
+	bubbleTime: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
+	teammateLabel: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodySemibold,
+		alignSelf: "flex-end",
+		marginRight: 14,
+		marginBottom: 3,
+		maxWidth: "70%",
+	},
+	newPill: {
+		position: "absolute",
+		bottom: 12,
+		alignSelf: "center",
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		minHeight: 44,
+		paddingHorizontal: 16,
+		borderRadius: 22,
+		borderWidth: StyleSheet.hairlineWidth,
+		shadowColor: "#12163a",
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.12,
+		shadowRadius: 12,
+		elevation: 4,
+	},
+	newPillText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	failedRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -1438,7 +1821,7 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 		paddingHorizontal: 4,
 	},
-	failedText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	failedText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	offlineHint: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -1471,8 +1854,8 @@ const styles = StyleSheet.create({
 	},
 	blockedNotice: {
 		flex: 1,
-		fontSize: 14,
-		lineHeight: 19,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 	},
 	blockedActionBtn: {
@@ -1480,7 +1863,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 8,
 	},
-	blockedAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	blockedAction: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	msgInput: {
 		minHeight: 48,
 		maxHeight: 132,

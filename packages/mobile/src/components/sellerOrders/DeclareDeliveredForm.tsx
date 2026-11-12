@@ -180,7 +180,12 @@ const styles = StyleSheet.create({
 	},
 	photoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 	photo: { width: 56, height: 56, borderRadius: 10 },
-	photoText: { flex: 1, fontSize: 14, fontFamily: Fonts.bodyMedium },
+	photoText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyMedium,
+	},
 	iconButton: {
 		width: 48,
 		height: 48,

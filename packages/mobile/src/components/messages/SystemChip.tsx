@@ -91,5 +91,5 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		paddingHorizontal: 8,
 	},
-	linkText: { fontSize: 13, fontFamily: Fonts.bodyBold },
+	linkText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodyBold },
 });

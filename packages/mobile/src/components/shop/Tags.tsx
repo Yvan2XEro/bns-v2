@@ -8,7 +8,7 @@ const SUN = Colors.light.sun;
 const INK = Colors.light.sunForeground;
 
 /**
- * An amount on the seller screens, set as the app's price tag: Outfit
+ * An amount on the seller screens, set as the app's price tag: Poppins
  * ExtraBold, ink on signage yellow. For money the shop takes in (an order
  * total, a payout); a fee or a debt stays plain text so the yellow keeps
  * meaning "a price".
@@ -100,8 +100,13 @@ const styles = StyleSheet.create({
 		lineHeight: 19,
 		letterSpacing: -0.2,
 	},
-	tagTextSm: { fontSize: 13, lineHeight: 17 },
-	tagTextLg: { fontSize: 26, lineHeight: 31, letterSpacing: -0.6 },
+	tagTextSm: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 17 },
+	tagTextLg: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 24,
+		lineHeight: 32,
+		letterSpacing: -0.6,
+	},
 	pill: {
 		alignSelf: "flex-start",
 		borderRadius: 999,

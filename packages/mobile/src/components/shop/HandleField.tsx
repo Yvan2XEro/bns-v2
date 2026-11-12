@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		gap: 4,
 	},
-	prefix: { fontSize: 15, fontFamily: Fonts.body },
+	prefix: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	input: { flex: 1, fontSize: 15, fontFamily: Fonts.bodySemibold },
-	hint: { fontSize: 12, fontFamily: Fonts.body },
+	hint: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 });

@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { AmountTag } from "@/src/components/shop/Tags";
@@ -5,6 +6,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPriceRange } from "@/src/lib/market";
 import { type ProductFormState, parseAmount } from "@/src/lib/productForm";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import { priceRange } from "@/src/lib/variants";
 import { formStyles as f } from "./formStyles";
 
@@ -29,9 +31,21 @@ export function PublishSummaryCard({
 		0,
 	);
 
+	// The cover leads, so the seller confirms the product as the shop shows it.
+	const cover = form.images[0];
+	const coverUri = cover ? (resolveImageUrl(cover.uri) ?? cover.uri) : null;
+
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}>
 			<View style={f.row}>
+				{coverUri ? (
+					<Image
+						source={{ uri: coverUri }}
+						style={styles.cover}
+						contentFit="cover"
+						accessibilityIgnoresInvertColors
+					/>
+				) : null}
 				<View style={styles.text}>
 					<Text
 						style={[f.sectionTitle, { color: c.text }]}
@@ -77,6 +91,7 @@ export function PublishSummaryCard({
 }
 
 const styles = StyleSheet.create({
+	cover: { width: 64, height: 64, borderRadius: 12, alignSelf: "flex-start" },
 	text: { flex: 1, gap: 4 },
 	priceRow: {
 		flexDirection: "row",
@@ -85,7 +100,7 @@ const styles = StyleSheet.create({
 		gap: 8,
 		marginTop: 2,
 	},
-	editText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	editText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	editButton: {
 		minHeight: 44,
 		minWidth: 44,

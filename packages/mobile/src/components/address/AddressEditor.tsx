@@ -1,7 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo, useState } from "react";
 import { type Control, Controller, useForm } from "react-hook-form";
-import { StyleSheet, Text, type TextInputProps, View } from "react-native";
+import {
+	AccessibilityInfo,
+	StyleSheet,
+	Text,
+	type TextInputProps,
+	View,
+} from "react-native";
 import { Fonts } from "@/constants/theme";
 import { ChoiceChips } from "@/src/components/checkout/ChoiceChips";
 import { LocationField } from "@/src/components/checkout/LocationField";
@@ -66,6 +72,7 @@ function AddressInputField({
 			render={({ field }) => (
 				<FormField
 					{...input}
+					ref={field.ref}
 					label={label}
 					hint={hint}
 					value={field.value}
@@ -128,6 +135,9 @@ export function AddressEditor({
 	const [save, setSave] = useState(false);
 	const [isDefault, setIsDefault] = useState(initialDefault);
 	const [placeOutside, setPlaceOutside] = useState(false);
+	// Said beside the button after a refused submit: on a small phone the red
+	// field may be above the fold, and the tap must visibly do something.
+	const [invalidSummary, setInvalidSummary] = useState<string | null>(null);
 
 	const resolver = useMemo(
 		() =>
@@ -162,8 +172,33 @@ export function AddressEditor({
 	const city = watch("city");
 	const district = watch("district");
 
-	const submit = handleSubmit((values) =>
-		onSubmit(toAddressInput(values), { label, save, isDefault }),
+	const fieldLabels: Record<AddressField, string> = {
+		recipientName: t("checkout.recipientName"),
+		phone: t("checkout.phone"),
+		city: t("checkout.city"),
+		district: t("checkout.district"),
+		districtOther: t("checkout.districtOther"),
+		landmark: t("checkout.landmark"),
+		instructions: t("checkout.instructions"),
+	};
+
+	const submit = handleSubmit(
+		(values) => {
+			setInvalidSummary(null);
+			onSubmit(toAddressInput(values), { label, save, isDefault });
+		},
+		(errors) => {
+			const missing = (Object.keys(fieldLabels) as AddressField[])
+				.filter((field) => errors[field])
+				.map((field) => fieldLabels[field]);
+			if (missing.length === 0) return;
+			const summary = t("addresses.invalidSummary", {
+				fields: missing.join(", "),
+				defaultValue: "À compléter plus haut : {{fields}}.",
+			});
+			setInvalidSummary(summary);
+			AccessibilityInfo.announceForAccessibility(summary);
+		},
 	);
 
 	const labelInput = (
@@ -179,7 +214,6 @@ export function AddressEditor({
 
 	return (
 		<View style={styles.form}>
-			{extra === "book" ? labelInput : null}
 			<FormRow>
 				<AddressInputField
 					control={control}
@@ -302,6 +336,8 @@ export function AddressEditor({
 				maxLength={300}
 				error={error("instructions")}
 			/>
+			{/* The optional name comes after what the rider needs. */}
+			{extra === "book" ? labelInput : null}
 			{extra === "book" ? (
 				<GroupedSection>
 					<GroupedSwitchRow
@@ -339,6 +375,16 @@ export function AddressEditor({
 					{formError}
 				</Text>
 			) : null}
+			{invalidSummary && Object.keys(formState.errors).length > 0 ? (
+				<Text
+					style={[
+						styles.note,
+						{ color: c.isDark ? c.dangerText : c.destructive },
+					]}
+				>
+					{invalidSummary}
+				</Text>
+			) : null}
 			<View style={styles.buttons}>
 				{onCancel ? (
 					<FormButton
@@ -362,7 +408,7 @@ export function AddressEditor({
 const styles = StyleSheet.create({
 	form: { gap: 20 },
 	saveBlock: { gap: 16 },
-	note: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	note: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	buttons: { flexDirection: "row", gap: 12, marginTop: 4 },
 	button: { flex: 1 },
 });

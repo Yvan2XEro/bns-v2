@@ -1,5 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import type { ReactNode } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formatPrice } from "@/src/lib/market";
 import { formatOrderDate } from "@/src/lib/orderMoney";
@@ -16,6 +18,7 @@ import {
 	TonePill,
 } from "./ModerationKit";
 import type { ModerationPalette, Translate } from "./theme";
+import { tonesOf } from "./tones";
 
 interface CardProps {
 	order: OrderView;
@@ -34,6 +37,44 @@ export function OrderSheetCard({
 	children: ReactNode;
 }) {
 	return <ModerationCard title={title}>{children}</ModerationCard>;
+}
+
+/**
+ * A party on the order, one tap from its moderation sheet: checking a
+ * suspicious COD refuser should not take a manual search.
+ */
+function PartyRow({
+	label,
+	value,
+	href,
+	c,
+	t,
+}: {
+	label: string;
+	value: string;
+	href: string | null;
+	c: ModerationPalette;
+	t: Translate;
+}) {
+	const k = tonesOf(c);
+	if (!href) return <FactRow label={label} value={value} />;
+	return (
+		<Pressable
+			accessibilityRole="link"
+			accessibilityLabel={`${label} : ${value}, ${t("moderation.openAccount")}`}
+			onPress={() => router.push(href as never)}
+			style={({ pressed }) => [styles.party, { opacity: pressed ? 0.7 : 1 }]}
+		>
+			<Text style={[styles.partyLabel, { color: c.muted }]}>{label}</Text>
+			<Text
+				style={[styles.partyValue, { color: k.linkText }]}
+				numberOfLines={2}
+			>
+				{value}
+			</Text>
+			<Ionicons name="chevron-forward" size={16} color={c.muted} />
+		</Pressable>
+	);
 }
 
 /** Status, money, parties — read straight off the staff projection. */
@@ -56,10 +97,19 @@ export function OrderSummaryCard({ order, locale, c, t }: CardProps) {
 				})}
 			</Text>
 			<CardDivider />
-			<FactRow label={t("moderationOrder.shop")} value={order.shop.name} />
-			<FactRow
+			<PartyRow
+				label={t("moderationOrder.shop")}
+				value={order.shop.name}
+				href={order.shop.id ? `/moderation/shop/${order.shop.id}` : null}
+				c={c}
+				t={t}
+			/>
+			<PartyRow
 				label={t("moderationOrder.buyer")}
 				value={order.buyer?.name ?? t("moderationOrder.unknown")}
+				href={order.buyer?.id ? `/moderation/user/${order.buyer.id}` : null}
+				c={c}
+				t={t}
 			/>
 			{order.cancellation ? (
 				<FactRow
@@ -140,4 +190,19 @@ const styles = StyleSheet.create({
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	hang: { marginTop: -4 },
 	block: { gap: 2 },
+	party: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		minHeight: 44,
+	},
+	partyLabel: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	partyValue: {
+		flexShrink: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		textAlign: "right",
+		textDecorationLine: "underline",
+	},
 });

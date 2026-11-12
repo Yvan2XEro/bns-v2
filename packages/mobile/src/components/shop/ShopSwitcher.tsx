@@ -138,7 +138,12 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		maxWidth: 220,
 	},
-	triggerLabel: { flex: 1, fontSize: 13, fontFamily: Fonts.bodySemibold },
+	triggerLabel: {
+		flex: 1,
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+	},
 	backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
 	menu: {
 		position: "absolute",
@@ -165,6 +170,11 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 		minHeight: 48,
 	},
-	rowName: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	rowMeta: { fontSize: 11, fontFamily: Fonts.body, marginTop: 1 },
+	rowName: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	rowMeta: {
+		fontSize: 11,
+		lineHeight: 14,
+		fontFamily: Fonts.body,
+		marginTop: 1,
+	},
 });

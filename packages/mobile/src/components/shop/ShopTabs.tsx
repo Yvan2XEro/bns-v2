@@ -81,5 +81,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		borderBottomWidth: 2,
 	},
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

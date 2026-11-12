@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, StyleSheet, Text } from "react-native";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useCancelOrder } from "@/src/hooks/useOrderActions";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
@@ -27,6 +28,7 @@ export function CancelSheet({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const cancel = useCancelOrder(orderId);
+	const { showSuccess } = useAlert();
 	const { control, formState, handleSubmit, setError } = useForm<CancelValues>({
 		resolver: zodResolver(cancelSchema),
 	});
@@ -35,6 +37,7 @@ export function CancelSheet({
 		try {
 			await cancel.mutateAsync(values);
 			onClose();
+			showSuccess(t("purchases.event_cancelled"));
 		} catch (error) {
 			setError("root", { message: resolveErrorMessage(error, t) });
 		}

@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Linking,
-	Pressable,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -30,7 +29,6 @@ import { useCancelOrder } from "@/src/hooks/useOrderActions";
 import { usePurchase } from "@/src/hooks/usePurchases";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { newIdempotencyKey } from "@/src/lib/checkoutFlow";
-import { hapticOutcome } from "@/src/lib/haptics";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { availableActions } from "@/src/lib/orderActions";
@@ -198,13 +196,25 @@ export default function CheckoutPendingScreen() {
 
 	const phase = status.data ? pendingPhaseOf(status.data, now) : "checking";
 
-	// The money went through: felt once, when the screen sees it happen.
+	// The money went through: the buyer gets the same placed screen as a
+	// cash order (number, next steps, receipt), which is felt there.
 	const announcedRef = useRef(false);
 	useEffect(() => {
 		if (phase !== "succeeded" || announcedRef.current) return;
 		announcedRef.current = true;
-		hapticOutcome("success");
-	}, [phase]);
+		router.replace({
+			pathname: "/checkout/confirmation/[id]",
+			params: { id: orderId },
+		});
+	}, [phase, orderId]);
+	const headerTitle =
+		phase === "failed"
+			? t("payments.failed_title")
+			: phase === "expired" || phase === "cancelled"
+				? t("payments.pending_headerExpired")
+				: phase === "succeeded"
+					? t("payments.pending_headerPaid")
+					: t("payments.pending_headerPending");
 	const resendSeconds = resendSecondsLeft(attemptStartedAtRef.current, now);
 	const canResendNow = resendSeconds === 0 && Boolean(channel && phone);
 
@@ -253,7 +263,7 @@ export default function CheckoutPendingScreen() {
 			edges={["top", "bottom"]}
 			style={[styles.flex, { backgroundColor: c.bg }]}
 		>
-			<SellerHeader title={t("payments.pending_title")} onBack={goToOrder} />
+			<SellerHeader title={headerTitle} onBack={goToOrder} />
 			<ScreenColumn width="reading">
 				<ScrollView contentContainerStyle={styles.scroll}>
 					{phase === "checking" ? (
@@ -322,21 +332,13 @@ export default function CheckoutPendingScreen() {
 								}
 							/>
 							{canResendNow ? (
-								<Pressable
+								<CheckoutButton
+									variant="outline"
+									icon="refresh"
+									label={t("payments.pending_noPrompt")}
 									onPress={() => void resend()}
-									disabled={createIntent.isPending}
-									accessibilityRole="button"
-									accessibilityState={{ busy: createIntent.isPending }}
-									style={styles.linkTarget}
-								>
-									{createIntent.isPending ? (
-										<ActivityIndicator color={c.primary} />
-									) : (
-										<Text style={[styles.link, { color: inkOf(c) }]}>
-											{t("payments.pending_noPrompt")}
-										</Text>
-									)}
-								</Pressable>
+									loading={createIntent.isPending}
+								/>
 							) : channel && phone ? (
 								<Text style={[styles.meta, { color: c.muted }]}>
 									{t("payments.pending_noPromptWait", {
@@ -383,15 +385,11 @@ export default function CheckoutPendingScreen() {
 							) : null}
 							{failedCardActions.includes("changeOperator") ? (
 								canRetry ? (
-									<Pressable
+									<CheckoutButton
+										variant="outline"
+										label={t("payments.failed_changeNumber")}
 										onPress={changeOperator}
-										accessibilityRole="button"
-										style={styles.linkTarget}
-									>
-										<Text style={[styles.link, { color: inkOf(c) }]}>
-											{t("payments.failed_changeNumber")}
-										</Text>
-									</Pressable>
+									/>
 								) : (
 									// Without the number to resend to, this is the way on:
 									// it takes the button, not a link.
@@ -516,11 +514,11 @@ const styles = StyleSheet.create({
 	title: {
 		flex: 1,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 	},
 	amount: { gap: 6, paddingVertical: 4 },
-	amountLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	amountLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	paidRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -529,17 +527,18 @@ const styles = StyleSheet.create({
 	},
 	paid: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},
 	divider: { height: StyleSheet.hairlineWidth },
-	subhead: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	subhead: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	meta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 	linkTarget: { minHeight: 44, justifyContent: "center" },
 	link: {
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		textDecorationLine: "underline",
 	},

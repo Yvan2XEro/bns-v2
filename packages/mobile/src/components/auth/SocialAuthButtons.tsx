@@ -1,6 +1,12 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 import type React from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import {
+	ActivityIndicator,
+	Platform,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -67,16 +73,22 @@ const ALL_PROVIDERS: Array<{
 ];
 
 /**
- * The other ways in, under the form: neutral card buttons in ink, each
- * provider's own mark, and Apple's own button on iOS. `disabled` holds them
- * while a sign-in is already under way.
+ * The other ways in: neutral card buttons in ink, each provider's own mark,
+ * and Apple's own button on iOS. `disabled` holds them while a sign-in is
+ * already under way; `busy` puts the spinner on the provider tapped. With
+ * `placement="above"` they lead the form (one tap beats four fields) and the
+ * divider under them introduces the email form instead.
  */
 export function SocialAuthButtons({
 	onPress,
 	disabled,
+	busy = null,
+	placement = "below",
 }: {
 	onPress: (provider: SocialAuthProvider) => void;
 	disabled?: boolean;
+	busy?: SocialAuthProvider | null;
+	placement?: "above" | "below";
 }) {
 	const { t } = useTranslation();
 	const isDark = useColorScheme() === "dark";
@@ -97,15 +109,23 @@ export function SocialAuthButtons({
 
 	if (visible.length === 0) return null;
 
+	const divider = (
+		<View style={styles.dividerRow}>
+			<View style={[styles.divider, { backgroundColor: c.border }]} />
+			<Text style={[styles.dividerText, { color: c.mutedForeground }]}>
+				{placement === "above"
+					? t("auth.orWithEmail", { defaultValue: "ou avec votre e-mail" })
+					: t("auth.orContinueWith")}
+			</Text>
+			<View style={[styles.divider, { backgroundColor: c.border }]} />
+		</View>
+	);
+
 	return (
-		<View style={styles.container}>
-			<View style={styles.dividerRow}>
-				<View style={[styles.divider, { backgroundColor: c.border }]} />
-				<Text style={[styles.dividerText, { color: c.mutedForeground }]}>
-					{t("auth.orContinueWith")}
-				</Text>
-				<View style={[styles.divider, { backgroundColor: c.border }]} />
-			</View>
+		<View
+			style={[styles.container, placement === "above" && styles.containerAbove]}
+		>
+			{placement === "below" ? divider : null}
 
 			<View style={styles.buttons}>
 				{visible.map(({ labelKey, value, Icon }) =>
@@ -137,7 +157,10 @@ export function SocialAuthButtons({
 							disabled={disabled}
 							scaleTo={0.98}
 							accessibilityLabel={t(labelKey)}
-							accessibilityState={{ disabled: Boolean(disabled) }}
+							accessibilityState={{
+								disabled: Boolean(disabled),
+								busy: busy === value,
+							}}
 							style={[
 								styles.button,
 								{
@@ -147,7 +170,11 @@ export function SocialAuthButtons({
 								},
 							]}
 						>
-							<Icon color={c.foreground} />
+							{busy === value ? (
+								<ActivityIndicator size="small" color={c.link} />
+							) : (
+								<Icon color={c.foreground} />
+							)}
 							<Text style={[styles.buttonText, { color: c.foreground }]}>
 								{t(labelKey)}
 							</Text>
@@ -155,6 +182,7 @@ export function SocialAuthButtons({
 					),
 				)}
 			</View>
+			{placement === "above" ? divider : null}
 		</View>
 	);
 }
@@ -173,6 +201,7 @@ const styles = StyleSheet.create({
 	buttonText: {
 		fontFamily: Fonts.bodySemibold,
 		fontSize: 16,
+		lineHeight: 22,
 	},
 	buttons: {
 		gap: 10,
@@ -185,6 +214,7 @@ const styles = StyleSheet.create({
 		gap: 16,
 		marginTop: 8,
 	},
+	containerAbove: { marginTop: 0 },
 	divider: {
 		flex: 1,
 		height: StyleSheet.hairlineWidth,
@@ -197,5 +227,6 @@ const styles = StyleSheet.create({
 	dividerText: {
 		fontFamily: Fonts.body,
 		fontSize: 13,
+		lineHeight: 18,
 	},
 });

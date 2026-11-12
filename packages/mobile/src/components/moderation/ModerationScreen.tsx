@@ -96,10 +96,10 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	headerText: { flex: 1 },
-	// The bar title every shell shares: Outfit Bold 18/23.
+	// The bar title every shell shares: Poppins Bold 18/23.
 	title: {
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},

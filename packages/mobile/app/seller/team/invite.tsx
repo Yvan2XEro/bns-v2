@@ -16,6 +16,7 @@ import { dangerInk, fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { RoleCard } from "@/src/components/shop/team/RoleMatrix";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { alerts } from "@/src/contexts/AlertContext";
 import { useInviteMemberForm } from "@/src/hooks/useInviteMemberForm";
 import { useMyShop } from "@/src/hooks/useShops";
 import { useTranslation } from "@/src/lib/i18n";
@@ -43,7 +44,11 @@ export default function InviteMemberScreen() {
 	const shop = myShop.data?.shop;
 	const role = myShop.data?.role ?? null;
 	const { form, channel, roles, delivered, isPending, submit } =
-		useInviteMemberForm(shop?.id ?? "", role, () => router.back());
+		useInviteMemberForm(shop?.id ?? "", role, () => {
+			// The owner leaves the screen knowing the message went out.
+			alerts.showSuccess(t("team.inviteSent"));
+			router.back();
+		});
 
 	const close = () => router.back();
 
@@ -77,6 +82,7 @@ export default function InviteMemberScreen() {
 						<>
 							<View
 								style={[styles.segment, { backgroundColor: c.neutralSoft }]}
+								accessibilityRole="radiogroup"
 							>
 								{(["phone", "email"] as const).map((option) => {
 									const active = channel === option;
@@ -88,8 +94,8 @@ export default function InviteMemberScreen() {
 													shouldValidate: true,
 												})
 											}
-											accessibilityRole="button"
-											accessibilityState={{ selected: active }}
+											accessibilityRole="radio"
+											accessibilityState={{ checked: active }}
 											accessibilityLabel={t(
 												option === "phone"
 													? "team.channelPhone"
@@ -148,7 +154,10 @@ export default function InviteMemberScreen() {
 										)}
 									/>
 									{form.formState.errors.phone ? (
-										<Text style={[styles.hint, { color: dangerInk(c) }]}>
+										<Text
+											accessibilityRole="alert"
+											style={[styles.hint, { color: dangerInk(c) }]}
+										>
 											{fieldMessage(form.formState.errors.phone, t, {
 												required: "team.phoneRequired",
 												invalid: "team.phoneInvalid",
@@ -189,7 +198,10 @@ export default function InviteMemberScreen() {
 										)}
 									/>
 									{form.formState.errors.email ? (
-										<Text style={[styles.hint, { color: dangerInk(c) }]}>
+										<Text
+											accessibilityRole="alert"
+											style={[styles.hint, { color: dangerInk(c) }]}
+										>
 											{fieldMessage(form.formState.errors.email, t, {
 												required: "team.emailRequired",
 												invalid: "team.emailInvalid",
@@ -218,15 +230,18 @@ export default function InviteMemberScreen() {
 							</View>
 
 							<Pressable
+								// Always active: a tap on an incomplete form shows what is
+								// missing under each field instead of a silent grey button.
 								onPress={submit}
-								disabled={!form.formState.isValid || isPending}
+								disabled={isPending}
 								accessibilityRole="button"
 								accessibilityLabel={t("team.send")}
-								style={[
+								accessibilityState={{ disabled: isPending, busy: isPending }}
+								style={({ pressed }) => [
 									styles.submit,
 									{
 										backgroundColor: fillOf(c),
-										opacity: !form.formState.isValid || isPending ? 0.5 : 1,
+										opacity: isPending ? 0.5 : pressed ? 0.85 : 1,
 									},
 								]}
 							>
@@ -260,8 +275,13 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	segmentText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold, marginBottom: 8 },
+	segmentText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	label: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		marginBottom: 8,
+	},
 	input: {
 		minHeight: 48,
 		borderRadius: 12,
@@ -279,7 +299,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	notice: { borderRadius: 14, padding: 16, gap: 12 },
-	noticeText: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	noticeText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 });

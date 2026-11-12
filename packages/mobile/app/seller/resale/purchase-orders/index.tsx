@@ -287,7 +287,12 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		paddingHorizontal: 14,
 	},
-	financeLinkText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	financeLinkText: {
+		flex: 1,
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 22,
+	},
 	tabs: {
 		flexDirection: "row",
 		gap: 4,
@@ -313,7 +318,8 @@ const styles = StyleSheet.create({
 	},
 	tabText: {
 		fontFamily: Fonts.bodyMedium,
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		textAlign: "center",
 	},
 	tabTextActive: { fontFamily: Fonts.bodyBold },
@@ -346,15 +352,17 @@ const styles = StyleSheet.create({
 	number: {
 		flex: 1,
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},
 	amount: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},
-	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	itemsLine: { flexDirection: "row", alignItems: "center", gap: 10 },
 	itemsText: { flex: 1 },
 	thumbnail: { width: 44, height: 44, borderRadius: 8 },

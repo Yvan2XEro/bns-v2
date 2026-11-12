@@ -1,15 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCounts } from "@novu/react-native";
-import { FlashList } from "@shopify/flash-list";
 import {
 	useInfiniteQuery,
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { setStatusBarStyle } from "expo-status-bar";
-import React, { memo, useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useRef } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -26,7 +25,6 @@ import Animated, {
 	useAnimatedScrollHandler,
 	useAnimatedStyle,
 	useSharedValue,
-	withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
@@ -40,15 +38,6 @@ import { LocationCard } from "@/src/components/location/LocationCard";
 import { SearchField } from "@/src/components/SearchBar";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useDiscoveryPalette } from "@/src/components/search/palette";
-import {
-	SaveSearchButton,
-	SaveSearchDialog,
-} from "@/src/components/search/SaveSearch";
-import {
-	FiltersChip,
-	SortBar,
-	type SortKey,
-} from "@/src/components/search/SortBar";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useApplyLaunchMode } from "@/src/hooks/useAppMode";
 import { useCategoryCounts } from "@/src/hooks/useCategoryCounts";
@@ -57,8 +46,7 @@ import {
 	CATEGORIES_QUERY_KEY,
 	CATEGORIES_STALE_TIME_MS,
 } from "@/src/hooks/useListings";
-import { useReducedMotion } from "@/src/hooks/useReducedMotion";
-import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { categoryTree } from "@/src/lib/categoryTree";
@@ -70,44 +58,14 @@ import { rankByCounts } from "../../../../api/src/contracts/categoryCounts";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const RECENT_PAGE = 20;
+const FEATURED_GAP = 12;
+// The field is a button into the Search tab; it never holds text here.
+const noop = () => undefined;
 // Header collapse on scroll: sizes at rest and fully scrolled.
 const LOGO_MAX = 44;
 const LOGO_MIN = 28;
 const NAME_MAX = 26;
 const NAME_MIN = 18;
-
-// One row of the search grid. Memoised so appending a page, or toggling one
-// favourite, only re-renders the rows whose listings actually changed.
-const SearchResultRow = memo(function SearchResultRow({
-	row,
-	cardWidth,
-	favoriteIds,
-	onToggleFavorite,
-}: {
-	row: any[];
-	cardWidth: number;
-	favoriteIds: Set<string>;
-	onToggleFavorite: (listing: any) => void;
-}) {
-	return (
-		<View style={styles.row}>
-			{row.map((listing) => (
-				<ListingCard
-					key={listing.id}
-					listing={listing}
-					width={cardWidth}
-					isFavorite={favoriteIds.has(listing.id)}
-					onToggleFavorite={() => onToggleFavorite(listing)}
-					onPress={openListing}
-				/>
-			))}
-		</View>
-	);
-});
-
-const SearchRowGap = () => <View style={styles.searchRowGap} />;
-const openListing = (id: string) => router.push(`/listing/${id}`);
-const searchRowKey = (row: any[]) => row.map((listing) => listing.id).join("|");
 
 // ─── Notification bell ────────────────────────────────────────────────────────
 // Isolated component so useCounts (from @novu/react-native) runs inside
@@ -148,57 +106,25 @@ const darkIcon = require("@/assets/icon2-dark.png");
 export default function HomeScreen() {
 	useApplyLaunchMode();
 	const c = useDiscoveryPalette();
-	const reducedMotion = useReducedMotion();
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const novuReady = useNotificationReady();
 	const queryClient = useQueryClient();
-	const filterParams = useLocalSearchParams();
 	const { width, isTablet, columns, cardWidth } = useResponsive();
 	// Hero cards stay readable instead of becoming a 970pt letterbox on iPad.
 	const featuredWidth = isTablet ? Math.min(520, width - 48) : width - 48;
 	const featuredHeight = isTablet ? 260 : 190;
 
-	// ── Search state ──────────────────────────────────────────────
-	const [query, setQuery] = useState("");
-	const [debouncedQuery, setDebouncedQuery] = useState("");
-	const [sort, setSort] = useState<SortKey>("newest");
-	const [searchFocused, setSearchFocused] = useState(false);
-	const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 	const inputRef = useRef<TextInput>(null);
 
 	// ── Animations ────────────────────────────────────────────────
 	const scrollY = useSharedValue(0);
-	const searchActive = useSharedValue(0);
 
 	const scrollHandler = useAnimatedScrollHandler({
 		onScroll: (e) => {
 			scrollY.value = e.contentOffset.y;
 		},
 	});
-
-	// Ligne 1 : logo+nom+avatar se masquent quand search actif
-	const topRowStyle = useAnimatedStyle(() => ({
-		height: interpolate(
-			searchActive.value,
-			[0, 1],
-			[52, 0],
-			Extrapolation.CLAMP,
-		),
-		opacity: interpolate(
-			searchActive.value,
-			[0, 0.5],
-			[1, 0],
-			Extrapolation.CLAMP,
-		),
-		overflow: "hidden" as const,
-		marginBottom: interpolate(
-			searchActive.value,
-			[0, 1],
-			[8, 0],
-			Extrapolation.CLAMP,
-		),
-	}));
 
 	// Logo and name shrink on scroll, by transform only: the 44pt logo scales
 	// to 28pt from its left edge, and the name (26pt → 18pt) scales from its own
@@ -238,51 +164,6 @@ export default function HomeScreen() {
 		],
 	}));
 
-	// Bouton Annuler slide depuis la droite
-	const cancelStyle = useAnimatedStyle(() => ({
-		width: interpolate(searchActive.value, [0, 1], [0, 72]),
-		opacity: searchActive.value,
-		overflow: "hidden" as const,
-	}));
-
-	// ── Handlers ──────────────────────────────────────────────────
-	const handleQueryChange = (text: string) => {
-		setQuery(text);
-		clearTimeout(debounceRef.current || undefined);
-		debounceRef.current = setTimeout(() => setDebouncedQuery(text), 300);
-	};
-
-	const onSearchFocus = () => {
-		setSearchFocused(true);
-		searchActive.value = withTiming(1, {
-			duration: reducedMotion ? 0 : 250,
-		});
-	};
-
-	const onSearchCancel = () => {
-		setSearchFocused(false);
-		setQuery("");
-		setDebouncedQuery("");
-		searchActive.value = withTiming(0, {
-			duration: reducedMotion ? 0 : 200,
-		});
-		inputRef.current?.blur();
-		// Efface aussi les filtres URL si présents
-		if (activeFilterCount > 0) {
-			const resetParams: Record<string, undefined> = {
-				category: undefined,
-				minPrice: undefined,
-				maxPrice: undefined,
-				location: undefined,
-				radius: undefined,
-			};
-			for (const key of Object.keys(attrParams)) {
-				resetParams[key] = undefined;
-			}
-			router.setParams(resetParams);
-		}
-	};
-
 	// ── Colors ────────────────────────────────────────────────────
 	const bg = c.background;
 	const cardBg = c.card;
@@ -312,26 +193,21 @@ export default function HomeScreen() {
 	const {
 		coords: userCoords,
 		hydrated: locationHydrated,
-		permission: locationPermission,
 		detecting: locationDetecting,
-		requestDetection,
 		browsePlace,
 		setBrowsePlace,
 	} = useUserLocation();
 	const browseCity = browsePlace?.name ?? null;
 
 	// A city the user picked by hand carries coordinates too, so "near you"
-	// works with no permission at all once a location is remembered.
-	const showLocationPrompt =
-		locationHydrated && !userCoords && locationPermission !== "granted";
-	const locationRefused = locationPermission === "denied";
+	// works with no permission at all once a location is remembered. Without
+	// coordinates the section stays hidden: the location card right above it
+	// is the one place that asks, and its sheet offers "Autour de moi".
 	// Skeletons only while something is actually in flight. With the permission
 	// granted but no fix obtainable (geocoder down, GPS off), fall through to the
 	// "nothing nearby" card rather than spinning forever.
 	const locationPending = !locationHydrated || locationDetecting;
-
-	// ── Save search dialog ─────────────────────────────────────────
-	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+	const showNearby = !!userCoords || locationPending;
 
 	// ── Queries (home) ────────────────────────────────────────────
 	const { data: categoriesData } = useQuery({
@@ -366,12 +242,21 @@ export default function HomeScreen() {
 				: undefined;
 		},
 	});
+	// The paid slot follows the browsing city; a city with no boosted listing
+	// falls back to the national selection rather than an empty hero.
 	const { data: featuredData } = useQuery({
-		queryKey: ["listings", "featured"],
-		queryFn: () =>
-			api.get<{ hits: any[]; total: number }>(
-				"/api/public/search?limit=6&boosted=true&sort=boosted&offset=0",
-			),
+		queryKey: ["listings", "featured", browseCity],
+		queryFn: async () => {
+			const base =
+				"/api/public/search?limit=6&boosted=true&sort=boosted&offset=0";
+			if (browseCity) {
+				const local = await api.get<{ hits: any[]; total: number }>(
+					`${base}&location=${encodeURIComponent(browseCity)}`,
+				);
+				if ((local?.hits?.length ?? 0) > 0) return local;
+			}
+			return api.get<{ hits: any[]; total: number }>(base);
+		},
 	});
 
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
@@ -429,147 +314,6 @@ export default function HomeScreen() {
 		setRefreshing(false);
 	};
 
-	// ── Queries (search) ──────────────────────────────────────────
-	// Extraire les attr_* depuis les params URL
-	const attrParams: Record<string, string> = {};
-	for (const [key, value] of Object.entries(filterParams)) {
-		if (key.startsWith("attr_") && typeof value === "string" && value) {
-			attrParams[key] = value;
-		}
-	}
-
-	const activeFilterCount = [
-		filterParams.category,
-		filterParams.minPrice,
-		filterParams.maxPrice,
-		filterParams.location,
-		...Object.values(attrParams),
-	].filter(Boolean).length;
-
-	const isSearchMode =
-		searchFocused || query.length > 0 || activeFilterCount > 0;
-
-	const openFilters = () =>
-		router.push({
-			pathname: "/filters",
-			params: {
-				returnTo: "/(tabs)/home",
-				category: (filterParams.category as string) ?? "",
-				minPrice: (filterParams.minPrice as string) ?? "",
-				maxPrice: (filterParams.maxPrice as string) ?? "",
-				location: (filterParams.location as string) ?? "",
-				radius: (filterParams.radius as string) ?? "",
-				...attrParams,
-			},
-		});
-
-	const searchParams: Record<string, string> = {
-		sort,
-		...(debouncedQuery ? { q: debouncedQuery } : {}),
-		...(filterParams.category
-			? { category: filterParams.category as string }
-			: {}),
-		...(filterParams.minPrice
-			? { minPrice: filterParams.minPrice as string }
-			: {}),
-		...(filterParams.maxPrice
-			? { maxPrice: filterParams.maxPrice as string }
-			: {}),
-		...(filterParams.location
-			? { location: filterParams.location as string }
-			: {}),
-		...(filterParams.location && filterParams.radius
-			? { radius: filterParams.radius as string }
-			: {}),
-		...attrParams,
-	};
-	const queryString = Object.entries(searchParams)
-		.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-		.join("&");
-
-	const {
-		data: searchData,
-		fetchNextPage,
-		hasNextPage,
-		isFetchingNextPage,
-		isLoading: searchLoading,
-	} = useInfiniteQuery({
-		queryKey: ["search", searchParams],
-		queryFn: ({ pageParam = 0 }) =>
-			api.get<{ hits: any[]; total: number }>(
-				`/api/public/search?${queryString}&limit=20&offset=${pageParam}`,
-			),
-		getNextPageParam: (lastPage, pages) => {
-			const offset = pages.length * 20;
-			// The endpoint can answer with a bare array (see rawHits above) and a
-			// page can be null; reading `.total` off either throws inside
-			// TanStack's pagination path and blanks the screen.
-			const total = Array.isArray(lastPage)
-				? lastPage.length
-				: (lastPage?.total ?? 0);
-			return offset < total ? offset : undefined;
-		},
-		initialPageParam: 0,
-		enabled: isSearchMode,
-	});
-
-	// Memoised on the query data so the rows keep their identity between
-	// renders and the memoised SearchResultRow can skip the unchanged ones.
-	const searchListings = useMemo(
-		() =>
-			(
-				searchData?.pages.flatMap((p: any) =>
-					Array.isArray(p) ? p : (p?.hits ?? []),
-				) ?? []
-			)
-				.filter(Boolean)
-				.map((l: any) => ({
-					...l,
-					isBoosted: !!(
-						l.boostedUntil && new Date(l.boostedUntil) > new Date()
-					),
-				})),
-		[searchData],
-	);
-	const totalDocs = searchData?.pages[0]?.total ?? 0;
-
-	const searchPairs = useMemo(
-		() => chunkIntoRows(searchListings, columns),
-		[searchListings, columns],
-	);
-	const renderSearchRow = useCallback(
-		({ item }: { item: any[] }) => (
-			<SearchResultRow
-				row={item}
-				cardWidth={cardWidth}
-				favoriteIds={favoriteIds}
-				onToggleFavorite={toggleFavorite}
-			/>
-		),
-		[cardWidth, favoriteIds, toggleFavorite],
-	);
-	const canSave = !!(debouncedQuery || activeFilterCount > 0) && !!user;
-
-	const clearSearch = () => {
-		clearTimeout(debounceRef.current || undefined);
-		setQuery("");
-		setDebouncedQuery("");
-	};
-	// The empty state's "Clear filters" clears the query too: clearing the
-	// text alone left a filtered search that still matched nothing.
-	const clearFilters = () => {
-		clearSearch();
-		const reset: Record<string, undefined> = {
-			category: undefined,
-			minPrice: undefined,
-			maxPrice: undefined,
-			location: undefined,
-			radius: undefined,
-		};
-		for (const key of Object.keys(attrParams)) reset[key] = undefined;
-		router.setParams(reset);
-	};
-
 	// ── Render ────────────────────────────────────────────────────
 	return (
 		<SafeAreaView
@@ -580,7 +324,7 @@ export default function HomeScreen() {
 			<View style={[styles.header, { backgroundColor: accentBg }]}>
 				<ShellPattern />
 				{/* ── Ligne 1 : Logo  |  Nom  |  spacer  |  Avatar ── */}
-				<Animated.View style={[styles.topRow, topRowStyle]}>
+				<View style={styles.topRow}>
 					<Animated.View style={[styles.logoImgWrap, logoAnimStyle]}>
 						<Image
 							source={darkIcon}
@@ -641,426 +385,129 @@ export default function HomeScreen() {
 							<Ionicons name="person-outline" size={20} color={shellIcon} />
 						)}
 					</Pressable>
-				</Animated.View>
-
-				{/* ── Ligne 2 : Barre de recherche  |  Annuler ── */}
-				<View style={styles.searchRow}>
-					<SearchField
-						ref={inputRef}
-						value={query}
-						onChangeText={handleQueryChange}
-						// One search for the whole app: the full screen has the recent
-						// searches, category suggestions and shops this field lacked.
-						onFocus={() => {
-							inputRef.current?.blur();
-							router.push({
-								pathname: "/(tabs)/search",
-								params: { focus: "1" },
-							});
-						}}
-						onClear={clearSearch}
-						active={isSearchMode}
-						placeholder={t("home.searchPlaceholderDetailed")}
-						style={styles.searchField}
-					/>
-
-					{/* Bouton Annuler animé */}
-					<Animated.View style={cancelStyle}>
-						<Pressable
-							onPress={onSearchCancel}
-							style={styles.cancelBtn}
-							accessibilityRole="button"
-						>
-							<Text style={[styles.cancelText, { color: shellIcon }]}>
-								{t("common.cancel")}
-							</Text>
-						</Pressable>
-					</Animated.View>
 				</View>
+
+				{/* ── Ligne 2 : la recherche ── */}
+				{/* One search for the whole app: the field opens the Search tab,
+				    which has the recent searches, suggestions and shops. */}
+				<SearchField
+					ref={inputRef}
+					value=""
+					onChangeText={noop}
+					onFocus={() => {
+						inputRef.current?.blur();
+						router.push({
+							pathname: "/(tabs)/search",
+							params: { focus: "1" },
+						});
+					}}
+					placeholder={t("home.searchPlaceholderDetailed")}
+				/>
 			</View>
 
 			{/* ══ Content ══ */}
-			{isSearchMode ? (
-				/* ── MODE RECHERCHE ── */
-				<>
-					<View style={[styles.content, { backgroundColor: bg }]}>
-						<SortBar
-							sort={sort}
-							onChange={setSort}
-							trailing={
-								<FiltersChip count={activeFilterCount} onPress={openFilters} />
-							}
-						/>
-
-						{searchLoading ? (
-							<View style={styles.skeletonGrid}>
-								<ListingGridSkeleton
-									cardWidth={cardWidth}
-									columns={columns}
-									rows={3}
-								/>
-							</View>
-						) : searchListings.length === 0 ? (
-							<EmptyState
-								icon="search-outline"
-								title={t("search.noResults")}
-								subtitle={
-									activeFilterCount > 0
-										? t("search.noResultsHint")
-										: t("search.noResultsHintShort")
-								}
-								{...(activeFilterCount > 0
-									? { ctaLabel: t("search.clearFilters"), onCta: clearFilters }
-									: query
-										? { ctaLabel: t("search.clearSearch"), onCta: clearSearch }
-										: {})}
-							/>
-						) : (
-							// Recycled rows keyed by their listings, as in SearchResults: a
-							// page appended at the end never re-renders the ones above it.
-							<FlashList
-								data={searchPairs}
-								renderItem={renderSearchRow}
-								extraData={favoriteIds}
-								keyExtractor={searchRowKey}
-								// FlashList lays rows out itself and ignores `gap` on the
-								// container, so the 16pt between rows is a separator.
-								ItemSeparatorComponent={SearchRowGap}
-								contentContainerStyle={{
-									...styles.searchList,
-									// The save button floats over the grid: the last row clears it.
-									paddingBottom: canSave ? 96 : 40,
-								}}
-								ListHeaderComponent={
-									totalDocs > 0 ? (
-										<Text
-											style={[styles.resultCount, { color: mutedColor }]}
-											accessibilityLiveRegion="polite"
-										>
-											{t("search.resultsCount", { count: totalDocs })}
-										</Text>
-									) : null
-								}
-								keyboardDismissMode="on-drag"
-								onEndReached={() =>
-									hasNextPage && !isFetchingNextPage && fetchNextPage()
-								}
-								onEndReachedThreshold={0.5}
-								showsVerticalScrollIndicator={false}
-								ListFooterComponent={
-									isFetchingNextPage ? (
-										<ActivityIndicator
-											color={primaryColor}
-											style={{ margin: 16 }}
-										/>
-									) : null
-								}
-							/>
-						)}
-					</View>
-
-					{canSave && (
-						<SaveSearchButton onPress={() => setSaveDialogOpen(true)} />
-					)}
-				</>
-			) : (
-				/* ── MODE ACCUEIL ── */
-				<AnimatedScrollView
-					style={{ flex: 1 }}
-					contentContainerStyle={{ flexGrow: 1 }}
-					showsVerticalScrollIndicator={false}
-					onScroll={scrollHandler}
-					scrollEventThrottle={16}
-					refreshControl={
-						<RefreshControl
-							refreshing={refreshing}
-							onRefresh={onRefresh}
-							tintColor={primaryColor}
-						/>
-					}
-				>
-					<View style={[styles.homeContent, { backgroundColor: bg }]}>
-						{/* Catégories: the rubrics in two rows, the rest one tap away */}
-						{rubrics.length > 0 && (
-							<View style={styles.section}>
-								<View style={styles.sectionHeader}>
-									<Text
-										style={[styles.sectionTitle, { color: textColor }]}
-										accessibilityRole="header"
-									>
-										{t("home.categories")}
-									</Text>
-									<Pressable
-										onPress={() => router.push("/categories")}
-										style={styles.seeAllBtn}
-										accessibilityRole="button"
-										accessibilityLabel={t("categories.title")}
-									>
-										<Text style={[styles.seeAll, { color: c.link }]}>
-											{t("home.seeAll")}
-										</Text>
-									</Pressable>
-								</View>
-								<View style={styles.catGrid}>
-									{rubrics.slice(0, homeRubrics).map((rubric) => (
-										<View
-											key={rubric.id}
-											style={[
-												styles.catCell,
-												{ width: `${100 / catColumns}%` },
-											]}
-										>
-											<CategoryIcon
-												category={rubric}
-												// A rubric opens its sub-categories; one without any
-												// goes straight to the search filtered on it.
-												onPress={() =>
-													rubric.children.length > 0
-														? router.push({
-																pathname: "/categories",
-																params: { rubric: rubric.id },
-															})
-														: router.push({
-																pathname: "/(tabs)/search",
-																params: { category: rubric.id },
-															})
-												}
-											/>
-										</View>
-									))}
-									{rubrics.length > homeRubrics && (
-										<View
-											style={[
-												styles.catCell,
-												{ width: `${100 / catColumns}%` },
-											]}
-										>
-											<Pressable
-												onPress={() => router.push("/categories")}
-												style={styles.catMore}
-												accessibilityRole="button"
-												accessibilityLabel={t("categories.title")}
-											>
-												<View
-													style={[
-														styles.catMoreIcon,
-														{ backgroundColor: c.primaryTint, borderColor },
-													]}
-												>
-													<Ionicons name="grid" size={22} color={c.link} />
-												</View>
-												<Text
-													style={[styles.catMoreLabel, { color: c.link }]}
-													numberOfLines={2}
-												>
-													{t("categories.more")}
-												</Text>
-											</Pressable>
-										</View>
-									)}
-								</View>
-							</View>
-						)}
-
-						{/* Localisation du fil */}
-						<View style={styles.locationSection}>
-							<LocationCard />
-						</View>
-
-						{/* À la une */}
-						{boostedListings.length > 0 && (
-							<View style={styles.section}>
-								<View style={styles.sectionHeader}>
-									<View style={styles.sectionTitleRow}>
-										<Text
-											style={[styles.sectionTitle, { color: textColor }]}
-											accessibilityRole="header"
-										>
-											{t("home.featured")}
-										</Text>
-									</View>
-								</View>
-								<ScrollView
-									horizontal
-									showsHorizontalScrollIndicator={false}
-									pagingEnabled={!isTablet}
-									contentContainerStyle={styles.featuredList}
-								>
-									{boostedListings.slice(0, 6).map((listing: any) => (
-										<Pressable
-											key={listing.id}
-											onPress={() => router.push(`/listing/${listing.id}`)}
-											accessibilityRole="button"
-											accessibilityLabel={[
-												listing.title,
-												listing.price
-													? formatPrice(listing.price, i18n.language)
-													: t("listing.priceOnRequest"),
-												listing.location,
-												t("home.featuredBadge"),
-											]
-												.filter(Boolean)
-												.join(", ")}
-											style={({ pressed }) => [
-												styles.featuredCard,
-												{ backgroundColor: cardBg, width: featuredWidth },
-												pressed && styles.pressed,
-											]}
-										>
-											<Image
-												source={{
-													uri:
-														resolveListingImageUrl(
-															listing.images?.[0],
-															"thumbnail",
-														) ?? undefined,
-												}}
-												style={[
-													styles.featuredImage,
-													{ height: featuredHeight },
-												]}
-												contentFit="cover"
-												placeholder={{
-													blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6.",
-												}}
-											/>
-											<View style={styles.featuredBadge}>
-												<Ionicons name="flash" size={12} color={c.sun} />
-												<Text style={styles.featuredBadgeText}>
-													{t("home.featuredBadge")}
-												</Text>
-											</View>
-											<View style={styles.featuredOverlay}>
-												<View style={styles.featuredPriceTag}>
-													<Text style={styles.featuredPrice} numberOfLines={1}>
-														{listing.price
-															? formatPrice(listing.price, i18n.language)
-															: t("listing.priceOnRequest")}
-													</Text>
-												</View>
-												<Text style={styles.featuredTitle} numberOfLines={1}>
-													{listing.title}
-												</Text>
-												<View style={styles.featuredMeta}>
-													<Ionicons
-														name="location-outline"
-														size={13}
-														color="rgba(255,255,255,0.86)"
-													/>
-													<Text
-														style={styles.featuredMetaText}
-														numberOfLines={1}
-													>
-														{listing.location}
-													</Text>
-												</View>
-											</View>
-										</Pressable>
-									))}
-								</ScrollView>
-							</View>
-						)}
-
-						{/* Annonces récentes */}
+			<AnimatedScrollView
+				style={{ flex: 1 }}
+				contentContainerStyle={{ flexGrow: 1 }}
+				showsVerticalScrollIndicator={false}
+				onScroll={scrollHandler}
+				scrollEventThrottle={16}
+				refreshControl={
+					<RefreshControl
+						refreshing={refreshing}
+						onRefresh={onRefresh}
+						tintColor={primaryColor}
+						colors={[c.primaryFill]}
+					/>
+				}
+			>
+				<View style={[styles.homeContent, { backgroundColor: bg }]}>
+					{/* Catégories: the rubrics in two rows, the rest one tap away */}
+					{rubrics.length > 0 && (
 						<View style={styles.section}>
 							<View style={styles.sectionHeader}>
 								<Text
-									style={[
-										styles.sectionTitle,
-										styles.sectionTitleShrink,
-										{ color: textColor },
-									]}
-									numberOfLines={1}
+									style={[styles.sectionTitle, { color: textColor }]}
 									accessibilityRole="header"
 								>
-									{browseCity
-										? t("home.recentListingsIn", { city: browseCity })
-										: t("home.recentListings")}
+									{t("home.categories")}
 								</Text>
 								<Pressable
-									onPress={onSearchFocus}
+									onPress={() => router.push("/categories")}
 									style={styles.seeAllBtn}
 									accessibilityRole="button"
+									accessibilityLabel={t("categories.title")}
 								>
 									<Text style={[styles.seeAll, { color: c.link }]}>
 										{t("home.seeAll")}
 									</Text>
 								</Pressable>
 							</View>
-							{recentLoading ? (
-								<View style={styles.gridSkeleton}>
-									<ListingGridSkeleton
-										cardWidth={cardWidth}
-										columns={columns}
-										rows={3}
-									/>
-								</View>
-							) : recentError ? (
-								<EmptyState
-									icon="cloud-offline-outline"
-									title={t("home.errorTitle")}
-									subtitle={t("home.errorSub")}
-									ctaLabel={t("common.retry")}
-									onCta={() => refetchRecent()}
-								/>
-							) : homeListings.length === 0 ? (
-								<EmptyState
-									icon="storefront-outline"
-									title={t("home.noListings")}
-									subtitle={
-										browseCity
-											? t("home.noListingsIn", { city: browseCity })
-											: t("home.noListingsSub")
-									}
-									ctaLabel={
-										browseCity
-											? t("locationSheet.seeAllCities")
-											: t("home.publish")
-									}
-									onCta={() =>
-										browseCity
-											? void setBrowsePlace(null)
-											: router.push("/(tabs)/create")
-									}
-								/>
-							) : (
-								<View style={styles.grid}>
-									{homeListings.map((listing: any) => (
-										<ListingCard
-											key={listing.id}
-											listing={listing}
-											width={cardWidth}
-											isFavorite={favoriteIds.has(listing.id)}
-											onToggleFavorite={() => toggleFavorite(listing)}
-											onPress={(id) => router.push(`/listing/${id}`)}
+							<View style={styles.catGrid}>
+								{rubrics.slice(0, homeRubrics).map((rubric) => (
+									<View
+										key={rubric.id}
+										style={[styles.catCell, { width: `${100 / catColumns}%` }]}
+									>
+										<CategoryIcon
+											category={rubric}
+											// A rubric opens its sub-categories; one without any
+											// goes straight to the search filtered on it.
+											onPress={() =>
+												rubric.children.length > 0
+													? router.push({
+															pathname: "/categories",
+															params: { rubric: rubric.id },
+														})
+													: router.push({
+															pathname: "/(tabs)/search",
+															params: {
+																category: rubric.id,
+																entry: String(Date.now()),
+															},
+														})
+											}
 										/>
-									))}
-								</View>
-							)}
-							{hasMoreRecent && (
-								<Pressable
-									onPress={() => void fetchMoreRecent()}
-									disabled={loadingMoreRecent}
-									accessibilityRole="button"
-									accessibilityState={{ busy: loadingMoreRecent }}
-									style={({ pressed }) => [
-										styles.moreBtn,
-										{ backgroundColor: cardBg, borderColor },
-										pressed && styles.pressed,
-									]}
-								>
-									{loadingMoreRecent ? (
-										<ActivityIndicator color={primaryColor} />
-									) : (
-										<Text style={[styles.moreText, { color: c.link }]}>
-											{t("home.showMore")}
-										</Text>
-									)}
-								</Pressable>
-							)}
+									</View>
+								))}
+								{rubrics.length > homeRubrics && (
+									<View
+										style={[styles.catCell, { width: `${100 / catColumns}%` }]}
+									>
+										<Pressable
+											onPress={() => router.push("/categories")}
+											style={styles.catMore}
+											accessibilityRole="button"
+											accessibilityLabel={t("categories.title")}
+										>
+											<View
+												style={[
+													styles.catMoreIcon,
+													{ backgroundColor: c.primaryTint, borderColor },
+												]}
+											>
+												<Ionicons name="grid" size={22} color={c.link} />
+											</View>
+											<Text
+												style={[styles.catMoreLabel, { color: c.link }]}
+												numberOfLines={2}
+											>
+												{t("categories.more")}
+											</Text>
+										</Pressable>
+									</View>
+								)}
+							</View>
 						</View>
+					)}
 
-						{/* ── Annonces proches de vous ── */}
+					{/* Localisation du fil */}
+					<View style={styles.locationSection}>
+						<LocationCard />
+					</View>
+
+					{/* ── Près de vous: right under the place it depends on ── */}
+					{showNearby && (
 						<View style={styles.section}>
 							<View style={styles.sectionHeader}>
 								<View style={styles.sectionTitleRow}>
@@ -1073,64 +520,7 @@ export default function HomeScreen() {
 									</Text>
 								</View>
 							</View>
-							{showLocationPrompt ? (
-								<Pressable
-									// The single permission request in this screen, and it only
-									// runs from this explicit press. A refusal or a dead geocoder
-									// resolves normally — the card just stays put.
-									disabled={locationDetecting}
-									onPress={() => {
-										void requestDetection();
-									}}
-									accessibilityRole="button"
-									accessibilityState={{ busy: locationDetecting }}
-									accessibilityLabel={t("home.enableLocation")}
-									accessibilityHint={
-										locationRefused
-											? t("errors.locationPermission")
-											: t("home.enableLocationSub")
-									}
-									style={({ pressed }) => [
-										styles.locationPrompt,
-										{ backgroundColor: cardBg, borderColor },
-										pressed && styles.pressed,
-									]}
-								>
-									<View
-										style={[
-											styles.locationIcon,
-											{ backgroundColor: c.primaryTint },
-										]}
-									>
-										<Ionicons
-											name="location-outline"
-											size={20}
-											color={c.link}
-										/>
-									</View>
-									<View style={{ flex: 1 }}>
-										<Text
-											style={[styles.locationPromptTitle, { color: textColor }]}
-										>
-											{t("home.enableLocation")}
-										</Text>
-										<Text style={[styles.locationPromptSub, { color: c.body }]}>
-											{locationRefused
-												? t("errors.locationPermission")
-												: t("home.enableLocationSub")}
-										</Text>
-									</View>
-									{locationDetecting ? (
-										<ActivityIndicator size="small" color={primaryColor} />
-									) : (
-										<Ionicons
-											name="chevron-forward"
-											size={16}
-											color={mutedColor}
-										/>
-									)}
-								</Pressable>
-							) : !userCoords && locationPending ? (
+							{!userCoords ? (
 								<ScrollView
 									horizontal
 									showsHorizontalScrollIndicator={false}
@@ -1181,24 +571,214 @@ export default function HomeScreen() {
 								</ScrollView>
 							)}
 						</View>
-					</View>
-				</AnimatedScrollView>
-			)}
+					)}
 
-			<SaveSearchDialog
-				visible={saveDialogOpen}
-				onClose={() => setSaveDialogOpen(false)}
-				query={debouncedQuery}
-				searchParams={searchParams}
-				filters={{
-					category: filterParams.category,
-					minPrice: filterParams.minPrice,
-					maxPrice: filterParams.maxPrice,
-					location: filterParams.location,
-					sort,
-					...attrParams,
-				}}
-			/>
+					{/* À la une */}
+					{boostedListings.length > 0 && (
+						<View style={styles.section}>
+							<View style={styles.sectionHeader}>
+								<View style={styles.sectionTitleRow}>
+									<Text
+										style={[styles.sectionTitle, { color: textColor }]}
+										accessibilityRole="header"
+									>
+										{t("home.featured")}
+									</Text>
+								</View>
+							</View>
+							<ScrollView
+								horizontal
+								showsHorizontalScrollIndicator={false}
+								// Snap card by card: the cards are narrower than the screen,
+								// so paging by screen width drifts off by the third one.
+								snapToInterval={featuredWidth + FEATURED_GAP}
+								snapToAlignment="start"
+								decelerationRate="fast"
+								contentContainerStyle={styles.featuredList}
+							>
+								{boostedListings.slice(0, 6).map((listing: any) => (
+									<Pressable
+										key={listing.id}
+										onPress={() => router.push(`/listing/${listing.id}`)}
+										accessibilityRole="button"
+										accessibilityLabel={[
+											listing.title,
+											listing.price
+												? formatPrice(listing.price, i18n.language)
+												: t("listing.priceOnRequest"),
+											listing.location,
+											t("home.featuredBadge"),
+										]
+											.filter(Boolean)
+											.join(", ")}
+										style={({ pressed }) => [
+											styles.featuredCard,
+											{ backgroundColor: cardBg, width: featuredWidth },
+											pressed && styles.pressed,
+										]}
+									>
+										<Image
+											source={{
+												uri:
+													resolveListingImageUrl(
+														listing.images?.[0],
+														"medium",
+													) ?? undefined,
+											}}
+											style={[styles.featuredImage, { height: featuredHeight }]}
+											contentFit="cover"
+											placeholder={{
+												blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6.",
+											}}
+										/>
+										<View style={styles.featuredBadge}>
+											<Ionicons name="flash" size={12} color={c.sun} />
+											<Text style={styles.featuredBadgeText}>
+												{t("home.featuredBadge")}
+											</Text>
+										</View>
+										<View style={styles.featuredOverlay}>
+											<View style={styles.featuredPriceTag}>
+												<Text style={styles.featuredPrice} numberOfLines={1}>
+													{listing.price
+														? formatPrice(listing.price, i18n.language)
+														: t("listing.priceOnRequest")}
+												</Text>
+											</View>
+											<Text style={styles.featuredTitle} numberOfLines={1}>
+												{listing.title}
+											</Text>
+											<View style={styles.featuredMeta}>
+												<Ionicons
+													name="location-outline"
+													size={13}
+													color="rgba(255,255,255,0.86)"
+												/>
+												<Text style={styles.featuredMetaText} numberOfLines={1}>
+													{listing.location}
+												</Text>
+											</View>
+										</View>
+									</Pressable>
+								))}
+							</ScrollView>
+						</View>
+					)}
+
+					{/* Annonces récentes */}
+					<View style={styles.section}>
+						<View style={styles.sectionHeader}>
+							<Text
+								style={[
+									styles.sectionTitle,
+									styles.sectionTitleShrink,
+									{ color: textColor },
+								]}
+								numberOfLines={1}
+								accessibilityRole="header"
+							>
+								{browseCity
+									? t("home.recentListingsIn", { city: browseCity })
+									: t("home.recentListings")}
+							</Text>
+							<Pressable
+								// The full search, kept on the city this feed shows.
+								onPress={() =>
+									router.push({
+										pathname: "/(tabs)/search",
+										params: {
+											...(browseCity ? { location: browseCity } : {}),
+											entry: String(Date.now()),
+										},
+									})
+								}
+								style={styles.seeAllBtn}
+								accessibilityRole="button"
+								accessibilityLabel={`${
+									browseCity
+										? t("home.recentListingsIn", { city: browseCity })
+										: t("home.recentListings")
+								}, ${t("home.seeAll")}`}
+							>
+								<Text style={[styles.seeAll, { color: c.link }]}>
+									{t("home.seeAll")}
+								</Text>
+							</Pressable>
+						</View>
+						{recentLoading ? (
+							<View style={styles.gridSkeleton}>
+								<ListingGridSkeleton
+									cardWidth={cardWidth}
+									columns={columns}
+									rows={3}
+								/>
+							</View>
+						) : recentError ? (
+							<EmptyState
+								icon="cloud-offline-outline"
+								title={t("home.errorTitle")}
+								subtitle={t("home.errorSub")}
+								ctaLabel={t("common.retry")}
+								onCta={() => refetchRecent()}
+							/>
+						) : homeListings.length === 0 ? (
+							<EmptyState
+								icon="storefront-outline"
+								title={t("home.noListings")}
+								subtitle={
+									browseCity
+										? t("home.noListingsIn", { city: browseCity })
+										: t("home.noListingsSub")
+								}
+								ctaLabel={
+									browseCity
+										? t("locationSheet.seeAllCities")
+										: t("home.publish")
+								}
+								onCta={() =>
+									browseCity
+										? void setBrowsePlace(null)
+										: router.push("/(tabs)/create")
+								}
+							/>
+						) : (
+							<View style={styles.grid}>
+								{homeListings.map((listing: any) => (
+									<ListingCard
+										key={listing.id}
+										listing={listing}
+										width={cardWidth}
+										isFavorite={favoriteIds.has(listing.id)}
+										onToggleFavorite={() => toggleFavorite(listing)}
+										onPress={(id) => router.push(`/listing/${id}`)}
+									/>
+								))}
+							</View>
+						)}
+						{hasMoreRecent && (
+							<Pressable
+								onPress={() => void fetchMoreRecent()}
+								disabled={loadingMoreRecent}
+								accessibilityRole="button"
+								accessibilityState={{ busy: loadingMoreRecent }}
+								style={({ pressed }) => [
+									styles.moreBtn,
+									{ backgroundColor: cardBg, borderColor },
+									pressed && styles.pressed,
+								]}
+							>
+								{loadingMoreRecent ? (
+									<ActivityIndicator color={primaryColor} />
+								) : (
+									<Text style={[styles.moreText, { color: c.link }]}>
+										{t("home.showMore")}
+									</Text>
+								)}
+							</Pressable>
+						)}
+					</View>
+				</View>
+			</AnimatedScrollView>
 		</SafeAreaView>
 	);
 }
@@ -1212,7 +792,6 @@ const styles = StyleSheet.create({
 		paddingTop: 6,
 		paddingBottom: 14,
 		overflow: "hidden",
-		gap: 0, // géré par marginBottom animé de topRow
 	},
 
 	/* Ligne 1 : logo | nom | spacer | avatar */
@@ -1220,9 +799,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
-		height: 52, // hauteur fixe → l'animation collapse à 0
+		height: 52,
 		marginBottom: 8,
-		overflow: "hidden",
 	},
 	logoImgWrap: {
 		width: LOGO_MAX,
@@ -1246,7 +824,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	moreText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	moreText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	pressed: { opacity: 0.85 },
 	bellBtn: {
 		width: 44,
@@ -1278,24 +856,6 @@ const styles = StyleSheet.create({
 	},
 	avatar: { width: 44, height: 44 },
 
-	/* Ligne 2 : search + annuler */
-	searchRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 6,
-	},
-	searchField: { flex: 1 },
-	cancelBtn: {
-		paddingHorizontal: 4,
-		alignItems: "center",
-		justifyContent: "center",
-		height: 48,
-	},
-	cancelText: {
-		fontSize: 16,
-		fontFamily: Fonts.bodySemibold,
-	},
-
 	/* ── Home content ── */
 	homeContent: {
 		flexGrow: 1,
@@ -1315,14 +875,14 @@ const styles = StyleSheet.create({
 	sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
 	sectionTitle: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.4,
 	},
 	sectionTitleShrink: { flexShrink: 1 },
 	locationSection: { marginTop: 20 },
 	seeAllBtn: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },
-	seeAll: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	seeAll: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	catGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
@@ -1348,7 +908,7 @@ const styles = StyleSheet.create({
 	},
 
 	/* ── Featured ── */
-	featuredList: { paddingHorizontal: 16, gap: 12 },
+	featuredList: { paddingHorizontal: 16, gap: FEATURED_GAP },
 	featuredCard: { borderRadius: 16, overflow: "hidden" },
 	featuredImage: { width: "100%", height: 190 },
 	featuredOverlay: {
@@ -1377,6 +937,7 @@ const styles = StyleSheet.create({
 	featuredBadgeText: {
 		color: "#fff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyBold,
 	},
 	featuredPriceTag: {
@@ -1399,6 +960,7 @@ const styles = StyleSheet.create({
 	featuredTitle: {
 		color: "#fff",
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		marginTop: 10,
 	},
@@ -1412,6 +974,7 @@ const styles = StyleSheet.create({
 		flexShrink: 1,
 		color: "rgba(255,255,255,0.86)",
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.body,
 	},
 
@@ -1424,24 +987,6 @@ const styles = StyleSheet.create({
 		paddingBottom: 20,
 	},
 	gridSkeleton: { paddingHorizontal: 16, paddingBottom: 20 },
-
-	/* ── Search mode ── */
-	content: {
-		flex: 1,
-		borderTopLeftRadius: 22,
-		borderTopRightRadius: 22,
-		overflow: "hidden",
-	},
-	searchList: { paddingHorizontal: 16, paddingTop: 12 },
-	searchRowGap: { height: 16 },
-	row: { flexDirection: "row", gap: 12 },
-	resultCount: {
-		fontSize: 13,
-		fontFamily: Fonts.bodyMedium,
-		// 12pt above the first row (FlashList has no container gap).
-		marginBottom: 12,
-	},
-	skeletonGrid: { padding: 16 },
 
 	/* ── Nearby / Location prompt ── */
 	locationPrompt: {
@@ -1461,7 +1006,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	locationPromptTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	locationPromptSub: {
 		fontSize: 13,
 		lineHeight: 18,

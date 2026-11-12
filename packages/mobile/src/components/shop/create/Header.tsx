@@ -44,5 +44,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	headerTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
+	headerTitle: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 });

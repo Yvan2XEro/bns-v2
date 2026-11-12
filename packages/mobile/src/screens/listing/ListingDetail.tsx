@@ -58,12 +58,10 @@ import { formatPrice, formatPriceRange } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { publicShopBadge } from "@/src/lib/verification";
 import type {
-	Favorite,
 	ListingDoc,
 	ListingImageItem,
 	ListingShopRef,
 	PayloadDoc,
-	PayloadPage,
 	ProductDoc,
 	SimilarResponse,
 	UserDoc,
@@ -207,15 +205,6 @@ export function ListingDetail({ id }: { id: string }) {
 		if (id) trackListingView(id);
 	}, [id, trackListingView]);
 
-	const { data: favData } = useQuery({
-		queryKey: ["favorite", id],
-		queryFn: () =>
-			api.get<PayloadPage<Favorite>>(
-				`/api/favorites?where[listing][equals]=${id}&limit=1`,
-			),
-		enabled: !!user && !!id,
-	});
-
 	const { data: similarData } = useQuery({
 		queryKey: ["similar", id],
 		queryFn: () =>
@@ -228,8 +217,8 @@ export function ListingDetail({ id }: { id: string }) {
 	const seller = listing?.seller;
 	const isOwner =
 		user?.id === (typeof seller === "string" ? seller : seller?.id);
-	const favDoc = favData?.docs?.[0];
-	const isFavorite = !!favDoc;
+	// The same heart as on the cards: sign-in gate, instant fill, rollback.
+	const isFavorite = !!id && favoriteIds.has(id);
 
 	// Most listings have no shop — this stays null and the rest of the page
 	// renders exactly as it did before shops existed, with no extra request.
@@ -266,8 +255,13 @@ export function ListingDetail({ id }: { id: string }) {
 	const scrollRef = useRef<ScrollView>(null);
 	const contentY = useRef(0);
 	const buyBoxY = useRef(0);
+	const similarY = useRef<number | null>(null);
+	// Sold, rented, filled: nothing left to call or message about.
+	const isClosed = listing?.status === "sold";
+	const [descTruncated, setDescTruncated] = useState(false);
 	// A shop product the viewer can buy: the bar's main action is ordering.
 	const canOrder =
+		!isClosed &&
 		Boolean(productId) &&
 		listing?.orderable !== false &&
 		!ownShop &&
@@ -304,21 +298,15 @@ export function ListingDetail({ id }: { id: string }) {
 		[listing?.attributes, listing?.category, t, i18n.language],
 	);
 
-	const { mutate: toggleFav } = useMutation({
-		mutationFn: () =>
-			isFavorite
-				? api.delete(`/api/favorites/${favDoc.id}`)
-				: api.post("/api/favorites", { listing: id }),
-		onMutate: async () => {
-			// Saving is the moment worth a sound; removing only ticks.
-			feedback(isFavorite ? "tap" : "pop");
-			await queryClient.cancelQueries({ queryKey: ["favorite", id] });
-		},
-		onSettled: async () => {
-			await queryClient.invalidateQueries({ queryKey: ["favorite", id] });
-			await queryClient.invalidateQueries({ queryKey: ["favorites"] });
-		},
-	});
+	const toggleFav = () => {
+		if (!listing || !id) return;
+		// Saving is the moment worth a sound; removing only ticks.
+		if (user) feedback(isFavorite ? "tap" : "pop");
+		toggleFavorite({ ...listing, id });
+	};
+
+	// Shared links must open from WhatsApp: never a bare "/listing/…" path.
+	const listingUrl = `${(webUrl || "https://buynsellem.com").replace(/\/+$/, "")}/listing/${id}`;
 
 	const handleShare = async () => {
 		// The share panel (WhatsApp Status, stories, …) once an admin turned
@@ -327,7 +315,7 @@ export function ListingDetail({ id }: { id: string }) {
 			await ShareSheet.call({ kind: "listing", id, title: listing.title });
 			return;
 		}
-		const url = `${webUrl ?? ""}/listing/${id}`;
+		const url = listingUrl;
 		// No price, no "0 FCFA": the title alone carries a free or on-quote listing.
 		const heading = priceLabel
 			? `${listing?.title} — ${priceLabel}`
@@ -467,6 +455,48 @@ export function ListingDetail({ id }: { id: string }) {
 		listing.category && typeof listing.category === "object"
 			? listing.category.name
 			: null;
+
+	const categoryId =
+		listing.category && typeof listing.category === "object"
+			? listing.category.id
+			: typeof listing.category === "string"
+				? listing.category
+				: null;
+
+	const similarCount = (similarData?.hits ?? []).filter(
+		(l) => l.id !== id,
+	).length;
+	const showSimilar = () => {
+		if (similarCount > 0 && similarY.current !== null) {
+			scrollRef.current?.scrollTo({
+				y: Math.max(0, contentY.current + similarY.current - 12),
+				animated: true,
+			});
+			return;
+		}
+		router.push({
+			pathname: "/(tabs)/search",
+			params: {
+				...(categoryId ? { category: categoryId } : {}),
+				entry: String(Date.now()),
+			},
+		});
+	};
+
+	const openReport = () => {
+		// Reporting needs an account: ask before the form, not after it.
+		if (!user) {
+			router.push({
+				pathname: "/auth/login",
+				params: getAuthModalParams(pathname),
+			});
+			return;
+		}
+		router.push({
+			pathname: "/report",
+			params: { targetType: "listing", targetId: id },
+		});
+	};
 
 	const listingTags = Array.isArray(listing.tags)
 		? listing.tags.filter(isListingTag)
@@ -724,7 +754,7 @@ export function ListingDetail({ id }: { id: string }) {
 									<View style={styles.metaItem}>
 										<Ionicons name="eye-outline" size={15} color={mutedColor} />
 										<Text style={[styles.metaText, { color: mutedColor }]}>
-											{listing.viewCount}
+											{t("listing.views", { count: listing.viewCount ?? 0 })}
 										</Text>
 									</View>
 								) : null}
@@ -741,15 +771,18 @@ export function ListingDetail({ id }: { id: string }) {
 						</View>
 
 						{/* Buying sits right under the price, as in the design. */}
-						<DeliveryEstimates
-							listingId={id}
-							eligible={Boolean(
-								listingProduct &&
-									listingShop &&
-									!listingShop.ordersRestrictedAt,
-							)}
-						/>
+						{!isClosed ? (
+							<DeliveryEstimates
+								listingId={id}
+								eligible={Boolean(
+									listingProduct &&
+										listingShop &&
+										!listingShop.ordersRestrictedAt,
+								)}
+							/>
+						) : null}
 						<View
+							style={isClosed ? styles.hidden : undefined}
 							onLayout={(e) => {
 								buyBoxY.current = e.nativeEvent.layout.y;
 							}}
@@ -890,13 +923,25 @@ export function ListingDetail({ id }: { id: string }) {
 								>
 									{t("listing.description")}
 								</Text>
+								{/* Measured at full length, out of sight: the toggle shows
+								    only when the text really runs past five lines. */}
+								<Text
+									style={[styles.description, styles.measure]}
+									onTextLayout={(e) =>
+										setDescTruncated(e.nativeEvent.lines.length > 5)
+									}
+									accessibilityElementsHidden
+									importantForAccessibility="no-hide-descendants"
+								>
+									{listing.description}
+								</Text>
 								<Text
 									style={[styles.description, { color: bodyColor }]}
 									numberOfLines={descExpanded ? undefined : 5}
 								>
 									{listing.description}
 								</Text>
-								{listing.description.length > 200 ? (
+								{descTruncated ? (
 									<Pressable
 										onPress={() => setDescExpanded(!descExpanded)}
 										accessibilityRole="button"
@@ -982,9 +1027,14 @@ export function ListingDetail({ id }: { id: string }) {
 										<Pressable
 											key={String(tag.id)}
 											onPress={() =>
+												// Tags only filter inside a category: send both.
 												router.push({
 													pathname: "/(tabs)/search",
-													params: { tags: tag.slug },
+													params: {
+														tags: tag.slug,
+														...(categoryId ? { category: categoryId } : {}),
+														entry: String(Date.now()),
+													},
 												})
 											}
 											accessibilityRole="link"
@@ -1008,8 +1058,13 @@ export function ListingDetail({ id }: { id: string }) {
 						) : null}
 
 						{/* Similar Listings */}
-						{(similarData?.hits?.length ?? 0) > 0 ? (
-							<View style={styles.similar}>
+						{similarCount > 0 ? (
+							<View
+								style={styles.similar}
+								onLayout={(e) => {
+									similarY.current = e.nativeEvent.layout.y;
+								}}
+							>
 								<Text
 									style={[styles.sectionTitle, { color: textColor }]}
 									accessibilityRole="header"
@@ -1048,12 +1103,7 @@ export function ListingDetail({ id }: { id: string }) {
 
 						{/* Report link */}
 						<Pressable
-							onPress={() =>
-								router.push({
-									pathname: "/report",
-									params: { targetType: "listing", targetId: id },
-								})
-							}
+							onPress={openReport}
 							accessibilityRole="button"
 							style={({ pressed }) => [
 								styles.reportLink,
@@ -1082,7 +1132,22 @@ export function ListingDetail({ id }: { id: string }) {
 				]}
 			>
 				<View style={[styles.actionButtons, centeredContent]}>
-					{!isOwner && canOrder ? (
+					{!isOwner && isClosed ? (
+						<Pressable
+							onPress={showSimilar}
+							accessibilityRole="button"
+							style={({ pressed }) => [
+								styles.msgBtn,
+								{ backgroundColor: filledColor, opacity: pressed ? 0.85 : 1 },
+							]}
+						>
+							<Ionicons name="albums-outline" size={19} color="#ffffff" />
+							<Text style={styles.msgBtnText} numberOfLines={1}>
+								{t("listing.seeSimilar")}
+							</Text>
+						</Pressable>
+					) : null}
+					{!isOwner && !isClosed && canOrder ? (
 						<Pressable
 							onPress={() =>
 								scrollRef.current?.scrollTo({
@@ -1097,19 +1162,19 @@ export function ListingDetail({ id }: { id: string }) {
 							]}
 						>
 							<Ionicons name="bag-handle-outline" size={19} color="#ffffff" />
+							{/* It opens the buy box (variant, quantity, delivery), so
+							    it says "choose", not "order" as if it ordered. */}
 							<Text style={styles.msgBtnText} numberOfLines={1}>
-								{priceLabel
-									? t("listing.orderAction", { price: priceLabel })
-									: t("listing.barOrder")}
+								{t("listing.barChooseOrder")}
 							</Text>
 						</Pressable>
 					) : null}
-					{!isOwner && id && !canOrder ? (
+					{!isOwner && !isClosed && id && !canOrder ? (
 						<CallSellerButton
 							listingId={id}
 							whatsappMessage={t("listing.whatsappAbout", {
 								title: listing?.title ?? "",
-								url: `${webUrl ?? ""}/listing/${id}`,
+								url: listingUrl,
 							})}
 							style={[
 								styles.callBtn,
@@ -1119,7 +1184,7 @@ export function ListingDetail({ id }: { id: string }) {
 							color={textColor}
 						/>
 					) : null}
-					{!isOwner ? (
+					{!isOwner && !isClosed ? (
 						<Pressable
 							onPress={handleMessage}
 							disabled={startConversation.isPending}
@@ -1246,6 +1311,7 @@ const styles = StyleSheet.create({
 	photoCountText: {
 		color: "#ffffff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -1261,7 +1327,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 4,
 	},
-	boostedText: { color: INK, fontSize: 12, fontFamily: Fonts.bodyBold },
+	boostedText: {
+		color: INK,
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodyBold,
+	},
 
 	// ── Content ──
 	// Rises over the gallery's bottom edge like a sheet.
@@ -1322,7 +1393,7 @@ const styles = StyleSheet.create({
 	},
 	price: {
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		color: INK,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.8,
@@ -1333,10 +1404,10 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 5,
 	},
-	closedText: { fontSize: 13, fontFamily: Fonts.bodyBold },
+	closedText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodyBold },
 	title: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.5,
 	},
@@ -1357,15 +1428,24 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 5,
 	},
-	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	sectionTitle: {
-		fontSize: 19,
-		lineHeight: 24,
+		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 		marginBottom: 10,
 	},
 	description: { fontSize: 15, lineHeight: 23, fontFamily: Fonts.body },
+	// Same width as the visible text (inside the card's 16pt padding).
+	measure: {
+		position: "absolute",
+		left: 16,
+		right: 16,
+		top: 0,
+		opacity: 0,
+	},
+	hidden: { display: "none" },
 	readMoreBtn: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -1373,16 +1453,22 @@ const styles = StyleSheet.create({
 		gap: 4,
 		minHeight: 44,
 	},
-	readMore: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	readMore: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	attrGroup: { marginBottom: 14 },
 	attrGroupTitle: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 		marginBottom: 10,
 	},
 	attrsGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 14 },
 	attrItem: { width: "50%", paddingRight: 12 },
-	attrKey: { fontSize: 13, fontFamily: Fonts.body, marginBottom: 2 },
+	attrKey: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+		marginBottom: 2,
+	},
 	attrVal: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
 	tagWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	tag: {
@@ -1391,7 +1477,7 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 		paddingHorizontal: 12,
 	},
-	tagText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	tagText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 
 	// ── Seller ──
 	sellerCard: { flexDirection: "row", alignItems: "center", gap: 14 },
@@ -1403,10 +1489,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	sellerLetter: { fontSize: 22, fontFamily: Fonts.displayBold },
+	sellerLetter: { fontSize: 24, lineHeight: 32, fontFamily: Fonts.displayBold },
 	sellerInfo: { flex: 1, gap: 3 },
 	sellerRole: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
-	sellerName: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	sellerName: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	memberSince: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 
 	safetyStrip: {
@@ -1436,7 +1522,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		marginTop: 4,
 	},
-	reportText: { fontSize: 14, fontFamily: Fonts.bodyMedium },
+	reportText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyMedium },
 
 	// ── Action bar ──
 	actionBar: {
@@ -1462,6 +1548,7 @@ const styles = StyleSheet.create({
 	msgBtnText: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 		flexShrink: 1,
 	},
@@ -1475,7 +1562,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		minHeight: 52,
 	},
-	editBtnText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	editBtnText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	callBtnSquare: {
 		width: 52,
 		height: 52,

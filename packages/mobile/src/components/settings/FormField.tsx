@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { type Ref, useState } from "react";
 import {
 	Pressable,
 	StyleSheet,
@@ -17,7 +17,8 @@ import { useGroupedColors } from "./Grouped";
  * A labelled text field for account forms: 52pt, 16pt type, the focus and
  * refusal drawn on the border. `error` as a string is said under the field;
  * `true` only marks it (the message sits under the form). `secure` adds the
- * reveal toggle.
+ * reveal toggle. `ref` reaches the TextInput, so a form library can focus
+ * the first refused field.
  */
 export function FormField({
 	label,
@@ -26,8 +27,10 @@ export function FormField({
 	icon,
 	multiline,
 	hint,
+	ref,
 	...input
 }: {
+	ref?: Ref<TextInput>;
 	label: string;
 	error?: string | boolean | null;
 	secure?: boolean;
@@ -80,11 +83,15 @@ export function FormField({
 				) : null}
 				<TextInput
 					{...input}
+					ref={ref}
 					multiline={multiline}
 					secureTextEntry={secure && !revealed}
-					accessibilityLabel={label}
-					accessibilityHint={message ?? hint}
-					aria-invalid={Boolean(error)}
+					// The refusal is part of the name: React Native ignores
+					// aria-invalid, and many TalkBack users turn hints off.
+					accessibilityLabel={
+						error ? `${label}, ${message ?? t("common.required")}` : label
+					}
+					accessibilityHint={message ? undefined : hint}
 					onFocus={() => setFocused(true)}
 					onBlur={(event) => {
 						setFocused(false);
@@ -125,7 +132,7 @@ export function FormField({
 
 const styles = StyleSheet.create({
 	field: { gap: 6 },
-	label: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	box: {
 		flexDirection: "row",
 		alignItems: "center",

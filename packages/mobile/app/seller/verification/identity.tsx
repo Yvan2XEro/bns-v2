@@ -51,22 +51,16 @@ export default function IdentityConsentScreen() {
 			{isLoading ? <DetailSkeleton cards={2} /> : null}
 
 			{!isLoading && isError ? (
-				<View style={styles.center}>
-					<Text style={[styles.errorText, { color: c.text }]}>
-						{resolveErrorMessage(myShop.error ?? query.error, t)}
-					</Text>
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={t("common.retry")}
-						onPress={() => {
-							void myShop.refetch();
-							void query.refetch();
-						}}
-						style={[styles.retryBtn, { backgroundColor: fillOf(c) }]}
-					>
-						<Text style={styles.retryLabel}>{t("common.retry")}</Text>
-					</Pressable>
-				</View>
+				<EmptyState
+					illustration="notFound"
+					title={t("verification.loadError")}
+					subtitle={resolveErrorMessage(myShop.error ?? query.error, t)}
+					ctaLabel={t("common.retry")}
+					onCta={() => {
+						void myShop.refetch();
+						void query.refetch();
+					}}
+				/>
 			) : null}
 
 			{!isLoading && !isError && myShop.data && !shop ? (
@@ -154,7 +148,8 @@ const styles = StyleSheet.create({
 		padding: 24,
 	},
 	errorText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
@@ -169,11 +164,12 @@ const styles = StyleSheet.create({
 	retryLabel: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 	content: { padding: 16, gap: 16, paddingBottom: 40 },
 	banner: { borderRadius: 12, padding: 12 },
-	bannerText: { fontSize: 13, fontFamily: Fonts.body },
+	bannerText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	submit: {
 		minHeight: 48,
 		borderRadius: 14,
@@ -183,6 +179,7 @@ const styles = StyleSheet.create({
 	submitLabel: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 });

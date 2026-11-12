@@ -1,5 +1,7 @@
-import { useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
 import {
+	Pressable,
 	RefreshControl,
 	ScrollView,
 	StyleSheet,
@@ -24,7 +26,7 @@ import { formatOrderDate } from "@/src/lib/orderMoney";
 import { PAYOUT_STATUSES, type PayoutStatus } from "@/src/lib/paymentStatus";
 
 /**
- * One label/value line of a detail card. `numeric` sets the value in Outfit,
+ * One label/value line of a detail card. `numeric` sets the value in Poppins,
  * the face the app gives to amounts and counts.
  */
 function Line({
@@ -33,23 +35,47 @@ function Line({
 	c,
 	numeric = false,
 	first = false,
+	onPress,
 }: {
 	label: string;
 	value: string;
 	c: ShopPalette;
 	numeric?: boolean;
 	first?: boolean;
+	/** Makes the line a link, with a chevron. */
+	onPress?: () => void;
 }) {
+	const lineStyle = [
+		styles.line,
+		!first && {
+			borderTopWidth: StyleSheet.hairlineWidth,
+			borderTopColor: c.border,
+		},
+	];
+	if (onPress) {
+		return (
+			<Pressable
+				onPress={onPress}
+				accessibilityRole="link"
+				accessibilityLabel={`${label}, ${value}`}
+				style={({ pressed }) => [lineStyle, pressed && { opacity: 0.7 }]}
+			>
+				<Text style={[styles.lineLabel, { color: c.link }]}>{label}</Text>
+				<Text
+					style={[
+						numeric ? styles.lineNumber : styles.lineValue,
+						{ color: c.text },
+					]}
+					numberOfLines={1}
+				>
+					{value}
+				</Text>
+				<Ionicons name="chevron-forward" size={16} color={c.muted} />
+			</Pressable>
+		);
+	}
 	return (
-		<View
-			style={[
-				styles.line,
-				!first && {
-					borderTopWidth: StyleSheet.hairlineWidth,
-					borderTopColor: c.border,
-				},
-			]}
-		>
+		<View style={lineStyle}>
 			<Text style={[styles.lineLabel, { color: c.muted }]}>{label}</Text>
 			<Text
 				style={[
@@ -149,6 +175,26 @@ function PayoutDetailContent({
 					</View>
 				</View>
 
+				{detail.status === "failed" ? (
+					<Pressable
+						onPress={() => router.push("/seller/payments/setup")}
+						accessibilityRole="link"
+						accessibilityLabel={t("payments.payout_failedAction")}
+						style={({ pressed }) => [
+							s.card,
+							styles.failed,
+							{ backgroundColor: c.dangerSoft, borderColor: c.danger },
+							pressed && { opacity: 0.85 },
+						]}
+					>
+						<Ionicons name="alert-circle" size={20} color={c.dangerText} />
+						<Text style={[styles.failedText, { color: c.dangerText }]}>
+							{t("payments.payout_failedAction")}
+						</Text>
+						<Ionicons name="chevron-forward" size={18} color={c.dangerText} />
+					</Pressable>
+				) : null}
+
 				{detail.orders.length > 0 ? (
 					<View style={card}>
 						<Text
@@ -166,6 +212,9 @@ function PayoutDetailContent({
 									value={formatPrice(order.amount, locale)}
 									c={c}
 									numeric
+									onPress={() =>
+										router.push(`/seller/orders/${order.orderId}` as never)
+									}
 								/>
 							))}
 						</View>
@@ -219,6 +268,13 @@ const styles = StyleSheet.create({
 		marginBottom: 6,
 	},
 	lines: { marginTop: 2 },
+	failed: { flexDirection: "row", alignItems: "center", gap: 10 },
+	failedText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 21,
+		fontFamily: Fonts.bodySemibold,
+	},
 	line: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -226,10 +282,10 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		paddingVertical: 8,
 	},
-	lineLabel: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	lineLabel: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	lineValue: {
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		flexShrink: 1,
 		textAlign: "right",

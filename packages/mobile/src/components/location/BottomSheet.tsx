@@ -199,7 +199,12 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		gap: 12,
 	},
-	title: { flex: 1, fontSize: 20, fontFamily: Fonts.displayBold },
+	title: {
+		flex: 1,
+		fontSize: 20,
+		lineHeight: 28,
+		fontFamily: Fonts.displayBold,
+	},
 	close: {
 		width: 44,
 		height: 44,

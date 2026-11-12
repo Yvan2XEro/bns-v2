@@ -382,6 +382,8 @@ export interface Favorite {
 export interface ConversationShop {
 	id: string;
 	name: string;
+	/** The storefront handle (`/s/{handle}`); absent on older payloads. */
+	handle?: string;
 	logo?: Media | null;
 }
 
@@ -397,6 +399,12 @@ export interface Conversation {
 	lastMessage?: string | Message | null;
 	shop?: string | ConversationShop | null;
 	buyer?: string | UserDoc | null;
+	/** Shop conversations only: the order the thread is about, if any. */
+	order?: string | { id: string } | null;
+	/** Shop conversations only: the member handling it (depth ≥ 1 populates). */
+	assignee?: string | UserDoc | null;
+	/** Shop conversations only: the shop inbox state. */
+	inboxStatus?: "open" | "done" | null;
 	updatedAt: string;
 	createdAt: string;
 }

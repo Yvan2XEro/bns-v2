@@ -26,6 +26,7 @@ import {
 	RETURN_BASIS_LABELS,
 	RETURN_CASE_STATUS_LABELS,
 } from "@/src/lib/caseStatus";
+import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import type { ReturnListRow } from "../../../../api/src/contracts/returns";
@@ -35,6 +36,11 @@ export function SellerReturnsList({ selectedId, onOpen }: SplitListProps) {
 	const { t, i18n } = useTranslation();
 	const { shop, isLoading: shopLoading } = useActiveShop();
 	const returns = useShopReturns(shop?.shopId);
+	// Late returns cost the shop money: they lead the list, the rest keep the
+	// server's order.
+	const rows = [...(returns.data?.rows ?? [])].sort(
+		(a, b) => Number(Boolean(b.overdue)) - Number(Boolean(a.overdue)),
+	);
 
 	if (shopLoading || returns.isPending) {
 		return (
@@ -63,16 +69,18 @@ export function SellerReturnsList({ selectedId, onOpen }: SplitListProps) {
 					ctaLabel={t("common.retry")}
 					onCta={() => void returns.refetch()}
 				/>
-			) : returns.data?.rows.length === 0 ? (
-				<EmptyState
-					illustration="empty"
-					title={t("sellerReturns.emptyTitle")}
-					subtitle={t("sellerReturns.emptyBody")}
-				/>
 			) : (
 				<ScreenColumn width="wide">
 					<FlashList
-						data={returns.data?.rows ?? []}
+						data={rows}
+						// Inside the list so an empty one can still be pulled to refresh.
+						ListEmptyComponent={
+							<EmptyState
+								illustration="empty"
+								title={t("sellerReturns.emptyTitle")}
+								subtitle={t("sellerReturns.emptyBody")}
+							/>
+						}
 						extraData={selectedId}
 						keyExtractor={(row) => row.id}
 						contentContainerStyle={styles.list}
@@ -120,7 +128,7 @@ function ReturnRow({
 	const amount = formatPrice(item.refundAmount, locale);
 	const deadline = item.nextDeadline
 		? t("returns.deadline", {
-				date: new Date(item.nextDeadline).toLocaleDateString(locale),
+				date: formatDate(item.nextDeadline, { day: "numeric", month: "short" }),
 			})
 		: null;
 	return (
@@ -200,11 +208,17 @@ const styles = StyleSheet.create({
 	number: {
 		flexShrink: 1,
 		fontFamily: Fonts.displayBold,
-		fontSize: 17,
+		fontSize: 18,
+		lineHeight: 26,
 		fontVariant: ["tabular-nums"],
 	},
-	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
-	amount: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
+	amount: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	deadline: { flexDirection: "row", alignItems: "center", gap: 6 },
-	meta: { flexShrink: 1, fontFamily: Fonts.bodyMedium, fontSize: 13 },
+	meta: {
+		flexShrink: 1,
+		fontFamily: Fonts.bodyMedium,
+		fontSize: 13,
+		lineHeight: 18,
+	},
 });

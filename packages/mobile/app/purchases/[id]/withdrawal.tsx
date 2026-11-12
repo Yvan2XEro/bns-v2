@@ -1,11 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
-import {
-	KeyboardAvoidingView,
-	Platform,
-	ScrollView,
-	StyleSheet,
-	Text,
-} from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -67,38 +62,43 @@ export default function WithdrawalScreen() {
 					onCta={() => void purchase.refetch()}
 				/>
 			) : (
-				<KeyboardAvoidingView
-					style={styles.safe}
-					behavior={Platform.OS === "ios" ? "padding" : undefined}
-				>
-					<ScreenColumn width="reading">
-						<ScrollView
-							contentContainerStyle={styles.content}
-							keyboardShouldPersistTaps="handled"
-						>
-							<Card>
-								<WithdrawalWindowNote order={order} now={now} />
-								{offered ? null : (
-									<Text
-										style={[purchaseText.body, { color: c.body }]}
-										accessibilityRole="alert"
-									>
-										{t("purchases.withdrawalUnavailable")}
-									</Text>
-								)}
-							</Card>
-							{offered ? (
-								<WithdrawalForm
-									order={order}
-									onSent={() => {
-										showSuccess(t("purchases.withdrawalSent"));
-										router.back();
-									}}
-								/>
-							) : null}
-						</ScrollView>
-					</ScreenColumn>
-				</KeyboardAvoidingView>
+				<ScreenColumn width="reading">
+					<KeyboardAwareScrollView
+						contentContainerStyle={styles.content}
+						keyboardShouldPersistTaps="handled"
+						bottomOffset={24}
+					>
+						<Card>
+							<WithdrawalWindowNote order={order} now={now} />
+							{offered ? null : (
+								<Text
+									style={[purchaseText.body, { color: c.body }]}
+									accessibilityRole="alert"
+								>
+									{t("purchases.withdrawalUnavailable")}
+								</Text>
+							)}
+						</Card>
+						{offered ? (
+							<WithdrawalForm
+								order={order}
+								onSent={(response) => {
+									showSuccess(
+										t("purchases.withdrawalCaseOpen", {
+											number: response.caseNumber,
+										}),
+									);
+									// Straight to the case: where the return is followed
+									// and the shipment arranged.
+									router.replace({
+										pathname: "/returns/[id]",
+										params: { id: response.caseId },
+									});
+								}}
+							/>
+						) : null}
+					</KeyboardAwareScrollView>
+				</ScreenColumn>
 			)}
 		</SafeAreaView>
 	);

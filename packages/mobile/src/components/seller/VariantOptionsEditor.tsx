@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { Dispatch, SetStateAction } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { type FieldIssue, issueAt } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -33,6 +34,7 @@ export function VariantOptionsEditor({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const { showAlert } = useAlert();
 
 	const update = (mutate: (s: ProductFormState) => ProductFormState) =>
 		setForm((s) => {
@@ -40,23 +42,72 @@ export function VariantOptionsEditor({
 			return { ...next, variants: syncVariantRows(next) };
 		});
 
-	const commitName = (index: number, name: string) => {
+	/**
+	 * Commits a name, or says why not. A refused name used to snap back to the
+	 * old one on blur with no word; the row now keeps what was typed and shows
+	 * this message under it.
+	 */
+	const commitName = (index: number, name: string): string | null => {
 		const trimmed = name.trim();
+		if (!trimmed) {
+			return t("product.optionNameEmpty", {
+				defaultValue: "Donnez un nom à l’option.",
+			});
+		}
 		const duplicate = form.options.some(
 			(o, i) =>
 				i !== index && o.name.trim().toLowerCase() === trimmed.toLowerCase(),
 		);
-		if (!trimmed || duplicate) return;
+		if (duplicate) {
+			return t("product.optionNameTaken", {
+				defaultValue: "Ce nom est déjà utilisé par une autre option.",
+			});
+		}
 		update((s) => ({
 			...s,
 			options: s.options.map((o, i) =>
 				i === index ? { ...o, name: trimmed } : o,
 			),
 		}));
+		return null;
 	};
 
-	const removeOption = (index: number) =>
+	const dropOption = (index: number) =>
 		update((s) => ({ ...s, options: s.options.filter((_, i) => i !== index) }));
+
+	// Removing an option regenerates every variant: the prices, costs and
+	// stock typed on them go too. One stray tap on the bin cost all of it, so
+	// it asks first — unless nothing has been typed yet.
+	const removeOption = (index: number) => {
+		const typed = form.variants.some(
+			(row) => row.price || row.cost || row.initialStock || row.sku,
+		);
+		if (!typed) {
+			dropOption(index);
+			return;
+		}
+		const name =
+			form.options[index]?.name.trim() || t("product.optionNamePlaceholder");
+		showAlert(
+			t("product.removeOptionTitle", {
+				name,
+				defaultValue: "Supprimer l’option « {{name}} » ?",
+			}),
+			t("product.removeOptionMsg", {
+				count: form.variants.length,
+				defaultValue:
+					"Les {{count}} variantes et les prix, coûts et stocks saisis seront retirés.",
+			}),
+			[
+				{ text: t("common.cancel"), style: "cancel" },
+				{
+					text: t("common.delete"),
+					style: "destructive",
+					onPress: () => dropOption(index),
+				},
+			],
+		);
+	};
 
 	const removeValue = (index: number, value: string) =>
 		update((s) => ({

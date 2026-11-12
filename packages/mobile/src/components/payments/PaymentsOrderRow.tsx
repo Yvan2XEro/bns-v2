@@ -24,7 +24,9 @@ export function PaymentsOrderRow({ order }: { order: SellerPaymentsOrderRow }) {
 			]}
 		>
 			<View style={styles.head}>
-				<Text style={[s.cardTitle, { color: c.link, fontSize: 14 }]}>
+				<Text
+					style={[s.cardTitle, { color: c.link, fontSize: 15, lineHeight: 22 }]}
+				>
 					{order.orderNumber}
 				</Text>
 				<Text style={[s.meta, { color: c.muted }]}>

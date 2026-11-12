@@ -63,7 +63,13 @@ export function ToggleField({
 	return (
 		<View style={[formStyles.row, { minHeight: 48 }]}>
 			<Text
-				style={{ flex: 1, color: c.text, fontFamily: Fonts.body, fontSize: 14 }}
+				style={{
+					flex: 1,
+					color: c.text,
+					fontFamily: Fonts.body,
+					fontSize: 15,
+					lineHeight: 22,
+				}}
 			>
 				{label}
 			</Text>
@@ -83,13 +89,17 @@ export function ChipField<T extends string>({
 	selected,
 	onToggle,
 	error,
+	serverError,
 	labelOf,
 }: {
 	label: string;
 	options: readonly T[];
 	selected: readonly T[];
 	onToggle: (option: T) => void;
+	/** A translation key from the form schema. */
 	error?: string;
+	/** A message already translated, such as a server refusal. */
+	serverError?: string;
 	labelOf: (option: T) => string;
 }) {
 	const c = useShopTheme();
@@ -116,10 +126,7 @@ export function ChipField<T extends string>({
 							]}
 						>
 							<Text
-								style={[
-									formStyles.chipText,
-									{ color: on ? c.primary : c.body },
-								]}
+								style={[formStyles.chipText, { color: on ? c.link : c.body }]}
 							>
 								{labelOf(option)}
 							</Text>
@@ -127,7 +134,7 @@ export function ChipField<T extends string>({
 					);
 				})}
 			</View>
-			<FieldError message={error ? t(error) : undefined} />
+			<FieldError message={error ? t(error) : serverError} />
 		</View>
 	);
 }
@@ -139,12 +146,15 @@ export function ChoiceField<T extends string>({
 	value,
 	onChange,
 	labelOf,
+	serverError,
 }: {
 	label: string;
 	options: readonly T[];
 	value: T;
 	onChange: (next: T) => void;
 	labelOf: (option: T) => string;
+	/** A message already translated, such as a server refusal. */
+	serverError?: string;
 }) {
 	const c = useShopTheme();
 	return (
@@ -169,10 +179,7 @@ export function ChoiceField<T extends string>({
 							]}
 						>
 							<Text
-								style={[
-									formStyles.chipText,
-									{ color: on ? c.primary : c.body },
-								]}
+								style={[formStyles.chipText, { color: on ? c.link : c.body }]}
 							>
 								{labelOf(option)}
 							</Text>
@@ -180,6 +187,7 @@ export function ChoiceField<T extends string>({
 					);
 				})}
 			</View>
+			<FieldError message={serverError} />
 		</View>
 	);
 }

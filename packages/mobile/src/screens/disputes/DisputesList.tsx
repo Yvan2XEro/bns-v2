@@ -1,7 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import {
+	Pressable,
+	RefreshControl,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import {
@@ -28,6 +35,13 @@ export function DisputesList({ selectedId, onOpen }: SplitListProps) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
 	const query = useBuyerDisputes();
+	// A pull is the buyer's own; a background refetch never spins it.
+	const [pulling, setPulling] = useState(false);
+	const { refetch } = query;
+	const onRefresh = useCallback(() => {
+		setPulling(true);
+		void refetch().finally(() => setPulling(false));
+	}, [refetch]);
 	return (
 		<SafeAreaView
 			edges={["top"]}
@@ -60,6 +74,14 @@ export function DisputesList({ selectedId, onOpen }: SplitListProps) {
 						keyExtractor={(row) => row.id}
 						contentContainerStyle={styles.list}
 						ItemSeparatorComponent={Separator}
+						refreshControl={
+							<RefreshControl
+								refreshing={pulling}
+								onRefresh={onRefresh}
+								tintColor={c.primary}
+								colors={[c.primary]}
+							/>
+						}
 						renderItem={({ item }) => (
 							<DisputeRow
 								item={item}
@@ -157,10 +179,11 @@ const styles = StyleSheet.create({
 	number: {
 		flexShrink: 1,
 		fontFamily: Fonts.displayBold,
-		fontSize: 17,
+		fontSize: 18,
+		lineHeight: 26,
 		fontVariant: ["tabular-nums"],
 	},
-	description: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
+	description: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	rowBottom: {
 		alignItems: "center",
 		flexDirection: "row",
@@ -169,9 +192,10 @@ const styles = StyleSheet.create({
 	amount: {
 		flex: 1,
 		fontFamily: Fonts.displayExtrabold,
-		fontSize: 17,
+		fontSize: 18,
+		lineHeight: 26,
 		fontVariant: ["tabular-nums"],
 	},
 	overdue: { flexDirection: "row", alignItems: "center", gap: 4 },
-	overdueText: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
+	overdueText: { fontFamily: Fonts.bodySemibold, fontSize: 13, lineHeight: 18 },
 });

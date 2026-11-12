@@ -24,11 +24,15 @@ import { ContestSheet } from "@/src/components/purchases/ContestSheet";
 import { HandoverCard } from "@/src/components/purchases/HandoverCard";
 import { OrderHelpBar } from "@/src/components/purchases/OrderHelpBar";
 import { OrderProgress } from "@/src/components/purchases/OrderProgress";
-import { PaymentSection } from "@/src/components/purchases/PaymentSection";
+import {
+	orderAwaitsPayment,
+	PaymentSection,
+} from "@/src/components/purchases/PaymentSection";
 import { PurchaseStatusPill } from "@/src/components/purchases/PurchaseRow";
 import { PurchaseSummary } from "@/src/components/purchases/PurchaseSummary";
 import { ReviewPanel } from "@/src/components/purchases/ReviewPanel";
 import { Timeline } from "@/src/components/purchases/Timeline";
+import { PurchaseButton } from "@/src/components/purchases/ui";
 import { WithdrawalWindowNote } from "@/src/components/purchases/WithdrawalWindowNote";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -38,6 +42,7 @@ import { usePurchase } from "@/src/hooks/usePurchases";
 import { useOrderShipments } from "@/src/hooks/useShipments";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { availableActions, type OrderAction } from "@/src/lib/orderActions";
 import { formatOrderDate } from "@/src/lib/orderMoney";
 
@@ -60,6 +65,12 @@ export function PurchaseDetail({ id }: { id: string }) {
 			params: { id: order?.id ?? id },
 		});
 	const contestHere = config.disputesEnabled && has("contest_delivery");
+	// One way to report a problem: with disputes on, the help bar's full form
+	// (it has a "not received" reason); the light sheet only when they are off.
+	const barActionList = contestHere
+		? actions.filter((action) => action !== "contest_delivery")
+		: actions;
+	const mustPay = order ? orderAwaitsPayment(order) : false;
 	const sheetProps = (name: PurchaseSheet) => ({
 		visible: sheet === name && has(name),
 		onClose: () => setSheet(null),
@@ -128,7 +139,29 @@ export function PurchaseDetail({ id }: { id: string }) {
 							timestamps={order.timestamps}
 						/>
 
-						<ActionBar order={order} actions={actions} onSheet={setSheet} />
+						{/* At the door, the code to give the rider comes first. */}
+						{order.status === "shipped" ? (
+							<HandoverCard order={order} actions={actions} />
+						) : null}
+
+						{mustPay ? (
+							<PurchaseButton
+								label={t("payments.pay_submit", {
+									amount: formatPrice(order.amounts.total, lang),
+								})}
+								onPress={() =>
+									router.push({
+										pathname: "/checkout/[orderId]/pay",
+										params: { orderId: order.id },
+									})
+								}
+							/>
+						) : null}
+						<ActionBar
+							order={order}
+							actions={barActionList}
+							onSheet={setSheet}
+						/>
 						{shipments.map((view) => (
 							<TrackingBlock
 								key={view.id}
@@ -141,7 +174,6 @@ export function PurchaseDetail({ id }: { id: string }) {
 										params: { id: order.id },
 									})
 								}
-								onContest={contestHere ? reportProblem : undefined}
 							/>
 						))}
 						{has("confirm_code") || has("resend_code") ? (
@@ -150,10 +182,6 @@ export function PurchaseDetail({ id }: { id: string }) {
 								canConfirm={has("confirm_code")}
 								canResend={has("resend_code")}
 							/>
-						) : null}
-
-						{order.status === "shipped" ? (
-							<HandoverCard order={order} actions={actions} />
 						) : null}
 
 						<WithdrawalWindowNote order={order} now={now} />
@@ -197,5 +225,5 @@ const styles = StyleSheet.create({
 	content: { padding: 16, gap: 16, paddingBottom: 48 },
 	heading: { flexDirection: "row", alignItems: "center", gap: 8 },
 	pill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-	pillText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	pillText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

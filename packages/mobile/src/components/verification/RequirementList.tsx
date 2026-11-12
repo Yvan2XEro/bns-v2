@@ -88,5 +88,5 @@ const styles = StyleSheet.create({
 	row: { flexDirection: "row", alignItems: "center", gap: 8 },
 	label: { flex: 1, fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	pill: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-	pillText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	pillText: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.bodySemibold },
 });

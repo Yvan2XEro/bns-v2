@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 10,
 	},
-	title: { fontSize: 16, fontFamily: Fonts.displayBold },
+	title: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
 	paragraph: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 20 },
 	checkboxRow: {
 		marginTop: 4,
@@ -113,5 +113,5 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.bodyMedium,
 		lineHeight: 19,
 	},
-	error: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	error: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

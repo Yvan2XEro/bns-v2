@@ -186,6 +186,6 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	text: { flex: 1, gap: 2 },
-	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	subtitle: { fontSize: 13, fontFamily: Fonts.body },
+	title: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	subtitle: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

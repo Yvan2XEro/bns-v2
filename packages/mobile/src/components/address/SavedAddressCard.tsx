@@ -121,11 +121,27 @@ export function SavedAddressCard({
 						{contact}
 					</Text>
 					{address.gps ? (
-						<Text style={[styles.meta, { color: c.mutedForeground }]}>
-							{t("addresses.coordinates", {
+						// Raw coordinates mean nothing to a buyer or a rider: the
+						// card says a position is saved, the numbers stay for a
+						// screen reader and the order details.
+						<View
+							style={styles.gpsRow}
+							accessible
+							accessibilityLabel={t("addresses.coordinates", {
 								coordinates: coordinatesText(address.gps),
 							})}
-						</Text>
+						>
+							<Ionicons
+								name="navigate-outline"
+								size={13}
+								color={c.mutedForeground}
+							/>
+							<Text style={[styles.meta, { color: c.mutedForeground }]}>
+								{t("addresses.gpsSaved", {
+									defaultValue: "Position GPS enregistrée",
+								})}
+							</Text>
+						</View>
 					) : null}
 				</View>
 			</Pressable>
@@ -150,11 +166,14 @@ export function CardAction({
 	onPress,
 	tone = "primary",
 	disabled = false,
+	target,
 }: {
 	label: string;
 	onPress: () => void;
 	tone?: "primary" | "danger";
 	disabled?: boolean;
+	/** The address it acts on, said to a screen reader ("Supprimer, Maison"). */
+	target?: string;
 }) {
 	const c = useGroupedColors();
 	const color =
@@ -164,7 +183,7 @@ export function CardAction({
 			onPress={onPress}
 			disabled={disabled}
 			accessibilityRole="button"
-			accessibilityLabel={label}
+			accessibilityLabel={target ? `${label}, ${target}` : label}
 			accessibilityState={{ disabled }}
 			android_ripple={{ color: c.well }}
 			style={({ pressed }) => [
@@ -205,8 +224,9 @@ const styles = StyleSheet.create({
 	},
 	tag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
 	tagText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
-	line: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	line: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	gpsRow: { flexDirection: "row", alignItems: "center", gap: 5 },
 	reason: {
 		fontSize: 13,
 		lineHeight: 18,
@@ -228,5 +248,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		borderRadius: 10,
 	},
-	actionText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	actionText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

@@ -2,10 +2,13 @@
 	"navigation": {
 		"home": "Accueil",
 		"search": "Recherche",
-		"sell": "Vendre",
+		"sell": "Publier",
 		"messages": "Messages",
 		"account": "Compte",
-		"favorites": "Favoris"
+		"favorites": "Favoris",
+		"sellA11y": "Publier une annonce",
+		"messagesWithCount_one": "Messages, {{count}} non lu",
+		"messagesWithCount": "Messages, {{count}} non lus"
 	},
 	"sellerMode": {
 		"switchToSeller": "Passer en mode vendeur",
@@ -36,7 +39,9 @@
 		"taskUnread_one": "{{count}} message non lu",
 		"taskUnread": "{{count}} messages non lus",
 		"taskPaymentsHold_one": "{{count}} paiement en suspens",
-		"taskPaymentsHold": "{{count}} paiements en suspens"
+		"taskPaymentsHold": "{{count}} paiements en suspens",
+		"greetingNoName": "Bonjour",
+		"countsError": "Impossible de vérifier vos commandes. Tirez pour actualiser."
 	},
 	"common": {
 		"offlineBanner": "Hors ligne",
@@ -44,6 +49,8 @@
 		"search": "Rechercher",
 		"filter": "Filtrer",
 		"cancel": "Annuler",
+		"undo": "Annuler",
+		"view": "Voir",
 		"save": "Enregistrer",
 		"delete": "Supprimer",
 		"edit": "Modifier",
@@ -151,7 +158,13 @@
 		"emailVerifiedTitle": "Adresse confirmée",
 		"emailVerifiedDesc": "Votre compte est actif. Vous pouvez vous connecter.",
 		"verifyFailedTitle": "Ce lien ne fonctionne plus",
-		"verifyFailedDesc": "Il a déjà servi, ou un e-mail plus récent l'a remplacé. Saisissez votre adresse pour en recevoir un nouveau."
+		"verifyFailedDesc": "Il a déjà servi, ou un e-mail plus récent l'a remplacé. Saisissez votre adresse pour en recevoir un nouveau.",
+		"orWithEmail": "ou avec votre e-mail",
+		"socialLoginRetry": "La connexion n'a pas abouti. Réessayez, ou connectez-vous avec votre e-mail.",
+		"callbackTimeoutTitle": "La connexion n'a pas abouti",
+		"callbackTimeoutBody": "Réessayez, ou connectez-vous avec votre e-mail.",
+		"openMailApp": "Ouvrir ma messagerie",
+		"wrongAddress": "Ce n'est pas la bonne adresse ?"
 	},
 	"home": {
 		"searchPlaceholder": "Que cherchez-vous ?",
@@ -239,7 +252,13 @@
 		"recentTitle": "Recherches récentes",
 		"clearRecent": "Effacer",
 		"removeRecent": "Retirer « {{query}} » de l'historique",
-		"inCategory": "Dans {{name}}"
+		"inCategory": "Dans {{name}}",
+		"noResultsFor": "Rien pour « {{q}} »",
+		"noResultsRemoveFilter": "Retirez un filtre pour voir plus d'annonces.",
+		"noResultsSpelling": "Vérifiez l'orthographe ou essayez un mot plus court.",
+		"searchAllCategories": "Chercher dans toutes les catégories",
+		"loadMoreFailed": "Impossible de charger la suite.",
+		"removeFilter": "Retirer le filtre {{label}}"
 	},
 	"listing": {
 		"call": "Appeler",
@@ -319,18 +338,20 @@
 		"whatsappAbout": "Bonjour, votre annonce « {{title}} » sur Buy'N'Sellem est-elle toujours disponible ? {{url}}",
 		"barOrder": "Commander",
 		"orderAction": "Commander · {{price}}",
-		"orderableBadge": "Achat en ligne"
+		"orderableBadge": "Achat en ligne",
+		"seeSimilar": "Voir des annonces similaires",
+		"barChooseOrder": "Choisir et commander"
 	},
 	"create": {
 		"title": "Publier une annonce",
 		"newListing": "Nouvelle annonce",
 		"stepLabel": "Étape {{current}} sur {{total}} — {{name}}",
-		"stepDetails": "Détails de l'annonce",
+		"stepDetails": "Description, prix et lieu",
 		"stepDetailsSubtitle": "Prix et localisation",
-		"stepDetailsTitle": "Détails de l'annonce",
-		"stepDetailsHint": "Ces informations décident de la place de votre annonce dans les résultats.",
+		"stepDetailsTitle": "Description, prix et lieu",
+		"stepDetailsHint": "Un prix clair et le bon quartier : c'est ce que les acheteurs filtrent en premier.",
 		"stepDetailsHintGeneric": "Ajoutez les informations essentielles pour bien présenter cette annonce.",
-		"stepAttributes": "Détails supplémentaires",
+		"stepAttributes": "Caractéristiques",
 		"stepAttributesSubtitle": "Aidez les acheteurs à trouver votre annonce",
 		"stepAttributesHint": "Ces informations aident les acheteurs à trouver votre annonce.",
 		"stepPhotos": "Ajouter des photos",
@@ -385,7 +406,7 @@
 		"days": "jours",
 		"continue": "Continuer",
 		"loginRequired": "Connexion requise",
-		"loginRequiredSubtitle": "Connectez-vous pour publier une annonce",
+		"loginRequiredSubtitle": "C'est gratuit : un titre, des photos, un prix, et votre annonce part en vérification.",
 		"signIn": "Se connecter",
 		"sell": "Vendre",
 		"categoryFieldLabel": "Catégorie",
@@ -412,7 +433,7 @@
 		"publishErrorMsg": "Une erreur est survenue",
 		"saveDraftBtn": "Enregistrer comme brouillon",
 		"draftSavedTitle": "Brouillon enregistré",
-		"draftSavedMsg": "Votre annonce est enregistrée. Elle ne sera visible qu'après envoi en validation.",
+		"draftSavedMsg": "Retrouvez-le dans Mes annonces.",
 		"tagsFieldLabel": "Tags",
 		"dateFormatHint": "JJ/MM/AAAA",
 		"attributeMin": "Valeur minimale : {{value}}",
@@ -420,7 +441,7 @@
 		"attributeInvalidDate": "Date invalide (JJ/MM/AAAA)",
 		"attributeInvalidNumber": "Valeur numérique invalide",
 		"stepPhotosQualityTipGeneric": "Des photos nettes, prises en plein jour, font vendre plus vite.",
-		"stepDescribe": "Votre annonce",
+		"stepDescribe": "Ce que vous vendez",
 		"stepDescribeTitle": "Que vendez-vous ?",
 		"stepDescribeHint": "Décrivez votre article en quelques mots. Nous vous proposons la catégorie à partir du titre.",
 		"stepLabelWithCategory": "Étape {{current}} sur {{total}} — {{name}} · {{category}}",
@@ -436,7 +457,7 @@
 		"resumeTitle": "Reprendre votre annonce ?",
 		"resumeMsg": "Vous aviez commencé une annonce sur ce téléphone.",
 		"resumeConfirm": "Reprendre",
-		"resumeDiscard": "Recommencer",
+		"resumeDiscard": "Supprimer le brouillon",
 		"viewListing": "Voir mon annonce",
 		"shareWhatsApp": "Partager sur WhatsApp",
 		"postAnother": "Publier une autre annonce",
@@ -444,7 +465,12 @@
 		"photoUploading": "Envoi de la photo…",
 		"photoRetry": "Échec · réessayer",
 		"makeMain": "Mettre en photo principale",
-		"photosStillUploading": "Des photos sont encore en cours d’envoi."
+		"photosStillUploading": "Des photos sont encore en cours d’envoi.",
+		"resumeMsgWithTitle": "Votre annonce « {{title}} » n'est pas terminée. La reprendre ?",
+		"photosFailedOnNext": "Une photo n'a pas été envoyée. Réessayez-la ou retirez-la pour continuer.",
+		"backToReview": "Revenir à la vérification",
+		"durationHint": "Ensuite, l'annonce expire. Vous pourrez la renouveler depuis Mes annonces.",
+		"publishedNotify": "Vous recevrez une notification dès qu'elle sera en ligne. Vous pourrez alors la partager."
 	},
 	"edit": {
 		"title": "Modifier l'annonce",
@@ -490,7 +516,12 @@
 		"statusRejectedNotice": "Votre annonce a été rejetée.",
 		"statusRejectionReason": "Raison : {{reason}}",
 		"saleSection": "Vente",
-		"photosFailedOnSave": "Certaines photos n'ont pas été envoyées. Réessayez ou retirez-les avant d'enregistrer."
+		"photosFailedOnSave": "Certaines photos n'ont pas été envoyées. Réessayez ou retirez-les avant d'enregistrer.",
+		"resubmitTitle": "Renvoyer l'annonce en vérification ?",
+		"resubmitMsg": "Vos modifications seront vérifiées (moins de 24 h). L'annonce restera hors ligne pendant ce temps.",
+		"resubmitConfirm": "Enregistrer et soumettre",
+		"loadError": "Impossible de charger l'annonce",
+		"categoryLocked": "Pour changer de catégorie, créez une nouvelle annonce."
 	},
 	"messages": {
 		"title": "Messages",
@@ -533,7 +564,7 @@
 		"orderContext": "Commande {{number}} · {{title}}",
 		"orderContextShort": "Commande {{number}}",
 		"unreadWithCount": "Non lus ({{count}})",
-		"markAllRead": "Tout lire",
+		"markAllRead": "Tout marquer lu",
 		"markAllReadError": "Impossible de tout marquer comme lu. Réessayez.",
 		"noMessages": "Aucun message",
 		"deleteError": "Impossible de supprimer la conversation.",
@@ -571,16 +602,32 @@
 		"copy": "Copier",
 		"copied": "Message copié",
 		"actions": "Options du message",
-		"actionsHint": "Appui long pour copier le message"
+		"actionsHint": "Appui long pour copier ou signaler le message",
+		"markAllReadDone": "Conversations marquées comme lues",
+		"deleteBody": "La conversation sera supprimée pour vous et pour {{name}}. Vous ne pourrez pas la récupérer.",
+		"staleList": "Hors ligne. Dernière mise à jour à {{time}}.",
+		"searchLoadedOnly": "Recherche dans les conversations déjà chargées",
+		"reportMessage": "Signaler ce message",
+		"viewShop": "Voir la boutique",
+		"reportShop": "Signaler la boutique",
+		"blockShop": "Bloquer la boutique",
+		"unblockShop": "Débloquer la boutique",
+		"blockShopConfirmTitle": "Bloquer {{name}} ?",
+		"blockShopConfirmBody": "Vous ne pourrez plus écrire à cette boutique, et son propriétaire ne pourra plus vous écrire.",
+		"blockedToast": "{{name}} est bloqué",
+		"unblockedToast": "{{name}} est débloqué",
+		"bubbleMine": "Vous, {{time}} : {{text}}",
+		"bubbleFrom": "{{name}}, {{time}} : {{text}}",
+		"actionsPreview": "Message : {{text}}"
 	},
 	"account": {
 		"guestTitle": "Bienvenue sur Buy'N'Sellem",
 		"guestPerkFavorites": "Vos favoris et recherches enregistrées",
 		"guestPerkMessages": "La messagerie avec les vendeurs",
 		"guestPerkOrders": "Le suivi de vos commandes",
-		"sectionPreferences": "PRÉFÉRENCES",
+		"sectionPreferences": "Préférences",
 		"title": "Mon compte",
-		"myAccount": "Mon Compte",
+		"myAccount": "Mon compte",
 		"editProfile": "Modifier le profil",
 		"edit": "Modifier",
 		"myListings": "Mes annonces",
@@ -617,8 +664,8 @@
 		"profileViews": "{{count}} vues du profil",
 		"sectionPurchases": "Mes achats",
 		"sectionListings": "Mes annonces",
-		"sectionSettings": "PARAMÈTRES",
-		"sectionSupport": "ASSISTANCE",
+		"sectionSettings": "Paramètres",
+		"sectionSupport": "Assistance",
 		"security": "Sécurité",
 		"sectionModeration": "Modération",
 		"moderation": "File de modération",
@@ -631,7 +678,10 @@
 		"openShopSublabel": "Gratuit · une page à partager sur WhatsApp",
 		"myPurchases": "Mes commandes",
 		"myPurchasesSublabel": "Suivre vos achats",
-		"cart": "Panier"
+		"cart": "Panier",
+		"notificationsUnread_one": "{{count}} non lue",
+		"notificationsUnread": "{{count}} non lues",
+		"phoneNotVerified": "Téléphone non vérifié"
 	},
 	"listings": {
 		"title": "Mes annonces",
@@ -677,7 +727,13 @@
 		"bulkDelete": "Supprimer la sélection",
 		"bulkDeleteConfirm_one": "Supprimer {{count}} annonce ?",
 		"bulkDeleteConfirm": "Supprimer {{count}} annonces ?",
-		"statusDraft": "Brouillon"
+		"statusDraft": "Brouillon",
+		"filterRejected": "Refusées",
+		"fixAndResubmit": "Corriger et renvoyer",
+		"markedSold": "Annonce marquée comme vendue",
+		"deleted": "Annonce supprimée",
+		"deleteNamedConfirm": "Supprimer « {{title}} » ?",
+		"deleteNamedMessage": "Les acheteurs ne la verront plus, et vous ne pourrez pas la récupérer."
 	},
 	"profile": {
 		"bio": "Biographie",
@@ -711,7 +767,7 @@
 		"bioPlaceholder": "Quelques mots sur vous…",
 		"locationPlaceholder": "Ville, région",
 		"editProfileTitle": "Modifier le profil",
-		"save": "Sauvegarder",
+		"save": "Enregistrer",
 		"change": "Changer",
 		"verifiedBanner": "Compte vérifié ✓",
 		"unverifiedBanner": "Vérifiez votre compte pour instaurer la confiance avec les acheteurs",
@@ -750,7 +806,15 @@
 		"publishReview": "Publier l'avis",
 		"memberSinceDate": "Membre depuis",
 		"blockConfirmTitle": "Bloquer cet utilisateur ?",
-		"blockConfirmBody": "Il ne pourra plus vous envoyer de messages, et vous ne pourrez plus lui en envoyer."
+		"blockConfirmBody": "Il ne pourra plus vous envoyer de messages, et vous ne pourrez plus lui en envoyer.",
+		"reviewAfterExchange": "Vous pourrez noter ce vendeur après un échange avec lui.",
+		"discardReviewTitle": "Abandonner votre avis ?",
+		"keepWriting": "Continuer",
+		"discardReview": "Abandonner",
+		"discardTitle": "Abandonner les modifications ?",
+		"discardMessage": "Ce que vous avez changé ne sera pas enregistré.",
+		"nameRequired": "Indiquez votre nom",
+		"phoneChangeFooter": "Pour changer de numéro, il faut le confirmer par SMS."
 	},
 	"settings": {
 		"title": "Paramètres",
@@ -874,7 +938,14 @@
 				"manage": "Gérer",
 				"openSettings": "Ouvrir les réglages"
 			}
-		}
+		},
+		"changePhoneBtn": "Changer de numéro",
+		"deleteWord": "SUPPRIMER",
+		"deleteTypeLabel": "Pour confirmer, tapez {{word}}",
+		"deleteFinalBtn": "Supprimer définitivement",
+		"deleteShopWarning": "Votre boutique {{name}} fermera avec ses annonces. Les commandes en cours et les paiements à recevoir seront perdus.",
+		"notificationTypesFooter": "Choisissez ce qui vous est envoyé. Pour tout couper, utilisez l'autorisation Notifications plus bas.",
+		"notificationTypeError": "Ce réglage n'a pas été enregistré. Vérifiez votre connexion et réessayez."
 	},
 	"boost": {
 		"title": "Booster votre annonce",
@@ -908,7 +979,11 @@
 		"loginRequired": "Connexion requise pour booster une annonce.",
 		"mobileUnavailableBadge": "Temporairement indisponible",
 		"mobileUnavailableTitle": "Le boost n'est pas disponible dans l'application mobile pour le moment.",
-		"mobileUnavailableMessage": "Cette fonctionnalité est en cours d'adaptation pour la publication mobile. Vous pouvez toujours gérer votre annonce normalement depuis l'application."
+		"mobileUnavailableMessage": "Cette fonctionnalité est en cours d'adaptation pour la publication mobile. Vous pouvez toujours gérer votre annonce normalement depuis l'application.",
+		"soonTitle": "Boost bientôt disponible",
+		"soonBody": "Vous ne pouvez pas encore booster une annonce depuis l'application.",
+		"shareHint": "En attendant, partagez-la sur WhatsApp et dans vos groupes. C'est gratuit.",
+		"shareListing": "Partager mon annonce"
 	},
 	"report": {
 		"title": "Signaler",
@@ -936,7 +1011,9 @@
 		"harassmentLabel": "Harcèlement",
 		"otherLabel": "Autre",
 		"descriptionLabel": "Description (optionnel)",
-		"errorTitle": "Erreur"
+		"errorTitle": "Erreur",
+		"shopTitle": "Signaler cette boutique",
+		"otherHint": "Dites-nous ce qui ne va pas (10 caractères minimum)"
 	},
 	"filters": {
 		"title": "Filtres",
@@ -968,7 +1045,10 @@
 		"orderable": "Achat en ligne (paiement protégé ou à la livraison)",
 		"showCount_one": "Voir {{count}} annonce",
 		"showCount": "Voir {{count}} annonces",
-		"tags": "Tags"
+		"tags": "Tags",
+		"orderableLabel": "Commande dans l'appli",
+		"orderableHint": "Paiement protégé ou à la livraison",
+		"priceInverted": "Le minimum dépasse le maximum."
 	},
 	"errors": {
 		"generic": "Une erreur inattendue s'est produite. Veuillez réessayer.",
@@ -1025,14 +1105,17 @@
 		"tip5Title": "Vérifiez l'identité du vendeur",
 		"tip5Desc": "Consultez le profil du vendeur, ses avis et sa date d'inscription sur la plateforme avant de procéder.",
 		"tip6Title": "Signalez les comportements suspects",
-		"tip6Desc": "Utilisez le bouton « Signaler » si vous détectez une arnaque, un faux article ou un comportement inapproprié."
+		"tip6Desc": "Utilisez le bouton « Signaler » si vous détectez une arnaque, un faux article ou un comportement inapproprié.",
+		"actionsTitle": "Un problème ?"
 	},
 	"savedSearches": {
 		"title": "Recherches sauvegardées",
 		"noSearches": "Aucune recherche",
 		"noSearchesSubtitle": "Sauvegardez vos recherches pour être notifié des nouvelles annonces",
 		"alerts": "Alertes",
-		"deleteConfirm": "Supprimer cette recherche ?"
+		"deleteConfirm": "Supprimer cette recherche ?",
+		"filterCount_one": "{{count}} filtre",
+		"filterCount": "{{count}} filtres"
 	},
 	"boostHistory": {
 		"title": "Historique des boosts",
@@ -1060,7 +1143,10 @@
 		"month2": "2 mois",
 		"month3": "3 mois",
 		"days_one": "{{count}} jour",
-		"days": "{{count}} jours"
+		"days": "{{count}} jours",
+		"statusAwaitingPayment": "Paiement en attente",
+		"partialTotal_one": "Sur le dernier boost chargé",
+		"partialTotal": "Sur les {{count}} derniers boosts chargés"
 	},
 	"privacy": {
 		"title": "Politique de confidentialité",
@@ -1216,7 +1302,9 @@
 		"listingCount_one": "{{count}} annonce",
 		"listingCount": "{{count}} annonces",
 		"listingsSaved_one": "{{count}} annonce sauvegardée",
-		"listingsSaved": "{{count}} annonces sauvegardées"
+		"listingsSaved": "{{count}} annonces sauvegardées",
+		"removed": "« {{title}} » retiré des favoris",
+		"updateError": "Les favoris n'ont pas été mis à jour. Vérifiez votre connexion et réessayez."
 	},
 	"help": {
 		"title": "Aide & FAQ",
@@ -1235,7 +1323,9 @@
 		"q6": "Comment sauvegarder une recherche ?",
 		"a6": "Sur la page Recherche, appuyez sur le bouton « Sauvegarder » en bas de l'écran pour enregistrer vos critères et recevoir des alertes.",
 		"q7": "Comment supprimer mon compte ?",
-		"a7": "Allez dans Compte → Paramètres → Zone dangereuse → Supprimer mon compte. Cette action est irréversible."
+		"a7": "Allez dans Compte → Sécurité → Supprimer mon compte. Cette action est irréversible.",
+		"openSecurity": "Ouvrir Sécurité",
+		"openMyListings": "Ouvrir Mes annonces"
 	},
 	"contact": {
 		"title": "Nous contacter",
@@ -1256,7 +1346,9 @@
 		"subjectTechnical": "Problème technique",
 		"subjectAbuse": "Signaler un abus",
 		"subjectPartnership": "Demande de partenariat",
-		"subjectOther": "Autre"
+		"subjectOther": "Autre",
+		"successReplyTo": "Nous vous répondrons par e-mail à {{email}}.",
+		"emailInvalid": "Indiquez un e-mail valide, par exemple nom@exemple.com"
 	},
 	"notifications": {
 		"title": "Notifications",
@@ -1271,11 +1363,14 @@
 		"archive": "Archiver",
 		"restore": "Restaurer",
 		"channelDefault": "Général",
-		"channelOrders": "Nouvelles commandes"
+		"channelOrders": "Nouvelles commandes",
+		"inboxTab": "Reçues",
+		"archivedTab": "Archivées",
+		"archivedToast": "Notification archivée"
 	},
 	"onboarding": {
 		"skip": "Ignorer",
-		"next": "Suivant →",
+		"next": "Suivant",
 		"start": "Commencer",
 		"slide1Title": "Bienvenue sur\nBuy'N'Sellem",
 		"slide1Desc": "La marketplace simple pour acheter et vendre près de chez vous.",
@@ -1284,7 +1379,8 @@
 		"slide3Title": "Vendez\nen quelques clics",
 		"slide3Desc": "Publiez votre annonce en moins de 2 minutes et touchez des milliers d'acheteurs.",
 		"slide4Title": "Échangez\nen toute sécurité",
-		"slide4Desc": "Discutez directement avec acheteurs et vendeurs en toute confiance."
+		"slide4Desc": "Discutez directement avec acheteurs et vendeurs en toute confiance.",
+		"explore": "Explorer sans compte"
 	},
 	"security": {
 		"title": "Sécurité"
@@ -1638,7 +1734,7 @@
 		"tabRisk": "Risques",
 		"emptyListingsTitle": "Aucune annonce en attente",
 		"emptyReportsTitle": "Aucun signalement ouvert",
-		"emptyRiskTitle": "Aucun signalement de risque ouvert",
+		"emptyRiskTitle": "Aucune alerte de risque ouverte",
 		"riskQueueFailed": "Impossible de charger la file des risques.",
 		"riskUnknownSubject": "Sujet inconnu",
 		"riskOccurrences_one": "{{count}} signal",
@@ -1647,24 +1743,24 @@
 		"riskMedium": "Risque moyen",
 		"riskLow": "Risque faible",
 		"riskDetailTitle": "Examen du risque",
-		"riskDetailFailed": "Impossible de charger ce signalement de risque.",
+		"riskDetailFailed": "Impossible de charger cette alerte.",
 		"riskSubject": "Sujet",
 		"riskSignal": "Signal",
 		"riskLastSeen": "Dernière détection : {{date}}",
 		"riskEvidence": "Éléments de preuve",
 		"riskNoEvidence": "Aucun élément supplémentaire n'a été enregistré.",
-		"riskRelated": "Signalements liés",
+		"riskRelated": "Alertes liées",
 		"riskHistory": "Historique de modération",
 		"riskMarkReviewed": "Marquer comme examiné",
 		"riskReviewed": "Examiné",
-		"riskDismiss": "Rejeter le signalement",
-		"riskDismissTitle": "Rejeter ce signalement de risque",
+		"riskDismiss": "Classer l'alerte",
+		"riskDismissTitle": "Classer cette alerte",
 		"riskResolution": "Résolution",
 		"riskFalsePositive": "Faux positif",
 		"riskDecisionNote": "Note interne",
 		"riskSuspendUser": "Suspendre le compte",
 		"riskSuspendShop": "Suspendre la boutique",
-		"riskHoldPayouts": "Bloquer les paiements",
+		"riskHoldPayouts": "Suspendre les versements",
 		"riskActionConfirm": "Confirmer la sanction",
 		"riskDuration": "Durée",
 		"riskSevenDays": "7 jours",
@@ -1686,9 +1782,9 @@
 		"reviewListing": "Examiner l'annonce",
 		"noPhotos": "Aucune photo",
 		"openAccount": "Voir ce compte",
-		"approve": "Valider",
+		"approve": "Approuver",
 		"reject": "Rejeter",
-		"approvedTitle": "Annonce validée",
+		"approvedTitle": "Annonce approuvée",
 		"approvedMessage": "Elle est maintenant en ligne.",
 		"rejectedTitle": "Annonce rejetée",
 		"rejectedMessage": "Le vendeur a été informé du motif.",
@@ -1746,7 +1842,7 @@
 		"liftedTitle": "Suspension levée",
 		"liftedMessage_one": "{{count}} annonce est de nouveau en ligne.",
 		"liftedMessage": "{{count}} annonces sont de nouveau en ligne.",
-		"action_listing_approve": "Annonce validée",
+		"action_listing_approve": "Annonce approuvée",
 		"action_listing_reject": "Annonce rejetée",
 		"action_listing_takedown": "Annonce retirée",
 		"action_listing_holdRelease": "Blocage de l'annonce levé",
@@ -1781,7 +1877,7 @@
 		"shopSuspend": "Suspendre la boutique",
 		"shopLift": "Lever la suspension",
 		"shopSuspendSheetTitle": "Suspendre cette boutique",
-		"shopSuspendSheetSubtitle": "Ses annonces quittent la recherche et la page de la boutique renvoie 404 jusqu'à la fin de la suspension.",
+		"shopSuspendSheetSubtitle": "Ses annonces disparaissent de la recherche et sa page n'est plus accessible jusqu'à la fin de la suspension.",
 		"shopConfirmSuspend": "Suspendre la boutique",
 		"shopSuspendedTitle": "Boutique suspendue",
 		"shopSuspendedMessage_one": "{{count}} annonce a été retirée.",
@@ -1792,7 +1888,7 @@
 		"emptyVerificationTitle": "Aucune demande de vérification en attente",
 		"verifReviewTitle": "Demande de vérification",
 		"verifRowShop": "Boutique {{id}}",
-		"verifRowClaim": "Réclamer",
+		"verifRowClaim": "Prendre en charge",
 		"verifLevelRequest": "Demande de niveau {{level}}",
 		"verifReasonLabel": "Motif",
 		"verifSellerMessageLabel": "Message au vendeur",
@@ -1874,8 +1970,8 @@
 		"verifDocumentKind_legal_representative_id": "Pièce d'identité du représentant légal",
 		"verifDocumentKind_mandate": "Mandat",
 		"verifDocumentKind_other": "Autre document",
-		"verifAction_claim": "Réclamer",
-		"verifAction_release": "Libérer",
+		"verifAction_claim": "Prendre en charge",
+		"verifAction_release": "Remettre dans la file",
 		"verifAction_request_info": "Demander des infos",
 		"verifAction_approve": "Approuver",
 		"verifAction_reject": "Rejeter",
@@ -1947,11 +2043,11 @@
 		"paymentsPayoutAccountNone": "Aucun compte de versement actif",
 		"paymentsPendingAccountsTitle": "En attente d'examen",
 		"paymentsPendingAccountsEmpty": "Aucun compte de versement en attente d'examen",
-		"paymentsApprove": "Valider",
+		"paymentsApprove": "Approuver",
 		"paymentsReject": "Rejeter",
-		"paymentsApproveSheetTitle": "Valider ce compte de versement ?",
+		"paymentsApproveSheetTitle": "Approuver ce compte de versement ?",
 		"paymentsRejectSheetTitle": "Rejeter ce compte de versement ?",
-		"paymentsAccountApproved": "Compte de versement validé",
+		"paymentsAccountApproved": "Compte de versement approuvé",
 		"paymentsAccountRejected": "Compte de versement rejeté",
 		"paymentsHoldsTitle": "Suspensions de versement",
 		"paymentsHoldsEmpty": "Aucune suspension active",
@@ -1986,10 +2082,84 @@
 		"listingAlreadyPublished": "Déjà en ligne : seul un refus peut la retirer.",
 		"listingAlreadyRejected": "Déjà refusée : l'approuver la remet en ligne.",
 		"reportAlreadyClosed": "Ce signalement est déjà clos.",
-		"riskAlreadyClosed": "Ce signal de risque est déjà clos.",
+		"riskAlreadyClosed": "Cette alerte est déjà close.",
 		"riskDecisionSaved": "Décision enregistrée",
 		"target_phone": "Téléphone",
-		"target_device": "Appareil"
+		"target_device": "Appareil",
+		"ageNow": "à l'instant",
+		"decisionTextMissing": "Remplissez « {{label}} » pour continuer.",
+		"discardTitle": "Abandonner cette décision ?",
+		"discardBody": "La note que vous avez écrite sera perdue.",
+		"discardKeep": "Reprendre",
+		"discardConfirm": "Abandonner",
+		"offlineTitle": "Pas de connexion",
+		"queueStale": "Liste non actualisée. Touchez pour réessayer.",
+		"disputesOverdue": "{{count}} en retard",
+		"riskScore": "score {{score}} sur 100",
+		"riskSignal_velocity_orders_per_phone": "Trop de commandes pour un même téléphone",
+		"riskSignal_velocity_checkout_attempts": "Tentatives de paiement répétées",
+		"riskSignal_velocity_payout_account_changes": "Changements répétés du compte de versement",
+		"riskSignal_velocity_shop_creation": "Boutiques créées en rafale",
+		"riskSignal_velocity_accounts_per_device": "Plusieurs comptes sur un même appareil",
+		"riskSignal_identity_duplicate_document": "Pièce d'identité déjà utilisée",
+		"riskSignal_identity_duplicate_payout_account": "Compte de versement déjà utilisé",
+		"riskSignal_orders_seller_cancellation_ratio": "Taux d'annulation élevé chez le vendeur",
+		"riskSignal_orders_dispute_ratio": "Taux de litiges élevé",
+		"riskSignal_cod_refusal_streak": "Refus répétés à la livraison",
+		"riskSignal_cod_refusal_ratio_shop": "Taux de refus à la livraison élevé pour la boutique",
+		"riskSignal_resale_self_dealing": "Revente à soi-même",
+		"riskSignal_resale_shared_identity": "Revendeur et fournisseur avec la même identité",
+		"riskSignal_resale_handover_at_supplier": "Colis remis chez le fournisseur",
+		"riskSignal_resale_buyer_concentration": "Acheteurs concentrés sur un revendeur",
+		"riskSignal_resale_cancellation_pattern": "Annulations suspectes en revente",
+		"riskSignal_resale_refusal_pattern": "Refus suspects en revente",
+		"riskSignal_dispute_lost_seller": "Litige perdu par le vendeur",
+		"riskSignal_counterfeit_confirmed": "Contrefaçon confirmée",
+		"riskSignal_refund_overdue": "Remboursement en retard",
+		"riskSignal_seller_no_response": "Le vendeur ne répond pas",
+		"riskSignal_unavailable_after_confirmation": "Article indisponible après confirmation",
+		"riskSignal_dispute_abuse_buyer": "Litiges abusifs de l'acheteur",
+		"riskSignal_cod_refusal_abuse": "Refus abusifs à la livraison",
+		"riskSignal_serial_withdrawal": "Rétractations en série",
+		"riskSignal_evidence_reused": "Preuve déjà utilisée",
+		"riskSignal_review_extortion": "Chantage à l'avis",
+		"riskSignal_resale_collusion_suspected": "Collusion de revente suspectée",
+		"riskSignal_commission_credit_unpaid": "Commission impayée",
+		"nextListing": "Annonce suivante ouverte.",
+		"factCondition": "État",
+		"factSubmitted": "Déposée le",
+		"sellerOnline": "{{count}} en ligne",
+		"sellerReports_one": "{{count}} signalement",
+		"sellerReports": "{{count}} signalements",
+		"draftListingRejected": "Annonce refusée : {{reason}}.",
+		"draftUserSuspended": "Compte suspendu.",
+		"draftShopSuspended": "Boutique suspendue.",
+		"riskClose": "Classer",
+		"riskCloseReviewed": "Examinée, rien à faire pour l'instant",
+		"riskFalsePositiveNote": "Pourquoi c'est un faux positif",
+		"riskSanction": "Sanctionner…",
+		"riskSanctionLabel": "Sanction",
+		"riskEffectSuspendUser": "il ne peut plus publier ni écrire",
+		"riskEffectSuspendShop": "ses annonces quittent la recherche",
+		"riskEffectHoldPayouts": "les nouveaux versements restent bloqués",
+		"verifClaimed": "Demande prise en charge",
+		"verifReleased": "Demande remise dans la file",
+		"verifDone_approve": "Demande approuvée",
+		"verifDone_reject": "Demande rejetée",
+		"verifDone_request_info": "Demande d'informations envoyée",
+		"verifDone_revoke": "Niveau révoqué",
+		"verifDoneApproveMessage": "La boutique passe au niveau {{level}}.",
+		"factEmail": "E-mail",
+		"factIdentity": "Identité vérifiée",
+		"factIdentityVerified": "Oui, le {{date}}",
+		"shopSectionOverview": "Aperçu",
+		"shopSectionPayments": "Paiements",
+		"shopSectionHistory": "Historique",
+		"paymentsHoldSheetSubtitle": "Les nouveaux versements restent bloqués jusqu'à la levée de la suspension.",
+		"paymentsHoldPlacedMessage": "Les nouveaux versements de la boutique sont bloqués.",
+		"paymentsHoldReleasedMessage": "Les versements reprennent.",
+		"paymentsAccountApprovedMessage": "La boutique peut être payée sur ce compte.",
+		"paymentsAccountRejectedMessage": "Aucun versement ne partira sur ce compte."
 	},
 	"shop": {
 		"deliveryCities": "Livraison ou retrait disponible à : {{cities}}",
@@ -2196,7 +2366,8 @@
 		"searchClear": "Effacer la recherche",
 		"searchEverywhere": "Chercher « {{q}} » sur tout Buy'N'Sellem",
 		"noListingsFiltered": "Aucune annonce ne correspond dans cette boutique.",
-		"aboutReturnPolicy": "Politique de retour"
+		"aboutReturnPolicy": "Politique de retour",
+		"showWholeShop": "Voir toute la boutique"
 	},
 	"seller": {
 		"space": "Espace vendeur",
@@ -2213,8 +2384,8 @@
 		"tileCatalogueBody_one": "{{count}} produit · {{drafts}} brouillon(s)",
 		"tileCatalogueBody": "{{count}} produits · {{drafts}} brouillons",
 		"tileStock": "Stock",
-		"tileStockAlerts_one": "{{count}} alerte · {{sample}}",
-		"tileStockAlerts": "{{count}} alertes · {{sample}}",
+		"tileStockAlerts_one": "Stock bas : {{sample}}",
+		"tileStockAlerts": "{{count}} articles en stock bas, dont {{sample}}",
 		"tileStockOk": "Aucune alerte",
 		"tileInbox": "Messagerie",
 		"tileInboxBody": "Aucun nouveau message",
@@ -2242,7 +2413,9 @@
 		"tileBillingBody": "Factures de commission et réglages des commandes",
 		"tilePayments": "Paiements",
 		"tilePaymentsBody": "Soldes et versements",
-		"tilePaymentsHold": "{{count}} en suspens"
+		"tilePaymentsHold": "{{count}} en suspens",
+		"manageToday": "À traiter",
+		"shopInactive": "Boutique inactive"
 	},
 	"sellerInsights": {
 		"title": "Statistiques de la boutique",
@@ -2401,7 +2574,9 @@
 		"increaseStockFor": "Augmenter le stock de {{title}}",
 		"listingStatus_draft": "Brouillon",
 		"listingStatus_pending": "En attente de validation",
-		"listingStatus_published": "En ligne"
+		"listingStatus_published": "En ligne",
+		"addShort": "Produit",
+		"showAll": "Voir tous les produits"
 	},
 	"product": {
 		"newTitle": "Nouveau produit",
@@ -2435,13 +2610,13 @@
 		"samePrice": "Même prix pour toutes",
 		"defaultVariant": "Variante unique",
 		"margin": "Marge {{value}}",
-		"skuPlaceholder": "SKU (facultatif)",
+		"skuPlaceholder": "Référence interne (facultatif)",
 		"barcodePlaceholder": "Code-barres (facultatif)",
 		"price": "Prix",
-		"cost": "Coût",
+		"cost": "Prix d'achat",
 		"stock": "Stock",
 		"initialStock": "Stock initial",
-		"threshold": "Alerte ≤",
+		"threshold": "Alerter sous",
 		"initialStockNote_one": "{{count}} unité · le stock initial est enregistré comme une réception dans l'historique.",
 		"initialStockNote": "{{count}} unités · le stock initial est enregistré comme une réception dans l'historique.",
 		"stockThroughMovements": "Le stock change par des ajustements, pour garder un historique complet.",
@@ -2484,7 +2659,15 @@
 		"readOnly": "Votre boutique n'est pas active : les produits ne peuvent pas être modifiés.",
 		"listingStats": "En ligne · {{views}} vues · {{favorites}} favoris",
 		"viewListing": "Voir",
-		"latestMovements": "Derniers mouvements"
+		"latestMovements": "Derniers mouvements",
+		"optionNameEmpty": "Donnez un nom à l'option.",
+		"optionNameTaken": "Ce nom est déjà utilisé par une autre option.",
+		"removeOptionTitle": "Supprimer l'option « {{name}} » ?",
+		"removeOptionMsg": "Les {{count}} variantes seront supprimées, avec les prix, coûts et stocks saisis.",
+		"priceForAll": "Prix (toutes)",
+		"photosFailedElsewhere": "Une photo n'a pas été envoyée. Revenez à l'étape 1 pour la réessayer ou la retirer.",
+		"handlingPlaceholder": "ex. 24",
+		"warrantyPlaceholder": "ex. 3"
 	},
 	"verification": {
 		"hub": {
@@ -2708,7 +2891,8 @@
 				"3": "Vérifier mon entreprise"
 			},
 			"continue": "Continuer ma demande"
-		}
+		},
+		"loadError": "Impossible de charger la vérification"
 	},
 	"team": {
 		"title": "Équipe",
@@ -2768,7 +2952,9 @@
 			"manager": "Gère le catalogue, le stock et les commandes, voit les coûts et consulte les paiements.",
 			"staff": "Prépare les commandes et met à jour le catalogue et le stock.",
 			"owner": "Tous les droits, dont les paiements et la fermeture de la boutique."
-		}
+		},
+		"inviteSent": "Invitation envoyée",
+		"inviteResent": "Invitation renvoyée à {{target}}"
 	},
 	"shopActivity": {
 		"title": "Activité",
@@ -2828,7 +3014,7 @@
 		"filter_unassigned": "Non assignés",
 		"filter_mine": "Les miens",
 		"filter_unread": "Non lus",
-		"filter_awaiting": "En attente de réponse",
+		"filter_awaiting": "À répondre",
 		"filter_done": "Terminés",
 		"unknownBuyer": "Acheteur inconnu",
 		"unknownMember": "Membre inconnu",
@@ -2851,7 +3037,14 @@
 		"emptyTitle": "Aucune conversation",
 		"emptySub": "Les conversations apparaîtront ici dès qu'un acheteur vous contactera.",
 		"noShopTitle": "Pas encore de boutique",
-		"noShopSub": "Créez une boutique pour commencer à répondre aux acheteurs."
+		"noShopSub": "Créez une boutique pour commencer à répondre aux acheteurs.",
+		"searchPlaceholder": "Rechercher un acheteur ou une annonce",
+		"lockedSubShop": "Demandez au propriétaire de {{shop}} de vous ouvrir la messagerie.",
+		"markedDone": "Conversation terminée",
+		"reopened": "Conversation rouverte",
+		"reportBuyer": "Signaler l'acheteur",
+		"state_done": "Terminé",
+		"state_awaiting": "À répondre"
 	},
 	"invite": {
 		"title": "Vous êtes invité(e)",
@@ -2874,7 +3067,10 @@
 		"expired": "Cette invitation a expiré.",
 		"responded": "Cette invitation a déjà reçu une réponse.",
 		"mismatch": "Cette invitation a été envoyée à {{target}}. Connectez-vous avec ce compte pour continuer.",
-		"backHome": "Retour à l'accueil"
+		"backHome": "Retour à l'accueil",
+		"declineConfirmTitle": "Refuser l'invitation de {{shop}} ?",
+		"declineConfirmBody": "Pour rejoindre la boutique plus tard, il faudra un nouveau lien.",
+		"declined": "Invitation de {{shop}} refusée"
 	},
 	"orderStatus": {
 		"status_placed_buyer": "Commande transmise",
@@ -2947,7 +3143,12 @@
 		"headerLabel_one": "Panier, {{count}} article",
 		"headerLabel": "Panier, {{count}} articles",
 		"removed": "« {{title}} » retiré",
-		"undo": "Annuler"
+		"undo": "Annuler",
+		"codNoteProtected": "Payez à la livraison, ou maintenant par mobile money avec le paiement protégé. Vous avez {{days}} jours après réception pour vous rétracter.",
+		"priceUp": "Prix en hausse (avant : {{price}})",
+		"priceDown": "Prix en baisse (avant : {{price}})",
+		"headerSummaryShops_one": "{{count}} article · {{shops}} boutiques",
+		"headerSummaryShops": "{{count}} articles · {{shops}} boutiques"
 	},
 	"addresses": {
 		"title": "Mes adresses",
@@ -2984,7 +3185,9 @@
 		"searching": "Recherche…",
 		"noPlace": "Aucun lieu trouvé. Choisissez dans les listes ci-dessous.",
 		"placeOutside": "Ce lieu est hors des villes où vous pouvez être livré ici.",
-		"coordinates": "Position : {{coordinates}}"
+		"coordinates": "Position : {{coordinates}}",
+		"gpsSaved": "Position GPS enregistrée",
+		"invalidSummary": "À compléter plus haut : {{fields}}."
 	},
 	"checkout": {
 		"sellerLabel": "Vendeur",
@@ -3042,7 +3245,7 @@
 		"confirmed": "Commande confirmée",
 		"viewOrder": "Voir la commande",
 		"title": "Commande",
-		"stepOf": "Étape {{current}} sur 3",
+		"stepOf": "Étape {{current}} sur {{total}}",
 		"continue": "Continuer",
 		"phoneHint": "Un numéro mobile : il reçoit le SMS de confirmation",
 		"districtOtherOption": "Autre",
@@ -3109,7 +3312,13 @@
 		"nextHandoverPaidBody": "Vérifiez le colis puis donnez le code reçu par SMS.",
 		"trackOrder": "Suivre ma commande",
 		"writeToShop": "Écrire à la boutique",
-		"payOnDelivery": "{{amount}} à payer à la livraison"
+		"payOnDelivery": "{{amount}} à payer à la livraison",
+		"stepDeliveryReview": "Livraison et total",
+		"stepPay": "Paiement",
+		"termsProtected": "Conditions du paiement protégé",
+		"acceptRequired": "Cochez les conditions de vente pour commander.",
+		"placeOrderTotal": "Commander · {{total}}",
+		"oneMoreStep": "Plus qu'une étape"
 	},
 	"purchases": {
 		"arrivalLive": "Arrivée vers {{time}}",
@@ -3124,7 +3333,7 @@
 		"handoverResent": "Un nouveau code vous a été envoyé par SMS.",
 		"handoverReveal": "Afficher le code",
 		"handoverWarning": "Ne donnez ce code qu'au livreur, à la remise du colis",
-		"helpProblem": "Un problème ?",
+		"helpProblem": "Signaler un problème",
 		"helpMessageShop": "Écrire à la boutique",
 		"title": "Mes commandes",
 		"tabOpen": "En cours",
@@ -3276,7 +3485,12 @@
 		"handoverAlsoSms": "Aussi envoyé par SMS",
 		"deliveryInstructions": "Instructions de livraison",
 		"emptyCta": "Découvrir les annonces",
-		"payOnDeliveryConfirmBody": "Cette commande sera annulée. Vous pourrez ensuite la repasser en choisissant le paiement à la livraison."
+		"payOnDeliveryConfirmBody": "Cette commande sera annulée. Vous pourrez ensuite la repasser en choisissant le paiement à la livraison.",
+		"todoPay": "Paiement à finaliser",
+		"receiptConfirmed": "Réception confirmée",
+		"confirmReceiptBodyPaid": "Le paiement sera versé à {{shop}}. Vous ne pourrez plus contester la livraison.",
+		"withdrawalReasonOptional": "Motif du retour (facultatif)",
+		"withdrawalReasonPlaceholder": "Ex. : la taille ne convient pas"
 	},
 	"sellerOrders": {
 		"title": "Commandes",
@@ -3386,7 +3600,20 @@
 			"notified": "{{buyer}} est prévenu·e dans l'app et par notification.",
 			"stock": "Les articles réservés reviennent dans votre stock.",
 			"rate": "Ce refus compte dans le taux d'annulation de la boutique. Au-delà de {{threshold}} % des commandes reçues (dès {{min}} commandes), une alerte s'affiche dans vos statistiques."
-		}
+		},
+		"shipConfirm": "Commande de {{name}}, {{place}}. Le colis part maintenant ?",
+		"confirmByCallConfirm": "Vous avez joint {{name}} au téléphone et la commande est maintenue ?",
+		"acceptedToast": "Commande {{number}} acceptée. Elle est dans « À expédier ».",
+		"shippedToast": "Commande {{number}} expédiée",
+		"confirmedByCallToast": "Commande {{number}} confirmée",
+		"handoverDone": "Colis remis",
+		"handoverDoneMeta": "Commande {{number}} · {{time}}",
+		"emptyTab_to_accept": "Rien à accepter. Les nouvelles commandes arrivent ici.",
+		"emptyTab_to_ship": "Aucun colis à préparer.",
+		"emptyTab_shipped": "Aucune commande en route.",
+		"emptyTab_delivered": "Aucune commande livrée pour l'instant.",
+		"emptyTab_cancelled": "Aucune commande annulée.",
+		"emptyTab_failed": "Aucune livraison échouée."
 	},
 	"billing": {
 		"title": "Facturation",
@@ -3466,7 +3693,9 @@
 		"capsMaxDailyOrders": "Nouvelles commandes par jour : {{count}} au plus",
 		"capsMaxOpenOrders": "Commandes en cours en même temps : {{count}} au plus",
 		"capsHint": "Ces plafonds suivent le niveau de vérification de votre boutique et augmentent avec lui.",
-		"saveFailed": "Enregistrement impossible"
+		"saveFailed": "Enregistrement impossible",
+		"payAmount": "Payer {{amount}}",
+		"payConfirming": "Paiement en cours de confirmation. Inutile de payer à nouveau."
 	},
 	"moderationOrder": {
 		"title": "Commande",
@@ -3674,7 +3903,20 @@
 		"authorBuyer": "Acheteur",
 		"authorStaff": "Médiation Buy'N'Sellem",
 		"staffBadge": "Équipe",
-		"requestedAmountMax": "Au plus {{amount}}, le total de la commande"
+		"requestedAmountMax": "Au plus {{amount}}, le total de la commande",
+		"descriptionCount": "{{n}} caractères sur {{min}} minimum",
+		"descriptionPlaceholder": "Ex. : le colis est arrivé ouvert, l'écran est fissuré",
+		"reasonRequired": "Choisissez ce qui s'est passé.",
+		"takePhoto": "Prendre une photo",
+		"uploadFailed": "Le fichier n'a pas été envoyé. Vérifiez votre connexion et réessayez.",
+		"confirmWithdrawTitle": "Retirer le litige ?",
+		"confirmWithdrawBody": "Le litige sera fermé et ne pourra pas être rouvert.",
+		"confirmRejectTitle": "Refuser la proposition ?",
+		"confirmRejectBody": "Le litige continue sans cette proposition de {{amount}}.",
+		"confirmAcceptTitle": "Accepter {{amount}} ?",
+		"confirmAcceptBody": "Le litige sera clos avec ce remboursement.",
+		"confirmResolutionTitle": "Accepter la résolution ?",
+		"confirmResolutionBody": "Le litige sera clos selon la résolution proposée."
 	},
 	"returns": {
 		"chooseInspection": "Choisissez un résultat d'inspection",
@@ -3802,14 +4044,28 @@
 		"viewPurchases": "Voir mes achats",
 		"viewCase": "Voir le dossier de retour",
 		"orderNumber": "Commande {{number}}",
-		"confirmCancelBody": "La demande de retour sera fermée et ne pourra pas être rouverte."
+		"confirmCancelBody": "La demande de retour sera fermée et ne pourra pas être rouverte.",
+		"done": {
+			"ship": "Retour marqué comme expédié",
+			"accept_deduction": "Retenue acceptée",
+			"contest_deduction": "Retenue contestée",
+			"confirm_refund": "Remboursement confirmé",
+			"contest_refund": "Problème de remboursement signalé",
+			"cancel": "Demande de retour annulée"
+		},
+		"confirmContestDeductionBody": "Un médiateur Buy'N'Sellem examinera la retenue. Le remboursement attend sa décision.",
+		"confirmContestRefundBody": "Un médiateur Buy'N'Sellem examinera le remboursement avec la boutique."
 	},
 	"sellerReturns": {
 		"title": "Retours clients",
 		"tileBody": "Traiter les articles retournés et les remboursements.",
 		"loadError": "Impossible de charger les retours clients.",
 		"emptyTitle": "Aucun retour client",
-		"emptyBody": "Les demandes de retour de vos clients apparaîtront ici."
+		"emptyBody": "Les demandes de retour de vos clients apparaîtront ici.",
+		"tileAwaiting_one": "{{count}} retour à traiter",
+		"tileAwaiting": "{{count}} retours à traiter",
+		"tileOverdue_one": "{{count}} retour à traiter, {{overdue}} en retard",
+		"tileOverdue": "{{count}} retours à traiter, {{overdue}} en retard"
 	},
 	"moderationDisputes": {
 		"title": "Arbitrage des litiges",
@@ -3876,7 +4132,25 @@
 			"partial_fault": "Responsabilité partagée",
 			"agreement": "Accord des parties",
 			"other": "Autre"
-		}
+		},
+		"assignedToYou": "Assigné à vous",
+		"assignedToOther": "Pris par un collègue",
+		"unassigned": "Non assigné",
+		"reassignTitle": "Reprendre ce dossier ?",
+		"reassignMessage": "Un collègue traite déjà ce litige. Il vous sera réassigné.",
+		"confirmSummary": "{{outcome}} · Remboursement : {{refund}} · Responsable : {{liable}} · Motif : {{reason}} · Retour de l'article : {{returnItem}}",
+		"refundMax": "Maximum {{amount}}",
+		"refundOverMax": "Le remboursement ne peut pas dépasser {{amount}}.",
+		"stillMissing": "Reste à remplir : {{fields}}",
+		"filterAll": "Tous",
+		"filterMine": "À moi",
+		"filterOverdue": "En retard",
+		"dueInMinutes": "Échéance dans {{count}} min",
+		"dueInHours": "Échéance dans {{count}} h",
+		"dueInDays": "Échéance dans {{count}} j",
+		"lateMinutes": "En retard de {{count}} min",
+		"lateHours": "En retard de {{count}} h",
+		"lateDays": "En retard de {{count}} j"
 	},
 	"sellerResale": {
 		"resellerCard": "Revendeur",
@@ -4196,7 +4470,18 @@
 		"money_refundTitle": "Remboursé si la commande n'aboutit pas",
 		"pay_mobileMoney": "Mobile money",
 		"pending_amount": "Montant à valider : {{amount}}",
-		"pending_dialMenu": "Ouvrir le menu de validation ({{code}})"
+		"pending_dialMenu": "Ouvrir le menu de validation ({{code}})",
+		"pay_laterTitle": "Payer plus tard ?",
+		"pay_laterBody": "Votre commande est réservée, mais elle sera annulée si elle n'est pas payée à temps. Vous la retrouverez dans Mes commandes.",
+		"pay_later": "Plus tard",
+		"pay_now": "Payer maintenant",
+		"pay_operatorSwitch": "Numéro {{operator}} : payer avec {{operator}}",
+		"pending_headerPending": "Paiement en cours",
+		"pending_headerExpired": "Délai dépassé",
+		"pending_headerPaid": "Paiement reçu",
+		"setup_saved": "Compte enregistré. Vérification en cours.",
+		"setup_changeAccount": "Changer de compte",
+		"payout_failedAction": "Ce versement a échoué. Vérifiez votre compte de versement."
 	},
 	"delivery": {
 		"statusBuyer": {
@@ -4216,6 +4501,15 @@
 			"failed": "Échec de livraison",
 			"returned": "Revenue en boutique",
 			"cancelled": "Annulée"
+		},
+		"statusCourier": {
+			"pending": "À récupérer",
+			"picked_up": "En route",
+			"in_transit": "En route",
+			"delivered": "Livré",
+			"failed": "Échec de livraison",
+			"returned": "Retourné en boutique",
+			"cancelled": "Annulé"
 		},
 		"pendingReadyBuyer": "Prête au retrait",
 		"pendingReadySeller": "Prête au retrait",
@@ -4336,7 +4630,11 @@
 			"pickupFee": "Saisissez des frais de 0 à 5 000.",
 			"holdDays": "Saisissez 1 à 14 jours.",
 			"defaultOrigin": "Seule une origine d'expédition active peut être la valeur par défaut."
-		}
+		},
+		"saved": "Modifications enregistrées.",
+		"addFirstZone": "Créer ma première zone",
+		"locating": "Recherche de la position…",
+		"positionUnavailable": "Position introuvable. Réessayez dehors ou saisissez les coordonnées."
 	},
 	"tracking": {
 		"title": "Livraison {{number}}",
@@ -4373,7 +4671,8 @@
 		"positionCaptured": "Position enregistrée, touchez pour actualiser",
 		"positionDenied": "L'accès à la position a été refusé. Le point de repère suffira.",
 		"rescheduleSubmit": "Confirmer le nouveau créneau",
-		"rescheduleClosed": "Il n'y a rien à reprogrammer sur cette commande."
+		"rescheduleClosed": "Il n'y a rien à reprogrammer sur cette commande.",
+		"rescheduled": "Nouveau créneau : {{date}}, {{window}}"
 	},
 	"shipmentPanel": {
 		"takePhoto": "Prendre une photo",
@@ -4429,14 +4728,25 @@
 		"dispatchTitle": "Répartition",
 		"notMember": "Cet espace est réservé aux membres d'un coursier.",
 		"assignConfirm": "Confier cette livraison à {{name}} ?",
-		"remitConfirm": "Confirmez-vous avoir remis {{amount}} ?"
+		"remitConfirm": "Confirmez-vous avoir remis {{amount}} ?",
+		"confirmRemittanceMessage": "Vous confirmez avoir reçu {{amount}} pour ce colis ?",
+		"disputeRemittanceMessage": "Vous signalez que {{amount}} ne vous a pas été remis pour ce colis.",
+		"returnedMessage": "Confirmez que le colis est bien de retour en boutique.",
+		"revokeLinkMessage": "Le livreur ne pourra plus ouvrir son lien de livraison.",
+		"confirmRemittanceDone": "Argent reçu confirmé",
+		"disputeRemittanceDone": "Reversement contesté",
+		"returnedDone": "Colis marqué comme revenu",
+		"cannotOpen": "Aucune application pour ouvrir ce lien",
+		"cashTag": "Espèces {{amount}}",
+		"riderLoad_one": "{{count}} en cours",
+		"riderLoad": "{{count}} en cours"
 	},
 	"checkoutGroup": {
 		"cartGroupHeading": "Commande de {{shop}}",
 		"groupSubtotal": "Sous-total",
 		"groupDelivery": "Livraison",
 		"groupTotal": "Total",
-		"groupRemove": "Retirer ce groupe du panier",
+		"groupRemove": "Retirer la commande de {{shop}} du panier",
 		"grandSubtotal": "Sous-total, toutes les commandes",
 		"grandTotal": "Total, toutes les commandes",
 		"stepperPosition": "Commande {{n}} sur {{total}}",
@@ -4462,7 +4772,22 @@
 		"unavailable_below_minimum": "Le minimum de commande de cette boutique n'est pas atteint.",
 		"unavailable_cod_not_allowed": "Le paiement à la livraison n'est pas proposé par cette boutique.",
 		"unavailable_shop_inactive": "Cette boutique n'accepte plus de commandes pour le moment.",
-		"unavailable_other": "Ce groupe ne peut pas être commandé pour le moment."
+		"unavailable_other": "Ce groupe ne peut pas être commandé pour le moment.",
+		"groupRemoveTitle": "Retirer la commande de {{shop}} ?",
+		"groupRemoveBody_one": "L'article de {{shop}} sera retiré du panier.",
+		"groupRemoveBody": "Les {{count}} articles de {{shop}} seront retirés du panier.",
+		"placeOrdersTotal": "Commander · {{total}}",
+		"itemsToggle_one": "Article ({{count}})",
+		"itemsToggle": "Articles ({{count}})",
+		"feeIncluded": "Inclus dans le total",
+		"confirmOrder": "Confirmer la commande {{orderNumber}}",
+		"nextShop": "Prochaine : {{shop}}",
+		"openGroupDetail_one": "Passée ensemble le {{date}}, {{count}} commande",
+		"openGroupDetail": "Passées ensemble le {{date}}, {{count}} commandes",
+		"placedTitle_one": "Commande passée",
+		"placedTitle": "Commandes passées",
+		"placedSummary_one": "{{count}} commande envoyée à la boutique.",
+		"placedSummary": "{{count}} commandes, une par boutique. Chaque boutique confirme la sienne."
 	},
 	"photoLimit": {
 		"count": "{{count}} / {{max}} photos",
@@ -4496,7 +4821,7 @@
 		"optionsMax": "{{max}} options au maximum.",
 		"valuesCount": "Chaque option compte de 1 à {{max}} valeurs.",
 		"fixStep": "Certains champs sont à corriger avant de continuer.",
-		"serverRefused": "Certains champs ont été refusés. Ils sont signalés en rouge."
+		"serverRefused": "Certains champs ont été refusés. Corrigez ceux signalés en rouge."
 	},
 	"sellerHome": {
 		"metaSetup": "Quelques étapes et votre boutique est prête à vendre",
@@ -4818,7 +5143,8 @@
 		"loadError": "Impossible de charger vos annonces.",
 		"retry": "Réessayer",
 		"previous": "Précédent",
-		"next": "Suivant"
+		"next": "Suivant",
+		"noAccess": "Votre rôle ne permet pas de gérer les annonces. Demandez au propriétaire."
 	},
 	"listingRejection": {
 		"prohibited_item": "Article interdit sur la plateforme",
@@ -4858,5 +5184,13 @@
 		"allOf": "Tout {{name}}",
 		"seeAllCount": "Voir les {{count}}",
 		"more": "Toutes"
+	},
+	"legal": {
+		"contents": "Sommaire"
+	},
+	"paymentRequirements": {
+		"individual_id_number": "Numéro de pièce d'identité",
+		"individual_id_document": "Photo de la pièce d'identité",
+		"individual_address": "Justificatif d'adresse"
 	}
 }

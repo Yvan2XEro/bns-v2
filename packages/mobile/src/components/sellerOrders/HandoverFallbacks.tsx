@@ -91,14 +91,19 @@ const styles = StyleSheet.create({
 		padding: 12,
 		borderRadius: 12,
 	},
-	bannerText: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
-	heading: { fontSize: 16, fontFamily: Fonts.displayBold },
+	bannerText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
+	heading: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
 	card: {
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
 		padding: 14,
 		gap: 10,
 	},
-	title: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	title: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	body: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import type { FieldIssue } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
@@ -25,7 +26,8 @@ export function VariantOptionRow({
 }: {
 	option: ProductOption;
 	readOnly?: boolean;
-	onCommitName: (name: string) => void;
+	/** Returns why the name was refused, or null once it is committed. */
+	onCommitName: (name: string) => string | null;
 	onRemove: () => void;
 	onRemoveValue: (value: string) => void;
 	onAddValue: (value: string) => void;
@@ -35,18 +37,26 @@ export function VariantOptionRow({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const [nameDraft, setNameDraft] = useState<string | null>(null);
+	const [nameError, setNameError] = useState<string | null>(null);
 	const [newValue, setNewValue] = useState("");
 
 	const commitName = () => {
 		if (nameDraft === null) return;
-		onCommitName(nameDraft);
-		setNameDraft(null);
+		const refused = onCommitName(nameDraft);
+		setNameError(refused);
+		// A refused name stays in the field, with the reason under it.
+		if (!refused) setNameDraft(null);
 	};
 
+	// "S, M, L" adds three values at once; Enter adds one and keeps the
+	// keyboard up for the next.
 	const addValue = () => {
-		const value = newValue.trim();
-		if (!value) return;
-		onAddValue(value);
+		const values = newValue
+			.split(",")
+			.map((value) => value.trim())
+			.filter(Boolean);
+		if (values.length === 0) return;
+		for (const value of values) onAddValue(value);
 		setNewValue("");
 	};
 
@@ -56,7 +66,10 @@ export function VariantOptionRow({
 				<TextInput
 					value={nameDraft ?? option.name}
 					editable={!readOnly}
-					onChangeText={setNameDraft}
+					onChangeText={(text) => {
+						setNameDraft(text);
+						if (nameError) setNameError(null);
+					}}
 					onBlur={commitName}
 					onSubmitEditing={commitName}
 					returnKeyType="done"
@@ -68,7 +81,7 @@ export function VariantOptionRow({
 							flex: 1,
 							color: c.text,
 							backgroundColor: c.input,
-							borderColor: nameIssue ? ISSUE_BORDER : c.border,
+							borderColor: nameIssue || nameError ? ISSUE_BORDER : c.border,
 						},
 					]}
 					accessibilityLabel={t("product.optionNamePlaceholder")}
@@ -85,7 +98,16 @@ export function VariantOptionRow({
 					</Pressable>
 				) : null}
 			</View>
-			<FieldIssueText issue={nameIssue} />
+			{nameError ? (
+				<Text
+					style={[f.error, { color: dangerInk(c) }]}
+					accessibilityRole="alert"
+				>
+					{nameError}
+				</Text>
+			) : (
+				<FieldIssueText issue={nameIssue} />
+			)}
 			<View style={f.chips}>
 				{option.values.map((value) => (
 					<Pressable
@@ -112,7 +134,8 @@ export function VariantOptionRow({
 						onChangeText={setNewValue}
 						onSubmitEditing={addValue}
 						onBlur={addValue}
-						returnKeyType="done"
+						submitBehavior="submit"
+						returnKeyType="next"
 						placeholder={t("product.addValue")}
 						placeholderTextColor={c.muted}
 						style={[

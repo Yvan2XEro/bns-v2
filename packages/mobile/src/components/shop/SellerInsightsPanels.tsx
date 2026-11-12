@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { successInk } from "@/src/components/shop/ink";
@@ -12,10 +13,13 @@ export function InsightsHeader({
 	view,
 	period,
 	onPeriod,
+	actions,
 }: {
 	view: ShopInsightsView;
 	period: "7d" | "30d" | "90d";
 	onPeriod: (period: "7d" | "30d" | "90d") => void;
+	/** The recommended actions, shown after the figures and before the products. */
+	actions?: ReactNode;
 }) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
@@ -220,6 +224,7 @@ export function InsightsHeader({
 					value={String(view.stock.outOfStockWithViews.length)}
 				/>
 			</View>
+			{actions}
 			<PanelTitle title={t("sellerInsights.topProducts")} />
 		</View>
 	);
@@ -255,7 +260,8 @@ export function InsightProductRow({
 	);
 }
 
-export function InsightsFooter({
+/** The recommended actions on their own, for the top of the screen. */
+export function InsightsActions({
 	view,
 	onAction,
 }: {
@@ -264,6 +270,66 @@ export function InsightsFooter({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	return (
+		<View style={{ gap: 12 }}>
+			<PanelTitle title={t("sellerInsights.actions")} />
+			{view.actions.length === 0 ? (
+				<Text style={[styles.muted, { color: c.muted }]}>
+					{t("sellerInsights.noActions")}
+				</Text>
+			) : (
+				view.actions.map((action, index) => (
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel={actionLabel(action, t)}
+						key={`${action.type}-${index}`}
+						onPress={() => onAction(action)}
+						style={({ pressed }) => [
+							styles.action,
+							{ borderColor: c.border },
+							pressed && { backgroundColor: c.primarySoft },
+						]}
+					>
+						<Text style={[styles.actionText, { color: c.body }]}>
+							{actionLabel(action, t)}
+						</Text>
+						<Ionicons name="chevron-forward" size={16} color={c.muted} />
+					</Pressable>
+				))
+			)}
+		</View>
+	);
+}
+
+export function InsightsFooter({
+	view,
+	onAction,
+	showActions = true,
+}: {
+	view: ShopInsightsView;
+	onAction: (action: ShopInsightsView["actions"][number]) => void;
+	/** False once the actions are shown at the top by `InsightsActions`. */
+	showActions?: boolean;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	if (!showActions) {
+		return (
+			<View style={styles.footer}>
+				{view.stock.restock.slice(0, 5).map((item) => (
+					<Text key={item.variantId} style={[styles.muted, { color: c.muted }]}>
+						{item.productTitle} ·{" "}
+						{t("sellerInsights.daysCover", { days: item.daysOfCover })}
+					</Text>
+				))}
+				{view.stock.restock.length === 0 ? (
+					<Text style={[styles.muted, { color: c.muted }]}>
+						{t("sellerInsights.noRestock")}
+					</Text>
+				) : null}
+			</View>
+		);
+	}
 	return (
 		<View style={styles.footer}>
 			{view.stock.restock.slice(0, 5).map((item) => (
@@ -454,8 +520,8 @@ export function InsightMetric({
 const styles = StyleSheet.create({
 	header: { gap: 12, padding: 16 },
 	titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-	title: { fontSize: 22, fontFamily: Fonts.displayBold },
-	muted: { fontSize: 12, fontFamily: Fonts.body },
+	title: { fontSize: 24, lineHeight: 32, fontFamily: Fonts.displayBold },
+	muted: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	periods: {
 		flexDirection: "row",
 		borderWidth: 1,
@@ -470,7 +536,7 @@ const styles = StyleSheet.create({
 		borderRadius: 9,
 		paddingHorizontal: 4,
 	},
-	periodText: { fontSize: 12, fontFamily: Fonts.displayBold },
+	periodText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.displayBold },
 	metrics: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	metricCard: {
 		width: "48%",
@@ -481,16 +547,21 @@ const styles = StyleSheet.create({
 		padding: 11,
 		gap: 5,
 	},
-	metricLabel: { fontSize: 11, fontFamily: Fonts.body },
-	metricValue: { fontSize: 16, fontFamily: Fonts.displayBold },
-	metricDelta: { fontSize: 11, fontFamily: Fonts.body },
+	metricLabel: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
+	metricValue: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
+	metricDelta: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
 	panel: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 16,
 		padding: 14,
 		gap: 12,
 	},
-	panelTitle: { fontSize: 15, fontFamily: Fonts.displayBold, marginTop: 2 },
+	panelTitle: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+		marginTop: 2,
+	},
 	funnelLine: { gap: 5 },
 	inline: {
 		flexDirection: "row",
@@ -498,7 +569,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 10,
 	},
-	inlineValue: { fontSize: 12, fontFamily: Fonts.displayBold },
+	inlineValue: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.displayBold },
 	track: { height: 6, overflow: "hidden", borderRadius: 4 },
 	fill: { height: "100%", borderRadius: 4 },
 	listRow: {
@@ -510,7 +581,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 10,
 	},
-	rowTitle: { fontSize: 12, fontFamily: Fonts.displayBold },
+	rowTitle: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.displayBold },
 	footer: { paddingHorizontal: 16, paddingBottom: 36, gap: 12 },
 	action: {
 		minHeight: 48,
@@ -521,7 +592,7 @@ const styles = StyleSheet.create({
 		borderBottomWidth: StyleSheet.hairlineWidth,
 		paddingVertical: 9,
 	},
-	actionText: { flex: 1, fontSize: 12, fontFamily: Fonts.body },
+	actionText: { flex: 1, fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	sparkline: {
 		height: 23,
 		flexDirection: "row",

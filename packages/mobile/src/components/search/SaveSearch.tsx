@@ -228,7 +228,12 @@ const styles = StyleSheet.create({
 		borderRadius: 24,
 		...shadows.lg,
 	},
-	fabText: { color: "#ffffff", fontSize: 15, fontFamily: Fonts.bodyBold },
+	fabText: {
+		color: "#ffffff",
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	pressed: { opacity: 0.85 },
 
 	overlay: {
@@ -247,7 +252,7 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},
@@ -269,5 +274,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	buttonText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	buttonText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

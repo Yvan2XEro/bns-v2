@@ -79,7 +79,7 @@ export function ChecklistSwitches({
 }
 
 const styles = StyleSheet.create({
-	count: { fontSize: 15, fontFamily: Fonts.displayBold },
+	count: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 	itemRow: {
 		flexDirection: "row",
 		alignItems: "center",

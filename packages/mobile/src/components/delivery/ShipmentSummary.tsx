@@ -52,7 +52,12 @@ export function ShipmentSummary({ view }: { view: ShopShipmentView }) {
 				]}
 			>
 				<Text
-					style={{ color: c.text, fontFamily: Fonts.displayBold, fontSize: 16 }}
+					style={{
+						color: c.text,
+						fontFamily: Fonts.displayBold,
+						fontSize: 16,
+						lineHeight: 22,
+					}}
 				>
 					{t(
 						shipmentStatusLabel(

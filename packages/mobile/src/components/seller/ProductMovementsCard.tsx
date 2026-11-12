@@ -64,5 +64,10 @@ export function ProductMovementsCard({
 }
 
 const styles = StyleSheet.create({
-	qty: { width: 40, fontSize: 15, fontFamily: Fonts.displayBold },
+	qty: {
+		width: 40,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+	},
 });

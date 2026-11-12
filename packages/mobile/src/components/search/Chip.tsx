@@ -15,8 +15,10 @@ export function Chip({
 	label,
 	selected = false,
 	icon,
+	trailingIcon,
 	count,
 	disabled = false,
+	role = "button",
 	onPress,
 	accessibilityLabel,
 	accessibilityHint,
@@ -24,6 +26,10 @@ export function Chip({
 	label: string;
 	selected?: boolean;
 	icon?: IconName;
+	/** An icon after the label, e.g. the close mark on a removable filter. */
+	trailingIcon?: IconName;
+	/** "radio" when the chip is one choice of a set (sorts). */
+	role?: "button" | "radio";
 	/** A small count after the label, e.g. the number of active filters. */
 	count?: number;
 	disabled?: boolean;
@@ -38,8 +44,12 @@ export function Chip({
 			onPress={onPress}
 			disabled={disabled}
 			hitSlop={{ top: 4, bottom: 4 }}
-			accessibilityRole="button"
-			accessibilityState={{ selected, disabled }}
+			accessibilityRole={role}
+			accessibilityState={
+				role === "radio"
+					? { checked: selected, disabled }
+					: { selected, disabled }
+			}
 			accessibilityLabel={accessibilityLabel ?? label}
 			accessibilityHint={accessibilityHint}
 			style={({ pressed }) => [
@@ -61,6 +71,9 @@ export function Chip({
 					<Text style={styles.countText}>{count}</Text>
 				</View>
 			) : null}
+			{trailingIcon ? (
+				<Ionicons name={trailingIcon} size={16} color={ink} />
+			) : null}
 		</Pressable>
 	);
 }
@@ -76,7 +89,12 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		maxWidth: 280,
 	},
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	label: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 	count: {
 		minWidth: 20,
 		height: 20,

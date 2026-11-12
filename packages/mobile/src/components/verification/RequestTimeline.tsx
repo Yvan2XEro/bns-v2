@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
 	},
 	body: { flex: 1, gap: 2, paddingLeft: 8 },
 	bodySpaced: { paddingBottom: 16 },
-	status: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	status: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	statusCurrent: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodyBold },
 	date: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 });

@@ -1,6 +1,13 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
-import { StyleSheet, Text, type TextInput } from "react-native";
+import {
+	AccessibilityInfo,
+	Pressable,
+	StyleSheet,
+	Text,
+	type TextInput,
+	View,
+} from "react-native";
 import { Fonts } from "@/constants/theme";
 import {
 	AuthField,
@@ -13,7 +20,7 @@ import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
 import { FormError } from "@/src/components/checkout/FormError";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
-import { useAuth } from "@/src/lib/auth";
+import { type SocialAuthProvider, useAuth } from "@/src/lib/auth";
 import {
 	getAuthModalParams,
 	getSafeAuthRedirect,
@@ -25,20 +32,27 @@ export default function RegisterScreen() {
 	const { loginWithProvider, register } = useAuth();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
-	const params = useLocalSearchParams<{ redirect?: string }>();
-	const [name, setName] = useState("");
-	const [email, setEmail] = useState("");
+	// Back from "wrong address?" on the check-email screen, the form comes
+	// back filled.
+	const params = useLocalSearchParams<{
+		redirect?: string;
+		name?: string;
+		email?: string;
+	}>();
+	const [name, setName] = useState(params.name ?? "");
+	const [email, setEmail] = useState(params.email ?? "");
 	const [password, setPassword] = useState("");
-	const [confirm, setConfirm] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [socialLoading, setSocialLoading] = useState<SocialAuthProvider | null>(
+		null,
+	);
 	// What the form refuses is said on the form: the field's border and a
 	// line under it. The sheet is kept for what the server answers.
 	const [missing, setMissing] = useState(false);
+	// One password field: the reveal toggle replaces typing it twice.
 	const [passwordError, setPasswordError] = useState<string | null>(null);
-	const [confirmError, setConfirmError] = useState<string | null>(null);
 	const emailRef = useRef<TextInput>(null);
 	const passwordRef = useRef<TextInput>(null);
-	const confirmRef = useRef<TextInput>(null);
 
 	const redirectTo = getSafeAuthRedirect(params.redirect);
 
@@ -52,13 +66,18 @@ export default function RegisterScreen() {
 	};
 
 	const handleRegister = async () => {
-		const empty = !name.trim() || !email.trim() || !password || !confirm;
+		const empty = !name.trim() || !email.trim() || !password;
 		const tooShort = password.length > 0 && password.length < 8;
-		const mismatch = !tooShort && confirm.length > 0 && password !== confirm;
 		setMissing(empty);
 		setPasswordError(tooShort ? t("auth.passwordTooShortMessage") : null);
-		setConfirmError(mismatch ? t("auth.passwordMismatchMessage") : null);
-		if (empty || tooShort || mismatch) return;
+		if (empty || tooShort) {
+			AccessibilityInfo.announceForAccessibility(
+				empty
+					? t("auth.missingFieldsMessage")
+					: t("auth.passwordTooShortMessage"),
+			);
+			return;
+		}
 		setLoading(true);
 		try {
 			const address = email.trim().toLowerCase();
@@ -66,7 +85,7 @@ export default function RegisterScreen() {
 			// Signing in waits on the link just sent: say where to look.
 			router.replace({
 				pathname: "/auth/check-email",
-				params: { email: address, sent: "1" },
+				params: { email: address, name: name.trim(), sent: "1" },
 			});
 		} catch (err: unknown) {
 			showError(
@@ -78,10 +97,8 @@ export default function RegisterScreen() {
 		}
 	};
 
-	const handleSocialLogin = async (
-		provider: "apple" | "facebook" | "google",
-	) => {
-		setLoading(true);
+	const handleSocialLogin = async (provider: SocialAuthProvider) => {
+		setSocialLoading(provider);
 		try {
 			await loginWithProvider(provider, redirectTo);
 			finishAuth();
@@ -91,7 +108,7 @@ export default function RegisterScreen() {
 				authErrorMessage(err, t("auth.socialLoginFailedMessage")),
 			);
 		} finally {
-			setLoading(false);
+			setSocialLoading(null);
 		}
 	};
 
@@ -113,6 +130,13 @@ export default function RegisterScreen() {
 				/>
 			}
 		>
+			{/* One tap with Google beats four fields: the providers lead. */}
+			<SocialAuthButtons
+				onPress={handleSocialLogin}
+				disabled={loading || socialLoading !== null}
+				busy={socialLoading}
+				placement="above"
+			/>
 			<AuthField
 				label={t("auth.name")}
 				icon="person-outline"
@@ -154,59 +178,54 @@ export default function RegisterScreen() {
 				password
 				autoCapitalize="none"
 				autoComplete="new-password"
-				returnKeyType="next"
-				submitBehavior="submit"
-				onSubmitEditing={() => confirmRef.current?.focus()}
-				error={passwordError ?? (missing && !password)}
-			/>
-			<AuthField
-				label={t("auth.confirmPassword")}
-				icon="lock-closed-outline"
-				inputRef={confirmRef}
-				value={confirm}
-				onChangeText={(text) => {
-					setConfirm(text);
-					if (confirmError && text === password) setConfirmError(null);
-				}}
-				error={confirmError ?? (missing && !confirm)}
-				placeholder={t("auth.confirmPasswordPlaceholder")}
-				password
-				autoCapitalize="none"
-				autoComplete="new-password"
 				returnKeyType="go"
 				onSubmitEditing={handleRegister}
+				error={passwordError ?? (missing && !password)}
 			/>
 			<FormError message={missing ? t("auth.missingFieldsMessage") : null} />
 			<AuthSubmit
 				label={t("auth.createMyAccount")}
 				onPress={handleRegister}
 				loading={loading}
+				disabled={socialLoading !== null}
 			/>
-			<Text style={[styles.termsText, { color: c.muted }]}>
-				{t("auth.termsPrefix")}{" "}
-				<Text
-					style={[styles.termsLink, { color: c.link }]}
-					onPress={() => router.push("/terms")}
-					accessibilityRole="link"
-				>
-					{t("auth.termsLink")}
-				</Text>{" "}
-				{t("auth.privacyPrefix")}{" "}
-				<Text
-					style={[styles.termsLink, { color: c.link }]}
-					onPress={() => router.push("/privacy")}
-					accessibilityRole="link"
-				>
-					{t("auth.privacyLink")}
+			{/* The sentence, then each document as its own 44pt target: inline
+			    13pt words were too small for a thumb. */}
+			<View style={styles.terms}>
+				<Text style={[styles.termsText, { color: c.muted }]}>
+					{t("auth.termsAgreement")}
 				</Text>
-				.
-			</Text>
-			<SocialAuthButtons onPress={handleSocialLogin} disabled={loading} />
+				<View style={styles.termsLinks}>
+					<Pressable
+						onPress={() => router.push("/terms")}
+						accessibilityRole="link"
+						hitSlop={10}
+						style={styles.termsLinkHit}
+					>
+						<Text style={[styles.termsLink, { color: c.link }]}>
+							{t("auth.termsLink")}
+						</Text>
+					</Pressable>
+					<Pressable
+						onPress={() => router.push("/privacy")}
+						accessibilityRole="link"
+						hitSlop={10}
+						style={styles.termsLinkHit}
+					>
+						<Text style={[styles.termsLink, { color: c.link }]}>
+							{t("auth.privacyLink")}
+						</Text>
+					</Pressable>
+				</View>
+			</View>
 		</AuthScreen>
 	);
 }
 
 const styles = StyleSheet.create({
-	termsText: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 19 },
-	termsLink: { fontFamily: Fonts.bodySemibold },
+	terms: { gap: 4 },
+	termsText: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
+	termsLinks: { flexDirection: "row", flexWrap: "wrap", columnGap: 20 },
+	termsLinkHit: { minHeight: 44, justifyContent: "center" },
+	termsLink: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

@@ -30,6 +30,8 @@ export function CartLineRow({
 	const state = cartLineState(line);
 	const stepper = quantityStepper(line);
 	const image = resolveImageUrl(line.imageUrl);
+	// Which way the price moved is the fact that decides keep or remove.
+	const priceRose = line.unitPrice > line.priceAtAdd;
 	const stepStyle = (enabled: boolean) => [
 		styles.step,
 		{ opacity: enabled && !busy ? 1 : 0.35 },
@@ -79,14 +81,22 @@ export function CartLineRow({
 				) : null}
 				{state === "price_changed" ? (
 					<View style={styles.status}>
-						<Ionicons name="pricetag" size={14} color={c.warningText} />
+						<Ionicons
+							name={priceRose ? "trending-up" : "trending-down"}
+							size={14}
+							color={c.warningText}
+						/>
 						<Text style={[styles.statusText, { color: c.warningText }]}>
-							{t("cart.priceChanged")} ·{" "}
-							{t("cart.priceWas", {
+							{t(priceRose ? "cart.priceUp" : "cart.priceDown", {
 								price: formatPrice(line.priceAtAdd, locale),
 							})}
 						</Text>
 					</View>
+				) : null}
+				{line.maxQuantity != null && line.maxQuantity <= LOW_STOCK ? (
+					<Text style={[styles.meta, { color: c.muted }]}>
+						{t("cart.available", { count: line.maxQuantity })}
+					</Text>
 				) : null}
 				<View style={styles.row}>
 					<Pressable
@@ -102,41 +112,34 @@ export function CartLineRow({
 							{t("cart.remove")}
 						</Text>
 					</Pressable>
-					<View style={styles.rowEnd}>
-						{line.maxQuantity != null && line.maxQuantity <= LOW_STOCK ? (
-							<Text style={[styles.meta, { color: c.muted }]}>
-								{t("cart.available", { count: line.maxQuantity })}
-							</Text>
-						) : null}
-						<View style={[styles.stepper, { borderColor: c.border }]}>
-							<Pressable
-								onPress={() => onQuantity(line.quantity - 1)}
-								disabled={busy || !stepper.canDecrease}
-								accessibilityRole="button"
-								accessibilityLabel={t("cart.decrease", { title: line.title })}
-								style={stepStyle(stepper.canDecrease)}
-								hitSlop={2}
-							>
-								<Ionicons name="remove" size={18} color={c.text} />
-							</Pressable>
-							<Text
-								style={[styles.quantity, { color: c.text }]}
-								accessibilityLabel={`${t("cart.quantity")} ${line.quantity}`}
-								accessibilityLiveRegion="polite"
-							>
-								{line.quantity}
-							</Text>
-							<Pressable
-								onPress={() => onQuantity(line.quantity + 1)}
-								disabled={busy || !stepper.canIncrease}
-								accessibilityRole="button"
-								accessibilityLabel={t("cart.increase", { title: line.title })}
-								style={stepStyle(stepper.canIncrease)}
-								hitSlop={2}
-							>
-								<Ionicons name="add" size={18} color={c.primary} />
-							</Pressable>
-						</View>
+					<View style={[styles.stepper, { borderColor: c.border }]}>
+						<Pressable
+							onPress={() => onQuantity(line.quantity - 1)}
+							disabled={busy || !stepper.canDecrease}
+							accessibilityRole="button"
+							accessibilityLabel={t("cart.decrease", { title: line.title })}
+							style={stepStyle(stepper.canDecrease)}
+							hitSlop={2}
+						>
+							<Ionicons name="remove" size={18} color={c.text} />
+						</Pressable>
+						<Text
+							style={[styles.quantity, { color: c.text }]}
+							accessibilityLabel={`${t("cart.quantity")} ${line.quantity}`}
+							accessibilityLiveRegion="polite"
+						>
+							{line.quantity}
+						</Text>
+						<Pressable
+							onPress={() => onQuantity(line.quantity + 1)}
+							disabled={busy || !stepper.canIncrease}
+							accessibilityRole="button"
+							accessibilityLabel={t("cart.increase", { title: line.title })}
+							style={stepStyle(stepper.canIncrease)}
+							hitSlop={2}
+						>
+							<Ionicons name="add" size={18} color={c.primary} />
+						</Pressable>
 					</View>
 				</View>
 				{stepper.atMax ? (
@@ -173,18 +176,23 @@ const styles = StyleSheet.create({
 		gap: 8,
 		marginTop: 6,
 	},
-	rowEnd: { flexDirection: "row", alignItems: "center", gap: 10 },
 	title: { fontSize: 15, fontFamily: Fonts.bodySemibold, lineHeight: 20 },
 	price: {
-		fontSize: 17,
+		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.3,
 		fontVariant: ["tabular-nums"],
 		marginTop: 2,
 	},
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	status: { flexDirection: "row", alignItems: "center", gap: 4 },
-	statusText: { flexShrink: 1, fontSize: 13, fontFamily: Fonts.bodySemibold },
+	statusText: {
+		flexShrink: 1,
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+	},
 	stepper: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -201,6 +209,7 @@ const styles = StyleSheet.create({
 		minWidth: 24,
 		textAlign: "center",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -211,5 +220,5 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		paddingRight: 4,
 	},
-	removeText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	removeText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 });

@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
 	title: {
 		flexShrink: 1,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},
@@ -55,5 +55,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	countText: { fontSize: 14, lineHeight: 18, fontFamily: Fonts.displayBold },
+	countText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 });

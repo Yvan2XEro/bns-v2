@@ -15,10 +15,12 @@ import {
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import {
+	InlineNotice,
 	LoadError,
 	QueueSkeleton,
 } from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
+import { riskSignalLabel } from "@/src/components/moderation/riskLabels";
 import {
 	type ModerationPalette,
 	type Translate,
@@ -32,6 +34,7 @@ import {
 	usePendingReports,
 	useRiskFlags,
 } from "@/src/hooks/useModeration";
+import { useModerationDisputes } from "@/src/hooks/useModerationDisputes";
 import { useVerificationQueue } from "@/src/hooks/useModerationVerification";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -53,10 +56,28 @@ function relativeAge(iso: string, t: Translate): string {
 		0,
 		Math.round((Date.now() - new Date(iso).getTime()) / 60000),
 	);
+	if (minutes < 1) return t("moderation.ageNow");
 	if (minutes < 60) return t("moderation.ageMinutes", { count: minutes });
 	const hours = Math.round(minutes / 60);
 	if (hours < 24) return t("moderation.ageHours", { count: hours });
 	return t("moderation.ageDays", { count: Math.round(hours / 24) });
+}
+
+/**
+ * How long an item has waited, coloured once it is late: amber past a day,
+ * red past three. The words stay, so colour is never the only signal.
+ */
+function waitingAge(
+	iso: string,
+	t: Translate,
+	c: ModerationPalette,
+): { text: string; color?: string } {
+	const k = tonesOf(c);
+	const hours = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+	return {
+		text: relativeAge(iso, t),
+		color: hours > 72 ? k.dangerText : hours > 24 ? k.warningText : undefined,
+	};
 }
 
 function nameOf(value: UserDoc | string | null | undefined): string | null {
@@ -73,10 +94,6 @@ function severityLabel(
 		: severity === "medium"
 			? t("moderation.riskMedium")
 			: t("moderation.riskLow");
-}
-
-function readableSignal(signal: string): string {
-	return signal.replaceAll(".", " · ").replaceAll("_", " ");
 }
 
 const Separator = () => <View style={styles.separator} />;
@@ -97,6 +114,13 @@ export default function ModerationHubScreen() {
 	// must finish reviewing while intake is paused, so the hub only ever asks
 	// for the fixed "to_review" queue and never reads the flag.
 	const verifications = useVerificationQueue("to_review");
+	// The summary has no dispute count; the queue is a short flat list, so
+	// the hub counts it itself.
+	const disputes = useModerationDisputes();
+	const openDisputes = disputes.data?.length ?? 0;
+	const overdueDisputes = (disputes.data ?? []).filter(
+		(row) => row.overdue,
+	).length;
 
 	const active =
 		queue === "listings"
@@ -137,9 +161,13 @@ export default function ModerationHubScreen() {
 
 	const onRefresh = useCallback(async () => {
 		setRefreshing(true);
-		await Promise.all([active.refetch(), summary.refetch()]);
+		await Promise.all([
+			active.refetch(),
+			summary.refetch(),
+			disputes.refetch(),
+		]);
 		setRefreshing(false);
-	}, [active, summary]);
+	}, [active, summary, disputes]);
 
 	const tabs = queueTabs(summary.data).map((tab) => ({
 		...tab,
@@ -174,7 +202,15 @@ export default function ModerationHubScreen() {
 		>
 			<Pressable
 				accessibilityRole="button"
-				accessibilityLabel={t("moderation.disputesQueue")}
+				accessibilityLabel={[
+					t("moderation.disputesQueue"),
+					openDisputes > 0 ? String(openDisputes) : null,
+					overdueDisputes > 0
+						? t("moderation.disputesOverdue", { count: overdueDisputes })
+						: null,
+				]
+					.filter(Boolean)
+					.join(", ")}
 				onPress={() => router.push("/moderation/disputes")}
 				style={({ pressed }) => [
 					styles.disputesLink,
@@ -190,9 +226,31 @@ export default function ModerationHubScreen() {
 				>
 					<Ionicons name="scale-outline" size={20} color={k.linkText} />
 				</View>
-				<Text style={[styles.disputesLabel, { color: c.text }]}>
-					{t("moderation.disputesQueue")}
-				</Text>
+				<View style={styles.disputesBody}>
+					<Text style={[styles.disputesLabel, { color: c.text }]}>
+						{t("moderation.disputesQueue")}
+					</Text>
+					{overdueDisputes > 0 ? (
+						<Text style={[styles.disputesLate, { color: k.dangerText }]}>
+							{t("moderation.disputesOverdue", { count: overdueDisputes })}
+						</Text>
+					) : null}
+				</View>
+				{openDisputes > 0 ? (
+					<View
+						style={[
+							styles.tabBadge,
+							{
+								backgroundColor:
+									overdueDisputes > 0 ? k.dangerFill : k.primaryFill,
+							},
+						]}
+					>
+						<Text style={[styles.tabBadgeText, { color: k.onFill }]}>
+							{openDisputes}
+						</Text>
+					</View>
+				) : null}
 				<Ionicons name="chevron-forward" size={18} color={c.muted} />
 			</Pressable>
 
@@ -276,74 +334,91 @@ export default function ModerationHubScreen() {
 							: t("common.error")
 					}
 					message={resolveErrorMessage(active.error, t)}
+					error={active.error}
 					onRetry={() => void active.refetch()}
 				/>
-			) : queue === "risk" ? (
-				<FlashList
-					data={(riskFlags.data?.pages ?? []).flatMap((page) => page.items)}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={contentStyle}
-					ItemSeparatorComponent={Separator}
-					refreshControl={refreshControl}
-					onEndReached={() => {
-						if (riskFlags.hasNextPage && !riskFlags.isFetchingNextPage) {
-							void riskFlags.fetchNextPage();
-						}
-					}}
-					onEndReachedThreshold={0.4}
-					ListEmptyComponent={
-						<EmptyState
-							illustration="empty"
-							title={t("moderation.emptyRiskTitle")}
-							subtitle={t("moderation.emptySubtitle")}
-						/>
-					}
-					ListFooterComponent={footer}
-					renderItem={({ item }) => <RiskFlagRow flag={item} t={t} c={c} />}
-				/>
 			) : (
-				<FlashList
-					data={items}
-					keyExtractor={(item) => item.id}
-					getItemType={() => queue}
-					contentContainerStyle={contentStyle}
-					ItemSeparatorComponent={Separator}
-					refreshControl={refreshControl}
-					onEndReached={() => {
-						if (
-							infiniteActive?.hasNextPage &&
-							!infiniteActive.isFetchingNextPage
-						) {
-							infiniteActive.fetchNextPage();
-						}
-					}}
-					onEndReachedThreshold={0.4}
-					ListEmptyComponent={
-						<EmptyState
-							illustration="empty"
-							title={
-								queue === "listings"
-									? t("moderation.emptyListingsTitle")
-									: queue === "reports"
-										? t("moderation.emptyReportsTitle")
-										: t("moderation.emptyVerificationTitle")
+				<>
+					{/* A failed background refresh over cached rows: say so, or the
+					    moderator works a stale queue and every decision 409s. */}
+					{active.isError ? (
+						<Pressable
+							accessibilityRole="button"
+							accessibilityHint={t("common.retry")}
+							onPress={() => void active.refetch()}
+							style={styles.staleNotice}
+						>
+							<InlineNotice tone="warning" text={t("moderation.queueStale")} />
+						</Pressable>
+					) : null}
+					{queue === "risk" ? (
+						<FlashList
+							data={(riskFlags.data?.pages ?? []).flatMap((page) => page.items)}
+							keyExtractor={(item) => item.id}
+							contentContainerStyle={contentStyle}
+							ItemSeparatorComponent={Separator}
+							refreshControl={refreshControl}
+							onEndReached={() => {
+								if (riskFlags.hasNextPage && !riskFlags.isFetchingNextPage) {
+									void riskFlags.fetchNextPage();
+								}
+							}}
+							onEndReachedThreshold={0.4}
+							ListEmptyComponent={
+								<EmptyState
+									illustration="empty"
+									title={t("moderation.emptyRiskTitle")}
+									subtitle={t("moderation.emptySubtitle")}
+								/>
 							}
-							subtitle={t("moderation.emptySubtitle")}
+							ListFooterComponent={footer}
+							renderItem={({ item }) => <RiskFlagRow flag={item} t={t} c={c} />}
 						/>
-					}
-					ListFooterComponent={footer}
-					renderItem={({ item }) =>
-						queue === "listings" ? (
-							<ListingRow listing={item as ListingDoc} t={t} c={c} />
-						) : queue === "reports" ? (
-							<ReportRow report={item as ReportDoc} t={t} c={c} />
-						) : (
-							<VerificationCard
-								item={item as ModerationVerificationQueueItem}
-							/>
-						)
-					}
-				/>
+					) : (
+						<FlashList
+							data={items}
+							keyExtractor={(item) => item.id}
+							getItemType={() => queue}
+							contentContainerStyle={contentStyle}
+							ItemSeparatorComponent={Separator}
+							refreshControl={refreshControl}
+							onEndReached={() => {
+								if (
+									infiniteActive?.hasNextPage &&
+									!infiniteActive.isFetchingNextPage
+								) {
+									infiniteActive.fetchNextPage();
+								}
+							}}
+							onEndReachedThreshold={0.4}
+							ListEmptyComponent={
+								<EmptyState
+									illustration="empty"
+									title={
+										queue === "listings"
+											? t("moderation.emptyListingsTitle")
+											: queue === "reports"
+												? t("moderation.emptyReportsTitle")
+												: t("moderation.emptyVerificationTitle")
+									}
+									subtitle={t("moderation.emptySubtitle")}
+								/>
+							}
+							ListFooterComponent={footer}
+							renderItem={({ item }) =>
+								queue === "listings" ? (
+									<ListingRow listing={item as ListingDoc} t={t} c={c} />
+								) : queue === "reports" ? (
+									<ReportRow report={item as ReportDoc} t={t} c={c} />
+								) : (
+									<VerificationCard
+										item={item as ModerationVerificationQueueItem}
+									/>
+								)
+							}
+						/>
+					)}
+				</>
 			)}
 		</ModerationScreen>
 	);
@@ -356,6 +431,7 @@ function QueueRow({
 	leading,
 	title,
 	meta,
+	age,
 	titleLines = 1,
 	c,
 }: {
@@ -364,6 +440,8 @@ function QueueRow({
 	leading: ReactNode;
 	title: string;
 	meta: string;
+	/** The waiting time, appended to the meta line in its own colour. */
+	age?: { text: string; color?: string };
 	titleLines?: number;
 	c: ModerationPalette;
 }) {
@@ -391,6 +469,17 @@ function QueueRow({
 				</Text>
 				<Text style={[styles.cardMeta, { color: c.muted }]} numberOfLines={2}>
 					{meta}
+					{age ? (
+						<Text
+							style={
+								age.color
+									? { color: age.color, fontFamily: Fonts.bodySemibold }
+									: null
+							}
+						>
+							{meta ? ` · ${age.text}` : age.text}
+						</Text>
+					) : null}
 				</Text>
 			</View>
 			<Ionicons name="chevron-forward" size={18} color={c.muted} />
@@ -412,16 +501,17 @@ function RiskFlagRow({
 	const medium = flag.severity === "medium";
 	const title = flag.subjectLabel ?? t("moderation.riskUnknownSubject");
 	const severity = severityLabel(flag.severity, t);
+	const signal = riskSignalLabel(flag.signal, t);
+	const score = t("moderation.riskScore", { score: flag.score });
 	return (
 		<QueueRow
-			label={`${title}, ${severity}, ${flag.score}`}
+			label={`${title}, ${severity}, ${score}, ${signal}`}
 			onPress={() => router.push(`/moderation/risk/${flag.id}`)}
 			c={c}
 			title={title}
-			meta={`${severity} · ${readableSignal(flag.signal)} · ${t(
-				"moderation.riskOccurrences",
-				{ count: flag.occurrences ?? 1 },
-			)} · ${relativeAge(flag.lastSeenAt, t)}`}
+			meta={`${severity} · ${signal} · ${t("moderation.riskOccurrences", {
+				count: flag.occurrences ?? 1,
+			})} · ${relativeAge(flag.lastSeenAt, t)}`}
 			leading={
 				<View
 					style={[
@@ -449,6 +539,7 @@ function RiskFlagRow({
 					>
 						{flag.score}
 					</Text>
+					<Text style={[styles.riskScale, { color: c.muted }]}>/100</Text>
 				</View>
 			}
 		/>
@@ -474,9 +565,8 @@ function ListingRow({
 			c={c}
 			title={listing.title}
 			titleLines={2}
-			meta={[seller, relativeAge(listing.createdAt, t)]
-				.filter(Boolean)
-				.join(" · ")}
+			meta={seller ?? ""}
+			age={waitingAge(listing.createdAt, t, c)}
 			leading={
 				thumb ? (
 					<Image
@@ -517,13 +607,10 @@ function ReportRow({
 			onPress={() => router.push(`/moderation/report/${report.id}` as never)}
 			c={c}
 			title={title}
-			meta={[
-				t(`moderation.target_${report.targetType}`),
-				reporter,
-				relativeAge(report.createdAt, t),
-			]
+			meta={[t(`moderation.target_${report.targetType}`), reporter]
 				.filter(Boolean)
 				.join(" · ")}
+			age={waitingAge(report.createdAt, t, c)}
 			leading={
 				<View style={[styles.tile, { backgroundColor: c.dangerSoft }]}>
 					<Ionicons name="flag" size={18} color={k.dangerText} />
@@ -556,12 +643,18 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	disputesBody: { flex: 1, gap: 1 },
 	disputesLabel: {
-		flex: 1,
 		fontSize: 15,
 		lineHeight: 20,
 		fontFamily: Fonts.bodySemibold,
 	},
+	disputesLate: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+	},
+	staleNotice: { marginHorizontal: 16, marginTop: 12 },
 	tabsWrap: { borderBottomWidth: StyleSheet.hairlineWidth },
 	tabs: { paddingHorizontal: 8 },
 	tab: {
@@ -572,7 +665,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		borderBottomWidth: 2.5,
 	},
-	tabLabel: { fontSize: 15, lineHeight: 20 },
+	tabLabel: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 20 },
 	tabBadge: {
 		minWidth: 22,
 		height: 22,
@@ -581,7 +674,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	tabBadgeText: { fontSize: 12, fontFamily: Fonts.displayBold },
+	tabBadgeText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.displayBold },
 	card: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -600,7 +693,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	riskScore: { fontSize: 16, fontFamily: Fonts.displayExtrabold },
+	riskScore: {
+		fontSize: 16,
+		lineHeight: 19,
+		fontFamily: Fonts.displayExtrabold,
+	},
+	riskScale: { fontSize: 12, lineHeight: 14, fontFamily: Fonts.bodyMedium },
 	cardBody: { flex: 1, gap: 3 },
 	cardTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
 	cardMeta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },

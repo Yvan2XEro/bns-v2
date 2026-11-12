@@ -359,6 +359,7 @@ const styles = StyleSheet.create({
 	value: {
 		fontFamily: Fonts.body,
 		fontSize: 15,
+		lineHeight: 22,
 		maxWidth: "45%",
 	},
 });

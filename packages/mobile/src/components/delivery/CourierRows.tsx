@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import type { CourierShipmentRow } from "@/src/hooks/useRiderShipments";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { type RiderGroup, readDestination } from "@/src/lib/riderShipment";
-import { shipmentStatusLabel } from "@/src/lib/shipmentStatus";
+import { courierStatusLabel } from "@/src/lib/shipmentStatus";
 
 export const GROUP_LABEL: Record<RiderGroup, string> = {
 	today: "shipmentPanel.groupToday",
@@ -28,12 +29,27 @@ export function CourierRow({
 	children?: ReactNode;
 }) {
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const destination = readDestination(row.destination);
 	const address = [destination.landmark, destination.district, destination.city]
 		.filter(Boolean)
 		.join(", ");
-	const status = t(shipmentStatusLabel("seller", row.status));
+	const status = t(courierStatusLabel(row.status));
+	// Failed and delivered must not look alike: the colour follows the
+	// outcome, the words stay (same rule as the rider list's own row).
+	const tone =
+		row.status === "failed"
+			? { bg: c.dangerSoft, fg: c.dangerText }
+			: row.status === "delivered"
+				? { bg: c.successSoft, fg: c.successText }
+				: { bg: c.neutralSoft, fg: c.neutralText };
+	const cash = row.codCollection?.expectedAmount ?? 0;
+	const cashLabel =
+		cash > 0
+			? t("shipmentPanel.cashTag", {
+					amount: formatPrice(cash, i18n.language),
+				})
+			: null;
 	return (
 		<View
 			style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}
@@ -42,7 +58,7 @@ export function CourierRow({
 				onPress={onPress}
 				disabled={!onPress}
 				accessibilityRole={onPress ? "button" : "text"}
-				accessibilityLabel={[row.shipmentNumber, status, address]
+				accessibilityLabel={[row.shipmentNumber, status, cashLabel, address]
 					.filter(Boolean)
 					.join(", ")}
 				style={({ pressed }) => [
@@ -58,11 +74,25 @@ export function CourierRow({
 						<Text style={[styles.address, { color: c.text }]}>{address}</Text>
 					) : null}
 					<View style={styles.metaRow}>
-						<View style={[styles.pill, { backgroundColor: c.neutralSoft }]}>
-							<Text style={[styles.pillText, { color: c.neutralText }]}>
+						<View style={[styles.pill, { backgroundColor: tone.bg }]}>
+							<Text style={[styles.pillText, { color: tone.fg }]}>
 								{status}
 							</Text>
 						</View>
+						{cashLabel ? (
+							<View
+								style={[
+									styles.pill,
+									{
+										backgroundColor: c.isDark
+											? Colors.dark.sun
+											: Colors.light.sun,
+									},
+								]}
+							>
+								<Text style={styles.cashText}>{cashLabel}</Text>
+							</View>
+						) : null}
 						{row.rider?.name ? (
 							<Text
 								style={[styles.rider, { color: c.muted }]}
@@ -96,10 +126,22 @@ const styles = StyleSheet.create({
 		gap: 12,
 	},
 	body: { flex: 1, gap: 4 },
-	number: { fontFamily: Fonts.displayBold, fontSize: 17 },
+	number: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	address: { fontFamily: Fonts.bodySemibold, fontSize: 16, lineHeight: 22 },
 	metaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
 	pill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-	pillText: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
-	rider: { flexShrink: 1, fontFamily: Fonts.body, fontSize: 13 },
+	pillText: { fontFamily: Fonts.bodySemibold, fontSize: 12, lineHeight: 16 },
+	cashText: {
+		color: Colors.light.sunForeground,
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 13,
+		lineHeight: 18,
+		fontVariant: ["tabular-nums"],
+	},
+	rider: {
+		flexShrink: 1,
+		fontFamily: Fonts.body,
+		fontSize: 13,
+		lineHeight: 18,
+	},
 });

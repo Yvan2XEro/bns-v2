@@ -87,7 +87,12 @@ const styles = StyleSheet.create({
 		gap: 12,
 		padding: 24,
 	},
-	body: { fontSize: 14, fontFamily: Fonts.body, textAlign: "center" },
+	body: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+		textAlign: "center",
+	},
 	button: {
 		minHeight: 48,
 		minWidth: 44,
@@ -100,6 +105,7 @@ const styles = StyleSheet.create({
 	buttonLabel: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 	linkButton: {
@@ -109,5 +115,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 16,
 	},
-	linkLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	linkLabel: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 });

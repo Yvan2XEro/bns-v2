@@ -122,7 +122,7 @@ function Stat({
 
 const styles = StyleSheet.create({
 	section: { gap: 8 },
-	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	empty: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	statsRow: { flexDirection: "row", gap: 10, marginTop: 4 },
 	stat: {
 		flex: 1,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
 	statLabel: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	statValue: {
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -151,7 +151,12 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		gap: 12,
 	},
-	amount: { fontSize: 16, fontFamily: Fonts.displayBold },
-	status: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	amount: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
+	status: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

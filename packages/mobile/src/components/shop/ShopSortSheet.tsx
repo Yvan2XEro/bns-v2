@@ -97,6 +97,6 @@ const styles = StyleSheet.create({
 		gap: 12,
 	},
 	pressed: { opacity: 0.6 },
-	label: { fontSize: 16, fontFamily: Fonts.body },
+	label: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.body },
 	selected: { fontFamily: Fonts.bodySemibold },
 });

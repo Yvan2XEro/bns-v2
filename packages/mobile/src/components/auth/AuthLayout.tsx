@@ -36,8 +36,10 @@ export function authErrorMessage(error: unknown, fallback: string): string {
 
 /**
  * The frame every sign-in screen shares: an indigo ndop band carrying the
- * close/back button, the brand and the title, then the form straight on the
- * page below it — no card around it, inputs carry their own surface.
+ * close/back button and the brand on one row, then the title, then the form
+ * straight on the page below it — no card around it, inputs carry their own
+ * surface. The band stays short (about 150pt under the status bar) so that
+ * on a 360×640 phone the submit button stays in view with the keyboard up.
  */
 export function AuthScreen({
 	title,
@@ -80,19 +82,21 @@ export function AuthScreen({
 				>
 					<ShellPattern />
 					<View style={centeredContent}>
-						<Pressable
-							onPress={onClose}
-							hitSlop={8}
-							accessibilityRole="button"
-							accessibilityLabel={t(
-								closeIcon === "close" ? "common.close" : "common.back",
-							)}
-							style={styles.roundBtn}
-						>
-							<Ionicons name={closeIcon} size={20} color="#ffffff" />
-						</Pressable>
-						<View style={styles.shellBody}>
+						<View style={styles.topRow}>
+							<Pressable
+								onPress={onClose}
+								hitSlop={8}
+								accessibilityRole="button"
+								accessibilityLabel={t(
+									closeIcon === "close" ? "common.close" : "common.back",
+								)}
+								style={styles.roundBtn}
+							>
+								<Ionicons name={closeIcon} size={20} color="#ffffff" />
+							</Pressable>
 							<BrandRow />
+						</View>
+						<View style={styles.shellBody}>
 							<Text accessibilityRole="header" style={styles.title}>
 								{title}
 							</Text>
@@ -202,9 +206,11 @@ export function AuthField({
 					onFocus={() => setFocused(true)}
 					onBlur={() => setFocused(false)}
 					secureTextEntry={password && !revealed}
-					accessibilityLabel={label}
-					accessibilityHint={message ?? undefined}
-					aria-invalid={Boolean(error)}
+					// The refusal is part of the name: React Native ignores
+					// aria-invalid, and many TalkBack users turn hints off.
+					accessibilityLabel={
+						error ? `${label}, ${message ?? t("common.required")}` : label
+					}
 					placeholderTextColor={c.muted}
 					selectionColor={c.primary}
 					style={[styles.input, { color: c.text }]}
@@ -378,12 +384,13 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	shell: {
 		paddingHorizontal: 20,
-		paddingBottom: 28,
+		paddingBottom: 20,
 		borderBottomLeftRadius: 24,
 		borderBottomRightRadius: 24,
 		overflow: "hidden",
 	},
-	shellBody: { marginTop: 20 },
+	topRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+	shellBody: { marginTop: 16 },
 	roundBtn: {
 		width: 44,
 		height: 44,
@@ -400,26 +407,26 @@ const styles = StyleSheet.create({
 	brandIcon: { width: 32, height: 32, borderRadius: 9 },
 	brandText: {
 		color: "#ffffff",
-		fontSize: 19,
+		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
 	},
 	title: {
 		color: "#ffffff",
-		fontSize: 32,
-		lineHeight: 37,
+		fontSize: 24,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
-		letterSpacing: -0.9,
-		marginTop: 24,
+		letterSpacing: -0.7,
 	},
 	subtitle: {
 		color: SHELL_MUTED,
 		fontSize: 15,
 		fontFamily: Fonts.body,
 		lineHeight: 22,
-		marginTop: 8,
+		marginTop: 6,
 	},
-	form: { gap: 16, marginTop: 24 },
+	form: { gap: 16, marginTop: 20 },
 	footer: { marginTop: 24 },
 	field: { gap: 6 },
 	labelRow: {
@@ -427,7 +434,7 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		alignItems: "center",
 	},
-	label: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	inputRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -450,7 +457,12 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 4,
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	switchRow: {
 		flexDirection: "row",
 		flexWrap: "wrap",
@@ -465,8 +477,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	noticeTitle: {
-		fontSize: 28,
-		lineHeight: 33,
+		fontSize: 30,
+		lineHeight: 38,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.6,
 		marginTop: 20,
@@ -479,9 +491,9 @@ const styles = StyleSheet.create({
 		maxWidth: 520,
 	},
 	noticeHint: {
-		fontSize: 14,
+		fontSize: 15,
 		fontFamily: Fonts.body,
-		lineHeight: 20,
+		lineHeight: 22,
 		marginTop: 12,
 		maxWidth: 520,
 	},

@@ -1,5 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
-import { useState } from "react";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	RefreshControl,
@@ -9,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/src/components/EmptyState";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
+import { SearchBar } from "@/src/components/SearchBar";
 import { SkeletonConversationRow } from "@/src/components/SkeletonCard";
 import { InboxFilterChips } from "@/src/components/shop/inbox/InboxFilterChips";
 import { InboxRow } from "@/src/components/shop/inbox/InboxRow";
@@ -28,10 +30,21 @@ export function SellerInboxList({ selectedId, onOpen }: SplitListProps) {
 	const { shop, isLoading: shopLoading } = useActiveShop();
 	const shopId = shop?.shopId ?? null;
 	const [filter, setFilter] = useState<InboxFilter>("all");
+	// Searched on the server (buyer name, listing title), a beat after the
+	// last keystroke so each letter is not a request.
+	const [search, setSearch] = useState("");
+	const [query, setQuery] = useState("");
+	useEffect(() => {
+		const id = setTimeout(() => setQuery(search.trim()), 300);
+		return () => clearTimeout(id);
+	}, [search]);
 
 	useShopInboxSocket(shopId);
 
-	const inbox = useShopInbox(shopId ?? undefined, { filter });
+	const inbox = useShopInbox(shopId ?? undefined, {
+		filter,
+		...(query ? { q: query } : {}),
+	});
 	const rows: InboxConversationView[] =
 		inbox.data?.pages.flatMap((page) => page.docs) ?? [];
 	const totals = inbox.data?.pages[0]?.totals;
@@ -66,6 +79,8 @@ export function SellerInboxList({ selectedId, onOpen }: SplitListProps) {
 					illustration="messages"
 					title={t("inbox.noShopTitle")}
 					subtitle={t("inbox.noShopSub")}
+					ctaLabel={t("shop.createSubmit")}
+					onCta={() => router.push("/shop/create")}
 				/>
 			</SafeAreaView>
 		);
@@ -81,7 +96,7 @@ export function SellerInboxList({ selectedId, onOpen }: SplitListProps) {
 				<EmptyState
 					icon="lock-closed-outline"
 					title={t("inbox.lockedTitle")}
-					subtitle={t("inbox.lockedSub")}
+					subtitle={t("inbox.lockedSubShop", { shop: shop.name })}
 				/>
 			</SafeAreaView>
 		);
@@ -93,6 +108,11 @@ export function SellerInboxList({ selectedId, onOpen }: SplitListProps) {
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
 			<SellerHeader title={t("inbox.title")} subtitle={shop.name} />
+			<SearchBar
+				value={search}
+				onChangeText={setSearch}
+				placeholder={t("inbox.searchPlaceholder")}
+			/>
 			<InboxFilterChips active={filter} totals={totals} onChange={setFilter} />
 
 			{inbox.isLoading ? (
@@ -113,14 +133,24 @@ export function SellerInboxList({ selectedId, onOpen }: SplitListProps) {
 					onCta={() => inbox.refetch()}
 				/>
 			) : rows.length === 0 ? (
-				<EmptyState
-					illustration="messages"
-					title={t("inbox.emptyTitle")}
-					subtitle={t("inbox.emptySub")}
-				/>
+				query ? (
+					<EmptyState
+						illustration="searching"
+						title={t("search.noResults")}
+						subtitle={t("messages.noConversationsForSearch", { query })}
+					/>
+				) : (
+					<EmptyState
+						illustration="messages"
+						title={t("inbox.emptyTitle")}
+						subtitle={t("inbox.emptySub")}
+					/>
+				)
 			) : (
 				<FlashList
 					data={rows}
+					keyboardDismissMode="on-drag"
+					keyboardShouldPersistTaps="handled"
 					keyExtractor={(row) => row.id}
 					extraData={selectedId}
 					renderItem={({ item }) => (

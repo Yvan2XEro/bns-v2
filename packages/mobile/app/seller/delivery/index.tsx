@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { SettingsShell } from "@/src/components/delivery/SettingsShell";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -92,9 +93,41 @@ function ZoneRow({ zone }: { zone: DeliveryZone }) {
 	);
 }
 
+const openNewZone = () =>
+	router.push({
+		pathname: "/seller/delivery/zone/[id]",
+		params: { id: "new" },
+	});
+
+/** Pickup points live one level down; a row at the top keeps them in reach. */
+function PickupPointsRow() {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	return (
+		<Pressable
+			onPress={() => router.push("/seller/delivery/locations")}
+			accessibilityRole="button"
+			accessibilityLabel={t("deliverySettings.pickupPoints")}
+			style={({ pressed }) => [
+				styles.row,
+				styles.pickupRow,
+				{ borderColor: c.border, backgroundColor: c.card },
+				pressed && styles.pressed,
+			]}
+		>
+			<Ionicons name="storefront-outline" size={20} color={c.link} />
+			<Text style={[styles.rowTitle, { flex: 1, color: c.text }]}>
+				{t("deliverySettings.pickupPoints")}
+			</Text>
+			<Ionicons name="chevron-forward" size={18} color={c.muted} />
+		</Pressable>
+	);
+}
+
 function ZonesList({ shopId }: { shopId: string }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
 	const zones = useDeliveryZones(shopId);
 	if (zones.isPending)
 		return (
@@ -123,6 +156,7 @@ function ZonesList({ shopId }: { shopId: string }) {
 	return (
 		<ScreenColumn width="wide">
 			<FlashList
+				ListHeaderComponent={<PickupPointsRow />}
 				data={rows}
 				keyExtractor={(row) => row.key}
 				getItemType={(row) => row.kind}
@@ -139,6 +173,10 @@ function ZonesList({ shopId }: { shopId: string }) {
 						<Text style={[styles.rowText, { color: c.body }]}>
 							{t("deliverySettings.zonesEmpty")}
 						</Text>
+						<SheetButton
+							label={t("deliverySettings.addFirstZone")}
+							onPress={openNewZone}
+						/>
 					</View>
 				}
 				renderItem={({ item }) =>
@@ -153,25 +191,25 @@ function ZonesList({ shopId }: { shopId: string }) {
 						<ZoneRow zone={item.zone} />
 					)
 				}
-				ListFooterComponent={
-					<View style={styles.footer}>
-						<SheetButton
-							label={t("deliverySettings.addZone")}
-							onPress={() =>
-								router.push({
-									pathname: "/seller/delivery/zone/[id]",
-									params: { id: "new" },
-								})
-							}
-						/>
-						<SheetButton
-							label={t("deliverySettings.pickupPoints")}
-							tone="secondary"
-							onPress={() => router.push("/seller/delivery/locations")}
-						/>
-					</View>
-				}
 			/>
+			{rows.length > 0 ? (
+				// The main action stays in reach however many zones there are.
+				<View
+					style={[
+						styles.footer,
+						{
+							paddingBottom: insets.bottom + 12,
+							borderTopColor: c.border,
+							backgroundColor: c.bg,
+						},
+					]}
+				>
+					<SheetButton
+						label={t("deliverySettings.addZone")}
+						onPress={openNewZone}
+					/>
+				</View>
+			) : null}
 		</ScreenColumn>
 	);
 }
@@ -187,10 +225,10 @@ export default function DeliveryZonesScreen() {
 
 const styles = StyleSheet.create({
 	loading: { paddingTop: 16 },
-	content: { padding: 16, paddingBottom: 48 },
+	content: { padding: 16, paddingBottom: 24 },
 	city: {
-		fontSize: 19,
-		lineHeight: 24,
+		fontSize: 18,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 		marginTop: 16,
@@ -208,11 +246,21 @@ const styles = StyleSheet.create({
 	pressed: { opacity: 0.7 },
 	rowBody: { flex: 1, gap: 6 },
 	rowHead: { flexDirection: "row", alignItems: "center", gap: 8 },
-	rowTitle: { flexShrink: 1, fontSize: 16, fontFamily: Fonts.displayBold },
+	rowTitle: {
+		flexShrink: 1,
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+	},
 	rowText: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
 	rowFoot: { flexDirection: "row", alignItems: "center", gap: 10 },
 	rowMeta: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
-	footer: { gap: 10, marginTop: 24 },
+	footer: {
+		paddingHorizontal: 16,
+		paddingTop: 12,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
+	pickupRow: { marginBottom: 8 },
 	empty: {
 		alignItems: "center",
 		gap: 10,

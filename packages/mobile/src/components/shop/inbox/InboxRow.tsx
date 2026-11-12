@@ -67,7 +67,7 @@ export function InboxRow({
 		preview,
 		time,
 		assigneeText,
-		state ? t(`inbox.filter_${state}`) : null,
+		state ? t(`inbox.state_${state}`) : null,
 	]
 		.filter(Boolean)
 		.join(", ");
@@ -186,7 +186,7 @@ export function InboxRow({
 								]}
 								numberOfLines={1}
 							>
-								{t(`inbox.filter_${state}`)}
+								{t(`inbox.state_${state}`)}
 							</Text>
 						</View>
 					) : null}
@@ -249,14 +249,18 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		overflow: "hidden",
 	},
-	avatarInitial: { fontSize: 20, fontFamily: Fonts.displayBold },
+	avatarInitial: {
+		fontSize: 20,
+		lineHeight: 28,
+		fontFamily: Fonts.displayBold,
+	},
 	content: { flex: 1, gap: 2 },
 	topLine: { flexDirection: "row", alignItems: "baseline", gap: 8 },
-	name: { flex: 1, fontSize: 16, lineHeight: 21 },
-	time: { fontSize: 12, fontFamily: Fonts.body },
+	name: { flex: 1, fontFamily: Fonts.body, fontSize: 16, lineHeight: 21 },
+	time: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	listing: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	previewLine: { flexDirection: "row", alignItems: "center", gap: 8 },
-	preview: { flex: 1, fontSize: 14, lineHeight: 19 },
+	preview: { flex: 1, fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	badge: {
 		minWidth: 22,
 		height: 22,
@@ -265,7 +269,12 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 6,
 	},
-	badgeText: { color: "#ffffff", fontSize: 12, fontFamily: Fonts.displayBold },
+	badgeText: {
+		color: "#ffffff",
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.displayBold,
+	},
 	metaLine: {
 		flexDirection: "row",
 		alignItems: "center",

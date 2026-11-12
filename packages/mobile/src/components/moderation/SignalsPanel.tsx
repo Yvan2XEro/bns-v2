@@ -147,8 +147,8 @@ const styles = StyleSheet.create({
 		flexWrap: "wrap",
 	},
 	detail: {
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 		flexShrink: 1,
 	},
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
 		gap: 2,
 		minHeight: 48,
 	},
-	link: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	link: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	chip: {
 		borderRadius: 8,
 		paddingHorizontal: 8,

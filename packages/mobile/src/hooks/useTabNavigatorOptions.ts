@@ -2,7 +2,7 @@ import type { Tabs } from "expo-router";
 import { type ComponentProps, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HapticTab } from "@/components/haptic-tab";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useResponsive } from "@/src/hooks/useResponsive";
 
@@ -12,14 +12,14 @@ type BottomTabNavigationOptions = Exclude<
 	(...args: never[]) => unknown
 >;
 
-const INACTIVE_TINT = "#777ca3";
 /** Width of the navigation rail on a tablet in landscape. */
 export const RAIL_WIDTH = 88;
 
 /**
- * The tab bar every tab navigator shares — buyer and seller alike. At the
- * bottom on phones and tablets in portrait; a navigation rail on the left in
- * expanded, where five icons spread across 1,200 dp read as nothing.
+ * The options every tab navigator shares — buyer and seller alike. At the
+ * bottom the layouts draw the QuietTabBar (src/components/navigation); in
+ * expanded, a navigation rail on the left, where five icons spread across
+ * 1,200 dp read as nothing.
  */
 export function useTabNavigatorOptions(
 	activeTint: string,
@@ -29,11 +29,13 @@ export function useTabNavigatorOptions(
 	const { isTablet, isExpanded } = useResponsive();
 
 	return useMemo<BottomTabNavigationOptions>(() => {
-		const background = isDark ? "#0c1030" : "#ffffff";
-		const border = isDark ? "#2a3170" : "#e1e3ee";
+		const c = Colors[isDark ? "dark" : "light"];
+		const background = c.background;
+		const border = c.border;
 		const shared: BottomTabNavigationOptions = {
 			tabBarActiveTintColor: activeTint,
-			tabBarInactiveTintColor: INACTIVE_TINT,
+			// #777ca3 read at ~4.2:1: too pale for a label in daylight.
+			tabBarInactiveTintColor: c.mutedForeground,
 			headerShown: false,
 			tabBarButton: HapticTab,
 			// On a tablet a tab change redraws whole panes: shift them in rather
@@ -41,6 +43,7 @@ export function useTabNavigatorOptions(
 			animation: isTablet ? "shift" : "none",
 			tabBarLabelStyle: {
 				fontSize: 11,
+				lineHeight: 14,
 				fontFamily: Fonts.bodySemibold,
 				letterSpacing: 0.1,
 				marginBottom: isExpanded ? 0 : 4,

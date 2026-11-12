@@ -4,6 +4,7 @@ import { useCallback, useReducer } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
+	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -98,7 +99,8 @@ export default function VerificationHubScreen() {
 			{!isLoading && isError ? (
 				<EmptyState
 					illustration="notFound"
-					title={resolveErrorMessage(myShop.error ?? query.error, t)}
+					title={t("verification.loadError")}
+					subtitle={resolveErrorMessage(myShop.error ?? query.error, t)}
 					ctaLabel={t("common.retry")}
 					onCta={() => {
 						void myShop.refetch();
@@ -124,6 +126,16 @@ export default function VerificationHubScreen() {
 							styles.content,
 							footer ? styles.contentWithFooter : null,
 						]}
+						// A request under review: pull down to see the decision.
+						refreshControl={
+							<RefreshControl
+								refreshing={query.isRefetching}
+								onRefresh={() => void query.refetch()}
+								tintColor={c.primary}
+								colors={[c.primary]}
+								progressBackgroundColor={c.card}
+							/>
+						}
 					>
 						{!query.data.enabled ? (
 							<View
@@ -256,6 +268,7 @@ const styles = StyleSheet.create({
 	footerLabel: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 	banner: {
@@ -265,5 +278,5 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		padding: 14,
 	},
-	bannerText: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	bannerText: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 });

@@ -118,6 +118,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	count: { fontSize: 13, fontFamily: Fonts.body },
+	count: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	value: { fontFamily: Fonts.bodyBold },
 });
