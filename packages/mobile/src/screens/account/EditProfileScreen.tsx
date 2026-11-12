@@ -251,6 +251,7 @@ export function EditProfileScreen() {
 							<ActivityIndicator color={c.link} />
 						) : (
 							<Text
+								numberOfLines={1}
 								style={[
 									styles.saveBtn,
 									{ color: dirty ? c.link : c.mutedForeground },

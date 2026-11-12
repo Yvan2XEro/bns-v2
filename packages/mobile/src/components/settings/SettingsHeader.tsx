@@ -7,7 +7,7 @@ import { useGroupedColors } from "./Grouped";
 
 /**
  * The bar over an account sub-page: back on the left, the title centred,
- * an optional action on the right. The back button removes itself in a
+ * an optional action on the right (a word fits: the sides share the bar). The back button removes itself in a
  * tablet's detail pane; the title stays centred either way.
  */
 export function SettingsHeader({
@@ -50,10 +50,19 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 4,
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	side: { width: 56, alignItems: "flex-start", justifyContent: "center" },
-	right: { alignItems: "flex-end", paddingRight: 8 },
-	title: {
+	// Both sides take the same share of the bar, so the title stays centred
+	// whatever sits beside it, and a worded action ("Enregistrer") gets the
+	// room it needs instead of breaking over three lines in a fixed 56dp.
+	side: {
 		flex: 1,
+		flexBasis: 0,
+		minWidth: 56,
+		alignItems: "flex-start",
+		justifyContent: "center",
+	},
+	right: { alignItems: "flex-end", paddingRight: 12 },
+	title: {
+		flexShrink: 1,
 		textAlign: "center",
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
