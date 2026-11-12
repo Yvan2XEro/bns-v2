@@ -268,6 +268,7 @@ const styles = StyleSheet.create({
 	footerLabel: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 	banner: {
@@ -277,5 +278,5 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		padding: 14,
 	},
-	bannerText: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	bannerText: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 });

@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	moreText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	moreText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	pressed: { opacity: 0.85 },
 	bellBtn: {
 		width: 44,
@@ -882,7 +882,7 @@ const styles = StyleSheet.create({
 	sectionTitleShrink: { flexShrink: 1 },
 	locationSection: { marginTop: 20 },
 	seeAllBtn: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },
-	seeAll: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	seeAll: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	catGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
@@ -937,6 +937,7 @@ const styles = StyleSheet.create({
 	featuredBadgeText: {
 		color: "#fff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyBold,
 	},
 	featuredPriceTag: {
@@ -959,6 +960,7 @@ const styles = StyleSheet.create({
 	featuredTitle: {
 		color: "#fff",
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		marginTop: 10,
 	},
@@ -972,6 +974,7 @@ const styles = StyleSheet.create({
 		flexShrink: 1,
 		color: "rgba(255,255,255,0.86)",
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.body,
 	},
 

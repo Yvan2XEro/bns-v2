@@ -125,8 +125,8 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	body: { gap: 2 },
-	target: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	target: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	actions: { flexDirection: "row", gap: 8 },
 	actionBtn: {
 		minHeight: 48,
@@ -137,6 +137,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	actionText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	exhausted: { fontSize: 11, fontFamily: Fonts.body },
+	actionText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
+	exhausted: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
 });

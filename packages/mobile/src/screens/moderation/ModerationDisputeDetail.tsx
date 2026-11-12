@@ -753,7 +753,12 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 	},
 	inputMultiline: { minHeight: 72, textAlignVertical: "top" },
-	suffix: { fontFamily: Fonts.bodySemibold, fontSize: 14, marginLeft: 8 },
+	suffix: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 22,
+		marginLeft: 8,
+	},
 	choices: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	choice: {
 		flexDirection: "row",
@@ -765,7 +770,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},
-	choiceLabel: { fontSize: 14, lineHeight: 19 },
+	choiceLabel: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	toggle: {
 		flexDirection: "row",
 		alignItems: "center",

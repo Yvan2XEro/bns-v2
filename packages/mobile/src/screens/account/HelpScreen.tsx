@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		alignSelf: "flex-start",
 	},
-	faqLinkText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	faqLinkText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	faqA: {
 		fontSize: 15,
 		lineHeight: 23,

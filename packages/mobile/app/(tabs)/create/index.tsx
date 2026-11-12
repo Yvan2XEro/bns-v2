@@ -2562,8 +2562,8 @@ const styles = StyleSheet.create({
 	},
 	publishedNoticeText: {
 		flex: 1,
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 	},
 	textBtn: {
@@ -2571,7 +2571,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	textBtnText: { fontSize: 16, fontFamily: Fonts.bodySemibold },
+	textBtnText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 
 	/* ── No-user ── */
 	noUserHeader: {
@@ -2594,6 +2594,7 @@ const styles = StyleSheet.create({
 	},
 	noUserTitle: {
 		fontSize: 24,
+		lineHeight: 29,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.4,
 	},
@@ -2618,7 +2619,8 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 	},
 	noUserHeading: {
-		fontSize: 22,
+		fontSize: 24,
+		lineHeight: 29,
 		fontFamily: Fonts.displayBold,
 		marginBottom: 8,
 		textAlign: "center",
@@ -2645,6 +2647,7 @@ const styles = StyleSheet.create({
 	loginBtnText: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 
@@ -2669,6 +2672,7 @@ const styles = StyleSheet.create({
 	headerCenter: { flex: 1 },
 	headerTitle: {
 		fontSize: 18,
+		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},
@@ -2717,7 +2721,8 @@ const styles = StyleSheet.create({
 		gap: 6,
 	},
 	fieldLabel: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	fieldDivider: {
@@ -2740,6 +2745,7 @@ const styles = StyleSheet.create({
 	},
 	charCount: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.body,
 		fontVariant: ["tabular-nums"],
 		textAlign: "right",
@@ -2772,7 +2778,8 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	attrUnit: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	attrError: {
@@ -2812,6 +2819,7 @@ const styles = StyleSheet.create({
 	},
 	priceBadgeText: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayExtrabold,
 	},
 
@@ -2831,7 +2839,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	conditionText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -2872,6 +2881,7 @@ const styles = StyleSheet.create({
 	},
 	durationUnit: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyMedium,
 	},
 
@@ -2886,9 +2896,9 @@ const styles = StyleSheet.create({
 	},
 	tipText: {
 		flex: 1,
-		fontSize: 14,
+		fontSize: 15,
 		fontFamily: Fonts.body,
-		lineHeight: 20,
+		lineHeight: 22,
 	},
 
 	/* ── Photos ── */
@@ -2909,6 +2919,7 @@ const styles = StyleSheet.create({
 	},
 	photoIndex: {
 		fontSize: 20,
+		lineHeight: 25,
 		fontFamily: Fonts.displayBold,
 	},
 	addPhotoBtn: {
@@ -2931,11 +2942,13 @@ const styles = StyleSheet.create({
 	},
 	addPhotoText: {
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
 	photoRequired: {
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 		marginTop: 8,
@@ -2951,6 +2964,7 @@ const styles = StyleSheet.create({
 	photoPrimaryText: {
 		color: "#ffffff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyBold,
 	},
 	photoMakeMainBtn: {
@@ -2987,6 +3001,7 @@ const styles = StyleSheet.create({
 	},
 	gpsBtnText: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -3008,7 +3023,12 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displaySemibold,
 	},
 	previewPlace: { flexDirection: "row", alignItems: "center", gap: 4 },
-	previewPlaceText: { flex: 1, fontSize: 13, fontFamily: Fonts.body },
+	previewPlaceText: {
+		flex: 1,
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+	},
 	reviewCard: {
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -3051,8 +3071,8 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	reviewPriceText: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 24,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.3,
 	},
@@ -3063,7 +3083,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	editPillText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	publishBtn: {
@@ -3081,6 +3102,7 @@ const styles = StyleSheet.create({
 	publishBtnText: {
 		color: "#12163a",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 	draftBtn: {
@@ -3094,6 +3116,7 @@ const styles = StyleSheet.create({
 	draftBtnText: {
 		fontFamily: Fonts.bodySemibold,
 		fontSize: 15,
+		lineHeight: 22,
 	},
 	publishNote: {
 		fontSize: 13,
@@ -3117,6 +3140,7 @@ const styles = StyleSheet.create({
 	},
 	nextBtnText: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 });

@@ -79,7 +79,12 @@ export function CodeEntry({
 
 	return (
 		<View style={{ gap: 10 }}>
-			<Text style={[formStyles.hint, { color: c.body, fontSize: 14 }]}>
+			<Text
+				style={[
+					formStyles.hint,
+					{ color: c.body, fontSize: 15, lineHeight: 22 },
+				]}
+			>
 				{t("checkout.codeSent", { phone: order.delivery.phone })}
 			</Text>
 			{actions.includes("confirm_code") ? (
@@ -112,6 +117,7 @@ export function CodeEntry({
 										borderColor: codeError ? c.danger : c.border,
 										minHeight: 56,
 										fontSize: 24,
+										lineHeight: 29,
 										fontFamily: Fonts.displayBold,
 										letterSpacing: 8,
 										textAlign: "center",
@@ -129,7 +135,12 @@ export function CodeEntry({
 								: null
 						}
 					/>
-					<Text style={[formStyles.hint, { color: c.muted, fontSize: 13 }]}>
+					<Text
+						style={[
+							formStyles.hint,
+							{ color: c.muted, fontSize: 13, lineHeight: 18 },
+						]}
+					>
 						{t("checkout.attemptsLeft", {
 							count: order.confirmation.attemptsLeft,
 						})}
@@ -141,7 +152,12 @@ export function CodeEntry({
 					/>
 				</>
 			) : (
-				<Text style={[formStyles.hint, { color: c.warningText, fontSize: 14 }]}>
+				<Text
+					style={[
+						formStyles.hint,
+						{ color: c.warningText, fontSize: 15, lineHeight: 22 },
+					]}
+				>
 					{t("checkout.noMoreAttempts")}
 				</Text>
 			)}
@@ -178,6 +194,7 @@ export function CodeEntry({
 						<Text
 							style={{
 								fontSize: 15,
+								lineHeight: 22,
 								fontFamily: Fonts.bodySemibold,
 								color: secondsLeft > 0 ? c.muted : inkOf(c),
 								textDecorationLine: secondsLeft > 0 ? "none" : "underline",
@@ -190,7 +207,10 @@ export function CodeEntry({
 					</Pressable>
 					{resend.isSuccess ? (
 						<Text
-							style={[formStyles.hint, { color: c.successText, fontSize: 13 }]}
+							style={[
+								formStyles.hint,
+								{ color: c.successText, fontSize: 13, lineHeight: 18 },
+							]}
 							accessibilityLiveRegion="polite"
 						>
 							{t("checkout.codeSentAgain")}

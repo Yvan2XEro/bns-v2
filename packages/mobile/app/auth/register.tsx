@@ -224,8 +224,8 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
 	terms: { gap: 4 },
-	termsText: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
+	termsText: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	termsLinks: { flexDirection: "row", flexWrap: "wrap", columnGap: 20 },
 	termsLinkHit: { minHeight: 44, justifyContent: "center" },
-	termsLink: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.bodySemibold },
+	termsLink: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

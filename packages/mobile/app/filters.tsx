@@ -677,19 +677,20 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 8,
 	},
-	resetText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	resetText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	disabled: { opacity: 0.4 },
 	scroll: { padding: 16, paddingBottom: 40, gap: 24 },
 
 	section: { gap: 10 },
 	sectionTitle: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 24,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
 	subLabel: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		marginTop: 4,
 	},
@@ -697,7 +698,7 @@ const styles = StyleSheet.create({
 
 	// Prix
 	priceRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-	priceSep: { fontSize: 18, fontFamily: Fonts.body },
+	priceSep: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.body },
 	priceField: {
 		flex: 1,
 		flexDirection: "row",
@@ -716,8 +717,8 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.body,
 		fontVariant: ["tabular-nums"],
 	},
-	priceUnit: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	fieldError: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodyMedium },
+	priceUnit: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	fieldError: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyMedium },
 	input: {
 		flex: 1,
 		minHeight: 48,
@@ -762,8 +763,8 @@ const styles = StyleSheet.create({
 	// Section attributs dynamiques
 	attrGroup: { gap: 16 },
 	attrSectionHeader: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 24,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -782,6 +783,11 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 16,
 	},
-	applyText: { color: "#ffffff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	applyText: {
+		color: "#ffffff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	pressed: { opacity: 0.85 },
 });

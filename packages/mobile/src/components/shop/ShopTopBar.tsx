@@ -239,7 +239,12 @@ const styles = StyleSheet.create({
 		gap: 8,
 		minWidth: 0,
 	},
-	name: { flexShrink: 1, fontSize: 16, fontFamily: Fonts.displayBold },
+	name: {
+		flexShrink: 1,
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+	},
 	field: {
 		flex: 1,
 		flexDirection: "row",

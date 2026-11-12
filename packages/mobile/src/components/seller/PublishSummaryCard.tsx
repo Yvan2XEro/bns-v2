@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
 		gap: 8,
 		marginTop: 2,
 	},
-	editText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	editText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	editButton: {
 		minHeight: 44,
 		minWidth: 44,

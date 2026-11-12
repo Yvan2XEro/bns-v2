@@ -119,9 +119,9 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displayBold,
 	},
 	row: { gap: 2 },
-	label: { fontSize: 12, fontFamily: Fonts.bodyMedium },
+	label: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodyMedium },
 	value: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodyMedium },
-	hint: { fontSize: 12, fontFamily: Fonts.body },
+	hint: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	buttons: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	button: {
 		flexDirection: "row",
@@ -131,5 +131,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		borderRadius: 12,
 	},
-	buttonText: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	buttonText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

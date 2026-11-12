@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	dotText: { fontSize: 14, fontFamily: Fonts.displayBold },
+	dotText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 	line: { flex: 1, width: 2, marginVertical: 2 },
 	body: { flex: 1, gap: 2, paddingTop: 4, paddingBottom: 18 },
 	framed: {
@@ -131,6 +131,6 @@ const styles = StyleSheet.create({
 		marginBottom: 14,
 		marginTop: -2,
 	},
-	title: { fontSize: 15, fontFamily: Fonts.displayBold },
+	title: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 	benefit: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 });

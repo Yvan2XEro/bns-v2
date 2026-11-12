@@ -903,7 +903,11 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		paddingHorizontal: 4,
 	},
-	markReadText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	markReadText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	filterRow: {
 		flexDirection: "row",
 		paddingHorizontal: 16,
@@ -918,7 +922,7 @@ const styles = StyleSheet.create({
 		borderRadius: 18,
 		borderWidth: StyleSheet.hairlineWidth,
 	},
-	filterPillText: { fontSize: 14 },
+	filterPillText: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	listContent: { paddingBottom: 24 },
 	footerSpinner: { paddingVertical: 16 },
 	staleBar: {
@@ -934,7 +938,7 @@ const styles = StyleSheet.create({
 	},
 	staleText: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	staleRetry: { minHeight: 44, justifyContent: "center", paddingHorizontal: 8 },
-	staleRetryText: { fontSize: 14, fontFamily: Fonts.bodyBold },
+	staleRetryText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	searchScope: {
 		fontSize: 12,
 		lineHeight: 16,
@@ -971,17 +975,31 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	convNameRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
-	convName: { fontSize: 16, lineHeight: 21, flexShrink: 1 },
+	convName: {
+		fontFamily: Fonts.body,
+		fontSize: 16,
+		lineHeight: 21,
+		flexShrink: 1,
+	},
 	shopChip: {
 		borderRadius: 6,
 		paddingHorizontal: 6,
 		paddingVertical: 2,
 	},
-	shopChipText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
-	convTime: { fontSize: 12, fontFamily: Fonts.body },
+	shopChipText: {
+		fontSize: 11,
+		lineHeight: 14,
+		fontFamily: Fonts.bodySemibold,
+	},
+	convTime: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	convContext: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	convBottom: { flexDirection: "row", alignItems: "center", gap: 8 },
-	convLastMsg: { flex: 1, fontSize: 14, lineHeight: 19 },
+	convLastMsg: {
+		flex: 1,
+		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 22,
+	},
 	unreadBadge: {
 		minWidth: 22,
 		height: 22,
@@ -993,6 +1011,7 @@ const styles = StyleSheet.create({
 	unreadBadgeText: {
 		color: "#ffffff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.displayBold,
 	},
 	thumb: { width: 48, height: 48, borderRadius: 10 },
@@ -1005,6 +1024,7 @@ const styles = StyleSheet.create({
 	deleteActionText: {
 		color: "#ffffff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 	},
 });

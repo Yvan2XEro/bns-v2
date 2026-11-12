@@ -181,7 +181,12 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 6,
 		paddingVertical: 2,
 	},
-	coverText: { color: "#ffffff", fontSize: 12, fontFamily: Fonts.bodyBold },
+	coverText: {
+		color: "#ffffff",
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodyBold,
+	},
 	makeCover: {
 		position: "absolute",
 		left: 4,

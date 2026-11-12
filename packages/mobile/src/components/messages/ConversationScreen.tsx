@@ -1698,8 +1698,8 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 	},
 	headerName: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 24,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -1810,7 +1810,7 @@ const styles = StyleSheet.create({
 		shadowRadius: 12,
 		elevation: 4,
 	},
-	newPillText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	newPillText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	failedRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -1821,7 +1821,7 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 		paddingHorizontal: 4,
 	},
-	failedText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	failedText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	offlineHint: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -1854,8 +1854,8 @@ const styles = StyleSheet.create({
 	},
 	blockedNotice: {
 		flex: 1,
-		fontSize: 14,
-		lineHeight: 19,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 	},
 	blockedActionBtn: {
@@ -1863,7 +1863,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 8,
 	},
-	blockedAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	blockedAction: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	msgInput: {
 		minHeight: 48,
 		maxHeight: 132,

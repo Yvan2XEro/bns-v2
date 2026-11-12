@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
 	skeleton: { padding: 16 },
 	more: { margin: 16 },
 	moreError: { alignItems: "center", gap: 10, paddingVertical: 20 },
-	moreErrorText: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.body },
+	moreErrorText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	retryBtn: {
 		minHeight: 48,
 		paddingHorizontal: 20,
@@ -570,6 +570,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	retryText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	retryText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	pressed: { opacity: 0.7 },
 });

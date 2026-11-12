@@ -79,6 +79,6 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 	},
 	texts: { flex: 1, gap: 2 },
-	name: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	name: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	description: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

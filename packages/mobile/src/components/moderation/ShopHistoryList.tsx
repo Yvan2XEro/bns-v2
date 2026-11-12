@@ -176,7 +176,7 @@ function HistoryRow({
 const styles = StyleSheet.create({
 	flex: { flex: 1 },
 	section: { gap: 8 },
-	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	empty: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	row: {
 		flexDirection: "row",
 		alignItems: "center",

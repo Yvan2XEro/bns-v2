@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
 	},
 	tag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
 	tagText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
-	line: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	line: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	gpsRow: { flexDirection: "row", alignItems: "center", gap: 5 },
 	reason: {
@@ -248,5 +248,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		borderRadius: 10,
 	},
-	actionText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	actionText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

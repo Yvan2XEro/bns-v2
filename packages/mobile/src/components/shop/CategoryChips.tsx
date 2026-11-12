@@ -115,5 +115,10 @@ const styles = StyleSheet.create({
 		paddingRight: 14,
 	},
 	pressed: { opacity: 0.7 },
-	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	chipText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 });

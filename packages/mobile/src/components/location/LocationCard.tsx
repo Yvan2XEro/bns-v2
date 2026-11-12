@@ -111,5 +111,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	actionText: { color: "#fff", fontSize: 14, fontFamily: Fonts.bodyBold },
+	actionText: {
+		color: "#fff",
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

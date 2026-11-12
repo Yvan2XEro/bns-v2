@@ -100,8 +100,13 @@ const styles = StyleSheet.create({
 		lineHeight: 19,
 		letterSpacing: -0.2,
 	},
-	tagTextSm: { fontSize: 13, lineHeight: 17 },
-	tagTextLg: { fontSize: 26, lineHeight: 31, letterSpacing: -0.6 },
+	tagTextSm: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 17 },
+	tagTextLg: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 24,
+		lineHeight: 29,
+		letterSpacing: -0.6,
+	},
 	pill: {
 		alignSelf: "flex-start",
 		borderRadius: 999,

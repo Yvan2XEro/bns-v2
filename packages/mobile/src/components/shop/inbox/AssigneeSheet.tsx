@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		marginBottom: 8,
 	},
-	rowLabel: { flex: 1, fontSize: 16, lineHeight: 21 },
+	rowLabel: { flex: 1, fontFamily: Fonts.body, fontSize: 16, lineHeight: 21 },
 	spinner: { marginTop: 8 },
 	closeBtn: {
 		minHeight: 52,
@@ -238,5 +238,5 @@ const styles = StyleSheet.create({
 		marginTop: 8,
 		marginHorizontal: 20,
 	},
-	closeText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	closeText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

@@ -12,6 +12,7 @@ import {
 import { StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
@@ -351,5 +352,5 @@ const styles = StyleSheet.create({
 		padding: 12,
 		borderRadius: 12,
 	},
-	bannerText: { flex: 1, fontSize: 14, lineHeight: 20 },
+	bannerText: { flex: 1, fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 });

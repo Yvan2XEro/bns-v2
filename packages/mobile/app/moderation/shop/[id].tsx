@@ -552,5 +552,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 8,
 		borderBottomWidth: 2.5,
 	},
-	jumpText: { fontSize: 15, lineHeight: 20 },
+	jumpText: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 20 },
 });

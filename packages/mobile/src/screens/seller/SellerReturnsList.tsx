@@ -208,11 +208,17 @@ const styles = StyleSheet.create({
 	number: {
 		flexShrink: 1,
 		fontFamily: Fonts.displayBold,
-		fontSize: 17,
+		fontSize: 18,
+		lineHeight: 24,
 		fontVariant: ["tabular-nums"],
 	},
-	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
-	amount: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
+	amount: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	deadline: { flexDirection: "row", alignItems: "center", gap: 6 },
-	meta: { flexShrink: 1, fontFamily: Fonts.bodyMedium, fontSize: 13 },
+	meta: {
+		flexShrink: 1,
+		fontFamily: Fonts.bodyMedium,
+		fontSize: 13,
+		lineHeight: 18,
+	},
 });

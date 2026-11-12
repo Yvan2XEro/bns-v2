@@ -226,7 +226,12 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 10,
 	},
-	navText: { flexShrink: 1, fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	navText: {
+		flexShrink: 1,
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 22,
+	},
 	pressed: { opacity: 0.7 },
 	list: { padding: 16, paddingBottom: 40 },
 	card: {
@@ -237,7 +242,7 @@ const styles = StyleSheet.create({
 	},
 	heading: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
 	flex: { flex: 1, gap: 4 },
-	title: { fontFamily: Fonts.displayBold, fontSize: 17, lineHeight: 22 },
+	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 24 },
 	meta: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 	edit: {
 		minHeight: 44,
@@ -248,10 +253,14 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		paddingHorizontal: 12,
 	},
-	editText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	editText: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	pending: { fontFamily: Fonts.bodyMedium, fontSize: 13, lineHeight: 18 },
 	variant: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 12, gap: 6 },
-	variantTitle: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	variantTitle: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 22,
+	},
 	priceLine: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -260,7 +269,8 @@ const styles = StyleSheet.create({
 	},
 	price: {
 		fontFamily: Fonts.displaySemibold,
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontVariant: ["tabular-nums"],
 	},
 });

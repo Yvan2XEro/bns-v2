@@ -1535,6 +1535,7 @@ const styles = StyleSheet.create({
 	headerTitle: {
 		flex: 1,
 		fontSize: 18,
+		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		textAlign: "center",
 	},
@@ -1549,6 +1550,7 @@ const styles = StyleSheet.create({
 	saveBtnText: {
 		color: "#ffffff",
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 
@@ -1587,13 +1589,18 @@ const styles = StyleSheet.create({
 
 	/* Fields */
 	fieldGroup: { gap: 6 },
-	categoryValue: { fontSize: 16, fontFamily: Fonts.bodySemibold },
+	categoryValue: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	attrSection: { gap: 14 },
 	groupHeading: {
 		...TextStyles.h4,
 	},
 	attrUnit: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		marginLeft: 8,
 	},
@@ -1608,7 +1615,8 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.body,
 	},
 	fieldLabel: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	hint: {
@@ -1632,6 +1640,7 @@ const styles = StyleSheet.create({
 	},
 	charCount: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.body,
 		fontVariant: ["tabular-nums"],
 		alignSelf: "flex-end",
@@ -1658,12 +1667,13 @@ const styles = StyleSheet.create({
 		marginLeft: 8,
 	},
 	currency: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.displayExtrabold,
 	},
 	priceInput: {
 		flex: 1,
-		fontSize: 22,
+		fontSize: 24,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.4,
 		fontVariant: ["tabular-nums"],
@@ -1681,8 +1691,8 @@ const styles = StyleSheet.create({
 		padding: 12,
 	},
 	noticeBody: { flex: 1, gap: 4 },
-	noticeTitle: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.bodySemibold },
-	noticeText: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	noticeTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	noticeText: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	statusOptions: { gap: 10 },
 	statusOption: {
 		minHeight: 64,
@@ -1703,7 +1713,11 @@ const styles = StyleSheet.create({
 	},
 	radioDot: { width: 10, height: 10, borderRadius: 5 },
 	statusOptionText: { flex: 1, gap: 2 },
-	statusOptionLabel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	statusOptionLabel: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	statusOptionDesc: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 
 	/* Pills */
@@ -1722,7 +1736,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	pillText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -1744,6 +1759,7 @@ const styles = StyleSheet.create({
 	},
 	durationUnit: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyMedium,
 	},
 
@@ -1770,6 +1786,7 @@ const styles = StyleSheet.create({
 	mainBadgeText: {
 		color: "#ffffff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodyBold,
 	},
 	makeMainBtn: {
@@ -1815,6 +1832,7 @@ const styles = StyleSheet.create({
 	},
 	addImageText: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
@@ -1834,6 +1852,7 @@ const styles = StyleSheet.create({
 	submitText: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 });

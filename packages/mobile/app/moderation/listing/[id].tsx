@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 6,
 	},
-	noPhotoText: { fontSize: 13, fontFamily: Fonts.body },
+	noPhotoText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	listingTitle: {
 		fontSize: 20,
 		lineHeight: 25,
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 5,
 	},
-	pillText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	pillText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	sellerCard: {
 		flexDirection: "row",
@@ -590,7 +590,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	sellerName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	sellerName: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	sellerFacts: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
-	sellerMeta: { fontSize: 13, fontFamily: Fonts.bodySemibold, marginTop: 1 },
+	sellerMeta: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+		marginTop: 1,
+	},
 });

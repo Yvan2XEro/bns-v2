@@ -212,10 +212,16 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		alignItems: "center",
 	},
-	meta: { fontSize: 13, fontFamily: Fonts.body },
-	label: { flex: 1, fontSize: 15, fontFamily: Fonts.bodySemibold },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	label: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	amount: {
 		fontSize: 18,
+		lineHeight: 24,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -257,5 +263,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	ctaText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

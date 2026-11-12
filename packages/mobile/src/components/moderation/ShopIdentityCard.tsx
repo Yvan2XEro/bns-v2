@@ -157,15 +157,15 @@ const styles = StyleSheet.create({
 		paddingTop: 12,
 		minHeight: 56,
 	},
-	ownerName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	link: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	ownerName: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	link: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	stats: {
 		flexDirection: "row",
 		borderTopWidth: StyleSheet.hairlineWidth,
 		paddingTop: 12,
 	},
 	stat: { flex: 1, alignItems: "center", gap: 2 },
-	statValue: { fontSize: 22, lineHeight: 26, fontFamily: Fonts.displayBold },
+	statValue: { fontSize: 24, lineHeight: 29, fontFamily: Fonts.displayBold },
 	statLabel: {
 		fontSize: 12,
 		lineHeight: 16,

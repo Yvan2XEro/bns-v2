@@ -426,5 +426,10 @@ const styles = StyleSheet.create({
 	targetThumb: { width: 48, height: 48, borderRadius: 10 },
 	targetKind: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodyMedium },
 	targetTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
-	targetMeta: { fontSize: 13, fontFamily: Fonts.bodySemibold, marginTop: 1 },
+	targetMeta: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+		marginTop: 1,
+	},
 });

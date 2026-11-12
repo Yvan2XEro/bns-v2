@@ -324,7 +324,11 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		overflow: "hidden",
 	},
-	avatarInitial: { fontSize: 17, fontFamily: Fonts.displayBold },
+	avatarInitial: {
+		fontSize: 18,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+	},
 	titleCol: { flex: 1 },
 	menuBtn: {
 		width: 48,
@@ -334,8 +338,8 @@ const styles = StyleSheet.create({
 		marginRight: -12,
 	},
 	buyer: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 24,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -356,5 +360,10 @@ const styles = StyleSheet.create({
 		minHeight: 40,
 		flexShrink: 1,
 	},
-	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	chipText: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 });

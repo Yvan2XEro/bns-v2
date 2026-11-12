@@ -273,6 +273,7 @@ const styles = StyleSheet.create({
 	badgeText: {
 		color: Colors.light.destructiveForeground,
 		fontSize: 11,
+		lineHeight: 14,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},

@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	bannerText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	bannerText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	logoRow: {
 		flexDirection: "row",
 		alignItems: "flex-end",

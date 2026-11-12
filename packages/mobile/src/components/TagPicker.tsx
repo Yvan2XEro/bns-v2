@@ -302,6 +302,7 @@ const styles = StyleSheet.create({
 	placeholder: {
 		flex: 1,
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 	},
 	badgeWrap: {
@@ -319,9 +320,10 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		minHeight: 30,
 	},
-	badgeEmoji: { fontSize: 12 },
+	badgeEmoji: { fontFamily: Fonts.body, fontSize: 12, lineHeight: 16 },
 	badgeText: {
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 	},
 	addBtn: {
@@ -350,6 +352,7 @@ const styles = StyleSheet.create({
 	},
 	modalSub: {
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.body,
 		marginTop: 2,
 	},
@@ -375,13 +378,15 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		minHeight: 40,
 	},
-	chipEmoji: { fontSize: 13 },
+	chipEmoji: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 	chipText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	emptyText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 		padding: 20,
 	},
@@ -397,6 +402,7 @@ const styles = StyleSheet.create({
 	},
 	doneBtnText: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 		color: "#fff",
 	},

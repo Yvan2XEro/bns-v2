@@ -222,16 +222,17 @@ const styles = StyleSheet.create({
 	},
 	thumb: { width: 56, height: 56, borderRadius: 10 },
 	thumbEmpty: { alignItems: "center", justifyContent: "center" },
-	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	title: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	// The amount is what a seller scans the catalogue for: display face, ink.
 	price: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},
 	chips: { flexDirection: "row", alignItems: "center", gap: 8 },
 	status: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
-	statusText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	statusText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 	// 40pt buttons plus a 4pt slop make a 48pt target each: outdoors a near
 	// miss must not step the wrong way or open the product instead.
 	stepper: {
@@ -252,6 +253,7 @@ const styles = StyleSheet.create({
 		minWidth: 22,
 		textAlign: "center",
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},

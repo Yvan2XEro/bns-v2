@@ -109,17 +109,22 @@ export function ActivityRow({
 const styles = StyleSheet.create({
 	row: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 6 },
 	headerLine: { flexDirection: "row", alignItems: "center", gap: 6 },
-	actor: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
-	role: { fontSize: 11, fontFamily: Fonts.body },
-	time: { fontSize: 11, fontFamily: Fonts.body },
-	action: { fontSize: 13, fontFamily: Fonts.body },
+	actor: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
+	role: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
+	time: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
+	action: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	changes: { gap: 2 },
-	changeRow: { fontSize: 12, fontFamily: Fonts.body },
+	changeRow: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	target: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
 		minHeight: 48,
 	},
-	targetText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	targetText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

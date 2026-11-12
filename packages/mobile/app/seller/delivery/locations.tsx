@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
 	pressed: { opacity: 0.7 },
 	rowBody: { flex: 1, gap: 6 },
 	title: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.displayBold },
-	body: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	center: { textAlign: "center" },
 	tags: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
 	footer: { marginTop: 24 },

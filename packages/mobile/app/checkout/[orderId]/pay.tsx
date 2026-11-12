@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 9,
 		paddingVertical: 4,
 	},
-	badgeText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	badgeText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 	section: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	operators: { flexDirection: "row", gap: 10 },
 	operator: {
@@ -513,8 +513,12 @@ const styles = StyleSheet.create({
 		padding: 12,
 		minHeight: 64,
 	},
-	operatorName: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	operatorSub: { fontSize: 13, fontFamily: Fonts.body },
+	operatorName: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
+	operatorSub: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	phoneBox: {
 		borderRadius: 14,
 		borderWidth: 1,
@@ -522,7 +526,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 		gap: 2,
 	},
-	phoneLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	phoneLabel: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	phoneRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 	phoneInput: {
 		flex: 1,
@@ -532,14 +536,25 @@ const styles = StyleSheet.create({
 		fontVariant: ["tabular-nums"],
 		paddingVertical: 4,
 	},
-	amountLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.body },
+	amountLabel: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+	},
 	amountValue: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		fontVariant: ["tabular-nums"],
 	},
 	divider: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
-	totalLabel: { flex: 1, fontSize: 17, fontFamily: Fonts.displayBold },
+	totalLabel: {
+		flex: 1,
+		fontSize: 18,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+	},
 	cardTitle: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	step: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
 	stepIcon: {
@@ -549,7 +564,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	stepTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	stepTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	stepBody: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 19 },
 	linkTarget: {
 		minHeight: 44,
@@ -557,7 +572,8 @@ const styles = StyleSheet.create({
 		alignSelf: "flex-start",
 	},
 	link: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		textDecorationLine: "underline",
 	},

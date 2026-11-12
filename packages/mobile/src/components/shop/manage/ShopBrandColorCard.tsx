@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
 	},
 	preview: { borderWidth: 1, borderRadius: 12, overflow: "hidden" },
 	band: { paddingHorizontal: 14, paddingVertical: 16, gap: 2 },
-	bandName: { fontSize: 16, fontFamily: Fonts.displayBold },
-	bandMeta: { fontSize: 12, fontFamily: Fonts.body },
+	bandName: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
+	bandMeta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	previewBody: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -210,9 +210,9 @@ const styles = StyleSheet.create({
 		padding: 12,
 	},
 	button: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
-	buttonText: { fontSize: 13, fontFamily: Fonts.bodyBold },
+	buttonText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodyBold },
 	chip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 	action: {
 		flex: 1,
 		minHeight: 48,
@@ -221,5 +221,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	actionText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	actionText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

@@ -275,5 +275,10 @@ export function ShopProfileCard({
 
 const styles = StyleSheet.create({
 	save: { height: 52, alignItems: "center", justifyContent: "center" },
-	saveText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	saveText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

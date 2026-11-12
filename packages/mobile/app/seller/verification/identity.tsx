@@ -148,7 +148,8 @@ const styles = StyleSheet.create({
 		padding: 24,
 	},
 	errorText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},
@@ -163,11 +164,12 @@ const styles = StyleSheet.create({
 	retryLabel: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 	content: { padding: 16, gap: 16, paddingBottom: 40 },
 	banner: { borderRadius: 12, padding: 12 },
-	bannerText: { fontSize: 13, fontFamily: Fonts.body },
+	bannerText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	submit: {
 		minHeight: 48,
 		borderRadius: 14,
@@ -177,6 +179,7 @@ const styles = StyleSheet.create({
 	submitLabel: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 });

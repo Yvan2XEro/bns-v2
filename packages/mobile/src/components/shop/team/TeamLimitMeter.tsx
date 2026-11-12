@@ -55,8 +55,8 @@ const styles = StyleSheet.create({
 		gap: 10,
 	},
 	seats: {
-		fontSize: 17,
-		lineHeight: 22,
+		fontSize: 18,
+		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},

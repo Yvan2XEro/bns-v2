@@ -56,5 +56,5 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 		alignSelf: "flex-start",
 	},
-	text: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	text: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

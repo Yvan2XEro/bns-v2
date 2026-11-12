@@ -44,18 +44,26 @@ Rules:
 - No coloured glows. A shadow is an ink shadow with an offset.
 
 ## Type
+Nine roles, as `TextStyles` in `constants/theme.ts`. Each role is a size the eye can tell from its neighbour, and every text style in the app sits on one of them. Don't add sizes between the steps (14, 17, 19, 22): adjacent sizes can't carry different jobs, and they blur the hierarchy.
 
-| Style | Face | Size / line |
-|---|---|---|
-| h1 | Outfit ExtraBold | 30 / 34, -0.8 |
-| h2 | Outfit Bold | 23 / 28, -0.5 |
-| section title | Outfit Bold | 20 / 25, -0.4 |
-| price (card) | Outfit ExtraBold | 15 / 19 |
-| price (listing) | Outfit ExtraBold | 30 / 36 |
-| body | DM Sans Regular | 15 / 22 (16 in inputs and chat) |
-| label | DM Sans SemiBold | 13–15 |
-| button | DM Sans Bold | 16 |
-| meta | DM Sans Regular | 12 / 16 |
+| Role | Face | Size / line | Use |
+|---|---|---|---|
+| display | Outfit ExtraBold | 30 / 36, -0.8 | tab-root large title |
+| title | Outfit Bold | 24 / 29, -0.5 | screen and sheet title, step heading |
+| section | Outfit Bold | 20 / 25, -0.4 | section title on a screen |
+| heading | Outfit Bold | 18 / 24, -0.2 | card and group heading, centred stack title |
+| strong | DM Sans SemiBold / Bold | 16 / 22 | row titles, button labels (Bold) |
+| body | DM Sans Regular | 15 / 22 | running text (16 in inputs and chat) |
+| label | DM Sans SemiBold | 13 / 18 | field labels, chips, secondary actions |
+| caption | DM Sans Regular / Medium | 12 / 16 | place, time, counts |
+| micro | DM Sans SemiBold | 11 / 14 | badges, tab labels; never running text |
+| price | Outfit ExtraBold | 15–16 on cards, 30 / 36 on a listing | always ink on the yellow tag |
+
+Rules:
+- **Hierarchy comes from role, weight and colour together**, not size alone. Text colour has three steps: `foreground` for titles and values, `body` for running text, `mutedForeground` for metadata. Brand words use `link`, never `primary`.
+- **Outfit only from 16 up**, except numbers and prices.
+- **Every text style sets a fontFamily**, so it never falls back to the system font. Display roles (18+) and body roles both set a line height.
+- **Text inputs set no lineHeight**: it shifts the caret and clips text on both platforms.
 
 ## Shape
 - Cards and photos: 14–16 radius. Buttons and inputs: 12. Tags and badges: 6–10.

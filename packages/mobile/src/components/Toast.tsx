@@ -210,6 +210,7 @@ const styles = StyleSheet.create({
 	actionLabel: {
 		color: Colors.dark.link,
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	glyph: {
@@ -220,7 +221,12 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	words: { flex: 1, gap: 2 },
-	title: { color: "#ffffff", fontSize: 15, fontFamily: Fonts.bodySemibold },
+	title: {
+		color: "#ffffff",
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	message: {
 		color: "#c5ccf0",
 		fontSize: 13,

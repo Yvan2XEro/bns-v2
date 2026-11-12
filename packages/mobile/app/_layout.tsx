@@ -171,6 +171,7 @@ const errorStyles = StyleSheet.create({
 		color: Colors.light.primaryForeground,
 		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
+		lineHeight: 22,
 	},
 });
 

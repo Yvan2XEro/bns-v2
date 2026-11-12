@@ -70,6 +70,6 @@ const styles = StyleSheet.create({
 		marginVertical: 8,
 	},
 	row: { flexDirection: "row", gap: 6, alignItems: "flex-start" },
-	text: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	text: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	label: { fontFamily: Fonts.bodySemibold },
 });

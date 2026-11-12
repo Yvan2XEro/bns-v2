@@ -275,8 +275,13 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	segmentText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold, marginBottom: 8 },
+	segmentText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	label: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		marginBottom: 8,
+	},
 	input: {
 		minHeight: 48,
 		borderRadius: 12,
@@ -294,7 +299,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	notice: { borderRadius: 14, padding: 16, gap: 12 },
-	noticeText: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	noticeText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 });

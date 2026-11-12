@@ -147,7 +147,8 @@ const styles = StyleSheet.create({
 	},
 	toggle: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },
 	toggleText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		textDecorationLine: "underline",
 	},
@@ -163,7 +164,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 	},
-	sectionTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold, flex: 1 },
+	sectionTitle: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flex: 1,
+	},
 	sectionBody: { paddingBottom: 14, gap: 8 },
-	text: { fontSize: 14, lineHeight: 21, fontFamily: Fonts.body },
+	text: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 });

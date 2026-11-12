@@ -408,7 +408,7 @@ export function AddressEditor({
 const styles = StyleSheet.create({
 	form: { gap: 20 },
 	saveBlock: { gap: 16 },
-	note: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	note: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	buttons: { flexDirection: "row", gap: 12, marginTop: 4 },
 	button: { flex: 1 },
 });

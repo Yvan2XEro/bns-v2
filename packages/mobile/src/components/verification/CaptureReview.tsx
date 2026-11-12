@@ -206,15 +206,16 @@ const styles = StyleSheet.create({
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
 	headerButton: { minWidth: 72, minHeight: 48, justifyContent: "center" },
-	cancel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	cancel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	title: {
 		flex: 1,
 		textAlign: "center",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 	},
 	scroll: { padding: 16, gap: 14, paddingBottom: 32 },
-	hint: { fontSize: 13, fontFamily: Fonts.body },
+	hint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	page: {
 		borderRadius: 14,
 		borderWidth: 1,
@@ -223,7 +224,12 @@ const styles = StyleSheet.create({
 	},
 	preview: { width: "100%", aspectRatio: 3 / 4, borderRadius: 10 },
 	pageRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-	pageLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
+	pageLabel: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	pageAction: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -231,8 +237,12 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		paddingHorizontal: 6,
 	},
-	pageActionText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	error: { fontSize: 12, fontFamily: Fonts.body },
+	pageActionText: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+	},
+	error: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	addPage: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -243,7 +253,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderStyle: "dashed",
 	},
-	addPageText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	addPageText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
 	send: {
 		height: 54,
@@ -251,5 +261,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	sendText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	sendText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

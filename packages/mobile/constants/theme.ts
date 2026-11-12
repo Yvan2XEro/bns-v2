@@ -218,49 +218,85 @@ export const Fonts = {
  * Shorthand text-style presets. Spread these in StyleSheet definitions.
  */
 export const TextStyles = {
-	// Headings (Outfit)
-	h1: {
+	// ── Roles. Nine steps, each a size the eye can tell from its neighbour;
+	// every text style in the app sits on one of them. ──
+	/** Tab-root large title: Account, Search, Messages… */
+	display: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 30,
-		lineHeight: 34,
+		lineHeight: 36,
 		letterSpacing: -0.8,
 	},
-	h2: {
+	/** Screen and sheet title, step headings */
+	title: {
 		fontFamily: Fonts.displayBold,
-		fontSize: 23,
-		lineHeight: 28,
+		fontSize: 24,
+		lineHeight: 29,
 		letterSpacing: -0.5,
 	},
-	h3: {
+	/** Section title on a screen */
+	section: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 20,
+		lineHeight: 25,
+		letterSpacing: -0.4,
+	},
+	/** Card and group heading, centred stack titles */
+	heading: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 24,
 		letterSpacing: -0.2,
 	},
-	h4: { fontFamily: Fonts.displaySemibold, fontSize: 16, lineHeight: 21 },
-
-	// Body (DM Sans)
-	bodyLg: { fontFamily: Fonts.body, fontSize: 17, lineHeight: 25 },
+	/** Emphasised body: row titles, button labels (Bold) */
+	strong: { fontFamily: Fonts.bodySemibold, fontSize: 16, lineHeight: 22 },
+	/** Running text */
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
-	bodySm: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
-	caption: { fontFamily: Fonts.bodyMedium, fontSize: 12, lineHeight: 16 },
+	/** Field labels, chips, secondary actions */
+	label: { fontFamily: Fonts.bodySemibold, fontSize: 13, lineHeight: 18 },
+	/** Metadata: place, time, counts */
+	caption: { fontFamily: Fonts.body, fontSize: 12, lineHeight: 16 },
+	/** Badges and tab labels */
+	micro: { fontFamily: Fonts.bodySemibold, fontSize: 11, lineHeight: 14 },
 
-	// Labels
-	labelLg: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
-	label: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
-	labelSm: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
-
-	// Price (Outfit, tabular-feeling weight)
+	// Prices (Outfit)
 	price: {
 		fontFamily: Fonts.displayExtrabold,
-		fontSize: 17,
+		fontSize: 16,
+		lineHeight: 22,
 		letterSpacing: -0.3,
 	},
 	priceLg: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 30,
+		lineHeight: 36,
 		letterSpacing: -0.8,
 	},
+
+	// Older names, kept for the screens that use them.
+	h1: {
+		fontFamily: Fonts.displayExtrabold,
+		fontSize: 30,
+		lineHeight: 36,
+		letterSpacing: -0.8,
+	},
+	h2: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 24,
+		lineHeight: 29,
+		letterSpacing: -0.5,
+	},
+	h3: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 18,
+		lineHeight: 24,
+		letterSpacing: -0.2,
+	},
+	h4: { fontFamily: Fonts.displaySemibold, fontSize: 16, lineHeight: 22 },
+	bodyLg: { fontFamily: Fonts.body, fontSize: 16, lineHeight: 22 },
+	bodySm: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
+	labelLg: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
+	labelSm: { fontFamily: Fonts.bodySemibold, fontSize: 12, lineHeight: 16 },
 } as const;
 
 export const typography = {

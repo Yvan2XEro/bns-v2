@@ -159,9 +159,10 @@ const styles = StyleSheet.create({
 	},
 	main: { flex: 1, gap: 2 },
 	end: { alignItems: "flex-end", gap: 6 },
-	title: { fontSize: 16, fontFamily: Fonts.bodySemibold },
+	title: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	fee: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},

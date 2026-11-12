@@ -520,8 +520,8 @@ export function InsightMetric({
 const styles = StyleSheet.create({
 	header: { gap: 12, padding: 16 },
 	titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-	title: { fontSize: 22, fontFamily: Fonts.displayBold },
-	muted: { fontSize: 12, fontFamily: Fonts.body },
+	title: { fontSize: 24, lineHeight: 29, fontFamily: Fonts.displayBold },
+	muted: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	periods: {
 		flexDirection: "row",
 		borderWidth: 1,
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
 		borderRadius: 9,
 		paddingHorizontal: 4,
 	},
-	periodText: { fontSize: 12, fontFamily: Fonts.displayBold },
+	periodText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.displayBold },
 	metrics: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	metricCard: {
 		width: "48%",
@@ -547,16 +547,21 @@ const styles = StyleSheet.create({
 		padding: 11,
 		gap: 5,
 	},
-	metricLabel: { fontSize: 11, fontFamily: Fonts.body },
-	metricValue: { fontSize: 16, fontFamily: Fonts.displayBold },
-	metricDelta: { fontSize: 11, fontFamily: Fonts.body },
+	metricLabel: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
+	metricValue: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
+	metricDelta: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.body },
 	panel: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 16,
 		padding: 14,
 		gap: 12,
 	},
-	panelTitle: { fontSize: 15, fontFamily: Fonts.displayBold, marginTop: 2 },
+	panelTitle: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+		marginTop: 2,
+	},
 	funnelLine: { gap: 5 },
 	inline: {
 		flexDirection: "row",
@@ -564,7 +569,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 10,
 	},
-	inlineValue: { fontSize: 12, fontFamily: Fonts.displayBold },
+	inlineValue: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.displayBold },
 	track: { height: 6, overflow: "hidden", borderRadius: 4 },
 	fill: { height: "100%", borderRadius: 4 },
 	listRow: {
@@ -576,7 +581,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 10,
 	},
-	rowTitle: { fontSize: 12, fontFamily: Fonts.displayBold },
+	rowTitle: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.displayBold },
 	footer: { paddingHorizontal: 16, paddingBottom: 36, gap: 12 },
 	action: {
 		minHeight: 48,
@@ -587,7 +592,7 @@ const styles = StyleSheet.create({
 		borderBottomWidth: StyleSheet.hairlineWidth,
 		paddingVertical: 9,
 	},
-	actionText: { flex: 1, fontSize: 12, fontFamily: Fonts.body },
+	actionText: { flex: 1, fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	sparkline: {
 		height: 23,
 		flexDirection: "row",

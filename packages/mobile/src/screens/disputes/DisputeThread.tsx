@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		borderWidth: StyleSheet.hairlineWidth,
 	},
-	chipText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	chipText: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	evidenceText: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
 	card: {
 		borderRadius: 16,
@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
 	},
 	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
-	amount: { fontFamily: Fonts.displayBold, fontSize: 17, lineHeight: 22 },
+	amount: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 24 },
 	empty: {
 		fontFamily: Fonts.body,
 		fontSize: 15,
@@ -821,7 +821,7 @@ const styles = StyleSheet.create({
 	theirs: { flex: 1, gap: 4, alignItems: "flex-start" },
 	theirBubble: { borderWidth: 1, borderBottomLeftRadius: 4 },
 	authorRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-	author: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
+	author: { fontFamily: Fonts.bodySemibold, fontSize: 13, lineHeight: 18 },
 	avatar: {
 		width: 32,
 		height: 32,
@@ -830,8 +830,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	badge: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 },
-	badgeText: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
-	time: { fontFamily: Fonts.body, fontSize: 12 },
+	badgeText: { fontFamily: Fonts.bodySemibold, fontSize: 12, lineHeight: 16 },
+	time: { fontFamily: Fonts.body, fontSize: 12, lineHeight: 16 },
 	actions: { gap: 10, marginTop: 6 },
 	errorBar: {
 		flexDirection: "row",
@@ -842,8 +842,8 @@ const styles = StyleSheet.create({
 	},
 	errorText: {
 		flex: 1,
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyMedium,
 	},
 	decision: {

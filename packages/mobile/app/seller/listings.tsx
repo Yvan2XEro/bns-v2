@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 		justifyContent: "center",
 	},
-	filterText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	filterText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	list: { paddingHorizontal: 16, paddingBottom: 96 },
 	row: {
 		flexDirection: "row",
@@ -312,8 +312,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	texts: { flex: 1, gap: 2 },
-	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	price: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	title: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	price: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	action: {
 		width: 48,
@@ -332,5 +332,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 18,
 		borderRadius: 24,
 	},
-	addText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	addText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

@@ -374,10 +374,10 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 	},
 	searchName: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.bodyMedium },
-	searchMeta: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.body },
+	searchMeta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	searchDate: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	alert: { alignItems: "center", gap: 2, paddingHorizontal: 4 },
-	alertLabel: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	alertLabel: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.bodySemibold },
 	deleteBtn: {
 		width: 48,
 		height: 48,

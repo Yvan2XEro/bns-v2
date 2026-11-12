@@ -480,8 +480,8 @@ const styles = StyleSheet.create({
 	divided: { borderTopWidth: StyleSheet.hairlineWidth },
 	relatedText: {
 		flex: 1,
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 });

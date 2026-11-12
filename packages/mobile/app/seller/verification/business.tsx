@@ -286,13 +286,18 @@ const styles = StyleSheet.create({
 	tabs: { marginHorizontal: 16, marginTop: 12 },
 	scroll: { padding: 16, gap: 16, paddingBottom: 40 },
 	footer: { gap: 10, marginTop: 4 },
-	missing: { fontSize: 13, fontFamily: Fonts.body },
-	submitError: { fontSize: 13, fontFamily: Fonts.body },
+	missing: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	submitError: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	submit: {
 		minHeight: 52,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

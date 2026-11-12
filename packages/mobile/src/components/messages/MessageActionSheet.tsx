@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 		marginBottom: 8,
 	},
-	previewText: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	previewText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	actions: { paddingVertical: 4 },
 	action: {
 		flexDirection: "row",
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		borderRadius: 12,
 	},
-	actionText: { fontSize: 16, fontFamily: Fonts.bodySemibold },
+	actionText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	cancel: {
 		minHeight: 52,
 		borderRadius: 12,
@@ -263,5 +263,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 8,
 	},
-	cancelText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	cancelText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

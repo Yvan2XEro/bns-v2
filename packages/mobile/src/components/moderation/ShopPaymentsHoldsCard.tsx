@@ -116,7 +116,7 @@ export function ShopPaymentsHoldsCard({
 
 const styles = StyleSheet.create({
 	section: { gap: 8 },
-	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	empty: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	placeBtn: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 12,
 	},
-	placeBtnText: { fontSize: 14, fontFamily: Fonts.bodyBold },
+	placeBtnText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	row: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 14,

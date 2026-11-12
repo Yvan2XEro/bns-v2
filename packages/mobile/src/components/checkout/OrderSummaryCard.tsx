@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
 	lineTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
 	lineAmount: {
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -196,8 +197,8 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
-	totalLabel: { fontSize: 17, fontFamily: Fonts.displayBold },
+	totalLabel: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
 	totalValue: { alignItems: "flex-end", gap: 2, flexShrink: 1 },
-	changed: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	changed: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 	divider: { borderTopWidth: StyleSheet.hairlineWidth, marginVertical: 2 },
 });

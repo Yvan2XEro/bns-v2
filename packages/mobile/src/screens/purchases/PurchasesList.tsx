@@ -246,6 +246,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 6,
 	},
-	groupHeaderText: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
-	moreText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	groupHeaderText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
+	moreText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

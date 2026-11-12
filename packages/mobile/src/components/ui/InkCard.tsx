@@ -28,13 +28,19 @@ export function InkCard({ children }: { children: ReactNode }) {
 }
 
 export const inkText = StyleSheet.create({
-	label: { color: ON_INK.muted, fontSize: 12, fontFamily: Fonts.body },
+	label: {
+		color: ON_INK.muted,
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.body,
+	},
 	hero: {
 		color: ON_INK.text,
-		fontSize: 32,
+		fontSize: 30,
+		lineHeight: 36,
 		fontFamily: Fonts.displayExtrabold,
 	},
-	value: { fontSize: 17, fontFamily: Fonts.displayBold },
+	value: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
 	footnote: {
 		color: ON_INK.faint,
 		fontSize: 12,

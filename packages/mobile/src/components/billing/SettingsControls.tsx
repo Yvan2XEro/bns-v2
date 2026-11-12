@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { billingStyles as s } from "./billingStyles";
@@ -130,6 +131,7 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 12,
 		paddingVertical: 10,
+		fontFamily: Fonts.body,
 		fontSize: 15,
 	},
 	multiline: { minHeight: 110, textAlignVertical: "top" },

@@ -116,6 +116,7 @@ const styles = StyleSheet.create({
 	triggerText: {
 		flex: 1,
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 	},
 });

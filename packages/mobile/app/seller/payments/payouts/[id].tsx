@@ -282,10 +282,10 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		paddingVertical: 8,
 	},
-	lineLabel: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	lineLabel: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	lineValue: {
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		flexShrink: 1,
 		textAlign: "right",

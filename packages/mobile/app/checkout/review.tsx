@@ -318,7 +318,7 @@ function Review() {
 
 const styles = StyleSheet.create({
 	notice: { flexDirection: "row", gap: 10, padding: 14, borderRadius: 14 },
-	noticeTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	noticeTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	noticeBody: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 	accept: {
 		flexDirection: "row",
@@ -335,5 +335,10 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
 	},
-	loadingText: { flex: 1, fontSize: 15, fontFamily: Fonts.body },
+	loadingText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+	},
 });

@@ -185,8 +185,8 @@ export function Sheet({
 export const purchaseText = StyleSheet.create({
 	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	muted: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 19 },
-	strong: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	strong: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });
 
 const styles = StyleSheet.create({
@@ -199,7 +199,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	buttonText: { fontSize: 16, fontFamily: Fonts.bodyBold, textAlign: "center" },
+	buttonText: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+		textAlign: "center",
+	},
 	card: { borderRadius: 16, padding: 16, gap: 12 },
 	cardTitle: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },

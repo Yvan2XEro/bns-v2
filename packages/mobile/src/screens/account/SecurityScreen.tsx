@@ -474,8 +474,8 @@ const styles = StyleSheet.create({
 	scroll: { padding: 16, paddingTop: 20, gap: 24, paddingBottom: 48 },
 	form: { padding: 16, gap: 16 },
 	status: { flexDirection: "row", alignItems: "center", gap: 4 },
-	statusText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	wait: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.body },
+	statusText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
+	wait: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	deleteBody: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
 	deleteShop: { fontFamily: Fonts.bodySemibold },
 });

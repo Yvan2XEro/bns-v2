@@ -101,5 +101,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	dangerText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	dangerText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

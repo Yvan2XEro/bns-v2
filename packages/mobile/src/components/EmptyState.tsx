@@ -191,6 +191,7 @@ const styles = StyleSheet.create({
 	title: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
+		lineHeight: 24,
 		textAlign: "center",
 		marginBottom: 8,
 		// Caps the line length on iPad; wider than any phone content box so
@@ -219,10 +220,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	secondaryText: { fontFamily: Fonts.bodyBold, fontSize: 16 },
+	secondaryText: { fontFamily: Fonts.bodyBold, fontSize: 16, lineHeight: 22 },
 	ctaText: {
 		color: "#ffffff",
 		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
+		lineHeight: 22,
 	},
 });

@@ -275,10 +275,10 @@ function CheckBox({ checked }: { checked: boolean }) {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	body: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
+	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	row: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 48 },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	groupHead: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -331,5 +331,10 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 6,
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

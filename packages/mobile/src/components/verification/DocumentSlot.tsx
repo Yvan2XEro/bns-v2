@@ -359,7 +359,12 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		gap: 8,
 	},
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold, flex: 1 },
+	label: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flex: 1,
+	},
 	deleteButton: {
 		minHeight: 48,
 		minWidth: 44,
@@ -375,7 +380,7 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 	},
 	thumb: { width: 36, height: 36, borderRadius: 8 },
-	filename: { flex: 1, fontSize: 13, fontFamily: Fonts.body },
+	filename: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	dropzone: {
 		borderWidth: 1,
 		borderStyle: "dashed",
@@ -395,6 +400,6 @@ const styles = StyleSheet.create({
 		gap: 6,
 		minHeight: 48,
 	},
-	hint: { fontSize: 13, fontFamily: Fonts.body },
-	error: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	hint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	error: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 });

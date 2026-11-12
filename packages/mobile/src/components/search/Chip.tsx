@@ -89,7 +89,12 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		maxWidth: 280,
 	},
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	label: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 	count: {
 		minWidth: 20,
 		height: 20,

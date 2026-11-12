@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	title: {
-		fontSize: 26,
-		lineHeight: 31,
+		fontSize: 24,
+		lineHeight: 29,
 		letterSpacing: -0.6,
 		fontFamily: Fonts.displayExtrabold,
 		marginTop: 8,

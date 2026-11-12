@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
 	},
 	heading: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
 	title: {
-		fontSize: 19,
+		fontSize: 18,
 		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
@@ -198,10 +198,10 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		borderRadius: 10,
 	},
-	openText: { fontSize: 14, fontFamily: Fonts.bodyBold },
+	openText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	metrics: { flexDirection: "row", gap: 10 },
 	metric: { flex: 1, minWidth: 0, gap: 5 },
-	label: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 	value: {
 		fontSize: 20,
 		lineHeight: 25,
@@ -218,5 +218,5 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		gap: 10,
 	},
-	actionText: { flex: 1, fontSize: 12, fontFamily: Fonts.body },
+	actionText: { flex: 1, fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 });

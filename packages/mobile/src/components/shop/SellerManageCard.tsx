@@ -195,7 +195,7 @@ function Tile({
 
 const styles = StyleSheet.create({
 	sectionLabel: {
-		fontSize: 19,
+		fontSize: 18,
 		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
@@ -254,6 +254,7 @@ const styles = StyleSheet.create({
 	badgeText: {
 		color: "#fff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},

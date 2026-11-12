@@ -128,15 +128,16 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displayBold,
 	},
 	target: { minHeight: 44, minWidth: 44, justifyContent: "center" },
-	remove: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	remove: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	row: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
 	},
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	amount: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},

@@ -274,7 +274,7 @@ export default function CatalogueScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	headerActions: { flexDirection: "row", gap: 8 },
 	addLabelled: {
 		width: undefined,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
 		gap: 4,
 		paddingHorizontal: 14,
 	},
-	addText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	addText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	addBtn: {
 		width: 48,
 		height: 48,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		justifyContent: "center",
 	},
-	filterText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	filterText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	offline: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -308,7 +308,12 @@ const styles = StyleSheet.create({
 		padding: 10,
 		borderRadius: 10,
 	},
-	offlineText: { flex: 1, fontSize: 12, fontFamily: Fonts.bodySemibold },
+	offlineText: {
+		flex: 1,
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodySemibold,
+	},
 	secondary: {
 		alignSelf: "center",
 		padding: 12,
@@ -316,5 +321,9 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		justifyContent: "center",
 	},
-	secondaryText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	secondaryText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

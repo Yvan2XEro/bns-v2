@@ -164,8 +164,8 @@ const styles = StyleSheet.create({
 	},
 	statusText: {
 		flex: 1,
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 	},
 });

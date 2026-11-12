@@ -174,6 +174,6 @@ const styles = StyleSheet.create({
 	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	accountLine: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
-	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	empty: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	actions: { flexDirection: "row", gap: 10 },
 });

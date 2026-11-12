@@ -132,6 +132,6 @@ const styles = StyleSheet.create({
 	},
 	// The sell plaque's darker foot, as on the tab bar. No glow.
 	plaque: { borderBottomWidth: 3, borderBottomColor: Colors.light.warning },
-	backText: { fontSize: 16, fontFamily: Fonts.bodySemibold },
-	primaryText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	backText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	primaryText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

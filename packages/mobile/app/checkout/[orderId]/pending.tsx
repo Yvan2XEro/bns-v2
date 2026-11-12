@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displayBold,
 	},
 	amount: { gap: 6, paddingVertical: 4 },
-	amountLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	amountLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	paidRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -532,12 +532,13 @@ const styles = StyleSheet.create({
 		fontVariant: ["tabular-nums"],
 	},
 	divider: { height: StyleSheet.hairlineWidth },
-	subhead: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	subhead: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	meta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 	linkTarget: { minHeight: 44, justifyContent: "center" },
 	link: {
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		textDecorationLine: "underline",
 	},

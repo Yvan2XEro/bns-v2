@@ -20,5 +20,5 @@ export function Field({
 }
 
 const styles = StyleSheet.create({
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 });

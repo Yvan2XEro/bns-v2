@@ -608,8 +608,8 @@ const styles = StyleSheet.create({
 
 	cardBusy: { opacity: 0.55 },
 	reason: {
-		fontSize: 14,
-		lineHeight: 19,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyMedium,
 		marginTop: 4,
 	},
@@ -639,8 +639,8 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		paddingHorizontal: 14,
 	},
-	filterText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	filterCount: { fontSize: 14, fontFamily: Fonts.displayBold },
+	filterText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	filterCount: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 
 	/* List */
 	listContent: {
@@ -698,5 +698,9 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		paddingHorizontal: 8,
 	},
-	rowActionText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	rowActionText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

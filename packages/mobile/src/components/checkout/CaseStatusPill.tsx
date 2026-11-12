@@ -95,5 +95,10 @@ const styles = StyleSheet.create({
 		flexShrink: 1,
 	},
 	dot: { width: 6, height: 6, borderRadius: 3 },
-	text: { fontSize: 12, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	text: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 });

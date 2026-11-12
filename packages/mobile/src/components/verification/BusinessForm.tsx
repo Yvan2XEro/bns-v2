@@ -236,7 +236,7 @@ export function BusinessForm({
 const styles = StyleSheet.create({
 	scroll: { padding: 16, gap: 14, paddingBottom: 40 },
 	field: { gap: 6 },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	input: {
 		minHeight: 48,
 		borderRadius: 12,
@@ -246,11 +246,12 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		fontFamily: Fonts.body,
 	},
-	hint: { fontSize: 12, fontFamily: Fonts.body },
+	hint: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	rootError: {
 		borderRadius: 10,
 		padding: 10,
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.body,
 	},
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		justifyContent: "center",
 	},
-	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	switchRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -278,5 +279,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

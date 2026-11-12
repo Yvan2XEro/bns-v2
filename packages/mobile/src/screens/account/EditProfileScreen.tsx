@@ -395,7 +395,7 @@ export function EditProfileScreen() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	saveHit: { minHeight: 44, justifyContent: "center" },
-	saveBtn: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	saveBtn: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	scroll: { padding: 16, paddingTop: 24, gap: 20, paddingBottom: 48 },
 	avatarSection: { alignItems: "center", gap: 12 },
 
@@ -408,7 +408,15 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		paddingHorizontal: 14,
 	},
-	changeAvatarText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	changeAvatarText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	phoneStatus: { flexDirection: "row", alignItems: "center", gap: 4 },
-	phoneStatusText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	phoneStatusText: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

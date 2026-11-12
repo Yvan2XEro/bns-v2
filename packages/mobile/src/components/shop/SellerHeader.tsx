@@ -85,5 +85,10 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},
-	subtitle: { fontSize: 13, fontFamily: Fonts.body, marginTop: 1 },
+	subtitle: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+		marginTop: 1,
+	},
 });

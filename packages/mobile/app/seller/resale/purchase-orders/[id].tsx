@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
 		minHeight: 52,
 		paddingHorizontal: 14,
 	},
-	writeText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	writeText: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	safe: { flex: 1 },
 	content: { padding: 16, gap: 16, paddingBottom: 40 },
 	card: {
@@ -710,14 +710,15 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 10,
 	},
-	heading: { fontSize: 17, lineHeight: 22, fontFamily: Fonts.displayBold },
-	body: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	heading: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
+	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	amount: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},
-	fieldLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	fieldLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	input: {
 		minHeight: 48,
 		borderWidth: 1,
@@ -745,6 +746,6 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	buttonText: { fontFamily: Fonts.bodyBold, fontSize: 16 },
-	error: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	buttonText: { fontFamily: Fonts.bodyBold, fontSize: 16, lineHeight: 22 },
+	error: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

@@ -236,7 +236,12 @@ const styles = StyleSheet.create({
 		minHeight: 60,
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	title: { flex: 1, fontSize: 20, fontFamily: Fonts.displayBold },
+	title: {
+		flex: 1,
+		fontSize: 20,
+		lineHeight: 25,
+		fontFamily: Fonts.displayBold,
+	},
 	closeBtn: {
 		width: 48,
 		height: 48,
@@ -244,7 +249,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	body: { padding: 20, gap: 10, paddingBottom: 40 },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	labelSpaced: { marginTop: 14 },
 	reasonList: {
 		borderRadius: 14,
@@ -260,7 +265,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 	},
-	reasonText: { flex: 1, fontSize: 15, lineHeight: 20 },
+	reasonText: { flex: 1, fontFamily: Fonts.body, fontSize: 15, lineHeight: 20 },
 	textarea: {
 		borderRadius: 12,
 		borderWidth: 1,
@@ -280,5 +285,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 10,
 	},
-	submitText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

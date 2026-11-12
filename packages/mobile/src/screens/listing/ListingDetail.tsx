@@ -1311,6 +1311,7 @@ const styles = StyleSheet.create({
 	photoCountText: {
 		color: "#ffffff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -1326,7 +1327,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 4,
 	},
-	boostedText: { color: INK, fontSize: 12, fontFamily: Fonts.bodyBold },
+	boostedText: {
+		color: INK,
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodyBold,
+	},
 
 	// ── Content ──
 	// Rises over the gallery's bottom edge like a sheet.
@@ -1398,7 +1404,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 5,
 	},
-	closedText: { fontSize: 13, fontFamily: Fonts.bodyBold },
+	closedText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodyBold },
 	title: {
 		fontSize: 24,
 		lineHeight: 29,
@@ -1422,9 +1428,9 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 5,
 	},
-	chipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	sectionTitle: {
-		fontSize: 19,
+		fontSize: 18,
 		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
@@ -1447,16 +1453,22 @@ const styles = StyleSheet.create({
 		gap: 4,
 		minHeight: 44,
 	},
-	readMore: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	readMore: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	attrGroup: { marginBottom: 14 },
 	attrGroupTitle: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 		marginBottom: 10,
 	},
 	attrsGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 14 },
 	attrItem: { width: "50%", paddingRight: 12 },
-	attrKey: { fontSize: 13, fontFamily: Fonts.body, marginBottom: 2 },
+	attrKey: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+		marginBottom: 2,
+	},
 	attrVal: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
 	tagWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	tag: {
@@ -1465,7 +1477,7 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 		paddingHorizontal: 12,
 	},
-	tagText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	tagText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 
 	// ── Seller ──
 	sellerCard: { flexDirection: "row", alignItems: "center", gap: 14 },
@@ -1477,7 +1489,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	sellerLetter: { fontSize: 22, fontFamily: Fonts.displayBold },
+	sellerLetter: { fontSize: 24, lineHeight: 29, fontFamily: Fonts.displayBold },
 	sellerInfo: { flex: 1, gap: 3 },
 	sellerRole: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 	sellerName: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
@@ -1510,7 +1522,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		marginTop: 4,
 	},
-	reportText: { fontSize: 14, fontFamily: Fonts.bodyMedium },
+	reportText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyMedium },
 
 	// ── Action bar ──
 	actionBar: {
@@ -1536,6 +1548,7 @@ const styles = StyleSheet.create({
 	msgBtnText: {
 		color: "#ffffff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 		flexShrink: 1,
 	},
@@ -1549,7 +1562,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		minHeight: 52,
 	},
-	editBtnText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	editBtnText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	callBtnSquare: {
 		width: 52,
 		height: 52,

@@ -108,7 +108,7 @@ export default function SellerGuideScreen() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	content: { padding: 16, gap: 12, paddingBottom: 40 },
-	intro: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	intro: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	card: {
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -123,8 +123,13 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	title: { flex: 1, fontSize: 16, fontFamily: Fonts.displayBold },
-	body: { fontSize: 14, lineHeight: 21, fontFamily: Fonts.body },
+	title: {
+		flex: 1,
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+	},
+	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	link: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -132,5 +137,5 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		alignSelf: "flex-start",
 	},
-	linkText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	linkText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

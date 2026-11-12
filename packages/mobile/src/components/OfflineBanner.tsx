@@ -59,5 +59,10 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 6,
 	},
-	text: { color: "#fff", fontSize: 13, fontFamily: Fonts.bodySemibold },
+	text: {
+		color: "#fff",
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

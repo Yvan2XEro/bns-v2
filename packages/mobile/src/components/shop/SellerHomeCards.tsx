@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 8,
 	},
-	title: { fontSize: 19, lineHeight: 24, fontFamily: Fonts.displayBold },
+	title: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
 	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	row: {
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	rowTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	rowTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	more: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		alignSelf: "flex-start",
 	},
-	moreText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	moreText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	tip: {
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -251,6 +251,7 @@ const styles = StyleSheet.create({
 	tipButtonText: {
 		color: "#fff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 	tipGhost: {

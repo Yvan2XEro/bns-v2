@@ -267,6 +267,7 @@ const styles = StyleSheet.create({
 	},
 	marginText: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -289,6 +290,7 @@ const styles = StyleSheet.create({
 	},
 	stockValue: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displaySemibold,
 		fontVariant: ["tabular-nums"],
 	},

@@ -70,6 +70,6 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 	},
 	small: { paddingVertical: 2, paddingLeft: 5, paddingRight: 7 },
-	text: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	smallText: { fontSize: 11 },
+	text: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
+	smallText: { fontFamily: Fonts.body, fontSize: 11, lineHeight: 14 },
 });

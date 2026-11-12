@@ -264,8 +264,13 @@ export default function HandoverScreen() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	content: { padding: 16, paddingBottom: 40, gap: 16 },
-	body: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
-	center: { textAlign: "center", fontSize: 14, fontFamily: Fonts.bodyMedium },
+	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	center: {
+		textAlign: "center",
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyMedium,
+	},
 	items: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodySemibold },
 	done: {
 		flex: 1,
@@ -283,8 +288,8 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 	},
 	doneTitle: {
-		fontSize: 28,
-		lineHeight: 34,
+		fontSize: 30,
+		lineHeight: 36,
 		fontFamily: Fonts.displayBold,
 		textAlign: "center",
 	},

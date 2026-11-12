@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
@@ -79,6 +80,6 @@ export function ChoiceChips({
 }
 
 const styles = StyleSheet.create({
-	label: { fontSize: 14 },
-	hint: { fontSize: 13, lineHeight: 18 },
+	label: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
+	hint: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 });

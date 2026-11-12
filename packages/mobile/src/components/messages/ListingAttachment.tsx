@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayExtrabold,
 	},
-	tagTextSmall: { fontSize: 13, lineHeight: 17 },
+	tagTextSmall: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 17 },
 	card: {
 		borderRadius: 14,
 		overflow: "hidden",
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 	},
 	cardInfo: { flex: 1, gap: 6 },
-	cardTitle: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
+	cardTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	chip: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -324,14 +324,14 @@ const styles = StyleSheet.create({
 	stripImg: { width: 40, height: 40, borderRadius: 8 },
 	stripTitle: {
 		flex: 1,
-		fontSize: 14,
-		lineHeight: 19,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	chipImg: { width: 44, height: 44, borderRadius: 8 },
 	chipImgFallback: { alignItems: "center", justifyContent: "center" },
 	chipInfo: { flex: 1, gap: 4 },
-	chipTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	chipTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	chipRemove: {
 		width: 44,
 		height: 44,

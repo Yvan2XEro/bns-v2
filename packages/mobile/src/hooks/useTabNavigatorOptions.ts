@@ -41,6 +41,7 @@ export function useTabNavigatorOptions(
 			animation: isTablet ? "shift" : "none",
 			tabBarLabelStyle: {
 				fontSize: 11,
+				lineHeight: 14,
 				fontFamily: Fonts.bodySemibold,
 				letterSpacing: 0.1,
 				marginBottom: isExpanded ? 0 : 4,

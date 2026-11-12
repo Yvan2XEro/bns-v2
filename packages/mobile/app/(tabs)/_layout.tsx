@@ -297,6 +297,7 @@ const styles = StyleSheet.create({
 	badgeText: {
 		color: "#fff",
 		fontSize: 11,
+		lineHeight: 14,
 		fontFamily: Fonts.displayExtrabold,
 	},
 });

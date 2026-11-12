@@ -1687,6 +1687,7 @@ const styles = StyleSheet.create({
 	skipText: {
 		fontFamily: Fonts.bodySemibold,
 		fontSize: 15,
+		lineHeight: 22,
 		color: SHELL_MUTED,
 	},
 	slide: {
@@ -1707,13 +1708,18 @@ const styles = StyleSheet.create({
 	logoImg: { width: 52, height: 52, borderRadius: 14 },
 	slideTitle: {
 		fontFamily: Fonts.displayExtrabold,
-		fontSize: 32,
+		fontSize: 30,
 		letterSpacing: -0.9,
 		textAlign: "center",
-		lineHeight: 37,
+		lineHeight: 36,
 		color: "#ffffff",
 	},
-	slideTitleCompact: { fontSize: 27, lineHeight: 32, letterSpacing: -0.7 },
+	slideTitleCompact: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 30,
+		lineHeight: 36,
+		letterSpacing: -0.7,
+	},
 	langRow: {
 		position: "absolute",
 		left: 12,
@@ -1733,6 +1739,7 @@ const styles = StyleSheet.create({
 	langText: {
 		fontFamily: Fonts.bodySemibold,
 		fontSize: 15,
+		lineHeight: 22,
 		color: SHELL_MUTED,
 	},
 	langTextActive: { color: "#ffffff" },
@@ -1767,6 +1774,7 @@ const styles = StyleSheet.create({
 	nextBtnText: {
 		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
+		lineHeight: 22,
 		color: "#12163a",
 	},
 	exploreBtn: {
@@ -1781,6 +1789,7 @@ const styles = StyleSheet.create({
 	exploreBtnText: {
 		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
+		lineHeight: 22,
 		color: "#ffffff",
 	},
 });

@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
 	},
 	bannerCopy: { flex: 1, gap: 4 },
 	bannerTitle: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.displayBold },
-	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	// The two mode rows leave the shop's work behind: set apart from the tiles.
 	modeRows: { gap: 10, marginTop: 12 },
 });

@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 	},
 	pressed: { opacity: 0.7 },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	count: {
 		minWidth: 22,
 		alignItems: "center",
@@ -142,6 +142,7 @@ const styles = StyleSheet.create({
 	},
 	countText: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},

@@ -161,7 +161,12 @@ const styles = StyleSheet.create({
 		lineHeight: 23,
 		fontFamily: Fonts.displayBold,
 	},
-	sms: { color: INK_MUTED, fontSize: 12, fontFamily: Fonts.bodySemibold },
+	sms: {
+		color: INK_MUTED,
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodySemibold,
+	},
 	body: {
 		color: Colors.dark.body,
 		fontSize: 15,
@@ -182,6 +187,7 @@ const styles = StyleSheet.create({
 	digitText: {
 		color: "#fff",
 		fontSize: 30,
+		lineHeight: 36,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -189,9 +195,9 @@ const styles = StyleSheet.create({
 	warning: {
 		flex: 1,
 		color: AMBER,
-		fontSize: 14,
+		fontSize: 15,
 		fontFamily: Fonts.bodySemibold,
-		lineHeight: 20,
+		lineHeight: 22,
 	},
 	regenerate: {
 		minHeight: 52,
@@ -204,9 +210,15 @@ const styles = StyleSheet.create({
 	regenerateText: {
 		color: "#fff",
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
-	muted: { color: INK_MUTED, fontSize: 13, fontFamily: Fonts.body },
+	muted: {
+		color: INK_MUTED,
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.body,
+	},
 	locked: { borderRadius: 12, padding: 12, gap: 6 },
 	lockedTitle: { flexDirection: "row", alignItems: "center", gap: 6 },
 });

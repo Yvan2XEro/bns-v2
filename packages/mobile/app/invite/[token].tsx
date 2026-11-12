@@ -383,10 +383,20 @@ const styles = StyleSheet.create({
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	content: { padding: 20, gap: 20 },
 	summary: { alignItems: "center", gap: 6 },
-	shopName: { fontSize: 20, fontFamily: Fonts.displayExtrabold, marginTop: 8 },
-	handle: { fontSize: 13, fontFamily: Fonts.body },
-	body: { fontSize: 14, fontFamily: Fonts.body, textAlign: "center" },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	shopName: {
+		fontSize: 20,
+		lineHeight: 25,
+		fontFamily: Fonts.displayExtrabold,
+		marginTop: 8,
+	},
+	handle: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	body: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+		textAlign: "center",
+	},
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	roleCard: {
 		width: "100%",
 		borderRadius: 14,
@@ -394,7 +404,7 @@ const styles = StyleSheet.create({
 		gap: 4,
 		marginTop: 8,
 	},
-	roleTitle: { fontSize: 15, fontFamily: Fonts.displayBold },
+	roleTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 	roleBody: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	actions: { gap: 12 },
 	primaryButton: {
@@ -403,12 +413,17 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	primaryLabel: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	primaryLabel: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	linkButton: {
 		alignItems: "center",
 		justifyContent: "center",
 		minHeight: 48,
 		paddingHorizontal: 12,
 	},
-	linkLabel: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	linkLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

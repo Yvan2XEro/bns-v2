@@ -890,7 +890,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		justifyContent: "center",
 	},
-	segmentText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	segmentText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	undoBar: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	undoAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	undoAction: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	headerAction: {
 		width: 44,
 		height: 44,
@@ -952,6 +952,7 @@ const styles = StyleSheet.create({
 	permActionText: {
 		color: "#ffffff",
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 
@@ -1011,7 +1012,7 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.bodyMedium,
 	},
 	itemUnread: { fontFamily: Fonts.bodyBold },
-	itemBody: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	itemBody: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	itemTime: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	unreadDot: { width: 8, height: 8, borderRadius: 4 },
 
@@ -1024,7 +1025,11 @@ const styles = StyleSheet.create({
 		gap: 4,
 		paddingHorizontal: 4,
 	},
-	swipeBtnLabel: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	swipeBtnLabel: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.bodySemibold,
+	},
 
 	// ── Inline Novu actions (primary / secondary) ────────────────
 	inlineActions: {
@@ -1042,5 +1047,9 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		borderWidth: 1,
 	},
-	actionBtnText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	actionBtnText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

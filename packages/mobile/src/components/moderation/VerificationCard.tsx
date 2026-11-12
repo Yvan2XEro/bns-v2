@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
 	},
 	statusPill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
 	status: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
-	age: { fontSize: 13, fontFamily: Fonts.body },
+	age: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	signals: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
 	claimBtn: {
 		alignSelf: "flex-start",
@@ -183,5 +183,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	claimText: { fontSize: 15, fontFamily: Fonts.bodyBold, color: "#ffffff" },
+	claimText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+		color: "#ffffff",
+	},
 });

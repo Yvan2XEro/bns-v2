@@ -495,7 +495,12 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 14,
 	},
-	allLabel: { flexShrink: 1, fontSize: 15, fontFamily: Fonts.bodyBold },
+	allLabel: {
+		flexShrink: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	group: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 14,
@@ -508,7 +513,12 @@ const styles = StyleSheet.create({
 		gap: 10,
 		minHeight: 44,
 	},
-	groupName: { flex: 1, fontSize: 15, fontFamily: Fonts.bodyBold },
+	groupName: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	chip: {
 		minHeight: 40,
@@ -517,7 +527,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		maxWidth: "100%",
 	},
-	chipLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	chipLabel: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	tiles: {
 		flexDirection: "row",
 		flexWrap: "wrap",

@@ -447,7 +447,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	taskLabel: { flex: 1, fontSize: 15, fontFamily: Fonts.bodySemibold },
+	taskLabel: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	addBtn: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -460,5 +465,5 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 3,
 		borderBottomColor: "#9a6a00",
 	},
-	addBtnText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	addBtnText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

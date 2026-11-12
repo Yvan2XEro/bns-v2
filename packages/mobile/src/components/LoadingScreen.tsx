@@ -218,12 +218,14 @@ const styles = StyleSheet.create({
 	},
 	appName: {
 		fontFamily: Fonts.displayExtrabold,
-		fontSize: 32,
+		fontSize: 30,
+		lineHeight: 36,
 		letterSpacing: -0.5,
 	},
 	tagline: {
 		fontFamily: Fonts.body,
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		marginTop: 6,
 	},
 	dotsRow: {

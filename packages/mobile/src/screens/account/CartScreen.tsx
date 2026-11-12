@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	undoAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	undoAction: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	safe: { flex: 1 },
 	body: { flex: 1 },
 	list: { padding: 16 },
@@ -302,6 +302,6 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		marginBottom: 10,
 	},
-	shopName: { fontSize: 15, fontFamily: Fonts.displayBold },
+	shopName: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 	shopMeta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 });

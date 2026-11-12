@@ -69,5 +69,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 16,
 	},
-	text: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	text: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

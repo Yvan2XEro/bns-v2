@@ -93,7 +93,14 @@ function RiderCard({
 			<Text style={{ color: c.text, fontFamily: Fonts.bodySemibold }}>
 				{t("tracking.rider", { name: rider.firstName })}
 			</Text>
-			<Text style={{ color: c.muted, fontFamily: Fonts.body, fontSize: 12 }}>
+			<Text
+				style={{
+					color: c.muted,
+					fontFamily: Fonts.body,
+					fontSize: 12,
+					lineHeight: 16,
+				}}
+			>
 				{subtitle}
 			</Text>
 			{clock ? (
@@ -304,7 +311,7 @@ export function TrackingBlock({
 }
 
 const styles = StyleSheet.create({
-	title: { fontSize: 16, fontFamily: Fonts.displayBold },
+	title: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
 	step: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 28 },
 	dot: { width: 12, height: 12, borderRadius: 6 },
 	block: { gap: 6, marginTop: 6 },

@@ -108,12 +108,17 @@ const styles = StyleSheet.create({
 		shadowRadius: 3,
 		elevation: 1,
 	},
-	text: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	text: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flexShrink: 1,
+	},
 	count: {
 		minWidth: 20,
 		paddingHorizontal: 6,
 		borderRadius: 999,
 		alignItems: "center",
 	},
-	countText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	countText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 });

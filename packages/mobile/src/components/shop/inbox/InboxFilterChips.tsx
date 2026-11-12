@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		minHeight: 36,
 	},
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	labelSelected: { fontFamily: Fonts.bodyBold },
 	badge: {
 		borderRadius: 999,
@@ -116,5 +116,5 @@ const styles = StyleSheet.create({
 		paddingVertical: 1,
 		alignItems: "center",
 	},
-	badgeText: { fontSize: 12, fontFamily: Fonts.displayBold },
+	badgeText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.displayBold },
 });

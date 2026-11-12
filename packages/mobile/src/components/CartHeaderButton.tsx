@@ -95,5 +95,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	badgeText: { color: "#12163a", fontSize: 11, fontFamily: Fonts.bodyBold },
+	badgeText: {
+		color: "#12163a",
+		fontSize: 11,
+		lineHeight: 14,
+		fontFamily: Fonts.bodyBold,
+	},
 });

@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
 		gap: 10,
 	},
 	title: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
-	hint: { fontSize: 13, fontFamily: Fonts.body },
+	hint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	notice: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -203,5 +203,5 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 	},
 	noticeText: { flex: 1, gap: 2 },
-	noticeTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	noticeTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

@@ -138,10 +138,11 @@ const styles = StyleSheet.create({
 	},
 	shopName: {
 		fontSize: 20,
+		lineHeight: 25,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.4,
 	},
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	linkCard: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		backgroundColor: "rgba(255,255,255,0.08)",
 	},
-	link: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	link: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	shareBtn: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -162,7 +163,8 @@ const styles = StyleSheet.create({
 	},
 	shareText: {
 		color: ON_SUN,
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 });

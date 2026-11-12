@@ -83,8 +83,18 @@ const styles = StyleSheet.create({
 		gap: 10,
 		flexWrap: "wrap",
 	},
-	calmTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold, flex: 1 },
-	sanctionTitle: { fontSize: 16, fontFamily: Fonts.displayBold, flex: 1 },
+	calmTitle: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		flex: 1,
+	},
+	sanctionTitle: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+		flex: 1,
+	},
 	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 });

@@ -132,7 +132,7 @@ export function FormField({
 
 const styles = StyleSheet.create({
 	field: { gap: 6 },
-	label: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	box: {
 		flexDirection: "row",
 		alignItems: "center",

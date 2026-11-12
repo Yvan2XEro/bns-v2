@@ -602,8 +602,8 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displayBold,
 	},
 	subtitle: {
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 		marginTop: 4,
 	},
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 10,
 	},
-	choiceText: { fontSize: 15, lineHeight: 20, flex: 1 },
+	choiceText: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 20, flex: 1 },
 	durations: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	duration: {
 		minHeight: 48,
@@ -639,7 +639,11 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 		paddingHorizontal: 16,
 	},
-	durationText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	durationText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	textarea: {
 		borderRadius: 12,
 		borderWidth: 1.5,
@@ -662,7 +666,7 @@ const styles = StyleSheet.create({
 	missingText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodyMedium },
 	discardText: { gap: 2 },
 	discardTitle: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.bodyBold },
-	discardBody: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	discardBody: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	secondaryBtn: {
 		flex: 1,
 		minHeight: 52,

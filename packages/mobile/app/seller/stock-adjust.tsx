@@ -272,8 +272,8 @@ export default function StockAdjustSheet() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
+	label: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	after: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -281,8 +281,12 @@ const styles = StyleSheet.create({
 		padding: 14,
 		borderRadius: 12,
 	},
-	afterLabel: { fontSize: 14, fontFamily: Fonts.body },
-	afterValue: { fontSize: 22, fontFamily: Fonts.displayExtrabold },
+	afterLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	afterValue: {
+		fontSize: 24,
+		lineHeight: 29,
+		fontFamily: Fonts.displayExtrabold,
+	},
 	flex: { flex: 1 },
 	amountRow: { flexDirection: "row", alignItems: "center", gap: 12 },
 	stepper: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -297,7 +301,7 @@ const styles = StyleSheet.create({
 	amountInput: {
 		width: 72,
 		textAlign: "center",
-		fontSize: 28,
+		fontSize: 30,
 		fontFamily: Fonts.displayExtrabold,
 		paddingVertical: 4,
 	},
@@ -305,7 +309,7 @@ const styles = StyleSheet.create({
 	// left inputs too short for a thumb.
 	boxes: { gap: 14 },
 	box: { gap: 6 },
-	boxLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	boxLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	boxField: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -328,13 +332,23 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		fontFamily: Fonts.body,
 	},
-	suffix: { fontSize: 15, fontFamily: Fonts.bodySemibold, marginLeft: 8 },
-	error: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	suffix: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		marginLeft: 8,
+	},
+	error: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	submit: {
 		minHeight: 52,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

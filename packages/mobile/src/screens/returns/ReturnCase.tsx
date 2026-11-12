@@ -500,11 +500,12 @@ const styles = StyleSheet.create({
 	headRow: { flexDirection: "row", alignItems: "center", gap: 12 },
 	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
-	label: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	label: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	meta: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
 	qty: {
 		fontFamily: Fonts.bodySemibold,
 		fontSize: 15,
+		lineHeight: 22,
 		fontVariant: ["tabular-nums"],
 	},
 	refund: { gap: 6, paddingVertical: 2 },
@@ -531,5 +532,5 @@ const styles = StyleSheet.create({
 	dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 3, marginTop: 3 },
 	line: { flex: 1, width: 2, marginVertical: 3 },
 	eventText: { flex: 1, gap: 2, paddingBottom: 16 },
-	eventTitle: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	eventTitle: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 });

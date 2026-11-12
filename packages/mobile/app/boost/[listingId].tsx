@@ -171,8 +171,8 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		fontFamily: Fonts.displayExtrabold,
-		fontSize: 26,
-		lineHeight: 31,
+		fontSize: 24,
+		lineHeight: 29,
 		letterSpacing: -0.6,
 		marginBottom: 8,
 		textAlign: "center",
@@ -221,6 +221,7 @@ const styles = StyleSheet.create({
 		color: "#ffffff",
 		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
+		lineHeight: 22,
 	},
 	secondaryAction: {
 		alignItems: "center",
@@ -233,5 +234,6 @@ const styles = StyleSheet.create({
 	secondaryActionText: {
 		fontFamily: Fonts.bodySemibold,
 		fontSize: 16,
+		lineHeight: 22,
 	},
 });

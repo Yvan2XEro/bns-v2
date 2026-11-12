@@ -85,6 +85,7 @@ const styles = StyleSheet.create({
 	pressed: { transform: [{ scale: 0.98 }] },
 	text: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 		flexShrink: 1,
 		textAlign: "center",

@@ -132,6 +132,7 @@ const styles = StyleSheet.create({
 	label: {
 		color: "#ffffff",
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.bodySemibold,
 		textAlign: "center",
 	},

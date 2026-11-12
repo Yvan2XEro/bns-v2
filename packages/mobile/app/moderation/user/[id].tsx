@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	stat: { flex: 1, alignItems: "center", gap: 2 },
-	statValue: { fontSize: 22, lineHeight: 26, fontFamily: Fonts.displayBold },
+	statValue: { fontSize: 24, lineHeight: 29, fontFamily: Fonts.displayBold },
 	statLabel: {
 		fontSize: 12,
 		lineHeight: 16,
@@ -415,15 +415,24 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	reasonRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-	sanctionTitle: { fontSize: 16, fontFamily: Fonts.displayBold, flex: 1 },
+	sanctionTitle: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+		flex: 1,
+	},
 	sanctionBody: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	section: { gap: 8 },
-	empty: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	empty: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	historyRow: {
 		borderRadius: 12,
 		borderWidth: StyleSheet.hairlineWidth,
 		padding: 12,
 		gap: 2,
 	},
-	historyAction: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	historyAction: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

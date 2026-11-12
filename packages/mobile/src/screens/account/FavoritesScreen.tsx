@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	undoAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	undoAction: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	edge: {
 		position: "absolute",
 		left: 0,
@@ -546,7 +546,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 	},
 	sortPillText: {
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 
@@ -560,6 +561,7 @@ const styles = StyleSheet.create({
 	noResultIcon: { marginBottom: 12 },
 	noResultTitle: {
 		fontSize: 18,
+		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		marginBottom: 6,
 	},
@@ -579,6 +581,7 @@ const styles = StyleSheet.create({
 	},
 	clearBtnText: {
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.bodyBold,
 	},
 

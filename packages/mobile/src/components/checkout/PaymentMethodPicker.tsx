@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		marginBottom: 2,
 	},
-	optionTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	optionTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	optionBody: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	optionFee: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 });

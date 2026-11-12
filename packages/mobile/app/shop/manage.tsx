@@ -211,13 +211,14 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 	},
 	rowDivider: { borderTopWidth: StyleSheet.hairlineWidth },
-	rowLabel: { fontSize: 15, fontFamily: Fonts.bodyMedium },
+	rowLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyMedium },
 	rowValue: {
 		flex: 1,
-		fontSize: 14,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 		textAlign: "right",
 	},
 	dangerText: { flex: 1, gap: 2 },
-	rowHint: { fontSize: 12, fontFamily: Fonts.body },
+	rowHint: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 });

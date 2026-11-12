@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
 	content: { padding: 16, paddingBottom: 48 },
 	actions: { gap: 8, marginTop: 8 },
 	assign: { gap: 8 },
-	note: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	note: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	error: { borderRadius: 12, padding: 12 },
 	loading: { minHeight: 48 },
 });

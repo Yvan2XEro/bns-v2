@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
 	flex: { flex: 1 },
 	itemTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
-	amount: { fontSize: 15, fontFamily: Fonts.displayBold },
+	amount: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 	divider: { height: StyleSheet.hairlineWidth },
-	total: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	total: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

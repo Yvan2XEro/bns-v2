@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
 		height: 48,
 		borderRadius: 12,
 	},
-	primaryText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	primaryText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	icon: {
 		width: 48,
 		height: 48,

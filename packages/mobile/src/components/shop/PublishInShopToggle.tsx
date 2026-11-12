@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
 		marginBottom: 12,
 		minHeight: 48,
 	},
-	title: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	hint: { fontSize: 12, fontFamily: Fonts.body },
+	title: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	hint: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 });

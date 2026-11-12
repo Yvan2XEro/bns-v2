@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
 	loading: { paddingTop: 16 },
 	content: { padding: 16, paddingBottom: 24 },
 	city: {
-		fontSize: 19,
+		fontSize: 18,
 		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
@@ -246,7 +246,12 @@ const styles = StyleSheet.create({
 	pressed: { opacity: 0.7 },
 	rowBody: { flex: 1, gap: 6 },
 	rowHead: { flexDirection: "row", alignItems: "center", gap: 8 },
-	rowTitle: { flexShrink: 1, fontSize: 16, fontFamily: Fonts.displayBold },
+	rowTitle: {
+		flexShrink: 1,
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+	},
 	rowText: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
 	rowFoot: { flexDirection: "row", alignItems: "center", gap: 10 },
 	rowMeta: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },

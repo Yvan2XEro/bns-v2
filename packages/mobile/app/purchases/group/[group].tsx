@@ -412,9 +412,15 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 12,
 	},
-	title: { flex: 1, fontSize: 16, fontFamily: Fonts.bodySemibold },
+	title: {
+		flex: 1,
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+	},
 	price: {
 		fontSize: 18,
+		lineHeight: 24,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -427,7 +433,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 4,
 		borderRadius: 999,
 	},
-	stateText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	stateText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	button: {
 		minHeight: 52,
 		marginTop: 4,
@@ -438,12 +444,17 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	pressed: { transform: [{ scale: 0.98 }] },
-	buttonText: { fontSize: 16, fontFamily: Fonts.bodyBold, textAlign: "center" },
+	buttonText: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+		textAlign: "center",
+	},
 	link: {
 		minHeight: 44,
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
 	},
-	linkText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	linkText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

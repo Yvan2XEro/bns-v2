@@ -210,8 +210,8 @@ const styles = StyleSheet.create({
 	cashText: {
 		color: Colors.light.sunForeground,
 		fontFamily: Fonts.displayExtrabold,
-		fontSize: 14,
-		lineHeight: 18,
+		fontSize: 15,
+		lineHeight: 22,
 		fontVariant: ["tabular-nums"],
 	},
 	number: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },

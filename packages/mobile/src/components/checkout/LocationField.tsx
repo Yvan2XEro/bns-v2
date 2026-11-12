@@ -148,10 +148,11 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		borderWidth: 1,
 	},
-	buttonText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	buttonText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	link: { minHeight: 44, justifyContent: "center" },
 	linkText: {
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 		textDecorationLine: "underline",
 	},

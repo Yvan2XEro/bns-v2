@@ -210,10 +210,11 @@ const styles = StyleSheet.create({
 		height: 40,
 	},
 	pressed: { opacity: 0.7 },
-	chipText: { fontSize: 14, fontFamily: Fonts.body },
+	chipText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	chipSelected: { fontFamily: Fonts.bodySemibold },
 	chipCount: {
 		fontSize: 12,
+		lineHeight: 16,
 		fontFamily: Fonts.displaySemibold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -224,9 +225,9 @@ const styles = StyleSheet.create({
 		gap: 12,
 		minHeight: 48,
 	},
-	count: { flex: 1, fontSize: 13, fontFamily: Fonts.body },
+	count: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	sort: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44 },
-	sortText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	sortText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	everywhere: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -237,6 +238,7 @@ const styles = StyleSheet.create({
 	everywhereText: {
 		flexShrink: 1,
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodySemibold,
 	},
 });

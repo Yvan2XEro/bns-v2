@@ -108,7 +108,10 @@ function InvoiceContent({
 					<View style={styles.head}>
 						<Text
 							accessibilityRole="header"
-							style={[s.cardTitle, { color: c.text, fontSize: 18 }]}
+							style={[
+								s.cardTitle,
+								{ color: c.text, fontSize: 18, lineHeight: 24 },
+							]}
 						>
 							{number}
 						</Text>

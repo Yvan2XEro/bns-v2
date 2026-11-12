@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
 	pressed: { opacity: 0.7 },
 	actions: { flexDirection: "row", gap: 10 },
 	action: { flex: 1 },
-	error: { fontSize: 13, fontFamily: Fonts.body },
+	error: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	thumb: { width: 60, height: 60, borderRadius: 10 },
 	thumbEmpty: { alignItems: "center", justifyContent: "center" },
 	body: { flex: 1, gap: 3 },
@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
 	number: {
 		flex: 1,
 		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},

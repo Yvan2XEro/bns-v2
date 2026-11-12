@@ -201,6 +201,7 @@ const styles = StyleSheet.create({
 	buttonText: {
 		fontFamily: Fonts.bodySemibold,
 		fontSize: 16,
+		lineHeight: 22,
 	},
 	buttons: {
 		gap: 10,
@@ -226,5 +227,6 @@ const styles = StyleSheet.create({
 	dividerText: {
 		fontFamily: Fonts.body,
 		fontSize: 13,
+		lineHeight: 18,
 	},
 });

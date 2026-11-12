@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
 		padding: 12,
 	},
 	body: { flex: 1, gap: 2 },
-	title: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
-	message: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	title: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	message: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 });

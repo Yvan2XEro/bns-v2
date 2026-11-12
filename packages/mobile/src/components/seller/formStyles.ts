@@ -8,10 +8,10 @@ export const formStyles = StyleSheet.create({
 		padding: 14,
 		gap: 10,
 	},
-	sectionTitle: { fontSize: 16, fontFamily: Fonts.displayBold },
+	sectionTitle: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
 	labelRow: { flexDirection: "row", justifyContent: "space-between" },
-	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	counter: { fontSize: 12, fontFamily: Fonts.body },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	counter: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	hint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	input: {
 		minHeight: 48,
@@ -32,7 +32,7 @@ export const formStyles = StyleSheet.create({
 		minHeight: 44,
 		justifyContent: "center",
 	},
-	chipText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	chipText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
 	/** Colour comes from the caller: `dangerInk(c)`, legible in both themes. */
 	error: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },

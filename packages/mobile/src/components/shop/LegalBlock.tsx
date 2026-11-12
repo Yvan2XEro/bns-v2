@@ -104,8 +104,8 @@ const styles = StyleSheet.create({
 		flexShrink: 0,
 	},
 	value: {
-		fontSize: 14,
-		lineHeight: 19,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 		flexShrink: 1,
 		textAlign: "right",

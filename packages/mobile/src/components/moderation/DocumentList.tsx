@@ -155,6 +155,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	chipText: { fontSize: 14 },
+	chipText: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	preview: { width: "100%", height: 360, borderRadius: 12 },
 });

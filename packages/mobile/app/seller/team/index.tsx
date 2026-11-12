@@ -266,13 +266,13 @@ const styles = StyleSheet.create({
 	header: { gap: 12, marginBottom: 16 },
 	footer: { marginTop: 28, gap: 10 },
 	sectionTitle: {
-		fontSize: 19,
+		fontSize: 18,
 		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 	},
 	matrix: { marginTop: 28 },
-	meta: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	inviteWrap: { gap: 8 },
 	inviteBtn: {
 		flexDirection: "row",
@@ -282,5 +282,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	inviteText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	inviteText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

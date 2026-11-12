@@ -205,5 +205,5 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-	forgotLink: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
+	forgotLink: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

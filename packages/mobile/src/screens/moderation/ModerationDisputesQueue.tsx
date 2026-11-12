@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1.5,
 		paddingHorizontal: 14,
 	},
-	filterText: { fontSize: 14, lineHeight: 19 },
+	filterText: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	card: {
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 14,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
 		gap: 8,
 		marginBottom: 2,
 	},
-	number: { fontFamily: Fonts.displayBold, fontSize: 17, lineHeight: 22 },
+	number: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 24 },
 	priceTag: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
 	priceText: {
 		color: Colors.light.sunForeground,

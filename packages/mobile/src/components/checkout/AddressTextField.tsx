@@ -35,7 +35,12 @@ export function AddressTextField({
 
 	return (
 		<View style={{ gap: 6 }}>
-			<Text style={[formStyles.label, { color: c.body, fontSize: 14 }]}>
+			<Text
+				style={[
+					formStyles.label,
+					{ color: c.body, fontSize: 15, lineHeight: 22 },
+				]}
+			>
 				{label}
 			</Text>
 			<Controller
@@ -61,6 +66,7 @@ export function AddressTextField({
 								borderColor: error ? c.danger : c.border,
 								minHeight: 48,
 								fontSize: 16,
+								lineHeight: 22,
 							},
 						]}
 					/>

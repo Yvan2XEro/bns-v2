@@ -150,5 +150,10 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		paddingHorizontal: 2,
 	},
-	time: { fontSize: 12, fontFamily: Fonts.body, fontVariant: ["tabular-nums"] },
+	time: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.body,
+		fontVariant: ["tabular-nums"],
+	},
 });

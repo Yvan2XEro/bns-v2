@@ -86,9 +86,9 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		minHeight: 48,
 	},
-	name: { fontSize: 16, fontFamily: Fonts.displayBold },
+	name: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
 	row: { flexDirection: "row", alignItems: "center", gap: 6 },
-	meta: { fontSize: 12, fontFamily: Fonts.body },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	view: {
 		alignSelf: "center",
 		borderWidth: 1,
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 6,
 	},
-	viewText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	viewText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	sponsored: {
 		borderWidth: 1,
 		borderRadius: 6,
@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
 	},
 	sponsoredText: {
 		fontSize: 11,
+		lineHeight: 14,
 		fontFamily: Fonts.bodySemibold,
 		textTransform: "uppercase",
 		letterSpacing: 0.4,

@@ -868,6 +868,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		textAlign: "center",
 		fontSize: 18,
+		lineHeight: 24,
 		fontFamily: Fonts.displayBold,
 	},
 
@@ -889,7 +890,11 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginBottom: 4,
 	},
-	avatarLetter: { fontSize: 34, fontFamily: Fonts.displayExtrabold },
+	avatarLetter: {
+		fontSize: 30,
+		lineHeight: 36,
+		fontFamily: Fonts.displayExtrabold,
+	},
 	nameRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -935,6 +940,7 @@ const styles = StyleSheet.create({
 	shopRowText: {
 		flex: 1,
 		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.bodySemibold,
 	},
 	moreBtn: {
@@ -946,10 +952,10 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 4,
 	},
-	moreText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	moreText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 	reviewHint: {
-		fontSize: 14,
-		lineHeight: 20,
+		fontSize: 15,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
 		textAlign: "center",
 	},
@@ -963,7 +969,12 @@ const styles = StyleSheet.create({
 		minHeight: 52,
 		paddingHorizontal: 12,
 	},
-	msgBtnText: { color: "#ffffff", fontFamily: Fonts.bodyBold, fontSize: 16 },
+	msgBtnText: {
+		color: "#ffffff",
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
+		lineHeight: 22,
+	},
 	iconBtn: {
 		width: 52,
 		height: 52,
@@ -983,7 +994,7 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 3,
 		borderBottomColor: "transparent",
 	},
-	tabText: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	tabText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
 
 	/* Listings grid */
 	grid: { padding: 16, gap: 16 },
@@ -1001,7 +1012,7 @@ const styles = StyleSheet.create({
 		minHeight: 52,
 		marginBottom: 6,
 	},
-	addReviewText: { fontFamily: Fonts.bodyBold, fontSize: 16 },
+	addReviewText: { fontFamily: Fonts.bodyBold, fontSize: 16, lineHeight: 22 },
 	reviewCard: {
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -1020,9 +1031,13 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	reviewerLetter: { fontFamily: Fonts.displayBold, fontSize: 15 },
-	reviewerName: { fontSize: 15, fontFamily: Fonts.bodyBold },
-	reviewDate: { fontSize: 12, fontFamily: Fonts.body },
+	reviewerLetter: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 15,
+		lineHeight: 22,
+	},
+	reviewerName: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyBold },
+	reviewDate: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	reviewComment: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 
 	/* Review modal */
@@ -1050,7 +1065,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	modalTitle: { fontSize: 20, fontFamily: Fonts.displayBold },
+	modalTitle: { fontSize: 20, lineHeight: 25, fontFamily: Fonts.displayBold },
 	modalBody: { padding: 20, gap: 12 },
 	discardBox: { borderRadius: 12, padding: 14, gap: 10 },
 	discardTitle: {
@@ -1068,8 +1083,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 8,
 	},
-	discardKeep: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	fieldLabel: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	discardKeep: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	fieldLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	starPicker: {
 		alignItems: "center",
 		paddingVertical: 4,
@@ -1093,5 +1108,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 4,
 	},
-	submitText: { fontSize: 16, fontFamily: Fonts.bodyBold },
+	submitText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

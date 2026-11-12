@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 		paddingHorizontal: 14,
 	},
-	ordersText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	ordersText: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	list: { padding: 16, paddingBottom: 40 },
 	productCard: {
 		borderRadius: 16,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
 	imagePlaceholder: { alignItems: "center", justifyContent: "center" },
 	productInfo: { flex: 1, gap: 4 },
 	productTitle: { fontFamily: Fonts.displayBold, fontSize: 16, lineHeight: 21 },
-	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
+	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	description: {
 		fontFamily: Fonts.body,
 		fontSize: 13,
@@ -638,7 +638,12 @@ const styles = StyleSheet.create({
 		minHeight: 52,
 		paddingHorizontal: 14,
 	},
-	primaryText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
+	primaryText: {
+		color: "#fff",
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
+		lineHeight: 22,
+	},
 	terms: {
 		borderRadius: 14,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -647,7 +652,7 @@ const styles = StyleSheet.create({
 		marginBottom: 0,
 		padding: 14,
 	},
-	cardTitle: { fontFamily: Fonts.displayBold, fontSize: 17, lineHeight: 22 },
+	cardTitle: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 24 },
 	termsBody: {
 		fontFamily: Fonts.body,
 		fontSize: 13,

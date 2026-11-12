@@ -179,10 +179,11 @@ const styles = StyleSheet.create({
 	number: {
 		flexShrink: 1,
 		fontFamily: Fonts.displayBold,
-		fontSize: 17,
+		fontSize: 18,
+		lineHeight: 24,
 		fontVariant: ["tabular-nums"],
 	},
-	description: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
+	description: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	rowBottom: {
 		alignItems: "center",
 		flexDirection: "row",
@@ -191,9 +192,10 @@ const styles = StyleSheet.create({
 	amount: {
 		flex: 1,
 		fontFamily: Fonts.displayExtrabold,
-		fontSize: 17,
+		fontSize: 18,
+		lineHeight: 24,
 		fontVariant: ["tabular-nums"],
 	},
 	overdue: { flexDirection: "row", alignItems: "center", gap: 4 },
-	overdueText: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
+	overdueText: { fontFamily: Fonts.bodySemibold, fontSize: 13, lineHeight: 18 },
 });

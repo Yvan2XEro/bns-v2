@@ -349,8 +349,8 @@ const styles = StyleSheet.create({
 	flex: { flex: 1 },
 	content: { padding: 16, gap: 14, paddingBottom: 32 },
 	status: {
-		fontSize: 26,
-		lineHeight: 31,
+		fontSize: 24,
+		lineHeight: 29,
 		letterSpacing: -0.5,
 		fontFamily: Fonts.displayExtrabold,
 	},

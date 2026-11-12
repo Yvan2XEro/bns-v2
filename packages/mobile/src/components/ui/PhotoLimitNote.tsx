@@ -29,6 +29,6 @@ export function PhotoLimitNote({
 
 const styles = StyleSheet.create({
 	wrap: { marginTop: 8, gap: 2 },
-	count: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	note: { fontSize: 12, fontFamily: Fonts.body },
+	count: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
+	note: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 });

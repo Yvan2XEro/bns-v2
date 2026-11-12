@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
 	},
 	scroll: { padding: 16, paddingTop: 20, paddingBottom: 48, gap: 12 },
 	stack: { gap: 12 },
-	subtitle: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	subtitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	count: {
 		fontSize: 13,
 		lineHeight: 18,

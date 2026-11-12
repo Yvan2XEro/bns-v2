@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
 	scroll: { padding: 16, paddingTop: 24, gap: 24, paddingBottom: 48 },
 	lead: { gap: 8, paddingHorizontal: 4, maxWidth: 600 },
 	heading: {
-		fontSize: 23,
-		lineHeight: 28,
+		fontSize: 24,
+		lineHeight: 29,
 		letterSpacing: -0.5,
 		fontFamily: Fonts.displayBold,
 	},
@@ -125,5 +125,5 @@ const styles = StyleSheet.create({
 	},
 	tipText: { flex: 1, gap: 3 },
 	tipTitle: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.bodySemibold },
-	tipDesc: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
+	tipDesc: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 });

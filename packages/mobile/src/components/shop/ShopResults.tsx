@@ -89,5 +89,10 @@ export function ShopResults({
 }
 
 const styles = StyleSheet.create({
-	count: { fontSize: 15, fontFamily: Fonts.displayBold, marginBottom: 4 },
+	count: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+		marginBottom: 4,
+	},
 });

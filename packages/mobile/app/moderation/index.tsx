@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		borderBottomWidth: 2.5,
 	},
-	tabLabel: { fontSize: 15, lineHeight: 20 },
+	tabLabel: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 20 },
 	tabBadge: {
 		minWidth: 22,
 		height: 22,
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	tabBadgeText: { fontSize: 12, fontFamily: Fonts.displayBold },
+	tabBadgeText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.displayBold },
 	card: {
 		flexDirection: "row",
 		alignItems: "center",

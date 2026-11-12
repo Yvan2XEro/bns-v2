@@ -63,7 +63,13 @@ export function ToggleField({
 	return (
 		<View style={[formStyles.row, { minHeight: 48 }]}>
 			<Text
-				style={{ flex: 1, color: c.text, fontFamily: Fonts.body, fontSize: 14 }}
+				style={{
+					flex: 1,
+					color: c.text,
+					fontFamily: Fonts.body,
+					fontSize: 15,
+					lineHeight: 22,
+				}}
 			>
 				{label}
 			</Text>

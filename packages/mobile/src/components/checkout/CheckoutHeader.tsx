@@ -121,5 +121,5 @@ const styles = StyleSheet.create({
 	},
 	step: { flex: 1, gap: 6 },
 	bar: { height: 4, borderRadius: 2 },
-	label: { fontSize: 13 },
+	label: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 });

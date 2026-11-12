@@ -55,5 +55,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	countText: { fontSize: 14, lineHeight: 18, fontFamily: Fonts.displayBold },
+	countText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 });

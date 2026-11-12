@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 4,
 	},
-	cardTitle: { fontSize: 15, fontFamily: Fonts.displayBold },
+	cardTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.displayBold },
 	sectionGap: { marginTop: 10 },
 	continueBtn: {
 		marginTop: 12,
@@ -185,7 +185,11 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingHorizontal: 16,
 	},
-	continueLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	continueLabel: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+	},
 	actionRow: {
 		marginTop: 14,
 		flexDirection: "row",
@@ -197,6 +201,7 @@ const styles = StyleSheet.create({
 	actionLabel: {
 		flex: 1,
 		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.bodyMedium,
 		minWidth: 120,
 	},
@@ -208,7 +213,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaLabel: { color: "#ffffff", fontSize: 15, fontFamily: Fonts.bodyBold },
+	ctaLabel: {
+		color: "#ffffff",
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 	reasonWrap: { alignItems: "flex-end", gap: 6 },
 	reason: {
 		fontSize: 12,
@@ -224,5 +234,9 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	ctaDisabledLabel: { fontSize: 15, fontFamily: Fonts.bodyBold },
+	ctaDisabledLabel: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
 });

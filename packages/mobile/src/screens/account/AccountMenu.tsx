@@ -689,6 +689,7 @@ const styles = StyleSheet.create({
 		color: "#ffffff",
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 24,
+		lineHeight: 29,
 		letterSpacing: -0.5,
 	},
 	guestPrompt: {
@@ -721,6 +722,7 @@ const styles = StyleSheet.create({
 		color: "#12163a",
 		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
+		lineHeight: 22,
 	},
 	guestSecondary: {
 		flex: 1,
@@ -735,6 +737,7 @@ const styles = StyleSheet.create({
 		color: "#ffffff",
 		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
+		lineHeight: 22,
 	},
 	safe: { flex: 1 },
 
@@ -787,11 +790,11 @@ const styles = StyleSheet.create({
 		marginTop: 6,
 		minHeight: 24,
 	},
-	trustText: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
+	trustText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	trustLink: { fontFamily: Fonts.bodyBold },
 	userName: {
-		fontSize: 22,
-		lineHeight: 27,
+		fontSize: 24,
+		lineHeight: 29,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
 		marginBottom: 3,
@@ -811,7 +814,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		minHeight: 40,
 	},
-	editBtnText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	editBtnText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 
 	/* ── Content ── */
 	content: {
@@ -838,6 +841,7 @@ const styles = StyleSheet.create({
 	notifBadgeText: {
 		color: "#fff",
 		fontSize: 11,
+		lineHeight: 14,
 		fontFamily: Fonts.displayExtrabold,
 	},
 });
