@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatAttributeOptionLabel } from "@/src/lib/listingAttributes";
@@ -137,31 +137,37 @@ export function ActiveFilters({
 	if (filters.length === 0) return null;
 
 	return (
-		<ScrollView
-			horizontal
-			showsHorizontalScrollIndicator={false}
-			contentContainerStyle={styles.row}
-			keyboardShouldPersistTaps="handled"
-			accessibilityLabel={t("search.activeFilters")}
-		>
-			{filters.map((filter) => (
-				<Chip
-					key={filter.key}
-					label={filter.label}
-					selected
-					trailingIcon="close"
-					onPress={() => onRemove(filter.patch)}
-					accessibilityLabel={t("search.removeFilter", {
-						label: filter.label,
-					})}
-				/>
-			))}
-		</ScrollView>
+		// A horizontal ScrollView grows to fill the column on Android, which
+		// stretched the chips down the screen: the plain View holds it to their
+		// height, as in SearchSuggestions.
+		<View>
+			<ScrollView
+				horizontal
+				showsHorizontalScrollIndicator={false}
+				contentContainerStyle={styles.row}
+				keyboardShouldPersistTaps="handled"
+				accessibilityLabel={t("search.activeFilters")}
+			>
+				{filters.map((filter) => (
+					<Chip
+						key={filter.key}
+						label={filter.label}
+						selected
+						trailingIcon="close"
+						onPress={() => onRemove(filter.patch)}
+						accessibilityLabel={t("search.removeFilter", {
+							label: filter.label,
+						})}
+					/>
+				))}
+			</ScrollView>
+		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	row: {
+		alignItems: "center",
 		gap: 8,
 		paddingHorizontal: 16,
 		paddingTop: 10,

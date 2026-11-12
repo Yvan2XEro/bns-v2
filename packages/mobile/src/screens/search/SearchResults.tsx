@@ -428,32 +428,35 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 						onCta={() => refetch()}
 					/>
 				) : listings.length === 0 ? (
-					<EmptyState
-						icon="search-outline"
-						title={
-							debouncedQuery
-								? t("search.noResultsFor", { q: debouncedQuery })
-								: t("search.noResults")
-						}
-						subtitle={
-							activeFilterCount > 0
-								? t("search.noResultsRemoveFilter")
-								: debouncedQuery
-									? t("search.noResultsSpelling")
-									: t("search.noResultsHintShort")
-						}
-						{...(activeFilterCount > 0
-							? { ctaLabel: t("search.clearFilters"), onCta: clearAll }
-							: query
-								? { ctaLabel: t("search.clearSearch"), onCta: clearQuery }
+					// The save button floats over this too: its CTA must clear it.
+					<View style={{ flex: 1, paddingBottom: canSave ? 96 : 0 }}>
+						<EmptyState
+							icon="search-outline"
+							title={
+								debouncedQuery
+									? t("search.noResultsFor", { q: debouncedQuery })
+									: t("search.noResults")
+							}
+							subtitle={
+								activeFilterCount > 0
+									? t("search.noResultsRemoveFilter")
+									: debouncedQuery
+										? t("search.noResultsSpelling")
+										: t("search.noResultsHintShort")
+							}
+							{...(activeFilterCount > 0
+								? { ctaLabel: t("search.clearFilters"), onCta: clearAll }
+								: query
+									? { ctaLabel: t("search.clearSearch"), onCta: clearQuery }
+									: {})}
+							{...(params.category && debouncedQuery
+								? {
+										secondaryLabel: t("search.searchAllCategories"),
+										onSecondary: searchAllCategories,
+									}
 								: {})}
-						{...(params.category && debouncedQuery
-							? {
-									secondaryLabel: t("search.searchAllCategories"),
-									onSecondary: searchAllCategories,
-								}
-							: {})}
-					/>
+						/>
+					</View>
 				) : (
 					// Recycled rows keyed by their listings, so a page appended at
 					// the end never re-renders the ones above it.
