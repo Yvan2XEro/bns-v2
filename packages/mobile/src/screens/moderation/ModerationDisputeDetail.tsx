@@ -788,5 +788,5 @@ const styles = StyleSheet.create({
 		lineHeight: 20,
 	},
 	preview: { borderRadius: 12, borderWidth: 1, gap: 10, padding: 14 },
-	previewTotal: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	previewTotal: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 });

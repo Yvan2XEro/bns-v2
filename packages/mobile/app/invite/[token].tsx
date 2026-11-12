@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
 	summary: { alignItems: "center", gap: 6 },
 	shopName: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayExtrabold,
 		marginTop: 8,
 	},

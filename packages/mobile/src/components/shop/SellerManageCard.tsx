@@ -196,7 +196,7 @@ function Tile({
 const styles = StyleSheet.create({
 	sectionLabel: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 		marginTop: 6,

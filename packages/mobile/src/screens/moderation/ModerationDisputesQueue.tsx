@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
 		gap: 8,
 		marginBottom: 2,
 	},
-	number: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 24 },
+	number: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	priceTag: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
 	priceText: {
 		color: Colors.light.sunForeground,

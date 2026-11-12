@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
 	logoRing: { alignSelf: "flex-start", borderWidth: 4, borderRadius: 22 },
 	name: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		letterSpacing: -0.6,
 		fontFamily: Fonts.displayExtrabold,
 	},

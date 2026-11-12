@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
 	heading: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
 	title: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 	},
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
 	label: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
 	value: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.4,
 	},

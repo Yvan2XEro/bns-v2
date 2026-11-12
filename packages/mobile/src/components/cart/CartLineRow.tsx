@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
 	title: { fontSize: 15, fontFamily: Fonts.bodySemibold, lineHeight: 20 },
 	price: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.3,
 		fontVariant: ["tabular-nums"],

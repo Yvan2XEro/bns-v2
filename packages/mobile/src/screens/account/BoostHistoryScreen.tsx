@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
 	spentLabel: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	spentAmount: {
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		letterSpacing: -0.8,
 		fontFamily: Fonts.displayExtrabold,
 	},

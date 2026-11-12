@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
 	title: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 	},
 	subtitle: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },

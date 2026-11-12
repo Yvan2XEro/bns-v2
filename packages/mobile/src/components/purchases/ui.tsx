@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	card: { borderRadius: 16, padding: 16, gap: 12 },
-	cardTitle: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	cardTitle: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
 	sheet: {
@@ -223,5 +223,5 @@ const styles = StyleSheet.create({
 		borderRadius: 2,
 		marginBottom: 6,
 	},
-	sheetTitle: { fontSize: 20, lineHeight: 25, fontFamily: Fonts.displayBold },
+	sheetTitle: { fontSize: 20, lineHeight: 28, fontFamily: Fonts.displayBold },
 });

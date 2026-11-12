@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		textAlign: "center",
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
 	section: { gap: 10 },
 	sectionTitle: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -764,7 +764,7 @@ const styles = StyleSheet.create({
 	attrGroup: { gap: 16 },
 	attrSectionHeader: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},

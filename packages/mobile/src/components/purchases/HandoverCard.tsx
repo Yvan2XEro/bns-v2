@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		color: "#fff",
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 	},
 	sms: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
 	digitText: {
 		color: "#fff",
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},

@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
 	},
 	doneTitle: {
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		fontFamily: Fonts.displayBold,
 		textAlign: "center",
 	},

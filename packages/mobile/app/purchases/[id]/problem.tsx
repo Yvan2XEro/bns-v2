@@ -915,7 +915,7 @@ const styles = StyleSheet.create({
 	orderTotal: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		marginTop: 2,
 		fontVariant: ["tabular-nums"],
 	},
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
 		gap: 12,
 		padding: 16,
 	},
-	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	label: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	choices: { gap: 8 },

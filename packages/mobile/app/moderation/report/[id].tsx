@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
 	reason: {
 		flex: 1,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},

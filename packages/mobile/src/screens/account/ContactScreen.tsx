@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
 	},
 	doneTitle: {
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		letterSpacing: -0.6,
 		fontFamily: Fonts.displayExtrabold,
 		marginTop: 20,

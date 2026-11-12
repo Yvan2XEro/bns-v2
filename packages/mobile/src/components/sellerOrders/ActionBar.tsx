@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 10,
 	},
-	title: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	title: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	hint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	notice: {
 		flexDirection: "row",

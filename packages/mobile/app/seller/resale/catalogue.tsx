@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
 		marginBottom: 0,
 		padding: 14,
 	},
-	cardTitle: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 24 },
+	cardTitle: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	termsBody: {
 		fontFamily: Fonts.body,
 		fontSize: 13,

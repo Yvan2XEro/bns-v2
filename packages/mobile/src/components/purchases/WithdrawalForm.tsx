@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
 		minWidth: 28,
 		textAlign: "center",
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},

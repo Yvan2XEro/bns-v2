@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 4,
 	},
 	badgeText: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
-	section: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	section: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	operators: { flexDirection: "row", gap: 10 },
 	operator: {
 		flex: 1,
@@ -552,10 +552,10 @@ const styles = StyleSheet.create({
 	totalLabel: {
 		flex: 1,
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 	},
-	cardTitle: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	cardTitle: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	step: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
 	stepIcon: {
 		width: 36,

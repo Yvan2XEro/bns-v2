@@ -2594,7 +2594,7 @@ const styles = StyleSheet.create({
 	},
 	noUserTitle: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.4,
 	},
@@ -2620,7 +2620,7 @@ const styles = StyleSheet.create({
 	},
 	noUserHeading: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayBold,
 		marginBottom: 8,
 		textAlign: "center",
@@ -2672,7 +2672,7 @@ const styles = StyleSheet.create({
 	headerCenter: { flex: 1 },
 	headerTitle: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},
@@ -2919,7 +2919,7 @@ const styles = StyleSheet.create({
 	},
 	photoIndex: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayBold,
 	},
 	addPhotoBtn: {
@@ -3072,7 +3072,7 @@ const styles = StyleSheet.create({
 	},
 	reviewPriceText: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.3,
 	},

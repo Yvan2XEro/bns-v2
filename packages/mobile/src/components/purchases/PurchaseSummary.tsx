@@ -203,5 +203,5 @@ const styles = StyleSheet.create({
 		paddingTop: 12,
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
-	totalLabel: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
+	totalLabel: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 });

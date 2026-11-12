@@ -45,7 +45,7 @@ export function attachedListingOf(raw: unknown): AttachedListing | null {
 	};
 }
 
-/** The signature price tag: ink on signage yellow, set in Outfit ExtraBold. */
+/** The signature price tag: ink on signage yellow, set in Poppins ExtraBold. */
 function PriceTag({ price, small }: { price: number; small?: boolean }) {
 	const isDark = useColorScheme() === "dark";
 	const C = Colors[isDark ? "dark" : "light"];

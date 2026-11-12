@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
 	afterLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	afterValue: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
 	},
 	flex: { flex: 1 },

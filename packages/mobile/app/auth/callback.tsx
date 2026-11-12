@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
 	title: {
 		fontFamily: Fonts.displaySemibold,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		marginTop: 18,
 	},
 	actions: { alignSelf: "stretch", gap: 12, marginTop: 28 },

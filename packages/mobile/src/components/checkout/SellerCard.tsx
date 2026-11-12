@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 10,
 	},
-	label: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	label: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
 	main: { flex: 1, minWidth: 0, gap: 2 },
 	nameRow: {

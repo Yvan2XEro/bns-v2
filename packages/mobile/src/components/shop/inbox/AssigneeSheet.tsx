@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
 	grabberBar: { width: 40, height: 4, borderRadius: 2 },
 	title: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 		paddingHorizontal: 20,

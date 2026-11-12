@@ -105,7 +105,7 @@ export function ReturnOutcome({
 const styles = StyleSheet.create({
 	title: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		textAlign: "center",
 	},

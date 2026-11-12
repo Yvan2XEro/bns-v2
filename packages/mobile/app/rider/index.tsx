@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
 		padding: 14,
 	},
 	body: { flex: 1, gap: 4 },
-	place: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	place: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	city: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 20 },
 	metaRow: {
 		flexDirection: "row",

@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
 	},
 	shopName: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.4,
 	},

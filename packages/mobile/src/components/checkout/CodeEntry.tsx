@@ -117,7 +117,7 @@ export function CodeEntry({
 										borderColor: codeError ? c.danger : c.border,
 										minHeight: 56,
 										fontSize: 24,
-										lineHeight: 29,
+										lineHeight: 32,
 										fontFamily: Fonts.displayBold,
 										letterSpacing: 8,
 										textAlign: "center",

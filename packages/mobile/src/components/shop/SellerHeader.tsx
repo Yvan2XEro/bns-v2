@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
 	edge: { width: 4 },
 	title: {
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},

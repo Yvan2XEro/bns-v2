@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
 	profile: { alignItems: "center", gap: 6, paddingTop: 8 },
 	name: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		letterSpacing: -0.5,
 		fontFamily: Fonts.displayBold,
 		textAlign: "center",
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
 	section: { gap: 10 },
 	sectionTitle: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},

@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
 	},
 	digit: {
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		fontFamily: Fonts.displayBold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -120,5 +120,5 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	keyText: { fontSize: 24, lineHeight: 29, fontFamily: Fonts.displaySemibold },
+	keyText: { fontSize: 24, lineHeight: 32, fontFamily: Fonts.displaySemibold },
 });

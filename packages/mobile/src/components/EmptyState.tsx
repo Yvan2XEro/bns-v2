@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
 	title: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		textAlign: "center",
 		marginBottom: 8,
 		// Caps the line length on iPad; wider than any phone content box so

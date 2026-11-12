@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
 	content: { padding: 16, gap: 14, paddingBottom: 32 },
 	status: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		letterSpacing: -0.5,
 		fontFamily: Fonts.displayExtrabold,
 	},
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
 	divided: { borderTopWidth: StyleSheet.hairlineWidth },
 	recipient: {
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		marginBottom: 2,
 	},

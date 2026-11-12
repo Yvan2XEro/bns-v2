@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 12,
 	},
-	legend: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	legend: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	options: { flexDirection: "row", gap: 10 },
 	optionsStacked: { flexDirection: "column" },
 	option: {

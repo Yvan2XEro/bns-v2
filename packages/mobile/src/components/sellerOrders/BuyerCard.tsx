@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
 	title: {
 		flex: 1,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 	},
 	row: { gap: 2 },

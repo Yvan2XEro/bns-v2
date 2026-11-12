@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
 	label: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	noLevel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	level: { fontSize: 36, lineHeight: 42, fontFamily: Fonts.displayExtrabold },
-	of: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
+	of: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	bars: { flexDirection: "row", gap: 6 },
 	bar: { flex: 1, height: 6, borderRadius: 3 },
 	expiry: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },

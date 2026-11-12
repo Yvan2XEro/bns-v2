@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
 	},
-	previewName: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
+	previewName: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	input: {
 		height: 50,

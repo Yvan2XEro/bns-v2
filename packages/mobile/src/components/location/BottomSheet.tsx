@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
 	title: {
 		flex: 1,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayBold,
 	},
 	close: {

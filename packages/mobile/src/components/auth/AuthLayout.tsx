@@ -408,14 +408,14 @@ const styles = StyleSheet.create({
 	brandText: {
 		color: "#ffffff",
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
 	},
 	title: {
 		color: "#ffffff",
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.7,
 	},
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
 	},
 	noticeTitle: {
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.6,
 		marginTop: 20,

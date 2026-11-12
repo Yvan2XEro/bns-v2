@@ -879,7 +879,7 @@ const styles = StyleSheet.create({
 	sticky: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 },
 	section: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},

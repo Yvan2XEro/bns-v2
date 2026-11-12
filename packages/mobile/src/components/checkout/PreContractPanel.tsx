@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
 	heading: {
 		flexShrink: 1,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 	},
 	toggle: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },

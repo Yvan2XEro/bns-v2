@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
 	loading: { flex: 1, paddingTop: 16 },
 	sectionTitle: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 		marginTop: 8,

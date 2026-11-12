@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
 	},
 	avatarInitial: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayBold,
 	},
 	content: { flex: 1, gap: 2 },

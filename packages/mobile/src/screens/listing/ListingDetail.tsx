@@ -1393,7 +1393,7 @@ const styles = StyleSheet.create({
 	},
 	price: {
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		color: INK,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.8,
@@ -1407,7 +1407,7 @@ const styles = StyleSheet.create({
 	closedText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodyBold },
 	title: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.5,
 	},
@@ -1431,7 +1431,7 @@ const styles = StyleSheet.create({
 	chipText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
 	sectionTitle: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 		marginBottom: 10,
@@ -1489,10 +1489,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	sellerLetter: { fontSize: 24, lineHeight: 29, fontFamily: Fonts.displayBold },
+	sellerLetter: { fontSize: 24, lineHeight: 32, fontFamily: Fonts.displayBold },
 	sellerInfo: { flex: 1, gap: 3 },
 	sellerRole: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodySemibold },
-	sellerName: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	sellerName: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	memberSince: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 
 	safetyStrip: {

@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
 	pills: { flexDirection: "row", gap: 8 },
 	pill: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
 	pillText: { fontSize: 11, lineHeight: 14, fontFamily: Fonts.bodySemibold },
-	hello: { fontSize: 24, lineHeight: 29, fontFamily: Fonts.displayExtrabold },
+	hello: { fontSize: 24, lineHeight: 32, fontFamily: Fonts.displayExtrabold },
 	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	head: {
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		alignItems: "center",
 	},
-	section: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	section: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	subhead: {
 		fontSize: 13,
 		lineHeight: 18,

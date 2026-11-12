@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 10,
 	},
-	title: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	title: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	line: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
 	totalLine: { alignItems: "center", marginTop: 2 },
 	flex: { flex: 1 },

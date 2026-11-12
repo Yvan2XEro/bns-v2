@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		letterSpacing: -0.6,
 		fontFamily: Fonts.displayExtrabold,
 		marginTop: 8,

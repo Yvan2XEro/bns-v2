@@ -12,7 +12,7 @@ const SIZES = {
 } as const;
 
 /**
- * The price tag, applied to a total: Outfit ExtraBold, ink on signage
+ * The price tag, applied to a total: Poppins ExtraBold, ink on signage
  * yellow. One per screen, on the amount the buyer actually pays.
  */
 export function TotalTag({

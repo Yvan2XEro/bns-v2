@@ -520,7 +520,7 @@ export function InsightMetric({
 const styles = StyleSheet.create({
 	header: { gap: 12, padding: 16 },
 	titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-	title: { fontSize: 24, lineHeight: 29, fontFamily: Fonts.displayBold },
+	title: { fontSize: 24, lineHeight: 32, fontFamily: Fonts.displayBold },
 	muted: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	periods: {
 		flexDirection: "row",

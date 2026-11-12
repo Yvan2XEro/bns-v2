@@ -7,7 +7,7 @@ import { Fonts } from "@/constants/theme";
  * back to Roboto, and every field and option clears 48pt.
  */
 export const caseForm = StyleSheet.create({
-	heading: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	heading: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	subheading: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 21 },
 	label: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },

@@ -14,7 +14,7 @@ import { SettingsHeader } from "./SettingsHeader";
 /**
  * A long text to read (terms, privacy): the title in the bar, the date it
  * last changed, then its sections at a reading measure — headings in
- * Outfit with more room above than below, running text in DM Sans at 16.
+ * Poppins with more room above than below, running text in Inter at 16.
  * A long one (privacy: 21 sections) opens on its contents, each entry
  * scrolling to its section.
  */
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
 	sectionTitle: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 	},
 	paragraph: { fontFamily: Fonts.body, fontSize: 16, lineHeight: 25 },

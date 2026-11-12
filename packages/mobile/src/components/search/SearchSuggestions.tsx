@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
 	},
 	recentTitle: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},

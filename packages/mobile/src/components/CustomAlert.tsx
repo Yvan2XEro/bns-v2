@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
 		textAlign: "center",

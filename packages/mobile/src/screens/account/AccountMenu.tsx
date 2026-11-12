@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
 		color: "#ffffff",
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		letterSpacing: -0.5,
 	},
 	guestPrompt: {
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
 	// Tab roots share the h1 large title (30/34), like Search and Messages.
 	headerTitle: {
 		fontSize: 30,
-		lineHeight: 34,
+		lineHeight: 38,
 		letterSpacing: -0.8,
 		fontFamily: Fonts.displayExtrabold,
 	},
@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
 	trustLink: { fontFamily: Fonts.bodyBold },
 	userName: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
 		marginBottom: 3,

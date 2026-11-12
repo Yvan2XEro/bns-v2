@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
 	},
 	heading: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
 	flex: { flex: 1, gap: 4 },
-	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 24 },
+	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	meta: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 	edit: {
 		minHeight: 44,

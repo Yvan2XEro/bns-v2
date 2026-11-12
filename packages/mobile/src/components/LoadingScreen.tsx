@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
 	appName: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		letterSpacing: -0.5,
 	},
 	tagline: {

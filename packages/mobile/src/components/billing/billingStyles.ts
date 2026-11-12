@@ -10,7 +10,7 @@ export const billingStyles = StyleSheet.create({
 	},
 	cardTitle: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.2,
 	},
@@ -18,7 +18,7 @@ export const billingStyles = StyleSheet.create({
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	amount: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
 		fontVariant: ["tabular-nums"],

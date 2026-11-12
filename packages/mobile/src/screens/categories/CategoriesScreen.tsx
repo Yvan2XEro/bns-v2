@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		textAlign: "center",
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
 	paneContent: { padding: 12, gap: 12, paddingBottom: 40 },
 	paneTitle: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 		paddingHorizontal: 2,

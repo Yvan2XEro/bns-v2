@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
 	titleText: { flex: 1 },
 	pageTitle: {
 		fontSize: 30,
-		lineHeight: 34,
+		lineHeight: 38,
 		letterSpacing: -0.8,
 		fontFamily: Fonts.displayExtrabold,
 	},
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
 	noResultIcon: { marginBottom: 12 },
 	noResultTitle: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		marginBottom: 6,
 	},

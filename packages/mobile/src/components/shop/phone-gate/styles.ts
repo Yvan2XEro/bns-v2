@@ -21,7 +21,7 @@ export const fieldStyles = StyleSheet.create({
 		letterSpacing: 12,
 		fontFamily: Fonts.displayBold,
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		textAlign: "center",
 	},
 	hint: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },

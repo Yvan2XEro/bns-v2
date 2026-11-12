@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 12,
 	},
-	title: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	title: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	subtitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	note: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	line: { flexDirection: "row", gap: 8, alignItems: "flex-start" },

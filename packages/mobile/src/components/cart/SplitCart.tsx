@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
 	shop: {
 		flex: 1,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 	},
 	target: { minHeight: 44, minWidth: 44, justifyContent: "center" },

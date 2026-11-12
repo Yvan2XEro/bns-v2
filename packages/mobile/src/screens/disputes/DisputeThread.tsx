@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	bannerTitle: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	bannerTitle: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	bannerBody: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 18 },
 	evidence: { gap: 6 },
 	chipButton: {
@@ -799,9 +799,9 @@ const styles = StyleSheet.create({
 		gap: 10,
 		padding: 16,
 	},
-	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
-	amount: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 24 },
+	amount: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	empty: {
 		fontFamily: Fonts.body,
 		fontSize: 15,

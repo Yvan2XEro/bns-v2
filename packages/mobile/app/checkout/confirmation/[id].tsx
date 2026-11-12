@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		letterSpacing: -0.6,
 		fontFamily: Fonts.displayExtrabold,
 		textAlign: "center",
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		gap: 12,
 	},
-	totalLabel: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
+	totalLabel: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	number: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	card: {
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
 	infoBody: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	section: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayBold,
 		marginTop: 8,
 	},

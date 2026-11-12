@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
 	lead: { gap: 8, paddingHorizontal: 4, maxWidth: 600 },
 	heading: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		letterSpacing: -0.5,
 		fontFamily: Fonts.displayBold,
 	},

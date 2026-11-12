@@ -1711,13 +1711,13 @@ const styles = StyleSheet.create({
 		fontSize: 30,
 		letterSpacing: -0.9,
 		textAlign: "center",
-		lineHeight: 36,
+		lineHeight: 38,
 		color: "#ffffff",
 	},
 	slideTitleCompact: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		letterSpacing: -0.7,
 	},
 	langRow: {

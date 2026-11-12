@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
 	},
 	avatarInitial: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 	},
 	titleCol: { flex: 1 },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
 	},
 	buyer: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},

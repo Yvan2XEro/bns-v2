@@ -26,7 +26,7 @@ import { formatOrderDate } from "@/src/lib/orderMoney";
 import { PAYOUT_STATUSES, type PayoutStatus } from "@/src/lib/paymentStatus";
 
 /**
- * One label/value line of a detail card. `numeric` sets the value in Outfit,
+ * One label/value line of a detail card. `numeric` sets the value in Poppins,
  * the face the app gives to amounts and counts.
  */
 function Line({

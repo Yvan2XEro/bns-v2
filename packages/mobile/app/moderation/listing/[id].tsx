@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
 	noPhotoText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	listingTitle: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
 	priceText: {
 		color: Colors.light.sunForeground,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.3,
 		fontFamily: Fonts.displayExtrabold,
 	},

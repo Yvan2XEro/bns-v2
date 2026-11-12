@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
 	divider: { height: StyleSheet.hairlineWidth },
 	amounts: { gap: 6 },
 	dim: { opacity: 0.45 },
-	title: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
+	title: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	value: {
 		fontSize: 15,
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
 	strongLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 	strongValue: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
 	},
 	grandLabel: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		flexShrink: 1,
 	},

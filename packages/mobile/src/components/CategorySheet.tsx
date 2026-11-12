@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
 	sheetTitle: {
 		flex: 1,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},

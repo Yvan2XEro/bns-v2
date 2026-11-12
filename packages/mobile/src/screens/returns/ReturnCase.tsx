@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 	},
 	headRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 23 },
+	title: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	label: { fontFamily: Fonts.bodySemibold, fontSize: 15, lineHeight: 22 },
 	meta: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },

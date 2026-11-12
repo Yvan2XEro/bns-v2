@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
 		gap: 12,
 	},
 	body: { flex: 1, gap: 4 },
-	number: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 24 },
+	number: { fontFamily: Fonts.displayBold, fontSize: 18, lineHeight: 26 },
 	address: { fontFamily: Fonts.bodySemibold, fontSize: 16, lineHeight: 22 },
 	metaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
 	pill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },

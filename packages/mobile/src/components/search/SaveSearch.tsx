@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 	},

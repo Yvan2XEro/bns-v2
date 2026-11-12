@@ -868,7 +868,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		textAlign: "center",
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 	},
 
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
 	},
 	avatarLetter: {
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		fontFamily: Fonts.displayExtrabold,
 	},
 	nameRow: {
@@ -904,7 +904,7 @@ const styles = StyleSheet.create({
 	},
 	name: {
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		letterSpacing: -0.5,
 		fontFamily: Fonts.displayExtrabold,
 		textAlign: "center",
@@ -1065,7 +1065,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	modalTitle: { fontSize: 20, lineHeight: 25, fontFamily: Fonts.displayBold },
+	modalTitle: { fontSize: 20, lineHeight: 28, fontFamily: Fonts.displayBold },
 	modalBody: { padding: 20, gap: 12 },
 	discardBox: { borderRadius: 12, padding: 14, gap: 10 },
 	discardTitle: {

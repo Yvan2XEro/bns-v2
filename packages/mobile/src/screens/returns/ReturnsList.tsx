@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
 		flexShrink: 1,
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontVariant: ["tabular-nums"],
 	},
 	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },

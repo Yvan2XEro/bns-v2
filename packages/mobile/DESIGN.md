@@ -7,9 +7,9 @@ Ndop is the indigo resist-dyed cloth of the Grassfields: white lozenges and dots
 
 The app takes four things from that world and nothing else:
 - **Palette.** Ndop blue carries the shell (`#2a51c0` by day, night indigo `#13183e` in dark mode), signage yellow marks prices and the sell action, and the neutrals are tinted indigo instead of grey.
-- **Type.** Outfit is the painted-sign voice, and DM Sans is the working face.
+- **Type.** Poppins is the painted-sign voice, and Inter is the working face.
 - **Density.** Photo-led feeds, large prices, generous touch targets of 48–56pt.
-- **One signature move: the price tag.** Every price is set in Outfit ExtraBold, ink on a yellow tag. On a card it sits on the photo; on a listing it is the largest thing on screen.
+- **One signature move: the price tag.** Every price is set in Poppins ExtraBold, ink on a yellow tag. On a card it sits on the photo; on a listing it is the largest thing on screen.
 
 Navigation, controls, sheets and gestures stay native. The world never supplies them.
 
@@ -48,20 +48,21 @@ Nine roles, as `TextStyles` in `constants/theme.ts`. Each role is a size the eye
 
 | Role | Face | Size / line | Use |
 |---|---|---|---|
-| display | Outfit ExtraBold | 30 / 36, -0.8 | tab-root large title |
-| title | Outfit Bold | 24 / 29, -0.5 | screen and sheet title, step heading |
-| section | Outfit Bold | 20 / 25, -0.4 | section title on a screen |
-| heading | Outfit Bold | 18 / 24, -0.2 | card and group heading, centred stack title |
-| strong | DM Sans SemiBold / Bold | 16 / 22 | row titles, button labels (Bold) |
-| body | DM Sans Regular | 15 / 22 | running text (16 in inputs and chat) |
-| label | DM Sans SemiBold | 13 / 18 | field labels, chips, secondary actions |
-| caption | DM Sans Regular / Medium | 12 / 16 | place, time, counts |
-| micro | DM Sans SemiBold | 11 / 14 | badges, tab labels; never running text |
-| price | Outfit ExtraBold | 15–16 on cards, 30 / 36 on a listing | always ink on the yellow tag |
+| display | Poppins ExtraBold | 30 / 38, -0.8 | tab-root large title |
+| title | Poppins Bold | 24 / 32, -0.5 | screen and sheet title, step heading |
+| section | Poppins Bold | 20 / 28, -0.4 | section title on a screen |
+| heading | Poppins Bold | 18 / 26, -0.2 | card and group heading, centred stack title |
+| strong | Inter SemiBold / Bold | 16 / 22 | row titles, button labels (Bold) |
+| body | Inter Regular | 15 / 22 | running text (16 in inputs and chat) |
+| label | Inter SemiBold | 13 / 18 | field labels, chips, secondary actions |
+| caption | Inter Regular / Medium | 12 / 16 | place, time, counts |
+| micro | Inter SemiBold | 11 / 14 | badges, tab labels; never running text |
+| price | Poppins ExtraBold | 15–16 on cards, 30 / 38 on a listing | always ink on the yellow tag |
 
 Rules:
 - **Hierarchy comes from role, weight and colour together**, not size alone. Text colour has three steps: `foreground` for titles and values, `body` for running text, `mutedForeground` for metadata. Brand words use `link`, never `primary`.
-- **Outfit only from 16 up**, except numbers and prices.
+- **Poppins only from 16 up**, except numbers and prices.
+- **Poppins needs room:** its ascenders and accented capitals (É, À) are tall, so display line heights are about 1.3–1.45× the size; tighter clips them on Android.
 - **Every text style sets a fontFamily**, so it never falls back to the system font. Display roles (18+) and body roles both set a line height.
 - **Text inputs set no lineHeight**: it shifts the caret and clips text on both platforms.
 
@@ -82,7 +83,7 @@ Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.
 
 ## Alerts
 - **Toast:** news that needs no answer ("Saved", "Link copied"). It is an ink card at the top that leaves after 3–5 s and is announced to screen readers. `showSuccess` always routes here. A toast may carry one action ("Annuler", "Voir"), drawn in the night `link` colour; it then stays 7 s. The action is a shortcut, never the only way: what it does must stay reachable from the screen.
-- **Sheet:** only decisions and errors. One tinted tile names the kind, the title is set in Outfit, and the actions are 52pt high. In a row, cancel sits left and the action right. Action buttons are `ownBubble` in both themes. Never white on yellow.
+- **Sheet:** only decisions and errors. One tinted tile names the kind, the title is set in Poppins, and the actions are 52pt high. In a row, cancel sits left and the action right. Action buttons are `ownBubble` in both themes. Never white on yellow.
 
 ## Sound and haptics
 `src/lib/feedback.ts`, one call per meaningful moment, never per tap.

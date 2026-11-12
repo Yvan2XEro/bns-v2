@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 10,
 	},
-	heading: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
+	heading: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	amount: {
 		fontSize: 16,

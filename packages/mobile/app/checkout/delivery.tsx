@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
 	flex: { flex: 1 },
 	scroll: { padding: 16, gap: 12, paddingBottom: 24 },
 	stack: { gap: 12 },
-	title: { fontSize: 20, lineHeight: 25, fontFamily: Fonts.displayBold },
+	title: { fontSize: 20, lineHeight: 28, fontFamily: Fonts.displayBold },
 	body: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
 	note: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.bodyMedium },
 	empty: {

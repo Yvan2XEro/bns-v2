@@ -37,10 +37,10 @@ export const inkText = StyleSheet.create({
 	hero: {
 		color: ON_INK.text,
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		fontFamily: Fonts.displayExtrabold,
 	},
-	value: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
+	value: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	footnote: {
 		color: ON_INK.faint,
 		fontSize: 12,

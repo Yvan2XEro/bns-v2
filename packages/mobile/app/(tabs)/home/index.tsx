@@ -875,7 +875,7 @@ const styles = StyleSheet.create({
 	sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
 	sectionTitle: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.4,
 	},

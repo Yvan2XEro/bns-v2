@@ -293,13 +293,13 @@ const styles = StyleSheet.create({
 	cardValue: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontVariant: ["tabular-nums"],
 	},
 	section: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		paddingBottom: 10,
 		paddingTop: 24,
 	},

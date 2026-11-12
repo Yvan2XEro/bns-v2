@@ -10,7 +10,7 @@ import { useGroupedColors } from "./Grouped";
 
 /**
  * The button under an account form: filled for the form's action, a card
- * button in brand words for a second step beside it. 52pt, DM Sans Bold 16.
+ * button in brand words for a second step beside it. 52pt, Inter Bold 16.
  */
 export function FormButton({
 	label,

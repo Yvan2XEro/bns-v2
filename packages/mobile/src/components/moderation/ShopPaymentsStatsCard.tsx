@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
 	statLabel: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	statValue: {
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},

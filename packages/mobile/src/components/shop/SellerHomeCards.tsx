@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 8,
 	},
-	title: { fontSize: 18, lineHeight: 24, fontFamily: Fonts.displayBold },
+	title: { fontSize: 18, lineHeight: 26, fontFamily: Fonts.displayBold },
 	body: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
 	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
 	row: {

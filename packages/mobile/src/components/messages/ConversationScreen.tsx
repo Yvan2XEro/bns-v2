@@ -1699,7 +1699,7 @@ const styles = StyleSheet.create({
 	},
 	headerName: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
 	},
@@ -1722,7 +1722,7 @@ const styles = StyleSheet.create({
 	threadEmpty: { alignItems: "center", gap: 8, paddingHorizontal: 32 },
 	threadEmptyName: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 		fontFamily: Fonts.displayBold,
 		marginTop: 4,

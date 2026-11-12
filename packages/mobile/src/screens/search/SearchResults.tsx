@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
 	},
 	pageTitle: {
 		fontSize: 30,
-		lineHeight: 34,
+		lineHeight: 38,
 		letterSpacing: -0.8,
 		fontFamily: Fonts.displayExtrabold,
 	},

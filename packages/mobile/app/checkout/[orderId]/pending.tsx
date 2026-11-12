@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
 	title: {
 		flex: 1,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 	},
 	amount: { gap: 6, paddingVertical: 4 },
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
 	},
 	paid: {
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},

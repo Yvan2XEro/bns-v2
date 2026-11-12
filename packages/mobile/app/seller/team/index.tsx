@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
 	footer: { marginTop: 28, gap: 10 },
 	sectionTitle: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayBold,
 		letterSpacing: -0.3,
 	},

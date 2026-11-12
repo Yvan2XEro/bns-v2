@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	title: { fontSize: 24, lineHeight: 29, fontFamily: Fonts.displayExtrabold },
+	title: { fontSize: 24, lineHeight: 32, fontFamily: Fonts.displayExtrabold },
 	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 21 },
 	note: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body, marginTop: 6 },
 	button: {

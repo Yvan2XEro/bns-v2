@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
 	},
 	amount: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},

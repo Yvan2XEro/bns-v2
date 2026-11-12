@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
 	separator: { height: 10 },
 	header: { gap: 8, marginBottom: 16 },
 	headerGap: { height: 4 },
-	step: { fontSize: 20, lineHeight: 25, fontFamily: Fonts.displayBold },
+	step: { fontSize: 20, lineHeight: 28, fontFamily: Fonts.displayBold },
 	segments: { flexDirection: "row", gap: 4 },
 	segment: { flex: 1, height: 6, borderRadius: 3 },
 	meta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
 	},
 	price: {
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],
 	},

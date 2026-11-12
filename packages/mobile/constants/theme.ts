@@ -198,20 +198,22 @@ export const borderRadius = {
 } as const;
 
 // ─── Typography ───────────────────────────────────────────────────────────────
-// Outfit — the display voice: headings, prices, numbers.
-// DM Sans — the working face: body, labels, controls.
+// Poppins — the display voice: headings, prices, numbers.
+// Inter — the working face: body, labels, controls.
 // Paired with the web (packages/web/src/app/layout.tsx) — keep the two in sync.
 
 export const Fonts = {
-	body: "DMSans_400Regular",
-	bodyMedium: "DMSans_500Medium",
-	bodySemibold: "DMSans_600SemiBold",
-	bodyBold: "DMSans_700Bold",
+	// Inter — the working face: body, labels, controls.
+	body: "Inter_400Regular",
+	bodyMedium: "Inter_500Medium",
+	bodySemibold: "Inter_600SemiBold",
+	bodyBold: "Inter_700Bold",
 
-	displayMedium: "Outfit_500Medium",
-	displaySemibold: "Outfit_600SemiBold",
-	displayBold: "Outfit_700Bold",
-	displayExtrabold: "Outfit_800ExtraBold",
+	// Poppins — the voice: titles, prices, numbers.
+	displayMedium: "Poppins_500Medium",
+	displaySemibold: "Poppins_600SemiBold",
+	displayBold: "Poppins_700Bold",
+	displayExtrabold: "Poppins_800ExtraBold",
 } as const;
 
 /**
@@ -224,28 +226,28 @@ export const TextStyles = {
 	display: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		letterSpacing: -0.8,
 	},
 	/** Screen and sheet title, step headings */
 	title: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		letterSpacing: -0.5,
 	},
 	/** Section title on a screen */
 	section: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		letterSpacing: -0.4,
 	},
 	/** Card and group heading, centred stack titles */
 	heading: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 	},
 	/** Emphasised body: row titles, button labels (Bold) */
@@ -259,7 +261,7 @@ export const TextStyles = {
 	/** Badges and tab labels */
 	micro: { fontFamily: Fonts.bodySemibold, fontSize: 11, lineHeight: 14 },
 
-	// Prices (Outfit)
+	// Prices (Poppins)
 	price: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 16,
@@ -269,7 +271,7 @@ export const TextStyles = {
 	priceLg: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		letterSpacing: -0.8,
 	},
 
@@ -277,19 +279,19 @@ export const TextStyles = {
 	h1: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 30,
-		lineHeight: 36,
+		lineHeight: 38,
 		letterSpacing: -0.8,
 	},
 	h2: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 24,
-		lineHeight: 29,
+		lineHeight: 32,
 		letterSpacing: -0.5,
 	},
 	h3: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
-		lineHeight: 24,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 	},
 	h4: { fontFamily: Fonts.displaySemibold, fontSize: 16, lineHeight: 22 },

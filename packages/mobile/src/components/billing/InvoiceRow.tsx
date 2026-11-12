@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
 	total: {
 		fontFamily: Fonts.displayBold,
 		fontSize: 20,
-		lineHeight: 25,
+		lineHeight: 28,
 		marginTop: 2,
 	},
 	head: {

@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		fontFamily: Fonts.displayBold,
 		fontSize: 18,
-		lineHeight: 23,
+		lineHeight: 26,
 		letterSpacing: -0.2,
 	},
 });
