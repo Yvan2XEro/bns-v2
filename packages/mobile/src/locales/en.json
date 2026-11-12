@@ -2,11 +2,11 @@
 	"navigation": {
 		"home": "Home",
 		"search": "Search",
-		"sell": "Sell",
+		"sell": "Post",
 		"messages": "Messages",
 		"account": "Account",
 		"favorites": "Favorites",
-		"sellA11y": "Sell, post a listing",
+		"sellA11y": "Post a listing",
 		"messagesWithCount_one": "Messages, {{count}} unread",
 		"messagesWithCount": "Messages, {{count}} unread"
 	},

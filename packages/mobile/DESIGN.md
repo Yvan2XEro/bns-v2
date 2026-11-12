@@ -68,7 +68,7 @@ Rules:
 
 ## Shape
 - Cards and photos: 14–16 radius. Buttons and inputs: 12. Tags and badges: 6–10.
-- The sell tab is a small squared yellow plaque (44 × 28, darker foot), level with the other tabs: never raised, never a floating circle.
+- The publish tab is a small squared yellow plaque (50 × 32, darker foot), level with the other tabs: never raised, never a floating circle.
 - Listing cards have no box: the photo carries the card and the words sit on the ground.
 
 ## Motion
@@ -83,17 +83,17 @@ Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.
 
 ## Tab bar
 `src/components/navigation/QuietTabBar.tsx` is variant D, "la barre discrète", which Brice chose from four expert proposals:
-- **No box.** The bar sits on the screen's own ground (`background`) under one hairline (`border`), 56dp plus the safe area. It has no shadow and no white panel.
+- **No box.** The bar sits on the screen's own ground (`background`) under one hairline (`border`), 60dp plus the safe area. It has no shadow and no white panel.
 - **Selection has three cues, none of them hue alone:**
   - a 3 × 24dp `primary` mark under the hairline (a shop's brand colour in seller mode);
-  - the filled glyph (outline at rest);
+  - the filled glyph (outline at rest), 27dp so it reads at arm's length;
   - the label in ink and Inter Bold (`mutedForeground` and SemiBold at rest).
-- **Sell** is the only saturated colour: the yellow plaque, level with the other tabs, with an ink plus and an ink label. It never gets the mark.
+- **Publier** (creating a listing, not "selling") is the only saturated colour: the 50 × 32 yellow plaque, level with the other tabs, with an ink plus and an ink label. It never gets the mark.
 - **Badges:**
   - **Messages:** a count in `ownBubble`, white Inter Bold 11, ringed with the ground colour, shown as "9+" above nine. An unread message is not an error, so the badge is not red.
   - **Account:** a `primary` dot with no number.
   - Screen readers hear the count ("Messages, 3 non lus").
-- **Haptics:** a selection tick on a change of tab (iOS and Android), a light tap on Sell, nothing on the tab already open.
+- **Haptics:** a selection tick on a change of tab (iOS and Android), a light tap on Publier, nothing on the tab already open.
 - **Seller mode:** the same bar with four or five equal tabs and no plaque. Adding a product lives in the catalogue.
 - **Tablets in landscape** keep the navigator's rail.
 

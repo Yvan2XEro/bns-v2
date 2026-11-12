@@ -476,7 +476,14 @@ function RootLayoutNav() {
 	return (
 		<ThemeProvider value={colorScheme === "dark" ? NdopDark : NdopLight}>
 			<SellerBrandProvider>
-				<Stack>
+				<Stack
+					// Every screen draws its own header today; a native one shown by
+					// mistake would still speak the app's type, not the system's.
+					screenOptions={{
+						headerTitleStyle: { fontFamily: Fonts.displayBold },
+						headerBackTitleStyle: { fontFamily: Fonts.body },
+					}}
+				>
 					<Stack.Screen name="onboarding" options={{ headerShown: false }} />
 					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 					<Stack.Screen name="(seller-tabs)" options={{ headerShown: false }} />

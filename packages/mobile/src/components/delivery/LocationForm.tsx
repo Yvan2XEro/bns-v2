@@ -5,6 +5,7 @@ import * as Location from "expo-location";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { FormRow } from "@/src/components/layout/FormRow";
 import {
 	FieldError,
@@ -167,7 +168,7 @@ export function LocationForm({
 				) : (
 					<Ionicons name="locate-outline" size={18} color={c.link} />
 				)}
-				<Text style={{ color: c.link }}>
+				<Text style={{ fontFamily: Fonts.body, color: c.link }}>
 					{locating
 						? t("deliverySettings.locating")
 						: t("deliverySettings.useMyPosition")}
@@ -222,7 +223,7 @@ export function LocationForm({
 					accessibilityLabel={t("deliverySettings.openInMaps")}
 					style={{ minHeight: 48, justifyContent: "center" }}
 				>
-					<Text style={{ color: c.link }}>
+					<Text style={{ fontFamily: Fonts.body, color: c.link }}>
 						{t("deliverySettings.openInMaps")}
 					</Text>
 				</Pressable>
@@ -231,13 +232,15 @@ export function LocationForm({
 			{toggle("pickupEnabled", "deliverySettings.fieldPickupEnabled")}
 			{text("pickupFee", "deliverySettings.fieldPickupFee", "number-pad")}
 			{text("holdDays", "deliverySettings.fieldHoldDays", "number-pad")}
-			<Text style={{ color: c.body }}>{t("deliverySettings.fieldHours")}</Text>
+			<Text style={{ fontFamily: Fonts.body, color: c.body }}>
+				{t("deliverySettings.fieldHours")}
+			</Text>
 			{hours.map((row, index) => (
 				<View
 					key={row.day}
 					style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}
 				>
-					<Text style={{ width: 40, color: c.text }}>
+					<Text style={{ fontFamily: Fonts.body, width: 40, color: c.text }}>
 						{t(`deliverySettings.days.${row.day}`)}
 					</Text>
 					<View style={{ flex: 1 }}>
@@ -311,7 +314,7 @@ export function LocationForm({
 								borderColor: c.border,
 							}}
 						>
-							<Text style={{ color: c.link }}>
+							<Text style={{ fontFamily: Fonts.body, color: c.link }}>
 								+ {t(`deliverySettings.days.${day}`)}
 							</Text>
 						</Pressable>
@@ -334,7 +337,10 @@ export function LocationForm({
 			/>
 			{toggle("active", "deliverySettings.fieldActive")}
 			{error ? (
-				<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
+				<Text
+					accessibilityRole="alert"
+					style={{ fontFamily: Fonts.body, color: dangerInk(c) }}
+				>
 					{resolveErrorMessage(error, t, t("deliverySettings.saveFailed"))}
 				</Text>
 			) : null}

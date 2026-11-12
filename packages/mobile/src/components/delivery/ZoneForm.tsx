@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { FormRow } from "@/src/components/layout/FormRow";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
@@ -128,7 +129,7 @@ export function ZoneForm({
 					name="courier"
 					render={({ field }) =>
 						couriers.data && couriers.data.length === 0 ? (
-							<Text style={{ color: c.muted }}>
+							<Text style={{ fontFamily: Fonts.body, color: c.muted }}>
 								{t("deliverySettings.noCourier")}
 							</Text>
 						) : (
@@ -146,7 +147,10 @@ export function ZoneForm({
 				/>
 			) : null}
 			{errorOf("courier") || serverErrorOf("courier") ? (
-				<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
+				<Text
+					accessibilityRole="alert"
+					style={{ fontFamily: Fonts.body, color: dangerInk(c) }}
+				>
 					{errorOf("courier")
 						? t(errorOf("courier") ?? "")
 						: serverErrorOf("courier")}
@@ -280,7 +284,10 @@ export function ZoneForm({
 				)}
 			/>
 			{serverMessage && !serverField ? (
-				<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
+				<Text
+					accessibilityRole="alert"
+					style={{ fontFamily: Fonts.body, color: dangerInk(c) }}
+				>
 					{serverMessage}
 				</Text>
 			) : null}

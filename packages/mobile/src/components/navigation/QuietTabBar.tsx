@@ -23,10 +23,10 @@ import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 
 /**
  * The quiet tab bar (DESIGN.md, "Tab bar"): no box and no shadow, it sits on
- * the screen's own ground under one hairline, 56dp tall, so the photos and
+ * the screen's own ground under one hairline, 60dp tall, so the photos and
  * price tags keep the colour. Selection never rests on hue alone: a 3dp
- * primary mark slides under the hairline, the glyph turns from outline to
- * filled, and the label turns ink and bold. The sell action is the bar's only
+ * primary mark slides under the hairline, the 27dp glyph turns from outline
+ * to filled, and the label turns ink and bold. The publish action is the bar's only
  * saturated colour: a small yellow plaque, level with the other tabs.
  *
  * Used for the bottom position only; the tablet rail keeps the navigator's
@@ -37,6 +37,8 @@ type TabBarProps = Parameters<
 >[0];
 
 const MARK_WIDTH = 24;
+/** Glyph size: a notch above the platform default, to read at arm's length. */
+const GLYPH = 27;
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 
 export function QuietTabBar({
@@ -147,7 +149,7 @@ export function QuietTabBar({
 						{isAction ? (
 							<SellPlaque />
 						) : (
-							options.tabBarIcon?.({ focused, color: tint, size: 24 })
+							options.tabBarIcon?.({ focused, color: tint, size: GLYPH })
 						)}
 						<Text
 							numberOfLines={1}
@@ -196,7 +198,7 @@ export function TabGlyph({
 		<View style={styles.glyph}>
 			<Ionicons
 				name={focused || !(outline in Ionicons.glyphMap) ? name : outline}
-				size={24}
+				size={GLYPH}
 				color={color}
 			/>
 			{badge > 0 ? (
@@ -222,12 +224,12 @@ export function TabGlyph({
 	);
 }
 
-/** The sell action: signage yellow, ink plus, level with the other tabs. */
+/** The publish action: signage yellow, ink plus, level with the other tabs. */
 export function SellPlaque() {
 	const c = Colors[useColorScheme() === "dark" ? "dark" : "light"];
 	return (
 		<View style={[styles.plaque, { backgroundColor: c.sun }]}>
-			<Ionicons name="add" size={20} color={c.sunForeground} />
+			<Ionicons name="add" size={24} color={c.sunForeground} />
 		</View>
 	);
 }
@@ -248,7 +250,7 @@ const styles = StyleSheet.create({
 	},
 	cell: {
 		flex: 1,
-		height: 56,
+		height: 60,
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 2,
@@ -258,7 +260,7 @@ const styles = StyleSheet.create({
 		lineHeight: 14,
 		letterSpacing: 0.1,
 	},
-	glyph: { width: 24, height: 24 },
+	glyph: { width: GLYPH, height: GLYPH },
 	badge: {
 		position: "absolute",
 		top: -4,
@@ -287,9 +289,9 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 	},
 	plaque: {
-		width: 44,
-		height: 28,
-		borderRadius: 9,
+		width: 50,
+		height: 32,
+		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
 		borderBottomWidth: 2,

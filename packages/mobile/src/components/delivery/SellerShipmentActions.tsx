@@ -1,5 +1,6 @@
 import { useReducer } from "react";
 import { Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -109,7 +110,10 @@ function Mutating({ error }: { error: unknown }) {
 	const { t } = useTranslation();
 	if (!error) return null;
 	return (
-		<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
+		<Text
+			accessibilityRole="alert"
+			style={{ fontFamily: Fonts.body, color: dangerInk(c) }}
+		>
 			{resolveErrorMessage(error, t, t("shipmentPanel.actionFailed"))}
 		</Text>
 	);

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Share, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import {
 	NoteField,
 	ReasonPicker,
@@ -38,7 +39,10 @@ function ErrorLine({ error }: { error: unknown }) {
 	const { t } = useTranslation();
 	if (!error) return null;
 	return (
-		<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
+		<Text
+			accessibilityRole="alert"
+			style={{ fontFamily: Fonts.body, color: dangerInk(c) }}
+		>
 			{resolveErrorMessage(error, t, t("shipmentPanel.actionFailed"))}
 		</Text>
 	);
@@ -57,7 +61,11 @@ function PhotoField({
 	const { t } = useTranslation();
 	return (
 		<View style={{ gap: 8 }}>
-			{photo ? <Text>{t("shipmentPanel.photoAttached")}</Text> : null}
+			{photo ? (
+				<Text style={{ fontFamily: Fonts.body }}>
+					{t("shipmentPanel.photoAttached")}
+				</Text>
+			) : null}
 			<SheetButton
 				label={
 					photo ? t("shipmentPanel.retakePhoto") : t("shipmentPanel.takePhoto")
@@ -133,7 +141,9 @@ export function AttemptPanel({
 			/>
 			<PhotoField photo={proof.photo} onChange={proof.setPhoto} />
 			{proof.refusal ? (
-				<Text accessibilityRole="alert">{proof.refusal}</Text>
+				<Text style={{ fontFamily: Fonts.body }} accessibilityRole="alert">
+					{proof.refusal}
+				</Text>
 			) : null}
 			<ErrorLine error={attempt.error} />
 			<SheetButton
@@ -183,7 +193,9 @@ export function HandoverPanel({
 			/>
 			<PhotoField photo={proof.photo} onChange={proof.setPhoto} />
 			{proof.refusal ? (
-				<Text accessibilityRole="alert">{proof.refusal}</Text>
+				<Text style={{ fontFamily: Fonts.body }} accessibilityRole="alert">
+					{proof.refusal}
+				</Text>
 			) : null}
 			<ErrorLine error={handover.error} />
 			<SheetButton
@@ -249,8 +261,12 @@ export function RiderPanel({
 			<ErrorLine error={assign.error ?? link.error} />
 			{url ? (
 				<>
-					<Text selectable>{url}</Text>
-					<Text>{t("shipmentPanel.riderLinkOnce")}</Text>
+					<Text style={{ fontFamily: Fonts.body }} selectable>
+						{url}
+					</Text>
+					<Text style={{ fontFamily: Fonts.body }}>
+						{t("shipmentPanel.riderLinkOnce")}
+					</Text>
 					<SheetButton
 						label={t("shipmentPanel.shareAgain")}
 						tone="secondary"
@@ -293,9 +309,15 @@ export function DeclareDeliveredPanel({
 	return (
 		<View style={{ gap: 12 }}>
 			<PhotoField photo={proof.photo} onChange={proof.setPhoto} />
-			{!proof.photo ? <Text>{t("shipmentPanel.photoNeeded")}</Text> : null}
+			{!proof.photo ? (
+				<Text style={{ fontFamily: Fonts.body }}>
+					{t("shipmentPanel.photoNeeded")}
+				</Text>
+			) : null}
 			{proof.refusal ? (
-				<Text accessibilityRole="alert">{proof.refusal}</Text>
+				<Text style={{ fontFamily: Fonts.body }} accessibilityRole="alert">
+					{proof.refusal}
+				</Text>
 			) : null}
 			<NoteField
 				label={t("shipmentPanel.note")}
