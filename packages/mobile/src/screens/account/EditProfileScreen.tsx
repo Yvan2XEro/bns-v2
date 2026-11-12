@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
-import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useNavigation } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -22,6 +21,7 @@ import {
 	useGroupedColors,
 } from "@/src/components/settings/Grouped";
 import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
+import { UserAvatar } from "@/src/components/settings/UserAvatar";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useCloseScreen } from "@/src/contexts/DetailPaneContext";
@@ -32,7 +32,6 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
-import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 function getErrorMessage(error: unknown, fallback: string): string {
 	// `error instanceof Error` was always true for a failed request, so the
@@ -55,6 +54,41 @@ export function EditProfileScreen() {
 	const [location, setLocation] = useState(user?.location ?? "");
 	const [avatarUri, setAvatarUri] = useState<string | null>(null);
 	const [avatarUploading, setAvatarUploading] = useState(false);
+	const [nameError, setNameError] = useState<string | null>(null);
+
+	// Leaving with unsaved edits asks first, whether by the back arrow, the
+	// Android back button or the swipe. A successful save turns the guard off.
+	const dirty =
+		name !== (user?.name ?? "") ||
+		bio !== (user?.bio ?? "") ||
+		location !== (user?.location ?? "");
+	const savedRef = useRef(false);
+	const navigation = useNavigation();
+	useEffect(() => {
+		if (!dirty) return;
+		// `beforeRemove` through expo-router's own navigation: the separate
+		// @react-navigation package reads a provider that is never mounted.
+		return navigation.addListener("beforeRemove", (event) => {
+			if (savedRef.current) return;
+			event.preventDefault();
+			showAlert(
+				t("profile.discardTitle", {
+					defaultValue: "Abandonner les modifications ?",
+				}),
+				t("profile.discardMessage", {
+					defaultValue: "Ce que vous avez changé ne sera pas enregistré.",
+				}),
+				[
+					{ text: t("common.cancel"), style: "cancel" },
+					{
+						text: t("create.discardConfirm"),
+						style: "destructive",
+						onPress: () => navigation.dispatch(event.data.action),
+					},
+				],
+			);
+		});
+	}, [dirty, navigation, showAlert, t]);
 
 	const c = useGroupedColors();
 
@@ -132,8 +166,13 @@ export function EditProfileScreen() {
 
 	const { mutate: save, isPending } = useMutation({
 		mutationFn: () =>
-			api.patch(`/api/users/${user?.id}`, { name, bio, location }),
+			api.patch(`/api/users/${user?.id}`, {
+				name: name.trim(),
+				bio,
+				location,
+			}),
 		onSuccess: async () => {
+			savedRef.current = true;
 			await refreshUser();
 			showSuccess(
 				t("profile.profileUpdatedTitle"),
@@ -145,16 +184,34 @@ export function EditProfileScreen() {
 			showError(t("auth.errorTitle"), getErrorMessage(err, t("common.error"))),
 	});
 
+	// The name is the one required field: an empty one is refused here,
+	// under the field, rather than by the server in a sheet.
+	const handleSave = () => {
+		if (!name.trim()) {
+			setNameError(
+				t("profile.nameRequired", { defaultValue: "Indiquez votre nom" }),
+			);
+			return;
+		}
+		setNameError(null);
+		save();
+	};
+
 	const fields = [
 		{
-			label: t("profile.fullNameLabel"),
+			label: t("auth.name"),
 			value: name,
-			set: setName,
+			set: (text: string) => {
+				setName(text);
+				if (nameError && text.trim()) setNameError(null);
+			},
 			placeholder: t("auth.fullNamePlaceholder"),
 			keyboard: "default",
+			error: nameError,
 		},
 		{
 			label: t("profile.bioLabel"),
+			error: null,
 			value: bio,
 			set: setBio,
 			placeholder: t("profile.bioPlaceholderInput"),
@@ -162,6 +219,7 @@ export function EditProfileScreen() {
 		},
 		{
 			label: t("profile.locationLabel"),
+			error: null,
 			value: location,
 			set: setLocation,
 			placeholder: t("profile.locationPlaceholder"),
@@ -178,18 +236,26 @@ export function EditProfileScreen() {
 				title={t("profile.editProfileTitle")}
 				right={
 					<Pressable
-						onPress={() => save()}
-						disabled={isPending}
+						onPress={handleSave}
+						disabled={isPending || !dirty}
 						accessibilityRole="button"
 						accessibilityLabel={t("profile.save")}
-						accessibilityState={{ disabled: isPending, busy: isPending }}
+						accessibilityState={{
+							disabled: isPending || !dirty,
+							busy: isPending,
+						}}
 						hitSlop={12}
 						style={styles.saveHit}
 					>
 						{isPending ? (
 							<ActivityIndicator color={c.link} />
 						) : (
-							<Text style={[styles.saveBtn, { color: c.link }]}>
+							<Text
+								style={[
+									styles.saveBtn,
+									{ color: dirty ? c.link : c.mutedForeground },
+								]}
+							>
 								{t("profile.save")}
 							</Text>
 						)}
@@ -204,30 +270,7 @@ export function EditProfileScreen() {
 			>
 				{/* Avatar */}
 				<View style={styles.avatarSection}>
-					{avatarUri || user?.avatar?.url ? (
-						<Image
-							source={{
-								uri:
-									avatarUri ??
-									resolveListingImageUrl(user?.avatar, "thumbnail") ??
-									undefined,
-							}}
-							style={styles.avatar}
-							contentFit="cover"
-							accessibilityIgnoresInvertColors
-						/>
-					) : (
-						<View
-							style={[
-								styles.avatarPlaceholder,
-								{ backgroundColor: c.primaryTint },
-							]}
-						>
-							<Text style={[styles.avatarLetter, { color: c.link }]}>
-								{user?.name?.[0]?.toUpperCase()}
-							</Text>
-						</View>
-					)}
+					<UserAvatar user={user} uri={avatarUri} size={96} />
 					<Pressable
 						style={({ pressed }) => [
 							styles.changeAvatarBtn,
@@ -241,6 +284,7 @@ export function EditProfileScreen() {
 						disabled={avatarUploading}
 						hitSlop={4}
 						accessibilityRole="button"
+						accessibilityLabel={t("profile.editAvatar")}
 						accessibilityState={{
 							disabled: avatarUploading,
 							busy: avatarUploading,
@@ -274,10 +318,11 @@ export function EditProfileScreen() {
 
 				{/* Fields */}
 				{fields.map(
-					({ label, value, set, placeholder, multiline, keyboard }) => (
+					({ label, value, set, placeholder, multiline, keyboard, error }) => (
 						<FormField
 							key={label}
 							label={label}
+							error={error}
 							value={value}
 							onChangeText={set}
 							placeholder={placeholder}
@@ -289,16 +334,59 @@ export function EditProfileScreen() {
 					),
 				)}
 
-				<View style={styles.note}>
-					<Ionicons
-						name="information-circle-outline"
-						size={18}
-						color={c.mutedForeground}
+				{/* The number is changed in Security, behind an SMS code: the row
+				    says where it stands and goes there. */}
+				<GroupedSection
+					footer={t("profile.phoneChangeFooter", {
+						defaultValue:
+							"Pour changer de numéro, il faut le confirmer par SMS.",
+					})}
+				>
+					<GroupedRow
+						icon="call-outline"
+						label={t("profile.phoneLabel")}
+						value={user?.phone ?? null}
+						onPress={() => router.push("/security")}
+						trailing={
+							user?.phoneVerified === undefined ? undefined : (
+								<View style={styles.phoneStatus}>
+									<Ionicons
+										name={
+											user.phoneVerified ? "checkmark-circle" : "alert-circle"
+										}
+										size={15}
+										color={user.phoneVerified ? c.successText : c.warningText}
+									/>
+									<Text
+										style={[
+											styles.phoneStatusText,
+											{
+												color: user.phoneVerified
+													? c.successText
+													: c.warningText,
+											},
+										]}
+									>
+										{user.phoneVerified
+											? t("settings.phoneVerifiedBadge")
+											: t("settings.phoneNotVerifiedBadge")}
+									</Text>
+								</View>
+							)
+						}
+						accessibilityLabel={[
+							t("profile.phoneLabel"),
+							user?.phone,
+							user?.phoneVerified === undefined
+								? null
+								: user.phoneVerified
+									? t("settings.phoneVerifiedBadge")
+									: t("settings.phoneNotVerifiedBadge"),
+						]
+							.filter(Boolean)
+							.join(", ")}
 					/>
-					<Text style={[styles.infoText, { color: c.mutedForeground }]}>
-						{t("profile.phoneManagedInSettings")}
-					</Text>
-				</View>
+				</GroupedSection>
 			</KeyboardAwareScrollView>
 		</SafeAreaView>
 	);
@@ -310,15 +398,7 @@ const styles = StyleSheet.create({
 	saveBtn: { fontSize: 16, fontFamily: Fonts.bodyBold },
 	scroll: { padding: 16, paddingTop: 24, gap: 20, paddingBottom: 48 },
 	avatarSection: { alignItems: "center", gap: 12 },
-	avatar: { width: 96, height: 96, borderRadius: 48 },
-	avatarPlaceholder: {
-		width: 96,
-		height: 96,
-		borderRadius: 48,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	avatarLetter: { fontSize: 36, fontFamily: Fonts.displayBold },
+
 	changeAvatarBtn: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -329,16 +409,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 	},
 	changeAvatarText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	note: {
-		flexDirection: "row",
-		gap: 8,
-		alignItems: "flex-start",
-		paddingHorizontal: 4,
-	},
-	infoText: {
-		flex: 1,
-		fontSize: 13,
-		lineHeight: 19,
-		fontFamily: Fonts.body,
-	},
+	phoneStatus: { flexDirection: "row", alignItems: "center", gap: 4 },
+	phoneStatusText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 });

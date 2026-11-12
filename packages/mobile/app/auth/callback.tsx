@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { FormButton } from "@/src/components/settings/FormButton";
 import { useAuth } from "@/src/lib/auth";
 import { getSafeAuthRedirect } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
@@ -18,6 +19,14 @@ export default function AuthCallbackScreen() {
 		transferToken?: string;
 	}>();
 	const exchangeFailed = useRef(false);
+	// A deep link with neither a token nor an error (an aborted browser, a
+	// cold relaunch) would spin forever: after ten seconds, say so and offer
+	// the way out.
+	const [timedOut, setTimedOut] = useState(false);
+	useEffect(() => {
+		const timer = setTimeout(() => setTimedOut(true), 10_000);
+		return () => clearTimeout(timer);
+	}, []);
 	const redirectTo = getSafeAuthRedirect(params.redirect);
 
 	const c = Colors[isDark ? "dark" : "light"];
@@ -36,10 +45,10 @@ export default function AuthCallbackScreen() {
 			exchangeFailed.current = true;
 			router.replace({
 				pathname: "/auth/login",
-				params: { oauthError: t("auth.loginFailedTitle") },
+				params: { oauthError: "exchange" },
 			});
 		});
-	}, [params.transferToken, completeOAuth, t]);
+	}, [params.transferToken, completeOAuth]);
 
 	useEffect(() => {
 		if (isLoading || exchangeFailed.current) return;
@@ -61,18 +70,52 @@ export default function AuthCallbackScreen() {
 
 	return (
 		<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
-			<View style={styles.content}>
-				<ActivityIndicator size="large" color={primaryColor} />
-				<Text
-					accessibilityRole="header"
-					style={[styles.title, { color: textColor }]}
-				>
-					{t("auth.callbackTitle")}
-				</Text>
-				<Text style={[styles.subtitle, { color: mutedColor }]}>
-					{t("auth.callbackSubtitle")}
-				</Text>
-			</View>
+			{timedOut && !user ? (
+				<View style={styles.content} accessibilityLiveRegion="polite">
+					<Text
+						accessibilityRole="header"
+						style={[styles.title, { color: textColor }]}
+					>
+						{t("auth.callbackTimeoutTitle", {
+							defaultValue: "La connexion n'a pas abouti",
+						})}
+					</Text>
+					<Text style={[styles.subtitle, { color: mutedColor }]}>
+						{t("auth.callbackTimeoutBody", {
+							defaultValue: "Réessayez, ou connectez-vous avec votre e-mail.",
+						})}
+					</Text>
+					<View style={styles.actions}>
+						<FormButton
+							label={t("common.retry")}
+							onPress={() =>
+								router.replace({
+									pathname: "/auth/login",
+									params: params.redirect ? { redirect: redirectTo } : {},
+								})
+							}
+						/>
+						<FormButton
+							variant="secondary"
+							label={t("common.close")}
+							onPress={() => router.replace("/(tabs)/home")}
+						/>
+					</View>
+				</View>
+			) : (
+				<View style={styles.content}>
+					<ActivityIndicator size="large" color={primaryColor} />
+					<Text
+						accessibilityRole="header"
+						style={[styles.title, { color: textColor }]}
+					>
+						{t("auth.callbackTitle")}
+					</Text>
+					<Text style={[styles.subtitle, { color: mutedColor }]}>
+						{t("auth.callbackSubtitle")}
+					</Text>
+				</View>
+			)}
 		</SafeAreaView>
 	);
 }
@@ -90,6 +133,7 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		marginTop: 18,
 	},
+	actions: { alignSelf: "stretch", gap: 12, marginTop: 28 },
 	subtitle: {
 		fontFamily: Fonts.body,
 		fontSize: 15,

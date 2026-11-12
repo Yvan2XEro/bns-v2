@@ -105,6 +105,17 @@ export function usePhotoUploads({
 		setPending((list) => list.filter((p) => p.key !== key));
 	}, []);
 
+	/**
+	 * Drops every photo still waiting, sending or failed. Used when the form
+	 * they belong to is reset: an upload that lands afterwards finds its asset
+	 * gone and is ignored, rather than joining the next ad.
+	 */
+	const cancelAll = useCallback(() => {
+		assets.current.clear();
+		waiting.current = [];
+		setPending([]);
+	}, []);
+
 	// Back online: what failed goes again without the seller asking.
 	const pendingRef = useRef(pending);
 	pendingRef.current = pending;
@@ -167,9 +178,13 @@ export function usePhotoUploads({
 		pick,
 		retry,
 		remove,
+		cancelAll,
 		uploading: pending.some((p) => p.status === "uploading"),
+		failed: pending.some((p) => p.status === "failed"),
 	};
 }
+
+export type PhotoUploads = ReturnType<typeof usePhotoUploads>;
 
 async function upload(
 	asset: ImagePicker.ImagePickerAsset,

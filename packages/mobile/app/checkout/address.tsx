@@ -1,9 +1,8 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
 import { AddressEditor } from "@/src/components/address/AddressEditor";
 import {
 	CardAction,
@@ -19,6 +18,7 @@ import {
 import { OrderListSkeleton } from "@/src/components/checkout/OrderListSkeleton";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { SegmentedControl } from "@/src/components/ui/SegmentedControl";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import {
@@ -45,7 +45,7 @@ export default function CheckoutAddressScreen() {
 	const c = useShopTheme();
 	return (
 		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
-			<CheckoutHeader current={1} />
+			<CheckoutHeader current="address" />
 			<CheckoutGate>
 				<AddressStep />
 			</CheckoutGate>
@@ -56,7 +56,6 @@ export default function CheckoutAddressScreen() {
 type Mode = "list" | "new" | { edit: string };
 
 function AddressStep() {
-	const c = useShopTheme();
 	const { t } = useTranslation();
 	const { showConfirm } = useAlert();
 	const { launchCities } = useAppConfig();
@@ -127,51 +126,14 @@ function AddressStep() {
 				keyboardShouldPersistTaps="handled"
 			>
 				{addresses.length > 0 && !editing ? (
-					<View
-						accessibilityRole="tablist"
-						style={{
-							flexDirection: "row",
-							gap: 8,
-							backgroundColor: c.card,
-							borderRadius: 12,
-							padding: 4,
-							borderWidth: StyleSheet.hairlineWidth,
-							borderColor: c.border,
-						}}
-					>
-						{(["list", "new"] as const).map((tab) => {
-							const on = current === tab;
-							return (
-								<Pressable
-									key={tab}
-									onPress={() => setMode(tab)}
-									accessibilityRole="tab"
-									accessibilityState={{ selected: on }}
-									hitSlop={{ top: 4, bottom: 4 }}
-									style={{
-										flex: 1,
-										minHeight: 44,
-										alignItems: "center",
-										justifyContent: "center",
-										borderRadius: 9,
-										backgroundColor: on ? c.primarySoft : "transparent",
-									}}
-								>
-									<Text
-										style={{
-											fontFamily: Fonts.bodySemibold,
-											fontSize: 15,
-											color: on ? c.link : c.muted,
-										}}
-									>
-										{tab === "list"
-											? t("addresses.savedTab")
-											: t("addresses.newTab")}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
+					<SegmentedControl
+						segments={[
+							{ key: "list", label: t("addresses.savedTab") },
+							{ key: "new", label: t("addresses.newTab") },
+						]}
+						value={current === "new" ? "new" : "list"}
+						onChange={setMode}
+					/>
 				) : null}
 
 				{editing ? (

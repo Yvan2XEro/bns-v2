@@ -1,5 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+	Pressable,
+	StyleSheet,
+	Text,
+	useWindowDimensions,
+	View,
+} from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import type { BuyerProtectionConfig } from "@/src/contexts/AppConfigContext";
@@ -33,6 +39,9 @@ export function PaymentMethodPicker({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	// Two columns of three-line copy are hard to compare on a 360dp phone in
+	// daylight; under 400dp the options stack.
+	const narrow = useWindowDimensions().width < 400;
 
 	return (
 		<View
@@ -46,7 +55,7 @@ export function PaymentMethodPicker({
 			>
 				{t("payments.method_title")}
 			</Text>
-			<View style={styles.options}>
+			<View style={[styles.options, narrow && styles.optionsStacked]}>
 				{METHODS.map((option) => {
 					const active = option === method;
 					const isProtected = option === "mobile_money";
@@ -127,8 +136,10 @@ const styles = StyleSheet.create({
 	},
 	legend: { fontSize: 18, lineHeight: 23, fontFamily: Fonts.displayBold },
 	options: { flexDirection: "row", gap: 10 },
+	optionsStacked: { flexDirection: "column" },
 	option: {
-		flex: 1,
+		flexGrow: 1,
+		flexBasis: 0,
 		minHeight: 48,
 		borderWidth: 1.5,
 		borderRadius: 12,

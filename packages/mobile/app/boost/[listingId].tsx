@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { ShareSheet } from "@/src/components/share/ShareSheet";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useListing } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
@@ -13,7 +15,8 @@ import type { ListingDoc } from "@/src/types/api";
 
 // Deliberately no link out to the web listing page: that page renders the paid
 // boost dialog, so sending the user there from inside the app is an App Review
-// 3.1.1 external-purchase link-out for a digital in-app benefit.
+// 3.1.1 external-purchase link-out for a digital in-app benefit. What it
+// offers instead is free reach: sharing the listing where buyers already are.
 
 export default function BoostModal() {
 	const { listingId } = useLocalSearchParams<{ listingId: string }>();
@@ -29,6 +32,25 @@ export default function BoostModal() {
 		| undefined;
 	const listingTitle = listing?.title?.trim();
 	const thumbnail = resolveListingImageUrl(listing?.images?.[0], "thumbnail");
+	const { webUrl, shareCardsEnabled } = useAppConfig();
+
+	const share = async () => {
+		if (!listingId) return;
+		if (shareCardsEnabled && webUrl && listingTitle) {
+			await ShareSheet.call({
+				kind: "listing",
+				id: listingId,
+				title: listingTitle,
+			});
+			return;
+		}
+		const url = `${(webUrl || "https://buynsellem.com").replace(/\/+$/, "")}/listing/${listingId}`;
+		Share.share({
+			title: listingTitle,
+			url,
+			message: listingTitle ? `${listingTitle}\n${url}` : url,
+		});
+	};
 
 	const c = isDark ? Colors.dark : Colors.light;
 	const bg = c.background;
@@ -44,16 +66,9 @@ export default function BoostModal() {
 			edges={["top"]}
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
-			<Pressable
-				onPress={() => router.dismiss()}
-				style={styles.closeBtn}
-				accessibilityRole="button"
-				accessibilityLabel={t("common.close")}
-			>
-				<Ionicons name="close" size={24} color={textColor} />
-			</Pressable>
-
 			<View style={[styles.container, centeredContent]}>
+				{/* The status first: boosting is not here yet. Then what the
+				    seller can do today for the same listing. */}
 				<View style={styles.header}>
 					<View
 						style={[styles.rocketIconWrap, { backgroundColor: c.sun }]}
@@ -66,71 +81,68 @@ export default function BoostModal() {
 						style={[styles.title, { color: textColor }]}
 						accessibilityRole="header"
 					>
-						{t("boost.boostTitle")}
+						{t("boost.soonTitle")}
 					</Text>
 					<Text style={[styles.subtitle, { color: bodyColor }]}>
-						{t("boost.boostSubtitle")}
+						{t("boost.soonBody")}
 					</Text>
 				</View>
 
-				<View
-					style={[
-						styles.unavailableCard,
-						{
-							backgroundColor: cardBg,
-							borderColor,
-						},
-					]}
-				>
+				{listingTitle ? (
 					<View
 						style={[
-							styles.unavailableBadge,
-							{ backgroundColor: c.warningTint },
+							styles.listingCard,
+							{ backgroundColor: cardBg, borderColor },
 						]}
 					>
-						<Ionicons name="time-outline" size={16} color={c.warningText} />
+						{thumbnail ? (
+							<Image
+								source={{ uri: thumbnail }}
+								style={[styles.listingThumb, { backgroundColor: c.well }]}
+								contentFit="cover"
+								accessibilityIgnoresInvertColors
+							/>
+						) : null}
 						<Text
-							style={[styles.unavailableBadgeText, { color: c.warningText }]}
+							style={[styles.listingTitle, { color: textColor }]}
+							numberOfLines={2}
 						>
-							{t("boost.mobileUnavailableBadge")}
+							{listingTitle}
 						</Text>
 					</View>
+				) : null}
 
-					<Text style={[styles.unavailableTitle, { color: textColor }]}>
-						{t("boost.mobileUnavailableTitle")}
-					</Text>
-					<Text style={[styles.unavailableText, { color: bodyColor }]}>
-						{t("boost.mobileUnavailableMessage")}
-					</Text>
-					{listingTitle ? (
-						<View style={[styles.listingRow, { borderColor }]}>
-							{thumbnail ? (
-								<Image
-									source={{ uri: thumbnail }}
-									style={[styles.listingThumb, { backgroundColor: c.well }]}
-									contentFit="cover"
-									accessibilityIgnoresInvertColors
-								/>
-							) : null}
-							<Text
-								style={[styles.listingTitle, { color: textColor }]}
-								numberOfLines={2}
-							>
-								{listingTitle}
-							</Text>
-						</View>
-					) : null}
-				</View>
+				<Text style={[styles.shareHint, { color: bodyColor }]}>
+					{t("boost.shareHint")}
+				</Text>
 
+				<Pressable
+					onPress={() => void share()}
+					accessibilityRole="button"
+					style={({ pressed }) => [
+						styles.primaryAction,
+						{ backgroundColor: filledColor, opacity: pressed ? 0.85 : 1 },
+					]}
+				>
+					<Ionicons name="share-social-outline" size={19} color="#ffffff" />
+					<Text style={styles.primaryActionText}>
+						{t("boost.shareListing")}
+					</Text>
+				</Pressable>
 				<Pressable
 					onPress={() => router.dismiss()}
 					accessibilityRole="button"
 					style={({ pressed }) => [
-						styles.closeAction,
-						{ backgroundColor: filledColor, opacity: pressed ? 0.85 : 1 },
+						styles.secondaryAction,
+						{
+							borderColor: c.borderStrong,
+							backgroundColor: pressed ? c.well : "transparent",
+						},
 					]}
 				>
-					<Text style={styles.closeActionText}>{t("common.back")}</Text>
+					<Text style={[styles.secondaryActionText, { color: textColor }]}>
+						{t("common.close")}
+					</Text>
 				</Pressable>
 			</View>
 		</SafeAreaView>
@@ -139,14 +151,6 @@ export default function BoostModal() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	closeBtn: {
-		alignSelf: "flex-end",
-		width: 48,
-		height: 48,
-		marginRight: 8,
-		alignItems: "center",
-		justifyContent: "center",
-	},
 	container: {
 		flex: 1,
 		justifyContent: "center",
@@ -179,43 +183,13 @@ const styles = StyleSheet.create({
 		lineHeight: 22,
 		textAlign: "center",
 	},
-	unavailableCard: {
+	listingCard: {
+		alignItems: "center",
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
-		gap: 12,
-		padding: 20,
-	},
-	unavailableBadge: {
-		alignItems: "center",
-		alignSelf: "flex-start",
-		borderRadius: 8,
-		flexDirection: "row",
-		gap: 6,
-		paddingHorizontal: 10,
-		paddingVertical: 5,
-	},
-	unavailableBadgeText: {
-		fontFamily: Fonts.bodyBold,
-		fontSize: 13,
-	},
-	unavailableTitle: {
-		fontFamily: Fonts.displayBold,
-		fontSize: 19,
-		lineHeight: 24,
-		letterSpacing: -0.3,
-	},
-	unavailableText: {
-		fontFamily: Fonts.body,
-		fontSize: 15,
-		lineHeight: 22,
-	},
-	listingRow: {
-		alignItems: "center",
-		borderTopWidth: StyleSheet.hairlineWidth,
 		flexDirection: "row",
 		gap: 12,
-		marginTop: 4,
-		paddingTop: 14,
+		padding: 14,
 	},
 	listingThumb: {
 		borderRadius: 8,
@@ -228,16 +202,36 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		lineHeight: 20,
 	},
-	closeAction: {
+	shareHint: {
+		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 22,
+		marginTop: 16,
+	},
+	primaryAction: {
 		alignItems: "center",
 		borderRadius: 12,
+		flexDirection: "row",
+		gap: 8,
 		justifyContent: "center",
 		marginTop: 20,
 		minHeight: 52,
 	},
-	closeActionText: {
+	primaryActionText: {
 		color: "#ffffff",
 		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
+	},
+	secondaryAction: {
+		alignItems: "center",
+		borderRadius: 12,
+		borderWidth: 1.5,
+		justifyContent: "center",
+		marginTop: 10,
+		minHeight: 52,
+	},
+	secondaryActionText: {
+		fontFamily: Fonts.bodySemibold,
 		fontSize: 16,
 	},
 });

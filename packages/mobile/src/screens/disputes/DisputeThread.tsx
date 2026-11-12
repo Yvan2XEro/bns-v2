@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
 	ActivityIndicator,
@@ -70,6 +70,43 @@ const buttons = [
 	"proposal_accept",
 	"proposal_reject",
 ] as const;
+type DisputeButton = (typeof buttons)[number];
+
+/** Decisions waiting on the viewer: pinned above the composer, not lost under the history. */
+const DECISIONS = new Set<DisputeButton>([
+	"respond_accept",
+	"proposal_accept",
+	"proposal_reject",
+]);
+
+/**
+ * These settle money or close the case for good, so each asks first, in
+ * its own words.
+ */
+const CONFIRMS: Partial<
+	Record<DisputeButton, { title: string; body: string; destructive: boolean }>
+> = {
+	withdraw: {
+		title: "disputes.confirmWithdrawTitle",
+		body: "disputes.confirmWithdrawBody",
+		destructive: true,
+	},
+	proposal_reject: {
+		title: "disputes.confirmRejectTitle",
+		body: "disputes.confirmRejectBody",
+		destructive: true,
+	},
+	proposal_accept: {
+		title: "disputes.confirmAcceptTitle",
+		body: "disputes.confirmAcceptBody",
+		destructive: false,
+	},
+	respond_accept: {
+		title: "disputes.confirmResolutionTitle",
+		body: "disputes.confirmResolutionBody",
+		destructive: false,
+	},
+};
 
 export function DisputeThread({ id }: { id: string }) {
 	const { t, i18n } = useTranslation();
@@ -82,10 +119,22 @@ export function DisputeThread({ id }: { id: string }) {
 		resolver: zodResolver(messageSchema),
 		defaultValues: { body: "" },
 	});
-	const { showAlert, showError } = useAlert();
+	const { showAlert, showError, confirm } = useAlert();
 	const [viewing, setViewing] = useState<EvidenceAttachment | null>(null);
 	const [staged, setStaged] = useState<string[]>([]);
+	const [evidenceError, setEvidenceError] = useState<string | null>(null);
 	const openFile = useOpenEvidenceFile(id ?? "");
+	const scroll = useRef<ScrollView>(null);
+	// A new message lands in view, not below the fold.
+	const messageCount = view.data?.messages.length ?? 0;
+	useEffect(() => {
+		if (messageCount === 0) return;
+		const timer = setTimeout(
+			() => scroll.current?.scrollToEnd({ animated: true }),
+			50,
+		);
+		return () => clearTimeout(timer);
+	}, [messageCount]);
 
 	if (view.isPending || view.isError || !view.data)
 		return (
@@ -126,7 +175,27 @@ export function DisputeThread({ id }: { id: string }) {
 	const visibleButtons = buttons.filter((name) =>
 		dispute.allowedActions.includes(name),
 	);
-	const perform = async (name: (typeof buttons)[number]) => {
+	const decisions = visibleButtons.filter((name) => DECISIONS.has(name));
+	const otherButtons = visibleButtons.filter((name) => !DECISIONS.has(name));
+	const askThenPerform = async (name: DisputeButton) => {
+		const ask = CONFIRMS[name];
+		if (ask) {
+			const amount = dispute.proposal
+				? formatPrice(dispute.proposal.amount, locale)
+				: "";
+			const ok = await confirm(
+				t(ask.title, { amount }),
+				t(ask.body, { amount }),
+				{
+					confirmText: t(DISPUTE_ACTION_LABELS[name]),
+					destructive: ask.destructive,
+				},
+			);
+			if (!ok) return;
+		}
+		await perform(name);
+	};
+	const perform = async (name: DisputeButton) => {
 		const body =
 			name === "respond_accept"
 				? { action: "accept" }
@@ -145,8 +214,13 @@ export function DisputeThread({ id }: { id: string }) {
 		);
 	};
 	const addEvidence = async (stage = false) => {
+		setEvidenceError(null);
 		const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-		if (permission.status !== "granted") return;
+		if (permission.status !== "granted") {
+			// Said next to the button, rather than a tap that does nothing.
+			setEvidenceError(t("errors.photoPermission"));
+			return;
+		}
 		const result = await ImagePicker.launchImageLibraryAsync({
 			mediaTypes: ["images"],
 			quality: 0.85,
@@ -193,7 +267,7 @@ export function DisputeThread({ id }: { id: string }) {
 						name === "withdraw" || name === "proposal_reject"
 							? ("destructive" as const)
 							: ("default" as const),
-					onPress: () => void perform(name).catch(() => undefined),
+					onPress: () => void askThenPerform(name).catch(() => undefined),
 				})),
 			{ text: t("disputes.refresh"), onPress: () => void view.refetch() },
 			{ text: t("common.cancel"), style: "cancel" as const },
@@ -221,6 +295,7 @@ export function DisputeThread({ id }: { id: string }) {
 			<KeyboardAvoidingView behavior="padding" style={styles.safe}>
 				<ScreenColumn width="reading">
 					<ScrollView
+						ref={scroll}
 						contentContainerStyle={styles.content}
 						keyboardShouldPersistTaps="handled"
 					>
@@ -305,6 +380,7 @@ export function DisputeThread({ id }: { id: string }) {
 													})}
 										</Text>
 									) : null}
+									<FormError message={evidenceError} />
 								</View>
 							) : null}
 							{loose.length ? (
@@ -346,7 +422,7 @@ export function DisputeThread({ id }: { id: string }) {
 							</View>
 						) : null}
 
-						{dispute.proposal?.status === "open" ? (
+						{dispute.proposal?.status === "open" && decisions.length === 0 ? (
 							<View
 								style={[
 									styles.card,
@@ -476,9 +552,9 @@ export function DisputeThread({ id }: { id: string }) {
 							</Text>
 						)}
 
-						{visibleButtons.length ? (
+						{otherButtons.length ? (
 							<View style={styles.actions}>
-								{visibleButtons.map((name) => (
+								{otherButtons.map((name) => (
 									<PurchaseButton
 										key={name}
 										label={t(DISPUTE_ACTION_LABELS[name])}
@@ -493,20 +569,76 @@ export function DisputeThread({ id }: { id: string }) {
 											action.isPending ||
 											(name === "submit" && !evidenceStatus.canSubmit)
 										}
-										onPress={() => void perform(name).catch(() => undefined)}
+										onPress={() =>
+											void askThenPerform(name).catch(() => undefined)
+										}
 									/>
 								))}
 							</View>
 						) : null}
-						<FormError
-							message={
-								action.isError || upload.isError
-									? t("disputes.actionError")
-									: null
-							}
-						/>
 					</ScrollView>
 				</ScreenColumn>
+
+				{action.isError || upload.isError ? (
+					<View
+						style={[styles.errorBar, { backgroundColor: c.dangerSoft }]}
+						accessibilityRole="alert"
+						accessibilityLiveRegion="polite"
+					>
+						<Ionicons name="alert-circle" size={18} color={c.dangerText} />
+						<Text style={[styles.errorText, { color: c.dangerText }]}>
+							{action.isError
+								? resolveErrorMessage(
+										action.error,
+										t,
+										t("disputes.actionError"),
+									)
+								: resolveErrorMessage(
+										upload.error,
+										t,
+										t("disputes.uploadFailed"),
+									)}
+						</Text>
+					</View>
+				) : null}
+
+				{decisions.length ? (
+					<View
+						style={[
+							styles.decision,
+							{ backgroundColor: c.card, borderColor: c.primary },
+						]}
+					>
+						{dispute.proposal?.status === "open" ? (
+							<View style={styles.decisionHead}>
+								<Text
+									style={[styles.title, styles.flex, { color: c.text }]}
+									accessibilityRole="header"
+								>
+									{t("disputes.proposal")}
+								</Text>
+								<TotalTag
+									size="md"
+									amount={formatPrice(dispute.proposal.amount, locale)}
+								/>
+							</View>
+						) : null}
+						<View style={styles.decisionRow}>
+							{decisions.map((name) => (
+								<View key={name} style={styles.flex}>
+									<PurchaseButton
+										label={t(DISPUTE_ACTION_LABELS[name])}
+										tone={name === "proposal_reject" ? "outline" : "primary"}
+										disabled={action.isPending}
+										onPress={() =>
+											void askThenPerform(name).catch(() => undefined)
+										}
+									/>
+								</View>
+							))}
+						</View>
+					</View>
+				) : null}
 
 				{canMessage && staged.length ? (
 					<View
@@ -701,6 +833,27 @@ const styles = StyleSheet.create({
 	badgeText: { fontFamily: Fonts.bodySemibold, fontSize: 12 },
 	time: { fontFamily: Fonts.body, fontSize: 12 },
 	actions: { gap: 10, marginTop: 6 },
+	errorBar: {
+		flexDirection: "row",
+		gap: 8,
+		alignItems: "flex-start",
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+	},
+	errorText: {
+		flex: 1,
+		fontSize: 14,
+		lineHeight: 20,
+		fontFamily: Fonts.bodyMedium,
+	},
+	decision: {
+		gap: 10,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderTopWidth: 1.5,
+	},
+	decisionHead: { flexDirection: "row", alignItems: "center", gap: 12 },
+	decisionRow: { flexDirection: "row", gap: 10 },
 	menuButton: {
 		width: 48,
 		height: 48,

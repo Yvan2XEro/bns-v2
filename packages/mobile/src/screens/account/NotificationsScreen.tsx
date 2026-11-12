@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { Notification } from "@novu/js";
-import { useNotifications } from "@novu/react-native";
+import { useCounts, useNotifications } from "@novu/react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -218,7 +218,16 @@ function SwipeActionButton({
 
 // ─── Notification row ─────────────────────────────────────────────────────────
 
-function NotificationRow({ item, c }: { item: Notification; c: Palette }) {
+function NotificationRow({
+	item,
+	c,
+	onArchived,
+}: {
+	item: Notification;
+	c: Palette;
+	/** Told after an archive, so the screen can offer it back. */
+	onArchived?: (item: Notification) => void;
+}) {
 	const { t, i18n } = useTranslation();
 	const icon = notificationIcon(item.tags ?? [], c);
 	// Unread rows sit on the soft brand tint, with a dot; no side stripe.
@@ -229,8 +238,10 @@ function NotificationRow({ item, c }: { item: Notification; c: Palette }) {
 	const hasActions = !!(item.primaryAction || item.secondaryAction);
 	const when = timeAgo(item.createdAt, i18n.language);
 
-	const handleRowPress = async () => {
-		if (!item.isRead) await item.read();
+	// The destination opens at once; marking read goes on in the background,
+	// so a slow network never leaves the tap looking dead.
+	const handleRowPress = () => {
+		if (!item.isRead) void item.read();
 		const url =
 			item.redirect?.url ??
 			(typeof data?.url === "string" ? data.url : undefined) ??
@@ -246,16 +257,25 @@ function NotificationRow({ item, c }: { item: Notification; c: Palette }) {
 		if (listingId) router.push(`/listing/${listingId}`);
 	};
 
-	const handlePrimaryAction = async () => {
-		await item.completePrimary();
+	const handlePrimaryAction = () => {
 		const url = item.primaryAction?.redirect?.url;
 		if (url) navigate(url);
+		void item.completePrimary();
 	};
 
-	const handleSecondaryAction = async () => {
-		await item.completeSecondary();
+	const handleSecondaryAction = () => {
 		const url = item.secondaryAction?.redirect?.url;
 		if (url) navigate(url);
+		void item.completeSecondary();
+	};
+
+	const toggleArchive = async () => {
+		if (item.isArchived) {
+			await item.unarchive();
+			return;
+		}
+		const result = await item.archive();
+		if (!result?.error) onArchived?.(item);
 	};
 
 	const renderRightActions = (
@@ -288,12 +308,12 @@ function NotificationRow({ item, c }: { item: Notification; c: Palette }) {
 					? t("notifications.restore")
 					: t("notifications.archive"),
 				icon: item.isArchived ? "arrow-undo-outline" : "archive-outline",
-				color: c.sun,
-				ink: c.sunForeground,
+				// Archive is housekeeping, not signage: the quiet well, not yellow.
+				color: c.well,
+				ink: c.foreground,
 				onPress: async () => {
 					methods.close();
-					if (item.isArchived) await item.unarchive();
-					else await item.archive();
+					await toggleArchive();
 				},
 			},
 		];
@@ -337,6 +357,14 @@ function NotificationRow({ item, c }: { item: Notification; c: Palette }) {
 					.filter(Boolean)
 					.join(", ")}
 				accessibilityActions={[
+					// The inline buttons sit inside the row's one focus stop;
+					// their actions are offered here so TalkBack can reach them.
+					...(item.primaryAction
+						? [{ name: "primary", label: item.primaryAction.label }]
+						: []),
+					...(item.secondaryAction
+						? [{ name: "secondary", label: item.secondaryAction.label }]
+						: []),
 					{
 						name: "toggleRead",
 						label: item.isRead
@@ -354,7 +382,11 @@ function NotificationRow({ item, c }: { item: Notification; c: Palette }) {
 					if (event.nativeEvent.actionName === "toggleRead") {
 						void (item.isRead ? item.unread() : item.read());
 					} else if (event.nativeEvent.actionName === "archive") {
-						void (item.isArchived ? item.unarchive() : item.archive());
+						void toggleArchive();
+					} else if (event.nativeEvent.actionName === "primary") {
+						handlePrimaryAction();
+					} else if (event.nativeEvent.actionName === "secondary") {
+						handleSecondaryAction();
 					}
 				}}
 				android_ripple={{ color: c.well }}
@@ -569,9 +601,33 @@ export function NotificationsScreen() {
 function NotificationsContent({ c }: { c: Palette }) {
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
+	// Archived notifications have their own view, so "Restore" is reachable.
+	const [showArchived, setShowArchived] = useState(false);
 
-	const { notifications, isLoading, hasMore, fetchMore, readAll, refetch } =
-		useNotifications();
+	const {
+		notifications,
+		isLoading,
+		error,
+		hasMore,
+		fetchMore,
+		readAll,
+		refetch,
+	} = useNotifications({ archived: showArchived });
+	const { counts } = useCounts({ filters: [{ read: false }] });
+	const totalUnread = counts?.[0]?.count;
+
+	// The notification just archived, offered back for five seconds.
+	const [archived, setArchived] = useState<Notification | null>(null);
+	useEffect(() => {
+		if (!archived) return;
+		const timer = setTimeout(() => setArchived(null), 5000);
+		return () => clearTimeout(timer);
+	}, [archived]);
+	const undoArchive = () => {
+		if (!archived) return;
+		void archived.unarchive();
+		setArchived(null);
+	};
 
 	const [isMarkingRead, setIsMarkingRead] = useState(false);
 	const [isRefreshing, setIsRefreshing] = useState(false);
@@ -583,9 +639,11 @@ function NotificationsContent({ c }: { c: Palette }) {
 	const unreadCount = items.filter((n) => !n.isRead).length;
 	const sections = useMemo(() => groupByDay(items, t), [items, t]);
 
+	// The app icon's badge says what the inbox says: what is still unread.
 	useEffect(() => {
-		Notifications.setBadgeCountAsync(0);
-	}, []);
+		if (totalUnread === undefined) return;
+		void Notifications.setBadgeCountAsync(totalUnread);
+	}, [totalUnread]);
 
 	useEffect(() => {
 		Notifications.getPermissionsAsync().then((perm) => {
@@ -625,7 +683,7 @@ function NotificationsContent({ c }: { c: Palette }) {
 	};
 
 	const markAll =
-		unreadCount > 0 ? (
+		unreadCount > 0 && !showArchived ? (
 			<Pressable
 				onPress={handleMarkAllRead}
 				disabled={isMarkingRead}
@@ -662,8 +720,63 @@ function NotificationsContent({ c }: { c: Palette }) {
 		>
 			<SettingsHeader title={t("notifications.title")} right={markAll} />
 
+			<View
+				style={[styles.segment, centeredContent]}
+				accessibilityRole="tablist"
+			>
+				{[
+					{
+						key: false,
+						label: t("notifications.inboxTab", { defaultValue: "Reçues" }),
+					},
+					{
+						key: true,
+						label: t("notifications.archivedTab", {
+							defaultValue: "Archivées",
+						}),
+					},
+				].map((tab) => {
+					const active = showArchived === tab.key;
+					return (
+						<Pressable
+							key={String(tab.key)}
+							onPress={() => setShowArchived(tab.key)}
+							accessibilityRole="tab"
+							accessibilityState={{ selected: active }}
+							style={[
+								styles.segmentChip,
+								active
+									? {
+											backgroundColor: c.primaryFill,
+											borderColor: c.primaryFill,
+										}
+									: { backgroundColor: c.card, borderColor: c.borderStrong },
+							]}
+						>
+							<Text
+								style={[
+									styles.segmentText,
+									{ color: active ? "#ffffff" : c.foreground },
+								]}
+							>
+								{tab.label}
+							</Text>
+						</Pressable>
+					);
+				})}
+			</View>
+
 			{isLoading ? (
 				<OrderListSkeleton rows={6} />
+			) : error && items.length === 0 ? (
+				// A failed load is not an empty inbox.
+				<EmptyState
+					icon="alert-circle-outline"
+					title={t("common.error")}
+					subtitle={t("home.errorSub")}
+					ctaLabel={t("common.retry")}
+					onCta={() => void refetch()}
+				/>
 			) : items.length === 0 ? (
 				<View style={styles.flex}>
 					{permissionCard ? (
@@ -714,7 +827,7 @@ function NotificationsContent({ c }: { c: Palette }) {
 									style={[styles.separator, { backgroundColor: c.border }]}
 								/>
 							) : null}
-							<NotificationRow item={item} c={c} />
+							<NotificationRow item={item} c={c} onArchived={setArchived} />
 						</View>
 					)}
 					contentContainerStyle={[styles.list, centeredContent]}
@@ -731,6 +844,31 @@ function NotificationsContent({ c }: { c: Palette }) {
 					showsVerticalScrollIndicator={false}
 				/>
 			)}
+			{archived ? (
+				<View
+					style={[styles.undoBar, { backgroundColor: c.foreground }]}
+					accessibilityLiveRegion="polite"
+				>
+					<Text
+						style={[styles.undoText, { color: c.background }]}
+						numberOfLines={1}
+					>
+						{t("notifications.archivedToast", {
+							defaultValue: "Notification archivée",
+						})}
+					</Text>
+					<Pressable
+						onPress={undoArchive}
+						accessibilityRole="button"
+						accessibilityLabel={t("cart.undo")}
+						style={styles.undoButton}
+					>
+						<Text style={[styles.undoAction, { color: c.background }]}>
+							{t("cart.undo")}
+						</Text>
+					</Pressable>
+				</View>
+			) : null}
 		</SafeAreaView>
 	);
 }
@@ -739,6 +877,40 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	flex: { flex: 1 },
 
+	segment: {
+		flexDirection: "row",
+		gap: 8,
+		paddingHorizontal: 16,
+		paddingTop: 12,
+	},
+	segmentChip: {
+		minHeight: 40,
+		paddingHorizontal: 16,
+		borderRadius: 999,
+		borderWidth: 1,
+		justifyContent: "center",
+	},
+	segmentText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	undoBar: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		marginHorizontal: 16,
+		marginBottom: 8,
+		paddingLeft: 16,
+		paddingRight: 4,
+		paddingVertical: 4,
+		borderRadius: 12,
+	},
+	undoText: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	undoButton: {
+		minHeight: 48,
+		minWidth: 48,
+		paddingHorizontal: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	undoAction: { fontSize: 15, fontFamily: Fonts.bodyBold },
 	headerAction: {
 		width: 44,
 		height: 44,

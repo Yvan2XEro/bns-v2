@@ -8,6 +8,7 @@ import {
 	DecisionBar,
 	DecisionButton,
 	DetailSkeleton,
+	FactRow,
 	LoadError,
 	ModerationCard,
 	SectionTitle,
@@ -49,7 +50,12 @@ export default function ModerateUserScreen() {
 	const [suspending, setSuspending] = useState(false);
 
 	const { data, isLoading, isError, error, refetch } = useModerationUser(id);
-	const { mutate: suspend, isPending: suspendPending } = useSuspendUser();
+	const {
+		mutate: suspend,
+		isPending: suspendPending,
+		error: suspendError,
+		reset: resetSuspend,
+	} = useSuspendUser();
 	const { mutate: unsuspend, isPending: liftPending } = useUnsuspendUser();
 
 	const target = data?.user;
@@ -98,11 +104,8 @@ export default function ModerateUserScreen() {
 						}),
 					);
 				},
-				onError: (error) =>
-					showError(
-						t("moderation.actionFailed"),
-						resolveErrorMessage(error, t),
-					),
+				// The failure shows inside the open sheet: an alert cannot be
+				// presented over it.
 			},
 		);
 	};
@@ -140,6 +143,7 @@ export default function ModerateUserScreen() {
 				<LoadError
 					title={t("common.error")}
 					message={error ? resolveErrorMessage(error, t) : undefined}
+					error={error}
 					onRetry={() => void refetch()}
 				/>
 			) : (
@@ -169,6 +173,24 @@ export default function ModerateUserScreen() {
 										label={t(`moderation.role_${target.role}`)}
 									/>
 								) : null}
+							</View>
+
+							{/* What an impersonation or a duplicate account is judged on. */}
+							<View style={styles.facts}>
+								<FactRow
+									label={t("moderation.factEmail")}
+									value={target?.email}
+								/>
+								<FactRow
+									label={t("moderation.factIdentity")}
+									value={
+										target?.identityVerifiedAt
+											? t("moderation.factIdentityVerified", {
+													date: formatDate(target.identityVerifiedAt),
+												})
+											: t("moderation.verifCommonNo")
+									}
+								/>
 							</View>
 
 							<View style={[styles.stats, { borderTopColor: c.border }]}>
@@ -252,7 +274,10 @@ export default function ModerateUserScreen() {
 									variant="dangerOutline"
 									icon="ban-outline"
 									label={t("moderation.suspend")}
-									onPress={() => setSuspending(true)}
+									onPress={() => {
+										resetSuspend();
+										setSuspending(true);
+									}}
 									disabled={suspendPending}
 								/>
 							)}
@@ -274,6 +299,7 @@ export default function ModerateUserScreen() {
 						confirmLabel={t("moderation.confirmSuspend")}
 						destructive
 						pending={suspendPending}
+						error={suspendError ? resolveErrorMessage(suspendError, t) : null}
 						onConfirm={onSuspend}
 						onClose={() => setSuspending(false)}
 					/>
@@ -350,6 +376,7 @@ function HistoryRow({
 }
 
 const styles = StyleSheet.create({
+	facts: { gap: 6 },
 	flex: { flex: 1 },
 	content: { padding: 16, gap: 14, paddingBottom: 24 },
 	identity: { flexDirection: "row", alignItems: "center", gap: 12 },

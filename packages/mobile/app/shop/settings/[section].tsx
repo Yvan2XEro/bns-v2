@@ -1,4 +1,5 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import { StyleSheet } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,6 +14,7 @@ import { ShopLegalCard } from "@/src/components/shop/manage/ShopLegalCard";
 import { ShopProfileCard } from "@/src/components/shop/manage/ShopProfileCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { alerts } from "@/src/contexts/AlertContext";
 import { useMyShop } from "@/src/hooks/useShops";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
@@ -50,6 +52,31 @@ export default function ShopSettingsSectionScreen() {
 	const owner = isShopOwner(data?.role);
 
 	const title = section ? t(TITLE_KEYS[section]) : t("shop.settingsTitle");
+
+	// Unsaved edits are not dropped by a back swipe: leaving asks first, as
+	// the product editor does. A save turns the guard off before going back.
+	const navigation = useNavigation();
+	const [dirty, setDirty] = useState(false);
+	const leaving = useRef(false);
+	useEffect(() => {
+		if (!dirty) return;
+		return navigation.addListener("beforeRemove", (event) => {
+			if (leaving.current) return;
+			event.preventDefault();
+			alerts.showAlert(t("create.discardTitle"), t("create.discardMsg"), [
+				{ text: t("common.cancel"), style: "cancel" },
+				{
+					text: t("create.discardConfirm"),
+					style: "destructive",
+					onPress: () => navigation.dispatch(event.data.action),
+				},
+			]);
+		});
+	}, [dirty, navigation, t]);
+	const savedBack = () => {
+		leaving.current = true;
+		goBack();
+	};
 
 	// A failed read must not hold the skeleton forever: it gets its own retry.
 	if (isError && !data) {
@@ -112,7 +139,8 @@ export default function ShopSettingsSectionScreen() {
 							shop={shop}
 							readOnly={readOnly}
 							section={section}
-							onSaved={goBack}
+							onSaved={savedBack}
+							onDirtyChange={setDirty}
 						/>
 					) : null}
 					{section === "profile" ? (

@@ -52,6 +52,8 @@ export default function ModerateOrderScreen() {
 	const { centeredContent } = useResponsive();
 	const { showError, showSuccess } = useAlert();
 	const [cancelling, setCancelling] = useState(false);
+	// Shown inside the open sheet: an alert cannot be presented over it.
+	const [sheetError, setSheetError] = useState<string | null>(null);
 
 	const sheet = useModerationOrder(id);
 	const cancel = useStaffCancelOrder(id);
@@ -66,9 +68,10 @@ export default function ModerateOrderScreen() {
 	const onCancel = ({ choice, text }: DecisionResult) => {
 		const draft = staffCancelDraft(choice, text);
 		if (!draft.ok) {
-			showError(t("moderation.actionFailed"), t(draft.errorKey));
+			setSheetError(t(draft.errorKey));
 			return;
 		}
+		setSheetError(null);
 		cancel.mutate(draft.input, {
 			onSuccess: () => {
 				setCancelling(false);
@@ -77,8 +80,7 @@ export default function ModerateOrderScreen() {
 					t("moderationOrder.cancelledMessage"),
 				);
 			},
-			onError: (error) =>
-				showError(t("moderation.actionFailed"), resolveErrorMessage(error, t)),
+			onError: (error) => setSheetError(resolveErrorMessage(error, t)),
 		});
 	};
 
@@ -121,6 +123,7 @@ export default function ModerateOrderScreen() {
 					message={
 						sheet.error ? resolveErrorMessage(sheet.error, t) : undefined
 					}
+					error={sheet.error}
 					onRetry={() => void sheet.refetch()}
 				/>
 			) : (
@@ -137,7 +140,10 @@ export default function ModerateOrderScreen() {
 						canCancel={actions.canCancel}
 						canReceipt={actions.canReceipt}
 						receiptPending={receipt.isFetching}
-						onCancel={() => setCancelling(true)}
+						onCancel={() => {
+							setSheetError(null);
+							setCancelling(true);
+						}}
 						onReceipt={onReceipt}
 						c={c}
 						t={t}
@@ -154,6 +160,7 @@ export default function ModerateOrderScreen() {
 						confirmLabel={t("moderationOrder.cancel")}
 						destructive
 						pending={cancel.isPending}
+						error={sheetError}
 						onConfirm={onCancel}
 						onClose={() => setCancelling(false)}
 					/>

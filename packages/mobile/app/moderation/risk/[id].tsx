@@ -14,12 +14,15 @@ import {
 	DecisionButton,
 	DetailSkeleton,
 	FactRow,
-	InlineNotice,
 	LoadError,
 	ModerationCard,
 	TonePill,
 } from "@/src/components/moderation/ModerationKit";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
+import {
+	riskEvidenceLabel,
+	riskSignalLabel,
+} from "@/src/components/moderation/riskLabels";
 import { useModerationTheme } from "@/src/components/moderation/theme";
 import { tonesOf } from "@/src/components/moderation/tones";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -36,9 +39,19 @@ function textField(value: unknown): string | null {
 	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-function readableSignal(signal: string): string {
-	return signal.replaceAll(".", " · ").replaceAll("_", " ");
-}
+type Sanction = "suspend_user" | "suspend_shop" | "hold_payouts";
+
+const SANCTION_LABEL: Record<Sanction, string> = {
+	suspend_user: "moderation.riskSuspendUser",
+	suspend_shop: "moderation.riskSuspendShop",
+	hold_payouts: "moderation.riskHoldPayouts",
+};
+
+const SANCTION_EFFECT: Record<Sanction, string> = {
+	suspend_user: "moderation.riskEffectSuspendUser",
+	suspend_shop: "moderation.riskEffectSuspendShop",
+	hold_payouts: "moderation.riskEffectHoldPayouts",
+};
 
 /** The moderation sheet a sanction would be taken from, when the app has one. */
 function subjectRoute(type: unknown, id: string | null): string | null {
@@ -57,10 +70,8 @@ export default function RiskFlagScreen() {
 	const flagId = Array.isArray(params.id) ? params.id[0] : params.id;
 	const detail = useRiskFlag(flagId);
 	const decision = useRiskFlagDecision();
-	const [dismissVisible, setDismissVisible] = useState(false);
-	const [sanctionType, setSanctionType] = useState<
-		"suspend_user" | "suspend_shop" | "hold_payouts" | null
-	>(null);
+	const [closeVisible, setCloseVisible] = useState(false);
+	const [sanctionVisible, setSanctionVisible] = useState(false);
 
 	if (detail.isLoading || !detail.data) {
 		return (
@@ -68,6 +79,8 @@ export default function RiskFlagScreen() {
 				{detail.isError ? (
 					<LoadError
 						title={t("moderation.riskDetailFailed")}
+						message={resolveErrorMessage(detail.error, t)}
+						error={detail.error}
 						onRetry={() => void detail.refetch()}
 					/>
 				) : (
@@ -93,58 +106,91 @@ export default function RiskFlagScreen() {
 			: flag.severity === "medium"
 				? "warning"
 				: "neutral";
-	const dismissChoices: DecisionChoice[] = [
-		{ value: "false_positive", label: t("moderation.riskFalsePositive") },
-	];
+	// Closing an open flag is one of two things; a flag already reviewed can
+	// only be closed as a false positive, which needs no choice at all.
+	const closeChoices: DecisionChoice[] | undefined =
+		flag.status === "open"
+			? [
+					{ value: "reviewed", label: t("moderation.riskCloseReviewed") },
+					{
+						value: "false_positive",
+						label: t("moderation.riskFalsePositive"),
+					},
+				]
+			: undefined;
 	const durations: DecisionDuration[] = [
 		{ value: 7, label: t("moderation.riskSevenDays") },
 		{ value: 30, label: t("moderation.riskThirtyDays") },
 	];
 	const targetId = textField(subject.id);
-	const targetRoute = subjectRoute(subject.type, targetId);
+	const baseRoute = subjectRoute(subject.type, targetId);
+	// A payout signal opens the shop sheet on its payments section.
+	const targetRoute =
+		baseRoute && subject.type === "shop" && flag.signal.includes("payout")
+			? `${baseRoute}?section=payments`
+			: baseRoute;
 	const subjectTitle = subjectName ?? flag.subjectLabel ?? flag.subjectType;
 	const decidable = flag.status === "open" || flag.status === "reviewed";
-	// Every outcome is confirmed with a toast; the query refresh alone
-	// would leave the moderator guessing whether the tap landed.
-	const done = () => showSuccess(t("moderation.riskDecisionSaved"));
-	const resolveDismissal = (note: string) => {
+	const sanctions: Sanction[] =
+		targetId && subject.type === "user"
+			? ["suspend_user"]
+			: targetId && subject.type === "shop"
+				? ["suspend_shop", "hold_payouts"]
+				: [];
+	const sanctionChoices: DecisionChoice[] | undefined =
+		sanctions.length > 1
+			? sanctions.map((value) => ({
+					value,
+					label: `${t(SANCTION_LABEL[value])} — ${t(SANCTION_EFFECT[value])}`,
+				}))
+			: undefined;
+	const decisionErrorText = decision.isError
+		? resolveErrorMessage(decision.error, t)
+		: null;
+	// Every outcome is confirmed with a toast, then the moderator goes back
+	// to the Risques queue, as after a listing or a report.
+	const done = () => {
+		setCloseVisible(false);
+		setSanctionVisible(false);
+		showSuccess(t("moderation.riskDecisionSaved"));
+		if (router.canGoBack()) router.back();
+	};
+	const resolveClose = (choice: string | null, note: string) => {
+		if (!flagId) return;
+		if (choice === "reviewed") {
+			decision.mutate(
+				{
+					id: flagId,
+					outcome: "reviewed",
+					resolution: "none",
+					...(note ? { note } : {}),
+				},
+				{ onSuccess: done },
+			);
+			return;
+		}
 		const payload = riskDismissalDecision(note);
-		if (!payload || !flagId) return;
-		decision.mutate(
-			{ id: flagId, ...payload },
-			{
-				onSuccess: () => {
-					setDismissVisible(false);
-					done();
-				},
-			},
-		);
-	};
-	const resolveSanction = (durationDays: number | null, note: string) => {
-		if (!sanctionType || !targetId || !flagId) return;
-		const payload = riskSanctionDecision(
-			sanctionType,
-			targetId,
-			durationDays,
-			note,
-		);
 		if (!payload) return;
-		decision.mutate(
-			{ id: flagId, ...payload },
-			{
-				onSuccess: () => {
-					setSanctionType(null);
-					done();
-				},
-			},
-		);
+		decision.mutate({ id: flagId, ...payload }, { onSuccess: done });
 	};
-	const markReviewed = () => {
-		if (flag.status !== "open" || !flagId) return;
-		decision.mutate(
-			{ id: flagId, outcome: "reviewed", resolution: "none" },
-			{ onSuccess: done },
-		);
+	const resolveSanction = (
+		choice: string | null,
+		durationDays: number | null,
+		note: string,
+	) => {
+		const type =
+			sanctions.length === 1
+				? sanctions[0]
+				: sanctions.find((value) => value === choice);
+		if (!type || !targetId || !flagId) return;
+		const payload = riskSanctionDecision(type, targetId, durationDays, note);
+		if (!payload) return;
+		decision.mutate({ id: flagId, ...payload }, { onSuccess: done });
+	};
+	const openSheet = (which: "close" | "sanction") => {
+		decision.reset();
+		if (which === "close") setCloseVisible(true);
+		else setSanctionVisible(true);
 	};
 	const evidenceValue = (value: string | number | boolean | null) =>
 		value === null
@@ -156,16 +202,10 @@ export default function RiskFlagScreen() {
 	return (
 		<ModerationScreen
 			title={t("moderation.riskDetailTitle")}
-			subtitle={`${severity} · ${flag.score}`}
+			subtitle={`${severity} · ${t("moderation.riskScore", { score: flag.score })}`}
 		>
 			<ScreenColumn width="reading">
 				<ScrollView contentContainerStyle={styles.content}>
-					{decision.isError ? (
-						<InlineNotice
-							text={`${t("moderation.actionFailed")} ${resolveErrorMessage(decision.error, t)}`}
-						/>
-					) : null}
-
 					<ModerationCard
 						title={t("moderation.riskSubject")}
 						right={<TonePill tone={severityTone} label={severity} />}
@@ -202,6 +242,10 @@ export default function RiskFlagScreen() {
 					<ModerationCard title={t("moderation.riskSignal")}>
 						<View style={styles.signalRow}>
 							<View
+								accessible
+								accessibilityLabel={t("moderation.riskScore", {
+									score: flag.score,
+								})}
 								style={[
 									styles.score,
 									{
@@ -229,11 +273,14 @@ export default function RiskFlagScreen() {
 								>
 									{flag.score}
 								</Text>
+								<Text style={[styles.scoreScale, { color: c.muted }]}>
+									/100
+								</Text>
 							</View>
 							<Text
 								style={[styles.primaryText, styles.flex, { color: c.text }]}
 							>
-								{readableSignal(flag.signal)}
+								{riskSignalLabel(flag.signal, t)}
 							</Text>
 						</View>
 						<Text style={[styles.secondaryText, { color: c.muted }]}>
@@ -262,7 +309,7 @@ export default function RiskFlagScreen() {
 							evidenceRows.map((row) => (
 								<FactRow
 									key={row.label}
-									label={row.label}
+									label={riskEvidenceLabel(row.label, t)}
 									value={evidenceValue(row.value)}
 								/>
 							))
@@ -272,7 +319,7 @@ export default function RiskFlagScreen() {
 					{relatedFlags.length > 0 ? (
 						<ModerationCard title={t("moderation.riskRelated")}>
 							{relatedFlags.map((related, index) => {
-								const label = `${related.subjectLabel ?? related.subjectType} · ${readableSignal(related.signal)}`;
+								const label = `${related.subjectLabel ?? related.subjectType} · ${riskSignalLabel(related.signal, t)}`;
 								return (
 									<Pressable
 										key={related.id}
@@ -319,58 +366,26 @@ export default function RiskFlagScreen() {
 				</ScrollView>
 			</ScreenColumn>
 
-			{/* Closing the flag (dismiss, mark reviewed) and sanctioning the
-			    subject are different kinds of decision: the first two are calm
-			    indigo / outline, every sanction is a red outline that opens its
-			    own sheet. Nothing here acts on one tap except "mark reviewed",
-			    which changes no one's standing. */}
+			{/* Two kinds of decision, two buttons: close the flag (calm
+			    outline), or sanction the subject (red outline). Each opens its
+			    sheet, which lists the outcomes and what each one does. */}
 			{decidable ? (
-				<DecisionBar wrap>
+				<DecisionBar>
 					<DecisionButton
 						variant="secondary"
-						label={t("moderation.riskDismiss")}
-						onPress={() => setDismissVisible(true)}
+						icon="archive-outline"
+						label={t("moderation.riskClose")}
+						onPress={() => openSheet("close")}
 						disabled={decision.isPending}
 					/>
-					{flag.status === "open" ? (
-						<DecisionButton
-							variant="primary"
-							icon="checkmark"
-							label={t("moderation.riskMarkReviewed")}
-							pending={
-								decision.isPending && !dismissVisible && sanctionType === null
-							}
-							disabled={decision.isPending}
-							onPress={markReviewed}
-						/>
-					) : null}
-					{targetId && subject.type === "user" ? (
+					{sanctions.length > 0 ? (
 						<DecisionButton
 							variant="dangerOutline"
 							icon="ban-outline"
-							label={t("moderation.riskSuspendUser")}
-							onPress={() => setSanctionType("suspend_user")}
+							label={t("moderation.riskSanction")}
+							onPress={() => openSheet("sanction")}
 							disabled={decision.isPending}
-							style={styles.fullRow}
 						/>
-					) : null}
-					{targetId && subject.type === "shop" ? (
-						<>
-							<DecisionButton
-								variant="dangerOutline"
-								icon="ban-outline"
-								label={t("moderation.riskSuspendShop")}
-								onPress={() => setSanctionType("suspend_shop")}
-								disabled={decision.isPending}
-							/>
-							<DecisionButton
-								variant="dangerOutline"
-								icon="pause-circle-outline"
-								label={t("moderation.riskHoldPayouts")}
-								onPress={() => setSanctionType("hold_payouts")}
-								disabled={decision.isPending}
-							/>
-						</>
 					) : null}
 				</DecisionBar>
 			) : (
@@ -384,29 +399,40 @@ export default function RiskFlagScreen() {
 			)}
 
 			<DecisionSheet
-				visible={dismissVisible}
+				visible={closeVisible}
 				title={t("moderation.riskDismissTitle")}
 				subtitle={subjectTitle}
-				choices={dismissChoices}
+				choices={closeChoices}
 				choicesLabel={t("moderation.riskResolution")}
-				textLabel={t("moderation.riskDecisionNote")}
-				textRequired
+				textLabel={
+					closeChoices
+						? t("moderation.riskDecisionNote")
+						: t("moderation.riskFalsePositiveNote")
+				}
+				// A false positive needs its reason; "reviewed" does not.
+				textRequired={!closeChoices}
+				textRequiredFor={(choice) => choice === "false_positive"}
 				confirmLabel={t("moderation.riskDismiss")}
 				pending={decision.isPending}
-				onConfirm={({ text }) => resolveDismissal(text)}
-				onClose={() => setDismissVisible(false)}
+				error={closeVisible ? decisionErrorText : null}
+				onConfirm={({ choice, text }) => resolveClose(choice, text)}
+				onClose={() => setCloseVisible(false)}
 			/>
 			<DecisionSheet
-				visible={sanctionType !== null}
-				title={t(
-					sanctionType === "hold_payouts"
-						? "moderation.riskHoldPayouts"
-						: sanctionType === "suspend_shop"
-							? "moderation.riskSuspendShop"
-							: "moderation.riskSuspendUser",
-				)}
+				visible={sanctionVisible}
+				title={
+					sanctions.length === 1
+						? t(SANCTION_LABEL[sanctions[0]])
+						: t("moderation.riskSanction")
+				}
 				// Names who the sanction falls on, right above the red confirm.
-				subtitle={subjectTitle}
+				subtitle={
+					sanctions.length === 1
+						? `${subjectTitle} · ${t(SANCTION_EFFECT[sanctions[0]])}`
+						: subjectTitle
+				}
+				choices={sanctionChoices}
+				choicesLabel={t("moderation.riskSanctionLabel")}
 				durations={durations}
 				durationsLabel={t("moderation.riskDuration")}
 				textLabel={t("moderation.riskDecisionNote")}
@@ -414,10 +440,11 @@ export default function RiskFlagScreen() {
 				confirmLabel={t("moderation.riskActionConfirm")}
 				destructive
 				pending={decision.isPending}
-				onConfirm={({ durationDays, text }) =>
-					resolveSanction(durationDays, text)
+				error={sanctionVisible ? decisionErrorText : null}
+				onConfirm={({ choice, durationDays, text }) =>
+					resolveSanction(choice, durationDays, text)
 				}
-				onClose={() => setSanctionType(null)}
+				onClose={() => setSanctionVisible(false)}
 			/>
 		</ModerationScreen>
 	);
@@ -436,7 +463,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	scoreText: { fontSize: 18, fontFamily: Fonts.displayExtrabold },
+	scoreText: {
+		fontSize: 18,
+		lineHeight: 21,
+		fontFamily: Fonts.displayExtrabold,
+	},
+	scoreScale: { fontSize: 12, lineHeight: 14, fontFamily: Fonts.bodyMedium },
 	relatedRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -452,5 +484,4 @@ const styles = StyleSheet.create({
 		lineHeight: 20,
 		fontFamily: Fonts.bodySemibold,
 	},
-	fullRow: { flexBasis: "100%" },
 });

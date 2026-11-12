@@ -68,20 +68,38 @@ function getStatusConfig(
 ): Record<string, { label: string; tone: StatusTone }> {
 	return {
 		completed: { label: t("boostHistory.statusCompleted"), tone: "success" },
-		pending: { label: t("boostHistory.statusActive"), tone: "info" },
+		// A payment not yet confirmed is not a running boost: it says so.
+		pending: {
+			label: t("boostHistory.statusAwaitingPayment", {
+				defaultValue: "Paiement en attente",
+			}),
+			tone: "warning",
+		},
+		running: { label: t("boostHistory.statusActive"), tone: "info" },
 		failed: { label: t("boostHistory.statusFailed"), tone: "danger" },
 		refunded: { label: t("boostHistory.statusRefunded"), tone: "neutral" },
 	};
 }
 
+/**
+ * A boost is running only once it is paid and its listing is still boosted:
+ * a pending Mobile Money payment promotes nothing yet.
+ */
+function isRunning(item: any, now = Date.now()): boolean {
+	if (item.status !== "completed") return false;
+	const until = parseDate(item.listing?.boostedUntil);
+	return Boolean(until && until.getTime() > now);
+}
+
 /** Share of the boost period already used, 0–1; null when it cannot be told. */
 function boostProgress(item: any): number | null {
-	if (!item.durationDays || item.status !== "pending") return null;
-	// A missing createdAt used to produce NaN → width: "NaN%", which Yoga rejects.
-	const startDate = parseDate(item.createdAt);
-	if (!startDate) return null;
-	const start = startDate.getTime();
-	const end = start + item.durationDays * 86_400_000;
+	if (!item.durationDays || !isRunning(item)) return null;
+	// Measured back from when the listing's boost ends, not from when the
+	// payment was created. A missing date used to produce NaN → "NaN%".
+	const endDate = parseDate(item.listing?.boostedUntil);
+	if (!endDate) return null;
+	const end = endDate.getTime();
+	const start = end - item.durationDays * 86_400_000;
 	return Math.min(1, Math.max(0, (Date.now() - start) / (end - start)));
 }
 
@@ -92,15 +110,27 @@ function Summary({
 	totalSpent,
 	counts,
 	months,
+	partial,
+	loadedCount,
 }: {
 	c: Palette;
 	totalSpent: number;
 	counts: { total: number; active: number; completed: number };
 	months: { label: string; value: number }[];
+	/** More pages exist: the sums only cover what is loaded. */
+	partial: boolean;
+	loadedCount: number;
 }) {
 	const { t, i18n } = useTranslation();
 	const max = Math.max(...months.map((m) => m.value), 1);
-	const hasSpend = months.some((m) => m.value > 0);
+	// The chart waits for every page: a partial month would read as a dip.
+	const hasSpend = !partial && months.some((m) => m.value > 0);
+	const partialNote = partial
+		? t("boostHistory.partialTotal", {
+				count: loadedCount,
+				defaultValue: "Sur les {{count}} derniers boosts chargés",
+			})
+		: null;
 	const stats = [
 		{ label: t("boostHistory.total"), value: counts.total },
 		{ label: t("boostHistory.active"), value: counts.active },
@@ -118,7 +148,13 @@ function Summary({
 			    not a price, so plain ink; the yellow stays for prices. */}
 			<View
 				accessible
-				accessibilityLabel={`${t("boostHistory.totalSpent")}, ${formatPrice(totalSpent, i18n.language)}`}
+				accessibilityLabel={[
+					t("boostHistory.totalSpent"),
+					formatPrice(totalSpent, i18n.language),
+					partialNote,
+				]
+					.filter(Boolean)
+					.join(", ")}
 				style={styles.spent}
 			>
 				<Text style={[styles.spentLabel, { color: c.mutedForeground }]}>
@@ -131,6 +167,11 @@ function Summary({
 				>
 					{formatPrice(totalSpent, i18n.language)}
 				</Text>
+				{partialNote ? (
+					<Text style={[styles.spentLabel, { color: c.mutedForeground }]}>
+						{partialNote}
+					</Text>
+				) : null}
 			</View>
 
 			<View style={[styles.statStrip, { borderColor: c.border }]}>
@@ -212,7 +253,10 @@ function Summary({
 
 function BoostRow({ item, c }: { item: any; c: Palette }) {
 	const { t, i18n } = useTranslation();
-	const cfg = getStatusConfig(t)[item.status] ?? getStatusConfig(t).pending;
+	const configs = getStatusConfig(t);
+	const cfg = isRunning(item)
+		? configs.running
+		: (configs[item.status] ?? configs.pending);
 	const imgUrl = resolveListingImageUrl(item.listing?.images?.[0], "thumbnail");
 	const title = item.listing?.title ?? t("boostHistory.deletedListing");
 	const durationLabel = formatDuration(item.durationDays, t);
@@ -362,20 +406,30 @@ export function BoostHistoryScreen() {
 				0,
 			),
 			counts: {
-				total: payments.length,
-				active: payments.filter((p: any) => p.status === "pending").length,
+				total: data?.pages[0]?.totalDocs ?? payments.length,
+				active: payments.filter((p: any) => isRunning(p)).length,
 				completed: completed.length,
 			},
 			months,
 		};
-	}, [payments]);
+	}, [payments, data]);
 
 	// Running boosts first, where a seller looks for them; the rest below.
 	const sections = useMemo(() => {
-		const running = payments.filter((p: any) => p.status === "pending");
-		const past = payments.filter((p: any) => p.status !== "pending");
+		const running = payments.filter((p: any) => isRunning(p));
+		const awaiting = payments.filter((p: any) => p.status === "pending");
+		const past = payments.filter(
+			(p: any) => !isRunning(p) && p.status !== "pending",
+		);
 		return [
 			{ key: "active", title: t("boostHistory.active"), data: running },
+			{
+				key: "awaiting",
+				title: t("boostHistory.statusAwaitingPayment", {
+					defaultValue: "Paiement en attente",
+				}),
+				data: awaiting,
+			},
 			{ key: "history", title: t("boostHistory.history"), data: past },
 		].filter((s) => s.data.length > 0);
 	}, [payments, t]);
@@ -430,6 +484,8 @@ export function BoostHistoryScreen() {
 							totalSpent={summary.totalSpent}
 							counts={summary.counts}
 							months={summary.months}
+							partial={Boolean(hasNextPage)}
+							loadedCount={payments.length}
 						/>
 					}
 					renderSectionHeader={({ section }) => (

@@ -14,6 +14,26 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
 
 const FAQ_COUNT = 7;
+/** The answers that name a place in the app, and the way there. */
+const FAQ_LINKS: Record<
+	number,
+	{
+		labelKey: string;
+		fallback: string;
+		href: "/security" | "/account/listings";
+	}
+> = {
+	3: {
+		labelKey: "help.openMyListings",
+		fallback: "Ouvrir Mes annonces",
+		href: "/account/listings",
+	},
+	6: {
+		labelKey: "help.openSecurity",
+		fallback: "Ouvrir Sécurité",
+		href: "/security",
+	},
+};
 
 /**
  * The questions people ask, as one list that opens in place — one answer
@@ -42,32 +62,52 @@ export function HelpScreen() {
 					{FAQS.map((faq, i) => {
 						const open = expanded === i;
 						return (
-							<Pressable
-								key={faq.q}
-								onPress={() => setExpanded(open ? null : i)}
-								accessibilityRole="button"
-								accessibilityLabel={faq.q}
-								accessibilityState={{ expanded: open }}
-								android_ripple={{ color: c.well }}
-								style={({ pressed }) => [
-									styles.faq,
-									pressed ? { backgroundColor: c.well } : null,
-								]}
-							>
-								<View style={styles.faqHeader}>
-									<Text style={[styles.faqQ, { color: c.foreground }]}>
-										{faq.q}
-									</Text>
-									<Ionicons
-										name={open ? "chevron-up" : "chevron-down"}
-										size={18}
-										color={c.mutedForeground}
-									/>
-								</View>
-								{open ? (
-									<Text style={[styles.faqA, { color: c.body }]}>{faq.a}</Text>
+							<View key={faq.q}>
+								<Pressable
+									onPress={() => setExpanded(open ? null : i)}
+									accessibilityRole="button"
+									accessibilityLabel={faq.q}
+									accessibilityState={{ expanded: open }}
+									android_ripple={{ color: c.well }}
+									style={({ pressed }) => [
+										styles.faq,
+										pressed ? { backgroundColor: c.well } : null,
+									]}
+								>
+									<View style={styles.faqHeader}>
+										<Text style={[styles.faqQ, { color: c.foreground }]}>
+											{faq.q}
+										</Text>
+										<Ionicons
+											name={open ? "chevron-up" : "chevron-down"}
+											size={18}
+											color={c.mutedForeground}
+										/>
+									</View>
+									{open ? (
+										<Text style={[styles.faqA, { color: c.body }]}>
+											{faq.a}
+										</Text>
+									) : null}
+								</Pressable>
+								{/* A sibling of the question, not inside it, so a screen
+								    reader reaches it as its own link. */}
+								{open && FAQ_LINKS[i] ? (
+									<Pressable
+										onPress={() => router.push(FAQ_LINKS[i].href)}
+										accessibilityRole="link"
+										hitSlop={8}
+										style={styles.faqLink}
+									>
+										<Text style={[styles.faqLinkText, { color: c.link }]}>
+											{t(FAQ_LINKS[i].labelKey, {
+												defaultValue: FAQ_LINKS[i].fallback,
+											})}
+										</Text>
+										<Ionicons name="chevron-forward" size={16} color={c.link} />
+									</Pressable>
 								) : null}
-							</Pressable>
+							</View>
 						);
 					})}
 				</GroupedSection>
@@ -101,6 +141,17 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.bodySemibold,
 		lineHeight: 22,
 	},
+	faqLink: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		minHeight: 44,
+		marginTop: -6,
+		marginBottom: 4,
+		paddingHorizontal: 16,
+		alignSelf: "flex-start",
+	},
+	faqLinkText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	faqA: {
 		fontSize: 15,
 		lineHeight: 23,

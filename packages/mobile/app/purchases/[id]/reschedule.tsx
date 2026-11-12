@@ -15,6 +15,7 @@ import {
 } from "@/src/components/purchases/ui";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useNow } from "@/src/hooks/useNow";
 import {
 	useOrderShipments,
@@ -34,6 +35,8 @@ function RescheduleForm({ shipmentId }: { shipmentId: string }) {
 	const now = useNow();
 	const days = rescheduleDays(now);
 	const reschedule = useRescheduleShipment(shipmentId);
+	const { showSuccess } = useAlert();
+	const [locating, setLocating] = useState(false);
 	const [date, setDate] = useState(days[0]?.iso ?? "");
 	const [window, setWindow] = useState<DeliveryWindow>("morning");
 	const [landmark, setLandmark] = useState("");
@@ -49,17 +52,30 @@ function RescheduleForm({ shipmentId }: { shipmentId: string }) {
 			timeZone: "Africa/Douala",
 		}).format(new Date(iso));
 
+	// A fix outdoors can take seconds: the button says it is working, and a
+	// slow fix gives up after 10 s rather than leaving the buyer tapping.
 	const locate = async () => {
+		if (locating) return;
+		setLocating(true);
 		try {
 			const { status } = await Location.requestForegroundPermissionsAsync();
 			if (status !== "granted") return setDenied(true);
-			const { coords } = await Location.getCurrentPositionAsync({
-				accuracy: Location.Accuracy.High,
-			});
+			const position = await Promise.race([
+				Location.getCurrentPositionAsync({
+					accuracy: Location.Accuracy.Balanced,
+				}),
+				new Promise<null>((resolve) => setTimeout(() => resolve(null), 10_000)),
+			]);
+			if (!position) return;
 			setDenied(false);
-			setGps({ lat: coords.latitude, lng: coords.longitude });
+			setGps({
+				lat: position.coords.latitude,
+				lng: position.coords.longitude,
+			});
 		} catch {
 			setDenied(true);
+		} finally {
+			setLocating(false);
 		}
 	};
 
@@ -97,6 +113,7 @@ function RescheduleForm({ shipmentId }: { shipmentId: string }) {
 						label={
 							gps ? t("tracking.positionCaptured") : t("tracking.usePosition")
 						}
+						pending={locating}
 						onPress={() => void locate()}
 					/>
 					{denied ? (
@@ -121,7 +138,17 @@ function RescheduleForm({ shipmentId }: { shipmentId: string }) {
 									...(landmark.trim() ? { landmark: landmark.trim() } : {}),
 									...(gps ? { gps } : {}),
 								},
-								{ onSuccess: () => router.back() },
+								{
+									onSuccess: () => {
+										showSuccess(
+											t("tracking.rescheduled", {
+												date: dayLabel(date),
+												window: t(WINDOW_LABELS[window]),
+											}),
+										);
+										router.back();
+									},
+								},
 							)
 						}
 					/>
@@ -146,6 +173,14 @@ export default function RescheduleScreen() {
 			<SellerHeader title={t("tracking.rescheduleTitle")} />
 			{shipments.isPending ? (
 				<DetailSkeleton cards={1} />
+			) : shipments.isError ? (
+				// Offline is not "the window closed": say what failed, offer a retry.
+				<EmptyState
+					illustration="notFound"
+					title={resolveErrorMessage(shipments.error, t)}
+					ctaLabel={t("common.retry")}
+					onCta={() => void shipments.refetch()}
+				/>
 			) : target ? (
 				<RescheduleForm shipmentId={target.id} />
 			) : (

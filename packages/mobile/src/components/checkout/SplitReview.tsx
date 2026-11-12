@@ -1,23 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
-import { FlashList } from "@shopify/flash-list";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+	AccessibilityInfo,
 	ActivityIndicator,
 	Pressable,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
+import { useCart } from "@/src/hooks/useCart";
 import { useSplitPlace, useSplitQuote } from "@/src/hooks/useCheckoutGroup";
 import { ApiError } from "@/src/lib/api";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { newIdempotencyKey } from "@/src/lib/checkoutFlow";
+import { districtName } from "@/src/lib/checkoutForm";
 import {
+	isSplitCart,
 	splitPlaceBody,
 	unavailableReasonKey,
 } from "@/src/lib/checkoutGroupFlow";
@@ -35,6 +38,8 @@ import { DeliveryOptionCard } from "./DeliveryOptionCard";
 import { DetailSkeleton } from "./DetailSkeleton";
 import { FormError } from "./FormError";
 import { PaymentMethodPicker } from "./PaymentMethodPicker";
+import { PinnedActionBar } from "./PinnedActionBar";
+import { LinkButton } from "./SummaryParts";
 import { TotalTag } from "./TotalTag";
 
 function Separator() {
@@ -55,14 +60,22 @@ export function SplitReview({ address }: { address: AddressInput }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const locale = useAppLocale();
-	const insets = useSafeAreaInsets();
 	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
 	const quote = useSplitQuote();
 	const place = useSplitPlace();
 	const { addressChoice } = useCheckoutFlow();
+	const cart = useCart();
+	const list = useRef<FlashListRef<SplitQuoteGroup>>(null);
 	const [method, setMethod] = useState<PaymentMethod>("cod");
 	const [picks, setPicks] = useState<Record<string, string>>({});
 	const [accepted, setAccepted] = useState(false);
+	// Set when the server answered `checkout.quoteChanged`: the only re-quote
+	// that unticks the terms, and the buyer is told why.
+	const [quoteChanged, setQuoteChanged] = useState(false);
+	const [termsNudge, setTermsNudge] = useState(false);
+	// The method the shown figures were priced for, so a protection fee is
+	// only ever read off a mobile_money answer.
+	const [pricedMethod, setPricedMethod] = useState<PaymentMethod>("cod");
 	const [idempotencyKey, setIdempotencyKey] = useState(() =>
 		newIdempotencyKey(),
 	);
@@ -75,7 +88,6 @@ export function SplitReview({ address }: { address: AddressInput }) {
 		nextMethod: PaymentMethod,
 		nextPicks: Record<string, string>,
 	) => {
-		setAccepted(false);
 		quote.mutate(
 			{
 				address,
@@ -83,7 +95,12 @@ export function SplitReview({ address }: { address: AddressInput }) {
 				locale,
 				deliveryByGroup: nextPicks,
 			},
-			{ onSuccess: (fresh) => setLastView(fresh) },
+			{
+				onSuccess: (fresh) => {
+					setLastView(fresh);
+					setPricedMethod(nextMethod);
+				},
+			},
 		);
 	};
 	// biome-ignore lint/correctness/useExhaustiveDependencies: the first quote is the mount's
@@ -101,6 +118,12 @@ export function SplitReview({ address }: { address: AddressInput }) {
 
 	const placeOrders = () => {
 		if (!view || stale) return;
+		if (!accepted) {
+			setTermsNudge(true);
+			list.current?.scrollToEnd({ animated: true });
+			AccessibilityInfo.announceForAccessibility(t("checkout.acceptRequired"));
+			return;
+		}
 		const body = splitPlaceBody({
 			address,
 			quote: view,
@@ -119,7 +142,7 @@ export function SplitReview({ address }: { address: AddressInput }) {
 				router.dismissAll();
 				router.replace({
 					pathname: "/purchases/group/[group]",
-					params: { group: placed.checkoutGroup },
+					params: { group: placed.checkoutGroup, placed: "1" },
 				});
 			},
 			onError: (error) => {
@@ -128,10 +151,24 @@ export function SplitReview({ address }: { address: AddressInput }) {
 					error.code === ERROR_CODES.checkoutQuoteChanged
 				) {
 					setIdempotencyKey(newIdempotencyKey());
+					setAccepted(false);
+					setQuoteChanged(true);
 					requestQuote(method, picks);
 				}
 			},
 		});
+	};
+
+	// The split quote folds the buyer protection fee into each group total
+	// without stating it; this screen never derives it (the server decides
+	// money), so it only says the fee is in there.
+	const showsFee = pricedMethod === "mobile_money" && method === "mobile_money";
+	const shopOf = (groupKey: string) => {
+		const groups = cart.data && isSplitCart(cart.data) ? cart.data.groups : [];
+		return (
+			groups.find((group) => group.groupKey === groupKey)?.storefrontShop
+				.name ?? null
+		);
 	};
 
 	const methodPicker = protectedPaymentEnabled ? (
@@ -179,156 +216,297 @@ export function SplitReview({ address }: { address: AddressInput }) {
 		)
 			? place.error
 			: null;
-	const canPlace = accepted && view.groups.length > 0 && !stale;
+	const canPlace = view.groups.length > 0 && !stale;
 	const grand = formatPrice(view.grandTotal, locale);
 
 	return (
-		<FlashList<SplitQuoteGroup>
-			data={view.groups}
-			keyExtractor={(group) => group.groupKey}
-			extraData={{ picks, stale, method }}
-			contentContainerStyle={{ padding: 16, paddingBottom: 24 + insets.bottom }}
-			ItemSeparatorComponent={Separator}
-			ListHeaderComponent={
-				methodPicker ? (
-					<View style={styles.headerGap}>{methodPicker}</View>
-				) : null
-			}
-			renderItem={({ item: group }) => {
-				const chosen = picks[group.groupKey] ?? group.selectedOptionId;
-				return (
-					<View
-						style={[
-							styles.card,
-							{ backgroundColor: c.card, borderColor: c.border },
-						]}
-					>
-						<Text
-							style={[styles.title, { color: c.text }]}
-							accessibilityRole="header"
-						>
-							{t("checkoutGroup.deliveryFor", {
-								shop: group.storefrontShop.name,
-							})}
-						</Text>
-						<View accessibilityRole="radiogroup" style={styles.options}>
-							{group.delivery.options.map((option) => (
-								<DeliveryOptionCard
-									key={option.optionId}
-									option={option}
-									checked={option.optionId === chosen}
-									locale={locale}
-									selectable={method !== "cod" || option.codAllowed}
-									onSelect={() => pick(group.groupKey, option.optionId)}
+		<View style={styles.flex}>
+			<FlashList<SplitQuoteGroup>
+				ref={list}
+				data={view.groups}
+				keyExtractor={(group) => group.groupKey}
+				extraData={{ picks, stale, method, showsFee }}
+				contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+				ItemSeparatorComponent={Separator}
+				ListHeaderComponent={
+					<View style={styles.header}>
+						{quoteChanged ? (
+							<View
+								style={[styles.notice, { backgroundColor: c.warningSoft }]}
+								accessibilityRole="alert"
+							>
+								<Ionicons
+									name="alert-circle"
+									size={18}
+									color={c.warningText}
+									style={styles.noticeIcon}
 								/>
-							))}
-						</View>
-						<View style={[styles.divider, { backgroundColor: c.border }]} />
-						<View style={[styles.amounts, stale ? styles.dim : null]}>
-							<AmountRow
-								label={t("checkoutGroup.groupSubtotal")}
-								value={formatPrice(group.subtotal, locale)}
-							/>
-							<AmountRow
-								label={t("checkoutGroup.groupDelivery")}
-								value={
-									group.deliveryFee === 0
-										? t("checkout.free")
-										: formatPrice(group.deliveryFee, locale)
-								}
-							/>
-							<AmountRow
-								label={t("checkoutGroup.groupTotal")}
-								value={formatPrice(group.total, locale)}
-								strong
-							/>
+								<View style={[styles.flex, styles.noticeLines]}>
+									<Text style={[styles.noticeTitle, { color: c.warningText }]}>
+										{t("checkout.quoteChanged")}
+									</Text>
+									<Text style={[styles.meta, { color: c.warningText }]}>
+										{t("checkout.quoteChangedBody")}
+									</Text>
+								</View>
+							</View>
+						) : null}
+						{methodPicker}
+						<View
+							style={[
+								styles.card,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							<View style={styles.row}>
+								<Text
+									style={[styles.strongLabel, { color: c.text }]}
+									accessibilityRole="header"
+								>
+									{t("checkout.deliverTo")}
+								</Text>
+								<LinkButton
+									label={t("checkout.editAddress")}
+									onPress={() => router.dismissTo("/checkout/address")}
+								/>
+							</View>
+							<Text style={[styles.meta, { color: c.body }]}>
+								{`${address.recipientName} · ${address.phone}`}
+							</Text>
+							<Text style={[styles.meta, { color: c.muted }]}>
+								{address.landmark
+									? `${districtName(address)} — ${address.landmark}`
+									: districtName(address)}
+							</Text>
 						</View>
 					</View>
-				);
-			}}
-			ListFooterComponent={
-				<View style={styles.footer}>
-					{view.unavailableGroups.length > 0 ? (
+				}
+				renderItem={({ item: group }) => {
+					const chosen = picks[group.groupKey] ?? group.selectedOptionId;
+					return (
 						<View
-							style={[styles.notice, { backgroundColor: c.warningSoft }]}
-							accessibilityRole="alert"
+							style={[
+								styles.card,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
 						>
-							<Ionicons
-								name="information-circle"
-								size={18}
-								color={c.warningText}
-								style={styles.noticeIcon}
-							/>
-							<View style={[styles.flex, styles.noticeLines]}>
-								<Text style={[styles.noticeTitle, { color: c.warningText }]}>
-									{t("checkoutGroup.unavailableTitle")}
-								</Text>
-								{view.unavailableGroups.map((entry) => (
-									<Text
-										key={entry.groupKey}
-										style={[styles.meta, { color: c.warningText }]}
-									>
-										{t(unavailableReasonKey(entry.reason))}
-									</Text>
+							<Text
+								style={[styles.title, { color: c.text }]}
+								accessibilityRole="header"
+							>
+								{t("checkoutGroup.deliveryFor", {
+									shop: group.storefrontShop.name,
+								})}
+							</Text>
+							<View accessibilityRole="radiogroup" style={styles.options}>
+								{group.delivery.options.map((option) => (
+									<DeliveryOptionCard
+										key={option.optionId}
+										option={option}
+										checked={option.optionId === chosen}
+										locale={locale}
+										selectable={method !== "cod" || option.codAllowed}
+										onSelect={() => pick(group.groupKey, option.optionId)}
+									/>
 								))}
 							</View>
+							<GroupItems group={group} locale={locale} />
+							<View style={[styles.divider, { backgroundColor: c.border }]} />
+							<View style={[styles.amounts, stale ? styles.dim : null]}>
+								<AmountRow
+									label={t("checkoutGroup.groupSubtotal")}
+									value={formatPrice(group.subtotal, locale)}
+								/>
+								<AmountRow
+									label={t("checkoutGroup.groupDelivery")}
+									value={
+										group.deliveryFee === 0
+											? t("checkout.free")
+											: formatPrice(group.deliveryFee, locale)
+									}
+								/>
+								{showsFee ? (
+									<AmountRow
+										label={t("payments.summary_protectionFee")}
+										value={t("checkoutGroup.feeIncluded")}
+									/>
+								) : null}
+								<AmountRow
+									label={t("checkoutGroup.groupTotal")}
+									value={formatPrice(group.total, locale)}
+									strong
+								/>
+							</View>
 						</View>
-					) : null}
-					<View
-						style={[styles.grand, { borderTopColor: c.border }]}
-						accessible
-						accessibilityLabel={
-							quote.isPending
-								? t("checkout.loadingQuote")
-								: `${t("checkoutGroup.grandTotal")} ${grand}`
-						}
-						accessibilityLiveRegion="polite"
-					>
-						<Text style={[styles.grandLabel, { color: c.text }]}>
-							{t("checkoutGroup.grandTotal")}
-						</Text>
-						{quote.isPending ? (
-							<View style={styles.requote}>
-								<ActivityIndicator color={c.primary} size="small" />
+					);
+				}}
+				ListFooterComponent={
+					<View style={styles.footer}>
+						{view.unavailableGroups.length > 0 ? (
+							<View
+								style={[styles.notice, { backgroundColor: c.warningSoft }]}
+								accessibilityRole="alert"
+							>
+								<Ionicons
+									name="information-circle"
+									size={18}
+									color={c.warningText}
+									style={styles.noticeIcon}
+								/>
+								<View style={[styles.flex, styles.noticeLines]}>
+									<Text style={[styles.noticeTitle, { color: c.warningText }]}>
+										{t("checkoutGroup.unavailableTitle")}
+									</Text>
+									{view.unavailableGroups.map((entry) => {
+										const shop = shopOf(entry.groupKey);
+										const reason = t(unavailableReasonKey(entry.reason));
+										return (
+											<Text
+												key={entry.groupKey}
+												style={[styles.meta, { color: c.warningText }]}
+											>
+												{shop ? `${shop} : ${reason}` : reason}
+											</Text>
+										);
+									})}
+									<View style={styles.noticeActions}>
+										<LinkButton
+											label={t("checkout.editCart")}
+											onPress={() => router.navigate("/cart")}
+										/>
+										<LinkButton
+											label={t("checkout.editAddress")}
+											onPress={() => router.dismissTo("/checkout/address")}
+										/>
+									</View>
+								</View>
+							</View>
+						) : null}
+						<View
+							style={[styles.grand, { borderTopColor: c.border }]}
+							accessible
+							accessibilityLabel={
+								quote.isPending
+									? t("checkout.loadingQuote")
+									: `${t("checkoutGroup.grandTotal")} ${grand}`
+							}
+							accessibilityLiveRegion="polite"
+						>
+							<Text style={[styles.grandLabel, { color: c.text }]}>
+								{t("checkoutGroup.grandTotal")}
+							</Text>
+							{quote.isPending ? (
+								<View style={styles.requote}>
+									<ActivityIndicator color={c.primary} size="small" />
+									<Text style={[styles.meta, { color: c.muted }]}>
+										{t("checkout.loadingQuote")}
+									</Text>
+								</View>
+							) : (
+								<View style={stale ? styles.dim : null}>
+									<TotalTag amount={grand} />
+								</View>
+							)}
+						</View>
+						{quoteError}
+						<Pressable
+							onPress={() => {
+								setTermsNudge(false);
+								setAccepted(!accepted);
+							}}
+							accessibilityRole="checkbox"
+							accessibilityLabel={t("checkout.acceptTerms")}
+							accessibilityState={{ checked: accepted }}
+							style={styles.accept}
+						>
+							<Ionicons
+								name={accepted ? "checkbox" : "square-outline"}
+								size={24}
+								color={accepted ? c.primary : c.muted}
+							/>
+							<Text style={[styles.acceptText, { color: c.text }]}>
+								{t("checkout.acceptTerms")}
+							</Text>
+						</Pressable>
+						<FormError
+							message={
+								termsNudge && !accepted ? t("checkout.acceptRequired") : null
+							}
+						/>
+						<FormError
+							message={placeError ? resolveErrorMessage(placeError, t) : null}
+						/>
+					</View>
+				}
+			/>
+			<PinnedActionBar>
+				<CheckoutButton
+					label={
+						stale
+							? t("checkoutGroup.placeOrders")
+							: t("checkoutGroup.placeOrdersTotal", { total: grand })
+					}
+					onPress={placeOrders}
+					disabled={!canPlace}
+					loading={place.isPending}
+				/>
+			</PinnedActionBar>
+		</View>
+	);
+}
+
+/** The group's lines, folded by default: the delivery pick comes first. */
+function GroupItems({
+	group,
+	locale,
+}: {
+	group: SplitQuoteGroup;
+	locale: "fr" | "en";
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const [open, setOpen] = useState(false);
+	const count = group.items.length;
+	return (
+		<View style={styles.items}>
+			<Pressable
+				onPress={() => setOpen(!open)}
+				accessibilityRole="button"
+				accessibilityState={{ expanded: open }}
+				style={styles.itemsToggle}
+			>
+				<Text style={[styles.strongLabel, styles.flex, { color: c.text }]}>
+					{t("checkoutGroup.itemsToggle", { count })}
+				</Text>
+				<Ionicons
+					name={open ? "chevron-up" : "chevron-down"}
+					size={18}
+					color={c.muted}
+				/>
+			</Pressable>
+			{open ? (
+				<View style={styles.itemsList}>
+					<Text style={[styles.meta, { color: c.muted }]}>
+						{t("purchases.soldBy", { shop: group.fulfillingShop.name })}
+					</Text>
+					{group.items.map((line) => (
+						<View key={`${line.title}-${line.variantLabel}`} style={styles.row}>
+							<View style={styles.flex}>
+								<Text style={[styles.meta, { color: c.text }]}>
+									{line.title}
+								</Text>
 								<Text style={[styles.meta, { color: c.muted }]}>
-									{t("checkout.loadingQuote")}
+									{`${t("checkout.quantity", { quantity: line.quantity })} × ${formatPrice(line.unitPrice, locale)}`}
 								</Text>
 							</View>
-						) : (
-							<View style={stale ? styles.dim : null}>
-								<TotalTag amount={grand} />
-							</View>
-						)}
-					</View>
-					{quoteError}
-					<Pressable
-						onPress={() => setAccepted(!accepted)}
-						accessibilityRole="checkbox"
-						accessibilityLabel={t("checkout.acceptTerms")}
-						accessibilityState={{ checked: accepted }}
-						style={styles.accept}
-					>
-						<Ionicons
-							name={accepted ? "checkbox" : "square-outline"}
-							size={24}
-							color={accepted ? c.primary : c.muted}
-						/>
-						<Text style={[styles.acceptText, { color: c.text }]}>
-							{t("checkout.acceptTerms")}
-						</Text>
-					</Pressable>
-					<FormError
-						message={placeError ? resolveErrorMessage(placeError, t) : null}
-					/>
-					<CheckoutButton
-						label={t("checkoutGroup.placeOrders")}
-						onPress={placeOrders}
-						disabled={!canPlace}
-						loading={place.isPending}
-					/>
+							<Text style={[styles.value, { color: c.text }]}>
+								{formatPrice(line.lineSubtotal, locale)}
+							</Text>
+						</View>
+					))}
 				</View>
-			}
-		/>
+			) : null}
+		</View>
 	);
 }
 
@@ -367,7 +545,16 @@ const styles = StyleSheet.create({
 	stack: { gap: 10 },
 	pad: { padding: 16 },
 	pickerPad: { paddingHorizontal: 16, paddingTop: 16 },
-	headerGap: { marginBottom: 16 },
+	header: { gap: 16, marginBottom: 16 },
+	items: { gap: 8 },
+	itemsToggle: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		minHeight: 44,
+	},
+	itemsList: { gap: 10 },
+	noticeActions: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
 	card: {
 		padding: 16,
 		gap: 12,

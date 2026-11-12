@@ -1,7 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import {
+	Pressable,
+	RefreshControl,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import {
@@ -28,6 +35,13 @@ export function DisputesList({ selectedId, onOpen }: SplitListProps) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
 	const query = useBuyerDisputes();
+	// A pull is the buyer's own; a background refetch never spins it.
+	const [pulling, setPulling] = useState(false);
+	const { refetch } = query;
+	const onRefresh = useCallback(() => {
+		setPulling(true);
+		void refetch().finally(() => setPulling(false));
+	}, [refetch]);
 	return (
 		<SafeAreaView
 			edges={["top"]}
@@ -60,6 +74,14 @@ export function DisputesList({ selectedId, onOpen }: SplitListProps) {
 						keyExtractor={(row) => row.id}
 						contentContainerStyle={styles.list}
 						ItemSeparatorComponent={Separator}
+						refreshControl={
+							<RefreshControl
+								refreshing={pulling}
+								onRefresh={onRefresh}
+								tintColor={c.primary}
+								colors={[c.primary]}
+							/>
+						}
 						renderItem={({ item }) => (
 							<DisputeRow
 								item={item}

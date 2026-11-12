@@ -7,7 +7,7 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useRegenerateHandoverCode } from "@/src/hooks/useOrderActions";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
@@ -135,9 +135,13 @@ export function HandoverCard({
 	);
 }
 
-/** The design system's ink: the card reads as the one thing to keep safe. */
-const INK = "#12163a";
-const AMBER = "#ffc94a";
+/**
+ * The card is ink in both themes: it reads as the one thing to keep safe.
+ * Its inner surfaces and words borrow the night palette, which is drawn
+ * for exactly this ground.
+ */
+const INK = Colors.light.foreground;
+const AMBER = Colors.dark.sun;
 /** The shell's muted ink: 9:1 on the ink card, where the faint grey was 4.2:1. */
 const INK_MUTED = "#c7d3f7";
 
@@ -159,7 +163,7 @@ const styles = StyleSheet.create({
 	},
 	sms: { color: INK_MUTED, fontSize: 12, fontFamily: Fonts.bodySemibold },
 	body: {
-		color: "#c9cce0",
+		color: Colors.dark.body,
 		fontSize: 15,
 		fontFamily: Fonts.body,
 		lineHeight: 22,
@@ -169,7 +173,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		height: 64,
 		borderRadius: 12,
-		backgroundColor: "#1a1f4a",
+		backgroundColor: Colors.dark.card,
 		borderWidth: 1,
 		borderColor: "#3a3f66",
 		alignItems: "center",

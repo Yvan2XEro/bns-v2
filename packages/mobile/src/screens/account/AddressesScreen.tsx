@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useNavigation } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -39,7 +40,7 @@ export function AddressesScreen() {
 	const c = useGroupedColors();
 	const { t } = useTranslation();
 	const { user } = useAuth();
-	const { showConfirm } = useAlert();
+	const { showConfirm, showError } = useAlert();
 	const { launchCities } = useAppConfig();
 	const list = useSavedAddresses(Boolean(user));
 	const save = useSaveAddress();
@@ -54,7 +55,6 @@ export function AddressesScreen() {
 		editing?.id != null
 			? (addresses.find((a) => a.id === editing.id) ?? null)
 			: null;
-	const actionError = remove.error ?? makeDefault.error;
 	const saveError =
 		save.error && !addressFieldOf(save.error)
 			? resolveErrorMessage(save.error, t)
@@ -64,6 +64,24 @@ export function AddressesScreen() {
 		save.reset();
 		setEditing({ id });
 	};
+
+	// System back (Android button, iOS swipe) does what the drawn arrow
+	// does while the form is open: back to the list, not out of the screen
+	// with a half-typed address lost.
+	const navigation = useNavigation();
+	const isEditing = editing !== null;
+	useEffect(() => {
+		if (!isEditing) return;
+		return navigation.addListener("beforeRemove", (event) => {
+			event.preventDefault();
+			setEditing(null);
+		});
+	}, [isEditing, navigation]);
+
+	// A failed delete or default is said in a sheet: a line at the top of the
+	// list would be off screen for the last card.
+	const reportActionError = (err: unknown) =>
+		showError(t("common.error"), resolveErrorMessage(err, t));
 
 	return (
 		<SafeAreaView
@@ -176,11 +194,6 @@ export function AddressesScreen() {
 									})}
 								</Text>
 							)}
-							<FormError
-								message={
-									actionError ? resolveErrorMessage(actionError, t) : null
-								}
-							/>
 							{addresses.map((address) => (
 								<SavedAddressCard
 									key={address.id}
@@ -192,22 +205,32 @@ export function AddressesScreen() {
 												<CardAction
 													label={t("addresses.setDefault")}
 													disabled={makeDefault.isPending}
-													onPress={() => makeDefault.mutate(address.id)}
+													target={address.label ?? address.recipientName}
+													onPress={() =>
+														makeDefault.mutate(address.id, {
+															onError: reportActionError,
+														})
+													}
 												/>
 											) : null}
 											<CardAction
 												label={t("addresses.edit")}
+												target={address.label ?? address.recipientName}
 												onPress={() => startEditing(address.id)}
 											/>
 											<CardAction
 												label={t("addresses.delete")}
 												tone="danger"
+												target={address.label ?? address.recipientName}
 												disabled={remove.isPending}
 												onPress={() =>
 													showConfirm(
 														t("addresses.deleteTitle"),
 														t("addresses.deleteConfirm"),
-														() => remove.mutate(address.id),
+														() =>
+															remove.mutate(address.id, {
+																onError: reportActionError,
+															}),
 													)
 												}
 											/>

@@ -134,6 +134,78 @@ export function MessageListingCard({
 	);
 }
 
+/**
+ * The ad a thread is about, pinned under the header: photo, title on one
+ * line, the yellow price tag. Stays after the first message has gone, so a
+ * buyer talking to several sellers knows which phone and which price this is.
+ */
+export function ThreadListingStrip({
+	listing,
+	onPress,
+}: {
+	listing: AttachedListing;
+	onPress: () => void;
+}) {
+	const isDark = useColorScheme() === "dark";
+	const C = Colors[isDark ? "dark" : "light"];
+	const { t } = useTranslation();
+	const priceLabel =
+		listing.price != null ? formatPrice(listing.price, i18n.language) : null;
+
+	return (
+		<Pressable
+			onPress={onPress}
+			accessibilityRole="link"
+			accessibilityLabel={[t("messages.viewListing"), listing.title, priceLabel]
+				.filter(Boolean)
+				.join(", ")}
+			style={({ pressed }) => [
+				styles.strip,
+				{
+					backgroundColor: pressed ? C.well : C.card,
+					borderBottomColor: C.border,
+				},
+			]}
+		>
+			{listing.thumbnailUrl ? (
+				<Image
+					source={{ uri: listing.thumbnailUrl }}
+					style={[styles.stripImg, { backgroundColor: C.well }]}
+					contentFit="cover"
+					recyclingKey={listing.thumbnailUrl}
+					accessible={false}
+				/>
+			) : (
+				<View
+					style={[
+						styles.stripImg,
+						styles.chipImgFallback,
+						{ backgroundColor: C.well },
+					]}
+				>
+					<Ionicons
+						name="pricetag-outline"
+						size={16}
+						color={C.mutedForeground}
+					/>
+				</View>
+			)}
+			<Text
+				style={[styles.stripTitle, { color: C.foreground }]}
+				numberOfLines={1}
+			>
+				{listing.title}
+			</Text>
+			{listing.price != null ? (
+				<View>
+					<PriceTag price={listing.price} small />
+				</View>
+			) : null}
+			<Ionicons name="chevron-forward" size={16} color={C.mutedForeground} />
+		</Pressable>
+	);
+}
+
 /** The listing about to go out with the next message, above the composer. */
 export function ComposerListingChip({
 	listing,
@@ -239,6 +311,22 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		borderRadius: 12,
 		borderWidth: StyleSheet.hairlineWidth,
+	},
+	strip: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		minHeight: 56,
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+		borderBottomWidth: StyleSheet.hairlineWidth,
+	},
+	stripImg: { width: 40, height: 40, borderRadius: 8 },
+	stripTitle: {
+		flex: 1,
+		fontSize: 14,
+		lineHeight: 19,
+		fontFamily: Fonts.bodySemibold,
 	},
 	chipImg: { width: 44, height: 44, borderRadius: 8 },
 	chipImgFallback: { alignItems: "center", justifyContent: "center" },

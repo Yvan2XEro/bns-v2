@@ -191,6 +191,7 @@ export function ShopDetailsForm({ phone }: { phone: PhoneStatus }) {
 				disabled={!canSubmit}
 				accessibilityRole="button"
 				accessibilityLabel={t("shop.createSubmit")}
+				accessibilityState={{ disabled: !canSubmit, busy: isPending }}
 				style={[
 					styles.submit,
 					{ backgroundColor: c.sell, opacity: canSubmit ? 1 : 0.5 },

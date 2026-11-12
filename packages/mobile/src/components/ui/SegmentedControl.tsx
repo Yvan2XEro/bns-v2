@@ -60,7 +60,7 @@ export function SegmentedControl<K extends string>({
 						]}
 					>
 						<Text
-							style={[styles.text, { color: selected ? c.primary : c.muted }]}
+							style={[styles.text, { color: selected ? c.link : c.muted }]}
 							numberOfLines={1}
 						>
 							{label}
@@ -75,7 +75,7 @@ export function SegmentedControl<K extends string>({
 								<Text
 									style={[
 										styles.countText,
-										{ color: selected ? c.primary : c.muted },
+										{ color: selected ? c.link : c.muted },
 									]}
 								>
 									{count}

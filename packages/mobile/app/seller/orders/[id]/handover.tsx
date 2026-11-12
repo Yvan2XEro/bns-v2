@@ -1,7 +1,15 @@
+import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import {
+	AccessibilityInfo,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
@@ -35,7 +43,7 @@ import {
 
 export default function HandoverScreen() {
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const { shop, isLoading: shopLoading } = useActiveShop();
 	const query = useSellerOrder(shop?.shopId, id);
@@ -46,7 +54,58 @@ export default function HandoverScreen() {
 	});
 	const code = form.watch("code");
 	const order = query.data;
-	const header = <SellerHeader title={t("sellerOrders.handoverTitle")} />;
+	// The proof shown at the door once the code is accepted.
+	const [handedAt, setHandedAt] = useState<Date | null>(null);
+	const header = (
+		<SellerHeader
+			title={t("sellerOrders.handoverTitle")}
+			subtitle={
+				order ? `${order.orderNumber} · ${order.delivery.recipientName}` : null
+			}
+		/>
+	);
+
+	if (handedAt && order) {
+		const time = handedAt.toLocaleTimeString(i18n.language, {
+			hour: "2-digit",
+			minute: "2-digit",
+		});
+		return (
+			<SafeAreaView
+				edges={["top", "bottom"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				{header}
+				<ScreenColumn width="reading">
+					<View style={styles.done}>
+						<View
+							style={[styles.doneBadge, { backgroundColor: c.successSoft }]}
+						>
+							<Ionicons name="checkmark" size={56} color={c.successText} />
+						</View>
+						<Text
+							accessibilityRole="header"
+							style={[styles.doneTitle, { color: c.text }]}
+						>
+							{t("sellerOrders.handoverDone")}
+						</Text>
+						<Text style={[styles.doneMeta, { color: c.body }]}>
+							{t("sellerOrders.handoverDoneMeta", {
+								number: order.orderNumber,
+								time,
+							})}
+						</Text>
+						<View style={styles.doneAction}>
+							<SheetButton
+								label={t("sellerOrders.done")}
+								onPress={() => router.back()}
+							/>
+						</View>
+					</View>
+				</ScreenColumn>
+			</SafeAreaView>
+		);
+	}
 
 	if (shopLoading || query.isLoading) {
 		return (
@@ -90,17 +149,16 @@ export default function HandoverScreen() {
 			? resolveErrorMessage(verify.error, t, t("sellerOrders.actionFailed"))
 			: null;
 
-	const onKey = (key: KeypadKey) => {
-		// A new digit starts a new attempt: the last answer stops being news.
-		if (verify.error) verify.reset();
-		form.setValue("code", pressKey(code, key), { shouldValidate: false });
-	};
-
 	const submit = form.handleSubmit(({ code: value }) => {
 		verify.mutate(
 			{ code: value },
 			{
-				onSuccess: () => router.back(),
+				onSuccess: () => {
+					setHandedAt(new Date());
+					AccessibilityInfo.announceForAccessibility(
+						t("sellerOrders.handoverDone"),
+					);
+				},
 				onError: () => {
 					form.setValue("code", "");
 					// The error body answers at once; the order is the lasting answer.
@@ -109,6 +167,22 @@ export default function HandoverScreen() {
 			},
 		);
 	});
+
+	const onKey = (key: KeypadKey) => {
+		// A new digit starts a new attempt: the last answer stops being news.
+		if (verify.error) verify.reset();
+		const next = pressKey(code, key);
+		form.setValue("code", next, { shouldValidate: false });
+		// The fourth digit sends the code: one hand holds the parcel. The
+		// button below stays for a retry.
+		if (
+			next.length === HANDOVER_CODE_LENGTH &&
+			code.length < HANDOVER_CODE_LENGTH &&
+			!verify.isPending
+		) {
+			void submit();
+		}
+	};
 
 	const refresh = () => {
 		verify.reset();
@@ -136,6 +210,15 @@ export default function HandoverScreen() {
 						<>
 							<Text style={[styles.body, { color: c.body }]}>
 								{t("sellerOrders.handoverBody")}
+							</Text>
+							<Text style={[styles.items, { color: c.text }]} numberOfLines={2}>
+								{order.items
+									.map((item) =>
+										item.quantity > 1
+											? `${item.quantity} × ${item.title}`
+											: item.title,
+									)
+									.join(", ")}
 							</Text>
 							<HandoverKeypad
 								code={code}
@@ -183,4 +266,33 @@ const styles = StyleSheet.create({
 	content: { padding: 16, paddingBottom: 40, gap: 16 },
 	body: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
 	center: { textAlign: "center", fontSize: 14, fontFamily: Fonts.bodyMedium },
+	items: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.bodySemibold },
+	done: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		padding: 24,
+		gap: 12,
+	},
+	doneBadge: {
+		width: 112,
+		height: 112,
+		borderRadius: 56,
+		alignItems: "center",
+		justifyContent: "center",
+		marginBottom: 8,
+	},
+	doneTitle: {
+		fontSize: 28,
+		lineHeight: 34,
+		fontFamily: Fonts.displayBold,
+		textAlign: "center",
+	},
+	doneMeta: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+		textAlign: "center",
+	},
+	doneAction: { alignSelf: "stretch", marginTop: 24 },
 });

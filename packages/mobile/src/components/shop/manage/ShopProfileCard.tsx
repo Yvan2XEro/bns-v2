@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Controller } from "react-hook-form";
 import {
 	ActivityIndicator,
@@ -36,11 +37,14 @@ export function ShopProfileCard({
 	readOnly,
 	section,
 	onSaved,
+	onDirtyChange,
 }: {
 	shop: MyShop;
 	readOnly: boolean;
 	section: ProfileSection;
 	onSaved?: () => void;
+	/** Reports unsaved edits, so the screen can ask before they are lost. */
+	onDirtyChange?: (dirty: boolean) => void;
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -57,6 +61,10 @@ export function ShopProfileCard({
 		{ color: c.text, backgroundColor: c.input, borderColor: c.border },
 	];
 	const disabled = readOnly || isPending;
+	const isDirty = form.formState.isDirty;
+	useEffect(() => {
+		onDirtyChange?.(isDirty);
+	}, [isDirty, onDirtyChange]);
 
 	return (
 		<>
@@ -84,7 +92,10 @@ export function ShopProfileCard({
 							)}
 						/>
 						{form.formState.errors.name ? (
-							<Text style={[f.error, { color: dangerInk(c) }]}>
+							<Text
+								accessibilityRole="alert"
+								style={[f.error, { color: dangerInk(c) }]}
+							>
 								{t("shop.nameInvalid")}
 							</Text>
 						) : null}
@@ -220,7 +231,10 @@ export function ShopProfileCard({
 							)}
 						/>
 						{form.formState.errors.email ? (
-							<Text style={[f.error, { color: dangerInk(c) }]}>
+							<Text
+								accessibilityRole="alert"
+								style={[f.error, { color: dangerInk(c) }]}
+							>
 								{t("shop.contactEmailInvalid")}
 							</Text>
 						) : (
@@ -233,16 +247,19 @@ export function ShopProfileCard({
 			</View>
 
 			<Pressable
+				// Active while the form is incomplete: a tap shows the field errors
+				// instead of a grey button that never says what is missing.
 				onPress={submit}
-				disabled={disabled || !form.formState.isValid}
+				disabled={disabled}
 				accessibilityRole="button"
 				accessibilityLabel={t("shop.save")}
+				accessibilityState={{ disabled, busy: isPending }}
 				style={[
 					f.card,
 					styles.save,
 					{
 						backgroundColor: fillOf(c),
-						opacity: disabled || !form.formState.isValid ? 0.5 : 1,
+						opacity: disabled ? 0.5 : 1,
 					},
 				]}
 			>

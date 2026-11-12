@@ -45,6 +45,8 @@ export function SortBar({
 				contentContainerStyle={styles.chips}
 				style={styles.scroll}
 				keyboardShouldPersistTaps="handled"
+				accessibilityRole="radiogroup"
+				accessibilityLabel={t("search.sort.label")}
 			>
 				{SORTS.map((option) => (
 					<Chip
@@ -52,6 +54,7 @@ export function SortBar({
 						label={t(option.label)}
 						accessibilityLabel={option.a11y ? t(option.a11y) : undefined}
 						selected={sort === option.key}
+						role="radio"
 						onPress={() => onChange(option.key)}
 					/>
 				))}

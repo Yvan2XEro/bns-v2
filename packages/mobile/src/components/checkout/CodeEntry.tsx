@@ -1,7 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Text, TextInput, View } from "react-native";
+import {
+	ActivityIndicator,
+	Pressable,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -20,6 +26,7 @@ import { availableActions } from "@/src/lib/orderActions";
 import type { OrderView } from "@/src/types/order";
 import { CheckoutButton } from "./CheckoutButton";
 import { FormError } from "./FormError";
+import { inkOf } from "./fill";
 
 /**
  * The SMS-code outcome. Whether "confirm" and "resend" exist comes from the
@@ -83,7 +90,12 @@ export function CodeEntry({
 						render={({ field }) => (
 							<TextInput
 								value={field.value}
-								onChangeText={field.onChange}
+								onChangeText={(text) => {
+									field.onChange(text);
+									// The sixth digit is the buyer's "confirm": no hunt for
+									// the button with the keyboard up.
+									if (/^\d{6}$/.test(text) && !confirm.isPending) submit();
+								}}
 								onBlur={field.onBlur}
 								keyboardType="number-pad"
 								autoComplete="one-time-code"
@@ -135,15 +147,8 @@ export function CodeEntry({
 			)}
 			{actions.includes("resend_code") ? (
 				<View style={{ gap: 4 }}>
-					<CheckoutButton
-						variant="outline"
-						label={
-							secondsLeft > 0
-								? t("checkout.resendIn", { seconds: secondsLeft })
-								: t("checkout.resendCode")
-						}
-						disabled={secondsLeft > 0}
-						loading={resend.isPending}
+					{/* A quiet row, not a second big button under the confirm one. */}
+					<Pressable
 						onPress={() =>
 							resend.mutate(undefined, {
 								onSuccess: () => {
@@ -153,7 +158,36 @@ export function CodeEntry({
 								},
 							})
 						}
-					/>
+						disabled={secondsLeft > 0 || resend.isPending}
+						accessibilityRole="button"
+						accessibilityState={{
+							disabled: secondsLeft > 0,
+							busy: resend.isPending,
+						}}
+						style={{
+							minHeight: 44,
+							flexDirection: "row",
+							alignItems: "center",
+							justifyContent: "center",
+							gap: 8,
+						}}
+					>
+						{resend.isPending ? (
+							<ActivityIndicator color={c.primary} size="small" />
+						) : null}
+						<Text
+							style={{
+								fontSize: 15,
+								fontFamily: Fonts.bodySemibold,
+								color: secondsLeft > 0 ? c.muted : inkOf(c),
+								textDecorationLine: secondsLeft > 0 ? "none" : "underline",
+							}}
+						>
+							{secondsLeft > 0
+								? t("checkout.resendIn", { seconds: secondsLeft })
+								: t("checkout.resendCode")}
+						</Text>
+					</Pressable>
 					{resend.isSuccess ? (
 						<Text
 							style={[formStyles.hint, { color: c.successText, fontSize: 13 }]}

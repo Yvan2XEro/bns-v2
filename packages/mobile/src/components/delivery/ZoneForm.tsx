@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { FormRow } from "@/src/components/layout/FormRow";
+import { formStyles } from "@/src/components/seller/formStyles";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -21,6 +22,9 @@ import {
 } from "@/src/lib/deliveryZoneForm";
 import { useTranslation } from "@/src/lib/i18n";
 import { ChipField, ChoiceField, TextField, ToggleField } from "./FormFields";
+
+/** Usual same-day cutoffs: one tap fills HH:MM, so "17h" never reaches the check. */
+const CUTOFF_PRESETS = ["12:00", "14:00", "16:00", "17:00", "18:00"] as const;
 
 function toggled<T>(list: readonly T[], item: T): T[] {
 	return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
@@ -55,6 +59,13 @@ export function ZoneForm({
 		formState.errors[name]?.message;
 	const serverCode = error instanceof ApiError ? error.code : undefined;
 	const serverField = zoneErrorField(serverCode);
+	// One translated message for any refusal. A field-bound code is shown under
+	// its field; every other error falls back to the banner above Save.
+	const serverMessage = error
+		? resolveErrorMessage(error, t, t("deliverySettings.saveFailed"))
+		: undefined;
+	const serverErrorOf = (name: keyof ZoneFormValues) =>
+		serverField === name ? serverMessage : undefined;
 	const methods = couriersEnabled
 		? ZONE_METHODS
 		: (["seller_delivery"] as const);
@@ -83,6 +94,7 @@ export function ZoneForm({
 					setValue("courier", "");
 				}}
 				labelOf={(key) => (key === "douala" ? "Douala" : "Yaoundé")}
+				serverError={serverErrorOf("city")}
 			/>
 			<Controller
 				control={control}
@@ -94,10 +106,8 @@ export function ZoneForm({
 						selected={field.value}
 						onToggle={(key) => field.onChange(toggled(field.value, key))}
 						labelOf={(key) => districtLabel(key) ?? key}
-						error={
-							errorOf("districts") ??
-							(serverField === "districts" ? serverCode : undefined)
-						}
+						error={errorOf("districts")}
+						serverError={serverErrorOf("districts")}
 					/>
 				)}
 			/>
@@ -135,9 +145,11 @@ export function ZoneForm({
 					}
 				/>
 			) : null}
-			{errorOf("courier") ? (
+			{errorOf("courier") || serverErrorOf("courier") ? (
 				<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
-					{t(errorOf("courier") ?? "")}
+					{errorOf("courier")
+						? t(errorOf("courier") ?? "")
+						: serverErrorOf("courier")}
 				</Text>
 			) : null}
 			<FormRow>
@@ -190,13 +202,45 @@ export function ZoneForm({
 				control={control}
 				name="cutoffTime"
 				render={({ field }) => (
-					<TextField
-						label={t("deliverySettings.fieldCutoff")}
-						value={field.value}
-						onChange={field.onChange}
-						placeholder="17:00"
-						error={errorOf("cutoffTime")}
-					/>
+					<View style={{ gap: 8 }}>
+						<TextField
+							label={t("deliverySettings.fieldCutoff")}
+							value={field.value}
+							onChange={field.onChange}
+							placeholder="17:00"
+							error={errorOf("cutoffTime")}
+						/>
+						<View style={formStyles.chips}>
+							{CUTOFF_PRESETS.map((time) => {
+								const on = field.value === time;
+								return (
+									<Pressable
+										key={time}
+										onPress={() => field.onChange(on ? "" : time)}
+										accessibilityRole="radio"
+										accessibilityState={{ checked: on }}
+										accessibilityLabel={time}
+										style={[
+											formStyles.chip,
+											{
+												borderColor: on ? c.primary : c.border,
+												backgroundColor: on ? c.primarySoft : c.card,
+											},
+										]}
+									>
+										<Text
+											style={[
+												formStyles.chipText,
+												{ color: on ? c.link : c.body },
+											]}
+										>
+											{time}
+										</Text>
+									</Pressable>
+								);
+							})}
+						</View>
+					</View>
 				)}
 			/>
 			<Controller
@@ -235,9 +279,9 @@ export function ZoneForm({
 					/>
 				)}
 			/>
-			{error && !serverField ? (
+			{serverMessage && !serverField ? (
 				<Text accessibilityRole="alert" style={{ color: dangerInk(c) }}>
-					{resolveErrorMessage(error, t, t("deliverySettings.saveFailed"))}
+					{serverMessage}
 				</Text>
 			) : null}
 			<SheetButton

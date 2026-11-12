@@ -35,7 +35,7 @@ import type {
 export default function TeamScreen() {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const { showError, showConfirm } = useAlert();
+	const { showError, showConfirm, showSuccess } = useAlert();
 	const myShop = useMyShop();
 	const shop = myShop.data?.shop;
 	const role = myShop.data?.role ?? null;
@@ -59,7 +59,11 @@ export default function TeamScreen() {
 			onSuccess: (result) => {
 				if (!result.delivered) {
 					showError(t("team.inviteFailedTitle"), t("team.deliveredFalse"));
+					return;
 				}
+				showSuccess(
+					t("team.inviteResent", { target: invitation.maskedTarget }),
+				);
 			},
 			onError: (error) =>
 				showError(t("team.actionErrorTitle"), resolveErrorMessage(error, t)),

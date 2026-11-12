@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Pressable,
 	RefreshControl,
@@ -28,6 +28,7 @@ import {
 	type GroupFlow,
 	type OrderStep,
 } from "@/src/lib/checkoutGroupFlow";
+import { hapticOutcome } from "@/src/lib/haptics";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import type { CheckoutGroupOrderView } from "../../../../api/src/contracts/checkoutGroup";
@@ -41,7 +42,19 @@ export default function CheckoutGroupScreen() {
 	const { t } = useTranslation();
 	const locale = useAppLocale();
 	const insets = useSafeAreaInsets();
-	const { group } = useLocalSearchParams<{ group: string }>();
+	const { group, placed } = useLocalSearchParams<{
+		group: string;
+		placed?: string;
+	}>();
+	// Arriving straight from the review: the split checkout's own "placed"
+	// moment, felt once.
+	const justPlaced = placed === "1";
+	const feltRef = useRef(false);
+	useEffect(() => {
+		if (!justPlaced || feltRef.current) return;
+		feltRef.current = true;
+		hapticOutcome("success");
+	}, [justPlaced]);
 	const query = useCheckoutGroup(group);
 	const { refetch } = query;
 	// A pull is the buyer's own: the 20 s poll never spins the indicator.
@@ -97,7 +110,20 @@ export default function CheckoutGroupScreen() {
 								colors={[c.primary]}
 							/>
 						}
-						ListHeaderComponent={<GroupHeader flow={flow} />}
+						ListHeaderComponent={
+							<>
+								{justPlaced ? (
+									<PlacedHero count={query.data.orders.length} />
+								) : null}
+								<GroupHeader
+									flow={flow}
+									nextShop={
+										query.data.orders.find((order) => order.id === flow.next)
+											?.shop.name ?? null
+									}
+								/>
+							</>
+						}
 						renderItem={({ item: order }) => (
 							<OrderCard
 								order={order}
@@ -124,9 +150,41 @@ function stepColor(c: ShopPalette, step: OrderStep, next: boolean) {
  * per mobile-money order (paid, expired, still to pay), and the counts that
  * are not zero. Cash-on-delivery siblings have nothing to pay and no segment.
  */
-function GroupHeader({ flow }: { flow: GroupFlow }) {
+function PlacedHero({ count }: { count: number }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	return (
+		<View style={styles.hero} accessible accessibilityLiveRegion="polite">
+			<View style={[styles.heroTile, { backgroundColor: c.successSoft }]}>
+				<Ionicons name="checkmark" size={30} color={c.successText} />
+			</View>
+			<View style={styles.flex}>
+				<Text
+					style={[styles.step, { color: c.text }]}
+					accessibilityRole="header"
+				>
+					{t("checkoutGroup.placedTitle", { count })}
+				</Text>
+				<Text style={[styles.meta, { color: c.body }]}>
+					{t("checkoutGroup.placedSummary", { count })}
+				</Text>
+			</View>
+		</View>
+	);
+}
+
+function GroupHeader({
+	flow,
+	nextShop,
+}: {
+	flow: GroupFlow;
+	nextShop: string | null;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const nextLine = nextShop
+		? t("checkoutGroup.nextShop", { shop: nextShop })
+		: null;
 	const counts = [
 		flow.summary.paid
 			? t("checkoutGroup.summaryPaid", { count: flow.summary.paid })
@@ -158,7 +216,7 @@ function GroupHeader({ flow }: { flow: GroupFlow }) {
 				<View
 					style={styles.segments}
 					accessible
-					accessibilityLabel={counts.join(", ")}
+					accessibilityLabel={[...counts, nextLine].filter(Boolean).join(", ")}
 				>
 					{flow.steps.map((step) => (
 						<View
@@ -181,6 +239,9 @@ function GroupHeader({ flow }: { flow: GroupFlow }) {
 				<Text style={[styles.meta, { color: c.body }]}>
 					{counts.join(" · ")}
 				</Text>
+			) : null}
+			{nextLine ? (
+				<Text style={[styles.meta, { color: c.text }]}>{nextLine}</Text>
 			) : null}
 		</View>
 	);
@@ -280,6 +341,26 @@ function OrderCard({
 					</Pressable>
 				</>
 			) : null}
+			{/* A cash order still "placed" waits on its SMS code or the seller's
+			    call; the confirmation screen knows which, and takes the code. */}
+			{order.paymentMethod === "cod" && order.status === "placed" ? (
+				<Pressable
+					onPress={() =>
+						router.push({
+							pathname: "/checkout/confirmation/[id]",
+							params: { id: order.id },
+						})
+					}
+					accessibilityRole="button"
+					style={[styles.button, { borderColor: c.border }]}
+				>
+					<Text style={[styles.buttonText, { color: ink }]}>
+						{t("checkoutGroup.confirmOrder", {
+							orderNumber: order.orderNumber,
+						})}
+					</Text>
+				</Pressable>
+			) : null}
 			<Pressable
 				onPress={() => router.push(`/purchases/${order.id}`)}
 				accessibilityRole="button"
@@ -299,6 +380,20 @@ function OrderCard({
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
+	flex: { flex: 1 },
+	hero: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 14,
+		marginBottom: 20,
+	},
+	heroTile: {
+		width: 56,
+		height: 56,
+		borderRadius: 16,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 	separator: { height: 10 },
 	header: { gap: 8, marginBottom: 16 },
 	headerGap: { height: 4 },

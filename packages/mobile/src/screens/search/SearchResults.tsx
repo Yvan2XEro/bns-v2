@@ -1,9 +1,15 @@
 import { FlashList } from "@shopify/flash-list";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
+import {
+	router,
+	useFocusEffect,
+	useLocalSearchParams,
+	usePathname,
+} from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
+	Pressable,
 	RefreshControl,
 	StyleSheet,
 	Text,
@@ -17,6 +23,10 @@ import { ListingCard } from "@/src/components/ListingCard";
 import type { SplitListProps } from "@/src/components/layout/SplitScreen";
 import { ListingGridSkeleton } from "@/src/components/listing/Skeletons";
 import { SearchSegments } from "@/src/components/SearchSegments";
+import {
+	ActiveFilters,
+	type FilterPatch,
+} from "@/src/components/search/ActiveFilters";
 import { useDiscoveryPalette } from "@/src/components/search/palette";
 import { FiltersButton, QueryField } from "@/src/components/search/QueryField";
 import {
@@ -36,6 +46,7 @@ import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { useShopSearch } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 import type {
 	ListingHit,
@@ -55,6 +66,7 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const params = useLocalSearchParams();
+	const pathname = usePathname();
 	const { columns, cardWidth } = useResponsive();
 
 	const [query, setQuery] = useState((params.q as string) ?? "");
@@ -155,6 +167,20 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 	const [segment, setSegment] = useState<"listings" | "shops">(
 		params.segment === "shops" ? "shops" : "listings",
 	);
+
+	// The tab stays mounted, so a new way in (a category, a tag, "Voir tout")
+	// would otherwise inherit the last search's text and sort. Entry points
+	// pass a fresh `entry` value; changes made on this screen never do.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs per entry only
+	useEffect(() => {
+		if (!params.entry) return;
+		clearTimeout(debounceRef.current);
+		const text = (params.q as string) ?? "";
+		setQuery(text);
+		setDebouncedQuery(text);
+		setSort("newest");
+		setSegment(params.segment === "shops" ? "shops" : "listings");
+	}, [params.entry]);
 	const shopParams: Record<string, string> = {
 		...(debouncedQuery ? { q: debouncedQuery } : {}),
 		...(params.location ? { city: params.location as string } : {}),
@@ -174,6 +200,7 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 		isFetchingNextPage,
 		isLoading,
 		isError,
+		isFetchNextPageError,
 		refetch,
 	} = useInfiniteQuery({
 		queryKey: ["search", searchParams],
@@ -192,6 +219,12 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 		},
 		initialPageParam: 0,
 	});
+
+	// Held outside the JSX: inside the `isFetchNextPageError` branch TS narrows
+	// the destructured query result and types fetchNextPage as never.
+	const retryNextPage = () => {
+		void fetchNextPage();
+	};
 
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 
@@ -222,13 +255,23 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 
 	// ── Save search dialog ─────────────────────────────────────────
 	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+	// Everything the search runs with, so an alert matches what was saved.
+	// The text travels as the saved search's own `query`, not as a filter.
 	const savedFilters = {
-		category: params.category,
-		minPrice: params.minPrice,
-		maxPrice: params.maxPrice,
-		location: params.location,
-		sort,
-		...attrParams,
+		...Object.fromEntries(
+			Object.entries(searchParams).filter(([key]) => key !== "q"),
+		),
+		...(verifiedOnly ? { verified: "1" } : {}),
+	};
+	const openSave = () => {
+		if (!user) {
+			router.push({
+				pathname: "/auth/login",
+				params: getAuthModalParams(pathname),
+			});
+			return;
+		}
+		setSaveDialogOpen(true);
 	};
 
 	const renderRow = ({ item }: { item: ListingHitMapped[] }) => (
@@ -276,6 +319,14 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 		router.setParams(reset);
 	};
 
+	const removeFilter = (patch: FilterPatch) => router.setParams(patch);
+	// From an empty result: keep the words, drop the category around them.
+	const searchAllCategories = () => {
+		const reset: FilterPatch = { category: undefined, tags: undefined };
+		for (const key of Object.keys(attrParams)) reset[key] = undefined;
+		router.setParams(reset);
+	};
+
 	// Typed text that names a category offers to browse it whole; once one is
 	// chosen, the text would only narrow it again, so it is cleared.
 	const suggestedCategories = params.category
@@ -289,7 +340,8 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 	};
 	const showRecent =
 		inputFocused && query.trim().length === 0 && recent.length > 0;
-	const canSave = !!(debouncedQuery || activeFilterCount > 0) && !!user;
+	// Guests see it too: saved searches and alerts are a reason to sign up.
+	const canSave = !!(debouncedQuery || activeFilterCount > 0);
 
 	return (
 		<SafeAreaView
@@ -333,6 +385,14 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 				)}
 
 				{segment === "listings" && !showRecent && (
+					<ActiveFilters
+						params={params}
+						categories={categoriesData?.categories ?? []}
+						onRemove={removeFilter}
+					/>
+				)}
+
+				{segment === "listings" && !showRecent && (
 					<CategorySuggestions
 						categories={suggestedCategories}
 						onPick={browseCategory}
@@ -370,13 +430,29 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 				) : listings.length === 0 ? (
 					<EmptyState
 						icon="search-outline"
-						title={t("search.noResults")}
-						subtitle={t("search.noResultsHint")}
+						title={
+							debouncedQuery
+								? t("search.noResultsFor", { q: debouncedQuery })
+								: t("search.noResults")
+						}
+						subtitle={
+							activeFilterCount > 0
+								? t("search.noResultsRemoveFilter")
+								: debouncedQuery
+									? t("search.noResultsSpelling")
+									: t("search.noResultsHintShort")
+						}
 						{...(activeFilterCount > 0
 							? { ctaLabel: t("search.clearFilters"), onCta: clearAll }
 							: query
 								? { ctaLabel: t("search.clearSearch"), onCta: clearQuery }
 								: {})}
+						{...(params.category && debouncedQuery
+							? {
+									secondaryLabel: t("search.searchAllCategories"),
+									onSecondary: searchAllCategories,
+								}
+							: {})}
 					/>
 				) : (
 					// Recycled rows keyed by their listings, so a page appended at
@@ -405,12 +481,39 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 							/>
 						}
 						onEndReached={() =>
-							hasNextPage && !isFetchingNextPage && fetchNextPage()
+							hasNextPage &&
+							!isFetchingNextPage &&
+							!isFetchNextPageError &&
+							fetchNextPage()
 						}
 						onEndReachedThreshold={0.5}
 						ListFooterComponent={
 							isFetchingNextPage ? (
 								<ActivityIndicator color={c.primary} style={styles.more} />
+							) : isFetchNextPageError ? (
+								// A dropped connection mid-scroll says so, instead of
+								// passing for the end of the results.
+								<View style={styles.moreError}>
+									<Text
+										style={[styles.moreErrorText, { color: c.body }]}
+										accessibilityLiveRegion="polite"
+									>
+										{t("search.loadMoreFailed")}
+									</Text>
+									<Pressable
+										onPress={retryNextPage}
+										accessibilityRole="button"
+										style={({ pressed }) => [
+											styles.retryBtn,
+											{ borderColor: c.borderStrong },
+											pressed && styles.pressed,
+										]}
+									>
+										<Text style={[styles.retryText, { color: c.link }]}>
+											{t("common.retry")}
+										</Text>
+									</Pressable>
+								</View>
 							) : null
 						}
 						showsVerticalScrollIndicator={false}
@@ -419,7 +522,7 @@ export function SearchResults({ selectedId, onOpen }: SplitListProps) {
 			</View>
 
 			{canSave && segment === "listings" && !showRecent && (
-				<SaveSearchButton onPress={() => setSaveDialogOpen(true)} />
+				<SaveSearchButton onPress={openSave} />
 			)}
 
 			<SaveSearchDialog
@@ -454,4 +557,16 @@ const styles = StyleSheet.create({
 	row: { flexDirection: "row", gap: 12 },
 	skeleton: { padding: 16 },
 	more: { margin: 16 },
+	moreError: { alignItems: "center", gap: 10, paddingVertical: 20 },
+	moreErrorText: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.body },
+	retryBtn: {
+		minHeight: 48,
+		paddingHorizontal: 20,
+		borderRadius: 12,
+		borderWidth: 1.5,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	retryText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	pressed: { opacity: 0.7 },
 });

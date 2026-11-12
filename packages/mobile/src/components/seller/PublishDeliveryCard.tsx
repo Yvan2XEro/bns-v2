@@ -81,7 +81,10 @@ export function PublishDeliveryCard({
 						setForm((s) => ({ ...s, handlingHours: v.replace(/\D/g, "") }))
 					}
 					keyboardType="number-pad"
-					placeholder="24"
+					// "ex. 24", not a bare "24" that reads as a value already set.
+					placeholder={t("product.handlingPlaceholder", {
+						defaultValue: "ex. 24",
+					})}
 					placeholderTextColor={c.muted}
 					style={[
 						...inputStyle,
@@ -118,7 +121,9 @@ export function PublishDeliveryCard({
 					}
 					keyboardType="number-pad"
 					maxLength={3}
-					placeholder="3"
+					placeholder={t("product.warrantyPlaceholder", {
+						defaultValue: "ex. 3",
+					})}
 					placeholderTextColor={c.muted}
 					style={[...inputStyle, styles.number, flagged("warrantyMonths")]}
 					accessibilityLabel={t("product.warrantyMonths")}

@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
+import { useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -9,6 +10,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
@@ -18,6 +20,7 @@ import { HoldsList } from "@/src/components/payments/HoldsList";
 import { PaymentsShell } from "@/src/components/payments/PaymentsShell";
 import { PayoutAccountForm } from "@/src/components/payments/PayoutAccountForm";
 import { fillOf } from "@/src/components/shop/ink";
+import { StatusTag, type StatusTone } from "@/src/components/shop/Tags";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import {
@@ -29,9 +32,11 @@ import {
 	useStartOnboarding,
 	useSubmitPayoutAccount,
 } from "@/src/hooks/useSellerPayments";
+import { useMyShop } from "@/src/hooks/useShops";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatOrderDate } from "@/src/lib/orderMoney";
+import type { ConnectedAccountStatus } from "@/src/lib/paymentStatus";
 import {
 	CONNECTED_ACCOUNT_STATUSES,
 	PAYOUT_ACCOUNT_STATUSES,
@@ -39,6 +44,33 @@ import {
 } from "@/src/lib/paymentStatus";
 import { notMeAccountId } from "@/src/lib/sellerPayments";
 import type { PaymentSetupView } from "@/src/types/order";
+
+/** What each NotchPay account status asks of the seller, as a tone. */
+const CONNECTED_TONE: Record<ConnectedAccountStatus, StatusTone> = {
+	created: "neutral",
+	onboarding: "warning",
+	restricted: "warning",
+	active: "success",
+	disabled: "danger",
+	deauthorized: "danger",
+};
+
+/**
+ * NotchPay names a missing document with a code ("individual.id_number").
+ * A known code has its own sentence; an unknown one is made readable rather
+ * than shown raw.
+ */
+function requirementLabel(
+	code: string,
+	t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+	const tail = code.split(".").pop() ?? code;
+	const readable = tail.replace(/[_-]+/g, " ").trim();
+	const fallback = readable.charAt(0).toUpperCase() + readable.slice(1);
+	return t(`paymentRequirements.${code.replace(/\./g, "_")}`, {
+		defaultValue: fallback,
+	});
+}
 
 /**
  * The SMS "this was not me" link's target: `?shop=&notMe=<accountId>` in
@@ -108,7 +140,11 @@ function SetupContent({ shopId }: { shopId: string }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const locale = useLocaleKey();
-	const { showError } = useAlert();
+	const { showError, showSuccess, confirm } = useAlert();
+	const mine = useMyShop();
+	// The saved account shows as a card; the form opens only on purpose,
+	// because any change pauses payouts.
+	const [changing, setChanging] = useState(false);
 	const params = useLocalSearchParams<{ shop?: string; notMe?: string }>();
 	const notMeId = notMeAccountId(shopId, {
 		shop: params.shop ?? null,
@@ -138,10 +174,12 @@ function SetupContent({ shopId }: { shopId: string }) {
 		}
 	};
 
-	// No success toast: the saved account's own row re-renders from the
-	// invalidated query, same as billing's invoice list after a payment.
 	const onSaveAccount = (input: SubmitPayoutAccountInput) =>
 		submitAccount.mutate(input, {
+			onSuccess: () => {
+				setChanging(false);
+				showSuccess(t("payments.setup_saved"));
+			},
 			onError: (error) =>
 				showError(
 					t("payments.setup_saveFailed"),
@@ -190,7 +228,11 @@ function SetupContent({ shopId }: { shopId: string }) {
 		return (
 			<EmptyState
 				illustration="notFound"
-				title={t("seller.suspendedIndefinitely")}
+				title={
+					mine.data?.shop?.status === "suspended"
+						? t("seller.suspendedIndefinitely")
+						: t("seller.shopInactive")
+				}
 				subtitle={t("apiErrors.shop.inactive")}
 			/>
 		);
@@ -245,11 +287,24 @@ function SetupContent({ shopId }: { shopId: string }) {
 							<Text style={[s.body, { color: c.body }]}>
 								{t("payments.setup_step2Body")}
 							</Text>
-							<Text style={[s.meta, { color: c.muted, marginTop: 8 }]}>
-								{view.connectedAccount
-									? t(CONNECTED_ACCOUNT_STATUSES[view.connectedAccount.status])
-									: t("payments.accountStatus_created")}
-							</Text>
+							<View style={styles.tagRow}>
+								<StatusTag
+									label={
+										view.connectedAccount
+											? t(
+													CONNECTED_ACCOUNT_STATUSES[
+														view.connectedAccount.status
+													],
+												)
+											: t("payments.accountStatus_created")
+									}
+									tone={
+										view.connectedAccount
+											? CONNECTED_TONE[view.connectedAccount.status]
+											: "neutral"
+									}
+								/>
+							</View>
 							{view.connectedAccount &&
 							view.connectedAccount.requirementsDue.length > 0 ? (
 								<View style={styles.requirements}>
@@ -257,9 +312,9 @@ function SetupContent({ shopId }: { shopId: string }) {
 										{t("payments.setup_requirementsDue")}
 									</Text>
 									{view.connectedAccount.requirementsDue.map((req) => (
-										<Text key={req} style={[s.meta, { color: c.muted }]}>
+										<Text key={req} style={[s.body, { color: c.text }]}>
 											{"• "}
-											{req}
+											{requirementLabel(req, t)}
 										</Text>
 									))}
 								</View>
@@ -295,14 +350,38 @@ function SetupContent({ shopId }: { shopId: string }) {
 								{t("payments.setup_step3Title")}
 							</Text>
 							{view.payoutAccount ? (
-								<View style={styles.requirements}>
-									<Text style={[s.meta, { color: c.muted }]}>
-										{t(PAYOUT_METHODS[view.payoutAccount.method])} ·{" "}
+								<View
+									style={[
+										styles.accountCard,
+										{ backgroundColor: c.bg, borderColor: c.border },
+									]}
+									accessible
+									accessibilityLabel={[
+										t(PAYOUT_METHODS[view.payoutAccount.method]),
+										view.payoutAccount.accountNumberMasked,
+										t(PAYOUT_ACCOUNT_STATUSES[view.payoutAccount.status]),
+									].join(", ")}
+								>
+									<Text style={[s.body, { color: c.text }]}>
+										{t(PAYOUT_METHODS[view.payoutAccount.method])}
+									</Text>
+									<Text style={[styles.accountNumber, { color: c.text }]}>
 										{view.payoutAccount.accountNumberMasked}
 									</Text>
-									<Text style={[s.meta, { color: c.muted }]}>
-										{t(PAYOUT_ACCOUNT_STATUSES[view.payoutAccount.status])}
-									</Text>
+									<View style={styles.tagRow}>
+										<StatusTag
+											label={t(
+												PAYOUT_ACCOUNT_STATUSES[view.payoutAccount.status],
+											)}
+											tone={
+												view.payoutAccount.status === "active"
+													? "success"
+													: view.payoutAccount.status === "rejected"
+														? "danger"
+														: "warning"
+											}
+										/>
+									</View>
 								</View>
 							) : view.pendingAccount ? (
 								<Text style={[s.meta, { color: c.muted, marginBottom: 8 }]}>
@@ -324,22 +403,54 @@ function SetupContent({ shopId }: { shopId: string }) {
 								</Text>
 							) : (
 								<View style={{ marginTop: 10 }}>
-									{view.payoutAccount ? (
-										<Text
-											style={[
-												s.meta,
-												{ color: c.warningText, marginBottom: 8 },
+									{view.payoutAccount && !changing ? (
+										<Pressable
+											accessibilityRole="button"
+											accessibilityLabel={t("payments.setup_changeAccount")}
+											onPress={async () => {
+												const ok = await confirm(
+													t("payments.setup_changeAccount"),
+													t("payments.setup_changeNotice", {
+														hours: view.payoutChangeHoldHours,
+													}),
+													{ confirmText: t("payments.setup_changeAccount") },
+												);
+												if (ok) setChanging(true);
+											}}
+											style={({ pressed }) => [
+												s.button,
+												{
+													backgroundColor: c.card,
+													borderColor: c.border,
+													borderWidth: 1,
+												},
+												pressed && { opacity: 0.85 },
 											]}
 										>
-											{t("payments.setup_changeNotice", {
-												hours: view.payoutChangeHoldHours,
-											})}
-										</Text>
-									) : null}
-									<PayoutAccountForm
-										onSubmit={onSaveAccount}
-										pending={submitAccount.isPending}
-									/>
+											<Text style={[s.buttonText, { color: c.link }]}>
+												{t("payments.setup_changeAccount")}
+											</Text>
+										</Pressable>
+									) : (
+										<>
+											{view.payoutAccount ? (
+												<Text
+													style={[
+														s.meta,
+														{ color: c.warningText, marginBottom: 8 },
+													]}
+												>
+													{t("payments.setup_changeNotice", {
+														hours: view.payoutChangeHoldHours,
+													})}
+												</Text>
+											) : null}
+											<PayoutAccountForm
+												onSubmit={onSaveAccount}
+												pending={submitAccount.isPending}
+											/>
+										</>
+									)}
 								</View>
 							)}
 						</View>
@@ -371,5 +482,19 @@ export default function SellerPaymentsSetupScreen() {
 const styles = StyleSheet.create({
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	content: { padding: 16, gap: 12, paddingBottom: 32 },
-	requirements: { gap: 4, marginTop: 4 },
+	requirements: { gap: 4, marginTop: 8 },
+	tagRow: { flexDirection: "row", marginTop: 8 },
+	accountCard: {
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 12,
+		gap: 2,
+		marginTop: 8,
+	},
+	accountNumber: {
+		fontSize: 18,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
 });

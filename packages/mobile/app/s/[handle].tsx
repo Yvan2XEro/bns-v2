@@ -736,6 +736,16 @@ export default function ShopScreen() {
 										? t("shop.noListingsFiltered")
 										: t("shop.noListings")
 								}
+								// A filtered dead end gets its way back to the whole shop.
+								{...(activeQuery || category
+									? {
+											ctaLabel: t("shop.showWholeShop"),
+											onCta: () => {
+												setCategory(null);
+												closeSearch();
+											},
+										}
+									: {})}
 								size={140}
 							/>
 						)
@@ -750,10 +760,16 @@ export default function ShopScreen() {
 							) : null}
 							<Pressable
 								onPress={() =>
-									router.push({
-										pathname: "/report",
-										params: { targetType: "shop", targetId: shop.id },
-									})
+									// Reporting needs an account: ask before the form.
+									user
+										? router.push({
+												pathname: "/report",
+												params: { targetType: "shop", targetId: shop.id },
+											})
+										: router.push({
+												pathname: "/auth/login",
+												params: getAuthModalParams(pathname),
+											})
 								}
 								style={({ pressed }) => [
 									styles.report,
@@ -792,7 +808,7 @@ export default function ShopScreen() {
 						onSearchEverywhere={() =>
 							router.push({
 								pathname: "/(tabs)/search",
-								params: { q: activeQuery },
+								params: { q: activeQuery, entry: String(Date.now()) },
 							})
 						}
 					/>

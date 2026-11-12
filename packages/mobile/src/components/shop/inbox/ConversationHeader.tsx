@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { useState } from "react";
 import {
 	ActivityIndicator,
+	Platform,
 	Pressable,
 	StyleSheet,
 	Text,
@@ -10,6 +12,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { HeaderBackButton } from "@/src/components/layout/HeaderBackButton";
+import {
+	type MessageAction,
+	MessageActionSheet,
+} from "@/src/components/messages/MessageActionSheet";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import type { InboxConversationView } from "@/src/types/api";
@@ -20,8 +26,16 @@ interface ConversationHeaderProps {
 	/** From the inbox row when the thread was opened from the list. */
 	buyerAvatarUrl?: string | null;
 	listingTitle: string | null;
+	/** Opens the ad the thread is about. */
+	onListingPress?: () => void;
+	/** Opens the order the thread was created for. */
+	onOrderPress?: () => void;
+	/** Reports the buyer to moderation. */
+	onReportBuyer?: () => void;
 	assignee: InboxConversationView["assignee"];
 	status: "open" | "done";
+	/** Assignee and status not known yet (opened from a push): chips wait. */
+	stateLoading?: boolean;
 	onAssigneePress: () => void;
 	onToggleStatus: () => void;
 	assigneePending?: boolean;
@@ -38,8 +52,12 @@ export function ConversationHeader({
 	buyerName,
 	buyerAvatarUrl,
 	listingTitle,
+	onListingPress,
+	onOrderPress,
+	onReportBuyer,
 	assignee,
 	status,
+	stateLoading = false,
 	onAssigneePress,
 	onToggleStatus,
 	assigneePending,
@@ -55,13 +73,51 @@ export function ConversationHeader({
 	const accent = c.link;
 	const name = buyerName ?? t("inbox.unknownBuyer");
 	const avatarUri = resolveImageUrl(buyerAvatarUrl ?? null);
-	const assigneeLabel = assignee
-		? assignee.suspended
-			? t("inbox.assignedSuspended", {
-					name: assignee.name ?? t("inbox.unknownMember"),
-				})
-			: (assignee.name ?? t("inbox.unknownMember"))
-		: t("inbox.unassigned");
+	const [menuOpen, setMenuOpen] = useState(false);
+	const menu: MessageAction[] = [
+		...(onOrderPress
+			? [
+					{
+						key: "order",
+						label: t("messages.systemOrderOpen"),
+						icon: "receipt-outline" as const,
+						onPress: onOrderPress,
+					},
+				]
+			: []),
+		...(onListingPress
+			? [
+					{
+						key: "listing",
+						label: t("messages.viewListing"),
+						icon: "pricetag-outline" as const,
+						onPress: onListingPress,
+					},
+				]
+			: []),
+		...(onReportBuyer
+			? [
+					{
+						key: "report",
+						label: t("inbox.reportBuyer"),
+						icon: "flag-outline" as const,
+						tone: "danger" as const,
+						onPress: onReportBuyer,
+					},
+				]
+			: []),
+	];
+	const assigneeBusy = Boolean(assigneePending) || stateLoading;
+	const statusBusy = Boolean(statusPending) || stateLoading;
+	const assigneeLabel = stateLoading
+		? t("common.loading")
+		: assignee
+			? assignee.suspended
+				? t("inbox.assignedSuspended", {
+						name: assignee.name ?? t("inbox.unknownMember"),
+					})
+				: (assignee.name ?? t("inbox.unknownMember"))
+			: t("inbox.unassigned");
 
 	return (
 		<View
@@ -102,7 +158,21 @@ export function ConversationHeader({
 					>
 						{name}
 					</Text>
-					{listingTitle ? (
+					{listingTitle && onListingPress ? (
+						<Pressable
+							onPress={onListingPress}
+							accessibilityRole="link"
+							accessibilityLabel={`${t("messages.viewListing")}, ${listingTitle}`}
+							hitSlop={{ top: 6, bottom: 6 }}
+						>
+							<Text
+								style={[styles.listing, { color: accent }]}
+								numberOfLines={1}
+							>
+								{listingTitle}
+							</Text>
+						</Pressable>
+					) : listingTitle ? (
 						<Text
 							style={[styles.listing, { color: c.muted }]}
 							numberOfLines={1}
@@ -111,12 +181,39 @@ export function ConversationHeader({
 						</Text>
 					) : null}
 				</View>
+				{menu.length > 0 ? (
+					<Pressable
+						onPress={() => setMenuOpen(true)}
+						accessibilityRole="button"
+						accessibilityLabel={t("messages.options")}
+						style={({ pressed }) => [
+							styles.menuBtn,
+							{ opacity: pressed ? 0.6 : 1 },
+						]}
+					>
+						<Ionicons
+							name={
+								Platform.OS === "ios"
+									? "ellipsis-horizontal-circle-outline"
+									: "ellipsis-vertical"
+							}
+							size={Platform.OS === "ios" ? 24 : 20}
+							color={c.text}
+						/>
+					</Pressable>
+				) : null}
 			</View>
+			<MessageActionSheet
+				visible={menuOpen}
+				preview={null}
+				actions={menu}
+				onClose={() => setMenuOpen(false)}
+			/>
 
 			<View style={styles.actionsRow}>
 				<Pressable
 					onPress={onAssigneePress}
-					disabled={assigneePending}
+					disabled={assigneeBusy}
 					hitSlop={{ top: 4, bottom: 4 }}
 					style={({ pressed }) => [
 						styles.chip,
@@ -130,9 +227,9 @@ export function ConversationHeader({
 					]}
 					accessibilityRole="button"
 					accessibilityLabel={`${t("inbox.assigneeSheetTitle")}, ${assigneeLabel}`}
-					accessibilityState={{ busy: assigneePending }}
+					accessibilityState={{ busy: assigneeBusy, disabled: assigneeBusy }}
 				>
-					{assigneePending ? (
+					{assigneeBusy ? (
 						<ActivityIndicator size="small" color={accent} />
 					) : (
 						<Ionicons
@@ -154,7 +251,7 @@ export function ConversationHeader({
 
 				<Pressable
 					onPress={onToggleStatus}
-					disabled={statusPending}
+					disabled={statusBusy}
 					hitSlop={{ top: 4, bottom: 4 }}
 					style={({ pressed }) => [
 						styles.chip,
@@ -169,9 +266,9 @@ export function ConversationHeader({
 					accessibilityLabel={
 						status === "done" ? t("inbox.reopen") : t("inbox.markDone")
 					}
-					accessibilityState={{ busy: statusPending }}
+					accessibilityState={{ busy: statusBusy, disabled: statusBusy }}
 				>
-					{statusPending ? (
+					{statusBusy ? (
 						<ActivityIndicator size="small" color={accent} />
 					) : (
 						<Ionicons
@@ -190,7 +287,11 @@ export function ConversationHeader({
 							{ color: status === "done" ? c.successText : accent },
 						]}
 					>
-						{status === "done" ? t("inbox.reopen") : t("inbox.markDone")}
+						{stateLoading
+							? t("common.loading")
+							: status === "done"
+								? t("inbox.reopen")
+								: t("inbox.markDone")}
 					</Text>
 				</Pressable>
 			</View>
@@ -225,6 +326,13 @@ const styles = StyleSheet.create({
 	},
 	avatarInitial: { fontSize: 17, fontFamily: Fonts.displayBold },
 	titleCol: { flex: 1 },
+	menuBtn: {
+		width: 48,
+		height: 48,
+		alignItems: "center",
+		justifyContent: "center",
+		marginRight: -12,
+	},
 	buyer: {
 		fontSize: 17,
 		lineHeight: 22,

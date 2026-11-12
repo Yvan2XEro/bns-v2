@@ -51,22 +51,16 @@ export default function IdentityConsentScreen() {
 			{isLoading ? <DetailSkeleton cards={2} /> : null}
 
 			{!isLoading && isError ? (
-				<View style={styles.center}>
-					<Text style={[styles.errorText, { color: c.text }]}>
-						{resolveErrorMessage(myShop.error ?? query.error, t)}
-					</Text>
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={t("common.retry")}
-						onPress={() => {
-							void myShop.refetch();
-							void query.refetch();
-						}}
-						style={[styles.retryBtn, { backgroundColor: fillOf(c) }]}
-					>
-						<Text style={styles.retryLabel}>{t("common.retry")}</Text>
-					</Pressable>
-				</View>
+				<EmptyState
+					illustration="notFound"
+					title={t("verification.loadError")}
+					subtitle={resolveErrorMessage(myShop.error ?? query.error, t)}
+					ctaLabel={t("common.retry")}
+					onCta={() => {
+						void myShop.refetch();
+						void query.refetch();
+					}}
+				/>
 			) : null}
 
 			{!isLoading && !isError && myShop.data && !shop ? (

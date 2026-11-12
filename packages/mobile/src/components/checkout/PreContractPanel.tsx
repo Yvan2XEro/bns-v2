@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import type { ContractSnapshot } from "@/src/types/order";
+import type { ContractSnapshot, PaymentMethod } from "@/src/types/order";
 import { inkOf } from "./fill";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -46,11 +46,14 @@ export function PreContractPanel({
 	language,
 	appLanguage,
 	onLanguage,
+	paymentMethod = "cod",
 }: {
 	contract: ContractSnapshot;
 	language: "fr" | "en";
 	appLanguage: "fr" | "en";
 	onLanguage: (next: "fr" | "en") => void;
+	/** Names the terms block after the method the buyer actually chose. */
+	paymentMethod?: PaymentMethod;
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -102,7 +105,13 @@ export function PreContractPanel({
 					{t("checkout.platformRole", { platform: platform.legalName })}
 				</Text>
 			</Section>
-			<Section title={t("checkout.termsCod")}>
+			<Section
+				title={t(
+					paymentMethod === "mobile_money"
+						? "checkout.termsProtected"
+						: "checkout.termsCod",
+				)}
+			>
 				{contract.terms[language].map((term) => (
 					<Text key={term} style={text}>{`• ${term}`}</Text>
 				))}

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { successInk } from "@/src/components/shop/ink";
@@ -12,10 +13,13 @@ export function InsightsHeader({
 	view,
 	period,
 	onPeriod,
+	actions,
 }: {
 	view: ShopInsightsView;
 	period: "7d" | "30d" | "90d";
 	onPeriod: (period: "7d" | "30d" | "90d") => void;
+	/** The recommended actions, shown after the figures and before the products. */
+	actions?: ReactNode;
 }) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
@@ -220,6 +224,7 @@ export function InsightsHeader({
 					value={String(view.stock.outOfStockWithViews.length)}
 				/>
 			</View>
+			{actions}
 			<PanelTitle title={t("sellerInsights.topProducts")} />
 		</View>
 	);
@@ -255,7 +260,8 @@ export function InsightProductRow({
 	);
 }
 
-export function InsightsFooter({
+/** The recommended actions on their own, for the top of the screen. */
+export function InsightsActions({
 	view,
 	onAction,
 }: {
@@ -264,6 +270,66 @@ export function InsightsFooter({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	return (
+		<View style={{ gap: 12 }}>
+			<PanelTitle title={t("sellerInsights.actions")} />
+			{view.actions.length === 0 ? (
+				<Text style={[styles.muted, { color: c.muted }]}>
+					{t("sellerInsights.noActions")}
+				</Text>
+			) : (
+				view.actions.map((action, index) => (
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel={actionLabel(action, t)}
+						key={`${action.type}-${index}`}
+						onPress={() => onAction(action)}
+						style={({ pressed }) => [
+							styles.action,
+							{ borderColor: c.border },
+							pressed && { backgroundColor: c.primarySoft },
+						]}
+					>
+						<Text style={[styles.actionText, { color: c.body }]}>
+							{actionLabel(action, t)}
+						</Text>
+						<Ionicons name="chevron-forward" size={16} color={c.muted} />
+					</Pressable>
+				))
+			)}
+		</View>
+	);
+}
+
+export function InsightsFooter({
+	view,
+	onAction,
+	showActions = true,
+}: {
+	view: ShopInsightsView;
+	onAction: (action: ShopInsightsView["actions"][number]) => void;
+	/** False once the actions are shown at the top by `InsightsActions`. */
+	showActions?: boolean;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	if (!showActions) {
+		return (
+			<View style={styles.footer}>
+				{view.stock.restock.slice(0, 5).map((item) => (
+					<Text key={item.variantId} style={[styles.muted, { color: c.muted }]}>
+						{item.productTitle} ·{" "}
+						{t("sellerInsights.daysCover", { days: item.daysOfCover })}
+					</Text>
+				))}
+				{view.stock.restock.length === 0 ? (
+					<Text style={[styles.muted, { color: c.muted }]}>
+						{t("sellerInsights.noRestock")}
+					</Text>
+				) : null}
+			</View>
+		);
+	}
 	return (
 		<View style={styles.footer}>
 			{view.stock.restock.slice(0, 5).map((item) => (

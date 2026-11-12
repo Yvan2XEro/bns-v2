@@ -48,13 +48,16 @@ export function ProductAttributeInput({
 		<View style={{ gap: 6 }}>
 			<Text style={[f.label, { color: c.body }]}>{label}</Text>
 			{choices ? (
-				<View style={f.chips}>
+				<View style={f.chips} accessibilityRole="radiogroup">
 					{choices.map((choice) => {
 						const active = value === choice.value;
 						return (
 							<Pressable
 								key={choice.value}
-								onPress={() => onChange(active ? "" : choice.value)}
+								// A required answer is not cleared by tapping it again.
+								onPress={() =>
+									onChange(active && !attribute.required ? "" : choice.value)
+								}
 								style={[
 									f.chip,
 									{
@@ -62,9 +65,10 @@ export function ProductAttributeInput({
 										backgroundColor: active ? c.primarySoft : c.card,
 									},
 								]}
-								accessibilityRole="button"
+								// The same control as on the listing form, announced the same.
+								accessibilityRole="radio"
 								accessibilityLabel={choice.label}
-								accessibilityState={{ selected: active }}
+								accessibilityState={{ checked: active }}
 							>
 								<Text style={[f.chipText, { color: active ? c.link : c.body }]}>
 									{choice.label}

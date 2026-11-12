@@ -7,14 +7,13 @@ import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
 	ActivityIndicator,
-	Platform,
 	Pressable,
-	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
 	View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
@@ -100,7 +99,6 @@ export default function ReportOrderProblemScreen() {
 	const form = useForm<ProblemForm>({
 		resolver: zodResolver(problemSchema),
 		defaultValues: {
-			reason: "not_received",
 			description: "",
 			requestedOutcome: "full_refund",
 			requestedAmount: "",
@@ -159,26 +157,48 @@ export default function ReportOrderProblemScreen() {
 		);
 	const data = order.data;
 	const locked = caseId !== null;
-	const reason = form.watch("reason");
+	// Undefined until picked: nothing is preselected for a skimming buyer.
+	const reason = form.watch("reason") as ProblemForm["reason"] | undefined;
 	const outcome = form.watch("requestedOutcome");
 	const descriptionLength = form.watch("description").trim().length;
-	const needed = evidenceStillNeeded(reason, evidence.length);
+	const needed = reason ? evidenceStillNeeded(reason, evidence.length) : 0;
 	const failed = failedUploads(evidence);
 
-	const pickEvidence = async () => {
+	// The camera is for the buyer standing over a damaged parcel; the
+	// library for what they already shot.
+	const pickEvidence = async (source: "camera" | "library") => {
 		setEvidenceError(null);
-		const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+		const permission =
+			source === "camera"
+				? await ImagePicker.requestCameraPermissionsAsync()
+				: await ImagePicker.requestMediaLibraryPermissionsAsync();
 		if (permission.status !== "granted") {
 			// Said where the buyer is looking, rather than a tap that does nothing.
-			setEvidenceError(t("errors.photoPermission"));
+			setEvidenceError(
+				t(
+					source === "camera"
+						? "errors.cameraPermission"
+						: "errors.photoPermission",
+				),
+			);
 			return;
 		}
-		const result = await ImagePicker.launchImageLibraryAsync({
-			mediaTypes: ["images", "videos"],
-			allowsMultipleSelection: true,
-			selectionLimit: Math.max(1, DISPUTE_OPEN_EVIDENCE_MAX - evidence.length),
-			quality: 0.85,
-		});
+		const result =
+			source === "camera"
+				? await ImagePicker.launchCameraAsync({
+						mediaTypes: ["images"],
+						quality: 0.7,
+					})
+				: await ImagePicker.launchImageLibraryAsync({
+						mediaTypes: ["images", "videos"],
+						allowsMultipleSelection: true,
+						selectionLimit: Math.max(
+							1,
+							DISPUTE_OPEN_EVIDENCE_MAX - evidence.length,
+						),
+						quality: 0.7,
+						videoMaxDuration: 30,
+					});
 		if (result.canceled) return;
 		const { next, rejected } = acceptPickedEvidence(
 			evidence,
@@ -301,11 +321,11 @@ export default function ReportOrderProblemScreen() {
 				onBack={() => router.back()}
 			/>
 			<ScreenColumn width="reading">
-				<ScrollView
+				<KeyboardAwareScrollView
 					contentContainerStyle={styles.content}
 					keyboardShouldPersistTaps="handled"
 					keyboardDismissMode="interactive"
-					automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+					bottomOffset={24}
 				>
 					<View
 						style={[
@@ -409,6 +429,14 @@ export default function ReportOrderProblemScreen() {
 								</View>
 							)}
 						/>
+						{form.formState.errors.reason ? (
+							<Text
+								style={[styles.error, { color: c.dangerText }]}
+								accessibilityRole="alert"
+							>
+								{t("disputes.reasonRequired")}
+							</Text>
+						) : null}
 
 						<View style={styles.rowBetween}>
 							<Text
@@ -428,7 +456,10 @@ export default function ReportOrderProblemScreen() {
 												: c.muted,
 									},
 								]}
-								accessibilityLabel={t("disputes.descriptionLabel")}
+								accessibilityLabel={t("disputes.descriptionCount", {
+									n: Math.min(descriptionLength, DISPUTE_DESCRIPTION_MIN),
+									min: DISPUTE_DESCRIPTION_MIN,
+								})}
 							>
 								{`${Math.min(descriptionLength, DISPUTE_DESCRIPTION_MIN)} / ${DISPUTE_DESCRIPTION_MIN}`}
 							</Text>
@@ -439,6 +470,8 @@ export default function ReportOrderProblemScreen() {
 							render={({ field: { onBlur, onChange, value } }) => (
 								<TextInput
 									accessibilityLabel={t("disputes.reportDetails")}
+									placeholder={t("disputes.descriptionPlaceholder")}
+									placeholderTextColor={c.muted}
 									multiline
 									editable={!locked}
 									maxLength={DISPUTE_DESCRIPTION_MAX}
@@ -491,15 +524,36 @@ export default function ReportOrderProblemScreen() {
 							{evidence.length < DISPUTE_OPEN_EVIDENCE_MAX ? (
 								<Pressable
 									accessibilityRole="button"
-									accessibilityLabel={t("disputes.addEvidenceMedia")}
-									onPress={() => void pickEvidence().catch(() => undefined)}
+									accessibilityLabel={t("disputes.takePhoto")}
+									onPress={() =>
+										void pickEvidence("camera").catch(() => undefined)
+									}
 									style={[
 										styles.thumb,
 										styles.addTile,
 										{ borderColor: c.border },
 									]}
 								>
-									<Ionicons name="add" size={22} color={c.muted} />
+									<Ionicons name="camera-outline" size={22} color={c.muted} />
+									<Text style={[styles.addText, { color: c.muted }]}>
+										{t("disputes.takePhoto")}
+									</Text>
+								</Pressable>
+							) : null}
+							{evidence.length < DISPUTE_OPEN_EVIDENCE_MAX ? (
+								<Pressable
+									accessibilityRole="button"
+									accessibilityLabel={t("disputes.addEvidenceMedia")}
+									onPress={() =>
+										void pickEvidence("library").catch(() => undefined)
+									}
+									style={[
+										styles.thumb,
+										styles.addTile,
+										{ borderColor: c.border },
+									]}
+								>
+									<Ionicons name="images-outline" size={22} color={c.muted} />
 									<Text style={[styles.addText, { color: c.muted }]}>
 										{t("disputes.addEvidenceMedia")}
 									</Text>
@@ -680,7 +734,7 @@ export default function ReportOrderProblemScreen() {
 							{t("disputes.reviewTerms")}
 						</Text>
 					</View>
-				</ScrollView>
+				</KeyboardAwareScrollView>
 			</ScreenColumn>
 			<View
 				style={[styles.bar, { backgroundColor: c.card, borderColor: c.border }]}

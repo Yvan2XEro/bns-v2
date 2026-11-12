@@ -67,7 +67,7 @@ export function InboxRow({
 		preview,
 		time,
 		assigneeText,
-		state ? t(`inbox.filter_${state}`) : null,
+		state ? t(`inbox.state_${state}`) : null,
 	]
 		.filter(Boolean)
 		.join(", ");
@@ -186,7 +186,7 @@ export function InboxRow({
 								]}
 								numberOfLines={1}
 							>
-								{t(`inbox.filter_${state}`)}
+								{t(`inbox.state_${state}`)}
 							</Text>
 						</View>
 					) : null}

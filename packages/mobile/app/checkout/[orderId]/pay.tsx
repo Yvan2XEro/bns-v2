@@ -3,6 +3,7 @@ import { Redirect, router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { type ComponentProps, useEffect, useState } from "react";
 import {
+	BackHandler,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -21,10 +22,10 @@ import { OperatorMark } from "@/src/components/checkout/OperatorMark";
 import { TotalTag } from "@/src/components/checkout/TotalTag";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
-import { Sheet } from "@/src/components/purchases/ui";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useCreatePaymentIntent } from "@/src/hooks/useCheckout";
 import { usePurchase } from "@/src/hooks/usePurchases";
 import { ApiError } from "@/src/lib/api";
@@ -51,7 +52,10 @@ const CHANNELS: readonly PaymentChannel[] = ["cm.mtn", "cm.orange"];
  * own progress is ever rendered.
  */
 export default function CheckoutPayScreen() {
-	const { orderId } = useLocalSearchParams<{ orderId: string }>();
+	const { orderId, from } = useLocalSearchParams<{
+		orderId: string;
+		from?: string;
+	}>();
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const locale = useAppLocale();
@@ -60,13 +64,43 @@ export default function CheckoutPayScreen() {
 
 	const [channel, setChannel] = useState<PaymentChannel | null>(null);
 	const [phone, setPhone] = useState("");
-	const [sheetOpen, setSheetOpen] = useState(false);
 	const [formError, setFormError] = useState<string | null>(null);
+	const [phoneError, setPhoneError] = useState<string | null>(null);
+	// A number from the other operator, once the buyer has picked one: offered
+	// as a switch, never flipped behind their back.
+	const [suggested, setSuggested] = useState<PaymentChannel | null>(null);
+	const { confirm } = useAlert();
 
 	const leave = () =>
 		router.canGoBack() ? router.back() : router.replace("/(tabs)/account");
 
 	const data = order.data;
+	const payable =
+		data?.paymentMethod === "mobile_money" && data.paymentStatus === "unpaid";
+
+	// The order is placed and the cart emptied before this screen opens:
+	// leaving it unpaid lets the order lapse, so the buyer is told first.
+	const askLeave = async () => {
+		const later = await confirm(
+			t("payments.pay_laterTitle"),
+			t("payments.pay_laterBody"),
+			{
+				confirmText: t("payments.pay_later"),
+				cancelText: t("payments.pay_now"),
+			},
+		);
+		if (!later) return;
+		router.replace({ pathname: "/purchases/[id]", params: { id: orderId } });
+	};
+	// biome-ignore lint/correctness/useExhaustiveDependencies: askLeave reads only stable values
+	useEffect(() => {
+		if (!payable) return;
+		const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+			void askLeave();
+			return true;
+		});
+		return () => sub.remove();
+	}, [payable]);
 
 	// The delivery number is usually the one that pays: prefilled once, with
 	// its operator picked from the prefix. Both stay editable.
@@ -78,18 +112,32 @@ export default function CheckoutPayScreen() {
 		setChannel((current) => current ?? operatorFromPhone(deliveryPhone));
 	}, [deliveryPhone, deliveryMasked]);
 
+	const phoneProblem = (value: string) =>
+		isMarketPhone(value)
+			? null
+			: t("checkout.errorPhone", { example: phoneExample() });
+
 	const onPhoneChange = (text: string) => {
 		const next = phoneFromTyping(text);
 		setPhone(next);
 		const operator = operatorFromPhone(next);
-		if (operator) setChannel(operator);
+		if (operator && channel === null) setChannel(operator);
+		setSuggested(
+			operator && channel !== null && operator !== channel ? operator : null,
+		);
+		// Judged once the number is long enough to be whole, or already flagged.
+		const digits = next.replace(/\D/g, "").length;
+		if (phoneError || digits >= 9) setPhoneError(phoneProblem(next));
 	};
 
-	const canPay =
-		channel !== null && isMarketPhone(phone) && !createIntent.isPending;
-
 	const submit = async () => {
-		if (!channel || !isMarketPhone(phone)) return;
+		const problem = phoneProblem(phone);
+		setPhoneError(problem);
+		if (!channel) {
+			setFormError(t("payments.pay_operator"));
+			return;
+		}
+		if (problem) return;
 		setFormError(null);
 		try {
 			const result = await createIntent.mutateAsync({
@@ -203,8 +251,12 @@ export default function CheckoutPayScreen() {
 		>
 			<SellerHeader
 				title={t("payments.method_protected")}
-				subtitle={[firstItem, data.shop.name].filter(Boolean).join(" · ")}
-				onBack={leave}
+				subtitle={
+					from === "checkout"
+						? `${t("checkout.stepOf", { current: 4, total: 4 })} · ${t("checkout.stepPay")}`
+						: [firstItem, data.shop.name].filter(Boolean).join(" · ")
+				}
+				onBack={() => void askLeave()}
 				right={
 					<View style={[styles.badge, { backgroundColor: c.successSoft }]}>
 						<Ionicons
@@ -236,7 +288,10 @@ export default function CheckoutPayScreen() {
 							return (
 								<Pressable
 									key={option}
-									onPress={() => setChannel(option)}
+									onPress={() => {
+										setChannel(option);
+										setSuggested(null);
+									}}
 									accessibilityRole="radio"
 									accessibilityState={{ checked: selected }}
 									accessibilityLabel={t(PAYMENT_CHANNEL_LABELS[option])}
@@ -285,6 +340,9 @@ export default function CheckoutPayScreen() {
 							<TextInput
 								value={phone}
 								onChangeText={onPhoneChange}
+								onBlur={() => {
+									if (phone) setPhoneError(phoneProblem(phone));
+								}}
 								keyboardType="phone-pad"
 								autoComplete="tel"
 								placeholder={phoneExample()}
@@ -295,6 +353,23 @@ export default function CheckoutPayScreen() {
 								style={[styles.phoneInput, { color: c.text }]}
 							/>
 						</View>
+						<FormError message={phoneError} />
+						{suggested ? (
+							<Pressable
+								onPress={() => {
+									setChannel(suggested);
+									setSuggested(null);
+								}}
+								accessibilityRole="button"
+								style={styles.linkTarget}
+							>
+								<Text style={[styles.link, { color: inkOf(c) }]}>
+									{t("payments.pay_operatorSwitch", {
+										operator: t(PAYMENT_CHANNEL_LABELS[suggested]),
+									})}
+								</Text>
+							</Pressable>
+						) : null}
 					</View>
 
 					<View
@@ -355,15 +430,11 @@ export default function CheckoutPayScreen() {
 							title={t("payments.money_refundTitle")}
 							body={t("payments.sheet_cancelRefund")}
 						/>
-						<Pressable
-							onPress={() => setSheetOpen(true)}
-							accessibilityRole="button"
-							style={styles.linkTarget}
-						>
-							<Text style={[styles.link, { color: inkOf(c) }]}>
-								{t("payments.summary_coverLink")}
-							</Text>
-						</Pressable>
+						<MoneyStep
+							icon="receipt-outline"
+							title={t("payments.summary_protectionFee")}
+							body={t("payments.sheet_feeRefund")}
+						/>
 					</View>
 
 					<FormError message={formError} />
@@ -378,27 +449,9 @@ export default function CheckoutPayScreen() {
 						amount: money(data.amounts.total),
 					})}
 					onPress={() => void submit()}
-					disabled={!canPay}
 					loading={createIntent.isPending}
 				/>
 			</View>
-
-			<Sheet
-				visible={sheetOpen}
-				title={t("payments.sheet_title")}
-				onClose={() => setSheetOpen(false)}
-				closeLabel={t("common.close")}
-			>
-				<Text style={[formStyles.hint, { color: c.body }]}>
-					{t("payments.sheet_release")}
-				</Text>
-				<Text style={[formStyles.hint, { color: c.body }]}>
-					{t("payments.sheet_cancelRefund")}
-				</Text>
-				<Text style={[formStyles.hint, { color: c.body }]}>
-					{t("payments.sheet_feeRefund")}
-				</Text>
-			</Sheet>
 		</SafeAreaView>
 	);
 }

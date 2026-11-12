@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 
 /** Signage yellow, the same in both themes; its text is always ink. */
-const SUN = "#ffb81c";
-const INK = "#12163a";
+const SUN = Colors.light.sun;
+const INK = Colors.light.foreground;
 
 const SIZES = {
 	md: { fontSize: 18, lineHeight: 22, paddingH: 8, paddingV: 3, radius: 7 },

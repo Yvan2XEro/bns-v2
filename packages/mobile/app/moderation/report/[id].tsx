@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -17,13 +18,18 @@ import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
 import { tonesOf } from "@/src/components/moderation/tones";
 import { useAlert } from "@/src/contexts/AlertContext";
-import { useReportDecision } from "@/src/hooks/useModeration";
+import {
+	useModerationShop,
+	useModerationUser,
+	useReportDecision,
+} from "@/src/hooks/useModeration";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
-import type { ReportDoc, UserDoc } from "@/src/types/api";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
+import type { ListingDoc, ReportDoc, UserDoc } from "@/src/types/api";
 
 /**
  * A report is only actionable if the moderator can reach what was reported,
@@ -59,7 +65,7 @@ export default function ModerateReportScreen() {
 	const k = tonesOf(c);
 	const { t } = useTranslation();
 	const { centeredContent } = useResponsive();
-	const { showError, showSuccess } = useAlert();
+	const { showSuccess } = useAlert();
 	const [deciding, setDeciding] = useState<"resolved" | "dismissed" | null>(
 		null,
 	);
@@ -70,7 +76,62 @@ export default function ModerateReportScreen() {
 		enabled: Boolean(id),
 	});
 
-	const { mutate: decide, isPending } = useReportDecision();
+	const {
+		mutate: decide,
+		isPending,
+		error: decisionError,
+		reset: resetDecision,
+	} = useReportDecision();
+
+	// What was reported, by name: the same reads the target screens make, so
+	// opening the target afterwards comes from the cache.
+	const targetType = data?.targetType;
+	const targetId = data?.targetId;
+	const listingTarget = useQuery({
+		queryKey: ["moderation", "listing", targetId],
+		queryFn: () => api.get<ListingDoc>(`/api/listings/${targetId}?depth=2`),
+		enabled: targetType === "listing" && Boolean(targetId),
+	});
+	const userTarget = useModerationUser(
+		targetType === "user" ? targetId : undefined,
+	);
+	const shopTarget = useModerationShop(
+		targetType === "shop" ? targetId : undefined,
+	);
+	const targetName =
+		targetType === "listing"
+			? listingTarget.data?.title
+			: targetType === "user"
+				? userTarget.data?.user.name || userTarget.data?.user.email
+				: targetType === "shop"
+					? shopTarget.data?.shop.name
+					: undefined;
+	const targetThumb =
+		targetType === "listing"
+			? resolveListingImageUrl(listingTarget.data?.images?.[0], "thumbnail")
+			: null;
+
+	// Sanctioned since the report came in: the resolution starts from what
+	// was done, instead of being retyped.
+	const resolutionDraft = (() => {
+		const listing = listingTarget.data;
+		if (targetType === "listing" && listing?.status === "rejected") {
+			return listing.rejectionCode
+				? t("moderation.draftListingRejected", {
+						reason: t(`listingRejection.${listing.rejectionCode}`, {
+							defaultValue: listing.rejectionCode,
+						}),
+					})
+				: t("moderation.action_listing_reject");
+		}
+		if (targetType === "user" && userTarget.data?.suspension.active) {
+			return t("moderation.draftUserSuspended");
+		}
+		if (targetType === "shop" && shopTarget.data?.suspension.active) {
+			return t("moderation.draftShopSuspended");
+		}
+		return undefined;
+	})();
 
 	const run = (outcome: "resolved" | "dismissed", resolution?: string) => {
 		decide(
@@ -84,13 +145,13 @@ export default function ModerateReportScreen() {
 					);
 					if (router.canGoBack()) router.back();
 				},
-				onError: (error) =>
-					showError(
-						t("moderation.actionFailed"),
-						resolveErrorMessage(error, t),
-					),
 			},
 		);
+	};
+
+	const openSheet = (outcome: "resolved" | "dismissed") => {
+		resetDecision();
+		setDeciding(outcome);
 	};
 
 	const reporter =
@@ -112,6 +173,7 @@ export default function ModerateReportScreen() {
 				<LoadError
 					title={t("common.error")}
 					message={error ? resolveErrorMessage(error, t) : undefined}
+					error={error}
 					onRetry={() => void refetch()}
 				/>
 			) : (
@@ -141,16 +203,37 @@ export default function ModerateReportScreen() {
 							>
 								{data.description || t("moderation.noDescription")}
 							</Text>
-							<Text style={[styles.meta, { color: c.muted }]}>
-								{[
-									t("moderation.reportedBy", {
-										name: reporter?.name || reporter?.email || "—",
-									}),
-									formatDate(data.createdAt),
-								]
-									.filter(Boolean)
-									.join(" · ")}
-							</Text>
+							{/* The reporter opens to their own sheet: a moderator can
+							    check whether this account files reports in bad faith. */}
+							<View style={styles.metaRow}>
+								{reporter?.id ? (
+									<Pressable
+										accessibilityRole="link"
+										accessibilityLabel={`${t("moderation.reportedBy", {
+											name: reporter.name || reporter.email || "—",
+										})}, ${t("moderation.openAccount")}`}
+										hitSlop={12}
+										onPress={() =>
+											router.push(`/moderation/user/${reporter.id}` as never)
+										}
+									>
+										<Text style={[styles.metaLink, { color: k.linkText }]}>
+											{t("moderation.reportedBy", {
+												name: reporter.name || reporter.email || "—",
+											})}
+										</Text>
+									</Pressable>
+								) : (
+									<Text style={[styles.meta, { color: c.muted }]}>
+										{t("moderation.reportedBy", { name: "—" })}
+									</Text>
+								)}
+								{formatDate(data.createdAt) ? (
+									<Text style={[styles.meta, { color: c.muted }]}>
+										{` · ${formatDate(data.createdAt)}`}
+									</Text>
+								) : null}
+							</View>
 							{closed ? (
 								<TonePill
 									tone="neutral"
@@ -168,11 +251,15 @@ export default function ModerateReportScreen() {
 						    and as plain text when the app has no screen for it. */}
 						<Pressable
 							accessibilityRole={route ? "button" : "text"}
-							accessibilityLabel={`${t(`moderation.target_${data.targetType}`)}, ${
+							accessibilityLabel={[
+								t(`moderation.target_${data.targetType}`),
+								targetName,
 								route
 									? t("moderation.openTarget")
-									: t("moderation.targetNotOpenable")
-							}`}
+									: t("moderation.targetNotOpenable"),
+							]
+								.filter(Boolean)
+								.join(", ")}
 							onPress={() => route && router.push(route as never)}
 							disabled={!route}
 							style={({ pressed }) => [
@@ -184,17 +271,34 @@ export default function ModerateReportScreen() {
 								},
 							]}
 						>
-							<View style={[styles.targetIcon, { backgroundColor: c.bg }]}>
-								<Ionicons
-									name={targetIcon(data.targetType)}
-									size={18}
-									color={c.muted}
+							{targetThumb ? (
+								<Image
+									source={{ uri: targetThumb }}
+									style={[styles.targetThumb, { backgroundColor: c.bg }]}
+									contentFit="cover"
+									transition={150}
 								/>
-							</View>
+							) : (
+								<View style={[styles.targetIcon, { backgroundColor: c.bg }]}>
+									<Ionicons
+										name={targetIcon(data.targetType)}
+										size={18}
+										color={c.muted}
+									/>
+								</View>
+							)}
 							<View style={styles.flex}>
-								<Text style={[styles.targetTitle, { color: c.text }]}>
+								<Text style={[styles.targetKind, { color: c.muted }]}>
 									{t(`moderation.target_${data.targetType}`)}
 								</Text>
+								{targetName ? (
+									<Text
+										style={[styles.targetTitle, { color: c.text }]}
+										numberOfLines={2}
+									>
+										{targetName}
+									</Text>
+								) : null}
 								<Text
 									style={[
 										styles.targetMeta,
@@ -227,14 +331,14 @@ export default function ModerateReportScreen() {
 							<DecisionButton
 								variant="secondary"
 								label={t("moderation.dismiss")}
-								onPress={() => setDeciding("dismissed")}
+								onPress={() => openSheet("dismissed")}
 								disabled={isPending}
 							/>
 							<DecisionButton
 								variant="primary"
 								icon="checkmark-done"
 								label={t("moderation.resolve")}
-								onPress={() => setDeciding("resolved")}
+								onPress={() => openSheet("resolved")}
 								disabled={isPending}
 								grow={1.4}
 							/>
@@ -256,6 +360,7 @@ export default function ModerateReportScreen() {
 						textLabel={t("moderation.resolutionLabel")}
 						textPlaceholder={t("moderation.resolutionPlaceholder")}
 						textRequired={deciding === "resolved"}
+						initialText={deciding === "resolved" ? resolutionDraft : undefined}
 						confirmLabel={
 							deciding === "dismissed"
 								? t("moderation.confirmDismiss")
@@ -263,6 +368,7 @@ export default function ModerateReportScreen() {
 						}
 						destructive={false}
 						pending={isPending}
+						error={decisionError ? resolveErrorMessage(decisionError, t) : null}
 						onConfirm={({ text }) =>
 							deciding && run(deciding, text || undefined)
 						}
@@ -294,6 +400,13 @@ const styles = StyleSheet.create({
 	},
 	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
 	meta: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	metaRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center" },
+	metaLink: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+		textDecorationLine: "underline",
+	},
 	targetCard: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -310,6 +423,8 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	targetTitle: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	targetThumb: { width: 48, height: 48, borderRadius: 10 },
+	targetKind: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.bodyMedium },
+	targetTitle: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.bodySemibold },
 	targetMeta: { fontSize: 13, fontFamily: Fonts.bodySemibold, marginTop: 1 },
 });

@@ -98,7 +98,7 @@ export function RoleCard({
 				/>
 				<View style={{ flex: 1 }}>
 					<Text
-						style={[styles.roleName, { color: selected ? c.primary : c.text }]}
+						style={[styles.roleName, { color: selected ? c.link : c.text }]}
 					>
 						{t(ROLE_LABEL_KEYS[role])}
 					</Text>

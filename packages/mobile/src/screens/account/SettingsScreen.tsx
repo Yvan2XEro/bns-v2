@@ -16,8 +16,10 @@ import {
 	GroupedSwitchRow,
 	useGroupedColors,
 } from "@/src/components/settings/Grouped";
+import { NotificationPreferences } from "@/src/components/settings/NotificationPreferences";
 import { PermissionList } from "@/src/components/settings/PermissionList";
 import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
+import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { areSoundsEnabled, setSoundsEnabled } from "@/src/lib/feedback";
 import i18n, { useTranslation } from "@/src/lib/i18n";
@@ -27,6 +29,10 @@ export const THEME_STORAGE_KEY = "app_theme";
 
 type Locale = "fr" | "en";
 type ThemeChoice = "system" | "light" | "dark";
+
+// The stored choice, once read: a second visit starts on the right row
+// instead of ticking "System" and then jumping.
+let knownTheme: ThemeChoice | null = null;
 
 // Each language is named in itself, so it can be found whatever the app is
 // set to.
@@ -42,9 +48,13 @@ export function SettingsScreen() {
 	const [updateChecked, setUpdateChecked] = useState(false);
 	const [checkError, setCheckError] = useState(false);
 	const [soundsOn, setSoundsOn] = useState(areSoundsEnabled());
-	// "system" until a stored choice says otherwise; the root layout only
-	// restores "light" and "dark", so "system" leaves the device in charge.
-	const [themeChoice, setThemeChoice] = useState<ThemeChoice>("system");
+	// Unknown (no tick) until storage answers, so a stored "Dark" is never
+	// shown as "System" first. The root layout only restores "light" and
+	// "dark", so a missing value means the device is in charge.
+	const [themeChoice, setThemeChoice] = useState<ThemeChoice | null>(
+		knownTheme,
+	);
+	const notificationReady = useNotificationReady();
 	const [locale, setLocale] = useState<Locale>(
 		i18n.language?.slice(0, 2) === "en" ? "en" : "fr",
 	);
@@ -53,11 +63,13 @@ export function SettingsScreen() {
 		let alive = true;
 		AsyncStorage.getItem(THEME_STORAGE_KEY)
 			.then((saved) => {
-				if (!alive) return;
-				if (saved === "light" || saved === "dark") setThemeChoice(saved);
+				knownTheme = saved === "light" || saved === "dark" ? saved : "system";
+				if (alive) setThemeChoice(knownTheme);
 			})
 			.catch(() => {
 				// No stored choice: the device decides.
+				knownTheme = "system";
+				if (alive) setThemeChoice(knownTheme);
 			});
 		return () => {
 			alive = false;
@@ -99,6 +111,7 @@ export function SettingsScreen() {
 	};
 
 	const changeTheme = (next: ThemeChoice) => {
+		knownTheme = next;
 		setThemeChoice(next); // update immediately — don't wait for Appearance event
 		// React Native 0.86 hands the device back with 'unspecified' (Android:
 		// MODE_NIGHT_FOLLOW_SYSTEM, iOS: UIUserInterfaceStyleUnspecified). The
@@ -204,6 +217,8 @@ export function SettingsScreen() {
 						}}
 					/>
 				</GroupedSection>
+
+				{notificationReady ? <NotificationPreferences /> : null}
 
 				<PermissionList title={t("settings.permissions.title")} />
 

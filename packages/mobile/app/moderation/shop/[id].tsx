@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import {
 	type DecisionChoice,
@@ -21,6 +22,7 @@ import { ShopPaymentsStatsCard } from "@/src/components/moderation/ShopPaymentsS
 import { ShopSuspensionCard } from "@/src/components/moderation/ShopSuspensionCard";
 import { ShopTeamCard } from "@/src/components/moderation/ShopTeamCard";
 import { useModerationTheme } from "@/src/components/moderation/theme";
+import { tonesOf } from "@/src/components/moderation/tones";
 import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	useApprovePayoutAccount,
@@ -56,8 +58,17 @@ type PaymentsSheetState =
 	| { kind: "reject"; accountId: string }
 	| null;
 
+type Section = "overview" | "payments" | "history";
+const SECTIONS: Section[] = ["overview", "payments", "history"];
+const SECTION_LABEL: Record<Section, string> = {
+	overview: "moderation.shopSectionOverview",
+	payments: "moderation.shopSectionPayments",
+	history: "moderation.shopSectionHistory",
+};
+
 interface PaymentsSheetConfig {
 	title: string;
+	subtitle?: string;
 	choices?: DecisionChoice[];
 	choicesLabel?: string;
 	durations?: DecisionDuration[];
@@ -68,8 +79,12 @@ interface PaymentsSheetConfig {
 }
 
 export default function ModerateShopScreen() {
-	const { id } = useLocalSearchParams<{ id: string }>();
+	const { id, section: initialSection } = useLocalSearchParams<{
+		id: string;
+		section?: string;
+	}>();
 	const c = useModerationTheme();
+	const k = tonesOf(c);
 	const { t } = useTranslation();
 	const { user: me } = useAuth();
 	const { centeredContent } = useResponsive();
@@ -77,6 +92,55 @@ export default function ModerateShopScreen() {
 	const { showError, showSuccess, showConfirm } = useAlert();
 	const [suspending, setSuspending] = useState(false);
 	const [paymentsSheet, setPaymentsSheet] = useState<PaymentsSheetState>(null);
+	// Failures show inside the open sheet: an alert cannot open over it.
+	const [sheetError, setSheetError] = useState<string | null>(null);
+	const failed = (error: unknown) =>
+		setSheetError(resolveErrorMessage(error, t));
+	const openPaymentsSheet = (next: PaymentsSheetState) => {
+		setSheetError(null);
+		setPaymentsSheet(next);
+	};
+
+	// Seven cards is a long scroll: the jump bar reaches the payments or the
+	// history in one tap, and a link from a payments risk flag opens there.
+	const scrollRef = useRef<ScrollView>(null);
+	const offsets = useRef<Record<Section, number>>({
+		overview: 0,
+		payments: 0,
+		history: 0,
+	});
+	const [section, setSection] = useState<Section>("overview");
+	const jumped = useRef(false);
+	const jumpTo = (next: Section, animated = true) => {
+		setSection(next);
+		scrollRef.current?.scrollTo({
+			y: Math.max(offsets.current[next] - 8, 0),
+			animated,
+		});
+	};
+	const sectionLayout =
+		(key: Section) => (event: { nativeEvent: { layout: { y: number } } }) => {
+			offsets.current[key] = event.nativeEvent.layout.y;
+			if (
+				key === "payments" &&
+				initialSection === "payments" &&
+				!jumped.current
+			) {
+				jumped.current = true;
+				jumpTo("payments", false);
+			}
+		};
+	// The bar follows a manual scroll too, so it never names the wrong place.
+	const followScroll = (y: number) => {
+		const at = offsets.current;
+		const next: Section =
+			at.payments > 0 && y + 24 >= at.payments
+				? "payments"
+				: at.history > 0 && y + 24 >= at.history
+					? "history"
+					: "overview";
+		if (next !== section) setSection(next);
+	};
 
 	const { data, isLoading, isError, error, refetch } = useModerationShop(id);
 	const { mutate: suspend, isPending: suspendPending } = useSuspendShop();
@@ -136,11 +200,7 @@ export default function ModerateShopScreen() {
 						}),
 					);
 				},
-				onError: (error) =>
-					showError(
-						t("moderation.actionFailed"),
-						resolveErrorMessage(error, t),
-					),
+				onError: failed,
 			},
 		);
 	};
@@ -208,13 +268,12 @@ export default function ModerateShopScreen() {
 				{
 					onSuccess: () => {
 						setPaymentsSheet(null);
-						showSuccess(t("moderation.paymentsHoldPlaced"), "");
+						showSuccess(
+							t("moderation.paymentsHoldPlaced"),
+							t("moderation.paymentsHoldPlacedMessage"),
+						);
 					},
-					onError: (error) =>
-						showError(
-							t("moderation.actionFailed"),
-							resolveErrorMessage(error, t),
-						),
+					onError: failed,
 				},
 			);
 		} else if (paymentsSheet.kind === "release") {
@@ -223,13 +282,12 @@ export default function ModerateShopScreen() {
 				{
 					onSuccess: () => {
 						setPaymentsSheet(null);
-						showSuccess(t("moderation.paymentsHoldReleased"), "");
+						showSuccess(
+							t("moderation.paymentsHoldReleased"),
+							t("moderation.paymentsHoldReleasedMessage"),
+						);
 					},
-					onError: (error) =>
-						showError(
-							t("moderation.actionFailed"),
-							resolveErrorMessage(error, t),
-						),
+					onError: failed,
 				},
 			);
 		} else if (paymentsSheet.kind === "approve") {
@@ -238,13 +296,12 @@ export default function ModerateShopScreen() {
 				{
 					onSuccess: () => {
 						setPaymentsSheet(null);
-						showSuccess(t("moderation.paymentsAccountApproved"), "");
+						showSuccess(
+							t("moderation.paymentsAccountApproved"),
+							t("moderation.paymentsAccountApprovedMessage"),
+						);
 					},
-					onError: (error) =>
-						showError(
-							t("moderation.actionFailed"),
-							resolveErrorMessage(error, t),
-						),
+					onError: failed,
 				},
 			);
 		} else if (paymentsSheet.kind === "reject") {
@@ -253,13 +310,12 @@ export default function ModerateShopScreen() {
 				{
 					onSuccess: () => {
 						setPaymentsSheet(null);
-						showSuccess(t("moderation.paymentsAccountRejected"), "");
+						showSuccess(
+							t("moderation.paymentsAccountRejected"),
+							t("moderation.paymentsAccountRejectedMessage"),
+						);
 					},
-					onError: (error) =>
-						showError(
-							t("moderation.actionFailed"),
-							resolveErrorMessage(error, t),
-						),
+					onError: failed,
 				},
 			);
 		}
@@ -270,6 +326,7 @@ export default function ModerateShopScreen() {
 		if (paymentsSheet.kind === "hold") {
 			return {
 				title: t("moderation.paymentsPlaceHoldSheetTitle"),
+				subtitle: t("moderation.paymentsHoldSheetSubtitle"),
 				choices: holdReasons,
 				choicesLabel: t("moderation.paymentsReasonLabel"),
 				durations: holdDurations,
@@ -311,11 +368,51 @@ export default function ModerateShopScreen() {
 				<LoadError
 					title={t("common.error")}
 					message={error ? resolveErrorMessage(error, t) : undefined}
+					error={error}
 					onRetry={() => void refetch()}
 				/>
 			) : (
 				<>
-					<ScrollView contentContainerStyle={[styles.content, centeredContent]}>
+					<View
+						style={[styles.jumpBar, { borderBottomColor: c.border }]}
+						accessibilityRole="tablist"
+					>
+						{SECTIONS.map((key) => {
+							const on = section === key;
+							return (
+								<Pressable
+									key={key}
+									accessibilityRole="tab"
+									accessibilityState={{ selected: on }}
+									onPress={() => jumpTo(key)}
+									style={[
+										styles.jump,
+										{ borderBottomColor: on ? k.linkText : "transparent" },
+									]}
+								>
+									<Text
+										style={[
+											styles.jumpText,
+											{
+												color: on ? k.linkText : c.muted,
+												fontFamily: on ? Fonts.bodyBold : Fonts.bodySemibold,
+											},
+										]}
+									>
+										{t(SECTION_LABEL[key])}
+									</Text>
+								</Pressable>
+							);
+						})}
+					</View>
+					<ScrollView
+						ref={scrollRef}
+						contentContainerStyle={[styles.content, centeredContent]}
+						scrollEventThrottle={100}
+						onScroll={(event) =>
+							followScroll(event.nativeEvent.contentOffset.y)
+						}
+					>
 						<ShopIdentityCard
 							shop={shop}
 							owner={owner}
@@ -330,46 +427,56 @@ export default function ModerateShopScreen() {
 							c={c}
 							t={t}
 						/>
-						<ShopHistoryList
-							reports={data.reports}
-							history={data.history}
-							c={c}
-							t={t}
-						/>
-						<ShopPaymentsAccountCard
-							connectedAccount={data.payments.connectedAccount}
-							payoutAccount={data.payments.payoutAccount}
-							pendingAccounts={data.payments.pendingAccounts}
-							actionable={actionable}
-							decisionPending={decisionPending}
-							onApprove={(accountId) =>
-								setPaymentsSheet({ kind: "approve", accountId })
-							}
-							onReject={(accountId) =>
-								setPaymentsSheet({ kind: "reject", accountId })
-							}
-							c={c}
-							t={t}
-						/>
-						<ShopPaymentsHoldsCard
-							holds={data.payments.holds}
-							actionable={actionable}
-							releasePending={releasePending}
-							onPlaceHold={() => setPaymentsSheet({ kind: "hold" })}
-							onReleaseHold={(holdId) =>
-								setPaymentsSheet({ kind: "release", holdId })
-							}
-							c={c}
-							t={t}
-						/>
-						<ShopPaymentsStatsCard
-							lastPayouts={data.payments.lastPayouts}
-							openExposure={data.payments.openExposure}
-							refundRate={data.payments.refundRate}
-							locale={locale}
-							c={c}
-							t={t}
-						/>
+						<View
+							onLayout={sectionLayout("history")}
+							style={styles.sectionGroup}
+						>
+							<ShopHistoryList
+								reports={data.reports}
+								history={data.history}
+								c={c}
+								t={t}
+							/>
+						</View>
+						<View
+							onLayout={sectionLayout("payments")}
+							style={styles.sectionGroup}
+						>
+							<ShopPaymentsAccountCard
+								connectedAccount={data.payments.connectedAccount}
+								payoutAccount={data.payments.payoutAccount}
+								pendingAccounts={data.payments.pendingAccounts}
+								actionable={actionable}
+								decisionPending={decisionPending}
+								onApprove={(accountId) =>
+									openPaymentsSheet({ kind: "approve", accountId })
+								}
+								onReject={(accountId) =>
+									openPaymentsSheet({ kind: "reject", accountId })
+								}
+								c={c}
+								t={t}
+							/>
+							<ShopPaymentsHoldsCard
+								holds={data.payments.holds}
+								actionable={actionable}
+								releasePending={releasePending}
+								onPlaceHold={() => openPaymentsSheet({ kind: "hold" })}
+								onReleaseHold={(holdId) =>
+									openPaymentsSheet({ kind: "release", holdId })
+								}
+								c={c}
+								t={t}
+							/>
+							<ShopPaymentsStatsCard
+								lastPayouts={data.payments.lastPayouts}
+								openExposure={data.payments.openExposure}
+								refundRate={data.payments.refundRate}
+								locale={locale}
+								c={c}
+								t={t}
+							/>
+						</View>
 					</ScrollView>
 
 					<ShopActionBar
@@ -377,7 +484,10 @@ export default function ModerateShopScreen() {
 						status={shop.status}
 						suspendPending={suspendPending}
 						liftPending={liftPending}
-						onSuspend={() => setSuspending(true)}
+						onSuspend={() => {
+							setSheetError(null);
+							setSuspending(true);
+						}}
 						onLift={onLift}
 						c={c}
 						t={t}
@@ -396,6 +506,7 @@ export default function ModerateShopScreen() {
 						confirmLabel={t("moderation.shopConfirmSuspend")}
 						destructive
 						pending={suspendPending}
+						error={suspending ? sheetError : null}
 						onConfirm={onSuspend}
 						onClose={() => setSuspending(false)}
 					/>
@@ -404,6 +515,7 @@ export default function ModerateShopScreen() {
 						<DecisionSheet
 							visible={Boolean(paymentsSheet)}
 							title={paymentsSheetConfig.title}
+							subtitle={paymentsSheetConfig.subtitle}
 							choices={paymentsSheetConfig.choices}
 							choicesLabel={paymentsSheetConfig.choicesLabel}
 							durations={paymentsSheetConfig.durations}
@@ -413,6 +525,7 @@ export default function ModerateShopScreen() {
 							confirmLabel={paymentsSheetConfig.confirmLabel}
 							destructive={paymentsSheetConfig.destructive}
 							pending={paymentsSheetConfig.pending}
+							error={sheetError}
 							onConfirm={onPaymentsSheetConfirm}
 							onClose={() => setPaymentsSheet(null)}
 						/>
@@ -425,4 +538,19 @@ export default function ModerateShopScreen() {
 
 const styles = StyleSheet.create({
 	content: { padding: 16, gap: 14, paddingBottom: 24 },
+	sectionGroup: { gap: 14 },
+	jumpBar: {
+		flexDirection: "row",
+		paddingHorizontal: 8,
+		borderBottomWidth: StyleSheet.hairlineWidth,
+	},
+	jump: {
+		flex: 1,
+		minHeight: 48,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 8,
+		borderBottomWidth: 2.5,
+	},
+	jumpText: { fontSize: 15, lineHeight: 20 },
 });

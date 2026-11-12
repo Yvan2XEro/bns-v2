@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { alerts } from "@/src/contexts/AlertContext";
 import { useActiveCouriers } from "@/src/hooks/useDeliverySettings";
 import {
 	useCodRemittance,
@@ -15,6 +16,7 @@ import {
 } from "@/src/hooks/useShipmentActions";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { readDestination } from "@/src/lib/riderShipment";
 import {
 	type ShipmentAction,
@@ -72,6 +74,36 @@ const PANEL_OF: Partial<Record<ShipmentAction, Exclude<Panel, null>>> = {
 	reschedule: "reschedule",
 };
 
+/**
+ * Actions that move money or cannot be taken back: each one is asked first,
+ * so a tap while scrolling never confirms or disputes a cash transfer.
+ */
+const CONFIRM_OF: Partial<
+	Record<
+		ShipmentAction,
+		{ message: string; done: string; destructive?: boolean }
+	>
+> = {
+	confirm_remittance: {
+		message: "shipmentPanel.confirmRemittanceMessage",
+		done: "shipmentPanel.confirmRemittanceDone",
+	},
+	dispute_remittance: {
+		message: "shipmentPanel.disputeRemittanceMessage",
+		done: "shipmentPanel.disputeRemittanceDone",
+		destructive: true,
+	},
+	returned: {
+		message: "shipmentPanel.returnedMessage",
+		done: "shipmentPanel.returnedDone",
+	},
+	revoke_rider_link: {
+		message: "shipmentPanel.revokeLinkMessage",
+		done: "shipmentPanel.linkRevoked",
+		destructive: true,
+	},
+};
+
 function Mutating({ error }: { error: unknown }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -119,13 +151,31 @@ export function SellerShipmentActions({
 
 	const actions = visibleShipmentActions(view, { canProcess, canSeeCosts });
 	const close = () => patch({ panel: null });
-	const run: Partial<Record<ShipmentAction, () => void>> = {
-		start: () => start.mutate(),
-		ready_for_pickup: () => ready.mutate(),
-		returned: () => returned.mutate({}),
-		revoke_rider_link: () => revoke.mutate(),
-		confirm_remittance: () => remittance.mutate({ action: "confirm" }),
-		dispute_remittance: () => remittance.mutate({ action: "dispute" }),
+	const cod = view.codCollection;
+	const codAmount = cod?.collectedAmount ?? cod?.expectedAmount ?? null;
+	const amount =
+		codAmount === null ? "" : formatPrice(codAmount, i18n.language);
+	const run: Partial<Record<ShipmentAction, (onSuccess?: () => void) => void>> =
+		{
+			start: () => start.mutate(),
+			ready_for_pickup: () => ready.mutate(),
+			returned: (onSuccess) => returned.mutate({}, { onSuccess }),
+			revoke_rider_link: (onSuccess) => revoke.mutate(undefined, { onSuccess }),
+			confirm_remittance: (onSuccess) =>
+				remittance.mutate({ action: "confirm" }, { onSuccess }),
+			dispute_remittance: (onSuccess) =>
+				remittance.mutate({ action: "dispute" }, { onSuccess }),
+		};
+	const runConfirmed = async (action: ShipmentAction) => {
+		const ask = CONFIRM_OF[action];
+		if (!ask) return run[action]?.();
+		const ok = await alerts.confirm(
+			t(LABEL[action]),
+			t(ask.message, { amount }),
+			{ confirmText: t(LABEL[action]), destructive: ask.destructive },
+		);
+		if (!ok) return;
+		run[action]?.(() => alerts.showSuccess(t(ask.done)));
 	};
 	const dayLabel = (iso: string) =>
 		new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-US", {
@@ -147,6 +197,7 @@ export function SellerShipmentActions({
 					key={action}
 					label={t(LABEL[action])}
 					tone={action === "dispute_remittance" ? "danger" : "primary"}
+					outline={action === "dispute_remittance"}
 					pending={
 						(action === "start" && start.isPending) ||
 						(action === "ready_for_pickup" && ready.isPending) ||
@@ -157,7 +208,7 @@ export function SellerShipmentActions({
 					onPress={() => {
 						const panel = PANEL_OF[action];
 						if (panel) patch({ panel: state.panel === panel ? null : panel });
-						else run[action]?.();
+						else void runConfirmed(action);
 					}}
 				/>
 			))}

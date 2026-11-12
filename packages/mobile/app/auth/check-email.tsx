@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { Linking, Platform } from "react-native";
 import {
 	AuthNotice,
 	AuthNoticeText,
@@ -18,7 +19,11 @@ const COOLDOWN_SECONDS = 60;
  */
 export default function CheckEmailScreen() {
 	const { t } = useTranslation();
-	const params = useLocalSearchParams<{ email?: string; sent?: string }>();
+	const params = useLocalSearchParams<{
+		email?: string;
+		name?: string;
+		sent?: string;
+	}>();
 	const email = params.email ?? "";
 	const resend = useResendVerification();
 	const [left, setLeft] = useState(params.sent === "1" ? COOLDOWN_SECONDS : 0);
@@ -29,14 +34,33 @@ export default function CheckEmailScreen() {
 		return () => clearTimeout(timer);
 	}, [left]);
 
+	// iOS opens Mail's inbox; Android has no inbox link, so the mail app's
+	// compose screen is the closest (back from it is the inbox).
+	const openMail = () => {
+		const url = Platform.OS === "ios" ? "message://" : "mailto:";
+		Linking.openURL(url).catch(() => {
+			if (url === "mailto:") return;
+			void Linking.openURL("mailto:").catch(() => {
+				// No mail app at all: the address on screen is still there.
+			});
+		});
+	};
+
 	return (
 		<AuthNotice
 			icon="mail-unread-outline"
 			title={t("auth.checkInboxTitle")}
 			actions={
 				<>
+					<AuthSubmit
+						label={t("auth.openMailApp", {
+							defaultValue: "Ouvrir ma messagerie",
+						})}
+						onPress={openMail}
+					/>
 					{email ? (
 						<AuthSubmit
+							variant="secondary"
 							label={
 								left > 0
 									? t("auth.resendVerificationIn", { seconds: left })
@@ -51,8 +75,22 @@ export default function CheckEmailScreen() {
 							disabled={left > 0}
 						/>
 					) : null}
+					{email ? (
+						<AuthSubmit
+							variant="secondary"
+							label={t("auth.wrongAddress", {
+								defaultValue: "Ce n'est pas la bonne adresse ?",
+							})}
+							onPress={() =>
+								router.replace({
+									pathname: "/auth/register",
+									params: { email, name: params.name ?? "" },
+								})
+							}
+						/>
+					) : null}
 					<AuthSubmit
-						variant={email ? "secondary" : "primary"}
+						variant="secondary"
 						label={t("auth.backToLogin")}
 						onPress={() => router.replace("/auth/login")}
 					/>

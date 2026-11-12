@@ -4,11 +4,13 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { Colors, Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
-import { fillOf } from "@/src/components/shop/ink";
 import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -33,6 +35,9 @@ import { can } from "@/src/lib/shopRoles";
 import { isShopOwner } from "@/src/lib/variants";
 import type { ListingDoc } from "@/src/types/api";
 
+/** Ink on signage yellow: adding an ad is the sell action (DESIGN.md). */
+const INK = Colors.light.sunForeground;
+
 /**
  * The shop's ads that are not products: an agency's flats, a recruiter's job
  * offers, a provider's services — and a store's own job offers. New ones go
@@ -48,6 +53,7 @@ export default function ShopAdsScreen() {
 	const allowed = can(mine.data?.role, "catalogue.edit");
 	// A shop ad's seller is the owner, and only the seller may edit or close it.
 	const owner = isShopOwner(mine.data?.role);
+	const insets = useSafeAreaInsets();
 	const ads = useShopAds(allowed ? shop?.id : undefined, filter);
 	const close = useCloseShopAd(shop?.id);
 	const rows: ListingDoc[] = useMemo(
@@ -79,7 +85,7 @@ export default function ShopAdsScreen() {
 			{mine.isLoading || (allowed && ads.isLoading) ? (
 				<ListSkeleton />
 			) : !allowed ? (
-				<EmptyState illustration="auth" title={t("sellerAds.loadError")} />
+				<EmptyState illustration="auth" title={t("sellerAds.noAccess")} />
 			) : ads.isError ? (
 				<EmptyState
 					illustration="sell"
@@ -112,10 +118,7 @@ export default function ShopAdsScreen() {
 									]}
 								>
 									<Text
-										style={[
-											styles.filterText,
-											{ color: on ? c.primary : c.text },
-										]}
+										style={[styles.filterText, { color: on ? c.link : c.text }]}
 									>
 										{t(`sellerAds.filter.${key}`)}
 										{counts ? ` ${counts[key]}` : ""}
@@ -148,12 +151,44 @@ export default function ShopAdsScreen() {
 									"thumbnail",
 								);
 								const closedAs = listingKindRules(ad.kind).closedAs;
+								const priceText = kindPriceText(
+									ad.price ? formatPrice(ad.price, i18n.language) : null,
+									ad,
+									(key) => t(`listingKind.${key}`),
+								);
+								const statusText =
+									ad.status === "sold"
+										? t(`listingKind.closedAs.${closedAs}`)
+										: t(`sellerAds.status.${ad.status}`);
+								const canClose = owner && ad.status === "published";
+								const closeLabel = t(`listingKind.markClosed.${closedAs}`);
 								return (
 									<Pressable
 										onPress={() => router.push(`/listing/${ad.id}`)}
-										style={[
+										accessibilityRole="button"
+										accessibilityLabel={[ad.title, priceText, statusText]
+											.filter(Boolean)
+											.join(", ")}
+										// The nested icon buttons are hidden from a screen reader
+										// inside an accessible row: offer them as row actions.
+										accessibilityActions={[
+											...(canClose
+												? [{ name: "close", label: closeLabel }]
+												: []),
+											...(owner
+												? [{ name: "edit", label: t("sellerAds.edit") }]
+												: []),
+										]}
+										onAccessibilityAction={(event) => {
+											if (event.nativeEvent.actionName === "close")
+												confirmClose(ad);
+											if (event.nativeEvent.actionName === "edit")
+												router.push(`/listing/${ad.id}/edit`);
+										}}
+										style={({ pressed }) => [
 											styles.row,
 											{ backgroundColor: c.card, borderColor: c.border },
+											pressed && { opacity: 0.85 },
 										]}
 									>
 										{thumb ? (
@@ -177,33 +212,25 @@ export default function ShopAdsScreen() {
 												{ad.title}
 											</Text>
 											<Text style={[styles.price, { color: c.text }]}>
-												{kindPriceText(
-													ad.price
-														? formatPrice(ad.price, i18n.language)
-														: null,
-													ad,
-													(key) => t(`listingKind.${key}`),
-												)}
+												{priceText}
 											</Text>
 											<Text
 												style={[styles.meta, { color: c.muted }]}
 												numberOfLines={1}
 											>
-												{ad.status === "sold"
-													? t(`listingKind.closedAs.${closedAs}`)
-													: t(`sellerAds.status.${ad.status}`)}
+												{statusText}
 												{ad.location ? ` · ${ad.location}` : ""}
 											</Text>
 										</View>
-										{owner && ad.status === "published" ? (
+										{canClose ? (
 											<Pressable
 												onPress={() => confirmClose(ad)}
 												accessibilityRole="button"
-												accessibilityLabel={t(
-													`listingKind.markClosed.${closedAs}`,
-												)}
-												hitSlop={8}
-												style={styles.action}
+												accessibilityLabel={closeLabel}
+												style={({ pressed }) => [
+													styles.action,
+													pressed && { backgroundColor: c.primarySoft },
+												]}
 											>
 												<Ionicons
 													name="checkmark-circle-outline"
@@ -217,8 +244,10 @@ export default function ShopAdsScreen() {
 												onPress={() => router.push(`/listing/${ad.id}/edit`)}
 												accessibilityRole="button"
 												accessibilityLabel={t("sellerAds.edit")}
-												hitSlop={8}
-												style={styles.action}
+												style={({ pressed }) => [
+													styles.action,
+													pressed && { backgroundColor: c.primarySoft },
+												]}
 											>
 												<Ionicons
 													name="pencil-outline"
@@ -235,10 +264,17 @@ export default function ShopAdsScreen() {
 					<Pressable
 						onPress={() => router.push("/(tabs)/create")}
 						accessibilityRole="button"
-						style={[styles.add, { backgroundColor: fillOf(c) }]}
+						accessibilityLabel={t("sellerAds.add")}
+						style={({ pressed }) => [
+							styles.add,
+							{ backgroundColor: c.sell, bottom: insets.bottom + 16 },
+							pressed && { opacity: 0.85 },
+						]}
 					>
-						<Ionicons name="add" size={20} color="#fff" />
-						<Text style={styles.addText}>{t("sellerAds.add")}</Text>
+						<Ionicons name="add" size={20} color={INK} />
+						<Text style={[styles.addText, { color: INK }]}>
+							{t("sellerAds.add")}
+						</Text>
 					</Pressable>
 				</>
 			)}
@@ -279,11 +315,16 @@ const styles = StyleSheet.create({
 	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	price: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
-	action: { padding: 6 },
+	action: {
+		width: 48,
+		height: 48,
+		borderRadius: 24,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 	add: {
 		position: "absolute",
 		right: 16,
-		bottom: 24,
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 6,
@@ -291,5 +332,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 18,
 		borderRadius: 24,
 	},
-	addText: { color: "#fff", fontSize: 16, fontFamily: Fonts.bodyBold },
+	addText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

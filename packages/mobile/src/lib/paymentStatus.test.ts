@@ -232,7 +232,13 @@ describe("the payments namespace", () => {
 		// more mobile-only keys (protectedBadge, pay_mobileMoney and the four
 		// money_* rows of "where does your money go"). The pending screen's
 		// exact amount and USSD dial button added two more, mirrored to web.
-		expect(Object.keys(enNs)).toHaveLength(167);
+		// The mobile UX pass added eleven mobile-only screen keys: the pay
+		// screen's leave prompt and operator switch (pay_later*, pay_now,
+		// pay_operatorSwitch), the pending screen's per-phase header titles
+		// (pending_header*), and the payout setup/detail toasts and cards
+		// (setup_saved, setup_changeAccount, payout_failedAction). No
+		// disclosure sentence changed.
+		expect(Object.keys(enNs)).toHaveLength(178);
 	});
 
 	test("carries the same placeholders in both languages, in i18next's double braces", () => {

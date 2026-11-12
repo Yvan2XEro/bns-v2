@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import { useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -20,6 +21,7 @@ import { DetailSkeleton } from "@/src/components/moderation/ModerationKit";
 import { moderationTones } from "@/src/components/moderation/tones";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { toast } from "@/src/components/Toast";
 import { usePickUp } from "@/src/hooks/useRiderShipments";
 import { useShipment } from "@/src/hooks/useShipmentActions";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -28,8 +30,22 @@ import { feedback } from "@/src/lib/feedback";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { destinationMapsUrl, riderButtons } from "@/src/lib/riderShipment";
-import { shipmentStatusLabel } from "@/src/lib/shipmentStatus";
+import { courierStatusLabel } from "@/src/lib/shipmentStatus";
 import { telHref } from "@/src/lib/shipmentTracking";
+
+/**
+ * Outdoors a GPS fix can take many seconds. The pick-up is the rider's
+ * action, the position only its audit trail, so the wait is capped and the
+ * request leaves without a position after that.
+ */
+const GPS_WAIT_MS = 3000;
+
+function gpsWithin(ms: number) {
+	return Promise.race([
+		tryCurrentGps(),
+		new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+	]);
+}
 
 /**
  * The rider's run sheet, read on a bike with one hand: the status and the
@@ -50,13 +66,42 @@ export default function RiderShipmentScreen() {
 	const buttons = view ? riderButtons(view.allowedActions) : [];
 	const canPickUp = buttons.includes("pick_up");
 	const sun = c.isDark ? Colors.dark.sun : Colors.light.sun;
+	// The button is busy from the tap, not from the request: during the GPS
+	// wait a second tap would otherwise fire a second pick-up.
+	const [locating, setLocating] = useState(false);
+	const busy = locating || pickUp.isPending;
 
 	const onPickUp = async () => {
-		pickUp.mutate((await tryCurrentGps()) ?? undefined, {
+		if (busy) return;
+		setLocating(true);
+		const gps = await gpsWithin(GPS_WAIT_MS);
+		setLocating(false);
+		pickUp.mutate(gps ?? undefined, {
 			// The parcel is now the rider's responsibility: say so in the hand.
 			onSuccess: () => feedback("success"),
 		});
 	};
+
+	// No dialer on a tablet, no maps app: the tile must not look dead. The
+	// toast carries the number or the address so the rider can still use it.
+	const open = (url: string, fallback: string) => {
+		Linking.openURL(url).catch(() =>
+			toast.show({
+				type: "info",
+				title: t("shipmentPanel.cannotOpen"),
+				message: fallback,
+			}),
+		);
+	};
+	const addressLine = view
+		? [
+				view.destination.landmark,
+				view.destination.district,
+				view.destination.city,
+			]
+				.filter(Boolean)
+				.join(", ")
+		: "";
 
 	return (
 		<SafeAreaView
@@ -90,7 +135,7 @@ export default function RiderShipmentScreen() {
 								accessibilityRole="header"
 								style={[styles.status, { color: c.text }]}
 							>
-								{t(shipmentStatusLabel("seller", view.status))}
+								{t(courierStatusLabel(view.status))}
 							</Text>
 
 							<View
@@ -107,14 +152,11 @@ export default function RiderShipmentScreen() {
 												{view.destination.recipientFirstName}
 											</Text>
 										) : null}
-										<Text style={[styles.address, { color: c.text }]}>
-											{[
-												view.destination.landmark,
-												view.destination.district,
-												view.destination.city,
-											]
-												.filter(Boolean)
-												.join(", ")}
+										<Text
+											selectable
+											style={[styles.address, { color: c.text }]}
+										>
+											{addressLine}
 										</Text>
 									</View>
 								</View>
@@ -174,8 +216,9 @@ export default function RiderShipmentScreen() {
 											icon="call"
 											label={t("shipmentPanel.callBuyer")}
 											onPress={() =>
-												void Linking.openURL(
+												open(
 													telHref(view.destination.phone ?? ""),
+													view.destination.phone ?? "",
 												)
 											}
 										/>
@@ -184,7 +227,7 @@ export default function RiderShipmentScreen() {
 										<Tile
 											icon="navigate"
 											label={t("shipmentPanel.openInMaps")}
-											onPress={() => void Linking.openURL(maps)}
+											onPress={() => open(maps, addressLine)}
 										/>
 									) : null}
 								</View>
@@ -235,11 +278,8 @@ export default function RiderShipmentScreen() {
 							<Pressable
 								accessibilityRole="button"
 								accessibilityLabel={t("shipmentPanel.pickUp")}
-								accessibilityState={{
-									disabled: pickUp.isPending,
-									busy: pickUp.isPending,
-								}}
-								disabled={pickUp.isPending}
+								accessibilityState={{ disabled: busy, busy }}
+								disabled={busy}
 								onPress={onPickUp}
 								style={({ pressed }) => [
 									styles.primary,
@@ -250,12 +290,12 @@ export default function RiderShipmentScreen() {
 									},
 								]}
 							>
-								{pickUp.isPending ? (
+								{busy ? (
 									<ActivityIndicator color={k.onFill} />
 								) : (
 									<>
 										<Ionicons name="cube" size={24} color={k.onFill} />
-										<Text style={styles.primaryText}>
+										<Text style={[styles.primaryText, { color: k.onFill }]}>
 											{t("shipmentPanel.pickUp")}
 										</Text>
 									</>
@@ -395,7 +435,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	primaryText: {
-		color: "#ffffff",
 		fontSize: 18,
 		lineHeight: 23,
 		fontFamily: Fonts.bodyBold,

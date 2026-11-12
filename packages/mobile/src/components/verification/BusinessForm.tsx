@@ -155,7 +155,7 @@ export function BusinessForm({
 										<Text
 											style={[
 												styles.chipText,
-												{ color: active ? c.primary : c.body },
+												{ color: active ? c.link : c.body },
 											]}
 										>
 											{t(`verification.business.businessTypeOption.${value}`)}

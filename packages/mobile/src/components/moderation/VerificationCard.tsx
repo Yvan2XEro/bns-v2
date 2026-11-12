@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
+import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	moderationVerificationKeys,
 	useVerificationDecision,
@@ -38,15 +39,25 @@ export function VerificationCard({
 	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const claim = useVerificationDecision();
+	const { showSuccess } = useAlert();
 
 	const age = relativeAge(item.submittedAt);
 	const claimable = item.status === "submitted" && !item.assignee;
 	const tone = statusToneKey(item.status);
 	const k = tonesOf(c);
 	const status = toneColors(tone, c);
-	const shopLabel = t("moderation.verifRowShop", {
-		id: item.shopId ?? item.id,
-	});
+	// A shop name is what a reviewer scans for; the database ID is only the
+	// fallback until the queue route sends `shopName` with every row.
+	const shopName = (
+		item as ModerationVerificationQueueItem & {
+			shopName?: string | null;
+		}
+	).shopName;
+	const shopLabel =
+		shopName ||
+		t("moderation.verifRowShop", {
+			id: item.shopId ?? item.id,
+		});
 
 	return (
 		<Pressable
@@ -103,6 +114,7 @@ export function VerificationCard({
 						claim.mutate(
 							{ id: item.id, action: "claim" },
 							{
+								onSuccess: () => showSuccess(t("moderation.verifClaimed")),
 								onError: () => {
 									queryClient.invalidateQueries({
 										queryKey: moderationVerificationKeys.root,

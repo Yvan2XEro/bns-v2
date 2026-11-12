@@ -158,9 +158,11 @@ function SettingsRowButton({
 			onPress={onPress}
 			accessibilityRole="button"
 			accessibilityLabel={`${label}, ${value}`}
-			style={[
+			android_ripple={{ color: c.border }}
+			style={({ pressed }) => [
 				styles.row,
 				!first && [styles.rowDivider, { borderTopColor: c.border }],
+				pressed && { backgroundColor: c.primarySoft },
 			]}
 		>
 			{danger ? (

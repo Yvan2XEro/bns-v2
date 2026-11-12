@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { ConversationScreen } from "@/src/components/messages/ConversationScreen";
 import {
 	fetchLatestMessages,
+	lastStoredMessageId,
 	messagesKey,
 } from "@/src/components/messages/messageHistory";
 import { useMarkConversationRead } from "@/src/hooks/useShopInbox";
@@ -62,11 +63,20 @@ export function BuyerConversation({
 	// read-on-view, clears its unread count.
 	useFocusEffect(
 		useCallback(() => {
-			const lastMessageId = latest.data?.docs.at(-1)?.id;
+			const lastMessageId = lastStoredMessageId(latest.data?.docs);
 			if (conversationId && lastMessageId) {
-				markRead.mutate({ conversationId, lastMessageId });
+				markRead.mutate(
+					{ conversationId, lastMessageId },
+					{
+						// The Messages list counts unread from the same flag.
+						onSuccess: () =>
+							queryClient.invalidateQueries({
+								queryKey: ["conversations", "unread"],
+							}),
+					},
+				);
 			}
-		}, [conversationId, latest.data, markRead.mutate]),
+		}, [conversationId, latest.data, markRead.mutate, queryClient]),
 	);
 
 	if (!conversationId) return null;

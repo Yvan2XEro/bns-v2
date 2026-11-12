@@ -36,7 +36,9 @@
 		"taskUnread_one": "{{count}} unread message",
 		"taskUnread": "{{count}} unread messages",
 		"taskPaymentsHold_one": "{{count}} payment on hold",
-		"taskPaymentsHold": "{{count}} payments on hold"
+		"taskPaymentsHold": "{{count}} payments on hold",
+		"greetingNoName": "Hello",
+		"countsError": "Couldn't check your orders. Pull to refresh."
 	},
 	"common": {
 		"offlineBanner": "Offline",
@@ -44,6 +46,8 @@
 		"search": "Search",
 		"filter": "Filter",
 		"cancel": "Cancel",
+		"undo": "Undo",
+		"view": "View",
 		"save": "Save",
 		"delete": "Delete",
 		"edit": "Edit",
@@ -151,7 +155,13 @@
 		"emailVerifiedTitle": "Address confirmed",
 		"emailVerifiedDesc": "Your account is active. You can sign in.",
 		"verifyFailedTitle": "This link no longer works",
-		"verifyFailedDesc": "It was already used, or a newer email replaced it. Enter your address to receive a new one."
+		"verifyFailedDesc": "It was already used, or a newer email replaced it. Enter your address to receive a new one.",
+		"orWithEmail": "or with your email",
+		"socialLoginRetry": "Sign-in didn't go through. Try again, or sign in with your email.",
+		"callbackTimeoutTitle": "Sign-in didn't go through",
+		"callbackTimeoutBody": "Try again, or sign in with your email.",
+		"openMailApp": "Open my email app",
+		"wrongAddress": "Wrong address?"
 	},
 	"home": {
 		"searchPlaceholder": "What are you looking for?",
@@ -239,7 +249,13 @@
 		"recentTitle": "Recent searches",
 		"clearRecent": "Clear",
 		"removeRecent": "Remove “{{query}}” from history",
-		"inCategory": "In {{name}}"
+		"inCategory": "In {{name}}",
+		"noResultsFor": "Nothing for “{{q}}”",
+		"noResultsRemoveFilter": "Remove a filter to see more listings.",
+		"noResultsSpelling": "Check the spelling or try a shorter word.",
+		"searchAllCategories": "Search all categories",
+		"loadMoreFailed": "Couldn't load more listings.",
+		"removeFilter": "Remove filter {{label}}"
 	},
 	"listing": {
 		"call": "Call",
@@ -316,13 +332,15 @@
 		"whatsappAbout": "Hello, is your listing \"{{title}}\" on Buy'N'Sellem still available? {{url}}",
 		"barOrder": "Order",
 		"orderAction": "Order · {{price}}",
-		"orderableBadge": "Buy online"
+		"orderableBadge": "Buy online",
+		"seeSimilar": "See similar listings",
+		"barChooseOrder": "Choose and order"
 	},
 	"create": {
 		"title": "Post a Listing",
-		"stepDetails": "Listing details",
+		"stepDetails": "Description, price and place",
 		"stepDetailsSubtitle": "Price and location",
-		"stepAttributes": "Additional details",
+		"stepAttributes": "Characteristics",
 		"stepAttributesSubtitle": "Help buyers find your listing",
 		"stepPhotos": "Add photos",
 		"stepPhotosSubtitle": "Great photos sell faster",
@@ -359,10 +377,10 @@
 		"stepLabel": "Step {{current}} of {{total}} — {{name}}",
 		"sell": "Sell",
 		"loginRequired": "Login required",
-		"loginRequiredSubtitle": "Sign in to post a listing",
+		"loginRequiredSubtitle": "It's free: a title, photos and a price, and your listing goes off for review.",
 		"searchCategory": "Search a category...",
-		"stepDetailsTitle": "Listing details",
-		"stepDetailsHint": "These are what decide where your ad shows up in results.",
+		"stepDetailsTitle": "Description, price and place",
+		"stepDetailsHint": "A clear price and the right neighbourhood: that's what buyers filter on first.",
 		"stepDetailsHintGeneric": "Add the key information people need to understand this listing.",
 		"titleFieldLabel": "Listing title",
 		"titlePlaceholder": "e.g. iPhone 13 Pro 256 GB, black...",
@@ -409,7 +427,7 @@
 		"stepReviewHint": "Review your listing before publishing it.",
 		"saveDraftBtn": "Save as draft",
 		"draftSavedTitle": "Draft saved",
-		"draftSavedMsg": "Your listing is saved. It stays private until you submit it for review.",
+		"draftSavedMsg": "You'll find it in My listings.",
 		"tagsFieldLabel": "Tags",
 		"dateFormatHint": "DD/MM/YYYY",
 		"attributeMin": "Minimum value: {{value}}",
@@ -417,7 +435,7 @@
 		"attributeInvalidDate": "Invalid date (DD/MM/YYYY)",
 		"attributeInvalidNumber": "Invalid number",
 		"stepPhotosQualityTipGeneric": "Sharp photos taken in daylight sell faster.",
-		"stepDescribe": "Your ad",
+		"stepDescribe": "What you're selling",
 		"stepDescribeTitle": "What are you selling?",
 		"stepDescribeHint": "Describe your item in a few words. We suggest a category from the title.",
 		"stepLabelWithCategory": "Step {{current}} of {{total}} — {{name}} · {{category}}",
@@ -433,7 +451,7 @@
 		"resumeTitle": "Pick up your listing?",
 		"resumeMsg": "You had started a listing on this phone.",
 		"resumeConfirm": "Pick up",
-		"resumeDiscard": "Start over",
+		"resumeDiscard": "Delete the draft",
 		"viewListing": "View my listing",
 		"shareWhatsApp": "Share on WhatsApp",
 		"postAnother": "Post another listing",
@@ -441,7 +459,12 @@
 		"photoUploading": "Sending the photo…",
 		"photoRetry": "Failed · retry",
 		"makeMain": "Make it the main photo",
-		"photosStillUploading": "Some photos are still being sent."
+		"photosStillUploading": "Some photos are still being sent.",
+		"resumeMsgWithTitle": "Your listing “{{title}}” isn't finished. Pick it up?",
+		"photosFailedOnNext": "A photo wasn't sent. Retry it or remove it to continue.",
+		"backToReview": "Back to review",
+		"durationHint": "After that, the listing expires. You can renew it from My listings.",
+		"publishedNotify": "You'll get a notification as soon as it's online. You can share it then."
 	},
 	"messages": {
 		"title": "Messages",
@@ -522,16 +545,32 @@
 		"copy": "Copy",
 		"copied": "Message copied",
 		"actions": "Message options",
-		"actionsHint": "Long-press to copy the message"
+		"actionsHint": "Long-press to copy or report the message",
+		"markAllReadDone": "Conversations marked as read",
+		"deleteBody": "This deletes the conversation for you and for {{name}}. It can't be recovered.",
+		"staleList": "Offline. Last updated at {{time}}.",
+		"searchLoadedOnly": "Searching the conversations loaded so far",
+		"reportMessage": "Report this message",
+		"viewShop": "View shop",
+		"reportShop": "Report shop",
+		"blockShop": "Block shop",
+		"unblockShop": "Unblock shop",
+		"blockShopConfirmTitle": "Block {{name}}?",
+		"blockShopConfirmBody": "You won't be able to message this shop, and its owner won't be able to message you.",
+		"blockedToast": "{{name}} blocked",
+		"unblockedToast": "{{name}} unblocked",
+		"bubbleMine": "You, {{time}}: {{text}}",
+		"bubbleFrom": "{{name}}, {{time}}: {{text}}",
+		"actionsPreview": "Message: {{text}}"
 	},
 	"account": {
 		"guestTitle": "Welcome to Buy'N'Sellem",
 		"guestPerkFavorites": "Your favourites and saved searches",
 		"guestPerkMessages": "Messages with sellers",
 		"guestPerkOrders": "Tracking your orders",
-		"sectionPreferences": "PREFERENCES",
+		"sectionPreferences": "Preferences",
 		"title": "Account",
-		"myAccount": "My Account",
+		"myAccount": "My account",
 		"editProfile": "Edit Profile",
 		"edit": "Edit",
 		"myListings": "My Listings",
@@ -568,8 +607,8 @@
 		"profileViews": "{{count}} profile views",
 		"sectionPurchases": "My purchases",
 		"sectionListings": "My listings",
-		"sectionSettings": "SETTINGS",
-		"sectionSupport": "SUPPORT",
+		"sectionSettings": "Settings",
+		"sectionSupport": "Support",
 		"security": "Security",
 		"sectionModeration": "Moderation",
 		"moderation": "Moderation queue",
@@ -582,7 +621,10 @@
 		"openShopSublabel": "Free · a page to share on WhatsApp",
 		"myPurchases": "My orders",
 		"myPurchasesSublabel": "Track what you bought",
-		"cart": "Cart"
+		"cart": "Cart",
+		"notificationsUnread_one": "{{count}} unread",
+		"notificationsUnread": "{{count}} unread",
+		"phoneNotVerified": "Phone not verified"
 	},
 	"listings": {
 		"title": "My Listings",
@@ -628,7 +670,13 @@
 		"bulkDelete": "Delete selected",
 		"bulkDeleteConfirm_one": "Delete {{count}} listing?",
 		"bulkDeleteConfirm": "Delete {{count}} listings?",
-		"statusDraft": "Draft"
+		"statusDraft": "Draft",
+		"filterRejected": "Rejected",
+		"fixAndResubmit": "Fix and resubmit",
+		"markedSold": "Listing marked as sold",
+		"deleted": "Listing deleted",
+		"deleteNamedConfirm": "Delete “{{title}}”?",
+		"deleteNamedMessage": "Buyers won't see it any more, and you can't get it back."
 	},
 	"edit": {
 		"title": "Edit listing",
@@ -674,7 +722,12 @@
 		"statusRejectedNotice": "Your listing was rejected.",
 		"statusRejectionReason": "Reason: {{reason}}",
 		"saleSection": "Sale",
-		"photosFailedOnSave": "Some photos were not sent. Retry or remove them before saving."
+		"photosFailedOnSave": "Some photos were not sent. Retry or remove them before saving.",
+		"resubmitTitle": "Send the listing back for review?",
+		"resubmitMsg": "Your changes will be reviewed (under 24 h). The listing stays offline until then.",
+		"resubmitConfirm": "Save and submit",
+		"loadError": "Couldn't load the listing",
+		"categoryLocked": "To change the category, create a new listing."
 	},
 	"profile": {
 		"bio": "Bio",
@@ -747,7 +800,15 @@
 		"publishReview": "Publish review",
 		"memberSinceDate": "Member since",
 		"blockConfirmTitle": "Block this user?",
-		"blockConfirmBody": "They will no longer be able to message you, and you will not be able to message them."
+		"blockConfirmBody": "They will no longer be able to message you, and you will not be able to message them.",
+		"reviewAfterExchange": "You can rate this seller once you've been in touch with them.",
+		"discardReviewTitle": "Discard your review?",
+		"keepWriting": "Keep writing",
+		"discardReview": "Discard",
+		"discardTitle": "Discard your changes?",
+		"discardMessage": "What you changed won't be saved.",
+		"nameRequired": "Enter your name",
+		"phoneChangeFooter": "To change your number, you confirm it by SMS."
 	},
 	"settings": {
 		"title": "Settings",
@@ -871,7 +932,14 @@
 				"manage": "Manage",
 				"openSettings": "Open settings"
 			}
-		}
+		},
+		"changePhoneBtn": "Change number",
+		"deleteWord": "DELETE",
+		"deleteTypeLabel": "To confirm, type {{word}}",
+		"deleteFinalBtn": "Delete permanently",
+		"deleteShopWarning": "Your shop {{name}} will close along with its listings. Orders in progress and payouts still due will be lost.",
+		"notificationTypesFooter": "Choose what we send you. To turn everything off, use the Notifications permission below.",
+		"notificationTypeError": "This setting wasn't saved. Check your connection and try again."
 	},
 	"boost": {
 		"title": "Boost Your Listing",
@@ -905,7 +973,11 @@
 		"successMessage": "Your listing is now featured.",
 		"mobileUnavailableBadge": "Temporarily unavailable",
 		"mobileUnavailableTitle": "Boosting is not available in the mobile app right now.",
-		"mobileUnavailableMessage": "This feature is being updated for the mobile release. You can still manage your listing normally from the app."
+		"mobileUnavailableMessage": "This feature is being updated for the mobile release. You can still manage your listing normally from the app.",
+		"soonTitle": "Boost is coming soon",
+		"soonBody": "You can't boost a listing from the app yet.",
+		"shareHint": "In the meantime, share it on WhatsApp and in your groups. It's free.",
+		"shareListing": "Share my listing"
 	},
 	"report": {
 		"title": "Report",
@@ -933,7 +1005,9 @@
 		"harassmentLabel": "Harassment",
 		"otherLabel": "Other",
 		"descriptionLabel": "Description (optional)",
-		"errorTitle": "Error"
+		"errorTitle": "Error",
+		"shopTitle": "Report this shop",
+		"otherHint": "Tell us what's wrong (at least 10 characters)"
 	},
 	"filters": {
 		"title": "Filters",
@@ -965,7 +1039,10 @@
 		"orderable": "Buy online (protected payment or cash on delivery)",
 		"showCount_one": "Show {{count}} listing",
 		"showCount": "Show {{count}} listings",
-		"tags": "Tags"
+		"tags": "Tags",
+		"orderableLabel": "Order in the app",
+		"orderableHint": "Protected payment or cash on delivery",
+		"priceInverted": "The minimum is higher than the maximum."
 	},
 	"errors": {
 		"generic": "An unexpected error occurred. Please try again.",
@@ -1022,14 +1099,17 @@
 		"tip5Title": "Check the seller's identity",
 		"tip5Desc": "Look at the seller's profile, reviews and how long they've been on the platform before going ahead.",
 		"tip6Title": "Report suspicious behaviour",
-		"tip6Desc": "Use the Report button if you spot a scam, a fake listing or inappropriate behaviour."
+		"tip6Desc": "Use the Report button if you spot a scam, a fake listing or inappropriate behaviour.",
+		"actionsTitle": "Something wrong?"
 	},
 	"savedSearches": {
 		"title": "Saved Searches",
 		"noSearches": "No saved searches",
 		"noSearchesSubtitle": "Save your searches to get notified about new matching listings",
 		"alerts": "Alerts",
-		"deleteConfirm": "Delete this search?"
+		"deleteConfirm": "Delete this search?",
+		"filterCount_one": "{{count}} filter",
+		"filterCount": "{{count}} filters"
 	},
 	"boostHistory": {
 		"title": "Boost History",
@@ -1057,7 +1137,10 @@
 		"month3": "3 months",
 		"days_one": "{{count}} day",
 		"days": "{{count}} days",
-		"active": "Active"
+		"active": "Active",
+		"statusAwaitingPayment": "Payment pending",
+		"partialTotal_one": "From the last boost loaded",
+		"partialTotal": "From the last {{count}} boosts loaded"
 	},
 	"favorites": {
 		"title": "Favorites",
@@ -1077,7 +1160,9 @@
 		"listingCount_one": "{{count}} listing",
 		"listingCount": "{{count}} listings",
 		"listingsSaved_one": "{{count}} saved listing",
-		"listingsSaved": "{{count}} saved listings"
+		"listingsSaved": "{{count}} saved listings",
+		"removed": "“{{title}}” removed from favourites",
+		"updateError": "Your favourites weren't updated. Check your connection and try again."
 	},
 	"help": {
 		"title": "Help & FAQ",
@@ -1096,7 +1181,9 @@
 		"q6": "How do I save a search?",
 		"a6": "On the Search page, tap the \"Save\" button at the bottom of the screen to save your criteria and receive alerts.",
 		"q7": "How do I delete my account?",
-		"a7": "Go to Account → Settings → Danger zone → Delete my account. This action is irreversible."
+		"a7": "Go to Account → Security → Delete my account. This can't be undone.",
+		"openSecurity": "Open Security",
+		"openMyListings": "Open My listings"
 	},
 	"contact": {
 		"title": "Contact Us",
@@ -1117,7 +1204,9 @@
 		"subjectTechnical": "Technical issue",
 		"subjectAbuse": "Report abuse",
 		"subjectPartnership": "Partnership request",
-		"subjectOther": "Other"
+		"subjectOther": "Other",
+		"successReplyTo": "We'll reply by email to {{email}}.",
+		"emailInvalid": "Enter a valid email, for example name@example.com"
 	},
 	"notifications": {
 		"title": "Notifications",
@@ -1132,11 +1221,14 @@
 		"archive": "Archive",
 		"restore": "Restore",
 		"channelDefault": "General",
-		"channelOrders": "New orders"
+		"channelOrders": "New orders",
+		"inboxTab": "Inbox",
+		"archivedTab": "Archived",
+		"archivedToast": "Notification archived"
 	},
 	"onboarding": {
 		"skip": "Skip",
-		"next": "Next →",
+		"next": "Next",
 		"start": "Get Started",
 		"slide1Title": "Welcome to\nBuy'N'Sellem",
 		"slide1Desc": "The simple marketplace to buy and sell near you.",
@@ -1145,7 +1237,8 @@
 		"slide3Title": "Sell\nin a few clicks",
 		"slide3Desc": "Post your listing in under 2 minutes and reach thousands of buyers.",
 		"slide4Title": "Chat\nsafely",
-		"slide4Desc": "Talk directly with buyers and sellers with full confidence."
+		"slide4Desc": "Talk directly with buyers and sellers with full confidence.",
+		"explore": "Browse without an account"
 	},
 	"security": {
 		"title": "Security"
@@ -1635,7 +1728,7 @@
 		"tabRisk": "Risk",
 		"emptyListingsTitle": "No listings awaiting review",
 		"emptyReportsTitle": "No open reports",
-		"emptyRiskTitle": "No open risk flags",
+		"emptyRiskTitle": "No open risk alerts",
 		"riskQueueFailed": "The risk queue could not be loaded.",
 		"riskUnknownSubject": "Unknown subject",
 		"riskOccurrences_one": "{{count}} signal",
@@ -1644,18 +1737,18 @@
 		"riskMedium": "Medium risk",
 		"riskLow": "Low risk",
 		"riskDetailTitle": "Risk review",
-		"riskDetailFailed": "This risk flag could not be loaded.",
+		"riskDetailFailed": "This alert could not be loaded.",
 		"riskSubject": "Subject",
 		"riskSignal": "Signal",
 		"riskLastSeen": "Last seen {{date}}",
 		"riskEvidence": "Evidence",
 		"riskNoEvidence": "No additional evidence was recorded.",
-		"riskRelated": "Related flags",
+		"riskRelated": "Related alerts",
 		"riskHistory": "Moderation history",
 		"riskMarkReviewed": "Mark reviewed",
 		"riskReviewed": "Reviewed",
-		"riskDismiss": "Dismiss flag",
-		"riskDismissTitle": "Dismiss this risk flag",
+		"riskDismiss": "Close alert",
+		"riskDismissTitle": "Close this alert",
 		"riskResolution": "Resolution",
 		"riskFalsePositive": "False positive",
 		"riskDecisionNote": "Internal note",
@@ -1775,7 +1868,7 @@
 		"shopSuspend": "Suspend the shop",
 		"shopLift": "Lift the suspension",
 		"shopSuspendSheetTitle": "Suspend this shop",
-		"shopSuspendSheetSubtitle": "Its listings leave search and the shop page returns 404 until the suspension ends.",
+		"shopSuspendSheetSubtitle": "Its listings leave search and its page is unavailable until the suspension ends.",
 		"shopConfirmSuspend": "Suspend the shop",
 		"shopSuspendedTitle": "Shop suspended",
 		"shopSuspendedMessage_one": "{{count}} listing was taken down.",
@@ -1869,7 +1962,7 @@
 		"verifDocumentKind_mandate": "Mandate",
 		"verifDocumentKind_other": "Other document",
 		"verifAction_claim": "Claim",
-		"verifAction_release": "Release",
+		"verifAction_release": "Return to queue",
 		"verifAction_request_info": "Request info",
 		"verifAction_approve": "Approve",
 		"verifAction_reject": "Reject",
@@ -1983,10 +2076,84 @@
 		"listingAlreadyPublished": "Already live: only a rejection can take it down.",
 		"listingAlreadyRejected": "Already rejected: approving it puts it back online.",
 		"reportAlreadyClosed": "This report is already closed.",
-		"riskAlreadyClosed": "This risk flag is already closed.",
+		"riskAlreadyClosed": "This alert is already closed.",
 		"riskDecisionSaved": "Decision saved",
 		"target_phone": "Phone",
-		"target_device": "Device"
+		"target_device": "Device",
+		"ageNow": "just now",
+		"decisionTextMissing": "Fill in “{{label}}” to continue.",
+		"discardTitle": "Discard this decision?",
+		"discardBody": "The note you wrote will be lost.",
+		"discardKeep": "Keep editing",
+		"discardConfirm": "Discard",
+		"offlineTitle": "No connection",
+		"queueStale": "This list is out of date. Tap to try again.",
+		"disputesOverdue": "{{count}} overdue",
+		"riskScore": "score {{score}} out of 100",
+		"riskSignal_velocity_orders_per_phone": "Too many orders from one phone",
+		"riskSignal_velocity_checkout_attempts": "Repeated checkout attempts",
+		"riskSignal_velocity_payout_account_changes": "Repeated payout account changes",
+		"riskSignal_velocity_shop_creation": "Burst of new shops",
+		"riskSignal_velocity_accounts_per_device": "Several accounts on one device",
+		"riskSignal_identity_duplicate_document": "Identity document already used",
+		"riskSignal_identity_duplicate_payout_account": "Payout account already used",
+		"riskSignal_orders_seller_cancellation_ratio": "High seller cancellation rate",
+		"riskSignal_orders_dispute_ratio": "High dispute rate",
+		"riskSignal_cod_refusal_streak": "Repeated refusals on delivery",
+		"riskSignal_cod_refusal_ratio_shop": "High delivery refusal rate for the shop",
+		"riskSignal_resale_self_dealing": "Self-dealing resale",
+		"riskSignal_resale_shared_identity": "Reseller and supplier share an identity",
+		"riskSignal_resale_handover_at_supplier": "Parcel handed over at the supplier",
+		"riskSignal_resale_buyer_concentration": "Buyers concentrated on one reseller",
+		"riskSignal_resale_cancellation_pattern": "Suspicious resale cancellations",
+		"riskSignal_resale_refusal_pattern": "Suspicious resale refusals",
+		"riskSignal_dispute_lost_seller": "Dispute lost by the seller",
+		"riskSignal_counterfeit_confirmed": "Counterfeit confirmed",
+		"riskSignal_refund_overdue": "Refund overdue",
+		"riskSignal_seller_no_response": "Seller not responding",
+		"riskSignal_unavailable_after_confirmation": "Item unavailable after confirmation",
+		"riskSignal_dispute_abuse_buyer": "Buyer dispute abuse",
+		"riskSignal_cod_refusal_abuse": "Delivery refusal abuse",
+		"riskSignal_serial_withdrawal": "Serial withdrawals",
+		"riskSignal_evidence_reused": "Evidence reused",
+		"riskSignal_review_extortion": "Review extortion",
+		"riskSignal_resale_collusion_suspected": "Suspected resale collusion",
+		"riskSignal_commission_credit_unpaid": "Unpaid commission",
+		"nextListing": "Next listing opened.",
+		"factCondition": "Condition",
+		"factSubmitted": "Submitted",
+		"sellerOnline": "{{count}} live",
+		"sellerReports_one": "{{count}} report",
+		"sellerReports": "{{count}} reports",
+		"draftListingRejected": "Listing rejected: {{reason}}.",
+		"draftUserSuspended": "Account suspended.",
+		"draftShopSuspended": "Shop suspended.",
+		"riskClose": "Close",
+		"riskCloseReviewed": "Reviewed, nothing to do for now",
+		"riskFalsePositiveNote": "Why it is a false positive",
+		"riskSanction": "Sanction…",
+		"riskSanctionLabel": "Sanction",
+		"riskEffectSuspendUser": "they can no longer post or message",
+		"riskEffectSuspendShop": "its listings leave search",
+		"riskEffectHoldPayouts": "new payouts stay held",
+		"verifClaimed": "You took this request",
+		"verifReleased": "Request back in the queue",
+		"verifDone_approve": "Request approved",
+		"verifDone_reject": "Request rejected",
+		"verifDone_request_info": "Information request sent",
+		"verifDone_revoke": "Level revoked",
+		"verifDoneApproveMessage": "The shop is now level {{level}}.",
+		"factEmail": "Email",
+		"factIdentity": "Identity verified",
+		"factIdentityVerified": "Yes, on {{date}}",
+		"shopSectionOverview": "Overview",
+		"shopSectionPayments": "Payments",
+		"shopSectionHistory": "History",
+		"paymentsHoldSheetSubtitle": "New payouts stay held until the hold is lifted.",
+		"paymentsHoldPlacedMessage": "The shop's new payouts are held.",
+		"paymentsHoldReleasedMessage": "Payouts resume.",
+		"paymentsAccountApprovedMessage": "The shop can now be paid to this account.",
+		"paymentsAccountRejectedMessage": "No payout will go to this account."
 	},
 	"shop": {
 		"deliveryCities": "Delivery or pickup available in: {{cities}}",
@@ -2193,7 +2360,8 @@
 		"searchClear": "Clear search",
 		"searchEverywhere": "Search “{{q}}” across Buy'N'Sellem",
 		"noListingsFiltered": "No listing in this shop matches.",
-		"aboutReturnPolicy": "Return policy"
+		"aboutReturnPolicy": "Return policy",
+		"showWholeShop": "See the whole shop"
 	},
 	"seller": {
 		"space": "Seller space",
@@ -2210,8 +2378,8 @@
 		"tileCatalogueBody_one": "{{count}} product · {{drafts}} draft(s)",
 		"tileCatalogueBody": "{{count}} products · {{drafts}} drafts",
 		"tileStock": "Stock",
-		"tileStockAlerts_one": "{{count}} alert · {{sample}}",
-		"tileStockAlerts": "{{count}} alerts · {{sample}}",
+		"tileStockAlerts_one": "Low stock: {{sample}}",
+		"tileStockAlerts": "{{count}} items low on stock, including {{sample}}",
 		"tileStockOk": "No alert",
 		"tileInbox": "Inbox",
 		"tileInboxBody": "No new messages",
@@ -2239,7 +2407,9 @@
 		"tileBillingBody": "Commission invoices and order settings",
 		"tilePayments": "Payments",
 		"tilePaymentsBody": "Balances and payouts",
-		"tilePaymentsHold": "{{count}} on hold"
+		"tilePaymentsHold": "{{count}} on hold",
+		"manageToday": "To do",
+		"shopInactive": "Shop inactive"
 	},
 	"sellerInsights": {
 		"title": "Shop insights",
@@ -2398,7 +2568,9 @@
 		"increaseStockFor": "Increase stock for {{title}}",
 		"listingStatus_draft": "Draft",
 		"listingStatus_pending": "Awaiting review",
-		"listingStatus_published": "Online"
+		"listingStatus_published": "Online",
+		"addShort": "Product",
+		"showAll": "Show all products"
 	},
 	"product": {
 		"newTitle": "New product",
@@ -2432,13 +2604,13 @@
 		"samePrice": "Same price for all",
 		"defaultVariant": "Single variant",
 		"margin": "Margin {{value}}",
-		"skuPlaceholder": "SKU (optional)",
+		"skuPlaceholder": "Internal reference (optional)",
 		"barcodePlaceholder": "Barcode (optional)",
 		"price": "Price",
-		"cost": "Cost",
+		"cost": "Purchase price",
 		"stock": "Stock",
 		"initialStock": "Initial stock",
-		"threshold": "Alert ≤",
+		"threshold": "Alert below",
 		"initialStockNote_one": "{{count}} unit · initial stock is recorded as a receipt in the history.",
 		"initialStockNote": "{{count}} units · initial stock is recorded as a receipt in the history.",
 		"stockThroughMovements": "Stock changes through adjustments, so the history stays complete.",
@@ -2481,7 +2653,15 @@
 		"readOnly": "Your shop is not active: products cannot be changed.",
 		"listingStats": "Online · {{views}} views · {{favorites}} favourites",
 		"viewListing": "View",
-		"latestMovements": "Latest movements"
+		"latestMovements": "Latest movements",
+		"optionNameEmpty": "Give the option a name.",
+		"optionNameTaken": "Another option already uses this name.",
+		"removeOptionTitle": "Delete the “{{name}}” option?",
+		"removeOptionMsg": "The {{count}} variants will be deleted, along with the prices, costs and stock you entered.",
+		"priceForAll": "Price (all)",
+		"photosFailedElsewhere": "A photo wasn't sent. Go back to step 1 to retry or remove it.",
+		"handlingPlaceholder": "e.g. 24",
+		"warrantyPlaceholder": "e.g. 3"
 	},
 	"verification": {
 		"hub": {
@@ -2705,7 +2885,8 @@
 				"3": "Verify my business"
 			},
 			"continue": "Continue my request"
-		}
+		},
+		"loadError": "Couldn't load verification"
 	},
 	"team": {
 		"title": "Team",
@@ -2765,7 +2946,9 @@
 			"manager": "Runs catalogue, stock and orders, sees costs and can view payments.",
 			"staff": "Prepares orders and keeps the catalogue and stock up to date.",
 			"owner": "Every right, payments and closing the shop included."
-		}
+		},
+		"inviteSent": "Invitation sent",
+		"inviteResent": "Invitation resent to {{target}}"
 	},
 	"shopActivity": {
 		"title": "Activity",
@@ -2825,7 +3008,7 @@
 		"filter_unassigned": "Unassigned",
 		"filter_mine": "Mine",
 		"filter_unread": "Unread",
-		"filter_awaiting": "Awaiting reply",
+		"filter_awaiting": "To answer",
 		"filter_done": "Done",
 		"unknownBuyer": "Unknown buyer",
 		"unknownMember": "Unknown member",
@@ -2848,7 +3031,14 @@
 		"emptyTitle": "No conversations",
 		"emptySub": "Conversations will appear here once a buyer reaches out.",
 		"noShopTitle": "No shop yet",
-		"noShopSub": "Create a shop to start answering buyers."
+		"noShopSub": "Create a shop to start answering buyers.",
+		"searchPlaceholder": "Search a buyer or a listing",
+		"lockedSubShop": "Ask the owner of {{shop}} to give you access to the inbox.",
+		"markedDone": "Conversation marked done",
+		"reopened": "Conversation reopened",
+		"reportBuyer": "Report buyer",
+		"state_done": "Done",
+		"state_awaiting": "To answer"
 	},
 	"invite": {
 		"title": "You're invited",
@@ -2871,7 +3061,10 @@
 		"expired": "This invitation has expired.",
 		"responded": "This invitation has already been answered.",
 		"mismatch": "This invitation was sent to {{target}}. Sign in with that account to continue.",
-		"backHome": "Back home"
+		"backHome": "Back home",
+		"declineConfirmTitle": "Decline the invitation from {{shop}}?",
+		"declineConfirmBody": "To join this shop later, you will need a new link.",
+		"declined": "Invitation from {{shop}} declined"
 	},
 	"orderStatus": {
 		"status_placed_buyer": "Order placed",
@@ -2944,7 +3137,12 @@
 		"headerLabel_one": "Cart, {{count}} item",
 		"headerLabel": "Cart, {{count}} items",
 		"removed": "\"{{title}}\" removed",
-		"undo": "Undo"
+		"undo": "Undo",
+		"codNoteProtected": "Pay on delivery, or pay now by mobile money with protected payment. You have {{days}} days after delivery to withdraw.",
+		"priceUp": "Price went up (was {{price}})",
+		"priceDown": "Price went down (was {{price}})",
+		"headerSummaryShops_one": "{{count}} item · {{shops}} shops",
+		"headerSummaryShops": "{{count}} items · {{shops}} shops"
 	},
 	"addresses": {
 		"title": "My addresses",
@@ -2981,7 +3179,9 @@
 		"searching": "Searching…",
 		"noPlace": "No place found. Choose from the lists below.",
 		"placeOutside": "This place is outside the cities you can be delivered to here.",
-		"coordinates": "Position: {{coordinates}}"
+		"coordinates": "Position: {{coordinates}}",
+		"gpsSaved": "GPS position saved",
+		"invalidSummary": "Still to fill in above: {{fields}}."
 	},
 	"checkout": {
 		"sellerLabel": "Seller",
@@ -3039,7 +3239,7 @@
 		"confirmed": "Order confirmed",
 		"viewOrder": "View order",
 		"title": "Checkout",
-		"stepOf": "Step {{current}} of 3",
+		"stepOf": "Step {{current}} of {{total}}",
 		"continue": "Continue",
 		"phoneHint": "A mobile number: it receives the confirmation SMS",
 		"districtOtherOption": "Other",
@@ -3106,7 +3306,13 @@
 		"nextHandoverPaidBody": "Check the parcel, then give the code you received by SMS.",
 		"trackOrder": "Track my order",
 		"writeToShop": "Message the shop",
-		"payOnDelivery": "{{amount}} to pay on delivery"
+		"payOnDelivery": "{{amount}} to pay on delivery",
+		"stepDeliveryReview": "Delivery and total",
+		"stepPay": "Payment",
+		"termsProtected": "Protected payment terms",
+		"acceptRequired": "Tick the terms of sale to place your order.",
+		"placeOrderTotal": "Place order · {{total}}",
+		"oneMoreStep": "One more step"
 	},
 	"purchases": {
 		"arrivalLive": "Arriving around {{time}}",
@@ -3121,7 +3327,7 @@
 		"handoverResent": "A new code has been sent to you by SMS.",
 		"handoverReveal": "Show the code",
 		"handoverWarning": "Only give this code to the courier, when the parcel is handed over",
-		"helpProblem": "A problem?",
+		"helpProblem": "Report a problem",
 		"helpMessageShop": "Message the shop",
 		"title": "My orders",
 		"tabOpen": "Ongoing",
@@ -3273,7 +3479,12 @@
 		"handoverAlsoSms": "Also sent by SMS",
 		"deliveryInstructions": "Delivery instructions",
 		"emptyCta": "Browse listings",
-		"payOnDeliveryConfirmBody": "This order will be cancelled. You can then order again and choose pay on delivery."
+		"payOnDeliveryConfirmBody": "This order will be cancelled. You can then order again and choose pay on delivery.",
+		"todoPay": "Payment to complete",
+		"receiptConfirmed": "Delivery confirmed",
+		"confirmReceiptBodyPaid": "{{shop}} will receive the payment. You won't be able to dispute the delivery after this.",
+		"withdrawalReasonOptional": "Reason for the return (optional)",
+		"withdrawalReasonPlaceholder": "E.g. the size doesn't fit"
 	},
 	"sellerOrders": {
 		"title": "Orders",
@@ -3383,7 +3594,20 @@
 			"notified": "{{buyer}} is told in the app and by notification.",
 			"stock": "The reserved items go back into your stock.",
 			"rate": "This refusal counts in the shop's cancellation rate. Above {{threshold}}% of orders received (from {{min}} orders), an alert shows in your insights."
-		}
+		},
+		"shipConfirm": "Order for {{name}}, {{place}}. Is the parcel leaving now?",
+		"confirmByCallConfirm": "Did you reach {{name}} by phone, and is the order still on?",
+		"acceptedToast": "Order {{number}} accepted. It is now under To ship.",
+		"shippedToast": "Order {{number}} shipped",
+		"confirmedByCallToast": "Order {{number}} confirmed",
+		"handoverDone": "Parcel handed over",
+		"handoverDoneMeta": "Order {{number}} · {{time}}",
+		"emptyTab_to_accept": "Nothing to accept. New orders show up here.",
+		"emptyTab_to_ship": "No parcels to prepare.",
+		"emptyTab_shipped": "No orders on the way.",
+		"emptyTab_delivered": "No delivered orders yet.",
+		"emptyTab_cancelled": "No cancelled orders.",
+		"emptyTab_failed": "No failed deliveries."
 	},
 	"billing": {
 		"title": "Billing",
@@ -3463,7 +3687,9 @@
 		"capsMaxDailyOrders": "New orders per day: {{count}} at most",
 		"capsMaxOpenOrders": "Open orders at once: {{count}} at most",
 		"capsHint": "These caps follow your shop's verification level and rise with it.",
-		"saveFailed": "Could not save"
+		"saveFailed": "Could not save",
+		"payAmount": "Pay {{amount}}",
+		"payConfirming": "Payment being confirmed. No need to pay again."
 	},
 	"moderationOrder": {
 		"title": "Order",
@@ -3671,7 +3897,20 @@
 		"authorBuyer": "Buyer",
 		"authorStaff": "Buy'N'Sellem mediation",
 		"staffBadge": "Team",
-		"requestedAmountMax": "Up to {{amount}}, the order total"
+		"requestedAmountMax": "Up to {{amount}}, the order total",
+		"descriptionCount": "{{n}} of {{min}} characters minimum",
+		"descriptionPlaceholder": "E.g. the parcel arrived open and the screen is cracked",
+		"reasonRequired": "Choose what happened.",
+		"takePhoto": "Take photo",
+		"uploadFailed": "The file wasn't sent. Check your connection and try again.",
+		"confirmWithdrawTitle": "Withdraw the dispute?",
+		"confirmWithdrawBody": "The dispute will close and can't be reopened.",
+		"confirmRejectTitle": "Decline the offer?",
+		"confirmRejectBody": "The dispute goes on without this {{amount}} offer.",
+		"confirmAcceptTitle": "Accept {{amount}}?",
+		"confirmAcceptBody": "The dispute will close with this refund.",
+		"confirmResolutionTitle": "Accept the resolution?",
+		"confirmResolutionBody": "The dispute will close on the proposed terms."
 	},
 	"returns": {
 		"chooseInspection": "Choose an inspection result",
@@ -3799,14 +4038,28 @@
 		"viewPurchases": "View my purchases",
 		"viewCase": "View return case",
 		"orderNumber": "Order {{number}}",
-		"confirmCancelBody": "The return request will be closed and cannot be reopened."
+		"confirmCancelBody": "The return request will be closed and cannot be reopened.",
+		"done": {
+			"ship": "Return marked as shipped",
+			"accept_deduction": "Deduction accepted",
+			"contest_deduction": "Deduction disputed",
+			"confirm_refund": "Refund confirmed",
+			"contest_refund": "Refund problem reported",
+			"cancel": "Return request cancelled"
+		},
+		"confirmContestDeductionBody": "A Buy'N'Sellem mediator will review the deduction. The refund waits for their decision.",
+		"confirmContestRefundBody": "A Buy'N'Sellem mediator will look into the refund with the shop."
 	},
 	"sellerReturns": {
 		"title": "Customer returns",
 		"tileBody": "Review returned orders and refund requests.",
 		"loadError": "Customer returns could not be loaded.",
 		"emptyTitle": "No customer returns",
-		"emptyBody": "Return requests from your customers will appear here."
+		"emptyBody": "Return requests from your customers will appear here.",
+		"tileAwaiting_one": "{{count}} return to handle",
+		"tileAwaiting": "{{count}} returns to handle",
+		"tileOverdue_one": "{{count}} return to handle, {{overdue}} overdue",
+		"tileOverdue": "{{count}} returns to handle, {{overdue}} overdue"
 	},
 	"moderationDisputes": {
 		"title": "Dispute arbitration",
@@ -3873,7 +4126,25 @@
 			"partial_fault": "Shared responsibility",
 			"agreement": "Party agreement",
 			"other": "Other"
-		}
+		},
+		"assignedToYou": "Assigned to you",
+		"assignedToOther": "Taken by a colleague",
+		"unassigned": "Unassigned",
+		"reassignTitle": "Take over this case?",
+		"reassignMessage": "A colleague is already handling this dispute. It will be reassigned to you.",
+		"confirmSummary": "{{outcome}} · Refund: {{refund}} · Liable: {{liable}} · Reason: {{reason}} · Item return: {{returnItem}}",
+		"refundMax": "Up to {{amount}}",
+		"refundOverMax": "The refund cannot exceed {{amount}}.",
+		"stillMissing": "Still to fill in: {{fields}}",
+		"filterAll": "All",
+		"filterMine": "Mine",
+		"filterOverdue": "Overdue",
+		"dueInMinutes": "Due in {{count}} min",
+		"dueInHours": "Due in {{count}} h",
+		"dueInDays": "Due in {{count}} d",
+		"lateMinutes": "{{count}} min overdue",
+		"lateHours": "{{count}} h overdue",
+		"lateDays": "{{count}} d overdue"
 	},
 	"sellerResale": {
 		"resellerCard": "Reseller",
@@ -4193,7 +4464,18 @@
 		"money_refundTitle": "Refunded if the order doesn't go through",
 		"pay_mobileMoney": "Mobile money",
 		"pending_amount": "Amount to approve: {{amount}}",
-		"pending_dialMenu": "Open the approval menu ({{code}})"
+		"pending_dialMenu": "Open the approval menu ({{code}})",
+		"pay_laterTitle": "Pay later?",
+		"pay_laterBody": "Your order is reserved, but it will be cancelled if it isn't paid in time. You'll find it in My orders.",
+		"pay_later": "Later",
+		"pay_now": "Pay now",
+		"pay_operatorSwitch": "{{operator}} number: pay with {{operator}}",
+		"pending_headerPending": "Payment in progress",
+		"pending_headerExpired": "Time ran out",
+		"pending_headerPaid": "Payment received",
+		"setup_saved": "Account saved. Verification in progress.",
+		"setup_changeAccount": "Change account",
+		"payout_failedAction": "This payout failed. Check your payout account."
 	},
 	"delivery": {
 		"statusBuyer": {
@@ -4208,6 +4490,15 @@
 		"statusSeller": {
 			"pending": "To ship",
 			"picked_up": "Picked up",
+			"in_transit": "On the way",
+			"delivered": "Delivered",
+			"failed": "Delivery failed",
+			"returned": "Back at the shop",
+			"cancelled": "Cancelled"
+		},
+		"statusCourier": {
+			"pending": "To pick up",
+			"picked_up": "On the way",
 			"in_transit": "On the way",
 			"delivered": "Delivered",
 			"failed": "Delivery failed",
@@ -4333,7 +4624,11 @@
 			"pickupFee": "Enter a fee from 0 to 5 000.",
 			"holdDays": "Enter 1 to 14 days.",
 			"defaultOrigin": "Only an active dispatch origin can be the default."
-		}
+		},
+		"saved": "Changes saved.",
+		"addFirstZone": "Create my first zone",
+		"locating": "Finding your location…",
+		"positionUnavailable": "Location not found. Try again outdoors or enter the coordinates."
 	},
 	"tracking": {
 		"title": "Delivery {{number}}",
@@ -4370,7 +4665,8 @@
 		"positionCaptured": "Position captured, tap to refresh",
 		"positionDenied": "Location access was refused. The landmark will do.",
 		"rescheduleSubmit": "Confirm the new slot",
-		"rescheduleClosed": "There is nothing to reschedule on this order."
+		"rescheduleClosed": "There is nothing to reschedule on this order.",
+		"rescheduled": "New slot: {{date}}, {{window}}"
 	},
 	"shipmentPanel": {
 		"takePhoto": "Take a photo",
@@ -4426,14 +4722,25 @@
 		"dispatchTitle": "Dispatch",
 		"notMember": "This space is for courier members.",
 		"assignConfirm": "Give this delivery to {{name}}?",
-		"remitConfirm": "Do you confirm you handed over {{amount}}?"
+		"remitConfirm": "Do you confirm you handed over {{amount}}?",
+		"confirmRemittanceMessage": "Confirm you received {{amount}} for this parcel?",
+		"disputeRemittanceMessage": "You are reporting that {{amount}} for this parcel was not handed to you.",
+		"returnedMessage": "Confirm the parcel is back at the shop.",
+		"revokeLinkMessage": "The rider will no longer be able to open their delivery link.",
+		"confirmRemittanceDone": "Cash receipt confirmed",
+		"disputeRemittanceDone": "Remittance disputed",
+		"returnedDone": "Parcel marked as returned",
+		"cannotOpen": "No app can open this",
+		"cashTag": "Cash {{amount}}",
+		"riderLoad_one": "{{count}} in progress",
+		"riderLoad": "{{count}} in progress"
 	},
 	"checkoutGroup": {
 		"cartGroupHeading": "Order from {{shop}}",
 		"groupSubtotal": "Subtotal",
 		"groupDelivery": "Delivery",
 		"groupTotal": "Total",
-		"groupRemove": "Remove this group from the cart",
+		"groupRemove": "Remove the {{shop}} order from the cart",
 		"grandSubtotal": "Subtotal, all orders",
 		"grandTotal": "Total, all orders",
 		"stepperPosition": "Order {{n}} of {{total}}",
@@ -4459,7 +4766,22 @@
 		"unavailable_below_minimum": "This shop's minimum order is not reached.",
 		"unavailable_cod_not_allowed": "This shop does not offer pay on delivery.",
 		"unavailable_shop_inactive": "This shop is not taking orders right now.",
-		"unavailable_other": "This group cannot be ordered right now."
+		"unavailable_other": "This group cannot be ordered right now.",
+		"groupRemoveTitle": "Remove the {{shop}} order?",
+		"groupRemoveBody_one": "The {{shop}} item will be removed from your cart.",
+		"groupRemoveBody": "All {{count}} items from {{shop}} will be removed from your cart.",
+		"placeOrdersTotal": "Place orders · {{total}}",
+		"itemsToggle_one": "Item ({{count}})",
+		"itemsToggle": "Items ({{count}})",
+		"feeIncluded": "Included in the total",
+		"confirmOrder": "Confirm order {{orderNumber}}",
+		"nextShop": "Next: {{shop}}",
+		"openGroupDetail_one": "Placed together on {{date}}, {{count}} order",
+		"openGroupDetail": "Placed together on {{date}}, {{count}} orders",
+		"placedTitle_one": "Order placed",
+		"placedTitle": "Orders placed",
+		"placedSummary_one": "{{count}} order sent to the shop.",
+		"placedSummary": "{{count}} orders, one per shop. Each shop confirms its own."
 	},
 	"photoLimit": {
 		"count": "{{count}} / {{max}} photos",
@@ -4493,7 +4815,7 @@
 		"optionsMax": "At most {{max}} options.",
 		"valuesCount": "Each option needs 1 to {{max}} values.",
 		"fixStep": "Some fields need your attention before you continue.",
-		"serverRefused": "Some fields were refused. They are highlighted."
+		"serverRefused": "Some fields were refused. Fix the ones marked in red."
 	},
 	"sellerHome": {
 		"metaSetup": "A few steps and your shop is ready to sell",
@@ -4815,7 +5137,8 @@
 		"loadError": "Your listings could not be loaded.",
 		"retry": "Retry",
 		"previous": "Previous",
-		"next": "Next"
+		"next": "Next",
+		"noAccess": "Your role can't manage ads. Ask the shop owner."
 	},
 	"listingRejection": {
 		"prohibited_item": "Item not allowed on the platform",
@@ -4855,5 +5178,13 @@
 		"allOf": "All of {{name}}",
 		"seeAllCount": "See all {{count}}",
 		"more": "All"
+	},
+	"legal": {
+		"contents": "Contents"
+	},
+	"paymentRequirements": {
+		"individual_id_number": "ID number",
+		"individual_id_document": "Photo of your ID",
+		"individual_address": "Proof of address"
 	}
 }

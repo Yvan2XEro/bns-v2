@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCounts } from "@novu/react-native";
-import { Image } from "expo-image";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, usePathname } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors, Fonts } from "@/constants/theme";
@@ -16,6 +17,7 @@ import {
 	GroupedSection,
 	type RowIconTone,
 } from "@/src/components/settings/Grouped";
+import { UserAvatar } from "@/src/components/settings/UserAvatar";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { switchAppMode } from "@/src/components/shop/SwitchModeButton";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -33,9 +35,9 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
-import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { courierSpaceTarget } from "@/src/lib/riderShipment";
 import type { AccountPane } from "./accountPanes";
+import { THEME_STORAGE_KEY } from "./SettingsScreen";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
@@ -49,6 +51,8 @@ interface MenuItemProps {
 	rightElement?: React.ReactNode;
 	/** Open in the pane beside the menu. */
 	selected?: boolean;
+	/** What a screen reader says, when it is more than label + sublabel. */
+	a11yLabel?: string;
 }
 
 function MenuItem({
@@ -60,6 +64,7 @@ function MenuItem({
 	iconTone,
 	rightElement,
 	selected,
+	a11yLabel,
 }: MenuItemProps) {
 	return (
 		<GroupedRow
@@ -72,19 +77,48 @@ function MenuItem({
 			selected={selected}
 			trailing={rightElement}
 			accessory={danger ? "none" : "chevron"}
-			accessibilityLabel={sublabel ? `${label}, ${sublabel}` : label}
+			accessibilityLabel={
+				a11yLabel ?? (sublabel ? `${label}, ${sublabel}` : label)
+			}
 		/>
 	);
 }
 
-function NotificationsUnreadBadge() {
+/**
+ * The Notifications row with its unread count, said as well as shown: a
+ * screen reader hears "Notifications, 3 non lues", not the bare label.
+ * Rendered only inside the Novu provider (`useNotificationReady`).
+ */
+function NotificationsRowWithCount(props: Omit<MenuItemProps, "a11yLabel">) {
+	const { t } = useTranslation();
 	const { counts } = useCounts({ filters: [{ read: false }] });
 	const count = counts?.[0]?.count ?? 0;
-	if (count === 0) return null;
 	return (
-		<View style={styles.notifBadge}>
-			<Text style={styles.notifBadgeText}>{count > 9 ? "9+" : count}</Text>
-		</View>
+		<MenuItem
+			{...props}
+			a11yLabel={
+				count > 0
+					? `${props.label}, ${t("account.notificationsUnread", {
+							count,
+							defaultValue:
+								count > 1 ? "{{count}} non lues" : "{{count}} non lue",
+						})}`
+					: props.label
+			}
+			rightElement={
+				count > 0 ? (
+					<View
+						style={styles.notifBadge}
+						importantForAccessibility="no-hide-descendants"
+						accessibilityElementsHidden
+					>
+						<Text style={styles.notifBadgeText}>
+							{count > 9 ? "9+" : count}
+						</Text>
+					</View>
+				) : undefined
+			}
+		/>
 	);
 }
 
@@ -121,6 +155,22 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 	const pathname = usePathname();
 
 	const notificationReady = useNotificationReady();
+	// The guest's one Settings row says what is set there: language · theme.
+	const [themeChoice, setThemeChoice] = useState<string | null>(null);
+	useEffect(() => {
+		if (user) return;
+		let alive = true;
+		AsyncStorage.getItem(THEME_STORAGE_KEY)
+			.then((saved) => {
+				if (alive) setThemeChoice(saved ?? "system");
+			})
+			.catch(() => {
+				if (alive) setThemeChoice("system");
+			});
+		return () => {
+			alive = false;
+		};
+	}, [user]);
 
 	const c = Colors[isDark ? "dark" : "light"];
 	const bg = c.background;
@@ -201,7 +251,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								<Pressable
 									onPress={goLogin}
 									accessibilityRole="button"
-									style={[styles.guestPrimary, { backgroundColor: c.sun }]}
+									style={styles.guestPrimary}
 								>
 									<Text style={styles.guestPrimaryText}>
 										{t("account.signIn")}
@@ -226,20 +276,23 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 						inset={58}
 						title={t("account.sectionPreferences")}
 					>
-						<MenuItem
-							icon="language-outline"
-							label={t("settings.language")}
-							sublabel={language}
-							{...entry("settings")}
-						/>
-						<MenuItem
-							icon="contrast-outline"
-							label={t("settings.theme")}
-							{...entry("settings")}
-						/>
+						{/* One row for one place: language and theme are both set in
+							    Settings, so the row names their current values. */}
 						<MenuItem
 							icon="settings-outline"
 							label={t("account.settings")}
+							sublabel={[
+								language,
+								themeChoice === "dark"
+									? t("settings.themeDark")
+									: themeChoice === "light"
+										? t("settings.themeLight")
+										: themeChoice
+											? t("settings.themeSystem")
+											: null,
+							]
+								.filter(Boolean)
+								.join(" · ")}
 							{...entry("settings")}
 						/>
 					</GroupedSection>
@@ -305,28 +358,7 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 					<View style={styles.profileTopRow}>
 						{/* Avatar */}
 						<View style={styles.avatarWrap}>
-							{user.avatar?.url ? (
-								<Image
-									source={{
-										uri:
-											resolveListingImageUrl(user.avatar, "thumbnail") ??
-											user.avatar?.url,
-									}}
-									style={styles.avatar}
-									contentFit="cover"
-								/>
-							) : (
-								<View
-									style={[
-										styles.avatarPlaceholder,
-										{ backgroundColor: c.primaryFill },
-									]}
-								>
-									<Text style={styles.avatarLetter}>
-										{user.name?.[0]?.toUpperCase() ?? "?"}
-									</Text>
-								</View>
-							)}
+							<UserAvatar user={user} size={72} />
 						</View>
 
 						{/* Info */}
@@ -350,13 +382,53 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 									{t("account.memberSince")} {memberSince}
 								</Text>
 							)}
+							{/* Trust status where the person looks first: a seller who
+							    cannot publish learns why here, not at a gate. Old API
+							    versions send no `phoneVerified`, and nothing is said. */}
+							{user.phoneVerified === true ? (
+								<View style={styles.trustRow}>
+									<Ionicons
+										name="checkmark-circle"
+										size={15}
+										color={c.successText}
+									/>
+									<Text style={[styles.trustText, { color: c.successText }]}>
+										{t("shop.levelPhone")}
+									</Text>
+								</View>
+							) : user.phoneVerified === false ? (
+								<Pressable
+									onPress={() => router.push("/verify-phone")}
+									accessibilityRole="button"
+									accessibilityLabel={`${t("account.phoneNotVerified", {
+										defaultValue: "Téléphone non vérifié",
+									})}, ${t("account.verifyNow")}`}
+									hitSlop={10}
+									style={styles.trustRow}
+								>
+									<Ionicons
+										name="alert-circle"
+										size={15}
+										color={c.warningText}
+									/>
+									<Text style={[styles.trustText, { color: c.warningText }]}>
+										{t("account.phoneNotVerified", {
+											defaultValue: "Téléphone non vérifié",
+										})}
+										{" · "}
+										<Text style={[styles.trustLink, { color: c.link }]}>
+											{t("account.verifyNow")}
+										</Text>
+									</Text>
+								</Pressable>
+							) : null}
 						</View>
 
 						<AnimatedPressable
 							{...entry("editProfile")}
 							scaleTo={0.95}
 							hitSlop={6}
-							accessibilityLabel={t("account.edit")}
+							accessibilityLabel={t("account.editProfile")}
 							style={[
 								styles.editBtn,
 								{ backgroundColor: c.card, borderColor: c.border },
@@ -500,6 +572,19 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 								onPress={() => router.push(courierSpace)}
 							/>
 						) : null}
+						{notificationReady ? (
+							<NotificationsRowWithCount
+								icon="notifications-outline"
+								label={t("account.notifications")}
+								{...entry("notifications")}
+							/>
+						) : (
+							<MenuItem
+								icon="notifications-outline"
+								label={t("account.notifications")}
+								{...entry("notifications")}
+							/>
+						)}
 						<MenuItem
 							icon="heart-outline"
 							label={t("account.favorites")}
@@ -547,14 +632,6 @@ export function AccountMenu({ selectedId, onOpen }: SplitListProps) {
 							icon="shield-checkmark-outline"
 							label={t("account.security")}
 							{...entry("security")}
-						/>
-						<MenuItem
-							icon="notifications-outline"
-							label={t("account.notifications")}
-							{...entry("notifications")}
-							rightElement={
-								notificationReady ? <NotificationsUnreadBadge /> : undefined
-							}
 						/>
 					</GroupedSection>
 
@@ -630,8 +707,11 @@ const styles = StyleSheet.create({
 		lineHeight: 21,
 	},
 	guestActions: { flexDirection: "row", gap: 10, marginTop: 10 },
+	// The shell's own button: white with ink. Signage yellow is kept for
+	// prices, selling and boosts (DESIGN.md).
 	guestPrimary: {
 		flex: 1,
+		backgroundColor: "#ffffff",
 		minHeight: 52,
 		borderRadius: 12,
 		alignItems: "center",
@@ -700,19 +780,15 @@ const styles = StyleSheet.create({
 		gap: 12,
 	},
 	avatarWrap: { position: "relative" },
-	avatar: { width: 72, height: 72, borderRadius: 22 },
-	avatarPlaceholder: {
-		width: 72,
-		height: 72,
-		borderRadius: 22,
+	trustRow: {
+		flexDirection: "row",
 		alignItems: "center",
-		justifyContent: "center",
+		gap: 5,
+		marginTop: 6,
+		minHeight: 24,
 	},
-	avatarLetter: {
-		fontSize: 28,
-		fontFamily: Fonts.displayBold,
-		color: "#fff",
-	},
+	trustText: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodySemibold },
+	trustLink: { fontFamily: Fonts.bodyBold },
 	userName: {
 		fontSize: 22,
 		lineHeight: 27,

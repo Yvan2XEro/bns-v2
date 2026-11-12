@@ -73,7 +73,7 @@ Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.
 - **Loops:** none, except skeletons. Background patterns (`NdopPattern`, `ShellPattern`) are static.
 
 ## Alerts
-- **Toast:** news that needs no answer ("Saved", "Link copied"). It is an ink card at the top that leaves after 3–5 s and is announced to screen readers. `showSuccess` always routes here.
+- **Toast:** news that needs no answer ("Saved", "Link copied"). It is an ink card at the top that leaves after 3–5 s and is announced to screen readers. `showSuccess` always routes here. A toast may carry one action ("Annuler", "Voir"), drawn in the night `link` colour; it then stays 7 s. The action is a shortcut, never the only way: what it does must stay reachable from the screen.
 - **Sheet:** only decisions and errors. One tinted tile names the kind, the title is set in Outfit, and the actions are 52pt high. In a row, cancel sits left and the action right. Action buttons are `ownBubble` in both themes. Never white on yellow.
 
 ## Sound and haptics

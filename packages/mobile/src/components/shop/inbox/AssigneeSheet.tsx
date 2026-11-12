@@ -107,7 +107,10 @@ export function AssigneeSheet({
 							return (
 								<Pressable
 									key={member.id}
-									onPress={() => onSelect(member.userId)}
+									// Already theirs: nothing to send, the sheet just closes.
+									onPress={() =>
+										selected ? onClose() : onSelect(member.userId)
+									}
 									disabled={pending}
 									style={[
 										styles.row,
@@ -175,15 +178,17 @@ export function AssigneeSheet({
 
 					<Pressable
 						onPress={onClose}
+						// The same bordered Cancel as the message sheet: one way to
+						// close a sheet in this thread.
 						style={({ pressed }) => [
 							styles.closeBtn,
-							{ opacity: pressed ? 0.6 : 1 },
+							{ borderColor: c.border, opacity: pressed ? 0.7 : 1 },
 						]}
 						accessibilityRole="button"
-						accessibilityLabel={t("common.close")}
+						accessibilityLabel={t("common.cancel")}
 					>
-						<Text style={[styles.closeText, { color: c.body }]}>
-							{t("common.close")}
+						<Text style={[styles.closeText, { color: c.text }]}>
+							{t("common.cancel")}
 						</Text>
 					</Pressable>
 				</View>
@@ -225,11 +230,13 @@ const styles = StyleSheet.create({
 	rowLabel: { flex: 1, fontSize: 16, lineHeight: 21 },
 	spinner: { marginTop: 8 },
 	closeBtn: {
-		alignSelf: "center",
-		marginTop: 8,
-		minHeight: 48,
+		minHeight: 52,
+		borderRadius: 12,
+		borderWidth: 1,
+		alignItems: "center",
 		justifyContent: "center",
-		paddingHorizontal: 20,
+		marginTop: 8,
+		marginHorizontal: 20,
 	},
-	closeText: { fontSize: 16, fontFamily: Fonts.bodySemibold },
+	closeText: { fontSize: 16, fontFamily: Fonts.bodyBold },
 });

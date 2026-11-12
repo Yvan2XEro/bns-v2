@@ -6,6 +6,7 @@ import {
 	type ReactNode,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 } from "react";
 import {
@@ -38,9 +39,14 @@ import { api } from "@/src/lib/api";
 import { pruneTagSlugs } from "@/src/lib/categoryTags";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatAttributeOptionLabel } from "@/src/lib/listingAttributes";
+import { formatPrice } from "@/src/lib/market";
 import type { Place } from "@/src/lib/places";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
+
+/** "1000000" -> "1 000 000": long amounts stay readable in daylight. */
+const groupDigits = (digits: string) =>
+	digits.replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f");
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -64,11 +70,14 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function ToggleRow({
 	icon,
 	label,
+	description,
 	value,
 	onChange,
 }: {
 	icon: IconName;
 	label: string;
+	/** A second, quieter line that says what the filter means. */
+	description?: string;
 	value: boolean;
 	onChange: (value: boolean) => void;
 }) {
@@ -79,6 +88,7 @@ function ToggleRow({
 			accessibilityRole="switch"
 			accessibilityState={{ checked: value }}
 			accessibilityLabel={label}
+			accessibilityHint={description}
 			style={({ pressed }) => [
 				styles.toggleRow,
 				pressed && { backgroundColor: c.well },
@@ -87,7 +97,16 @@ function ToggleRow({
 			<View style={[styles.toggleIcon, { backgroundColor: c.primaryTint }]}>
 				<Ionicons name={icon} size={18} color={c.link} />
 			</View>
-			<Text style={[styles.toggleText, { color: c.foreground }]}>{label}</Text>
+			<View style={styles.toggleCopy}>
+				<Text style={[styles.toggleText, { color: c.foreground }]}>
+					{label}
+				</Text>
+				{description ? (
+					<Text style={[styles.toggleDescription, { color: c.body }]}>
+						{description}
+					</Text>
+				) : null}
+			</View>
 			<Switch
 				value={value}
 				onValueChange={onChange}
@@ -191,9 +210,14 @@ export default function FiltersModal() {
 
 	const selectedCategoryName = selectedCategoryObject?.name ?? "";
 
+	// A category with its own filters (brand, mileage...) brings them into
+	// view right under it, instead of leaving them below the fold.
+	const scrollRef = useRef<ScrollView>(null);
+	const revealAttributes = useRef(false);
 	const chooseCategory = (id: string) => {
 		setSelectedCategory(id);
 		setAttributeFilters({});
+		revealAttributes.current = !!id;
 	};
 
 	// ── Handlers ────────────────────────────────────────────────
@@ -240,7 +264,15 @@ export default function FiltersModal() {
 	const total = countData?.total;
 	const countPending = countFetching || debouncedCount !== countParams;
 
+	const priceInverted =
+		!!minPrice && !!maxPrice && Number(minPrice) > Number(maxPrice);
+	// The market's currency word ("FCFA"), read off the price formatter.
+	const currencyLabel = formatPrice(0)
+		.replace(/[\d\s\u00a0\u202f.,]/g, "")
+		.trim();
+
 	const handleApply = () => {
+		if (priceInverted) return;
 		const filterParams = buildFilterParams();
 		if (returnTo) {
 			router.navigate({ pathname: returnTo as any, params: filterParams });
@@ -331,6 +363,7 @@ export default function FiltersModal() {
 			</View>
 
 			<ScrollView
+				ref={scrollRef}
 				contentContainerStyle={[styles.scroll, centeredContent]}
 				keyboardShouldPersistTaps="handled"
 				keyboardDismissMode="on-drag"
@@ -346,116 +379,19 @@ export default function FiltersModal() {
 					/>
 				</Section>
 
-				{/* ── Prix ── */}
-				<Section title={t("filters.price")}>
-					<View style={styles.priceRow}>
-						<TextInput
-							value={minPrice}
-							onChangeText={(v) => setMinPrice(v.replace(/[^0-9]/g, ""))}
-							placeholder={t("filters.minPrice")}
-							placeholderTextColor={c.mutedForeground}
-							accessibilityLabel={t("filters.minPrice")}
-							style={fieldStyle}
-							keyboardType="number-pad"
-							returnKeyType="done"
-						/>
-						<Text style={[styles.priceSep, { color: c.mutedForeground }]}>
-							–
-						</Text>
-						<TextInput
-							value={maxPrice}
-							onChangeText={(v) => setMaxPrice(v.replace(/[^0-9]/g, ""))}
-							placeholder={t("filters.maxPrice")}
-							placeholderTextColor={c.mutedForeground}
-							accessibilityLabel={t("filters.maxPrice")}
-							style={fieldStyle}
-							keyboardType="number-pad"
-							returnKeyType="done"
-						/>
-					</View>
-				</Section>
-
-				{/* ── Vendeurs vérifiés, achat en ligne ── */}
-				<View
-					style={[
-						styles.toggleCard,
-						{ backgroundColor: c.card, borderColor: c.border },
-					]}
-				>
-					<ToggleRow
-						icon="shield-checkmark-outline"
-						label={t("filters.verified")}
-						value={verifiedOnly}
-						onChange={setVerifiedOnly}
-					/>
-					<View style={[styles.divider, { backgroundColor: c.border }]} />
-					<ToggleRow
-						icon="bag-check-outline"
-						label={t("filters.orderable")}
-						value={orderableOnly}
-						onChange={setOrderableOnly}
-					/>
-				</View>
-
-				{/* ── Tags ── */}
-				{availableTags.length > 0 && (
-					<Section title={t("filters.tags")}>
-						<TagPicker
-							selectedSlugs={selectedTags}
-							onChangeSlugs={setSelectedTags}
-							availableTags={availableTags}
-							inputBg={c.card}
-							borderColor={c.borderStrong}
-							textColor={c.foreground}
-							mutedColor={c.mutedForeground}
-							primaryColor={c.primary}
-						/>
-					</Section>
-				)}
-
-				{/* ── Localisation + rayon ── */}
-				<Section title={t("filters.location")}>
-					<CityPicker
-						value={location}
-						onSelect={(place: Place) => {
-							setLocation(place.name);
-							setLocationLat(place.lat ?? null);
-							setLocationLng(place.lng ?? null);
-						}}
-						onClear={() => {
-							setLocation("");
-							setLocationLat(null);
-							setLocationLng(null);
-						}}
-						inputBg={c.card}
-						borderColor={c.borderStrong}
-						textColor={c.foreground}
-						mutedColor={c.mutedForeground}
-					/>
-					{location.length > 0 && (
-						<>
-							<Text style={[styles.subLabel, { color: c.body }]}>
-								{t("filters.radius")}
-							</Text>
-							<View style={styles.chipRow}>
-								{RADIUS_OPTIONS.map((r) => (
-									<Chip
-										key={r}
-										label={`${r} km`}
-										selected={radius === r}
-										onPress={() => setRadius(r)}
-										accessibilityLabel={t(`filters.radius${r}`)}
-									/>
-								))}
-							</View>
-						</>
-					)}
-				</Section>
-
 				{/* ── Attributs dynamiques de la catégorie ── */}
 				{categoryAttributes.length > 0 && (
-					<>
-						<View style={[styles.divider, { backgroundColor: c.border }]} />
+					<View
+						style={styles.attrGroup}
+						onLayout={(e) => {
+							if (!revealAttributes.current) return;
+							revealAttributes.current = false;
+							scrollRef.current?.scrollTo({
+								y: Math.max(0, e.nativeEvent.layout.y - 16),
+								animated: true,
+							});
+						}}
+					>
 						<Text
 							style={[styles.attrSectionHeader, { color: c.foreground }]}
 							accessibilityRole="header"
@@ -530,8 +466,149 @@ export default function FiltersModal() {
 								)}
 							</View>
 						))}
-					</>
+					</View>
 				)}
+				{/* ── Prix ── */}
+				<Section title={t("filters.price")}>
+					<View style={styles.priceRow}>
+						<View
+							style={[
+								styles.priceField,
+								{
+									backgroundColor: c.card,
+									borderColor: priceInverted ? c.dangerText : c.borderStrong,
+								},
+							]}
+						>
+							<TextInput
+								value={groupDigits(minPrice)}
+								onChangeText={(v) => setMinPrice(v.replace(/[^0-9]/g, ""))}
+								placeholder={t("common.min")}
+								placeholderTextColor={c.mutedForeground}
+								accessibilityLabel={`${t("filters.minPrice")}, ${currencyLabel}`}
+								style={[styles.priceInput, { color: c.foreground }]}
+								keyboardType="number-pad"
+								returnKeyType="done"
+							/>
+							<Text style={[styles.priceUnit, { color: c.body }]}>
+								{currencyLabel}
+							</Text>
+						</View>
+						<Text style={[styles.priceSep, { color: c.mutedForeground }]}>
+							–
+						</Text>
+						<View
+							style={[
+								styles.priceField,
+								{
+									backgroundColor: c.card,
+									borderColor: priceInverted ? c.dangerText : c.borderStrong,
+								},
+							]}
+						>
+							<TextInput
+								value={groupDigits(maxPrice)}
+								onChangeText={(v) => setMaxPrice(v.replace(/[^0-9]/g, ""))}
+								placeholder={t("common.max")}
+								placeholderTextColor={c.mutedForeground}
+								accessibilityLabel={`${t("filters.maxPrice")}, ${currencyLabel}`}
+								style={[styles.priceInput, { color: c.foreground }]}
+								keyboardType="number-pad"
+								returnKeyType="done"
+							/>
+							<Text style={[styles.priceUnit, { color: c.body }]}>
+								{currencyLabel}
+							</Text>
+						</View>
+					</View>
+					{priceInverted ? (
+						<Text
+							style={[styles.fieldError, { color: c.dangerText }]}
+							accessibilityLiveRegion="polite"
+							accessibilityRole="alert"
+						>
+							{t("filters.priceInverted")}
+						</Text>
+					) : null}
+				</Section>
+
+				{/* ── Vendeurs vérifiés, achat en ligne ── */}
+				<View
+					style={[
+						styles.toggleCard,
+						{ backgroundColor: c.card, borderColor: c.border },
+					]}
+				>
+					<ToggleRow
+						icon="shield-checkmark-outline"
+						label={t("filters.verified")}
+						value={verifiedOnly}
+						onChange={setVerifiedOnly}
+					/>
+					<View style={[styles.divider, { backgroundColor: c.border }]} />
+					<ToggleRow
+						icon="bag-check-outline"
+						label={t("filters.orderableLabel")}
+						description={t("filters.orderableHint")}
+						value={orderableOnly}
+						onChange={setOrderableOnly}
+					/>
+				</View>
+
+				{/* ── Tags ── */}
+				{availableTags.length > 0 && (
+					<Section title={t("filters.tags")}>
+						<TagPicker
+							selectedSlugs={selectedTags}
+							onChangeSlugs={setSelectedTags}
+							availableTags={availableTags}
+							inputBg={c.card}
+							borderColor={c.borderStrong}
+							textColor={c.foreground}
+							mutedColor={c.mutedForeground}
+							primaryColor={c.primary}
+						/>
+					</Section>
+				)}
+
+				{/* ── Localisation + rayon ── */}
+				<Section title={t("filters.location")}>
+					<CityPicker
+						value={location}
+						onSelect={(place: Place) => {
+							setLocation(place.name);
+							setLocationLat(place.lat ?? null);
+							setLocationLng(place.lng ?? null);
+						}}
+						onClear={() => {
+							setLocation("");
+							setLocationLat(null);
+							setLocationLng(null);
+						}}
+						inputBg={c.card}
+						borderColor={c.borderStrong}
+						textColor={c.foreground}
+						mutedColor={c.mutedForeground}
+					/>
+					{location.length > 0 && (
+						<>
+							<Text style={[styles.subLabel, { color: c.body }]}>
+								{t("filters.radius")}
+							</Text>
+							<View style={styles.chipRow}>
+								{RADIUS_OPTIONS.map((r) => (
+									<Chip
+										key={r}
+										label={`${r} km`}
+										selected={radius === r}
+										onPress={() => setRadius(r)}
+										accessibilityLabel={t(`filters.radius${r}`)}
+									/>
+								))}
+							</View>
+						</>
+					)}
+				</Section>
 			</ScrollView>
 
 			<View
@@ -545,11 +622,13 @@ export default function FiltersModal() {
 			>
 				<Pressable
 					onPress={handleApply}
+					disabled={priceInverted}
 					accessibilityRole="button"
-					accessibilityState={{ busy: countPending }}
+					accessibilityState={{ busy: countPending, disabled: priceInverted }}
 					style={({ pressed }) => [
 						styles.applyBtn,
 						{ backgroundColor: c.primaryFill },
+						priceInverted && styles.disabled,
 						pressed && styles.pressed,
 					]}
 				>
@@ -619,6 +698,26 @@ const styles = StyleSheet.create({
 	// Prix
 	priceRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 	priceSep: { fontSize: 18, fontFamily: Fonts.body },
+	priceField: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1.5,
+		paddingHorizontal: 14,
+		gap: 6,
+	},
+	priceInput: {
+		flex: 1,
+		minWidth: 0,
+		paddingVertical: 10,
+		fontSize: 16,
+		fontFamily: Fonts.body,
+		fontVariant: ["tabular-nums"],
+	},
+	priceUnit: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	fieldError: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.bodyMedium },
 	input: {
 		flex: 1,
 		minHeight: 48,
@@ -651,21 +750,22 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	toggleCopy: { flex: 1, gap: 2 },
 	toggleText: {
-		flex: 1,
 		fontSize: 15,
 		lineHeight: 20,
 		fontFamily: Fonts.bodySemibold,
 	},
+	toggleDescription: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	divider: { height: StyleSheet.hairlineWidth },
 
 	// Section attributs dynamiques
+	attrGroup: { gap: 16 },
 	attrSectionHeader: {
-		fontSize: 20,
-		lineHeight: 25,
-		letterSpacing: -0.4,
+		fontSize: 17,
+		lineHeight: 22,
+		letterSpacing: -0.2,
 		fontFamily: Fonts.displayBold,
-		marginBottom: -8,
 	},
 	attrBlock: { gap: 8 },
 

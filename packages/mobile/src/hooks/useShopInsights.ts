@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type {
 	InsightsPeriod,
 	ShopInsightsView,
@@ -19,5 +19,8 @@ export function useShopInsights(
 				`/api/shops/${encodeURIComponent(shopId ?? "")}/insights?period=${period}`,
 			),
 		enabled: Boolean(shopId),
+		// A period switch keeps the last figures until the new ones land; the
+		// screen dims them through `isPlaceholderData`.
+		placeholderData: keepPreviousData,
 	});
 }

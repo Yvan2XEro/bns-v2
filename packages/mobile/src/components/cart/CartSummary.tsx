@@ -22,7 +22,7 @@ export function CartSummary({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const { withdrawalDays } = useAppConfig();
+	const { withdrawalDays, protectedPaymentEnabled } = useAppConfig();
 	const totals = cartTotals(cart.lines);
 
 	return (
@@ -77,7 +77,10 @@ export function CartSummary({
 					style={styles.noteIcon}
 				/>
 				<Text style={[styles.noteText, { color: c.link }]}>
-					{t("cart.codNote", { days: withdrawalDays })}
+					{t(
+						protectedPaymentEnabled ? "cart.codNoteProtected" : "cart.codNote",
+						{ days: withdrawalDays },
+					)}
 				</Text>
 			</View>
 		</View>
@@ -92,17 +95,39 @@ export function CartCheckoutBar({
 	cart: CartView;
 	locale: "fr" | "en";
 }) {
+	return (
+		<CheckoutBar
+			total={formatPrice(cart.subtotal, locale)}
+			ready={canCheckout(cart)}
+		/>
+	);
+}
+
+/**
+ * The pinned total and checkout button, shared by the one-shop and the
+ * multi-shop cart. `note` says why the button is off when it is.
+ */
+export function CheckoutBar({
+	total,
+	ready,
+	label,
+	note,
+}: {
+	total: string;
+	ready: boolean;
+	label?: string;
+	note?: string | null;
+}) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
-	const ready = canCheckout(cart);
 	const fill = fillOf(c);
-	const subtotal = formatPrice(cart.subtotal, locale);
+	const totalLabel = label ?? t("cart.subtotal");
 
 	return (
 		<View
 			style={[
-				styles.bar,
+				styles.barWrap,
 				{
 					backgroundColor: c.card,
 					borderTopColor: c.border,
@@ -110,34 +135,49 @@ export function CartCheckoutBar({
 				},
 			]}
 		>
-			<View style={styles.barTotal}>
-				<Text style={[styles.meta, { color: c.muted }]}>
-					{t("cart.subtotal")}
-				</Text>
-				<TotalTag
-					amount={subtotal}
-					size="md"
-					accessibilityLabel={`${t("cart.subtotal")} ${subtotal}`}
-				/>
+			{note && !ready ? (
+				<View style={styles.notice} accessibilityLiveRegion="polite">
+					<Ionicons
+						name="alert-circle-outline"
+						size={16}
+						color={c.dangerText}
+						style={styles.noteIcon}
+					/>
+					<Text style={[styles.noticeText, { color: c.dangerText }]}>
+						{note}
+					</Text>
+				</View>
+			) : null}
+			<View style={styles.bar}>
+				<View style={styles.barTotal}>
+					<Text style={[styles.meta, { color: c.muted }]} numberOfLines={1}>
+						{totalLabel}
+					</Text>
+					<TotalTag
+						amount={total}
+						size="md"
+						accessibilityLabel={`${totalLabel} ${total}`}
+					/>
+				</View>
+				<Pressable
+					onPress={() => router.push("/checkout/address")}
+					disabled={!ready}
+					accessibilityRole="button"
+					accessibilityLabel={t("cart.checkout")}
+					accessibilityState={{ disabled: !ready }}
+					style={({ pressed }) => [
+						styles.cta,
+						{
+							backgroundColor: fill.bg,
+							opacity: ready ? (pressed ? 0.85 : 1) : 0.45,
+						},
+					]}
+				>
+					<Text style={[styles.ctaText, { color: fill.fg }]}>
+						{t("cart.checkout")}
+					</Text>
+				</Pressable>
 			</View>
-			<Pressable
-				onPress={() => router.push("/checkout/address")}
-				disabled={!ready}
-				accessibilityRole="button"
-				accessibilityLabel={t("cart.checkout")}
-				accessibilityState={{ disabled: !ready }}
-				style={({ pressed }) => [
-					styles.cta,
-					{
-						backgroundColor: fill.bg,
-						opacity: ready ? (pressed ? 0.85 : 1) : 0.45,
-					},
-				]}
-			>
-				<Text style={[styles.ctaText, { color: fill.fg }]}>
-					{t("cart.checkout")}
-				</Text>
-			</Pressable>
 		</View>
 	);
 }
@@ -196,14 +236,17 @@ const styles = StyleSheet.create({
 	},
 	noteText: { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 	barTotal: { gap: 4, flexShrink: 1 },
+	barWrap: {
+		gap: 10,
+		paddingHorizontal: 16,
+		paddingTop: 12,
+		borderTopWidth: 1,
+	},
 	bar: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
 		gap: 16,
-		paddingHorizontal: 16,
-		paddingTop: 12,
-		borderTopWidth: 1,
 	},
 	cta: {
 		flex: 1,

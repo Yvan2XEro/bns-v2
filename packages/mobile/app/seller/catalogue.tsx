@@ -11,7 +11,7 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { CatalogueRowItem } from "@/src/components/seller/CatalogueRowItem";
@@ -25,6 +25,9 @@ import { useCatalogue, useMyShop } from "@/src/hooks/useShops";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import type { CatalogueFilter, CatalogueRow } from "@/src/types/api";
+
+/** Ink on signage yellow (DESIGN.md: the sell action carries ink text). */
+const INK = Colors.light.sunForeground;
 
 const FILTERS: CatalogueFilter[] = ["all", "low", "draft", "out"];
 
@@ -74,6 +77,24 @@ export default function CatalogueScreen() {
 				}
 				right={
 					<View style={styles.headerActions}>
+						{readOnly ? null : (
+							<Pressable
+								onPress={() => router.push("/seller/product/new" as never)}
+								style={({ pressed }) => [
+									styles.addBtn,
+									styles.addLabelled,
+									{ backgroundColor: c.sell },
+									pressed && { opacity: 0.85 },
+								]}
+								accessibilityRole="button"
+								accessibilityLabel={t("catalogue.addProduct")}
+							>
+								<Ionicons name="add" size={18} color={INK} />
+								<Text style={[styles.addText, { color: INK }]}>
+									{t("catalogue.addShort")}
+								</Text>
+							</Pressable>
+						)}
 						<Pressable
 							onPress={printSheet.choose}
 							disabled={!shop || printSheet.pending}
@@ -94,16 +115,6 @@ export default function CatalogueScreen() {
 								<Ionicons name="print-outline" size={18} color={c.text} />
 							)}
 						</Pressable>
-						{readOnly ? null : (
-							<Pressable
-								onPress={() => router.push("/seller/product/new" as never)}
-								style={[styles.addBtn, { backgroundColor: c.sell }]}
-								accessibilityRole="button"
-								accessibilityLabel={t("catalogue.addProduct")}
-							>
-								<Ionicons name="add" size={18} color="#12163a" />
-							</Pressable>
-						)}
 					</View>
 				}
 			/>
@@ -113,6 +124,7 @@ export default function CatalogueScreen() {
 				showsHorizontalScrollIndicator={false}
 				style={styles.filtersScroll}
 				contentContainerStyle={styles.filters}
+				accessibilityRole="tablist"
 			>
 				{FILTERS.map((f) => {
 					const active = f === filter;
@@ -128,8 +140,12 @@ export default function CatalogueScreen() {
 									borderColor: active ? fillOf(c) : c.border,
 								},
 							]}
-							accessibilityRole="button"
-							accessibilityLabel={t(`catalogue.filter_${f}`)}
+							accessibilityRole="tab"
+							accessibilityLabel={
+								count !== null
+									? `${t(`catalogue.filter_${f}`)}, ${count}`
+									: t(`catalogue.filter_${f}`)
+							}
 							accessibilityState={{ selected: active }}
 						>
 							<Text
@@ -214,14 +230,12 @@ export default function CatalogueScreen() {
 						}
 						ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
 						ListEmptyComponent={
-							<Text
-								style={[
-									styles.meta,
-									{ color: c.muted, textAlign: "center", marginTop: 24 },
-								]}
-							>
-								{t("catalogue.filterEmpty")}
-							</Text>
+							<EmptyState
+								illustration="searching"
+								title={t("catalogue.filterEmpty")}
+								ctaLabel={t("catalogue.showAll")}
+								onCta={() => router.setParams({ filter: "all" })}
+							/>
 						}
 						ListFooterComponent={
 							offline ? (
@@ -262,6 +276,13 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	meta: { fontSize: 13, fontFamily: Fonts.body },
 	headerActions: { flexDirection: "row", gap: 8 },
+	addLabelled: {
+		width: undefined,
+		flexDirection: "row",
+		gap: 4,
+		paddingHorizontal: 14,
+	},
+	addText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	addBtn: {
 		width: 48,
 		height: 48,

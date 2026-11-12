@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
 import { dangerInk, fillOf } from "@/src/components/shop/ink";
@@ -63,7 +64,7 @@ export default function InviteScreen() {
 	const { t, i18n } = useTranslation();
 	const locale = i18n.language?.startsWith("en") ? "en-US" : "fr-FR";
 	const { user, logout, refreshUser } = useAuth();
-	const { showError } = useAlert();
+	const { showError, showSuccess, confirm } = useAlert();
 	const queryClient = useQueryClient();
 
 	const [acceptErrorCode, setAcceptErrorCode] = useState<string | null>(null);
@@ -140,10 +141,21 @@ export default function InviteScreen() {
 		});
 	};
 
-	const onDecline = () => {
+	// A refusal ends the invitation for good: asked first, then confirmed.
+	const onDecline = async () => {
 		if (!token) return;
+		const shopName = invitation?.shop.name ?? "";
+		const ok = await confirm(
+			t("invite.declineConfirmTitle", { shop: shopName }),
+			t("invite.declineConfirmBody"),
+			{ confirmText: t("invite.decline"), destructive: true },
+		);
+		if (!ok) return;
 		declineMutation.mutate(token, {
-			onSuccess: goHome,
+			onSuccess: () => {
+				showSuccess(t("invite.declined", { shop: shopName }));
+				goHome();
+			},
 			onError: (error) =>
 				showError(t("invite.title"), resolveErrorMessage(error, t)),
 		});
@@ -156,9 +168,13 @@ export default function InviteScreen() {
 
 	if (step === "loading") {
 		return (
-			<View style={[styles.center, { backgroundColor: c.bg }]}>
-				<ActivityIndicator color={c.primary} />
-			</View>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("invite.title")} onBack={goHome} />
+				<DetailSkeleton cards={1} />
+			</SafeAreaView>
 		);
 	}
 
@@ -241,7 +257,9 @@ export default function InviteScreen() {
 						<View style={styles.actions}>
 							<Pressable
 								accessibilityRole="button"
-								accessibilityLabel={t("invite.signIn")}
+								accessibilityLabel={t("invite.signIn", {
+									shop: invitation.shop.name,
+								})}
 								onPress={goSignIn}
 								style={[styles.primaryButton, { backgroundColor: fillOf(c) }]}
 							>
@@ -323,13 +341,21 @@ export default function InviteScreen() {
 							<Pressable
 								accessibilityRole="button"
 								accessibilityLabel={t("invite.decline")}
-								onPress={onDecline}
+								accessibilityState={{
+									busy: declineMutation.isPending,
+									disabled: declineMutation.isPending,
+								}}
+								onPress={() => void onDecline()}
 								disabled={declineMutation.isPending}
 								style={styles.linkButton}
 							>
-								<Text style={[styles.linkLabel, { color: dangerInk(c) }]}>
-									{t("invite.decline")}
-								</Text>
+								{declineMutation.isPending ? (
+									<ActivityIndicator color={dangerInk(c)} />
+								) : (
+									<Text style={[styles.linkLabel, { color: dangerInk(c) }]}>
+										{t("invite.decline")}
+									</Text>
+								)}
 							</Pressable>
 						</View>
 					) : null}

@@ -1,5 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	type InfiniteData,
+	useInfiniteQuery,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router, usePathname } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -118,10 +123,31 @@ const SEPARATOR_INSET = 80;
 
 type FilterTab = "all" | "unread" | "orders";
 
+/** Rows per page: a screen and a half on a phone, light on metered data. */
+const PAGE_SIZE = 20;
+/** The list's cache key; `["conversations"]` stays the prefix every invalidation already uses. */
+const LIST_KEY = ["conversations", "list"] as const;
+/** Up to this many unread messages are counted per load; a badge reads "99+" long before. */
+const UNREAD_SCAN_LIMIT = 500;
+
+interface ConversationPage {
+	docs: any[];
+	page?: number;
+	hasNextPage?: boolean;
+}
+
+function idOf(value: unknown): string | null {
+	if (!value) return null;
+	if (typeof value === "string") return value;
+	return typeof value === "object" && "id" in value
+		? String((value as { id: unknown }).id)
+		: null;
+}
+
 /** The account's conversations; one opens through `onOpen`. */
 export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 	const selectedRowStyle = useSelectedRowStyle();
-	const { showError, showConfirm } = useAlert();
+	const { showError, showSuccess, confirm } = useAlert();
 	const isDark = useColorScheme() === "dark";
 	const C = Colors[isDark ? "dark" : "light"];
 	const { centeredContent } = useResponsive();
@@ -137,12 +163,26 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 
 	const myShops = useMyShops();
 
-	const { data, isLoading, isError, refetch } = useQuery({
-		queryKey: ["conversations"],
-		queryFn: () =>
-			api.get<{ docs: any[] }>(
-				`/api/conversations?depth=2&sort=-updatedAt&where[participants][equals]=${user?.id ?? ""}`,
+	// Paged: Payload answers ten rows when no limit is given, which hid every
+	// older thread from the list and from search.
+	const {
+		data,
+		isLoading,
+		isError,
+		refetch,
+		hasNextPage,
+		isFetchingNextPage,
+		fetchNextPage,
+		dataUpdatedAt,
+	} = useInfiniteQuery({
+		queryKey: LIST_KEY,
+		queryFn: ({ pageParam }: { pageParam: number }) =>
+			api.get<ConversationPage>(
+				`/api/conversations?depth=2&sort=-updatedAt&limit=${PAGE_SIZE}&page=${pageParam}&where[participants][equals]=${user?.id ?? ""}`,
 			),
+		initialPageParam: 1,
+		getNextPageParam: (last, pages) =>
+			last.hasNextPage ? (last.page ?? pages.length) + 1 : undefined,
 		enabled: !!user,
 	});
 
@@ -165,23 +205,121 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 		return can(roleInShop(shop.id), "inbox.reply");
 	}
 
-	// Refresh conversation list on any incoming message (including brand-new
-	// conversations where the recipient hasn't joined the room yet).
+	// A new message moves its row to the top and updates its preview in the
+	// cache, instead of refetching the whole list at depth 2 on every
+	// message: a busy shop owner on metered data paid for that each time.
+	// Only a conversation the list does not hold yet (a brand-new one)
+	// costs a refetch.
 	useEffect(() => {
-		if (!chatClient) return;
-		const handler = () => {
-			queryClient.invalidateQueries({ queryKey: ["conversations"] });
+		if (!chatClient || !user) return;
+		const userId = user.id;
+		const handler = (msg: {
+			id: string;
+			conversationId: string;
+			sender?: string;
+			content?: string;
+			kind?: string;
+			createdAt?: string;
+		}) => {
+			let found = false;
+			queryClient.setQueryData<InfiniteData<ConversationPage, number>>(
+				LIST_KEY,
+				(old) => {
+					if (!old?.pages?.length) return old;
+					let row: any = null;
+					const pages = old.pages.map((page) => ({
+						...page,
+						docs: (page.docs ?? []).filter((doc) => {
+							if (doc?.id !== msg.conversationId) return true;
+							row = doc;
+							return false;
+						}),
+					}));
+					if (!row) return old;
+					found = true;
+					const moved = {
+						...row,
+						updatedAt: msg.createdAt ?? new Date().toISOString(),
+						lastMessage: {
+							id: msg.id,
+							content: msg.content ?? "",
+							sender: msg.sender || null,
+							kind: msg.kind ?? null,
+						},
+					};
+					const [first, ...rest] = pages;
+					return {
+						...old,
+						pages: [{ ...first, docs: [moved, ...first.docs] }, ...rest],
+					};
+				},
+			);
+			if (!found) {
+				queryClient.invalidateQueries({ queryKey: LIST_KEY });
+				return;
+			}
+			// The other side's words: the unread counts are worth one light read.
+			if (msg.sender && msg.sender !== userId)
+				queryClient.invalidateQueries({
+					queryKey: ["conversations", "unread"],
+				});
 		};
 		chatClient.on("message:new", handler);
 		return () => {
 			chatClient.off("message:new", handler);
 		};
-	}, [chatClient, queryClient]);
+	}, [chatClient, queryClient, user]);
 
 	// One null doc used to blow up every `c.unreadCount` read below and blank
-	// the Messages tab; drop them (and any non-array payload) up front.
-	const conversations = (Array.isArray(data?.docs) ? data.docs : []).filter(
-		Boolean,
+	// the Messages tab; drop them (and any non-array payload) up front. Pages
+	// are offset-based over a list that reorders as messages arrive, so a row
+	// can turn up on two pages: the first one wins.
+	const loadedRows = useMemo(() => {
+		const seen = new Set<string>();
+		const rows: any[] = [];
+		for (const page of data?.pages ?? []) {
+			for (const doc of Array.isArray(page?.docs) ? page.docs : []) {
+				if (!doc?.id || seen.has(doc.id)) continue;
+				seen.add(doc.id);
+				rows.push(doc);
+			}
+		}
+		return rows;
+	}, [data]);
+	const loadedIds = useMemo(
+		() => loadedRows.map((row) => String(row.id)).sort(),
+		[loadedRows],
+	);
+
+	// `/api/conversations` carries no per-viewer unread count, so every row
+	// used to read as seen. One request counts the other side's unread
+	// messages across the loaded threads; `messages.read` turns true once
+	// this account reads them (`/api/conversations/{id}/read`).
+	const unreadQuery = useQuery({
+		queryKey: ["conversations", "unread", user?.id ?? "", loadedIds.join(",")],
+		queryFn: async () => {
+			const res = await api.get<{ docs: Array<{ conversation?: unknown }> }>(
+				`/api/messages?depth=0&limit=${UNREAD_SCAN_LIMIT}&select[conversation]=true&where[read][equals]=false&where[sender][not_equals]=${user?.id ?? ""}&where[conversation][in]=${loadedIds.join(",")}`,
+			);
+			const counts: Record<string, number> = {};
+			for (const m of res.docs ?? []) {
+				const id = idOf(m.conversation);
+				if (id) counts[id] = (counts[id] ?? 0) + 1;
+			}
+			return counts;
+		},
+		enabled: Boolean(user) && loadedIds.length > 0,
+		// A new page changes the key: keep the counts on screen meanwhile.
+		placeholderData: (previous) => previous,
+	});
+	const unreadByConversation = unreadQuery.data;
+	const conversations = useMemo(
+		() =>
+			loadedRows.map((row) => ({
+				...row,
+				unreadCount: unreadByConversation?.[row.id] ?? 0,
+			})),
+		[loadedRows, unreadByConversation],
 	);
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
@@ -221,63 +359,56 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 		return list;
 	}, [conversations, filter, search, user]);
 
-	// Mark all conversations as read
+	// Marks every listed thread that has unread messages through the route
+	// both clients use (`/api/conversations/{id}/read`): it works with the
+	// socket down, which is when this button matters most, and has no cap on
+	// how many messages it clears. A per-message PATCH is refused by the
+	// collection's access control.
 	const handleMarkAllRead = async () => {
 		if (!user || markingAllRead) return;
+		const targets = conversations
+			.filter((c) => (c.unreadCount ?? 0) > 0)
+			.map((c) => ({ id: String(c.id), lastMessageId: idOf(c.lastMessage) }))
+			.filter((c): c is { id: string; lastMessageId: string } =>
+				Boolean(c.lastMessageId),
+			);
+		if (targets.length === 0) return;
 		setMarkingAllRead(true);
 		try {
-			// Fetch all unread messages for this user
-			const res = await api.get<{ docs: any[] }>(
-				`/api/messages?where[read][equals]=false&where[sender][not_equals]=${user.id}&limit=100`,
+			const results = await Promise.allSettled(
+				targets.map((c) =>
+					api.post(`/api/conversations/${c.id}/read`, {
+						lastMessageId: c.lastMessageId,
+					}),
+				),
 			);
-			const unreadMessages = res.docs ?? [];
-			if (unreadMessages.length === 0) return;
-
-			// Group by conversation and mark via socket
-			const byConv: Record<string, string[]> = {};
-			for (const m of unreadMessages) {
-				const convId = m.conversation?.id ?? m.conversation;
-				if (!byConv[convId]) byConv[convId] = [];
-				byConv[convId].push(m.id);
-			}
-
-			if (chatClient) {
-				for (const [convId, ids] of Object.entries(byConv)) {
-					await chatClient.joinConversation(convId);
-					chatClient.markRead(convId, ids);
-				}
-			} else {
-				// Fallback: REST PATCH
-				await Promise.all(
-					unreadMessages.map((m) =>
-						api.patch(`/api/messages/${m.id}`, { read: true }),
-					),
-				);
-			}
-
-			queryClient.invalidateQueries({ queryKey: ["conversations"] });
-		} catch {
-			showError(t("common.error"), t("messages.markAllReadError"));
+			queryClient.invalidateQueries({ queryKey: ["conversations", "unread"] });
+			if (results.some((r) => r.status === "rejected"))
+				showError(t("common.error"), t("messages.markAllReadError"));
+			else showSuccess(t("messages.markAllReadDone"));
 		} finally {
 			setMarkingAllRead(false);
 		}
 	};
 
-	// Delete a conversation
-	const handleDelete = (convId: string) => {
+	// Deleting removes the conversation document itself, for both sides: the
+	// confirm says so, in the destructive style. A thread tied to an order is
+	// not offered for deletion — its order chips are the shop's record as
+	// much as the buyer's.
+	const handleDelete = async (convId: string, name: string) => {
 		swipeableRefs.current.get(convId)?.close();
-		showConfirm(
+		const ok = await confirm(
 			t("messages.deleteTitle"),
-			t("messages.deleteConfirmText"),
-			async () => {
-				try {
-					await api.delete(`/api/conversations/${convId}`);
-					queryClient.invalidateQueries({ queryKey: ["conversations"] });
-				} catch {
-					showError(t("common.error"), t("messages.deleteError"));
-				}
-			},
+			t("messages.deleteBody", { name }),
+			{ destructive: true, confirmText: t("common.delete") },
 		);
+		if (!ok) return;
+		try {
+			await api.delete(`/api/conversations/${convId}`);
+			queryClient.invalidateQueries({ queryKey: ["conversations"] });
+		} catch {
+			showError(t("common.error"), t("messages.deleteError"));
+		}
 	};
 
 	const header = (
@@ -341,9 +472,9 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 		);
 	}
 
-	const renderRightActions = (convId: string) => (
+	const renderRightActions = (convId: string, name: string) => (
 		<Pressable
-			onPress={() => handleDelete(convId)}
+			onPress={() => handleDelete(convId, name)}
 			accessibilityRole="button"
 			accessibilityLabel={t("messages.deleteConversation")}
 			style={[styles.deleteAction, { backgroundColor: DELETE_FILL }]}
@@ -410,6 +541,8 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 		]
 			.filter(Boolean)
 			.join(", ");
+		// An order thread holds the order's chips for both sides: not deletable.
+		const deletable = !item.order;
 
 		return (
 			<ReanimatedSwipeable
@@ -418,7 +551,8 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 				ref={(ref) => {
 					swipeableRefs.current.set(item.id, ref);
 				}}
-				renderRightActions={() => renderRightActions(item.id)}
+				enabled={deletable}
+				renderRightActions={() => renderRightActions(item.id, title)}
 				rightThreshold={60}
 				overshootRight={false}
 			>
@@ -429,12 +563,14 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 					accessibilityState={{ selected: item.id === selectedId }}
 					// Swiping is invisible to a screen reader: the same delete is
 					// offered as an action on the row.
-					accessibilityActions={[
-						{ name: "delete", label: t("messages.deleteConversation") },
-					]}
+					accessibilityActions={
+						deletable
+							? [{ name: "delete", label: t("messages.deleteConversation") }]
+							: undefined
+					}
 					onAccessibilityAction={(event) => {
-						if (event.nativeEvent.actionName === "delete")
-							handleDelete(item.id);
+						if (deletable && event.nativeEvent.actionName === "delete")
+							void handleDelete(item.id, title);
 					}}
 					style={({ pressed }) => [
 						styles.convItem,
@@ -564,7 +700,12 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 
 			{/* Filters */}
 			<View style={styles.filterRow}>
-				{(["all", "unread", "orders"] as FilterTab[]).map((tab) => {
+				{/* "Unread" only once the counts are in: before that, or when they
+				    failed, it would claim everything is read. */}
+				{(unreadQuery.isSuccess
+					? (["all", "unread", "orders"] as FilterTab[])
+					: (["all", "orders"] as FilterTab[])
+				).map((tab) => {
 					const active = filter === tab;
 					const label =
 						tab === "all"
@@ -606,6 +747,48 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 					);
 				})}
 			</View>
+
+			{/* A failed refresh over rows already on screen: say they may be old. */}
+			{isError && conversations.length > 0 ? (
+				<View
+					style={[styles.staleBar, { backgroundColor: C.well }]}
+					accessibilityLiveRegion="polite"
+				>
+					<Ionicons
+						name="cloud-offline-outline"
+						size={16}
+						color={C.mutedForeground}
+					/>
+					<Text style={[styles.staleText, { color: bodyText }]}>
+						{t("messages.staleList", {
+							time: new Date(dataUpdatedAt).toLocaleTimeString(
+								appDateLocale(),
+								{ hour: "2-digit", minute: "2-digit" },
+							),
+						})}
+					</Text>
+					<Pressable
+						onPress={() => refetch()}
+						accessibilityRole="button"
+						hitSlop={8}
+						style={({ pressed }) => [
+							styles.staleRetry,
+							{ opacity: pressed ? 0.6 : 1 },
+						]}
+					>
+						<Text style={[styles.staleRetryText, { color: C.link }]}>
+							{t("common.retry")}
+						</Text>
+					</Pressable>
+				</View>
+			) : null}
+
+			{/* Search runs over the rows loaded so far: say so while more exist. */}
+			{search.trim() && hasNextPage ? (
+				<Text style={[styles.searchScope, { color: C.mutedForeground }]}>
+					{t("messages.searchLoadedOnly")}
+				</Text>
+			) : null}
 
 			{/* List */}
 			{isLoading ? (
@@ -660,6 +843,19 @@ export function ConversationList({ selectedId, onOpen }: SplitListProps) {
 					extraData={selectedId}
 					keyExtractor={(item) => item.id}
 					contentContainerStyle={[styles.listContent, centeredContent]}
+					onEndReached={() => {
+						if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+					}}
+					onEndReachedThreshold={0.5}
+					ListFooterComponent={
+						isFetchingNextPage ? (
+							<ActivityIndicator
+								style={styles.footerSpinner}
+								color={C.mutedForeground}
+								accessibilityLabel={t("common.loading")}
+							/>
+						) : null
+					}
 					ItemSeparatorComponent={() => (
 						<View style={{ backgroundColor: C.card }}>
 							<View style={[styles.separator, { backgroundColor: C.border }]} />
@@ -724,6 +920,28 @@ const styles = StyleSheet.create({
 	},
 	filterPillText: { fontSize: 14 },
 	listContent: { paddingBottom: 24 },
+	footerSpinner: { paddingVertical: 16 },
+	staleBar: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		marginHorizontal: 16,
+		marginBottom: 8,
+		paddingLeft: 12,
+		paddingRight: 4,
+		borderRadius: 12,
+		minHeight: 44,
+	},
+	staleText: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	staleRetry: { minHeight: 44, justifyContent: "center", paddingHorizontal: 8 },
+	staleRetryText: { fontSize: 14, fontFamily: Fonts.bodyBold },
+	searchScope: {
+		fontSize: 12,
+		lineHeight: 16,
+		fontFamily: Fonts.body,
+		paddingHorizontal: 16,
+		paddingBottom: 8,
+	},
 	convItem: {
 		flexDirection: "row",
 		alignItems: "center",

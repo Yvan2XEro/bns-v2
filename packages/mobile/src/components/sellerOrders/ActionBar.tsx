@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { dangerInk } from "@/src/components/shop/ink";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { alerts } from "@/src/contexts/AlertContext";
 import {
 	useAcceptOrder,
 	useConfirmByCall,
@@ -16,6 +17,8 @@ import { useTranslation } from "@/src/lib/i18n";
 import {
 	type ActionBarItem,
 	actionBarItemsFor,
+	cityLabel,
+	districtLabel,
 	isPostAction,
 	isSheetAction,
 	lockedHandoverNotice,
@@ -56,10 +59,40 @@ export function ActionBar({
 	const close = () => setSheet(null);
 	const openHandover = () => router.push(`/seller/orders/${order.id}/handover`);
 
-	const press = ({ action }: ActionBarItem) => {
+	// Shipping and the call confirmation cannot be taken back: name the buyer
+	// and the place first. Accept stays one tap, like in the list.
+	const place = [districtLabel(order.delivery), cityLabel(order.delivery.city)]
+		.filter(Boolean)
+		.join(", ");
+	const ASK: Partial<Record<keyof typeof posts, string>> = {
+		ship: "sellerOrders.shipConfirm",
+		confirm_by_call: "sellerOrders.confirmByCallConfirm",
+	};
+	const DONE: Record<keyof typeof posts, string> = {
+		accept: "sellerOrders.acceptedToast",
+		ship: "sellerOrders.shippedToast",
+		confirm_by_call: "sellerOrders.confirmedByCallToast",
+	};
+	const runPost = async (action: keyof typeof posts, labelKey: string) => {
+		const ask = ASK[action];
+		if (ask) {
+			const ok = await alerts.confirm(
+				t(labelKey),
+				t(ask, { name: order.delivery.recipientName, place }),
+				{ confirmText: t(labelKey) },
+			);
+			if (!ok) return;
+		}
+		for (const m of all) m.reset();
+		posts[action].mutate(undefined, {
+			onSuccess: () =>
+				alerts.showSuccess(t(DONE[action], { number: order.orderNumber })),
+		});
+	};
+
+	const press = ({ action, labelKey }: ActionBarItem) => {
 		if (isPostAction(action)) {
-			for (const m of all) m.reset();
-			posts[action].mutate();
+			void runPost(action, labelKey);
 		} else if (isSheetAction(action)) {
 			setSheet(action);
 		} else {
@@ -107,6 +140,7 @@ export function ActionBar({
 						label={t(item.labelKey)}
 						tone={item.tone}
 						outline
+						pending={isPostAction(item.action) && posts[item.action].isPending}
 						disabled={pending}
 						onPress={() => press(item)}
 					/>

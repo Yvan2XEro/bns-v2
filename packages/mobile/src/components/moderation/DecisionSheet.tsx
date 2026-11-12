@@ -1,12 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
 	ActivityIndicator,
 	KeyboardAvoidingView,
 	Modal,
-	Platform,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -23,6 +22,7 @@ import {
 	decisionSheetDefaults,
 } from "@/src/lib/decisionSheetForm";
 import { useTranslation } from "@/src/lib/i18n";
+import { InlineNotice } from "./ModerationKit";
 import { useModerationTheme } from "./theme";
 import { tonesOf } from "./tones";
 
@@ -55,6 +55,23 @@ interface DecisionSheetProps {
 	textPlaceholder?: string;
 	/** When true the confirm button stays disabled until the field is filled. */
 	textRequired?: boolean;
+	/**
+	 * The text becomes required for some choices only: "Autre motif" says
+	 * nothing by itself. Checked live, so the label and the confirm button
+	 * follow the reason the moderator has just picked.
+	 */
+	textRequiredFor?: (choice: string | null) => boolean;
+	/**
+	 * Why the last attempt failed. Shown inside the sheet, above the buttons:
+	 * an alert raised over an open sheet is a second Modal, which iOS refuses
+	 * to present, so the moderator would see the spinner stop and nothing else.
+	 */
+	error?: string | null;
+	/**
+	 * A draft the text field opens with, when the screen already knows what
+	 * was done (a report closed after its target was sanctioned).
+	 */
+	initialText?: string;
 	confirmLabel: string;
 	destructive?: boolean;
 	pending?: boolean;
@@ -83,6 +100,9 @@ export function DecisionSheet({
 	textLabel,
 	textPlaceholder,
 	textRequired,
+	textRequiredFor,
+	error,
+	initialText,
 	confirmLabel,
 	destructive,
 	pending,
@@ -102,6 +122,10 @@ export function DecisionSheet({
 		? (durations?.[0]?.value ?? null)
 		: null;
 
+	// Read through a ref: screens pass an inline function, and a new schema on
+	// every render would swap the form's resolver each time.
+	const textRequiredForRef = useRef(textRequiredFor);
+	textRequiredForRef.current = textRequiredFor;
 	const schema = useMemo(
 		() =>
 			buildDecisionSchema({
@@ -109,6 +133,8 @@ export function DecisionSheet({
 				needsDuration,
 				singleDuration,
 				textRequired: Boolean(textRequired),
+				textRequiredFor: (picked) =>
+					Boolean(textRequiredForRef.current?.(picked)),
 			}),
 		[needsChoice, needsDuration, singleDuration, textRequired],
 	);
@@ -119,17 +145,65 @@ export function DecisionSheet({
 		defaultValues: decisionSheetDefaults(singleDuration, singleDurationValue),
 	});
 
+	// A typed note is the one thing a stray backdrop tap or Android back must
+	// not throw away: the sheet asks first, inside itself, never over itself.
+	const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+
 	// Reopening must not inherit the previous decision: a moderator who
 	// rejected one listing for fraud should not find "fraud" preselected on the
-	// next one and confirm it without looking.
+	// next one and confirm it without looking. A draft text is read at open
+	// time only, so one arriving later never wipes what is being typed.
+	const initialTextRef = useRef(initialText);
+	initialTextRef.current = initialText;
 	useEffect(() => {
 		if (visible) {
-			form.reset(decisionSheetDefaults(singleDuration, singleDurationValue));
+			form.reset({
+				...decisionSheetDefaults(singleDuration, singleDurationValue),
+				text: initialTextRef.current ?? "",
+			});
+			setConfirmingDiscard(false);
 		}
 	}, [visible, singleDuration, singleDurationValue, form.reset]);
 
+	const choice = form.watch("choice");
+	const duration = form.watch("duration");
+	const text = form.watch("text");
+	const textNowRequired =
+		Boolean(textRequired) || Boolean(textRequiredFor?.(choice ?? null));
+	const textMissing = textNowRequired && text.trim().length === 0;
+	// The schema owns every rule, the choice-dependent note included.
 	const ready = form.formState.isValid;
 	const errors = form.formState.errors;
+
+	// Field errors appear once a field has been touched; until then a grey
+	// confirm button says nothing. This line names the first thing missing.
+	const missing =
+		needsChoice && choice === null
+			? t("moderation.decisionChoiceRequired")
+			: needsDuration && !singleDuration && duration === null
+				? t("moderation.decisionDurationRequired")
+				: textMissing && textLabel
+					? t("moderation.decisionTextMissing", { label: textLabel })
+					: null;
+
+	const fieldLabel =
+		textLabel && textNowRequired
+			? `${textLabel} (${t("common.required").toLowerCase()})`
+			: textLabel;
+
+	const requestClose = () => {
+		const typed = text.trim();
+		if (
+			!pending &&
+			!confirmingDiscard &&
+			typed.length > 0 &&
+			typed !== initialText
+		) {
+			setConfirmingDiscard(true);
+			return;
+		}
+		onClose();
+	};
 
 	const submit = form.handleSubmit((values) => {
 		onConfirm({
@@ -148,17 +222,20 @@ export function DecisionSheet({
 			visible={visible}
 			transparent
 			animationType={sheet.animationType}
-			onRequestClose={onClose}
+			onRequestClose={requestClose}
 			statusBarTranslucent
 		>
 			<Pressable
 				style={[styles.backdrop, { backgroundColor: c.overlay }]}
-				onPress={onClose}
+				onPress={requestClose}
 				accessibilityRole="button"
 				accessibilityLabel={t("common.close")}
 			/>
+			{/* Padding on both platforms: SDK 57 runs edge to edge, so Android no
+			    longer shrinks the window for the keyboard, and the note field and
+			    the confirm button would sit behind it. */}
 			<KeyboardAvoidingView
-				behavior={Platform.OS === "ios" ? "padding" : undefined}
+				behavior="padding"
 				style={sheet.wrap}
 				pointerEvents="box-none"
 			>
@@ -197,7 +274,7 @@ export function DecisionSheet({
 							) : null}
 						</View>
 						<Pressable
-							onPress={onClose}
+							onPress={requestClose}
 							hitSlop={8}
 							accessibilityRole="button"
 							accessibilityLabel={t("common.close")}
@@ -339,7 +416,7 @@ export function DecisionSheet({
 						{textLabel ? (
 							<View style={styles.field}>
 								<Text style={[styles.fieldLabel, { color: c.text }]}>
-									{textLabel}
+									{fieldLabel}
 								</Text>
 								<Controller
 									control={form.control}
@@ -351,7 +428,7 @@ export function DecisionSheet({
 											onBlur={field.onBlur}
 											placeholder={textPlaceholder}
 											placeholderTextColor={c.muted}
-											accessibilityLabel={textLabel}
+											accessibilityLabel={fieldLabel}
 											multiline
 											style={[
 												styles.textarea,
@@ -373,56 +450,116 @@ export function DecisionSheet({
 						) : null}
 					</ScrollView>
 
-					{/* Cancel left, the decision right, as in every alert sheet. */}
-					<View style={[styles.footer, { borderTopColor: c.border }]}>
-						<Pressable
-							onPress={onClose}
-							accessibilityRole="button"
-							accessibilityLabel={t("common.cancel")}
-							style={({ pressed }) => [
-								styles.secondaryBtn,
-								{
-									borderColor: k.strongBorder,
-									opacity: pressed ? 0.8 : 1,
-								},
-							]}
-						>
-							<Text style={[styles.btnText, { color: c.text }]}>
-								{t("common.cancel")}
-							</Text>
-						</Pressable>
-						<Pressable
-							onPress={submit}
-							disabled={!ready || pending}
-							accessibilityRole="button"
-							accessibilityLabel={confirmLabel}
-							accessibilityState={{
-								disabled: !ready || Boolean(pending),
-								busy: Boolean(pending),
-							}}
-							style={({ pressed }) => [
-								styles.confirmBtn,
-								{
-									backgroundColor: confirmFill,
-									opacity: pressed ? 0.88 : 1,
-								},
-							]}
-						>
-							{pending ? (
-								<ActivityIndicator color={k.onFill} />
-							) : (
-								<Text
-									style={[
-										styles.btnText,
-										{ color: ready ? k.onFill : k.disabledText },
-									]}
-									numberOfLines={2}
-								>
-									{confirmLabel}
+					{error && !confirmingDiscard ? (
+						<View style={styles.notice}>
+							<InlineNotice text={error} />
+						</View>
+					) : null}
+
+					{confirmingDiscard ? (
+						<View style={[styles.footerBlock, { borderTopColor: c.border }]}>
+							<View accessibilityRole="alert" style={styles.discardText}>
+								<Text style={[styles.discardTitle, { color: c.text }]}>
+									{t("moderation.discardTitle")}
 								</Text>
-							)}
-						</Pressable>
-					</View>
+								<Text style={[styles.discardBody, { color: c.muted }]}>
+									{t("moderation.discardBody")}
+								</Text>
+							</View>
+							<View style={styles.footerRow}>
+								<Pressable
+									onPress={() => setConfirmingDiscard(false)}
+									accessibilityRole="button"
+									accessibilityLabel={t("moderation.discardKeep")}
+									style={({ pressed }) => [
+										styles.secondaryBtn,
+										{
+											borderColor: k.strongBorder,
+											opacity: pressed ? 0.8 : 1,
+										},
+									]}
+								>
+									<Text style={[styles.btnText, { color: c.text }]}>
+										{t("moderation.discardKeep")}
+									</Text>
+								</Pressable>
+								<Pressable
+									onPress={onClose}
+									accessibilityRole="button"
+									accessibilityLabel={t("moderation.discardConfirm")}
+									style={({ pressed }) => [
+										styles.confirmBtn,
+										{
+											backgroundColor: k.dangerFill,
+											opacity: pressed ? 0.88 : 1,
+										},
+									]}
+								>
+									<Text style={[styles.btnText, { color: k.onFill }]}>
+										{t("moderation.discardConfirm")}
+									</Text>
+								</Pressable>
+							</View>
+						</View>
+					) : (
+						// Cancel left, the decision right, as in every alert sheet.
+						<View style={[styles.footerBlock, { borderTopColor: c.border }]}>
+							{!ready && missing && !error ? (
+								<Text style={[styles.missingText, { color: c.muted }]}>
+									{missing}
+								</Text>
+							) : null}
+							<View style={styles.footerRow}>
+								<Pressable
+									onPress={requestClose}
+									accessibilityRole="button"
+									accessibilityLabel={t("common.cancel")}
+									style={({ pressed }) => [
+										styles.secondaryBtn,
+										{
+											borderColor: k.strongBorder,
+											opacity: pressed ? 0.8 : 1,
+										},
+									]}
+								>
+									<Text style={[styles.btnText, { color: c.text }]}>
+										{t("common.cancel")}
+									</Text>
+								</Pressable>
+								<Pressable
+									onPress={submit}
+									disabled={!ready || pending}
+									accessibilityRole="button"
+									accessibilityLabel={confirmLabel}
+									accessibilityState={{
+										disabled: !ready || Boolean(pending),
+										busy: Boolean(pending),
+									}}
+									style={({ pressed }) => [
+										styles.confirmBtn,
+										{
+											backgroundColor: confirmFill,
+											opacity: pressed ? 0.88 : 1,
+										},
+									]}
+								>
+									{pending ? (
+										<ActivityIndicator color={k.onFill} />
+									) : (
+										<Text
+											style={[
+												styles.btnText,
+												{ color: ready ? k.onFill : k.disabledText },
+											]}
+											numberOfLines={2}
+										>
+											{confirmLabel}
+										</Text>
+									)}
+								</Pressable>
+							</View>
+						</View>
+					)}
 				</View>
 			</KeyboardAvoidingView>
 		</Modal>
@@ -514,13 +651,18 @@ const styles = StyleSheet.create({
 		minHeight: 96,
 		textAlignVertical: "top",
 	},
-	footer: {
-		flexDirection: "row",
+	notice: { paddingHorizontal: 20, paddingBottom: 10 },
+	footerBlock: {
 		gap: 10,
 		paddingHorizontal: 20,
 		paddingTop: 14,
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
+	footerRow: { flexDirection: "row", gap: 10 },
+	missingText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodyMedium },
+	discardText: { gap: 2 },
+	discardTitle: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.bodyBold },
+	discardBody: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
 	secondaryBtn: {
 		flex: 1,
 		minHeight: 52,

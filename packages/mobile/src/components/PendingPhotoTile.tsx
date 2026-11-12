@@ -9,7 +9,8 @@ import {
 	View,
 	type ViewStyle,
 } from "react-native";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/src/lib/i18n";
 import type { PendingPhoto } from "@/src/lib/photoQueue";
 
@@ -53,7 +54,7 @@ export function PendingPhotoTile({
 					<>
 						<Ionicons name="refresh" size={20} color="#ffffff" />
 						<Text style={styles.label} numberOfLines={2}>
-							{t("create.photoRetry")}
+							{t("common.retry")}
 						</Text>
 					</>
 				) : (
@@ -73,7 +74,45 @@ export function PendingPhotoTile({
 	);
 }
 
+/**
+ * Why the photos that failed were not sent, one line per distinct reason,
+ * under the grid: the tile itself only has room for "Réessayer", and a seller
+ * needs the reason to know whether retrying will help.
+ */
+export function PendingPhotoErrors({ photos }: { photos: PendingPhoto[] }) {
+	const { t } = useTranslation();
+	const C = Colors[useColorScheme() === "dark" ? "dark" : "light"];
+	const reasons = [
+		...new Set(
+			photos
+				.filter((photo) => photo.status === "failed")
+				.map((photo) => photo.error ?? t("create.uploadErrorMsg")),
+		),
+	];
+	if (reasons.length === 0) return null;
+	return (
+		<View style={styles.errors} accessibilityLiveRegion="polite">
+			{reasons.map((reason) => (
+				<View key={reason} style={styles.errorRow}>
+					<Ionicons
+						name="alert-circle"
+						size={14}
+						color={C.dangerText}
+						importantForAccessibility="no"
+					/>
+					<Text style={[styles.errorText, { color: C.dangerText }]}>
+						{t("create.photoFailed")} {reason}
+					</Text>
+				</View>
+			))}
+		</View>
+	);
+}
+
 const styles = StyleSheet.create({
+	errors: { gap: 4, marginTop: 8 },
+	errorRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
+	errorText: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	// Clips the picture and its veil to whatever radius the caller gives.
 	tile: { overflow: "hidden" },
 	overlay: {

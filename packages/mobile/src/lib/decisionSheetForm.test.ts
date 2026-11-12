@@ -47,6 +47,26 @@ describe("buildDecisionSchema", () => {
 		).toBe(true);
 	});
 
+	it("requires the text only for the choices that ask for it", () => {
+		const schema = buildDecisionSchema({
+			needsChoice: true,
+			needsDuration: false,
+			singleDuration: false,
+			textRequired: false,
+			textRequiredFor: (choice) => choice === "other",
+		});
+		expect(
+			schema.safeParse({ choice: "fraud", duration: null, text: "" }).success,
+		).toBe(true);
+		expect(
+			schema.safeParse({ choice: "other", duration: null, text: " " }).success,
+		).toBe(false);
+		expect(
+			schema.safeParse({ choice: "other", duration: null, text: "Doublon" })
+				.success,
+		).toBe(true);
+	});
+
 	it("requires non-empty text when the action needs a reason message", () => {
 		const schema = buildDecisionSchema({
 			needsChoice: false,

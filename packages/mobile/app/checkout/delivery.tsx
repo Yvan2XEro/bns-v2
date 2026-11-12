@@ -35,7 +35,7 @@ export default function CheckoutDeliveryScreen() {
 	const { state } = useCheckoutFlow();
 	return (
 		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
-			<CheckoutHeader current={2} />
+			<CheckoutHeader current="delivery" />
 			<CheckoutGate needs="address">
 				{state.address ? <DeliveryOrSplit address={state.address} /> : null}
 			</CheckoutGate>

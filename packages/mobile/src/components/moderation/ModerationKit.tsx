@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
+import { ERROR_CODES, hasErrorCode } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { type ModerationPalette, useModerationTheme } from "./theme";
 import { type Tone, toneColors, tonesOf } from "./tones";
@@ -420,21 +421,57 @@ export function DetailSkeleton() {
 	);
 }
 
+/** A request that never reached the server, or never came back. */
+export function isConnectionError(error: unknown): boolean {
+	return (
+		hasErrorCode(error, ERROR_CODES.network) ||
+		hasErrorCode(error, ERROR_CODES.timeout)
+	);
+}
+
+/** A request the server refused for lack of rights (HTTP 403). */
+export function isForbiddenError(error: unknown): boolean {
+	return (
+		Boolean(error) &&
+		typeof error === "object" &&
+		(error as { status?: unknown }).status === 403
+	);
+}
+
+/**
+ * The picture for a lost connection. A timeout on metered data must not
+ * look like "this item does not exist", which is what the not-found
+ * illustration says.
+ */
+export function OfflineMark() {
+	const c = useModerationTheme();
+	return (
+		<View style={[styles.offlineMark, { backgroundColor: c.card }]}>
+			<Ionicons name="cloud-offline-outline" size={44} color={c.muted} />
+		</View>
+	);
+}
+
 /** A sheet that could not load, with the way back in. */
 export function LoadError({
 	title,
 	message,
+	error,
 	onRetry,
 }: {
 	title: string;
 	message?: string;
+	/** The failure itself: a lost connection gets its own title and picture. */
+	error?: unknown;
 	onRetry: () => void;
 }) {
 	const { t } = useTranslation();
+	const offline = isConnectionError(error);
 	return (
 		<EmptyState
-			illustration="notFound"
-			title={title}
+			illustration={offline ? undefined : "notFound"}
+			illustrationNode={offline ? <OfflineMark /> : undefined}
+			title={offline ? t("moderation.offlineTitle") : title}
 			subtitle={message}
 			ctaLabel={t("common.retry")}
 			onCta={onRetry}
@@ -552,4 +589,11 @@ const styles = StyleSheet.create({
 	},
 	skeletonText: { flex: 1, gap: 8 },
 	skeletonDetail: { padding: 16, gap: 14 },
+	offlineMark: {
+		width: 96,
+		height: 96,
+		borderRadius: 48,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 });

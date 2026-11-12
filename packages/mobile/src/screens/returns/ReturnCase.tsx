@@ -57,6 +57,55 @@ const DANGER_ACTIONS = new Set<ReturnAction>([
 	"contest_deduction",
 ]);
 
+/** Each action's own receipt, so the buyer knows which one went through. */
+const ACTION_DONE: Partial<Record<ReturnAction, string>> = {
+	ship: "returns.done.ship",
+	accept_deduction: "returns.done.accept_deduction",
+	contest_deduction: "returns.done.contest_deduction",
+	confirm_refund: "returns.done.confirm_refund",
+	contest_refund: "returns.done.contest_refund",
+	cancel: "returns.done.cancel",
+};
+
+/** What a confirm asks before an action that cannot be taken back. */
+const CONFIRM_BODY: Partial<Record<ReturnAction, string>> = {
+	cancel: "returns.confirmCancelBody",
+	contest_deduction: "returns.confirmContestDeductionBody",
+	contest_refund: "returns.confirmContestRefundBody",
+};
+
+/** Where the case stands, in the buyer's words (`returns.step.*`). */
+function stepOf(status: string): string {
+	switch (status) {
+		case "requested":
+			return "returns.step.requested";
+		case "approved":
+		case "awaiting_shipment":
+		case "in_transit":
+			return "returns.step.shipping";
+		case "received":
+		case "inspected":
+			return "returns.step.inspection";
+		case "refund_pending":
+		case "disputed":
+			return "returns.step.refund";
+		default:
+			return "returns.step.complete";
+	}
+}
+
+/** The nearest deadline still ahead, if any. */
+function nextDeadline(
+	deadlines: Record<string, string | null>,
+	now: number,
+): string | null {
+	const ahead = Object.values(deadlines)
+		.filter((value): value is string => Boolean(value))
+		.filter((value) => new Date(value).getTime() > now)
+		.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+	return ahead[0] ?? null;
+}
+
 const shipSchema = z.object({ tracking: z.string().trim().max(200) });
 type ShipForm = z.infer<typeof shipSchema>;
 
@@ -89,16 +138,18 @@ export function ReturnCase({ id }: { id: string }) {
 		mutation.mutate(
 			{ action, body },
 			{
-				onSuccess: () => showSuccess(t("returns.actionSuccess")),
+				onSuccess: () =>
+					showSuccess(t(ACTION_DONE[action] ?? "returns.actionSuccess")),
 				onSettled: () => setRunning(null),
 			},
 		);
 	};
 	// Cancelling or contesting cannot be taken back: asked first.
 	const confirmThen = async (action: ReturnAction) => {
+		const body = CONFIRM_BODY[action];
 		const ok = await confirm(
 			t(RETURN_ACTION_LABELS[action]),
-			action === "cancel" ? t("returns.confirmCancelBody") : undefined,
+			body ? t(body) : undefined,
 			{
 				confirmText: t(RETURN_ACTION_LABELS[action]),
 				destructive: true,
@@ -113,6 +164,17 @@ export function ReturnCase({ id }: { id: string }) {
 		styles.card,
 		{ backgroundColor: c.card, borderColor: c.border },
 	];
+	const dateOf = (iso: string) =>
+		new Intl.DateTimeFormat(i18n.language, {
+			day: "numeric",
+			month: "short",
+			hour: "2-digit",
+			minute: "2-digit",
+			timeZone: "Africa/Douala",
+		}).format(new Date(iso));
+	// The first allowed action leads; the rest step back, so a stack of
+	// equal filled buttons never hides which one matters.
+	const leadAction = buyerActions.find((item) => !DANGER_ACTIONS.has(item));
 
 	return (
 		<SafeAreaView
@@ -210,6 +272,57 @@ export function ReturnCase({ id }: { id: string }) {
 								style={[styles.title, { color: c.text }]}
 								accessibilityRole="header"
 							>
+								{t("returns.actionsTitle")}
+							</Text>
+							<Text style={[styles.body, { color: c.body }]}>
+								{t(stepOf(query.data.status))}
+							</Text>
+							{(() => {
+								const due = nextDeadline(query.data.deadlines, Date.now());
+								return due ? (
+									<Text style={[styles.label, { color: c.text }]}>
+										{t("returns.nextDeadline", { date: dateOf(due) })}
+									</Text>
+								) : null;
+							})()}
+							<FormError
+								message={
+									mutation.isError
+										? resolveErrorMessage(
+												mutation.error,
+												t,
+												t("returns.actionError"),
+											)
+										: null
+								}
+							/>
+							{buyerActions.map((item) => {
+								const danger = DANGER_ACTIONS.has(item);
+								return (
+									<PurchaseButton
+										key={item}
+										label={t(RETURN_ACTION_LABELS[item])}
+										pending={running === item}
+										disabled={mutation.isPending}
+										tone={
+											danger
+												? "danger"
+												: item === leadAction
+													? "primary"
+													: "outline"
+										}
+										onPress={() =>
+											danger ? void confirmThen(item) : runAction(item)
+										}
+									/>
+								);
+							})}
+						</View>
+						<View style={card}>
+							<Text
+								style={[styles.title, { color: c.text }]}
+								accessibilityRole="header"
+							>
 								{t("returns.items")}
 							</Text>
 							{query.data.items.map((item) => (
@@ -294,7 +407,9 @@ export function ReturnCase({ id }: { id: string }) {
 								</Text>
 								<Text style={[styles.body, { color: c.body }]}>
 									{t("returns.refundProofDetail", {
-										method: query.data.refund.sellerProof.method,
+										method: t(
+											`returns.refundMethodOptions.${query.data.refund.sellerProof.method}`,
+										),
 										amount: formatPrice(
 											query.data.refund.sellerProof.amount,
 											i18n.language,
@@ -316,48 +431,12 @@ export function ReturnCase({ id }: { id: string }) {
 								events={query.data.timeline.map((event, index) => ({
 									key: `${event.status}-${event.at}-${index}`,
 									title: t(RETURN_CASE_STATUS_LABELS[event.status]),
-									meta: `${new Date(event.at).toLocaleString(i18n.language)}${
+									meta: `${dateOf(event.at)}${
 										event.note ? ` · ${event.note}` : ""
 									}`,
 								}))}
 							/>
 						</View>
-						<FormError
-							message={
-								mutation.isError
-									? resolveErrorMessage(
-											mutation.error,
-											t,
-											t("returns.actionError"),
-										)
-									: null
-							}
-						/>
-						{buyerActions.length > 0 ? (
-							<View style={styles.actions}>
-								<Text
-									style={[styles.title, { color: c.text }]}
-									accessibilityRole="header"
-								>
-									{t("returns.actionsTitle")}
-								</Text>
-								{buyerActions.map((item) => {
-									const danger = DANGER_ACTIONS.has(item);
-									return (
-										<PurchaseButton
-											key={item}
-											label={t(RETURN_ACTION_LABELS[item])}
-											pending={running === item}
-											disabled={mutation.isPending}
-											tone={danger ? "danger" : "primary"}
-											onPress={() =>
-												danger ? void confirmThen(item) : runAction(item)
-											}
-										/>
-									);
-								})}
-							</View>
-						) : null}
 						<SellerReturnActions view={query.data} />
 					</ScrollView>
 				</ScreenColumn>

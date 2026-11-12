@@ -37,6 +37,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useIsSellerTabRoot } from "@/src/contexts/SellerTabRootContext";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
+import { useShopReturns } from "@/src/hooks/useReturns";
 import { useSellerHomeActions } from "@/src/hooks/useSellerHomeActions";
 import { useSellerOrders } from "@/src/hooks/useSellerOrders";
 import { useSellerPayments } from "@/src/hooks/useSellerPayments";
@@ -221,6 +222,15 @@ function SellerHubContent({
 	const paymentsView = useSellerPayments(readsPayments ? shop.id : undefined);
 	const paymentsHolds = sellerPaymentsActionCount(paymentsView.data);
 
+	// Returns waiting on the shop, and how many are past their deadline: a
+	// missed deadline costs money, so the tile says so on the hub.
+	const readsReturns =
+		can(role, "orders.view") && shopProfileRules(shop.profile).retail;
+	const shopReturns = useShopReturns(readsReturns ? shop.id : undefined);
+	const returnsAwaiting = shopReturns.data?.awaitingCount ?? 0;
+	const returnsOverdue =
+		shopReturns.data?.rows.filter((row) => row.overdue).length ?? 0;
+
 	const share = () => {
 		const url = shopUrl(shop.handle, webUrl);
 		Share.share({ message: `${shop.name}\n${url}`, url });
@@ -246,7 +256,16 @@ function SellerHubContent({
 		returns: {
 			icon: "return-down-back-outline",
 			title: t("sellerReturns.title"),
-			body: t("sellerReturns.tileBody"),
+			body:
+				returnsOverdue > 0
+					? t("sellerReturns.tileOverdue", {
+							count: Math.max(returnsAwaiting, returnsOverdue),
+							overdue: returnsOverdue,
+						})
+					: returnsAwaiting > 0
+						? t("sellerReturns.tileAwaiting", { count: returnsAwaiting })
+						: t("sellerReturns.tileBody"),
+			alert: returnsOverdue > 0,
 			onPress: () => router.push("/seller/returns"),
 		},
 		orders: {
@@ -370,6 +389,7 @@ function SellerHubContent({
 			lowStock: counts.lowStockVariants,
 			toAccept,
 			paymentsHolds,
+			returnsAwaiting,
 		},
 		{
 			ordersEnabled,
@@ -399,6 +419,7 @@ function SellerHubContent({
 							onRefresh={() => {
 								onRefetch();
 								if (readsOrders) void toAcceptList.refetch();
+								if (readsReturns) void shopReturns.refetch();
 							}}
 							tintColor={c.primary}
 							colors={[c.primary]}

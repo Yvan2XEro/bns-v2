@@ -88,7 +88,7 @@ export function DeliveryOptionCard({
 			{option.promisedBy ? (
 				<Text style={[styles.meta, { color: c.muted }]}>
 					{t("checkout.promisedBy", {
-						date: new Date(option.promisedBy).toLocaleString(locale),
+						date: formatPromise(option.promisedBy, locale),
 					})}
 				</Text>
 			) : null}
@@ -168,3 +168,15 @@ const styles = StyleSheet.create({
 	meta: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
 	point: { padding: 12, borderRadius: 12, gap: 2 },
 });
+
+/** "jeu. 12 nov., 14:00": the promise as a buyer reads it, in Douala time. */
+function formatPromise(iso: string, locale: string): string {
+	return new Intl.DateTimeFormat(locale, {
+		weekday: "short",
+		day: "numeric",
+		month: "short",
+		hour: "2-digit",
+		minute: "2-digit",
+		timeZone: "Africa/Douala",
+	}).format(new Date(iso));
+}

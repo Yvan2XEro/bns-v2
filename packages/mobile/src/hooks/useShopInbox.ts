@@ -17,6 +17,11 @@ export function useShopInbox(
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (last) => last.nextCursor ?? undefined,
 		enabled: Boolean(shopId),
+		// A new search or filter keeps the rows on screen until its answer
+		// lands, instead of flashing skeletons per keystroke. Never across
+		// shops: another shop's threads must not stand in for this one's.
+		placeholderData: (previous, previousQuery) =>
+			previousQuery?.queryKey[1] === shopId ? previous : undefined,
 	});
 }
 

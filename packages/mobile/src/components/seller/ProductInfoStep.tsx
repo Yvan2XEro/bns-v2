@@ -3,6 +3,7 @@ import { Text, TextInput, View } from "react-native";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCategories } from "@/src/hooks/useListings";
+import type { PhotoUploads } from "@/src/hooks/usePhotoUploads";
 import { type FieldIssue, issueAt } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -20,10 +21,15 @@ import { ProductPhotosCard } from "./ProductPhotosCard";
 export function ProductInfoStep({
 	form,
 	setForm,
+	uploads,
+	readOnly,
 	issues = [],
 }: {
 	form: ProductFormState;
 	setForm: Dispatch<SetStateAction<ProductFormState>>;
+	uploads: PhotoUploads;
+	/** A shop that cannot edit: the fields read as values, nothing uploads. */
+	readOnly?: boolean;
 	/** What the server would refuse on this step, once the seller tried to move on. */
 	issues?: FieldIssue[];
 }) {
@@ -45,7 +51,13 @@ export function ProductInfoStep({
 	const attributes: ListingAttribute[] = getCategoryAttributes(form.category);
 	const inputStyle = [
 		f.input,
-		{ color: c.text, backgroundColor: c.input, borderColor: c.border },
+		readOnly
+			? {
+					color: c.muted,
+					backgroundColor: c.neutralSoft,
+					borderColor: c.border,
+				}
+			: { color: c.text, backgroundColor: c.input, borderColor: c.border },
 	];
 	const flagged = (path: string) =>
 		issueAt(issues, path) ? { borderColor: ISSUE_BORDER } : null;
@@ -55,7 +67,12 @@ export function ProductInfoStep({
 
 	return (
 		<View style={{ gap: 14 }}>
-			<ProductPhotosCard form={form} setForm={setForm} />
+			<ProductPhotosCard
+				form={form}
+				setForm={setForm}
+				uploads={uploads}
+				readOnly={readOnly}
+			/>
 			<FieldIssueText issue={issueAt(issues, "images")} />
 
 			<View
@@ -72,6 +89,7 @@ export function ProductInfoStep({
 				<TextInput
 					value={form.title}
 					onChangeText={(title) => setForm((s) => ({ ...s, title }))}
+					editable={!readOnly}
 					maxLength={120}
 					placeholder={t("product.titlePlaceholder")}
 					placeholderTextColor={c.muted}
@@ -83,28 +101,33 @@ export function ProductInfoStep({
 				<Text style={[f.label, { color: c.body }]}>
 					{t("product.categoryLabel")} *
 				</Text>
-				<CategoryField
-					categories={sellable}
-					value={form.category}
-					onSelect={(category) =>
-						setForm((s) => ({ ...s, category, attributes: {} }))
-					}
-					onClear={() =>
-						setForm((s) => ({ ...s, category: null, attributes: {} }))
-					}
-					colors={{
-						cardBg: c.card,
-						textColor: c.text,
-						mutedColor: c.muted,
-						primary: c.primary,
-						// Behind the sheet's white icon glyphs.
-						fill: c.fill,
-						link: c.link,
-						border: c.border,
-						isDark: c.isDark,
-						inputBg: c.input,
-					}}
-				/>
+				<View
+					pointerEvents={readOnly ? "none" : "auto"}
+					accessibilityState={{ disabled: !!readOnly }}
+				>
+					<CategoryField
+						categories={sellable}
+						value={form.category}
+						onSelect={(category) =>
+							setForm((s) => ({ ...s, category, attributes: {} }))
+						}
+						onClear={() =>
+							setForm((s) => ({ ...s, category: null, attributes: {} }))
+						}
+						colors={{
+							cardBg: c.card,
+							textColor: c.text,
+							mutedColor: c.muted,
+							primary: c.primary,
+							// Behind the sheet's white icon glyphs.
+							fill: c.fill,
+							link: c.link,
+							border: c.border,
+							isDark: c.isDark,
+							inputBg: c.input,
+						}}
+					/>
+				</View>
 				<FieldIssueText issue={issueAt(issues, "category")} />
 
 				{groupListingAttributes(attributes).map((section) => (
@@ -118,13 +141,14 @@ export function ProductInfoStep({
 							</Text>
 						) : null}
 						{section.attributes.map((attr) => (
-							<ProductAttributeInput
-								key={attr.slug}
-								attribute={attr}
-								value={form.attributes[attr.slug] ?? ""}
-								onChange={(value) => setAttr(attr.slug, value)}
-								issue={issueAt(issues, `attributes.${attr.slug}`)}
-							/>
+							<View key={attr.slug} pointerEvents={readOnly ? "none" : "auto"}>
+								<ProductAttributeInput
+									attribute={attr}
+									value={form.attributes[attr.slug] ?? ""}
+									onChange={(value) => setAttr(attr.slug, value)}
+									issue={issueAt(issues, `attributes.${attr.slug}`)}
+								/>
+							</View>
 						))}
 					</View>
 				))}
@@ -142,6 +166,7 @@ export function ProductInfoStep({
 					onChangeText={(description) =>
 						setForm((s) => ({ ...s, description }))
 					}
+					editable={!readOnly}
 					maxLength={5000}
 					multiline
 					placeholder={t("product.descriptionPlaceholder")}

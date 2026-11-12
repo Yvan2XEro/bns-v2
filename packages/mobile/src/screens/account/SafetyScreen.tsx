@@ -1,8 +1,10 @@
 import type { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import {
+	GroupedRow,
 	GroupedSection,
 	RowIcon,
 	useGroupedColors,
@@ -72,6 +74,31 @@ export function SafetyScreen() {
 							</View>
 						</View>
 					))}
+				</GroupedSection>
+
+				{/* Advice, then the way forward for someone it is already too
+				    late for. */}
+				<GroupedSection
+					title={t("safety.actionsTitle", { defaultValue: "Un problème ?" })}
+				>
+					<GroupedRow
+						icon="chatbubble-ellipses-outline"
+						iconTone="brand"
+						label={t("disputes.title")}
+						detail={t("disputes.subtitle")}
+						onPress={() => router.push("/account/disputes")}
+					/>
+					<GroupedRow
+						icon="flag-outline"
+						iconTone="danger"
+						label={t("contact.subjectAbuse")}
+						onPress={() =>
+							router.push({
+								pathname: "/contact",
+								params: { subject: "subjectAbuse" },
+							})
+						}
+					/>
 				</GroupedSection>
 			</ScrollView>
 		</SafeAreaView>

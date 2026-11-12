@@ -190,13 +190,14 @@ export function DocumentSlot({
 		showAlert(
 			t("verification.documents.confirmDeleteTitle"),
 			t("verification.documents.confirmDelete"),
+			// Cancel first, on the left, as every other dialog (DESIGN.md).
 			[
+				{ text: t("common.cancel"), style: "cancel" },
 				{
 					text: t("common.delete"),
 					style: "destructive",
 					onPress: () => onDelete(documentId),
 				},
-				{ text: t("common.cancel"), style: "cancel" },
 			],
 			"warning",
 		);
@@ -395,5 +396,5 @@ const styles = StyleSheet.create({
 		minHeight: 48,
 	},
 	hint: { fontSize: 13, fontFamily: Fonts.body },
-	error: { fontSize: 12, fontFamily: Fonts.body },
+	error: { fontSize: 14, lineHeight: 20, fontFamily: Fonts.body },
 });

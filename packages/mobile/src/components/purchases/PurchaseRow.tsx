@@ -74,12 +74,20 @@ export function PurchaseRow({
 	const number = t("purchases.orderNumber", { number: entry.orderNumber });
 	const paymentKey = purchasePaymentKey(entry);
 	const liveArrival = purchaseLiveArrival(entry);
+	// The one buyer task the list can see: a protected order still to pay
+	// before it lapses. Flagged on the row so nobody has to open each order.
+	const mustPay =
+		entry.paymentMethod === "mobile_money" &&
+		entry.status === "placed" &&
+		(entry.paymentStatus === "unpaid" ||
+			entry.paymentStatus === "awaiting_payment");
+	const todo = mustPay ? t("purchases.todoPay") : null;
 
 	return (
 		<Pressable
 			onPress={onPress}
 			accessibilityRole="button"
-			accessibilityLabel={`${entry.firstItemTitle}, ${number}, ${t(purchaseStatusKey(entry.status))}, ${formatPrice(entry.total, lang)}`}
+			accessibilityLabel={`${todo ? `${todo}, ` : ""}${entry.firstItemTitle}, ${number}, ${t(purchaseStatusKey(entry.status))}, ${formatPrice(entry.total, lang)}`}
 			accessibilityState={{ selected: Boolean(selected) }}
 			style={({ pressed }) => [
 				styles.card,
@@ -142,6 +150,14 @@ export function PurchaseRow({
 						{paymentKey ? ` · ${t(paymentKey)}` : ""}
 					</Text>
 				</View>
+				{todo ? (
+					<View style={styles.arrival}>
+						<Ionicons name="alert-circle" size={14} color={c.warningText} />
+						<Text style={[styles.arrivalText, { color: c.warningText }]}>
+							{todo}
+						</Text>
+					</View>
+				) : null}
 				{liveArrival ? (
 					<View style={styles.arrival}>
 						<Ionicons name="time-outline" size={14} color={inkOf(c)} />

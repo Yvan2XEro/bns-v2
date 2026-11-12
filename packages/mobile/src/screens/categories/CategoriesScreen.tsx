@@ -36,9 +36,15 @@ import {
 const GROUP_CHIPS = 8;
 const RAIL_WIDTH = 96;
 
-/** The one search of the app, filtered on the category itself. */
+/**
+ * The one search of the app, filtered on the category itself. `entry` makes
+ * it a fresh search: no text or sort left over from the last one.
+ */
 function openCategory(id: string) {
-	router.push({ pathname: "/(tabs)/search", params: { category: id } });
+	router.push({
+		pathname: "/(tabs)/search",
+		params: { category: id, entry: String(Date.now()) },
+	});
 }
 
 function Thumb({
@@ -219,7 +225,7 @@ export function CategoriesScreen() {
 										numberOfLines={2}
 										style={[
 											styles.railLabel,
-											{ color: active ? c.link : c.body },
+											{ color: active ? c.link : c.foreground },
 											active && styles.railLabelActive,
 										]}
 										android_hyphenationFrequency="normal"
@@ -457,8 +463,8 @@ const styles = StyleSheet.create({
 		gap: 6,
 	},
 	railLabel: {
-		fontSize: 12,
-		lineHeight: 15,
+		fontSize: 13,
+		lineHeight: 16,
 		textAlign: "center",
 		fontFamily: Fonts.bodySemibold,
 	},

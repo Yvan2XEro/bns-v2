@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
 	AuthField,
@@ -15,7 +15,9 @@ import { useTranslation } from "@/src/lib/i18n";
 export default function ForgotPasswordScreen() {
 	const { showError } = useAlert();
 	const { t } = useTranslation();
-	const [email, setEmail] = useState("");
+	// The address typed on the sign-in screen comes along.
+	const params = useLocalSearchParams<{ email?: string }>();
+	const [email, setEmail] = useState(params.email ?? "");
 	const [loading, setLoading] = useState(false);
 	const [sent, setSent] = useState(false);
 

@@ -10,7 +10,12 @@ import {
 } from "@/src/components/delivery/CourierRows";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
-import { QueueSkeleton } from "@/src/components/moderation/ModerationKit";
+import {
+	isConnectionError,
+	isForbiddenError,
+	OfflineMark,
+	QueueSkeleton,
+} from "@/src/components/moderation/ModerationKit";
 import { OpsGroupHeader } from "@/src/components/moderation/OpsGroupHeader";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -26,9 +31,28 @@ import {
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
-import { groupRiderRows } from "@/src/lib/riderShipment";
+import { groupRiderRows, riderGroup } from "@/src/lib/riderShipment";
 
-function AssignRider({ row }: { row: CourierShipmentRow }) {
+/** Parcels each rider is carrying now (to pick up, picked up, on the way). */
+function openLoadByRider(rows: readonly CourierShipmentRow[]) {
+	const load = new Map<string, number>();
+	for (const row of rows) {
+		if (riderGroup(row.status) !== "today") continue;
+		const rider = row.rider?.user;
+		const riderId = typeof rider === "object" && rider ? rider.id : rider;
+		if (!riderId) continue;
+		load.set(riderId, (load.get(riderId) ?? 0) + 1);
+	}
+	return load;
+}
+
+function AssignRider({
+	row,
+	load,
+}: {
+	row: CourierShipmentRow;
+	load: Map<string, number>;
+}) {
 	const { t } = useTranslation();
 	const c = useShopTheme();
 	const { showConfirm } = useAlert();
@@ -58,30 +82,39 @@ function AssignRider({ row }: { row: CourierShipmentRow }) {
 					{t("shipmentPanel.noRiders")}
 				</Text>
 			) : null}
-			{(riders.data ?? []).map((member) => {
-				const user = typeof member.user === "object" ? member.user : null;
-				const userId = user?.id ?? String(member.user);
-				return (
-					<SheetButton
-						key={member.id}
-						tone="secondary"
-						label={user?.name ?? userId}
-						// The spinner sits on the rider being assigned; the others wait.
-						pending={assign.isPending && assign.variables === userId}
-						disabled={assign.isPending}
-						// One tap away from sending someone across town: confirm first.
-						onPress={() =>
-							showConfirm(
-								t("shipmentPanel.assignRider"),
-								t("shipmentPanel.assignConfirm", {
-									name: user?.name ?? userId,
-								}),
-								() => assign.mutate(userId),
-							)
-						}
-					/>
-				);
-			})}
+			{/* Least loaded first, each with what they already carry: the
+			    dispatcher picks a rider, not a name. */}
+			{(riders.data ?? [])
+				.map((member) => {
+					const user = typeof member.user === "object" ? member.user : null;
+					const userId = user?.id ?? String(member.user);
+					return { member, user, userId, open: load.get(userId) ?? 0 };
+				})
+				.sort((a, b) => a.open - b.open)
+				.map(({ member, user, userId, open }) => {
+					return (
+						<SheetButton
+							key={member.id}
+							tone="secondary"
+							label={`${user?.name ?? userId} · ${t("shipmentPanel.riderLoad", {
+								count: open,
+							})}`}
+							// The spinner sits on the rider being assigned; the others wait.
+							pending={assign.isPending && assign.variables === userId}
+							disabled={assign.isPending}
+							// One tap away from sending someone across town: confirm first.
+							onPress={() =>
+								showConfirm(
+									t("shipmentPanel.assignRider"),
+									t("shipmentPanel.assignConfirm", {
+										name: user?.name ?? userId,
+									}),
+									() => assign.mutate(userId),
+								)
+							}
+						/>
+					);
+				})}
 			{assign.error ? (
 				<View
 					accessibilityRole="alert"
@@ -96,7 +129,13 @@ function AssignRider({ row }: { row: CourierShipmentRow }) {
 	);
 }
 
-function DispatcherRow({ row }: { row: CourierShipmentRow }) {
+function DispatcherRow({
+	row,
+	load,
+}: {
+	row: CourierShipmentRow;
+	load: Map<string, number>;
+}) {
 	const { t, i18n } = useTranslation();
 	const { showConfirm } = useAlert();
 	const [assigning, setAssigning] = useState(false);
@@ -117,7 +156,7 @@ function DispatcherRow({ row }: { row: CourierShipmentRow }) {
 							onPress={() => setAssigning(!assigning)}
 						/>
 					) : null}
-					{assigning ? <AssignRider row={row} /> : null}
+					{assigning ? <AssignRider row={row} load={load} /> : null}
 					{canRemit ? (
 						<SheetButton
 							label={t("shipmentPanel.declareRemitted")}
@@ -151,7 +190,9 @@ export default function CourierDispatchScreen() {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const query = useCourierShipments();
-	const groups = groupRiderRows(query.data?.rows ?? []);
+	const rows = query.data?.rows ?? [];
+	const load = openLoadByRider(rows);
+	const groups = groupRiderRows(rows);
 	const counts = new Map(groups.map(({ group, rows }) => [group, rows.length]));
 	const items: CourierListItem[] = groups.flatMap(({ group, rows }) => [
 		{ kind: "header" as const, key: `h-${group}`, group },
@@ -165,10 +206,21 @@ export default function CourierDispatchScreen() {
 			<SellerHeader title={t("shipmentPanel.dispatchTitle")} />
 			{query.isPending ? (
 				<QueueSkeleton rows={4} />
-			) : query.isError ? (
+			) : query.isError && isForbiddenError(query.error) ? (
 				<EmptyState
 					illustration="auth"
 					title={t("shipmentPanel.notMember")}
+					subtitle={resolveErrorMessage(query.error, t)}
+				/>
+			) : query.isError ? (
+				// A weak signal is not a missing membership: only a 403 says
+				// "not for you"; everything else is a load that can be retried.
+				<EmptyState
+					illustration={isConnectionError(query.error) ? undefined : "notFound"}
+					illustrationNode={
+						isConnectionError(query.error) ? <OfflineMark /> : undefined
+					}
+					title={t("shipmentPanel.loadError")}
 					subtitle={resolveErrorMessage(query.error, t)}
 					ctaLabel={t("common.retry")}
 					onCta={() => query.refetch()}
@@ -196,7 +248,7 @@ export default function CourierDispatchScreen() {
 									count={counts.get(item.group) ?? 0}
 								/>
 							) : (
-								<DispatcherRow row={item.row} />
+								<DispatcherRow row={item.row} load={load} />
 							)
 						}
 					/>

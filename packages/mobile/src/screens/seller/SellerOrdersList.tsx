@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { useLocalSearchParams } from "expo-router";
-import { useReducer, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -21,6 +21,7 @@ import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
 import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { toast } from "@/src/components/Toast";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useAcceptOrderFromList } from "@/src/hooks/useOrderActions";
 import { useSellerOrders } from "@/src/hooks/useSellerOrders";
@@ -42,11 +43,18 @@ function reducer(state: State, patch: Partial<State>): State {
 export function SellerOrdersList({ selectedId, onOpen }: SplitListProps) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const params = useLocalSearchParams<{ tab?: string }>();
+	const params = useLocalSearchParams<{ tab?: string; at?: string }>();
 	const [state, patch] = useReducer(reducer, {
 		tab: initialShopOrderTab(params.tab),
 		search: "",
 	});
+	// The Orders tab stays mounted. A dashboard task opens it with a `tab` and
+	// a fresh `at`, so the asked tab wins even when the seller had moved to
+	// another one, without remounting the list and losing its scroll.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs per navigation only
+	useEffect(() => {
+		if (params.tab) patch({ tab: initialShopOrderTab(params.tab) });
+	}, [params.tab, params.at]);
 	const { shop, isLoading: shopLoading } = useActiveShop();
 
 	// The counts narrow with `q` exactly as the rows do, so both read one query.
@@ -69,7 +77,20 @@ export function SellerOrdersList({ selectedId, onOpen }: SplitListProps) {
 
 	const accept = (id: string) => {
 		setRowError(null);
+		const number = rows.find((row) => row.id === id)?.orderNumber ?? "";
 		acceptFromList.mutate(id, {
+			// The row leaves "À accepter" at once: say where it went (the toast
+			// announces itself to screen readers) and offer the way there.
+			onSuccess: () => {
+				toast.show({
+					type: "success",
+					title: t("sellerOrders.acceptedToast", { number }),
+					action: {
+						label: t("common.view"),
+						onPress: () => patch({ tab: "to_ship" }),
+					},
+				});
+			},
 			onError: (error) =>
 				setRowError({
 					id,
@@ -164,17 +185,19 @@ export function SellerOrdersList({ selectedId, onOpen }: SplitListProps) {
 					ctaLabel={t("common.retry")}
 					onCta={() => orders.refetch()}
 				/>
-			) : rows.length === 0 ? (
-				<EmptyState
-					illustration={q ? "searching" : "empty"}
-					title={
-						q
-							? t("sellerOrders.emptySearch", { query: q })
-							: t("sellerOrders.empty")
-					}
-				/>
 			) : (
 				<FlashList
+					// Pull-to-refresh stays available on an empty tab too.
+					ListEmptyComponent={
+						<EmptyState
+							illustration={q ? "searching" : "empty"}
+							title={
+								q
+									? t("sellerOrders.emptySearch", { query: q })
+									: t(`sellerOrders.emptyTab_${state.tab}`)
+							}
+						/>
+					}
 					data={rows}
 					keyExtractor={(row) => row.id}
 					contentContainerStyle={styles.list}

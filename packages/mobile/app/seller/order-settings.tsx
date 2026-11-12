@@ -1,11 +1,5 @@
-import {
-	KeyboardAvoidingView,
-	Platform,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { BillingShell } from "@/src/components/billing/BillingShell";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { CapsNotice } from "@/src/components/billing/CapsNotice";
@@ -56,37 +50,33 @@ function OrderSettingsContent({
 	const caps = capsNotice(view);
 
 	return (
-		<KeyboardAvoidingView
-			style={{ flex: 1 }}
-			behavior={Platform.OS === "ios" ? "padding" : undefined}
-		>
-			<ScreenColumn width="reading">
-				<ScrollView
-					contentContainerStyle={styles.content}
-					keyboardShouldPersistTaps="handled"
-				>
-					{caps ? <CapsNotice caps={caps} /> : null}
-					{view.cityDefaultFee === null ? (
-						<View
-							style={[
-								s.card,
-								{ backgroundColor: c.warningSoft, borderColor: c.warningSoft },
-							]}
-						>
-							<Text style={[s.body, { color: c.warningText }]}>
-								{t("billing.launchCityNotice")}
-							</Text>
-						</View>
-					) : null}
-					{!canEdit ? (
-						<Text style={[s.body, { color: c.muted }]}>
-							{t("billing.settingsReadOnly")}
+		<ScreenColumn width="reading">
+			<KeyboardAwareScrollView
+				contentContainerStyle={styles.content}
+				keyboardShouldPersistTaps="handled"
+				bottomOffset={24}
+			>
+				{caps ? <CapsNotice caps={caps} /> : null}
+				{view.cityDefaultFee === null ? (
+					<View
+						style={[
+							s.card,
+							{ backgroundColor: c.warningSoft, borderColor: c.warningSoft },
+						]}
+					>
+						<Text style={[s.body, { color: c.warningText }]}>
+							{t("billing.launchCityNotice")}
 						</Text>
-					) : null}
-					<OrderSettingsForm shopId={shopId} view={view} canEdit={canEdit} />
-				</ScrollView>
-			</ScreenColumn>
-		</KeyboardAvoidingView>
+					</View>
+				) : null}
+				{!canEdit ? (
+					<Text style={[s.body, { color: c.muted }]}>
+						{t("billing.settingsReadOnly")}
+					</Text>
+				) : null}
+				<OrderSettingsForm shopId={shopId} view={view} canEdit={canEdit} />
+			</KeyboardAwareScrollView>
+		</ScreenColumn>
 	);
 }
 

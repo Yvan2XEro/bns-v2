@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import type { Dispatch, SetStateAction } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
+import type { PhotoUploads } from "@/src/hooks/usePhotoUploads";
 import type { FieldIssue } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ProductFormState } from "@/src/lib/productForm";
@@ -13,10 +14,15 @@ import { ProductMovementsCard } from "./ProductMovementsCard";
 import { PublishStep } from "./PublishStep";
 import { VariantsStep } from "./VariantsStep";
 
-/** The existing-product editor: publish settings, variants, info and history. */
+/**
+ * The existing-product editor: info (photos, title), variants, publish
+ * settings, then history. The most common edit — a photo or the title — used
+ * to sit below the publish settings and the whole variant table.
+ */
 export function ProductEditorContent({
 	form,
 	setForm,
+	uploads,
 	issues,
 	readOnly,
 	canManageCost,
@@ -25,6 +31,8 @@ export function ProductEditorContent({
 }: {
 	form: ProductFormState;
 	setForm: Dispatch<SetStateAction<ProductFormState>>;
+	/** The screen owns the photo queue, so it survives step changes and can block a save. */
+	uploads: PhotoUploads;
 	issues: FieldIssue[];
 	readOnly: boolean;
 	canManageCost: boolean;
@@ -36,6 +44,21 @@ export function ProductEditorContent({
 
 	return (
 		<>
+			<ProductInfoStep
+				form={form}
+				setForm={setForm}
+				uploads={uploads}
+				readOnly={readOnly}
+				issues={issues}
+			/>
+			<VariantsStep
+				form={form}
+				setForm={setForm}
+				editing
+				readOnly={readOnly}
+				canManageCost={canManageCost}
+				issues={issues}
+			/>
 			<PublishStep
 				form={form}
 				setForm={setForm}
@@ -69,15 +92,6 @@ export function ProductEditorContent({
 					</Text>
 				</Pressable>
 			) : null}
-			<VariantsStep
-				form={form}
-				setForm={setForm}
-				editing
-				readOnly={readOnly}
-				canManageCost={canManageCost}
-				issues={issues}
-			/>
-			<ProductInfoStep form={form} setForm={setForm} issues={issues} />
 			<ProductMovementsCard movements={movements} />
 		</>
 	);

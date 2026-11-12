@@ -21,9 +21,49 @@ import { SettingsHeader } from "@/src/components/settings/SettingsHeader";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
+
+interface SavedSearch {
+	id: string;
+	name: string;
+	query?: string | null;
+	url?: string | null;
+	filters?: Record<string, unknown> | null;
+	alertEnabled?: boolean;
+	createdAt?: string;
+}
+
+const savedSearchesKey = ["saved-searches"] as const;
+
+/**
+ * The params the search tab reads, rebuilt from what was saved. The stored
+ * `url` ("/search?q=…&category=…") carries every criterion; older rows
+ * without one fall back to the query plus the filters. The name is never
+ * the query: a renamed search ("Corolla pas chère") would be fed to the
+ * engine as text.
+ */
+export function savedSearchParams(item: SavedSearch): Record<string, string> {
+	const params: Record<string, string> = {};
+	const queryString = item.url?.split("?")[1];
+	if (queryString) {
+		for (const [key, value] of new URLSearchParams(queryString)) {
+			if (value && key !== "sort") params[key] = value;
+		}
+		return params;
+	}
+	if (item.query) params.q = item.query;
+	for (const [key, value] of Object.entries(item.filters ?? {})) {
+		if (key === "sort" || value == null || value === "") continue;
+		if (typeof value === "string" || typeof value === "number") {
+			params[key] = String(value);
+		}
+	}
+	return params;
+}
 
 /**
  * Saved searches as one inset list: tap a search to run it again, the
@@ -35,13 +75,15 @@ export function SavedSearchesScreen() {
 	const { t } = useTranslation();
 	const { user, isLoading: authLoading } = useAuth();
 	const queryClient = useQueryClient();
-	const { showConfirm } = useAlert();
+	const { showConfirm, showError } = useAlert();
 	const danger = c.isDark ? c.dangerText : c.destructive;
 
-	const { data, isLoading, refetch } = useQuery({
-		queryKey: ["saved-searches"],
+	const { data, isLoading, isError, refetch } = useQuery({
+		queryKey: savedSearchesKey,
 		queryFn: () =>
-			api.get<{ docs: any[] }>("/api/saved-searches?sort=-createdAt&limit=50"),
+			api.get<{ docs: SavedSearch[] }>(
+				"/api/saved-searches?sort=-createdAt&limit=50",
+			),
 		enabled: !!user && !authLoading,
 	});
 
@@ -50,14 +92,70 @@ export function SavedSearchesScreen() {
 	const { mutate: toggleAlert } = useMutation({
 		mutationFn: ({ id, alertEnabled }: { id: string; alertEnabled: boolean }) =>
 			api.patch(`/api/saved-searches/${id}`, { alertEnabled }),
+		// The switch moves under the thumb at once; a refusal puts it back
+		// and says so, instead of snapping back on a slow network.
+		onMutate: async ({ id, alertEnabled }) => {
+			await queryClient.cancelQueries({ queryKey: savedSearchesKey });
+			const previous = queryClient.getQueryData<{ docs: SavedSearch[] }>(
+				savedSearchesKey,
+			);
+			queryClient.setQueryData<{ docs: SavedSearch[] }>(
+				savedSearchesKey,
+				(old) =>
+					old
+						? {
+								...old,
+								docs: old.docs.map((doc) =>
+									doc.id === id ? { ...doc, alertEnabled } : doc,
+								),
+							}
+						: old,
+			);
+			return { previous };
+		},
+		onError: (err, _vars, context) => {
+			if (context?.previous) {
+				queryClient.setQueryData(savedSearchesKey, context.previous);
+			}
+			showError(t("common.error"), resolveErrorMessage(err, t));
+		},
 		onSettled: () =>
-			queryClient.invalidateQueries({ queryKey: ["saved-searches"] }),
+			queryClient.invalidateQueries({ queryKey: savedSearchesKey }),
 	});
+
+	// "Douala · ≤ 150 000 FCFA": enough to tell two "iPhone" searches apart.
+	const describe = (item: SavedSearch): string | null => {
+		const params = savedSearchParams(item);
+		const parts: string[] = [];
+		if (params.location) parts.push(params.location);
+		const min = Number(params.minPrice);
+		const max = Number(params.maxPrice);
+		if (min > 0 && max > 0) {
+			parts.push(`${formatPrice(min)} – ${formatPrice(max)}`);
+		} else if (max > 0) {
+			parts.push(`≤ ${formatPrice(max)}`);
+		} else if (min > 0) {
+			parts.push(`≥ ${formatPrice(min)}`);
+		}
+		const extra = Object.keys(params).filter(
+			(key) => key === "category" || key.startsWith("attr_"),
+		).length;
+		if (extra > 0) {
+			parts.push(
+				t("savedSearches.filterCount", {
+					count: extra,
+					defaultValue: extra > 1 ? "{{count}} filtres" : "{{count}} filtre",
+				}),
+			);
+		}
+		return parts.length ? parts.join(" · ") : null;
+	};
 
 	const { mutate: deleteSearch } = useMutation({
 		mutationFn: (id: string) => api.delete(`/api/saved-searches/${id}`),
+		onError: (err) => showError(t("common.error"), resolveErrorMessage(err, t)),
 		onSettled: () =>
-			queryClient.invalidateQueries({ queryKey: ["saved-searches"] }),
+			queryClient.invalidateQueries({ queryKey: savedSearchesKey }),
 	});
 
 	const [refreshing, setRefreshing] = React.useState(false);
@@ -85,6 +183,16 @@ export function SavedSearchesScreen() {
 						<SkeletonRow key={i} />
 					))}
 				</View>
+			) : isError && searches.length === 0 ? (
+				// A failed load is not an empty list: "no searches" would read as
+				// if they had been deleted.
+				<EmptyState
+					icon="alert-circle-outline"
+					title={t("common.error")}
+					subtitle={t("home.errorSub")}
+					ctaLabel={t("common.retry")}
+					onCta={() => void refetch()}
+				/>
 			) : searches.length === 0 ? (
 				<EmptyState
 					icon="bookmark-outline"
@@ -122,6 +230,7 @@ export function SavedSearchesScreen() {
 					)}
 					renderItem={({ item, index }) => {
 						const date = formatDate(item.createdAt);
+						const meta = describe(item);
 						const first = index === 0;
 						const last = index === searches.length - 1;
 						return (
@@ -137,11 +246,16 @@ export function SavedSearchesScreen() {
 									onPress={() => {
 										router.push({
 											pathname: "/(tabs)/search",
-											params: { q: item.name },
+											// A fresh `entry` makes a mounted Search tab
+											// reset its text, sort and segment to these.
+											params: {
+												...savedSearchParams(item),
+												entry: String(Date.now()),
+											},
 										});
 									}}
 									accessibilityRole="button"
-									accessibilityLabel={[item.name, date]
+									accessibilityLabel={[item.name, meta, date]
 										.filter(Boolean)
 										.join(", ")}
 									android_ripple={{ color: c.well }}
@@ -158,6 +272,14 @@ export function SavedSearchesScreen() {
 									>
 										{item.name}
 									</Text>
+									{meta ? (
+										<Text
+											style={[styles.searchMeta, { color: c.body }]}
+											numberOfLines={1}
+										>
+											{meta}
+										</Text>
+									) : null}
 									{date ? (
 										<Text
 											style={[styles.searchDate, { color: c.mutedForeground }]}
@@ -252,6 +374,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 	},
 	searchName: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.bodyMedium },
+	searchMeta: { fontSize: 14, lineHeight: 19, fontFamily: Fonts.body },
 	searchDate: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	alert: { alignItems: "center", gap: 2, paddingHorizontal: 4 },
 	alertLabel: { fontSize: 11, fontFamily: Fonts.bodySemibold },

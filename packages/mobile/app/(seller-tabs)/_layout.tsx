@@ -260,7 +260,9 @@ const styles = StyleSheet.create({
 		// inset from the box edge, not outside it.
 		top: 0,
 		right: 4,
-		backgroundColor: "#d23a2e",
+		// The danger fill keeps its day value at night, as the shop palette's
+		// `danger` does: the night red under white 11pt text falls below 4.5:1.
+		backgroundColor: Colors.light.destructive,
 		borderRadius: 10,
 		minWidth: 18,
 		height: 18,
@@ -269,7 +271,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 4,
 	},
 	badgeText: {
-		color: "#ffffff",
+		color: Colors.light.destructiveForeground,
 		fontSize: 11,
 		fontFamily: Fonts.displayExtrabold,
 		fontVariant: ["tabular-nums"],

@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { StyleSheet, Text, TextInput } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useContestDelivery } from "@/src/hooks/useOrderActions";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
@@ -25,6 +26,7 @@ export function ContestSheet({
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
 	const contest = useContestDelivery(order.id);
+	const { showSuccess } = useAlert();
 	const { control, handleSubmit, formState, setError } = useForm<ContestValues>(
 		{ resolver: zodResolver(contestSchema), defaultValues: { note: "" } },
 	);
@@ -34,6 +36,7 @@ export function ContestSheet({
 		try {
 			await contest.mutateAsync(note ? { note } : {});
 			onClose();
+			showSuccess(t("purchases.contestSent"));
 		} catch (error) {
 			setError("root", { message: resolveErrorMessage(error, t) });
 		}

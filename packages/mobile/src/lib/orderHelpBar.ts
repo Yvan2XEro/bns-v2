@@ -1,7 +1,7 @@
 export type OrderHelpAction = "report_problem" | "message_shop";
 
 /**
- * The fixed bar under an order. "Un problème ?" follows the rule the screen
+ * The fixed bar under an order. "Signaler un problème" follows the rule the screen
  * already applied to its report link (disputes on, `contest_delivery`
  * offered); writing to the shop needs only a shop to write to.
  */

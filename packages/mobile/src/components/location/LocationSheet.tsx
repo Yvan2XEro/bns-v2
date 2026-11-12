@@ -1,7 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+	Linking,
+	Pressable,
+	StyleSheet,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import {
@@ -79,7 +86,14 @@ function LocationSheetBody({
 		[onSelect, onClose],
 	);
 
+	// Once the OS has refused, asking again shows nothing: the only way
+	// forward is the phone's settings, so the row says so and goes there.
+	const blocked = failure === "permission-denied";
 	const locate = useCallback(async () => {
+		if (failure === "permission-denied") {
+			void Linking.openSettings();
+			return;
+		}
 		setFailure(null);
 		// From a press, so this is allowed to show the OS permission dialog.
 		const result = await location.requestDetection();
@@ -99,7 +113,7 @@ function LocationSheetBody({
 				: {}),
 			source: "device",
 		});
-	}, [location, pick]);
+	}, [failure, location, pick]);
 
 	const rows = useMemo<SheetRow[]>(() => {
 		const out: SheetRow[] = [{ type: "nearby", key: "nearby" }];
@@ -186,8 +200,12 @@ function LocationSheetBody({
 						case "nearby":
 							return (
 								<ActionRow
-									icon="navigate"
-									label={t("locationSheet.nearMe")}
+									icon={blocked ? "settings-outline" : "navigate"}
+									label={
+										blocked
+											? t("settings.permissions.action.openSettings")
+											: t("locationSheet.nearMe")
+									}
 									hint={
 										failure
 											? t(FAILURE_KEYS[failure])

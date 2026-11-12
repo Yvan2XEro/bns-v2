@@ -24,11 +24,17 @@ export default function VerifyPhoneScreen() {
 	const params = useLocalSearchParams<{ action?: string }>();
 	const action: GatedAction =
 		ACTIONS.find((value) => value === params.action) ?? "publishListing";
+	// Opened from a notification or a cold deep link there is nothing behind
+	// this screen: leaving goes home instead of doing nothing.
+	const leave = () => {
+		if (router.canGoBack()) router.back();
+		else router.replace("/(tabs)/home");
+	};
 
 	return (
 		<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
 			<Pressable
-				onPress={() => router.back()}
+				onPress={leave}
 				accessibilityRole="button"
 				accessibilityLabel={t("common.close")}
 				style={styles.close}
@@ -56,7 +62,7 @@ export default function VerifyPhoneScreen() {
 					<PhoneGate
 						onVerified={() => {
 							void queryClient.invalidateQueries({ queryKey: phoneStatusKey });
-							router.back();
+							leave();
 						}}
 					/>
 				</KeyboardAwareScrollView>

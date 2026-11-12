@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -41,6 +42,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ShellPattern } from "@/src/components/brand/BackgroundPattern";
 import { useOnboarding } from "@/src/contexts/OnboardingContext";
 import { useTranslation } from "@/src/lib/i18n";
+import { LANG_STORAGE_KEY } from "@/src/screens/account/SettingsScreen";
 
 // ─── Animated SVG primitives ──────────────────────────────────────────────────
 const AnimatedG = Animated.createAnimatedComponent(G);
@@ -1402,7 +1404,9 @@ function Dot({ index, currentIndex }: { index: number; currentIndex: number }) {
 			style={[
 				dotStyles.dot,
 				{
-					backgroundColor: isActive ? "#ffb81c" : "rgba(255,255,255,0.28)",
+					// White on the shell: the signage yellow stays for prices
+					// and selling (DESIGN.md).
+					backgroundColor: isActive ? "#ffffff" : "rgba(255,255,255,0.28)",
 				},
 				style,
 			]}
@@ -1418,11 +1422,22 @@ const dotStyles = StyleSheet.create({
 export default function OnboardingScreen() {
 	const isDark = useColorScheme() === "dark";
 	const shell = isDark ? Colors.dark.shell : Colors.light.shell;
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const { hasSeenOnboarding, isLoading, markOnboardingSeen } = useOnboarding();
 	// Live width — the pager measures each slide against it, so a stale
 	// module-scope value breaks paging after rotation / Stage Manager resize.
-	const { width: SW } = useWindowDimensions();
+	const { width: SW, height: SH } = useWindowDimensions();
+	// A 360×640 phone (or large system text) must fit the card, the title,
+	// the text and the buttons without clipping: the card follows the height.
+	const compact = SH < 700;
+	const cardSize = Math.round(Math.min(248, SH * 0.32));
+	const locale = i18n.language?.slice(0, 2) === "en" ? "en" : "fr";
+	const changeLanguage = (next: "fr" | "en") => {
+		void i18n.changeLanguage(next);
+		void AsyncStorage.setItem(LANG_STORAGE_KEY, next).catch(() => {
+			// Not stored: the choice still holds for this session.
+		});
+	};
 	const insets = useSafeAreaInsets();
 	const SLIDES = getSlides(t);
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -1458,6 +1473,14 @@ export default function OnboardingScreen() {
 		router.replace("/(tabs)/home");
 	};
 
+	// The tour ends on the first real choice: an account now, or a look
+	// around first.
+	const handleCreateAccount = async () => {
+		await markOnboardingSeen();
+		router.replace("/(tabs)/home");
+		router.push("/auth/register");
+	};
+
 	const renderSlide = ({
 		item,
 		index,
@@ -1470,15 +1493,29 @@ export default function OnboardingScreen() {
 		const bg = isDark ? "#1a1f4a" : "#ffffff";
 
 		return (
-			<View style={[styles.slide, { width: SW }]}>
-				{/* Illustration card */}
-				<View style={[styles.illustCard, { backgroundColor: bg }]}>
-					<IllustrationComponent />
+			<View
+				style={[styles.slide, { width: SW }, compact && styles.slideCompact]}
+			>
+				{/* Illustration card, scaled with the screen's height */}
+				<View
+					style={[
+						styles.illustCard,
+						{
+							backgroundColor: bg,
+							width: cardSize,
+							height: cardSize,
+							borderRadius: Math.round(cardSize / 7.75),
+						},
+					]}
+				>
+					<View style={{ transform: [{ scale: cardSize / 248 }] }}>
+						<IllustrationComponent />
+					</View>
 				</View>
 
 				{/* Logo + title */}
 				<View style={styles.textBlock}>
-					{index === 0 && (
+					{index === 0 && !compact && (
 						<View style={styles.logoRow}>
 							<Image
 								source={require("@/assets/icon2-dark.png")}
@@ -1487,10 +1524,16 @@ export default function OnboardingScreen() {
 							/>
 						</View>
 					)}
-					<Text accessibilityRole="header" style={styles.slideTitle}>
+					<Text
+						accessibilityRole="header"
+						maxFontSizeMultiplier={1.3}
+						style={[styles.slideTitle, compact && styles.slideTitleCompact]}
+					>
 						{item.title}
 					</Text>
-					<Text style={styles.slideDesc}>{item.description}</Text>
+					<Text maxFontSizeMultiplier={1.4} style={styles.slideDesc}>
+						{item.description}
+					</Text>
 				</View>
 			</View>
 		);
@@ -1500,6 +1543,40 @@ export default function OnboardingScreen() {
 		<SafeAreaView style={[styles.container, { backgroundColor: shell }]}>
 			<StatusBar style="light" />
 			<ShellPattern />
+
+			{/* The language, chosen before anything is read */}
+			{currentIndex === 0 ? (
+				<View
+					style={[styles.langRow, { top: insets.top + 4 }]}
+					accessibilityRole="radiogroup"
+				>
+					{(
+						[
+							["fr", "FR", "Français"],
+							["en", "EN", "English"],
+						] as const
+					).map(([code, short, name]) => {
+						const active = locale === code;
+						return (
+							<Pressable
+								key={code}
+								onPress={() => changeLanguage(code)}
+								accessibilityRole="radio"
+								accessibilityLabel={name}
+								accessibilityState={{ checked: active }}
+								hitSlop={6}
+								style={[styles.langChip, active && styles.langChipActive]}
+							>
+								<Text
+									style={[styles.langText, active && styles.langTextActive]}
+								>
+									{short}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
+			) : null}
 
 			{/* Skip */}
 			{!isLast && (
@@ -1545,18 +1622,49 @@ export default function OnboardingScreen() {
 					))}
 				</View>
 
-				<Pressable
-					style={({ pressed }) => [
-						styles.nextBtn,
-						{ opacity: pressed ? 0.85 : 1 },
-					]}
-					onPress={goNext}
-					accessibilityRole="button"
-				>
-					<Text style={styles.nextBtnText}>
-						{isLast ? t("onboarding.start") : t("onboarding.next")}
-					</Text>
-				</Pressable>
+				{isLast ? (
+					<>
+						<Pressable
+							style={({ pressed }) => [
+								styles.nextBtn,
+								{ opacity: pressed ? 0.85 : 1 },
+							]}
+							onPress={handleCreateAccount}
+							accessibilityRole="button"
+						>
+							<Text style={styles.nextBtnText}>
+								{t("account.createAccount")}
+							</Text>
+						</Pressable>
+						<Pressable
+							style={({ pressed }) => [
+								styles.exploreBtn,
+								{ opacity: pressed ? 0.85 : 1 },
+							]}
+							onPress={handleComplete}
+							accessibilityRole="button"
+						>
+							<Text style={styles.exploreBtnText}>
+								{t("onboarding.explore", {
+									defaultValue: "Explorer sans compte",
+								})}
+							</Text>
+						</Pressable>
+					</>
+				) : (
+					<Pressable
+						style={({ pressed }) => [
+							styles.nextBtn,
+							{ opacity: pressed ? 0.85 : 1 },
+						]}
+						onPress={goNext}
+						accessibilityRole="button"
+						// The visible label may carry an arrow; it is not read out.
+						accessibilityLabel={t("common.next")}
+					>
+						<Text style={styles.nextBtnText}>{t("onboarding.next")}</Text>
+					</Pressable>
+				)}
 			</View>
 		</SafeAreaView>
 	);
@@ -1588,10 +1696,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 28,
 		gap: 32,
 	},
+	slideCompact: { gap: 20 },
 	illustCard: {
-		width: 248,
-		height: 248,
-		borderRadius: 32,
 		alignItems: "center",
 		justifyContent: "center",
 		...shadows.lg,
@@ -1607,6 +1713,29 @@ const styles = StyleSheet.create({
 		lineHeight: 37,
 		color: "#ffffff",
 	},
+	slideTitleCompact: { fontSize: 27, lineHeight: 32, letterSpacing: -0.7 },
+	langRow: {
+		position: "absolute",
+		left: 12,
+		zIndex: 10,
+		flexDirection: "row",
+		gap: 4,
+	},
+	langChip: {
+		minHeight: 44,
+		minWidth: 44,
+		paddingHorizontal: 10,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	langChipActive: { backgroundColor: "rgba(255,255,255,0.16)" },
+	langText: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		color: SHELL_MUTED,
+	},
+	langTextActive: { color: "#ffffff" },
 	slideDesc: {
 		fontFamily: Fonts.body,
 		fontSize: 16,
@@ -1626,20 +1755,32 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 6,
 	},
-	// The sign-plaque button: yellow, ink letters, a darker foot.
-	// The sell plaque's yellow and foot: the one action on the shell.
+	// The shell's own button: white with ink letters. The signage yellow is
+	// for prices, selling and boosts, which the tour has not shown yet.
 	nextBtn: {
 		minHeight: 56,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: Colors.light.sun,
-		borderBottomWidth: 3,
-		borderBottomColor: Colors.light.warning,
+		backgroundColor: "#ffffff",
 	},
 	nextBtnText: {
 		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
-		color: Colors.light.sunForeground,
+		color: "#12163a",
+	},
+	exploreBtn: {
+		minHeight: 52,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+		borderWidth: 1,
+		borderColor: "rgba(255,255,255,0.35)",
+		marginTop: -8,
+	},
+	exploreBtnText: {
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
+		color: "#ffffff",
 	},
 });

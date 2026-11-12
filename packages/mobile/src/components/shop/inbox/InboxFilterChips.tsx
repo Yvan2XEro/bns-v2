@@ -36,7 +36,7 @@ export function InboxFilterChips({
 						key={filter}
 						onPress={() => onChange(filter)}
 						animationType="scale"
-						haptic="light"
+						// The selected fill is the confirmation: no haptic per tap.
 						accessibilityRole="button"
 						accessibilityLabel={
 							count !== undefined
