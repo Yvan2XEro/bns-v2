@@ -69,7 +69,8 @@ Rules:
 ## Shape
 - Cards and photos: 14–16 radius. Buttons and inputs: 12. Tags and badges: 6–10.
 - The publish tab is a small squared yellow plaque (50 × 32, darker foot), level with the other tabs: never raised, never a floating circle.
-- Listing cards have no box: the photo carries the card and the words sit on the ground.
+- **Listing cards are white cards** on the ground: `card`, a 1pt `border` and radius 14, with the 4:3 photo flush at the top and the words inside with 10pt of padding. They used to have no box, but the title and the place then floated on the page and the cards merged with the ground (Brice, 2026-11-12). Boosted cards get a 2pt signage-yellow frame. Loading skeletons draw the same card.
+- **The home feed's place is a selector, not a promo card:** a white 56pt row with the location icon, "Annonces de" over the place in bold, and "Choisir" or "Changer" with a chevron. It has no filled button, because choosing a city is optional.
 
 ## Motion
 Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.3, 1`), and exits are faster than entrances.

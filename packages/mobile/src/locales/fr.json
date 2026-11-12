@@ -1716,6 +1716,7 @@
 		"cardBodyAll": "Choisissez votre ville pour voir d'abord les annonces près de chez vous.",
 		"cardBodyPlace": "Les annonces de cette ville passent en premier. Changez quand vous voulez.",
 		"cardChoose": "Choisir",
+		"scopeLabel": "Annonces de",
 		"cardChange": "Changer"
 	},
 	"tagPicker": {
