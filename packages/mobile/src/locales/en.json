@@ -5,7 +5,10 @@
 		"sell": "Sell",
 		"messages": "Messages",
 		"account": "Account",
-		"favorites": "Favorites"
+		"favorites": "Favorites",
+		"sellA11y": "Sell, post a listing",
+		"messagesWithCount_one": "Messages, {{count}} unread",
+		"messagesWithCount": "Messages, {{count}} unread"
 	},
 	"sellerMode": {
 		"switchToSeller": "Switch to seller mode",

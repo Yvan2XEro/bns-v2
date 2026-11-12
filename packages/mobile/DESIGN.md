@@ -23,7 +23,7 @@ Navigation, controls, sheets and gestures stay native. The world never supplies 
 | foreground | `#12163a` | `#e1e3ee` | text |
 | body | `#3a3f66` | `#c9cce0` | secondary text |
 | mutedForeground | `#5b6088` | `#a3a7c8` | labels, meta |
-| faint | `#777ca3` | `#777ca3` | disabled, inactive tab icons (about 4.2:1: never for text that must be read; placeholders use mutedForeground) |
+| faint | `#777ca3` | `#777ca3` | disabled states (about 4.2:1: never for text that must be read; placeholders and inactive tabs use mutedForeground) |
 | border | `#e1e3ee` | `#2a3170` | hairlines |
 | primary | `#2f5bd4` | `#3b82f6` | rails, rings, focus, icons with nothing on top |
 | primaryFill | `#2f5bd4` | `#2448ab` | behind a white label: buttons, selected chips |
@@ -68,18 +68,34 @@ Rules:
 
 ## Shape
 - Cards and photos: 14–16 radius. Buttons and inputs: 12. Tags and badges: 6–10.
-- The sell tab is a squared yellow plaque with a darker foot, not a floating circle.
+- The sell tab is a small squared yellow plaque (44 × 28, darker foot), level with the other tabs: never raised, never a floating circle.
 - Listing cards have no box: the photo carries the card and the words sit on the ground.
 
 ## Motion
 Motion confirms, it does not decorate. It uses a decelerating ease (`0.16, 1, 0.3, 1`), and exits are faster than entrances.
 - **Presses:** a 0.97 scale spring.
-- **Tabs:** the tab icon dips and settles once.
+- **Tabs:** the selection mark slides to the new tab in 200 ms; the glyph swaps from outline to filled. With Reduce Motion the mark jumps.
 - **Favourite heart:** pops to 1.25.
 - **Cart count:** hops once when it goes up.
 - **The one authored moment is the publish stamp** (`PublishedStamp`). When a listing goes live, a yellow price tag is stamped onto the screen with an ink ring.
 - **Reduce Motion:** the stamp, the sheet and the toast fade instead of moving.
 - **Loops:** none, except skeletons. Background patterns (`NdopPattern`, `ShellPattern`) are static.
+
+## Tab bar
+`src/components/navigation/QuietTabBar.tsx` is variant D, "la barre discrète", which Brice chose from four expert proposals:
+- **No box.** The bar sits on the screen's own ground (`background`) under one hairline (`border`), 56dp plus the safe area. It has no shadow and no white panel.
+- **Selection has three cues, none of them hue alone:**
+  - a 3 × 24dp `primary` mark under the hairline (a shop's brand colour in seller mode);
+  - the filled glyph (outline at rest);
+  - the label in ink and Inter Bold (`mutedForeground` and SemiBold at rest).
+- **Sell** is the only saturated colour: the yellow plaque, level with the other tabs, with an ink plus and an ink label. It never gets the mark.
+- **Badges:**
+  - **Messages:** a count in `ownBubble`, white Inter Bold 11, ringed with the ground colour, shown as "9+" above nine. An unread message is not an error, so the badge is not red.
+  - **Account:** a `primary` dot with no number.
+  - Screen readers hear the count ("Messages, 3 non lus").
+- **Haptics:** a selection tick on a change of tab (iOS and Android), a light tap on Sell, nothing on the tab already open.
+- **Seller mode:** the same bar with four or five equal tabs and no plaque. Adding a product lives in the catalogue.
+- **Tablets in landscape** keep the navigator's rail.
 
 ## Alerts
 - **Toast:** news that needs no answer ("Saved", "Link copied"). It is an ink card at the top that leaves after 3–5 s and is announced to screen readers. `showSuccess` always routes here. A toast may carry one action ("Annuler", "Voir"), drawn in the night `link` colour; it then stays 7 s. The action is a shortcut, never the only way: what it does must stay reachable from the screen.

@@ -5,7 +5,10 @@
 		"sell": "Vendre",
 		"messages": "Messages",
 		"account": "Compte",
-		"favorites": "Favoris"
+		"favorites": "Favoris",
+		"sellA11y": "Vendre, publier une annonce",
+		"messagesWithCount_one": "Messages, {{count}} non lu",
+		"messagesWithCount": "Messages, {{count}} non lus"
 	},
 	"sellerMode": {
 		"switchToSeller": "Passer en mode vendeur",
