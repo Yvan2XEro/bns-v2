@@ -1713,6 +1713,7 @@
 		"cardBodyAll": "Pick your city to see listings near you first.",
 		"cardBodyPlace": "Listings from this city come first. Change it anytime.",
 		"cardChoose": "Choose",
+		"scopeLabel": "Showing listings from",
 		"cardChange": "Change"
 	},
 	"tagPicker": {

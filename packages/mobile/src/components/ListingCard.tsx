@@ -116,6 +116,8 @@ export function ListingCard({
 	const textPrimary = isDark ? "#e1e3ee" : "#12163a";
 	const textMuted = isDark ? "#a3a7c8" : "#5b6088";
 	const placeholderBg = isDark ? "#13183e" : "#e1e3ee";
+	const cardBg = isDark ? "#1a1f4a" : "#ffffff";
+	const cardBorder = isDark ? "#2a3170" : "#e1e3ee";
 
 	const handleFavorite = () => {
 		heartScale.value = withSequence(
@@ -150,16 +152,16 @@ export function ListingCard({
 			}}
 		>
 			<Animated.View
-				style={[styles.card, { width: w }, selectedStyle(selected), cardStyle]}
+				style={[
+					styles.card,
+					{ width: w, backgroundColor: cardBg, borderColor: cardBorder },
+					listing.isBoosted && styles.cardBoosted,
+					selectedStyle(selected),
+					cardStyle,
+				]}
 			>
 				{/* ── Photo, with the price painted on it ── */}
-				<View
-					style={[
-						styles.photo,
-						{ backgroundColor: placeholderBg },
-						listing.isBoosted && styles.photoBoosted,
-					]}
-				>
+				<View style={[styles.photo, { backgroundColor: placeholderBg }]}>
 					{imageUrl ? (
 						<Image
 							source={{ uri: imageUrl }}
@@ -284,17 +286,20 @@ export function ListingCard({
 }
 
 const styles = StyleSheet.create({
+	// A white card on the ground, so the title and the place belong to their
+	// photo instead of floating on the page (DESIGN.md, "Listing card").
 	card: {
 		borderRadius: 14,
-	},
-	photo: {
-		borderRadius: 14,
+		borderWidth: 1,
 		overflow: "hidden",
 	},
 	// Boosted listings carry a signage-yellow frame instead of a glow.
-	photoBoosted: {
+	cardBoosted: {
 		borderWidth: 2,
 		borderColor: "#ffb81c",
+	},
+	photo: {
+		overflow: "hidden",
 	},
 	imagePlaceholder: {
 		alignItems: "center",
@@ -408,8 +413,8 @@ const styles = StyleSheet.create({
 	// ── Words ──
 	content: {
 		paddingTop: 8,
-		paddingHorizontal: 2,
-		paddingBottom: 4,
+		paddingHorizontal: 10,
+		paddingBottom: 10,
 		gap: 3,
 	},
 	title: {

@@ -71,14 +71,20 @@ export function SkeletonCard({ cardWidth }: { cardWidth?: number }) {
 	// Live width — keeps the placeholder in sync with ListingCard on rotation.
 	const { width } = useWindowDimensions();
 	const w = cardWidth ?? (width - 48) / 2;
+	const isDark = useColorScheme() === "dark";
 
 	return (
-		<View style={[styles.card, { width: w }]}>
-			<SkeletonBlock
-				width={w}
-				height={Math.round(w * 0.75)}
-				borderRadius={14}
-			/>
+		<View
+			style={[
+				styles.card,
+				{
+					width: w,
+					backgroundColor: isDark ? "#1a1f4a" : "#ffffff",
+					borderColor: isDark ? "#2a3170" : "#e1e3ee",
+				},
+			]}
+		>
+			<SkeletonBlock width={w} height={Math.round(w * 0.75)} borderRadius={0} />
 			<View style={styles.content}>
 				<SkeletonBlock width="85%" height={13} />
 				<SkeletonBlock width="55%" height={13} style={{ marginTop: 5 }} />
@@ -210,8 +216,9 @@ const convStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-	card: {},
-	content: { paddingTop: 8, paddingHorizontal: 2, paddingBottom: 4 },
+	// The same white card as ListingCard, so nothing jumps when listings land.
+	card: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
+	content: { paddingTop: 8, paddingHorizontal: 10, paddingBottom: 10 },
 	row: {
 		flexDirection: "row",
 		borderRadius: 16,

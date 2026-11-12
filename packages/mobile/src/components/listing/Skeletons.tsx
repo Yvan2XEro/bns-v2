@@ -135,14 +135,33 @@ export function ListingGridSkeleton({
 			{Array.from({ length: rows }, (_, r) => (
 				<View key={r} style={[styles.gridRow, { gap }]}>
 					{Array.from({ length: columns }, (_, i) => (
-						<View key={i} style={{ width: cardWidth, gap: 8 }}>
-							<SkeletonBox width={cardWidth} height={cardWidth} radius={14} />
-							<SkeletonBox width="80%" height={14} />
-							<SkeletonBox width="45%" height={12} />
-						</View>
+						<GridCardSkeleton key={i} cardWidth={cardWidth} />
 					))}
 				</View>
 			))}
+		</View>
+	);
+}
+
+/** One ListingCard while it loads: the white card, a 4:3 photo, two lines. */
+function GridCardSkeleton({ cardWidth }: { cardWidth: number }) {
+	const c = Colors[useColorScheme() === "dark" ? "dark" : "light"];
+	return (
+		<View
+			style={[
+				styles.gridCard,
+				{ width: cardWidth, backgroundColor: c.card, borderColor: c.border },
+			]}
+		>
+			<SkeletonBox
+				width={cardWidth}
+				height={Math.round(cardWidth * 0.75)}
+				radius={0}
+			/>
+			<View style={styles.gridCardWords}>
+				<SkeletonBox width="80%" height={14} />
+				<SkeletonBox width="45%" height={12} />
+			</View>
 		</View>
 	);
 }
@@ -184,6 +203,13 @@ export function ShopSkeleton({
 }
 
 const styles = StyleSheet.create({
+	gridCard: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
+	gridCardWords: {
+		gap: 8,
+		paddingTop: 10,
+		paddingHorizontal: 10,
+		paddingBottom: 12,
+	},
 	root: { flex: 1 },
 	detailBody: { padding: 16, gap: 10 },
 	gapTop: { marginTop: 8 },
