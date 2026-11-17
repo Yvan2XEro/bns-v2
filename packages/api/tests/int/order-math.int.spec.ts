@@ -118,6 +118,18 @@ describe("invoiceTotals", () => {
 			}),
 		).toEqual({ commissionTotal: 1_500, vatAmount: 385, totalDue: 1_885 });
 	});
+
+	it("bills a passed-through reseller margin without taxing it", () => {
+		expect(
+			invoiceTotals({
+				charges: 2_000,
+				nonVatCharges: 2_440,
+				credits: 0,
+				carryOver: 0,
+				vatRateBps: 1925,
+			}),
+		).toEqual({ commissionTotal: 4_440, vatAmount: 385, totalDue: 4_825 });
+	});
 });
 
 describe("marketWeekBounds", () => {

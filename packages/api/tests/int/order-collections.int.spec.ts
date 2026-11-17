@@ -368,10 +368,7 @@ describe("commission-lines field shape", () => {
 		expect(amount?.min).toBe(1);
 	});
 
-	it("kind offers charge, credit and carry_over as the P4/P6 kinds", () => {
-		// The spec's data-model table names one further P8 kind
-		// (`resale_margin`); it is declared here, reserved, alongside the three
-		// P4/P6 writes, plus P6's `dispute_fee`.
+	it("kind offers the P4/P6 kinds and P8's resale_margin", () => {
 		expect(
 			optionValues(field(CommissionLines.fields as Field[], "kind")),
 		).toEqual([...COMMISSION_LINE_KINDS]);

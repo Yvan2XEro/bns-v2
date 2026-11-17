@@ -120,6 +120,32 @@ describe("issueInvoicesForWeek", () => {
 		});
 	});
 
+	it("bills a resale supplier the reseller margin it collected, untaxed", async () => {
+		const payload = world({
+			"commission-lines": [
+				chargeLine({ amount: 1_600, baseAmount: 20_000 }),
+				chargeLine({
+					id: "cl-2",
+					kind: "resale_margin",
+					baseAmount: 20_000,
+					amount: 2_440,
+				}),
+			],
+		});
+		const result = await issueInvoicesForWeek(payload, NOW);
+
+		expect(result.issued).toHaveLength(1);
+		expect(invoicesOf(payload)[0]).toMatchObject({
+			commissionTotal: 4_040,
+			vatAmount: 308,
+			totalDue: 4_348,
+		});
+		expect(linesOf(payload).map((line) => line.status)).toEqual([
+			"invoiced",
+			"invoiced",
+		]);
+	});
+
 	it("ignores a line accrued after periodEnd", async () => {
 		const afterEnd = new Date(
 			new Date(periodEnd).getTime() + DAY_MS,

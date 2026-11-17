@@ -30,14 +30,24 @@ export function vatOf(commissionTotal: number, vatRateBps: number): number {
 	return roundHalfUp((commissionTotal * vatRateBps) / 10_000);
 }
 
+/**
+ * `nonVatCharges` is money the shop owes that is not the platform's revenue —
+ * a resale supplier's collected reseller margin, passed through to the
+ * reseller — so it is due on the invoice but never taxed.
+ */
 export function invoiceTotals(input: {
 	charges: number;
+	nonVatCharges?: number;
 	credits: number;
 	nonVatCredits?: number;
 	carryOver: number;
 	vatRateBps: number;
 }): { commissionTotal: number; vatAmount: number; totalDue: number } {
-	const commissionTotal = input.charges - input.credits + input.carryOver;
+	const commissionTotal =
+		input.charges +
+		(input.nonVatCharges ?? 0) -
+		input.credits +
+		input.carryOver;
 	const vatBase =
 		input.charges -
 		(input.credits - (input.nonVatCredits ?? 0)) +

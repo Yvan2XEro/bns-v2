@@ -13,9 +13,12 @@ const baseData = (invoiceStatus: string, activeReturn = false) => ({
 		{
 			id: "reseller-commission-1",
 			resellerShop: "shop-reseller-1",
+			supplierShop: "shop-supplier-1",
 			order: "order-1",
 			purchaseOrder: "purchase-order-1",
 			status: "accrued",
+			paymentMethod: "cod",
+			saleAmount: 20_000,
 			amount: 2_440,
 		},
 	],
@@ -95,6 +98,66 @@ describe("releaseResellerCommissions", () => {
 
 		expect(released).toEqual([]);
 		expect(payload.store["reseller-commissions"]?.[0]?.status).toBe("accrued");
+	});
+});
+
+describe("releaseResellerCommissions — billing the margin back", () => {
+	const settings = {
+		globals: { "app-settings": { orders: { withdrawalDays: 15 } } },
+	};
+	const withoutMargin = (paymentMethod: string) => {
+		const data = baseData("paid");
+		return {
+			...data,
+			"reseller-commissions": data["reseller-commissions"].map((row) => ({
+				...row,
+				paymentMethod,
+			})),
+			"commission-lines": [],
+		};
+	};
+
+	it("bills a COD supplier the final margin once, then waits for that invoice", async () => {
+		const payload = fakePayload(withoutMargin("cod"), settings);
+		const at = new Date("2026-08-17T00:00:00.000Z");
+
+		expect(await releaseResellerCommissions(payload, at)).toEqual([]);
+		expect(await releaseResellerCommissions(payload, at)).toEqual([]);
+
+		expect(payload.store["commission-lines"]).toEqual([
+			expect.objectContaining({
+				shop: "shop-supplier-1",
+				order: "order-1",
+				kind: "resale_margin",
+				paymentMethod: "cod",
+				baseAmount: 20_000,
+				amount: 2_440,
+				status: "open",
+			}),
+		]);
+		expect(payload.store["reseller-commissions"]?.[0]?.status).toBe("accrued");
+	});
+
+	it("bills nothing while the withdrawal window is open", async () => {
+		const payload = fakePayload(withoutMargin("cod"), settings);
+
+		await releaseResellerCommissions(
+			payload,
+			new Date("2026-08-10T00:00:00.000Z"),
+		);
+
+		expect(payload.store["commission-lines"] ?? []).toEqual([]);
+	});
+
+	it("bills no margin on a prepaid resale", async () => {
+		const payload = fakePayload(withoutMargin("mobile_money"), settings);
+
+		await releaseResellerCommissions(
+			payload,
+			new Date("2026-08-17T00:00:00.000Z"),
+		);
+
+		expect(payload.store["commission-lines"] ?? []).toEqual([]);
 	});
 });
 

@@ -12,7 +12,7 @@ import { relationId } from "../lib/relationId";
 import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
 import { withTransaction } from "../lib/transactions";
-import type { ResellerPayout } from "../payload-types";
+import type { ResellerCommission, ResellerPayout } from "../payload-types";
 import { activeHolds } from "./payoutHolds";
 import {
 	orderCurrency,
@@ -24,7 +24,7 @@ import {
 import { planResellerPayout } from "./resellerPayoutPlanner";
 import { nextNumber } from "./sequences";
 import { requireShopPermission } from "./shopGuards";
-import type { ServiceUser } from "./shops";
+import { isUniqueViolation, type ServiceUser } from "./shops";
 
 const PAYOUT_CONTEXT = { resellerPayoutService: true } as const;
 const idOf = (value: unknown) => relationId(value) ?? "";
@@ -222,7 +222,11 @@ export async function releaseResellerCommissions(
 			]);
 			if (returns.docs.length || disputes.docs.length) return false;
 			const marginLine = marginLines.docs[0];
-			const invoiceId = marginLine ? relationId(marginLine.invoice) : null;
+			if (!marginLine) {
+				await accrueResaleMargin(req, current, orderId, now);
+				return false;
+			}
+			const invoiceId = relationId(marginLine.invoice);
 			if (!invoiceId) return false;
 			const invoice = await req.payload.findByID({
 				collection: "commission-invoices",
@@ -245,6 +249,50 @@ export async function releaseResellerCommissions(
 		if (outcome) released.push(String(candidate.id));
 	}
 	return released;
+}
+
+/**
+ * Bills the supplier the reseller's margin. On a COD resale the delivery
+ * collects the whole price for the supplier, margin included, so the margin
+ * reaches the reseller only by being billed back: a `resale_margin` line on
+ * the supplier's next weekly invoice, untaxed. Written here rather than at
+ * delivery because only now — order completed, withdrawal window over, no
+ * return or dispute open — is the margin final; a refund before this point
+ * already lowered `commission.amount`.
+ *
+ * A prepaid resale settles through the payment split, not an invoice, so it
+ * gets no line here. Idempotent by the release's own pre-check and the
+ * `(kind, order)` partial unique index.
+ */
+async function accrueResaleMargin(
+	req: PayloadRequest,
+	commission: ResellerCommission,
+	orderId: string,
+	now: Date,
+): Promise<void> {
+	if (commission.paymentMethod !== "cod" || commission.amount <= 0) return;
+	const supplierShop = relationId(commission.supplierShop);
+	if (!supplierShop) return;
+	try {
+		await req.payload.create({
+			collection: "commission-lines",
+			overrideAccess: true,
+			req,
+			data: {
+				shop: supplierShop,
+				order: orderId,
+				kind: "resale_margin",
+				paymentMethod: "cod",
+				baseAmount: commission.saleAmount,
+				amount: commission.amount,
+				reason: "reseller_margin",
+				status: "open",
+				accruedAt: now.toISOString(),
+			},
+		});
+	} catch (error) {
+		if (!isUniqueViolation(error)) throw error;
+	}
 }
 
 async function isNewReseller(

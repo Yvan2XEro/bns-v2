@@ -3,10 +3,11 @@ import { can, shopScopedRead } from "../access/shopRoles";
 import { staffOnly } from "../access/staff";
 
 /**
- * `charge` and `carry_over` are written by P4, `credit` and `dispute_fee` by P6. The spec names
- * one P8 kind (`resale_margin`, with a `reason` field P8 also adds); it is
- * declared here, reserved and unused, the same way P4 declares `order.paid`
- * on `order-events` without ever writing it.
+ * `charge` and `carry_over` are written by P4, `credit` and `dispute_fee` by P6.
+ * `resale_margin` is P8's: the reseller margin a COD resale supplier collected
+ * from the buyer, billed back to the supplier once the margin is final
+ * (`releaseResellerCommissions`), untaxed, and paid on to the reseller when
+ * that invoice is paid.
  */
 export const COMMISSION_LINE_KINDS = [
 	"charge",

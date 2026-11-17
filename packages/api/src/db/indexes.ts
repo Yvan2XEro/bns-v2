@@ -88,6 +88,18 @@ export const INDEXES: readonly IndexSpec[] = [
 		keys: { order: 1, kind: 1 },
 		options: { unique: true, partialFilterExpression: { kind: "charge" } },
 	},
+	// One reseller margin billed per order: a retried release never bills twice.
+	{
+		collection: "commission-lines",
+		name: "commission_resale_margin_per_order_unique",
+		// Key order flipped from the charge index on purpose: MongoDB before 5.0
+		// refuses a second index on the same key pattern.
+		keys: { kind: 1, order: 1 },
+		options: {
+			unique: true,
+			partialFilterExpression: { kind: "resale_margin" },
+		},
+	},
 	// One review per reviewer, reviewed user and shop.
 	{
 		collection: "reviews",

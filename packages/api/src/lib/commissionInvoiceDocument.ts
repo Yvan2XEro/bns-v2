@@ -81,13 +81,14 @@ const copy = {
 		base: "Base",
 		amount: "Montant",
 		commissionTotal: "Total commission",
+		marginIncluded: "dont marge revendeur reversee, hors TVA",
 		vat: "TVA",
 		totalDue: "Total a payer",
 		kinds: {
 			charge: "Commission",
 			credit: "Avoir",
 			carry_over: "Report",
-			resale_margin: "Marge revente",
+			resale_margin: "Marge revendeur reversee (hors TVA)",
 			dispute_fee: "Frais de litige perdu",
 		},
 	},
@@ -104,13 +105,14 @@ const copy = {
 		base: "Base",
 		amount: "Amount",
 		commissionTotal: "Commission total",
+		marginIncluded: "of which reseller margin passed through, no VAT",
 		vat: "VAT",
 		totalDue: "Total due",
 		kinds: {
 			charge: "Commission",
 			credit: "Credit",
 			carry_over: "Carry-over",
-			resale_margin: "Resale margin",
+			resale_margin: "Reseller margin passed through (no VAT)",
 			dispute_fee: "Lost dispute fee",
 		},
 	},
@@ -144,6 +146,9 @@ export function renderInvoiceHtml(
 			</tr>`,
 		)
 		.join("");
+	const marginTotal = lines
+		.filter((line) => line.kind === "resale_margin")
+		.reduce((sum, line) => sum + line.amount, 0);
 
 	return `<!doctype html>
 <html lang="${lang}">
@@ -180,7 +185,11 @@ export function renderInvoiceHtml(
 	</thead>
 	<tbody>${rows}</tbody>
 </table>
-<p>${t.commissionTotal}: ${escapeHtml(money(invoice.commissionTotal ?? 0))}</p>
+<p>${t.commissionTotal}: ${escapeHtml(money(invoice.commissionTotal ?? 0))}</p>${
+		marginTotal > 0
+			? `\n<p>${t.marginIncluded}: ${escapeHtml(money(marginTotal))}</p>`
+			: ""
+	}
 <p>${t.vat}: ${escapeHtml(money(invoice.vatAmount ?? 0))}</p>
 <p>${t.totalDue}: ${escapeHtml(money(invoice.totalDue ?? 0))}</p>
 </body>

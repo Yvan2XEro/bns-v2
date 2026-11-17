@@ -478,6 +478,9 @@ export async function issueInvoicesForWeek(
 		if (!money) continue;
 		const charges =
 			sumByKind(lines, "charge") + sumByKind(lines, "dispute_fee");
+		// The reseller margin a COD resale supplier collected for the reseller:
+		// owed, passed through, untaxed (see `accrueResaleMargin`).
+		const nonVatCharges = sumByKind(lines, "resale_margin");
 		const credits = sumByKind(lines, "credit");
 		const nonVatCredits = lines
 			.filter(
@@ -489,6 +492,7 @@ export async function issueInvoicesForWeek(
 		const carryIn = sumByKind(lines, "carry_over");
 		const totals = invoiceTotals({
 			charges,
+			nonVatCharges,
 			credits,
 			nonVatCredits,
 			carryOver: -carryIn,
