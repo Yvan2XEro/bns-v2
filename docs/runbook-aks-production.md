@@ -53,6 +53,24 @@ restored is a hope, not a backup.
   `MONGO_PASSWORD` is new: the in-cluster root password (B) or the Atlas
   user's (A).
 
+## The preflight: `make check`
+
+Read-only, never prints a secret value, exit code 1 on any ✗. Run it before
+every `up` and after every deploy:
+
+```bash
+make check                                   # azure-prod
+make check ENV_FILE=.env.azure-prod STAGING_ENV=.env.staging
+```
+
+| Section | What it checks |
+|---|---|
+| Tools and sessions | pulumi, az, kubectl, docker installed; pulumi and az logged in |
+| Stack | domain, Let's Encrypt email, `imageTag` is a release tag, GHCR token, API paused or not, a database with backups (`mongoBackup`, or Atlas with its keys exported) |
+| Application values | the seven required secrets set and not placeholders; storage is azure/s3 with two distinct containers (never `local`: the API pods have no volume); NotchPay keys, not sandbox ones; email, OAuth, Novu, Sentry, Pixabay; `ENV_FILE` passes `env:check`; with `STAGING_ENV`, the three peppers equal staging's |
+| Images | the four images exist at `imageTag` in GHCR |
+| Live cluster (once deployed) | every pod ready, restarts; last successful backup under 26 h, archives in the storage account, MongoDB disk on the Retain class; ingress IP; DNS of the four hosts points at it; the web and the API answer over HTTPS |
+
 ## 1. The release
 
 Production runs the exact code staging was validated on. Tag the commit
@@ -147,7 +165,7 @@ pulumi config rm --path atlas.accessCidrs --stack azure-prod   # A only
 make infra-up STACK=azure-prod
 ```
 
-The API boots and runs its boot tasks (indexes, markets, workflow sync); the
+Then `make check` must end with no ✗. The API boots and runs its boot tasks (indexes, markets, workflow sync); the
 ones staging already ran are recorded in `deploy_tasks` and skipped. The
 search indexer rebuilds Meilisearch from the database. Then check:
 

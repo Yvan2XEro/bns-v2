@@ -214,10 +214,18 @@ infra-tag: ## Update image tag in running cluster. Usage: make infra-tag v=1.2.3
 	$(PULUMI) up --stack $(STACK)
 	@echo "✓ Cluster updated to v$(v) on stack $(STACK)"
 
+# `make check` audits azure-prod unless STACK is given on the command line
+# (STACK's own default, aws-staging, is for the infra-* targets).
+CHECK_STACK := $(if $(filter command line,$(origin STACK)),$(STACK),azure-prod)
+
+check: ## Production preflight, read-only. Usage: make check [STACK=azure-prod] [ENV_FILE=.env.azure-prod] [STAGING_ENV=.env.staging]
+	@cd infra && bun scripts/preflight.ts --stack $(CHECK_STACK) \
+	  $(if $(ENV_FILE),--env $(ENV_FILE)) $(if $(STAGING_ENV),--staging-env $(STAGING_ENV))
+
 infra-output: ## Show stack outputs (kubeconfig, cluster name)
 	$(PULUMI) stack output --stack $(STACK)
 
 .PHONY: help version release staging rollback build push up down pull deploy \
         logs ps restart k8s-apply k8s-diff k8s-delete k8s-status k8s-deploy \
         infra-install infra-preview infra-up infra-down infra-refresh infra-tag infra-output \
-        setup-secrets secrets-list
+        setup-secrets secrets-list check

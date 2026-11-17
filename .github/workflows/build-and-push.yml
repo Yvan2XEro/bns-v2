@@ -43,7 +43,9 @@ jobs:
             # On dev branch → dev + dev-{sha}
             type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
             type=sha,prefix=dev-,enable=${{ github.ref == 'refs/heads/dev' }}
-            # On version tag → v1.2.3 + latest
+            # On version tag → v1.2.3 (what make infra-tag, make rollback and the
+            # deploy jobs pull), 1.2.3, 1.2 and latest
+            type=semver,pattern=v{{version}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}

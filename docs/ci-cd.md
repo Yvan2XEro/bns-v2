@@ -36,7 +36,7 @@ Services: `api` · `web` · `chat-service` · `search-indexer`
 
 **Triggers:**
 - Push to `dev` → images tagged `dev` and `dev-<sha>`
-- Push of a `v*` tag → images tagged `v1.2.3`, `1.2`, `latest`
+- Push of a `v*` tag → images tagged `v1.2.3` (what every deploy pulls), `1.2.3`, `1.2`, `latest`
 
 **Jobs:**
 1. **build** — Matrix over all 4 services in parallel, with per-service GHA layer cache
@@ -169,6 +169,7 @@ make release v=1.2.3         # → production updated
 | Command | Description |
 |---------|-------------|
 | `make infra-install` | Install dependencies in `infra/` (bun) |
+| `make check [STACK=azure-prod] [ENV_FILE=…] [STAGING_ENV=…]` | Production preflight, read-only (see [runbook-aks-production.md](runbook-aks-production.md)) |
 | `make infra-preview STACK=aws-staging` | Preview infra changes |
 | `make infra-up STACK=aws-staging` | Create or update the cluster |
 | `make infra-down STACK=aws-staging` | Destroy the cluster |
