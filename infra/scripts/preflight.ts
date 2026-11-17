@@ -54,10 +54,17 @@ const has = async (tool: string) =>
 // ─── 1. Tools and sessions ───────────────────────────────────────────────────
 
 section("Tools and sessions");
-for (const tool of ["pulumi", "az", "kubectl", "docker"]) {
+for (const tool of ["pulumi", "az", "kubectl"]) {
 	if (await has(tool)) ok(`${tool} installed`);
 	else fail(`${tool} not installed`);
 }
+// Only the restore scripts use docker (restore-to-atlas.sh); nothing is
+// built locally — GitHub Actions builds every image.
+if (!(await has("docker")))
+	warn(
+		"docker not installed",
+		"needed only by infra/scripts/restore-to-atlas.sh",
+	);
 if ((await run(["pulumi", "whoami"])).code === 0) ok("pulumi logged in");
 else fail("pulumi not logged in", "pulumi login");
 if ((await run(["az", "account", "show", "-o", "none"])).code === 0)
@@ -341,10 +348,13 @@ if (tag) {
 	const missing: string[] = [];
 	for (const service of ["api", "web", "chat-service", "search-indexer"]) {
 		const image = `${registry}/${service}:${tag}`;
-		const inspect = await run(["docker", "manifest", "inspect", image]);
-		if (inspect.code === 0) ok(image);
-		else if (/unauthorized|denied/i.test(inspect.stderr))
-			warn(`${image}: registry refused`, "docker login ghcr.io, then rerun");
+		const found = await imageExists(registry, service, tag);
+		if (found === true) ok(image);
+		else if (found === "denied")
+			warn(
+				`${image}: the registry refused an anonymous read`,
+				"the package may be private",
+			);
 		else missing.push(service);
 	}
 	if (missing.length) {
@@ -356,8 +366,8 @@ if (tag) {
 		fail(
 			`no ${tag} image for ${missing.length === 4 ? "any service" : missing.join(", ")}`,
 			pushed
-				? `${tag} is pushed but has no images (failed build, or older than the v-prefixed tags): release a new version, git tag -a vX.Y.Z <sha> && git push origin vX.Y.Z`
-				: `git push origin ${tag} and wait for "Build & Push"`,
+				? `${tag} is pushed but GitHub Actions published no ${tag} images (its build failed, or it predates the v-prefixed tags): push a new tag, git tag -a vX.Y.Z <sha> && git push origin vX.Y.Z — the "Build & Push" workflow builds them`
+				: `git push origin ${tag}: the "Build & Push" workflow builds and publishes the images (a few minutes)`,
 		);
 	}
 }
@@ -599,6 +609,49 @@ for (const [url, name] of probes) {
 }
 
 finish();
+
+/**
+ * Asks GHCR itself (registry API, anonymous pull token) whether the tag
+ * exists: no docker, no local build, nothing pulled.
+ */
+async function imageExists(
+	registry: string,
+	service: string,
+	tag: string,
+): Promise<true | false | "denied"> {
+	const match = /^([^/]+)\/(.+)$/.exec(registry);
+	if (!match) return false;
+	const [, host, repo] = match;
+	try {
+		const tokenRes = await fetch(
+			`https://${host}/token?scope=repository:${repo}/${service}:pull`,
+			{ signal: AbortSignal.timeout(10_000) },
+		);
+		if (!tokenRes.ok) return "denied";
+		const { token } = (await tokenRes.json()) as { token?: string };
+		const res = await fetch(
+			`https://${host}/v2/${repo}/${service}/manifests/${tag}`,
+			{
+				method: "HEAD",
+				headers: {
+					Authorization: `Bearer ${token ?? ""}`,
+					Accept: [
+						"application/vnd.oci.image.index.v1+json",
+						"application/vnd.docker.distribution.manifest.list.v2+json",
+						"application/vnd.oci.image.manifest.v1+json",
+						"application/vnd.docker.distribution.manifest.v2+json",
+					].join(", "),
+				},
+				signal: AbortSignal.timeout(10_000),
+			},
+		);
+		if (res.ok) return true;
+		if (res.status === 401 || res.status === 403) return "denied";
+		return false;
+	} catch {
+		return false;
+	}
+}
 
 function finish(): never {
 	console.log(
