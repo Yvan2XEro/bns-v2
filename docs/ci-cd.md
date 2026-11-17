@@ -40,8 +40,12 @@ Services: `api` · `web` · `chat-service` · `search-indexer`
 
 **Jobs:**
 1. **build** — Matrix over all 4 services in parallel, with per-service GHA layer cache
-2. **deploy-staging** — After build on `dev`: SCP compose file + `docker compose pull && up`
-3. **deploy-production** — After build on `v*` tag: same flow with the versioned tag
+2. **deploy-staging** — After build on `dev`: calls the Dokploy app's deploy webhook
+   (`DOKPLOY_DEPLOY_URL`) with a push-shaped payload; Dokploy pulls the `dev`
+   images and restarts the compose app with the environment set in its own UI
+3. **deploy-production** — After build on `v*` tag: SCP the compose file to
+   `DEPLOY_PATH` over SSH, then `docker compose pull && up -d` with the
+   versioned tag; the server's `.env` next to it holds the application's keys
 
 **Registry auto-resolution:**
 ```bash
@@ -54,6 +58,9 @@ No manual configuration needed — the registry is derived from the GitHub repos
 ### `deploy.yml` — Manual deploy (rollback)
 
 **Trigger:** `workflow_dispatch` (GitHub Actions UI or CLI)
+
+Goes over SSH to either server (`STAGING_*` or `DEPLOY_*` secrets), not through
+Dokploy, and runs the same `docker compose pull && up -d` with the given tag.
 
 **Inputs:**
 - `environment`: `staging` or `production`
@@ -78,6 +85,10 @@ gh workflow run deploy.yml --field environment=production --field tag=v1.1.0
 **Jobs:**
 - Lint + type-check across all packages
 - Unit tests (matrix: `chat-service`, `search-indexer`)
+
+> The API, web and mobile suites are **not** run by CI yet. Run them before
+> merging: `cd packages/api && bunx vitest run tests/int`, then `bun test` in
+> `packages/web` and `packages/mobile`.
 
 ---
 
@@ -115,9 +126,11 @@ make release v=1.2.3         # → production updated
 | Command | Description |
 |---------|-------------|
 | `make release v=1.2.3` | Tag + push → triggers build + prod deploy |
-| `make staging` | Force-push current branch to `dev` → staging |
+| `make staging` | Push the current branch to `dev` (fast-forward only) → build → Dokploy redeploys staging |
 | `make rollback v=1.1.0` | Redeploy a previous version to prod |
 | `make rollback v=1.1.0 env=staging` | Rollback on staging |
+| `make setup-secrets [ENV=staging\|production] [GHFILE=.env.deploy]` | Upload the deploy secrets the workflows read (see below) |
+| `make secrets-list ENV=staging` | List the secret names set on an environment |
 
 ### Local build
 
@@ -133,7 +146,7 @@ make release v=1.2.3         # → production updated
 |---------|-------------|
 | `make up` | Start all services |
 | `make down` | Stop everything |
-| `make deploy` | Pull new images + restart |
+| `make deploy IMAGE_TAG=v1.2.3` | Pull new images + restart (`.env` from `deployments/docker-compose/.env.example`) |
 | `make logs` | Tail logs from all services |
 | `make logs-api` | Tail logs from a specific service |
 | `make restart-api` | Restart a specific service |
@@ -151,7 +164,7 @@ make release v=1.2.3         # → production updated
 
 | Command | Description |
 |---------|-------------|
-| `make infra-install` | Install npm dependencies in `infra/` |
+| `make infra-install` | Install dependencies in `infra/` (bun) |
 | `make infra-preview STACK=aws-staging` | Preview infra changes |
 | `make infra-up STACK=aws-staging` | Create or update the cluster |
 | `make infra-down STACK=aws-staging` | Destroy the cluster |
@@ -170,13 +183,25 @@ make release v=1.2.3         # → production updated
 
 ### First deploy
 
+**Staging (Dokploy):** create a Compose app on
+`deployments/docker-compose/docker-compose.yml`, paste the filled
+[`.env.example`](../deployments/docker-compose/.env.example) into its
+Environment tab with `IMAGE_TAG=dev`, and copy its deploy webhook URL into the
+`DOKPLOY_DEPLOY_URL` secret of the GitHub `staging` environment.
+
+**Production (VPS over SSH):**
+
 ```bash
-# On the server
+# On the server, in DEPLOY_PATH
 cp deployments/docker-compose/.env.example .env
 nano .env   # fill in values
 
 IMAGE_REGISTRY=ghcr.io/yvan2xero/bns-v2 IMAGE_TAG=latest docker compose up -d
 ```
+
+A variable the compose file does not list never reaches a container, whatever
+the server's `.env` or Dokploy holds: a new one goes into `docker-compose.yml`
+and `.env.example` together.
 
 ### Required environment variables
 
@@ -220,21 +245,28 @@ decision made in the admin panel, not a deploy step.
 
 ### Required GitHub Actions secrets
 
-Configure in **Settings → Secrets and variables → Actions**:
+These are the only secrets the workflows read. The application's own keys
+(`PAYLOAD_SECRET`, NotchPay, OAuth…) never go to GitHub: they live in the
+server's `.env` or Dokploy's Environment tab.
 
-| Secret | Environment |
-|--------|-------------|
-| `STAGING_HOST` | staging |
-| `STAGING_USER` | staging |
-| `STAGING_PATH` | staging |
-| `STAGING_SSH_KEY` | staging |
-| `DEPLOY_HOST` | production |
-| `DEPLOY_USER` | production |
-| `DEPLOY_PATH` | production |
-| `DEPLOY_SSH_KEY` | production |
-| `GHCR_TOKEN` | both |
+| Secret | Environment | Used by |
+|--------|-------------|---------|
+| `DOKPLOY_DEPLOY_URL` | staging | `build-and-push.yml` → staging redeploy |
+| `STAGING_HOST` `STAGING_USER` `STAGING_PATH` `STAGING_SSH_KEY` | staging | `deploy.yml` (manual deploy / rollback) only |
+| `DEPLOY_HOST` `DEPLOY_USER` `DEPLOY_PATH` `DEPLOY_SSH_KEY` | production | `build-and-push.yml` and `deploy.yml` |
+| `GHCR_TOKEN` | both | `docker login ghcr.io` on the server |
 
 > `GHCR_TOKEN`: GitHub Personal Access Token with the `read:packages` scope.
+
+`make setup-secrets` uploads them from a git-ignored file (default
+`.env.deploy`), piping each value to `gh` without printing it. SSH keys are
+given as a path, `STAGING_SSH_KEY_FILE=` / `DEPLOY_SSH_KEY_FILE=`, and uploaded
+from that file:
+
+```bash
+make setup-secrets                                   # staging, from .env.deploy
+make setup-secrets ENV=production GHFILE=.env.deploy.prod
+```
 
 ---
 
