@@ -75,6 +75,8 @@ function intent(overrides: Doc): Doc {
 const intentsOf = (p: FakePayload) => p.store["payment-intents"];
 
 beforeEach(() => {
+	// The payment's return URL is built on the public server URL.
+	vi.stubEnv("PAYLOAD_PUBLIC_SERVER_URL", "http://localhost:3000");
 	createPayment.mockReset();
 	triggerNotificationEvent.mockReset();
 	createPayment.mockResolvedValue({

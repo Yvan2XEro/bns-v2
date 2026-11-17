@@ -8,9 +8,14 @@ export const PROOF_RETENTION_DAYS = 180;
 export type ProofRetentionGuard = (
 	payload: Payload,
 	shipment: Shipment,
+	now: Date,
 ) => Promise<boolean>;
 
-const openContestGuard: ProofRetentionGuard = async (payload, shipment) => {
+const openContestGuard: ProofRetentionGuard = async (
+	payload,
+	shipment,
+	now,
+) => {
 	const orderId = relationId(shipment.order);
 	if (!orderId) return false;
 	const order = await payload.findByID({
@@ -20,7 +25,7 @@ const openContestGuard: ProofRetentionGuard = async (payload, shipment) => {
 		overrideAccess: true,
 	});
 	const contestBy = order.handover?.contestBy;
-	return Boolean(contestBy) && Date.parse(String(contestBy)) > Date.now();
+	return Boolean(contestBy) && Date.parse(String(contestBy)) > now.getTime();
 };
 
 const OPEN_DISPUTE_STATUSES = [
@@ -82,12 +87,15 @@ export const proofRetentionGuards: ProofRetentionGuard[] = [
 	openCaseGuard,
 ];
 
+/** `now` is the purge's own clock, so a contest window is judged at the
+ * same instant as the 180-day cutoff. */
 export async function proofsAreHeld(
 	payload: Payload,
 	shipment: Shipment,
+	now: Date = new Date(),
 ): Promise<boolean> {
 	for (const guard of proofRetentionGuards) {
-		if (await guard(payload, shipment)) return true;
+		if (await guard(payload, shipment, now)) return true;
 	}
 	return false;
 }

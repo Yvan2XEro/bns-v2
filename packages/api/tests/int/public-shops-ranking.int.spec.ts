@@ -250,12 +250,15 @@ describe("recomputeShopRankings", () => {
 			catalogueUpdatedAt: "2026-10-12T00:00:00.000Z",
 		});
 
-		// The fake runs no hooks: store the score the Shops hook would have.
+		// The fake runs no hooks: store the score the Shops hook would have,
+		// at the run's own instant (the hook reads the wall clock).
+		vi.setSystemTime(now);
 		if (updated)
 			updated.rankingScore = applyShopRankingScore({
 				data: {},
 				originalDoc: updated,
 			}).rankingScore;
+		vi.useRealTimers();
 		expect(await recomputeShopRankings(payload, now)).toEqual({
 			checked: 1,
 			updated: 0,

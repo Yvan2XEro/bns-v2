@@ -57,6 +57,8 @@ function world(charge: Doc = {}, intents: Doc[] = [], shop: Doc = {}) {
 const intentsOf = (payload: FakePayload) => payload.store["payment-intents"];
 
 beforeEach(() => {
+	// The payment's return URL is built on the public server URL.
+	vi.stubEnv("PAYLOAD_PUBLIC_SERVER_URL", "http://localhost:3000");
 	createPayment.mockReset();
 	createPayment.mockResolvedValue({
 		checkoutUrl: "https://pay.test/resale",

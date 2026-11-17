@@ -1628,7 +1628,12 @@ describe("the rehearsal needed no code", () => {
 			const path = join(dir, name);
 			if (statSync(path).isDirectory())
 				return name === "test" ? [] : walk(path);
-			return /\.(test|fixture)\.tsx?$/.test(name) ? [] : [path];
+			if (/\.(test|fixture)\.tsx?$/.test(name)) return [];
+			// Fonts and images are bytes, not shipped wording: a glyph table can
+			// spell anything.
+			return /\.(ttf|otf|woff2?|png|jpe?g|webp|gif|ico)$/i.test(name)
+				? []
+				: [path];
 		});
 
 	it("names neither the country nor its currency anywhere a client or the api ships", () => {

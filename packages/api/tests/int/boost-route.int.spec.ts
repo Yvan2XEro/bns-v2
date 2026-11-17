@@ -38,12 +38,16 @@ describe("POST /api/public/boost", () => {
 	let payload: ReturnType<typeof fakePayload>;
 
 	beforeEach(() => {
+		// The callback URL is built on the public server URL.
+		vi.stubEnv("PAYLOAD_PUBLIC_SERVER_URL", "http://localhost:3000");
 		payload = fakePayload({
 			listings: [
 				{ id: "l-mine", title: "A", seller: "u-1", status: "published" },
 				{ id: "l-other", title: "B", seller: "u-2", status: "published" },
 				{ id: "l-draft", title: "C", seller: "u-1", status: "draft" },
 			],
+			// A boost needs a verified phone (contracts/accountTrust.ts).
+			users: [{ id: "u-1", phoneVerifiedAt: "2026-01-01T00:00:00.000Z" }],
 		});
 		payload.auth.mockResolvedValue({
 			user: { id: "u-1", email: "s@example.com" },
@@ -66,6 +70,13 @@ describe("POST /api/public/boost", () => {
 		const response = await call({ listingId: "l-other", duration: "7" });
 		expect(response.status).toBe(403);
 		expect(await response.json()).toMatchObject({ code: "boost.notOwner" });
+	});
+
+	it("answers 403 auth.phoneRequired to an owner without a verified phone", async () => {
+		payload.store.users = [{ id: "u-1" }];
+		const response = await call({ listingId: "l-mine", duration: "7" });
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({ code: "auth.phoneRequired" });
 	});
 
 	it("answers 409 boost.listingNotPublished for an unpublished listing", async () => {

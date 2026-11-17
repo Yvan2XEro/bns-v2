@@ -65,7 +65,7 @@ export async function purgeDeliveryProofs(
 				req,
 			});
 			if (proofs.docs.length === 0) return null;
-			if (await proofsAreHeld(req.payload, shipment)) return null;
+			if (await proofsAreHeld(req.payload, shipment, now)) return null;
 			for (const proof of proofs.docs) {
 				await req.payload.delete({
 					collection: "delivery-proofs",
