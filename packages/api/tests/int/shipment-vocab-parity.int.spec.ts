@@ -200,11 +200,11 @@ describe("the delivery copy is the same on web and mobile", () => {
 				)
 				.map(([key]) => key);
 			expect(differing).toEqual([]);
-			// 29 map cells (see above) plus nothing else: the namespace holds the
-			// vocabulary and the two hint sentences, no screen copy yet. A screen
-			// string added to one client without its mirror fails the key-set
-			// comparison above before this count moves.
-			expect(webStrings.size).toBe(29);
+			// 29 map cells (see above) plus the courier's own seven status words
+			// the mobile redesign added, mirrored into web. A screen string added
+			// to one client without its mirror fails the key-set comparison above
+			// before this count moves.
+			expect(webStrings.size).toBe(36);
 		});
 	}
 });

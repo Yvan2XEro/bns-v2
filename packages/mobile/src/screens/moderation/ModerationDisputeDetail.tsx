@@ -40,7 +40,7 @@ import {
 	DISPUTE_STATUS_LABELS,
 } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatPrice } from "@/src/lib/market";
+import { currencySymbol, formatPrice } from "@/src/lib/market";
 import { canSubmitDisputeResolution } from "@/src/lib/moderationDisputeDecision";
 
 const outcomes = [
@@ -405,7 +405,7 @@ export function ModerationDisputeDetail({ id }: { id: string }) {
 									label={required(t("moderationDisputes.refundAmount"))}
 									value={form.refund}
 									keyboardType="number-pad"
-									suffix="FCFA"
+									suffix={currencySymbol(locale)}
 									hint={t("moderationDisputes.refundMax", {
 										amount: formatPrice(maxRefund, locale),
 									})}

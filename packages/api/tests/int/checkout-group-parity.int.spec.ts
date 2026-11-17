@@ -244,6 +244,23 @@ const MOBILE_ONLY = [
 	"deliveryFor",
 	"placeOrders",
 	"unavailableTitle",
+	// The mobile redesign's one-shop-at-a-time checkout: its confirm sheet,
+	// stepper, placed screen and per-group removal dialog have no web screen.
+	"groupRemoveTitle",
+	"groupRemoveBody",
+	"groupRemoveBody_one",
+	"placeOrdersTotal",
+	"itemsToggle",
+	"itemsToggle_one",
+	"feeIncluded",
+	"confirmOrder",
+	"nextShop",
+	"openGroupDetail",
+	"openGroupDetail_one",
+	"placedTitle",
+	"placedTitle_one",
+	"placedSummary",
+	"placedSummary_one",
 ];
 // Same key, deliberately different copy: web's ICU plurals vs i18next's
 // `_one` pairs, and two headings each platform words for its own layout.
@@ -253,10 +270,12 @@ const DIFFERENT_COPY = [
 	"summaryPending",
 	"grandTotal",
 	"purchasesHeader",
+	// Mobile names the shop in its remove button; web's sits inside the group.
+	"groupRemove",
 ];
-// 15 cells read the same: cart heading, group subtotal/delivery/total/remove,
+// 14 cells read the same: cart heading, group subtotal/delivery/total,
 // stepper position, both pay buttons, the two market notices, the five reasons.
-const CHECKOUT_GROUP_SHARED = 15;
+const CHECKOUT_GROUP_SHARED = 14;
 const toMobileBraces = (value: string) => value.replace(/\{(\w+)\}/g, "{{$1}}");
 
 describe("the CheckoutGroup copy is the same on web and mobile", () => {

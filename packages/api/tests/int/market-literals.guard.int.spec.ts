@@ -56,6 +56,8 @@ const ALLOW: Array<[string, string, (string | string[])?]> = [
 	["mobile/src/components/delivery/SellerShipmentActions.tsx", `delivery date zone: ${TZ}`],
 	["mobile/src/components/delivery/TrackingBlock.tsx", `delivery date zone: ${TZ}`],
 	["mobile/app/purchases/[id]/reschedule.tsx", `delivery date zone: ${TZ}`],
+	["mobile/src/components/checkout/DeliveryOptionCard.tsx", `delivery promise zone: ${TZ}`],
+	["mobile/src/screens/returns/ReturnCase.tsx", `return deadline zone: ${TZ}`],
 	["mobile/src/lib/shipmentTracking.ts", `delivery date zone: ${TZ}`, "DOUALA_OFFSET_MS"],
 	["mobile/src/lib/market.ts", "explicit M9 fallback for pre-market APIs; ages out with released clients", "FALLBACK_CURRENCY"],
 	["mobile/src/locales/", `common.currency, ${DEFER}`, '"currency": "XAF"'],

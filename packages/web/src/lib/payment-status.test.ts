@@ -211,8 +211,10 @@ describe("the Payments namespace", () => {
 		// only mobile renders as text today, mirrored here verbatim so the
 		// cross-client byte-parity spec stays whole-namespace. +6 for the
 		// mobile protected-pay redesign's labels, mirrored the same way. +2 for
-		// the pending screen's exact amount and USSD dial button.
-		expect(Object.keys(enNs)).toHaveLength(167);
+		// the pending screen's exact amount and USSD dial button. +11 for the
+		// mobile redesign's pay-later choice, pending headers, account change
+		// and payout retry, mirrored the same way.
+		expect(Object.keys(enNs)).toHaveLength(178);
 	});
 
 	test("carries the same placeholders in both languages, in next-intl's single braces", () => {
@@ -236,19 +238,19 @@ describe("the Payments namespace", () => {
 			"Protected payment available: your money is released to the seller only after delivery. Fee: {rate}% (min {min})",
 		);
 		expect(enNs.disclosure_holder).toBe(
-			"Your payment is collected and held by NotchPay, a payment provider. BuyNSellem never holds your money.",
+			"Your payment is collected and held by NotchPay, a payment provider. Buy'N'Sellem never holds your money.",
 		);
 		expect(enNs.disclosure_sellerLegend).toBe(
-			"Funds are held by NotchPay. BuyNSellem never holds your money.",
+			"Funds are held by NotchPay. Buy'N'Sellem never holds your money.",
 		);
 		expect(frNs.disclosure_listingBadge).toBe(
 			"Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : {rate} % (min. {min})",
 		);
 		expect(frNs.disclosure_holder).toBe(
-			"Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. BuyNSellem ne détient jamais votre argent.",
+			"Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. Buy'N'Sellem ne détient jamais votre argent.",
 		);
 		expect(frNs.disclosure_sellerLegend).toBe(
-			"Les fonds sont détenus par NotchPay. BuyNSellem ne détient jamais votre argent.",
+			"Les fonds sont détenus par NotchPay. Buy'N'Sellem ne détient jamais votre argent.",
 		);
 	});
 });

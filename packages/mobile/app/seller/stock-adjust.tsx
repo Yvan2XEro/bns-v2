@@ -22,13 +22,14 @@ import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useStockAdjustForm } from "@/src/hooks/useStockAdjustForm";
 import { useTranslation } from "@/src/lib/i18n";
+import { currencySymbol } from "@/src/lib/market";
 import { STOCK_NOTE_MAX } from "@/src/lib/stockAdjust";
 import { variantLabel } from "@/src/lib/variants";
 
 export default function StockAdjustSheet() {
 	const { variantId } = useLocalSearchParams<{ variantId: string }>();
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const {
 		variant,
 		v,
@@ -180,13 +181,13 @@ export default function StockAdjustSheet() {
 													keyboardType="number-pad"
 													placeholder="0"
 													placeholderTextColor={c.muted}
-													accessibilityLabel={`${t("stock.unitCost")} (FCFA)`}
+													accessibilityLabel={`${t("stock.unitCost")} (${currencySymbol(i18n.language)})`}
 													style={[styles.boxInput, { color: c.text }]}
 												/>
 											)}
 										/>
 										<Text style={[styles.suffix, { color: c.muted }]}>
-											FCFA
+											{currencySymbol(i18n.language)}
 										</Text>
 									</View>
 								</View>

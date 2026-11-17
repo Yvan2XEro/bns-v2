@@ -61,6 +61,13 @@ export function currencyCode(): string {
 	return (current?.currency ?? FALLBACK_CURRENCY).code;
 }
 
+/** The market's own currency mark for an amount field's suffix ("FCFA",
+ * "₦"…), in the reader's language; the ISO code when no format is served. */
+export function currencySymbol(lang?: string): string {
+	const format = current && pickFormat(current.formats, localeOf(lang));
+	return format?.symbol ?? currencyCode();
+}
+
 export function phoneExample(): string {
 	return current?.phone.displayExample ?? FALLBACK_EXAMPLE;
 }

@@ -198,7 +198,8 @@ const NAMESPACES = [
 		mobileTree: { en: mobileEn.returns, fr: mobileFr.returns },
 		// 109: the 96 web leaves plus the 16 mobile-only ones mirrored into web,
 		// less `party` (2, folded into `payer`) and `awaitingCount` (EXEMPT).
-		count: 109,
+		// 118: +9 for the mobile redesign's confirmations and "done" toasts.
+		count: 118,
 	},
 	{
 		web: "Disputes",
@@ -211,7 +212,8 @@ const NAMESPACES = [
 		// report redesign (thread title, author labels, "what happens next").
 		// 109: +7 for evidence thumbnails in the mobile thread (viewer, menu).
 		// 122: +13 for the one-page report with evidence attached on send.
-		count: 122,
+		// 136: +14 for the mobile redesign's form checks and confirmations.
+		count: 136,
 	},
 ] as const;
 

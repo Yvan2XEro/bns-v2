@@ -3995,9 +3995,9 @@
 		"channel_cmMtn": "MTN Mobile Money",
 		"channel_cmOrange": "Orange Money",
 		"comingSoon": "Coming soon",
-		"disclosure_holder": "Your payment is collected and held by NotchPay, a payment provider. BuyNSellem never holds your money.",
+		"disclosure_holder": "Your payment is collected and held by NotchPay, a payment provider. Buy'N'Sellem never holds your money.",
 		"disclosure_listingBadge": "Protected payment available: your money is released to the seller only after delivery. Fee: {rate}% (min {min})",
-		"disclosure_sellerLegend": "Funds are held by NotchPay. BuyNSellem never holds your money.",
+		"disclosure_sellerLegend": "Funds are held by NotchPay. Buy'N'Sellem never holds your money.",
 		"expired_body": "Your order was cancelled and its items were released. If money was taken from your account, it will be refunded automatically.",
 		"expired_title": "The time to pay has run out",
 		"failed_attemptsLeft": "Attempts left: {attempts}",
@@ -4131,7 +4131,7 @@
 		"setup_step1Body": "Protected payment requires identity verification level 2.",
 		"setup_step1Title": "Verify your identity",
 		"setup_step2Action": "Continue with NotchPay",
-		"setup_step2Body": "NotchPay, a payment provider, collects your customers' payments and pays them out to you. BuyNSellem never holds your money.",
+		"setup_step2Body": "NotchPay, a payment provider, collects your customers' payments and pays them out to you. Buy'N'Sellem never holds your money.",
 		"setup_step2Title": "Open your NotchPay account",
 		"setup_step3Title": "Add your payout account",
 		"setup_title": "Set up payments",
@@ -4152,7 +4152,18 @@
 		"money_refundTitle": "Refunded if the order doesn't go through",
 		"pay_mobileMoney": "Mobile money",
 		"pending_amount": "Amount to approve: {amount}",
-		"pending_dialMenu": "Open the approval menu ({code})"
+		"pending_dialMenu": "Open the approval menu ({code})",
+		"pay_laterTitle": "Pay later?",
+		"pay_laterBody": "Your order is reserved, but it will be cancelled if it isn't paid in time. You'll find it in My orders.",
+		"pay_later": "Later",
+		"pay_now": "Pay now",
+		"pay_operatorSwitch": "{operator} number: pay with {operator}",
+		"pending_headerPending": "Payment in progress",
+		"pending_headerExpired": "Time ran out",
+		"pending_headerPaid": "Payment received",
+		"setup_saved": "Account saved. Verification in progress.",
+		"setup_changeAccount": "Change account",
+		"payout_failedAction": "This payout failed. Check your payout account."
 	},
 	"PaymentsPay": {
 		"operatorRequired": "Choose an operator."
@@ -4284,7 +4295,18 @@
 		"trackingPlaceholder": "Optional tracking number",
 		"refundProof": "Seller refund proof",
 		"refundProofDetail": "{method} · {amount} · reference {transactionId}",
-		"timeline": "Return timeline"
+		"timeline": "Return timeline",
+		"confirmCancelBody": "The return request will be closed and cannot be reopened.",
+		"done": {
+			"ship": "Return marked as shipped",
+			"accept_deduction": "Deduction accepted",
+			"contest_deduction": "Deduction disputed",
+			"confirm_refund": "Refund confirmed",
+			"contest_refund": "Refund problem reported",
+			"cancel": "Return request cancelled"
+		},
+		"confirmContestDeductionBody": "A Buy'N'Sellem mediator will review the deduction. The refund waits for their decision.",
+		"confirmContestRefundBody": "A Buy'N'Sellem mediator will look into the refund with the shop."
 	},
 	"Disputes": {
 		"addEvidenceMedia": "Add",
@@ -4420,7 +4442,21 @@
 		"nextShop": "The shop is asked to respond",
 		"nextTitle": "What happens next?",
 		"staffBadge": "Team",
-		"threadTitle": "Dispute · {number}"
+		"threadTitle": "Dispute · {number}",
+		"requestedAmountMax": "Up to {amount}, the order total",
+		"descriptionCount": "{n} of {min} characters minimum",
+		"descriptionPlaceholder": "E.g. the parcel arrived open and the screen is cracked",
+		"reasonRequired": "Choose what happened.",
+		"takePhoto": "Take photo",
+		"uploadFailed": "The file wasn't sent. Check your connection and try again.",
+		"confirmWithdrawTitle": "Withdraw the dispute?",
+		"confirmWithdrawBody": "The dispute will close and can't be reopened.",
+		"confirmRejectTitle": "Decline the offer?",
+		"confirmRejectBody": "The dispute goes on without this {amount} offer.",
+		"confirmAcceptTitle": "Accept {amount}?",
+		"confirmAcceptBody": "The dispute will close with this refund.",
+		"confirmResolutionTitle": "Accept the resolution?",
+		"confirmResolutionBody": "The dispute will close on the proposed terms."
 	},
 	"Delivery": {
 		"statusBuyer": {
@@ -4459,7 +4495,16 @@
 			"evening": "Evening (4pm to 8pm)"
 		},
 		"freeAboveHint": "Free delivery from {amount}",
-		"minimumHint": "Delivery available from {amount}"
+		"minimumHint": "Delivery available from {amount}",
+		"statusCourier": {
+			"pending": "To pick up",
+			"picked_up": "On the way",
+			"in_transit": "On the way",
+			"delivered": "Delivered",
+			"failed": "Delivery failed",
+			"returned": "Back at the shop",
+			"cancelled": "Cancelled"
+		}
 	},
 	"ModerationDisputes": {
 		"title": "Disputes queue",

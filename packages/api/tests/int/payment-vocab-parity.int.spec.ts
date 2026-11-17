@@ -280,13 +280,15 @@ describe("the payments copy is the same on web and mobile", () => {
 			// 159 → 165: the mobile protected-pay redesign's six labels, mirrored
 			// the same way.
 			// 165 → 167: the pending screen's exact amount and USSD dial button.
-			expect(Object.keys(webStrings)).toHaveLength(167);
+			// 167 → 178: the mobile redesign's pay-later choice, pending headers,
+			// account change and payout retry, mirrored the same way.
+			expect(Object.keys(webStrings)).toHaveLength(178);
 		});
 	}
 
 	it("ships the holder sentence verbatim on both clients, in English", () => {
 		const sentence =
-			"Your payment is collected and held by NotchPay, a payment provider. BuyNSellem never holds your money.";
+			"Your payment is collected and held by NotchPay, a payment provider. Buy'N'Sellem never holds your money.";
 		expect(webNs.en.disclosure_holder).toBe(sentence);
 		expect(mobileNs.en.disclosure_holder).toBe(sentence);
 	});

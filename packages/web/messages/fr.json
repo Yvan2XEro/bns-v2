@@ -3995,9 +3995,9 @@
 		"channel_cmMtn": "MTN Mobile Money",
 		"channel_cmOrange": "Orange Money",
 		"comingSoon": "Bientôt disponible",
-		"disclosure_holder": "Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. BuyNSellem ne détient jamais votre argent.",
+		"disclosure_holder": "Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. Buy'N'Sellem ne détient jamais votre argent.",
 		"disclosure_listingBadge": "Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : {rate} % (min. {min})",
-		"disclosure_sellerLegend": "Les fonds sont détenus par NotchPay. BuyNSellem ne détient jamais votre argent.",
+		"disclosure_sellerLegend": "Les fonds sont détenus par NotchPay. Buy'N'Sellem ne détient jamais votre argent.",
 		"expired_body": "Votre commande a été annulée et ses articles remis en vente. Si un montant a été débité de votre compte, il vous sera remboursé automatiquement.",
 		"expired_title": "Le délai de paiement est dépassé",
 		"failed_attemptsLeft": "Tentatives restantes : {attempts}",
@@ -4131,7 +4131,7 @@
 		"setup_step1Body": "Le paiement protégé exige le niveau 2 de vérification d'identité.",
 		"setup_step1Title": "Vérifiez votre identité",
 		"setup_step2Action": "Continuer avec NotchPay",
-		"setup_step2Body": "NotchPay, un prestataire de paiement, encaisse les paiements de vos clients et vous les verse. BuyNSellem ne détient jamais votre argent.",
+		"setup_step2Body": "NotchPay, un prestataire de paiement, encaisse les paiements de vos clients et vous les verse. Buy'N'Sellem ne détient jamais votre argent.",
 		"setup_step2Title": "Ouvrez votre compte NotchPay",
 		"setup_step3Title": "Ajoutez votre compte de versement",
 		"setup_title": "Configurer les paiements",
@@ -4152,7 +4152,18 @@
 		"money_refundTitle": "Remboursé si la commande n'aboutit pas",
 		"pay_mobileMoney": "Mobile money",
 		"pending_amount": "Montant à valider : {amount}",
-		"pending_dialMenu": "Ouvrir le menu de validation ({code})"
+		"pending_dialMenu": "Ouvrir le menu de validation ({code})",
+		"pay_laterTitle": "Payer plus tard ?",
+		"pay_laterBody": "Votre commande est réservée, mais elle sera annulée si elle n'est pas payée à temps. Vous la retrouverez dans Mes commandes.",
+		"pay_later": "Plus tard",
+		"pay_now": "Payer maintenant",
+		"pay_operatorSwitch": "Numéro {operator} : payer avec {operator}",
+		"pending_headerPending": "Paiement en cours",
+		"pending_headerExpired": "Délai dépassé",
+		"pending_headerPaid": "Paiement reçu",
+		"setup_saved": "Compte enregistré. Vérification en cours.",
+		"setup_changeAccount": "Changer de compte",
+		"payout_failedAction": "Ce versement a échoué. Vérifiez votre compte de versement."
 	},
 	"PaymentsPay": {
 		"operatorRequired": "Choisissez un opérateur."
@@ -4284,7 +4295,18 @@
 		"trackingPlaceholder": "Numéro de suivi facultatif",
 		"refundProof": "Preuve de remboursement du vendeur",
 		"refundProofDetail": "{method} · {amount} · référence {transactionId}",
-		"timeline": "Historique du retour"
+		"timeline": "Historique du retour",
+		"confirmCancelBody": "La demande de retour sera fermée et ne pourra pas être rouverte.",
+		"done": {
+			"ship": "Retour marqué comme expédié",
+			"accept_deduction": "Retenue acceptée",
+			"contest_deduction": "Retenue contestée",
+			"confirm_refund": "Remboursement confirmé",
+			"contest_refund": "Problème de remboursement signalé",
+			"cancel": "Demande de retour annulée"
+		},
+		"confirmContestDeductionBody": "Un médiateur Buy'N'Sellem examinera la retenue. Le remboursement attend sa décision.",
+		"confirmContestRefundBody": "Un médiateur Buy'N'Sellem examinera le remboursement avec la boutique."
 	},
 	"Disputes": {
 		"addEvidenceMedia": "Ajouter",
@@ -4420,7 +4442,21 @@
 		"nextShop": "La boutique est invitée à répondre",
 		"nextTitle": "Et ensuite ?",
 		"staffBadge": "Équipe",
-		"threadTitle": "Litige · {number}"
+		"threadTitle": "Litige · {number}",
+		"requestedAmountMax": "Au plus {amount}, le total de la commande",
+		"descriptionCount": "{n} caractères sur {min} minimum",
+		"descriptionPlaceholder": "Ex. : le colis est arrivé ouvert, l'écran est fissuré",
+		"reasonRequired": "Choisissez ce qui s'est passé.",
+		"takePhoto": "Prendre une photo",
+		"uploadFailed": "Le fichier n'a pas été envoyé. Vérifiez votre connexion et réessayez.",
+		"confirmWithdrawTitle": "Retirer le litige ?",
+		"confirmWithdrawBody": "Le litige sera fermé et ne pourra pas être rouvert.",
+		"confirmRejectTitle": "Refuser la proposition ?",
+		"confirmRejectBody": "Le litige continue sans cette proposition de {amount}.",
+		"confirmAcceptTitle": "Accepter {amount} ?",
+		"confirmAcceptBody": "Le litige sera clos avec ce remboursement.",
+		"confirmResolutionTitle": "Accepter la résolution ?",
+		"confirmResolutionBody": "Le litige sera clos selon la résolution proposée."
 	},
 	"Delivery": {
 		"statusBuyer": {
@@ -4459,7 +4495,16 @@
 			"evening": "Soirée (16 h à 20 h)"
 		},
 		"freeAboveHint": "Livraison offerte dès {amount}",
-		"minimumHint": "Livraison à partir de {amount}"
+		"minimumHint": "Livraison à partir de {amount}",
+		"statusCourier": {
+			"pending": "À récupérer",
+			"picked_up": "En route",
+			"in_transit": "En route",
+			"delivered": "Livré",
+			"failed": "Échec de livraison",
+			"returned": "Retourné en boutique",
+			"cancelled": "Annulé"
+		}
 	},
 	"ModerationDisputes": {
 		"title": "File des litiges",
