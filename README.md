@@ -32,26 +32,20 @@ bun run dev
 
 ## Deployment
 
-Three deployment modes are available — see [docs/ci-cd.md](docs/ci-cd.md) for full details.
+Staging runs on Docker Compose (Dokploy); production on Kubernetes through
+the Pulumi stack in `infra/` — see [docs/ci-cd.md](docs/ci-cd.md) and
+[docs/runbook-aks-production.md](docs/runbook-aks-production.md).
 
-**Docker Compose (Dokploy / VPS)**
+**Staging — Docker Compose (Dokploy)**
 ```bash
-# CI/CD runs automatically: push to dev → staging, tag v* → prod
-make staging          # push to dev → staging
-make release v=1.2.3  # tag + push → production
-make rollback v=1.1.0 # rollback production
+make staging          # push to dev → CI builds the images → Dokploy redeploys
 ```
 
-**Kubernetes (Kustomize)**
+**Production — Kubernetes via Pulumi (AKS / EKS / K3s)**
 ```bash
-make k8s-apply
-make k8s-deploy v=1.2.3
-```
-
-**Managed cloud EKS / AKS (Pulumi)**
-```bash
-make infra-up STACK=aws-prod
-make infra-tag v=1.2.3 STACK=aws-prod
+make release v=1.2.3                      # tag + push → GitHub Actions builds the images
+make check                                # preflight, read-only
+make infra-tag v=1.2.3 STACK=azure-prod   # deploy (an older v=… rolls back)
 ```
 
 ## Tech stack

@@ -1,9 +1,11 @@
 # BNS — Release & Deployment Management
 #
 # Usage:
-#   make release v=1.2.3   → tag + push → CI builds images → auto-deploy to prod
 #   make staging            → push dev → CI builds images → Dokploy redeploys staging
-#   make rollback v=1.1.0  → redeploy a previous version to prod (via GitHub Actions)
+#   make release v=1.2.3   → tag + push → CI builds the v1.2.3 images (no deploy)
+#   make check              → production preflight (stack, values, images, live)
+#   make infra-tag v=1.2.3 STACK=azure-prod → deploy that release (Pulumi)
+#   make rollback v=1.1.0  → production back to v1.1.0 (Pulumi), env=staging for staging
 #   make build              → build all images locally
 #   make deploy IMAGE_TAG=v1.2.3 → pull + run images with docker compose (needs .env,
 #                                  see deployments/docker-compose/.env.example)
@@ -84,24 +86,27 @@ secrets-list: ## Show the names of the secrets set for ENV. Usage: make secrets-
 
 # ─── Release flow ─────────────────────────────────────────────────────────────
 
-release: ## Create + push a release tag (triggers prod CI/CD). Usage: make release v=1.2.3
+release: ## Create + push a release tag; CI builds its images. Usage: make release v=1.2.3
 	@test -n "$(v)" || (echo "Usage: make release v=1.2.3" && exit 1)
 	@git diff --quiet HEAD || (echo "✗ Uncommitted changes — commit first" && exit 1)
 	@git tag -a v$(v) -m "v$(v)"
 	@git push origin v$(v)
-	@echo "✓ Tag v$(v) pushed → CI will build images and deploy to production"
+	@echo "✓ Tag v$(v) pushed → GitHub Actions builds the v$(v) images"
+	@echo "  Then: make check && make infra-tag v=$(v) STACK=$(PROD_STACK)"
 	@echo "  Monitor: https://github.com/$(shell git remote get-url origin | sed 's|.*github.com[:/]||;s|.git$$||')/actions"
 
 staging: ## Push current branch to dev (triggers staging CI/CD)
 	@git push origin HEAD:dev
 	@echo "✓ Pushed to dev → CI builds the images, then Dokploy redeploys staging"
 
-rollback: ## Redeploy a previous version via GitHub Actions. Usage: make rollback v=1.1.0 env=production
+rollback: ## Back to a previous release. Usage: make rollback v=1.1.0 [env=production|staging]
 	@test -n "$(v)"   || (echo "Usage: make rollback v=1.1.0 [env=production|staging]" && exit 1)
-	@gh workflow run deploy.yml \
-	  --field environment=$(or $(env),production) \
-	  --field tag=v$(v)
-	@echo "✓ Rollback to v$(v) triggered on $(or $(env),production)"
+	@if [ "$(or $(env),production)" = "production" ]; then \
+	  $(MAKE) --no-print-directory infra-tag v=$(v) STACK=$(PROD_STACK); \
+	else \
+	  gh workflow run deploy.yml --field environment=$(env) --field tag=v$(v) && \
+	  echo "✓ Rollback to v$(v) triggered on $(env)"; \
+	fi
 
 # ─── Local build ──────────────────────────────────────────────────────────────
 
@@ -152,31 +157,6 @@ ps: ## Show running containers
 restart-%: ## Restart a specific service. Usage: make restart-api
 	$(COMPOSE) restart $*
 
-# ─── Kubernetes ───────────────────────────────────────────────────────────────
-
-k8s-apply: ## Apply all Kubernetes manifests
-	kubectl apply -k deployments/kubernetes/
-
-k8s-diff: ## Preview changes before applying
-	kubectl diff -k deployments/kubernetes/
-
-k8s-delete: ## Delete all K8s resources
-	kubectl delete -k deployments/kubernetes/
-
-k8s-status: ## Show pod status in bns namespace
-	kubectl get pods -n bns -o wide
-
-k8s-deploy: ## Deploy a specific image tag to K8s. Usage: make k8s-deploy v=1.2.3
-	@test -n "$(v)" || (echo "Usage: make k8s-deploy v=1.2.3" && exit 1)
-	@cd deployments/kubernetes && \
-	  kustomize edit set image \
-	    "REGISTRY/api=$(REGISTRY)/api:v$(v)" \
-	    "REGISTRY/web=$(REGISTRY)/web:v$(v)" \
-	    "REGISTRY/chat-service=$(REGISTRY)/chat-service:v$(v)" \
-	    "REGISTRY/search-indexer=$(REGISTRY)/search-indexer:v$(v)"
-	kubectl apply -k deployments/kubernetes/
-	@echo "✓ K8s deployment updated to v$(v)"
-
 # ─── Pulumi (EKS / AKS) ───────────────────────────────────────────────────────
 # Prerequisites: pulumi CLI, Node.js, AWS CLI or Azure CLI authenticated
 #
@@ -214,18 +194,21 @@ infra-tag: ## Update image tag in running cluster. Usage: make infra-tag v=1.2.3
 	$(PULUMI) up --stack $(STACK)
 	@echo "✓ Cluster updated to v$(v) on stack $(STACK)"
 
-# `make check` audits azure-prod unless STACK is given on the command line
-# (STACK's own default, aws-staging, is for the infra-* targets).
-CHECK_STACK := $(if $(filter command line,$(origin STACK)),$(STACK),azure-prod)
+# Production's Pulumi stack: `make check` and `make rollback` use it unless
+# STACK is given on the command line (STACK's own default is aws-staging).
+PROD_STACK := $(if $(filter command line,$(origin STACK)),$(STACK),azure-prod)
 
 check: ## Production preflight, read-only. Usage: make check [STACK=azure-prod] [ENV_FILE=.env.azure-prod] [STAGING_ENV=.env.staging]
-	@cd infra && bun scripts/preflight.ts --stack $(CHECK_STACK) \
+	@cd infra && bun scripts/preflight.ts --stack $(PROD_STACK) \
 	  $(if $(ENV_FILE),--env $(ENV_FILE)) $(if $(STAGING_ENV),--staging-env $(STAGING_ENV))
+
+k8s-status: ## Pod status in the bns namespace of the current kubectl context (the Pulumi cluster)
+	kubectl get pods -n bns -o wide
 
 infra-output: ## Show stack outputs (kubeconfig, cluster name)
 	$(PULUMI) stack output --stack $(STACK)
 
 .PHONY: help version release staging rollback build push up down pull deploy \
-        logs ps restart k8s-apply k8s-diff k8s-delete k8s-status k8s-deploy \
+        logs ps restart k8s-status \
         infra-install infra-preview infra-up infra-down infra-refresh infra-tag infra-output \
         setup-secrets secrets-list check

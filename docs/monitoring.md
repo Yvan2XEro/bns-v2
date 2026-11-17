@@ -64,7 +64,7 @@ Real secrets never go into this config:
 2. **PostHog:**
    - Create a project on **EU Cloud**.
    - Under *Project settings*, turn on **Discard client IP data** and fill in **Authorized URLs**.
-3. Set these on the API (Dokploy / compose env / `deployments/kubernetes/secret.yaml`):
+3. Set these on the API (Dokploy / compose env for staging, the production `.env` imported into the Pulumi stack with `bun run infra:env:apply`):
 
    ```
    SENTRY_DSN=…            # api project

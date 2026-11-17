@@ -3,12 +3,17 @@
 ## Overview
 
 ```
-dev branch  ──push──►  build images  ──►  staging deploy (automatic)
-                           │
-version tag (v1.2.3) ──►  build images  ──►  production deploy (automatic)
-                                                         │
-                                           rollback ◄── workflow_dispatch
+dev branch  ──push──►  build images  ──►  staging deploy (automatic, Dokploy)
+
+version tag (v1.2.3) ──►  build images        (GitHub Actions)
+                     make check            (preflight)
+                     make infra-tag v=1.2.3 STACK=azure-prod   ──►  production (Pulumi)
+                     make rollback v=1.1.0                     ──►  production back
 ```
+
+Staging runs on Docker Compose under Dokploy; production on Kubernetes,
+built and deployed only by the Pulumi stack in `infra/`
+([runbook-aks-production.md](runbook-aks-production.md)).
 
 Images are built by GitHub Actions and stored in **GHCR** (GitHub Container Registry):
 ```
@@ -26,7 +31,8 @@ Services: `api` · `web` · `chat-service` · `search-indexer`
 | `dev` | Continuous integration → automatic staging deploy |
 | `v*` (tag) | Source of truth for production releases |
 
-> Production deploys are triggered by **Git tags**, not branch merges.
+> A **Git tag** makes a release's images; `make infra-tag` deploys them to
+> production. Merging a branch deploys nothing.
 
 ---
 
@@ -59,12 +65,14 @@ No manual configuration needed — the registry is derived from the GitHub repos
 
 ---
 
-### `deploy.yml` — Manual deploy (rollback)
+### `deploy.yml` — Manual compose deploy (staging rollback)
 
 **Trigger:** `workflow_dispatch` (GitHub Actions UI or CLI)
 
-Goes over SSH to either server (`STAGING_*` or `DEPLOY_*` secrets), not through
-Dokploy, and runs the same `docker compose pull && up -d` with the given tag.
+Goes over SSH to a compose server (`STAGING_*` or `DEPLOY_*` secrets), not
+through Dokploy, and runs `docker compose pull && up -d` with the given tag.
+Production on Pulumi is rolled back with `make rollback v=…` instead, which
+runs `make infra-tag`.
 
 **Inputs:**
 - `environment`: `staging` or `production`
@@ -73,8 +81,8 @@ Dokploy, and runs the same `docker compose pull && up -d` with the given tag.
 **Usage:**
 ```bash
 # Via Makefile
-make rollback v=1.1.0              # rollback prod to v1.1.0
-make rollback v=1.1.0 env=staging
+make rollback v=1.1.0              # production (Pulumi) back to v1.1.0
+make rollback v=1.1.0 env=staging  # staging, through this workflow
 
 # Via gh CLI directly
 gh workflow run deploy.yml --field environment=production --field tag=v1.1.0
@@ -109,7 +117,8 @@ make release v=1.2.3
 What it does:
 1. Checks there are no uncommitted changes
 2. Creates annotated tag `v1.2.3`
-3. Pushes the tag → triggers build + automatic production deploy
+3. Pushes the tag → GitHub Actions builds the `v1.2.3` images
+4. Prints the next steps: `make check`, then `make infra-tag v=1.2.3 STACK=azure-prod`
 
 ### Full flow
 
@@ -118,7 +127,9 @@ git commit -m "feat: ..."
 git push origin dev          # → staging updated
 
 # Once staging is validated:
-make release v=1.2.3         # → production updated
+make release v=1.2.3                       # → images built
+make check                                 # → preflight passes
+make infra-tag v=1.2.3 STACK=azure-prod    # → production updated
 ```
 
 ---
@@ -129,10 +140,12 @@ make release v=1.2.3         # → production updated
 
 | Command | Description |
 |---------|-------------|
-| `make release v=1.2.3` | Tag + push → triggers build + prod deploy |
+| `make release v=1.2.3` | Tag + push → GitHub Actions builds the images |
+| `make check` | Production preflight, read-only |
+| `make infra-tag v=1.2.3 STACK=azure-prod` | Deploy a release to production (Pulumi) |
 | `make staging` | Push the current branch to `dev` (fast-forward only) → build → Dokploy redeploys staging |
-| `make rollback v=1.1.0` | Redeploy a previous version to prod |
-| `make rollback v=1.1.0 env=staging` | Rollback on staging |
+| `make rollback v=1.1.0` | Production back to v1.1.0 (runs `make infra-tag`) |
+| `make rollback v=1.1.0 env=staging` | Staging back to v1.1.0 (`deploy.yml`) |
 | `make setup-secrets [ENV=staging\|production] [GHFILE=.env.deploy]` | Upload the deploy secrets the workflows read (see below) |
 | `make secrets-list ENV=staging` | List the secret names set on an environment |
 
@@ -155,20 +168,12 @@ make release v=1.2.3         # → production updated
 | `make logs-api` | Tail logs from a specific service |
 | `make restart-api` | Restart a specific service |
 
-### Kubernetes (Kustomize)
-
-| Command | Description |
-|---------|-------------|
-| `make k8s-apply` | Apply Kustomize manifests |
-| `make k8s-diff` | Preview changes before applying |
-| `make k8s-deploy v=1.2.3` | Update image tag in the cluster |
-| `make k8s-status` | Pod status in the `bns` namespace |
-
 ### Infrastructure — Pulumi (EKS / AKS)
 
 | Command | Description |
 |---------|-------------|
 | `make infra-install` | Install dependencies in `infra/` (bun) |
+| `make k8s-status` | Pod status in the `bns` namespace (current kubectl context) |
 | `make check [STACK=azure-prod] [ENV_FILE=…] [STAGING_ENV=…]` | Production preflight, read-only (see [runbook-aks-production.md](runbook-aks-production.md)) |
 | `make infra-preview STACK=aws-staging` | Preview infra changes |
 | `make infra-up STACK=aws-staging` | Create or update the cluster |
