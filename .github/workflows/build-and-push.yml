@@ -97,46 +97,16 @@ jobs:
           fi
 
   # ─── Production deploy (on version tag) ────────────────────────────────────
-  # Only for a production that runs on docker compose over SSH. On AKS the
-  # Pulumi stack owns production (`make infra-tag v=… STACK=azure-prod`), so
-  # this job stays off unless the repository variable PRODUCTION_PLATFORM is
-  # set to `compose`.
+  # Preview, then a reviewer's approval, then `pulumi up` on the AKS stack
+  # (deploy-production.yml). A rollback runs that workflow by hand. Skipped
+  # until `make prod-ci-setup` has set PULUMI_BACKEND_URL: the very first
+  # deploy, with its data restore, is done by hand (runbook).
   deploy-production:
-    name: Deploy → Production
-    runs-on: ubuntu-latest
+    name: Production
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v') && vars.PRODUCTION_PLATFORM == 'compose'
-    environment: production
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Extract tag
-        id: tag
-        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Upload compose file to production server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: deployments/docker-compose/docker-compose.yml
-          target: ${{ secrets.DEPLOY_PATH }}
-          strip_components: 2
-
-      - name: Pull & restart on production
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            cd ${{ secrets.DEPLOY_PATH }}
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            export IMAGE_REGISTRY=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-            export IMAGE_TAG=${{ steps.tag.outputs.version }}
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker image prune -f
-            echo "✓ Production deployed — registry: $IMAGE_REGISTRY tag: $IMAGE_TAG"
+    if: startsWith(github.ref, 'refs/tags/v') && vars.PULUMI_BACKEND_URL != ''
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-production.yml
+    secrets: inherit

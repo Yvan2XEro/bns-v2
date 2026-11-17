@@ -5,10 +5,10 @@
 ```
 dev branch  ──push──►  build images  ──►  staging deploy (automatic, Dokploy)
 
-version tag (v1.2.3) ──►  build images        (GitHub Actions)
-                     make check            (preflight)
-                     make infra-tag v=1.2.3 STACK=azure-prod   ──►  production (Pulumi)
-                     make rollback v=1.1.0                     ──►  production back
+version tag (v1.2.3) ──►  build images ──►  preview (make check + pulumi preview)
+                                       ──►  ⏸ approval (environment `production`)
+                                       ──►  pulumi up ──►  rollout + live make check
+make rollback v=1.1.0 ──►  the same workflow, from the v1.1.0 tag
 ```
 
 Staging runs on Docker Compose under Dokploy; production on Kubernetes,
@@ -31,8 +31,8 @@ Services: `api` · `web` · `chat-service` · `search-indexer`
 | `dev` | Continuous integration → automatic staging deploy |
 | `v*` (tag) | Source of truth for production releases |
 
-> A **Git tag** makes a release's images; `make infra-tag` deploys them to
-> production. Merging a branch deploys nothing.
+> A **Git tag** releases: its images are built, production is previewed, and
+> the deploy waits for a reviewer. Merging a branch deploys nothing.
 
 ---
 
@@ -49,12 +49,12 @@ Services: `api` · `web` · `chat-service` · `search-indexer`
 2. **deploy-staging** — After build on `dev`: calls the Dokploy app's deploy webhook
    (`DOKPLOY_DEPLOY_URL`) with a push-shaped payload; Dokploy pulls the `dev`
    images and restarts the compose app with the environment set in its own UI
-3. **deploy-production** — After build on `v*` tag, **only when the repository
-   variable `PRODUCTION_PLATFORM` is `compose`**: SCP the compose file to
-   `DEPLOY_PATH` over SSH, then `docker compose pull && up -d` with the
-   versioned tag; the server's `.env` next to it holds the application's keys.
-   Production on AKS is deployed by the Pulumi stack instead
-   (`make infra-tag v=1.2.3 STACK=azure-prod`), see
+3. **deploy-production** — After build on a `v*` tag: calls
+   `deploy-production.yml` — a preview job (`make check` without the live
+   part, `pulumi preview` in the run summary; environment
+   `production-preview`), then a deploy job that waits for a reviewer of the
+   environment `production` before `pulumi up`, the rollout and the live
+   `make check`. Both environments accept only `v*` tags. See
    [runbook-aks-production.md](runbook-aks-production.md)
 
 **Registry auto-resolution:**
@@ -117,8 +117,8 @@ make release v=1.2.3
 What it does:
 1. Checks there are no uncommitted changes
 2. Creates annotated tag `v1.2.3`
-3. Pushes the tag → GitHub Actions builds the `v1.2.3` images
-4. Prints the next steps: `make check`, then `make infra-tag v=1.2.3 STACK=azure-prod`
+3. Pushes the tag → GitHub Actions builds the images, previews production,
+   and deploys once a reviewer approves (`deploy-production.yml`)
 
 ### Full flow
 
@@ -127,9 +127,7 @@ git commit -m "feat: ..."
 git push origin dev          # → staging updated
 
 # Once staging is validated:
-make release v=1.2.3                       # → images built
-make check                                 # → preflight passes
-make infra-tag v=1.2.3 STACK=azure-prod    # → production updated
+make release v=1.2.3     # → images, preview, approval → production updated
 ```
 
 ---
@@ -140,11 +138,12 @@ make infra-tag v=1.2.3 STACK=azure-prod    # → production updated
 
 | Command | Description |
 |---------|-------------|
-| `make release v=1.2.3` | Tag + push → GitHub Actions builds the images |
+| `make release v=1.2.3` | Tag + push → build, preview, approval, production deploy |
 | `make check` | Production preflight, read-only |
-| `make infra-tag v=1.2.3 STACK=azure-prod` | Deploy a release to production (Pulumi) |
+| `make prod-ci-setup [REVIEWERS=…]` | GitHub environments, approval and secrets for the production workflow (rerun after a local stack-config change) |
+| `make infra-tag v=1.2.3 STACK=azure-prod` | Manual deploy from this machine (fallback) |
 | `make staging` | Push the current branch to `dev` (fast-forward only) → build → Dokploy redeploys staging |
-| `make rollback v=1.1.0` | Production back to v1.1.0 (runs `make infra-tag`) |
+| `make rollback v=1.1.0` | Production back to v1.1.0 (the deploy workflow from that tag, with approval) |
 | `make rollback v=1.1.0 env=staging` | Staging back to v1.1.0 (`deploy.yml`) |
 | `make setup-secrets [ENV=staging\|production] [GHFILE=.env.deploy]` | Upload the deploy secrets the workflows read (see below) |
 | `make secrets-list ENV=staging` | List the secret names set on an environment |
@@ -256,26 +255,31 @@ decision made in the admin panel, not a deploy step.
 ### Required GitHub Actions secrets
 
 These are the only secrets the workflows read. The application's own keys
-(`PAYLOAD_SECRET`, NotchPay, OAuth…) never go to GitHub: they live in the
-server's `.env` or Dokploy's Environment tab.
+(`PAYLOAD_SECRET`, NotchPay, OAuth…) never go to GitHub in clear: staging's
+live in Dokploy's Environment tab, production's in the Pulumi stack config,
+encrypted with its passphrase.
 
 | Secret | Environment | Used by |
 |--------|-------------|---------|
 | `DOKPLOY_DEPLOY_URL` | staging | `build-and-push.yml` → staging redeploy |
 | `STAGING_HOST` `STAGING_USER` `STAGING_PATH` `STAGING_SSH_KEY` | staging | `deploy.yml` (manual deploy / rollback) only |
-| `DEPLOY_HOST` `DEPLOY_USER` `DEPLOY_PATH` `DEPLOY_SSH_KEY` | production | `build-and-push.yml` and `deploy.yml` |
-| `GHCR_TOKEN` | both | `docker login ghcr.io` on the server |
+| `GHCR_TOKEN` | staging | `docker login ghcr.io` on the staging server |
+| `AZURE_CLIENT_ID` `AZURE_TENANT_ID` `AZURE_SUBSCRIPTION_ID` | production-preview, production | OIDC sign-in to Azure (no password) |
+| `PULUMI_CONFIG_PASSPHRASE` `PULUMI_STACK_CONFIG` | production-preview, production | the stack config and the key to its encrypted values |
+| `MONGODB_ATLAS_PUBLIC_KEY` `MONGODB_ATLAS_PRIVATE_KEY` | production-preview, production | option A (Atlas) only |
+
+Repository variables: `PULUMI_BACKEND_URL`, `PRODUCTION_STACK`, `PRODUCTION_URL`.
 
 > `GHCR_TOKEN`: GitHub Personal Access Token with the `read:packages` scope.
 
-`make setup-secrets` uploads them from a git-ignored file (default
-`.env.deploy`), piping each value to `gh` without printing it. SSH keys are
-given as a path, `STAGING_SSH_KEY_FILE=` / `DEPLOY_SSH_KEY_FILE=`, and uploaded
-from that file:
+`make setup-secrets` uploads staging's from a git-ignored file (default
+`.env.deploy`), piping each value to `gh` without printing it; the SSH key is
+given as a path, `STAGING_SSH_KEY_FILE=`. `make prod-ci-setup` does
+production's (environments, approval, `v*`-only rule, secrets, variables):
 
 ```bash
 make setup-secrets                                   # staging, from .env.deploy
-make setup-secrets ENV=production GHFILE=.env.deploy.prod
+make prod-ci-setup REVIEWERS=<login>                 # production, from .env.deploy.prod
 ```
 
 ---

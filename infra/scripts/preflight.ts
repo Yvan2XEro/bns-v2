@@ -23,6 +23,8 @@ function argument(flag: string): string | undefined {
 const stack = argument("--stack") ?? "azure-prod";
 const envFile = argument("--env");
 const stagingEnvFile = argument("--staging-env");
+/** Before a deploy (CI preview): everything but the running cluster. */
+const skipLive = process.argv.includes("--skip-live");
 
 // ─── Reporting ───────────────────────────────────────────────────────────────
 
@@ -391,6 +393,18 @@ const out =
 	outputs.code === 0
 		? (JSON.parse(outputs.stdout || "{}") as Record<string, unknown>)
 		: {};
+const deployedTag = typeof out.imageTag === "string" ? out.imageTag : "";
+if (deployedTag && tag && deployedTag !== tag)
+	warn(
+		`production runs ${deployedTag}; this config deploys ${tag}`,
+		"expected when releasing; otherwise pulumi config set imageTag " +
+			deployedTag,
+	);
+else if (deployedTag) ok(`production runs ${deployedTag}`);
+if (skipLive) {
+	ok("live checks skipped (--skip-live)");
+	finish();
+}
 const clusterName = typeof out.clusterName === "string" ? out.clusterName : "";
 if (!clusterName) {
 	warn(

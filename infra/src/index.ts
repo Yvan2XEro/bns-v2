@@ -97,6 +97,10 @@ deployKubernetes(
 );
 
 export const clusterName = cluster.clusterName;
+/** Azure: where `az aks get-credentials` finds the cluster (CI deploys). */
+export const resourceGroupName = cluster.resourceGroupName;
+/** The release running now: `make infra-up` refuses a stale local imageTag. */
+export const imageTag = config.imageTag;
 export const egressIps = cluster.egressIps;
 export const atlasCluster = atlas?.clusterName;
 /** `pulumi stack output --show-secrets databaseUri`: for the restore runbook only. */

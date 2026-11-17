@@ -2,10 +2,11 @@
 #
 # Usage:
 #   make staging            → push dev → CI builds images → Dokploy redeploys staging
-#   make release v=1.2.3   → tag + push → CI builds the v1.2.3 images (no deploy)
+#   make release v=1.2.3   → tag + push → CI builds the images, previews, and
+#                            deploys to production once a reviewer approves
 #   make check              → production preflight (stack, values, images, live)
-#   make infra-tag v=1.2.3 STACK=azure-prod → deploy that release (Pulumi)
-#   make rollback v=1.1.0  → production back to v1.1.0 (Pulumi), env=staging for staging
+#   make infra-tag v=1.2.3 STACK=azure-prod → manual deploy from this machine (fallback)
+#   make rollback v=1.1.0  → production back to v1.1.0 (GitHub Actions, approval), env=staging for staging
 #   make build              → build all images locally
 #   make deploy IMAGE_TAG=v1.2.3 → pull + run images with docker compose (needs .env,
 #                                  see deployments/docker-compose/.env.example)
@@ -34,32 +35,30 @@ version: ## Show current version and registry
 # own keys live in the server's .env or the Dokploy app's Environment tab
 # (deployments/docker-compose/.env.example), never in GitHub.
 #
-# GHFILE (default: .env.deploy, git-ignored by the .env* rule) holds, per ENV:
-#   staging:     DOKPLOY_DEPLOY_URL, GHCR_TOKEN, and for `make rollback env=staging`
-#                STAGING_HOST STAGING_USER STAGING_PATH STAGING_SSH_KEY_FILE
-#   production:  DEPLOY_HOST DEPLOY_USER DEPLOY_PATH DEPLOY_SSH_KEY_FILE GHCR_TOKEN
+# Staging only. GHFILE (default: .env.deploy, git-ignored by the .env* rule)
+# holds DOKPLOY_DEPLOY_URL, GHCR_TOKEN, and for `make rollback env=staging`
+# STAGING_HOST STAGING_USER STAGING_PATH STAGING_SSH_KEY_FILE. Production's
+# CI secrets are set by `make prod-ci-setup` (infra/scripts/ci-setup.sh).
 # *_SSH_KEY_FILE is a path to the private key file; its content is uploaded.
 # Values are piped to gh, never printed.
 # Requires: gh CLI authenticated (gh auth login)
 #
 # Usage:
 #   make setup-secrets                                → staging from .env.deploy
-#   make setup-secrets ENV=production GHFILE=.env.deploy.prod
 #   make secrets-list ENV=staging                     → names of what is set
 
 GHFILE ?= .env.deploy
 ENV    ?= staging
 
 STAGING_SECRETS    := DOKPLOY_DEPLOY_URL GHCR_TOKEN STAGING_HOST STAGING_USER STAGING_PATH
-PRODUCTION_SECRETS := DEPLOY_HOST DEPLOY_USER DEPLOY_PATH GHCR_TOKEN
 
-setup-secrets: ## Sync the deploy secrets from GHFILE to a GitHub environment. Usage: make setup-secrets [ENV=staging|production] [GHFILE=.env.deploy]
+setup-secrets: ## Sync staging's deploy secrets from GHFILE to GitHub. Usage: make setup-secrets [GHFILE=.env.deploy]
 	@test -f "$(GHFILE)" || { echo "✗ $(GHFILE) not found"; exit 1; }
 	@command -v gh >/dev/null || { echo "✗ gh CLI not installed"; exit 1; }
 	@case "$(ENV)" in \
 	   staging)    keys="$(STAGING_SECRETS)";    ssh=STAGING_SSH_KEY ;; \
-	   production) keys="$(PRODUCTION_SECRETS)"; ssh=DEPLOY_SSH_KEY ;; \
-	   *) echo "✗ ENV must be staging or production"; exit 1 ;; \
+	   production) echo "✗ production deploys through Pulumi: make prod-ci-setup"; exit 1 ;; \
+	   *) echo "✗ ENV must be staging"; exit 1 ;; \
 	 esac; \
 	 REPO=$$(gh repo view --json nameWithOwner -q .nameWithOwner); \
 	 gh api "repos/$$REPO/environments/$(ENV)" --method PUT --silent; \
@@ -79,6 +78,10 @@ setup-secrets: ## Sync the deploy secrets from GHFILE to a GitHub environment. U
 	   echo "  - $$ssh ($${ssh}_FILE not set or not a file, skipped)"; \
 	 fi
 
+prod-ci-setup: ## GitHub environments, approval and secrets for the production deploy workflow. Usage: make prod-ci-setup [STACK=azure-prod] [GHFILE=.env.deploy.prod] [REVIEWERS=login1,login2]
+	@STACK=$(PROD_STACK) GHFILE=$(if $(filter command line,$(origin GHFILE)),$(GHFILE),.env.deploy.prod) \
+	  REVIEWERS=$(REVIEWERS) infra/scripts/ci-setup.sh
+
 secrets-list: ## Show the names of the secrets set for ENV. Usage: make secrets-list [ENV=staging]
 	@REPO=$$(gh repo view --json nameWithOwner -q .nameWithOwner); \
 	 echo "── Secrets ($(ENV)) ──"; \
@@ -86,13 +89,13 @@ secrets-list: ## Show the names of the secrets set for ENV. Usage: make secrets-
 
 # ─── Release flow ─────────────────────────────────────────────────────────────
 
-release: ## Create + push a release tag; CI builds its images. Usage: make release v=1.2.3
+release: ## Tag + push a release: CI builds, previews, deploys after approval. Usage: make release v=1.2.3
 	@test -n "$(v)" || (echo "Usage: make release v=1.2.3" && exit 1)
 	@git diff --quiet HEAD || (echo "✗ Uncommitted changes — commit first" && exit 1)
 	@git tag -a v$(v) -m "v$(v)"
 	@git push origin v$(v)
-	@echo "✓ Tag v$(v) pushed → GitHub Actions builds the v$(v) images"
-	@echo "  Then: make check && make infra-tag v=$(v) STACK=$(PROD_STACK)"
+	@echo "✓ Tag v$(v) pushed → GitHub Actions builds the images, previews production,"
+	@echo "  then waits for your approval: Actions → Deploy → Production (AKS)"
 	@echo "  Monitor: https://github.com/$(shell git remote get-url origin | sed 's|.*github.com[:/]||;s|.git$$||')/actions"
 
 staging: ## Push current branch to dev (triggers staging CI/CD)
@@ -102,7 +105,8 @@ staging: ## Push current branch to dev (triggers staging CI/CD)
 rollback: ## Back to a previous release. Usage: make rollback v=1.1.0 [env=production|staging]
 	@test -n "$(v)"   || (echo "Usage: make rollback v=1.1.0 [env=production|staging]" && exit 1)
 	@if [ "$(or $(env),production)" = "production" ]; then \
-	  $(MAKE) --no-print-directory infra-tag v=$(v) STACK=$(PROD_STACK); \
+	  gh workflow run deploy-production.yml --ref v$(v) && \
+	  echo "✓ Rollback to v$(v) started: preview, then your approval in GitHub Actions"; \
 	else \
 	  gh workflow run deploy.yml --field environment=$(env) --field tag=v$(v) && \
 	  echo "✓ Rollback to v$(v) triggered on $(env)"; \
@@ -178,7 +182,15 @@ infra-install: ## Install Pulumi dependencies
 infra-preview: ## Preview infra changes. Usage: make infra-preview [STACK=azure-prod]
 	$(PULUMI) preview --stack $(STACK)
 
-infra-up: ## Create / update cloud infra. Usage: make infra-up [STACK=azure-prod]
+infra-up: ## Create / update cloud infra. Usage: make infra-up [STACK=azure-prod] [FORCE=1]
+	@deployed=$$(cd infra && pulumi stack output imageTag --stack $(STACK) 2>/dev/null || true); \
+	 wanted=$$(cd infra && pulumi config get imageTag --stack $(STACK) 2>/dev/null || true); \
+	 if [ -n "$$deployed" ] && [ "$$deployed" != "$$wanted" ] && [ "$(FORCE)" != "1" ]; then \
+	   echo "✗ $(STACK) runs $$deployed but your local imageTag is $$wanted: this up would roll it back."; \
+	   echo "  Align it (cd infra && pulumi config set imageTag $$deployed --stack $(STACK)),"; \
+	   echo "  deploy a release with make infra-tag v=…, or pass FORCE=1."; \
+	   exit 1; \
+	 fi
 	$(PULUMI) up --stack $(STACK)
 
 infra-down: ## Destroy infra stack. Usage: make infra-down STACK=aws-staging

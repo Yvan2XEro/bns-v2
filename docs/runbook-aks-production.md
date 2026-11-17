@@ -71,6 +71,25 @@ make check ENV_FILE=.env.azure-prod STAGING_ENV=.env.staging
 | Images | the four images exist at `imageTag` in GHCR |
 | Live cluster (once deployed) | every pod ready, restarts; last successful backup under 26 h, archives in the storage account, MongoDB disk on the Retain class; ingress IP; DNS of the four hosts points at it; the web and the API answer over HTTPS |
 
+## 0. The Pulumi state, shared (before creating the stack)
+
+CI deploys production, so the stack's state cannot live on one laptop
+(`pulumi login --local`). Keep it in Azure Blob, in its own storage account:
+
+```bash
+az group create -n bns-pulumi -l westeurope
+az storage account create -n <bnspulumistate> -g bns-pulumi -l westeurope \
+  --sku Standard_GRS --min-tls-version TLS1_2 --allow-blob-public-access false
+az storage container create -n pulumi-state --account-name <bnspulumistate> --auth-mode login
+az storage account blob-service-properties update -n <bnspulumistate> -g bns-pulumi \
+  --enable-versioning true --enable-delete-retention true --delete-retention-days 30
+pulumi login 'azblob://pulumi-state?storage_account=<bnspulumistate>'
+export PULUMI_CONFIG_PASSPHRASE='…'   # keep it in a password manager: secrets cannot be read without it
+```
+
+Then create the stack (step 2). A stack already created under another
+backend moves with `pulumi stack export` / `pulumi stack import`.
+
 ## 1. The release
 
 Production runs the exact code staging was validated on. Tag the commit
@@ -80,8 +99,9 @@ staging runs (the `dev-<sha>` image tag shows it) and let CI build it:
 git tag -a v1.1.0 <sha> -m "v1.1.0" && git push origin v1.1.0
 ```
 
-CI builds `v1.1.0` images. It does not deploy them: the SSH production job
-only runs when the repository variable `PRODUCTION_PLATFORM` is `compose`.
+CI builds the `v1.1.0` images. It does not deploy them yet: the deploy job
+waits for `make prod-ci-setup` (after step 7), so this first deploy, with its
+restore, is yours.
 
 ## 2. The stack
 
@@ -175,13 +195,79 @@ search indexer rebuilds Meilisearch from the database. Then check:
   check the job succeeds and the archive appears in the backup account;
   A: Atlas → Backup shows the first snapshot within six hours.
 
-## Later releases and rollback
+Production is open. Hand the next releases to CI: the one-time setup below,
+ending with `make prod-ci-setup`.
 
-```bash
-git tag -a v1.2.0 -m "v1.2.0" && git push origin v1.2.0   # CI builds the images
-make infra-tag v=1.2.0 STACK=azure-prod                   # deploys them
-make infra-tag v=1.1.0 STACK=azure-prod                   # rollback of the code
+## Later releases: GitHub Actions, with your approval
+
+From the second release on, CI deploys. The first deploy (steps 1–7, with
+the restore) stays manual.
+
 ```
+make release v=1.2.0
+  → Build & Push builds the v1.2.0 images
+  → Deploy → Production (AKS) / preview: make check without the live part,
+    pulumi preview — its diff in the run summary
+  → Deploy → Production (AKS) / deploy: waits for a reviewer, then
+    pulumi up, rollout, live make check
+```
+
+Rollback: `make rollback v=1.1.0` runs the same workflow from the `v1.1.0`
+tag — same preview, same approval. `make infra-tag v=… STACK=azure-prod`
+from your machine remains the fallback when GitHub is down.
+
+### One-time setup
+
+1. **The state** in Azure Blob (step 0) — CI reads it as `PULUMI_BACKEND_URL`.
+2. **An identity for CI**, signed in by OIDC: no password stored anywhere.
+
+   ```bash
+   app=$(az ad app create --display-name bns-prod-deploy --query appId -o tsv)
+   az ad sp create --id "$app"
+   for env in production-preview production; do
+     az ad app federated-credential create --id "$app" --parameters "{
+       \"name\": \"gh-$env\", \"issuer\": \"https://token.actions.githubusercontent.com\",
+       \"subject\": \"repo:Yvan2XEro/bns-v2:environment:$env\",
+       \"audiences\": [\"api://AzureADTokenExchange\"] }"
+   done
+   sub=$(az account show --query id -o tsv)
+   # The stack creates its own resource groups, hence the subscription scope.
+   az role assignment create --assignee "$app" --role Contributor --scope "/subscriptions/$sub"
+   az role assignment create --assignee "$app" --role "Storage Blob Data Contributor" \
+     --scope "$(az storage account show -n <bnspulumistate> --query id -o tsv)"
+   ```
+3. **`.env.deploy.prod`** (git-ignored) at the repo root:
+
+   ```
+   AZURE_CLIENT_ID=<app id above>
+   AZURE_TENANT_ID=<az account show --query tenantId -o tsv>
+   AZURE_SUBSCRIPTION_ID=<subscription id>
+   PULUMI_BACKEND_URL=azblob://pulumi-state?storage_account=<bnspulumistate>
+   ```
+
+   With `PULUMI_CONFIG_PASSPHRASE` exported in your shell (and the Atlas keys
+   for option A), run:
+
+   ```bash
+   make prod-ci-setup REVIEWERS=<your-github-login>[,<another>]
+   ```
+
+   It creates the environments `production-preview` and `production` (the
+   latter with your approval), limits both to `v*` tags, uploads the secrets
+   and the encrypted stack config, and sets `PULUMI_BACKEND_URL`,
+   `PRODUCTION_STACK` and `PRODUCTION_URL`.
+4. **Who may release:** Settings → Rules → Rulesets → New tag ruleset on
+   `v*`, restricting creation, update and deletion to the maintainers. A `v*`
+   tag is what opens the production environments.
+
+### Keeping CI and your machine in step
+
+- CI deploys from its own copy of the stack config (`PULUMI_STACK_CONFIG`).
+  After any local change (`pulumi config set`, `infra:env:apply`), run
+  `make prod-ci-setup` again, or CI deploys the old values.
+- CI sets `imageTag` only for its run. Your local file then lags behind;
+  `make infra-up` refuses to run when it would put production back on an
+  older release (`FORCE=1` overrides), and `make check` shows both tags.
 
 A rollback of the data is, with B, `restore-mongo.sh --backup <blob>` with
 the API paused (back to that night); with A, an Atlas point-in-time restore

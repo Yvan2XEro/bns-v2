@@ -1,7 +1,8 @@
 name: Deploy (Manual)
 
-# Force-deploy any image tag to any environment without going through CI.
-# Useful for rollbacks: make rollback TAG=v1.1.0 ENV=production
+# Force-deploy an image tag to the staging compose server over SSH, e.g. a
+# rollback: make rollback v=1.1.0 env=staging. Production is the Pulumi stack:
+# deploy-production.yml (make rollback v=1.1.0).
 on:
   workflow_dispatch:
     inputs:
@@ -9,7 +10,7 @@ on:
         description: "Target environment"
         type: choice
         required: true
-        options: [staging, production]
+        options: [staging]
       tag:
         description: "Image tag to deploy (e.g. v1.2.3 or dev)"
         type: string
@@ -29,21 +30,12 @@ jobs:
       - name: Resolve server secrets
         id: server
         run: |
-          if [ "${{ inputs.environment }}" = "production" ]; then
-            echo "host=${{ secrets.DEPLOY_HOST }}"     >> $GITHUB_OUTPUT
-            echo "user=${{ secrets.DEPLOY_USER }}"     >> $GITHUB_OUTPUT
-            echo "path=${{ secrets.DEPLOY_PATH }}"     >> $GITHUB_OUTPUT
-            echo "key<<EOF"                             >> $GITHUB_OUTPUT
-            echo "${{ secrets.DEPLOY_SSH_KEY }}"       >> $GITHUB_OUTPUT
-            echo "EOF"                                  >> $GITHUB_OUTPUT
-          else
-            echo "host=${{ secrets.STAGING_HOST }}"   >> $GITHUB_OUTPUT
-            echo "user=${{ secrets.STAGING_USER }}"   >> $GITHUB_OUTPUT
-            echo "path=${{ secrets.STAGING_PATH }}"   >> $GITHUB_OUTPUT
-            echo "key<<EOF"                            >> $GITHUB_OUTPUT
-            echo "${{ secrets.STAGING_SSH_KEY }}"     >> $GITHUB_OUTPUT
-            echo "EOF"                                 >> $GITHUB_OUTPUT
-          fi
+          echo "host=${{ secrets.STAGING_HOST }}"   >> $GITHUB_OUTPUT
+          echo "user=${{ secrets.STAGING_USER }}"   >> $GITHUB_OUTPUT
+          echo "path=${{ secrets.STAGING_PATH }}"   >> $GITHUB_OUTPUT
+          echo "key<<EOF"                            >> $GITHUB_OUTPUT
+          echo "${{ secrets.STAGING_SSH_KEY }}"     >> $GITHUB_OUTPUT
+          echo "EOF"                                 >> $GITHUB_OUTPUT
 
       - name: Upload compose file
         uses: appleboy/scp-action@v0.1.7
