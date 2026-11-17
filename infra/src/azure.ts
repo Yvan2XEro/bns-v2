@@ -6,6 +6,8 @@ export interface AksResult {
 	clusterName: pulumi.Output<string>;
 	/** The public IP every pod's outbound traffic leaves from (one, by design). */
 	egressIps: pulumi.Output<string>[];
+	/** The stack's resource group, for the resources living beside the cluster. */
+	resourceGroupName: pulumi.Output<string>;
 }
 
 export function createAksCluster(
@@ -79,5 +81,10 @@ export function createAksCluster(
 			return ip.ipAddress;
 		});
 
-	return { kubeconfig, clusterName: cluster.name, egressIps: [address] };
+	return {
+		kubeconfig,
+		clusterName: cluster.name,
+		egressIps: [address],
+		resourceGroupName: rg.name,
+	};
 }

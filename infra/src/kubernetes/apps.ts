@@ -28,8 +28,21 @@ export interface AppsConfig {
 
 /** MongoDB in this cluster, or elsewhere (Atlas) behind a secret URI. */
 export type DatabaseTarget =
-	| { kind: "in-cluster" }
+	| { kind: "in-cluster"; backup?: MongoBackupTarget }
 	| { kind: "external"; uri: pulumi.Output<string> };
+
+/** The nightly dump of the in-cluster database (config `mongoBackup`). */
+export interface MongoBackupTarget {
+	schedule: string;
+	/** Azure disk SKU of the Retain storage class for MongoDB's volume. */
+	diskSku: string;
+	container: string;
+	connectionString: pulumi.Output<string>;
+}
+
+/** Pinned: the backup must not change because an image moved. */
+const MONGO_IMAGE = "mongo:7";
+const AZURE_CLI_IMAGE = "mcr.microsoft.com/azure-cli:2.67.0";
 
 /** Kubernetes objects holding the `.env` values. */
 const ENV_SECRET = "bns-env";
@@ -160,6 +173,25 @@ export function deployApps(cfg: AppsConfig): void {
 
 	// ─── Infrastructure ──────────────────────────────────────────────────────────
 
+	const backup =
+		cfg.database.kind === "in-cluster" ? cfg.database.backup : undefined;
+	// With backups on, MongoDB's disk outlives its claim: deleting the
+	// StatefulSet, the PVC or the namespace leaves the Azure disk in place.
+	const retainClass = backup
+		? new k8s.storage.v1.StorageClass(
+				"mongodb-retain",
+				{
+					metadata: { name: "bns-mongodb-retain" },
+					provisioner: "disk.csi.azure.com",
+					parameters: { skuName: backup.diskSku },
+					reclaimPolicy: "Retain",
+					volumeBindingMode: "WaitForFirstConsumer",
+					allowVolumeExpansion: true,
+				},
+				{ provider },
+			)
+		: undefined;
+
 	if (!external) {
 		// MongoDB — a single-node replica set, as in the Compose deployment:
 		// Payload only runs multi-document transactions against one. An
@@ -230,6 +262,9 @@ export function deployApps(cfg: AppsConfig): void {
 							metadata: { name: "data" },
 							spec: {
 								accessModes: ["ReadWriteOnce"],
+								...(retainClass
+									? { storageClassName: retainClass.metadata.name }
+									: {}),
 								resources: { requests: { storage: "10Gi" } },
 							},
 						},
@@ -253,6 +288,108 @@ export function deployApps(cfg: AppsConfig): void {
 				},
 			},
 			baseOpts,
+		);
+	}
+
+	// ─── Nightly MongoDB backup (config `mongoBackup`) ───────────────────────
+	// An init container dumps the app database to a scratch volume; the main
+	// container checks the archive is not empty and uploads it to Blob storage
+	// under <db>/<yyyy>/<mm>/<dd>/<HHMMSS>Z.archive.gz. A failed run leaves the
+	// Job failed (kubectl get jobs -n bns), retried twice, never overlapping.
+	if (backup && !external) {
+		const backupSecret = new k8s.core.v1.Secret(
+			"bns-backup",
+			{
+				metadata: { namespace: ns, name: "bns-backup" },
+				stringData: {
+					AZURE_STORAGE_CONNECTION_STRING: backup.connectionString,
+				},
+			},
+			baseOpts,
+		);
+		new k8s.batch.v1.CronJob(
+			"mongodb-backup",
+			{
+				metadata: { namespace: ns, name: "mongodb-backup" },
+				spec: {
+					schedule: backup.schedule,
+					timeZone: "Etc/UTC",
+					concurrencyPolicy: "Forbid",
+					startingDeadlineSeconds: 3600,
+					successfulJobsHistoryLimit: 3,
+					failedJobsHistoryLimit: 5,
+					jobTemplate: {
+						spec: {
+							backoffLimit: 2,
+							activeDeadlineSeconds: 3600,
+							template: {
+								metadata: { labels: { app: "mongodb-backup" } },
+								spec: {
+									restartPolicy: "Never",
+									volumes: [{ name: "dump", emptyDir: {} }],
+									initContainers: [
+										{
+											name: "dump",
+											image: MONGO_IMAGE,
+											command: ["bash", "-c"],
+											args: [
+												[
+													"set -euo pipefail",
+													'mongodump --host mongodb:27017 --username "$MONGO_USER" --password "$MONGO_PASSWORD" \\',
+													'  --authenticationDatabase admin --db "$MONGO_DB" \\',
+													"  --archive=/dump/backup.archive.gz --gzip",
+												].join("\n"),
+											],
+											env: [
+												{ name: "MONGO_USER", value: cfg.mongoUser },
+												{ name: "MONGO_DB", value: cfg.mongoDb },
+												fromSecret(STORE_SECRET, "MONGO_PASSWORD"),
+											],
+											volumeMounts: [{ name: "dump", mountPath: "/dump" }],
+											resources: {
+												requests: { memory: "128Mi", cpu: "50m" },
+												limits: { memory: "512Mi" },
+											},
+										},
+									],
+									containers: [
+										{
+											name: "upload",
+											image: AZURE_CLI_IMAGE,
+											command: ["bash", "-c"],
+											args: [
+												[
+													"set -euo pipefail",
+													"file=/dump/backup.archive.gz",
+													'[ -s "$file" ] || { echo "empty dump, refusing to upload" >&2; exit 1; }',
+													'name="$MONGO_DB/$(date -u +%Y/%m/%d/%H%M%SZ).archive.gz"',
+													"az storage blob upload --only-show-errors --no-progress \\",
+													'  --container-name "$CONTAINER" --name "$name" --file "$file"',
+													'echo "uploaded $name ($(stat -c %s "$file") bytes)"',
+												].join("\n"),
+											],
+											env: [
+												{ name: "MONGO_DB", value: cfg.mongoDb },
+												{ name: "CONTAINER", value: backup.container },
+												fromSecret(
+													"bns-backup",
+													"AZURE_STORAGE_CONNECTION_STRING",
+												),
+											],
+											volumeMounts: [{ name: "dump", mountPath: "/dump" }],
+											resources: {
+												requests: { memory: "128Mi", cpu: "50m" },
+												limits: { memory: "512Mi" },
+											},
+										},
+									],
+								},
+							},
+						},
+					},
+				},
+			},
+			{ ...baseOpts, dependsOn: [namespace, storeSecret, backupSecret] },
 		);
 	}
 

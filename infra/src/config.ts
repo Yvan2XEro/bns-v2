@@ -104,9 +104,10 @@ export const meiliMasterKey = requiredSecret("MEILI_MASTER_KEY");
 export const ghcrToken = cfg.requireSecret("ghcrToken");
 
 // ─── Database ────────────────────────────────────────────────────────────────
-// `in-cluster`: a single-node replica set in a StatefulSet (staging, labs).
+// `in-cluster`: a single-node replica set in a StatefulSet; with `mongoBackup`
+// (below) a production option kept inside the Azure subscription.
 // `atlas`: MongoDB Atlas, provisioned by this stack (src/atlas.ts), with
-// continuous backups and point-in-time restore — the production choice.
+// continuous backups and point-in-time restore, at the cost of an Atlas account.
 // Atlas credentials come from MONGODB_ATLAS_PUBLIC_KEY / _PRIVATE_KEY in the
 // shell (or `pulumi config set --secret mongodbatlas:privateKey`), never from
 // the app `.env`.
@@ -181,3 +182,45 @@ export const atlas = atlasConfig();
  * Everything else, the database included, is created.
  */
 export const apiPaused = cfg.getBoolean("apiPaused") ?? false;
+
+// ─── In-cluster MongoDB backups (azure) ──────────────────────────────────────
+// With `database: in-cluster`, `mongoBackup` turns on, for a production that
+// keeps everything inside its Azure subscription (src/azure-backup.ts):
+// - the MongoDB disk on a `Retain` storage class: deleting the StatefulSet,
+//   its claim or the namespace no longer deletes the data;
+// - a CronJob that mongodumps the app database and uploads the archive to a
+//   private, geo-redundant Blob container with soft delete, where a lifecycle
+//   rule moves it to cool storage after a week and deletes it after
+//   `retentionDays`.
+export interface MongoBackupConfig {
+	/** Cron, UTC. Default 01:00 UTC (02:00 in Douala). */
+	schedule: string;
+	retentionDays: number;
+	/** Storage account replication: GRS keeps a copy in the paired region. */
+	sku: "Standard_GRS" | "Standard_LRS" | "Standard_ZRS";
+	/** Disk SKU of the Retain storage class for MongoDB's volume. */
+	diskSku: "Premium_LRS" | "StandardSSD_LRS";
+}
+
+function mongoBackupConfig(): MongoBackupConfig | null {
+	const raw = cfg.getObject<Partial<MongoBackupConfig>>("mongoBackup");
+	if (!raw) return null;
+	if (databaseKind !== "in-cluster")
+		throw new Error(
+			"mongoBackup applies to database: in-cluster; Atlas backs itself up",
+		);
+	if (cloudProvider !== "azure")
+		throw new Error("mongoBackup needs cloudProvider: azure (Blob storage)");
+	const retentionDays = raw.retentionDays ?? 30;
+	if (!Number.isInteger(retentionDays) || retentionDays < 1)
+		throw new Error(
+			"mongoBackup.retentionDays must be a whole number of days >= 1",
+		);
+	return {
+		schedule: raw.schedule ?? "0 1 * * *",
+		retentionDays,
+		sku: raw.sku ?? "Standard_GRS",
+		diskSku: raw.diskSku ?? "Premium_LRS",
+	};
+}
+export const mongoBackup = mongoBackupConfig();

@@ -16,16 +16,24 @@ config:
   bns-infra:imageTag: v1.1.0
   bns-infra:domain: buynsellem.com
   bns-infra:acmeEmail: your@email.com
-  # The database: MongoDB Atlas on Azure (src/atlas.ts), continuous backup
-  # and point-in-time restore. Atlas API keys stay in the shell:
-  #   export MONGODB_ATLAS_PUBLIC_KEY=… MONGODB_ATLAS_PRIVATE_KEY=…
-  bns-infra:database: atlas
-  bns-infra:atlas:
-    orgId: your-atlas-organization-id
-    # instanceSize: M10        # smallest tier with point-in-time restore
-    # restoreWindowDays: 7
-    # regionName: EUROPE_WEST  # derived from bns-infra:region when omitted
-    # accessCidrs: ["203.0.113.7"]  # your IP, only during the first restore
+  # The database — two options (docs/runbook-aks-production.md):
+  # B (default here): MongoDB in the cluster on a Retain disk, dumped every
+  #   night to a geo-redundant Blob container in this subscription.
+  bns-infra:database: in-cluster
+  bns-infra:mongoBackup:
+    schedule: "0 1 * * *"   # UTC
+    retentionDays: 30
+    # sku: Standard_GRS       # backup storage replication
+    # diskSku: Premium_LRS    # MongoDB's disk
+  # A: MongoDB Atlas on Azure (src/atlas.ts): continuous backup and
+  #   point-in-time restore, needs an Atlas account. Replace the two keys
+  #   above with these, and export MONGODB_ATLAS_PUBLIC_KEY/_PRIVATE_KEY:
+  # bns-infra:database: atlas
+  # bns-infra:atlas:
+  #   orgId: your-atlas-organization-id
+  #   # instanceSize: M10        # smallest tier with point-in-time restore
+  #   # restoreWindowDays: 7
+  #   # accessCidrs: ["203.0.113.7"]  # your IP, only during the first restore
   # First deploy only: everything but the API, so the staging data can be
   # restored before anything writes (docs/runbook-aks-production.md).
   bns-infra:apiPaused: true

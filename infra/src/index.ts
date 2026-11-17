@@ -3,6 +3,7 @@ import { getStack } from "@pulumi/pulumi";
 import { createAtlasDatabase } from "./atlas";
 import { createEksCluster } from "./aws";
 import { createAksCluster } from "./azure";
+import { createBackupStorage } from "./azure-backup";
 import * as config from "./config";
 import { deployKubernetes } from "./kubernetes";
 import { createProxmoxCluster } from "./proxmox-k3s";
@@ -12,6 +13,8 @@ interface Cluster {
 	clusterName: pulumi.Output<string>;
 	/** Where pods' outbound traffic comes from, for databases that allow-list it. */
 	egressIps?: pulumi.Output<string>[];
+	/** Azure only: the resource group the backup storage joins. */
+	resourceGroupName?: pulumi.Output<string>;
 }
 
 const name = `bns-${getStack()}`;
@@ -54,12 +57,43 @@ function createAtlas() {
 }
 const atlas = createAtlas();
 
+function createMongoBackups() {
+	if (!config.mongoBackup) return null;
+	if (!cluster.resourceGroupName)
+		throw new Error("mongoBackup needs the AKS resource group");
+	return {
+		...createBackupStorage(
+			name,
+			cluster.resourceGroupName,
+			config.region,
+			config.mongoBackup,
+		),
+		schedule: config.mongoBackup.schedule,
+		diskSku: config.mongoBackup.diskSku,
+	};
+}
+const backups = createMongoBackups();
+
 // EKS hands back the kubeconfig as an object, AKS and K3s as YAML text.
 deployKubernetes(
 	cluster.kubeconfig.apply((value: unknown) =>
 		typeof value === "string" ? value : JSON.stringify(value),
 	),
-	atlas ? { kind: "external", uri: atlas.uri } : { kind: "in-cluster" },
+	atlas
+		? { kind: "external", uri: atlas.uri }
+		: {
+				kind: "in-cluster",
+				...(backups
+					? {
+							backup: {
+								schedule: backups.schedule,
+								diskSku: backups.diskSku,
+								container: backups.container,
+								connectionString: backups.connectionString,
+							},
+						}
+					: {}),
+			},
 );
 
 export const clusterName = cluster.clusterName;
@@ -67,3 +101,5 @@ export const egressIps = cluster.egressIps;
 export const atlasCluster = atlas?.clusterName;
 /** `pulumi stack output --show-secrets databaseUri`: for the restore runbook only. */
 export const databaseUri = atlas?.uri;
+/** The storage account holding the nightly MongoDB dumps (`mongoBackup`). */
+export const backupStorageAccount = backups?.accountName;
