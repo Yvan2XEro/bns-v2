@@ -4,6 +4,8 @@ import type * as pulumi from "@pulumi/pulumi";
 export interface AksResult {
 	kubeconfig: pulumi.Output<string>;
 	clusterName: pulumi.Output<string>;
+	/** The public IP every pod's outbound traffic leaves from (one, by design). */
+	egressIps: pulumi.Output<string>[];
 }
 
 export function createAksCluster(
@@ -39,6 +41,9 @@ export function createAksCluster(
 		networkProfile: {
 			networkPlugin: "azure",
 			loadBalancerSku: "standard",
+			// Exactly one managed outbound IP, kept for the cluster's life: the
+			// address external services (Atlas) allow in.
+			loadBalancerProfile: { managedOutboundIPs: { count: 1 } },
 		},
 		tags: { Project: "bns", ManagedBy: "pulumi" },
 	});
@@ -52,5 +57,27 @@ export function createAksCluster(
 		Buffer.from(v, "base64").toString(),
 	);
 
-	return { kubeconfig, clusterName: cluster.name };
+	const egressIp = cluster.networkProfile.apply((profile) => {
+		const id = profile?.loadBalancerProfile?.effectiveOutboundIPs?.[0]?.id;
+		if (!id) throw new Error("AKS reported no outbound IP");
+		// /subscriptions/…/resourceGroups/<rg>/providers/Microsoft.Network/publicIPAddresses/<name>
+		const match =
+			/resourceGroups\/([^/]+)\/providers\/Microsoft\.Network\/publicIPAddresses\/([^/]+)$/i.exec(
+				id,
+			);
+		if (!match) throw new Error(`Unexpected outbound IP id: ${id}`);
+		return { resourceGroupName: match[1], publicIpAddressName: match[2] };
+	});
+	const address = azure.network
+		.getPublicIPAddressOutput({
+			resourceGroupName: egressIp.apply((ip) => ip.resourceGroupName),
+			publicIpAddressName: egressIp.apply((ip) => ip.publicIpAddressName),
+		})
+		.apply((ip) => {
+			if (!ip.ipAddress)
+				throw new Error("The AKS outbound IP has no address yet");
+			return ip.ipAddress;
+		});
+
+	return { kubeconfig, clusterName: cluster.name, egressIps: [address] };
 }

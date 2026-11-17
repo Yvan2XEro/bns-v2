@@ -12,6 +12,20 @@ config:
   bns-infra:nodeCount: "3"
   bns-infra:vmSize: Standard_D2s_v3
   bns-infra:imageRegistry: ghcr.io/yvan2xero/bns-v2
-  bns-infra:imageTag: latest
+  # A release tag, never `latest` or `dev`: production runs a known build.
+  bns-infra:imageTag: v1.1.0
   bns-infra:domain: buynsellem.com
   bns-infra:acmeEmail: your@email.com
+  # The database: MongoDB Atlas on Azure (src/atlas.ts), continuous backup
+  # and point-in-time restore. Atlas API keys stay in the shell:
+  #   export MONGODB_ATLAS_PUBLIC_KEY=… MONGODB_ATLAS_PRIVATE_KEY=…
+  bns-infra:database: atlas
+  bns-infra:atlas:
+    orgId: your-atlas-organization-id
+    # instanceSize: M10        # smallest tier with point-in-time restore
+    # restoreWindowDays: 7
+    # regionName: EUROPE_WEST  # derived from bns-infra:region when omitted
+    # accessCidrs: ["203.0.113.7"]  # your IP, only during the first restore
+  # First deploy only: everything but the API, so the staging data can be
+  # restored before anything writes (docs/runbook-aks-production.md).
+  bns-infra:apiPaused: true

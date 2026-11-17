@@ -1,10 +1,13 @@
 import * as k8s from "@pulumi/kubernetes";
 import type * as pulumi from "@pulumi/pulumi";
 import * as config from "../config";
-import { deployApps } from "./apps";
+import { type DatabaseTarget, deployApps } from "./apps";
 import { deployNginxStack } from "./nginx";
 
-export function deployKubernetes(kubeconfig: pulumi.Output<string>): void {
+export function deployKubernetes(
+	kubeconfig: pulumi.Output<string>,
+	database: DatabaseTarget,
+): void {
 	const provider = new k8s.Provider("k8s-provider", { kubeconfig });
 
 	deployApps({
@@ -22,6 +25,8 @@ export function deployKubernetes(kubeconfig: pulumi.Output<string>): void {
 		redisPassword: config.redisPassword,
 		meiliMasterKey: config.meiliMasterKey,
 		autoscaling: config.autoscaling,
+		database,
+		apiPaused: config.apiPaused,
 	});
 
 	deployNginxStack({

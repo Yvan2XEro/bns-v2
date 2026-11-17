@@ -43,9 +43,13 @@ Services: `api` · `web` · `chat-service` · `search-indexer`
 2. **deploy-staging** — After build on `dev`: calls the Dokploy app's deploy webhook
    (`DOKPLOY_DEPLOY_URL`) with a push-shaped payload; Dokploy pulls the `dev`
    images and restarts the compose app with the environment set in its own UI
-3. **deploy-production** — After build on `v*` tag: SCP the compose file to
+3. **deploy-production** — After build on `v*` tag, **only when the repository
+   variable `PRODUCTION_PLATFORM` is `compose`**: SCP the compose file to
    `DEPLOY_PATH` over SSH, then `docker compose pull && up -d` with the
-   versioned tag; the server's `.env` next to it holds the application's keys
+   versioned tag; the server's `.env` next to it holds the application's keys.
+   Production on AKS is deployed by the Pulumi stack instead
+   (`make infra-tag v=1.2.3 STACK=azure-prod`), see
+   [runbook-aks-production.md](runbook-aks-production.md)
 
 **Registry auto-resolution:**
 ```bash

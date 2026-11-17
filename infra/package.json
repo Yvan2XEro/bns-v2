@@ -22,6 +22,7 @@
 		"@pulumi/command": "^1.2.1",
 		"@pulumi/eks": "^3",
 		"@pulumi/kubernetes": "^4",
+		"@pulumi/mongodbatlas": "^3",
 		"@pulumi/pulumi": "^3"
 	},
 	"devDependencies": {

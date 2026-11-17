@@ -102,3 +102,82 @@ export const meiliMasterKey = requiredSecret("MEILI_MASTER_KEY");
 
 // Pulls the images; not an app variable.
 export const ghcrToken = cfg.requireSecret("ghcrToken");
+
+// ─── Database ────────────────────────────────────────────────────────────────
+// `in-cluster`: a single-node replica set in a StatefulSet (staging, labs).
+// `atlas`: MongoDB Atlas, provisioned by this stack (src/atlas.ts), with
+// continuous backups and point-in-time restore — the production choice.
+// Atlas credentials come from MONGODB_ATLAS_PUBLIC_KEY / _PRIVATE_KEY in the
+// shell (or `pulumi config set --secret mongodbatlas:privateKey`), never from
+// the app `.env`.
+export const DATABASES = ["in-cluster", "atlas"] as const;
+export type Database = (typeof DATABASES)[number];
+const database = cfg.get("database") ?? "in-cluster";
+if (!(DATABASES as readonly string[]).includes(database))
+	throw new Error(
+		`Unsupported database "${database}". Supported: ${DATABASES.join(", ")}`,
+	);
+export const databaseKind = database as Database;
+
+/** Azure regions Atlas names differently; anything else needs `atlas.region`. */
+const ATLAS_AZURE_REGIONS: Record<string, string> = {
+	westeurope: "EUROPE_WEST",
+	northeurope: "EUROPE_NORTH",
+	francecentral: "FRANCE_CENTRAL",
+	germanywestcentral: "GERMANY_WEST_CENTRAL",
+	uksouth: "UK_SOUTH",
+	southafricanorth: "SOUTH_AFRICA_NORTH",
+	eastus: "US_EAST",
+	eastus2: "US_EAST_2",
+};
+
+export interface AtlasConfig {
+	orgId: string;
+	projectName: string;
+	clusterName: string;
+	/** Atlas's provider for the cluster: the same cloud as the app keeps latency low. */
+	providerName: "AZURE" | "AWS";
+	regionName: string;
+	/** M10 is the smallest tier with continuous backup and point-in-time restore. */
+	instanceSize: string;
+	mongoVersion: string;
+	/** Days a point-in-time restore can reach back to. */
+	restoreWindowDays: number;
+	/** Extra CIDRs allowed in, e.g. an operator's IP for the first restore. Remove after. */
+	accessCidrs: string[];
+}
+
+function atlasConfig(): AtlasConfig | null {
+	if (databaseKind !== "atlas") return null;
+	const raw = cfg.requireObject<Partial<AtlasConfig>>("atlas");
+	if (!raw.orgId)
+		throw new Error("atlas.orgId is required with database: atlas");
+	const providerName =
+		raw.providerName ?? (cloudProvider === "aws" ? "AWS" : "AZURE");
+	const regionName =
+		raw.regionName ??
+		(cloudProvider === "azure" ? ATLAS_AZURE_REGIONS[region] : undefined);
+	if (!regionName)
+		throw new Error(
+			`atlas.regionName is required: no Atlas name known for region "${region}"`,
+		);
+	return {
+		orgId: raw.orgId,
+		projectName: raw.projectName ?? `bns-${pulumi.getStack()}`,
+		clusterName: raw.clusterName ?? "bns",
+		providerName,
+		regionName,
+		instanceSize: raw.instanceSize ?? "M10",
+		mongoVersion: raw.mongoVersion ?? "7.0",
+		restoreWindowDays: raw.restoreWindowDays ?? 7,
+		accessCidrs: raw.accessCidrs ?? [],
+	};
+}
+export const atlas = atlasConfig();
+
+/**
+ * While true the API is not deployed, so nothing writes to the database:
+ * the window for the first restore (docs/runbook-aks-production.md).
+ * Everything else, the database included, is created.
+ */
+export const apiPaused = cfg.getBoolean("apiPaused") ?? false;

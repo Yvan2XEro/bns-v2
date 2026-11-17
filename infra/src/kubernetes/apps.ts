@@ -21,7 +21,15 @@ export interface AppsConfig {
 	meiliMasterKey: pulumi.Output<string>;
 	autoscaling: { api: ReplicaRange; web: ReplicaRange };
 	provider: k8s.Provider;
+	database: DatabaseTarget;
+	/** No API Deployment (nor its autoscaler) while true: nothing writes the database. */
+	apiPaused: boolean;
 }
+
+/** MongoDB in this cluster, or elsewhere (Atlas) behind a secret URI. */
+export type DatabaseTarget =
+	| { kind: "in-cluster" }
+	| { kind: "external"; uri: pulumi.Output<string> };
 
 /** Kubernetes objects holding the `.env` values. */
 const ENV_SECRET = "bns-env";
@@ -65,6 +73,7 @@ function passThroughEnv(service: AppService): EnvVar[] {
 export function deployApps(cfg: AppsConfig): void {
 	const { provider, imageRegistry: reg, imageTag: tag, domain } = cfg;
 	const ns = "bns";
+	const external = cfg.database.kind === "external" ? cfg.database : null;
 	const webOrigins = `https://${domain},https://www.${domain}`;
 
 	const namespace = new k8s.core.v1.Namespace(
@@ -106,6 +115,7 @@ export function deployApps(cfg: AppsConfig): void {
 				MONGO_PASSWORD: cfg.mongoPassword,
 				REDIS_PASSWORD: cfg.redisPassword,
 				MEILI_MASTER_KEY: cfg.meiliMasterKey,
+				...(external ? { DATABASE_URI: external.uri } : {}),
 			},
 		},
 		baseOpts,
@@ -132,10 +142,17 @@ export function deployApps(cfg: AppsConfig): void {
 	// Pods read env only at start: a hash of every value in the pod template
 	// rolls them whenever the `.env` changes.
 	const envChecksum = pulumi
-		.all([cfg.appSecrets, cfg.mongoPassword, cfg.redisPassword])
-		.apply(([secrets, mongo, redis]) =>
+		.all([
+			cfg.appSecrets,
+			cfg.mongoPassword,
+			cfg.redisPassword,
+			external?.uri ?? "",
+		])
+		.apply(([secrets, mongo, redis, databaseUri]) =>
 			createHash("sha256")
-				.update(JSON.stringify([cfg.appEnv, secrets, mongo, redis]))
+				.update(
+					JSON.stringify([cfg.appEnv, secrets, mongo, redis, databaseUri]),
+				)
 				.digest("hex"),
 		);
 	const podAnnotations = { "bns/env-checksum": envChecksum };
@@ -143,96 +160,101 @@ export function deployApps(cfg: AppsConfig): void {
 
 	// ─── Infrastructure ──────────────────────────────────────────────────────────
 
-	// MongoDB — a single-node replica set, as in the Compose deployment:
-	// Payload only runs multi-document transactions against one. An
-	// authenticated replica set needs a key file; for one member it can be
-	// fresh at every start. The readiness probe initiates the set once.
-	const mongoInitiate =
-		'mongosh --quiet -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval \'try { rs.status() } catch (e) { if (e.codeName !== "NotYetInitialized") throw e; rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "mongodb:27017" }] }) } quit(db.hello().isWritablePrimary ? 0 : 1)\'';
-	new k8s.apps.v1.StatefulSet(
-		"mongodb",
-		{
-			metadata: { namespace: ns, name: "mongodb" },
-			spec: {
-				serviceName: "mongodb",
-				replicas: 1,
-				selector: { matchLabels: { app: "mongodb" } },
-				template: {
-					metadata: { labels: { app: "mongodb" } },
-					spec: {
-						containers: [
-							{
-								name: "mongodb",
-								image: "mongo:7",
-								command: ["bash", "-c"],
-								args: [
-									[
-										"set -e",
-										"keyfile=/data/keyfile/mongo-keyfile",
-										"tr -dc 'A-Za-z0-9+/' < /dev/urandom | head -c 756 > \"$keyfile\"",
-										'chown 999:999 "$keyfile"',
-										'chmod 400 "$keyfile"',
-										'exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$keyfile"',
-									].join("\n"),
-								],
-								env: [
-									{ name: "MONGO_INITDB_ROOT_USERNAME", value: cfg.mongoUser },
-									fromSecret(
-										STORE_SECRET,
-										"MONGO_PASSWORD",
-										"MONGO_INITDB_ROOT_PASSWORD",
-									),
-									{ name: "MONGO_INITDB_DATABASE", value: cfg.mongoDb },
-								],
-								ports: [{ containerPort: 27017 }],
-								readinessProbe: {
-									exec: { command: ["bash", "-c", mongoInitiate] },
-									initialDelaySeconds: 10,
-									periodSeconds: 10,
-									timeoutSeconds: 10,
-								},
-								volumeMounts: [
-									{ name: "data", mountPath: "/data/db" },
-									{ name: "keyfile", mountPath: "/data/keyfile" },
-								],
-								resources: {
-									requests: { memory: "256Mi", cpu: "100m" },
-									limits: { memory: "1Gi" },
-								},
-							},
-						],
-						volumes: [{ name: "keyfile", emptyDir: {} }],
-					},
-				},
-				volumeClaimTemplates: [
-					{
-						metadata: { name: "data" },
+	if (!external) {
+		// MongoDB — a single-node replica set, as in the Compose deployment:
+		// Payload only runs multi-document transactions against one. An
+		// authenticated replica set needs a key file; for one member it can be
+		// fresh at every start. The readiness probe initiates the set once.
+		const mongoInitiate =
+			'mongosh --quiet -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval \'try { rs.status() } catch (e) { if (e.codeName !== "NotYetInitialized") throw e; rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "mongodb:27017" }] }) } quit(db.hello().isWritablePrimary ? 0 : 1)\'';
+		new k8s.apps.v1.StatefulSet(
+			"mongodb",
+			{
+				metadata: { namespace: ns, name: "mongodb" },
+				spec: {
+					serviceName: "mongodb",
+					replicas: 1,
+					selector: { matchLabels: { app: "mongodb" } },
+					template: {
+						metadata: { labels: { app: "mongodb" } },
 						spec: {
-							accessModes: ["ReadWriteOnce"],
-							resources: { requests: { storage: "10Gi" } },
+							containers: [
+								{
+									name: "mongodb",
+									image: "mongo:7",
+									command: ["bash", "-c"],
+									args: [
+										[
+											"set -e",
+											"keyfile=/data/keyfile/mongo-keyfile",
+											"tr -dc 'A-Za-z0-9+/' < /dev/urandom | head -c 756 > \"$keyfile\"",
+											'chown 999:999 "$keyfile"',
+											'chmod 400 "$keyfile"',
+											'exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$keyfile"',
+										].join("\n"),
+									],
+									env: [
+										{
+											name: "MONGO_INITDB_ROOT_USERNAME",
+											value: cfg.mongoUser,
+										},
+										fromSecret(
+											STORE_SECRET,
+											"MONGO_PASSWORD",
+											"MONGO_INITDB_ROOT_PASSWORD",
+										),
+										{ name: "MONGO_INITDB_DATABASE", value: cfg.mongoDb },
+									],
+									ports: [{ containerPort: 27017 }],
+									readinessProbe: {
+										exec: { command: ["bash", "-c", mongoInitiate] },
+										initialDelaySeconds: 10,
+										periodSeconds: 10,
+										timeoutSeconds: 10,
+									},
+									volumeMounts: [
+										{ name: "data", mountPath: "/data/db" },
+										{ name: "keyfile", mountPath: "/data/keyfile" },
+									],
+									resources: {
+										requests: { memory: "256Mi", cpu: "100m" },
+										limits: { memory: "1Gi" },
+									},
+								},
+							],
+							volumes: [{ name: "keyfile", emptyDir: {} }],
 						},
 					},
-				],
+					volumeClaimTemplates: [
+						{
+							metadata: { name: "data" },
+							spec: {
+								accessModes: ["ReadWriteOnce"],
+								resources: { requests: { storage: "10Gi" } },
+							},
+						},
+					],
+				},
 			},
-		},
-		{ ...baseOpts, dependsOn: [namespace, storeSecret] },
-	);
+			{ ...baseOpts, dependsOn: [namespace, storeSecret] },
+		);
 
-	new k8s.core.v1.Service(
-		"mongodb-svc",
-		{
-			metadata: { namespace: ns, name: "mongodb" },
-			spec: {
-				selector: { app: "mongodb" },
-				clusterIP: "None",
-				// The replica set's member is `mongodb:27017`: it must resolve
-				// before the pod is ready, or the set can never be initiated.
-				publishNotReadyAddresses: true,
-				ports: [{ port: 27017 }],
+		new k8s.core.v1.Service(
+			"mongodb-svc",
+			{
+				metadata: { namespace: ns, name: "mongodb" },
+				spec: {
+					selector: { app: "mongodb" },
+					clusterIP: "None",
+					// The replica set's member is `mongodb:27017`: it must resolve
+					// before the pod is ready, or the set can never be initiated.
+					publishNotReadyAddresses: true,
+					ports: [{ port: 27017 }],
+				},
 			},
-		},
-		baseOpts,
-	);
+			baseOpts,
+		);
+	}
 
 	// Redis
 	new k8s.apps.v1.StatefulSet(
@@ -354,68 +376,78 @@ export function deployApps(cfg: AppsConfig): void {
 	// Each gets the catalog's variables for it, then the values the stack
 	// derives from in-cluster names and the domain (app-env.ts, `derived`).
 
+	const databaseEnv: EnvVar[] = external
+		? [fromSecret(STORE_SECRET, "DATABASE_URI")]
+		: [
+				fromSecret(STORE_SECRET, "MONGO_PASSWORD"),
+				{
+					name: "DATABASE_URI",
+					value: `mongodb://${cfg.mongoUser}:$(MONGO_PASSWORD)@mongodb:27017/${cfg.mongoDb}?authSource=admin&replicaSet=rs0`,
+				},
+			];
+
 	// API
-	new k8s.apps.v1.Deployment(
-		"api",
-		{
-			metadata: { namespace: ns, name: "api" },
-			spec: {
-				replicas: cfg.autoscaling.api.min,
-				selector: { matchLabels: { app: "api" } },
-				template: {
-					metadata: { labels: { app: "api" }, annotations: podAnnotations },
-					spec: {
-						imagePullSecrets,
-						containers: [
-							{
-								name: "api",
-								image: `${reg}/api:${tag}`,
-								// `dev` and `latest` move: a restart must fetch the new build.
-								imagePullPolicy: "Always",
-								ports: [{ containerPort: 3000 }],
-								env: [
-									...passThroughEnv("api"),
-									fromSecret(STORE_SECRET, "MONGO_PASSWORD"),
-									{
-										name: "DATABASE_URI",
-										value: `mongodb://${cfg.mongoUser}:$(MONGO_PASSWORD)@mongodb:27017/${cfg.mongoDb}?authSource=admin&replicaSet=rs0`,
+	if (!cfg.apiPaused)
+		new k8s.apps.v1.Deployment(
+			"api",
+			{
+				metadata: { namespace: ns, name: "api" },
+				spec: {
+					replicas: cfg.autoscaling.api.min,
+					selector: { matchLabels: { app: "api" } },
+					template: {
+						metadata: { labels: { app: "api" }, annotations: podAnnotations },
+						spec: {
+							imagePullSecrets,
+							containers: [
+								{
+									name: "api",
+									image: `${reg}/api:${tag}`,
+									// `dev` and `latest` move: a restart must fetch the new build.
+									imagePullPolicy: "Always",
+									ports: [{ containerPort: 3000 }],
+									env: [
+										...passThroughEnv("api"),
+										...databaseEnv,
+										...redisEnv,
+										{ name: "MEILI_HOST", value: "http://meilisearch:7700" },
+										{
+											name: "PAYLOAD_PUBLIC_SERVER_URL",
+											value: `https://api.${domain}`,
+										},
+										{ name: "PAYLOAD_ALLOWED_ORIGINS", value: webOrigins },
+										{
+											name: "CHAT_PUBLIC_URL",
+											value: `https://chat.${domain}`,
+										},
+										{ name: "PUBLIC_WEB_URL", value: `https://${domain}` },
+									],
+									// The API has no /api/health: /api/public/config is the route
+									// every client calls first, served once Payload is up.
+									// A first boot (indexes, the market, workflows) gets five minutes.
+									startupProbe: {
+										httpGet: { path: "/api/public/config", port: 3000 },
+										periodSeconds: 10,
+										failureThreshold: 30,
 									},
-									...redisEnv,
-									{ name: "MEILI_HOST", value: "http://meilisearch:7700" },
-									{
-										name: "PAYLOAD_PUBLIC_SERVER_URL",
-										value: `https://api.${domain}`,
+									readinessProbe: {
+										httpGet: { path: "/api/public/config", port: 3000 },
+										periodSeconds: 10,
+										timeoutSeconds: 5,
 									},
-									{ name: "PAYLOAD_ALLOWED_ORIGINS", value: webOrigins },
-									{ name: "CHAT_PUBLIC_URL", value: `https://chat.${domain}` },
-									{ name: "PUBLIC_WEB_URL", value: `https://${domain}` },
-								],
-								// The API has no /api/health: /api/public/config is the route
-								// every client calls first, served once Payload is up.
-								// A first boot (indexes, the market, workflows) gets five minutes.
-								startupProbe: {
-									httpGet: { path: "/api/public/config", port: 3000 },
-									periodSeconds: 10,
-									failureThreshold: 30,
+									resources: {
+										requests: { memory: "256Mi", cpu: "100m" },
+										limits: { memory: "1Gi" },
+									},
 								},
-								readinessProbe: {
-									httpGet: { path: "/api/public/config", port: 3000 },
-									periodSeconds: 10,
-									timeoutSeconds: 5,
-								},
-								resources: {
-									requests: { memory: "256Mi", cpu: "100m" },
-									limits: { memory: "1Gi" },
-								},
-							},
-						],
+							],
+						},
 					},
 				},
 			},
-		},
-		// The autoscaler owns the replica count from here on.
-		{ provider, dependsOn: appDeps, ignoreChanges: ["spec.replicas"] },
-	);
+			// The autoscaler owns the replica count from here on.
+			{ provider, dependsOn: appDeps, ignoreChanges: ["spec.replicas"] },
+		);
 
 	new k8s.core.v1.Service(
 		"api-svc",
@@ -489,6 +521,7 @@ export function deployApps(cfg: AppsConfig): void {
 	// K3s ships metrics-server. CPU is measured against each pod's request
 	// (api 100m, web 100m), so a busy pod is one using more than 70m.
 	for (const name of ["api", "web"] as const) {
+		if (name === "api" && cfg.apiPaused) continue;
 		const range = cfg.autoscaling[name];
 		new k8s.autoscaling.v2.HorizontalPodAutoscaler(
 			`${name}-hpa`,

@@ -87,7 +87,9 @@ export const APP_ENV = {
 	SEARCH_DOMAIN: dokploy,
 
 	// ── Built by the stack from the domain and in-cluster service names ──
-	DATABASE_URI: derived("mongodb://…@mongodb:27017"),
+	DATABASE_URI: derived(
+		"mongodb://…@mongodb:27017, or the Atlas SRV URI with database: atlas",
+	),
 	MONGODB_URI: derived("same as DATABASE_URI"),
 	REDIS_URL: derived("redis://…@redis:6379"),
 	MEILI_HOST: derived("http://meilisearch:7700"),
@@ -117,6 +119,10 @@ export const APP_ENV = {
 	SUPPORT_EMAIL: api(),
 	SUPPORT_PHONE: api(),
 	PHOTON_URL: api(),
+	// Category photos for the taxonomy import; categories are created without it.
+	PIXABAY_API_KEY: api(true),
+	// Public Facebook app id handed to the app for story sharing.
+	FACEBOOK_APP_ID: api(),
 
 	// ── Chat service account ──
 	CHAT_SERVICE_EMAIL: { kind: "app", secret: false, services: ["api", "chat"] },
