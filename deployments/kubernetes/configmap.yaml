@@ -36,6 +36,17 @@ data:
   OIDC_SCOPES: ""
   OIDC_LABEL: ""
   OIDC_ICON: ""
+  # Uploads: "azure" or "s3" in production — the API pods have no volume.
+  # Each needs a public and a distinct private container/bucket; the keys
+  # are in secret.yaml.
+  STORAGE_PROVIDER: "azure"
+  AZURE_STORAGE_CONTAINER_NAME: "media"
+  AZURE_STORAGE_PRIVATE_CONTAINER_NAME: "media-private"
+  AZURE_STORAGE_ACCOUNT_BASEURL: ""
+  S3_BUCKET: ""
+  S3_PRIVATE_BUCKET: ""
+  S3_REGION: "us-east-1"
+  S3_ENDPOINT: ""
   MEILI_ENV: "production"
   MONGO_DB: "bns"
   MONGO_USER: "bns"

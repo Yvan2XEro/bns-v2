@@ -1,14 +1,6 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: api-media
-  namespace: bns
-spec:
-  accessModes: [ReadWriteOnce]
-  resources:
-    requests:
-      storage: 20Gi
----
+# Uploads live in object storage (S3 or Azure Blob, STORAGE_PROVIDER in
+# configmap.yaml), never on a pod volume: the API runs 2 to 6 replicas on
+# different nodes, and a ReadWriteOnce disk can follow only one of them.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,9 +38,6 @@ spec:
               value: "3000"
             - name: NODE_ENV
               value: production
-          volumeMounts:
-            - name: media
-              mountPath: /app/packages/api/media
           resources:
             requests:
               cpu: 300m
@@ -56,24 +45,29 @@ spec:
             limits:
               cpu: "1"
               memory: 1Gi
+          # The API has no /api/health: /api/public/config is the route every
+          # client calls first, served once Payload is up. A first boot
+          # (indexes, the market, workflows) gets five minutes.
+          startupProbe:
+            httpGet:
+              path: /api/public/config
+              port: 3000
+            periodSeconds: 10
+            failureThreshold: 30
           livenessProbe:
             httpGet:
-              path: /api/health
+              path: /api/public/config
               port: 3000
             initialDelaySeconds: 30
             periodSeconds: 15
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /api/public/config
               port: 3000
             initialDelaySeconds: 10
             periodSeconds: 5
             failureThreshold: 3
-      volumes:
-        - name: media
-          persistentVolumeClaim:
-            claimName: api-media
 ---
 apiVersion: v1
 kind: Service
