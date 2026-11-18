@@ -1,5 +1,30 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
+import { DEFAULT_CONTENT_LOCALE, requestLocale } from "@/lib/requestLocale";
+
+type CategoryResponseShape = {
+	id: string;
+	name: string;
+	slug: string;
+	description?: string | null;
+	searchAliases?: string | null;
+	icon?: string | null;
+	image?: string | null;
+	parent?: unknown;
+	active?: boolean | null;
+	attributes?: unknown[];
+	listingType?: unknown;
+	formPreset?: unknown;
+};
+
+function parseDepth(value: string | null): number {
+	if (!value) return 1;
+
+	const parsed = Number(value);
+	if (!Number.isInteger(parsed) || parsed < 0) return 1;
+
+	return parsed;
+}
 
 export async function GET(request: Request) {
 	try {
@@ -7,13 +32,17 @@ export async function GET(request: Request) {
 		const { searchParams } = new URL(request.url);
 		const id = searchParams.get("id");
 		const slug = searchParams.get("slug");
+		const depth = parseDepth(searchParams.get("depth"));
+		const locale = requestLocale(request);
+		const localized = { locale, fallbackLocale: DEFAULT_CONTENT_LOCALE };
 
 		if (id) {
-			const category = await payload.findByID({
+			const category = (await payload.findByID({
 				collection: "categories",
 				id,
-				depth: 1,
-			});
+				depth,
+				...localized,
+			})) as CategoryResponseShape | null;
 
 			if (!category) {
 				return Response.json({ error: "Category not found" }, { status: 404 });
@@ -24,10 +53,13 @@ export async function GET(request: Request) {
 				name: category.name,
 				slug: category.slug,
 				description: category.description,
+				searchAliases: category.searchAliases,
 				icon: category.icon,
 				image: category.image,
 				parent: category.parent,
 				active: category.active,
+				listingType: category.listingType,
+				formPreset: category.formPreset,
 				attributes: category.attributes || [],
 			});
 		}
@@ -39,7 +71,8 @@ export async function GET(request: Request) {
 					slug: { equals: slug },
 					active: { equals: true },
 				},
-				depth: 1,
+				depth,
+				...localized,
 				limit: 1,
 			});
 
@@ -53,10 +86,13 @@ export async function GET(request: Request) {
 				name: category.name,
 				slug: category.slug,
 				description: category.description,
+				searchAliases: (category as CategoryResponseShape).searchAliases,
 				icon: category.icon,
 				image: category.image,
 				parent: category.parent,
 				active: category.active,
+				listingType: (category as CategoryResponseShape).listingType,
+				formPreset: (category as CategoryResponseShape).formPreset,
 				attributes: category.attributes || [],
 			});
 		}
@@ -66,7 +102,10 @@ export async function GET(request: Request) {
 			where: {
 				active: { equals: true },
 			},
-			depth: 1,
+			depth,
+			...localized,
+			limit: 0,
+			pagination: false,
 		});
 
 		const categories = result.docs.map((cat) => ({
@@ -74,9 +113,12 @@ export async function GET(request: Request) {
 			name: cat.name,
 			slug: cat.slug,
 			description: cat.description,
+			searchAliases: (cat as CategoryResponseShape).searchAliases,
 			icon: cat.icon,
 			image: cat.image,
 			parent: cat.parent,
+			listingType: (cat as CategoryResponseShape).listingType,
+			formPreset: (cat as CategoryResponseShape).formPreset,
 			attributes: cat.attributes || [],
 		}));
 

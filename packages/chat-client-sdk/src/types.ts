@@ -16,6 +16,11 @@ export interface ClientToServerEvents {
 	}) => void;
 	"typing:start": (payload: { conversationId: string }) => void;
 	"typing:stop": (payload: { conversationId: string }) => void;
+	"shop:inbox:join": (
+		payload: { shopId: string },
+		ack?: (response: AckResponse) => void,
+	) => void;
+	"shop:inbox:leave": (payload: { shopId: string }) => void;
 }
 
 /** Events the server can send to the client */
@@ -31,6 +36,8 @@ export interface ServerToClientEvents {
 	typing: (payload: TypingEvent) => void;
 	"user:online": (payload: { userId: string }) => void;
 	"user:offline": (payload: { userId: string }) => void;
+	"inbox:conversation-updated": (payload: InboxConversationUpdate) => void;
+	"shop:access-revoked": (payload: { shopId: string }) => void;
 }
 
 export interface ListingAttachment {
@@ -48,6 +55,23 @@ export interface ChatMessage {
 	createdAt: string;
 	tempId?: string;
 	listing?: ListingAttachment;
+	shopId?: string;
+	/** Absent, or `"user"`, for an ordinary message. `"system"` for a line
+	 * the order service posted — `sender` is then an empty string, never a
+	 * user id. */
+	kind?: "user" | "system";
+	/** System messages only: the order-event type, e.g. `"order.placed"`. */
+	systemEvent?: string;
+	/** System messages only: structured data for a localised chip. */
+	systemParams?: Record<string, unknown>;
+}
+
+export interface InboxConversationUpdate {
+	conversationId: string;
+	assignee: string | null;
+	inboxStatus: "open" | "done";
+	awaitingReply: boolean;
+	lastMessageAt: string | null;
 }
 
 export interface SendMessagePayload {
@@ -100,5 +124,7 @@ export type ChatEventMap = {
 	typing: (event: TypingEvent) => void;
 	"user:online": (payload: { userId: string }) => void;
 	"user:offline": (payload: { userId: string }) => void;
+	"inbox:conversation-updated": (payload: InboxConversationUpdate) => void;
+	"shop:access-revoked": (payload: { shopId: string }) => void;
 	error: (error: Error) => void;
 };

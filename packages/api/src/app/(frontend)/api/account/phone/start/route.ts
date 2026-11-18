@@ -1,5 +1,6 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
+import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import {
 	PhoneVerificationError,
 	startPhoneVerification,
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
 		const { user } = await payload.auth({ headers: request.headers });
 
 		if (!user) {
-			return Response.json({ message: "Unauthorized" }, { status: 401 });
+			return errorResponse(ERROR_CODES.unauthorized, 401);
 		}
 
 		const userDoc = await payload.findByID({
@@ -39,12 +40,13 @@ export async function POST(request: Request) {
 			...status,
 		});
 	} catch (error) {
-		const message =
-			error instanceof Error
-				? error.message
-				: "Unable to start phone verification";
-		const status = error instanceof PhoneVerificationError ? error.status : 500;
-
-		return Response.json({ message }, { status });
+		// Only our own business failures are described to the user. Anything else
+		// is logged and reported as a generic server error, so a driver or Mongo
+		// message can never reach a client.
+		if (error instanceof PhoneVerificationError) {
+			return errorResponse(error.code, error.status);
+		}
+		console.error("[phone/start]", error);
+		return errorResponse(ERROR_CODES.server, 500);
 	}
 }

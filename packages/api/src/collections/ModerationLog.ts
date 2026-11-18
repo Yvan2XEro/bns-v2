@@ -1,0 +1,161 @@
+import type { CollectionConfig } from "payload";
+import { isAdmin, isModerator } from "../access/roles";
+
+export const MODERATION_ACTIONS = [
+	"listing.approve",
+	"listing.reject",
+	"listing.takedown",
+	"listing.holdRelease",
+	"user.suspend",
+	"user.unsuspend",
+	"shop.suspend",
+	"shop.unsuspend",
+	"report.resolve",
+	"report.dismiss",
+	"verification.claim",
+	"verification.release",
+	"verification.request_info",
+	"verification.approve",
+	"verification.reject",
+	"verification.revoke",
+	"verification.expire",
+	"order.cancel",
+	"commission.waive",
+	"payout.hold",
+	"payout.release",
+	"payout.account_approve",
+	"payout.account_reject",
+	"dispute.resolve",
+	"dispute.request_info",
+	"dispute.redact_message",
+	"dispute.assign",
+	"strike.revoke",
+	"resale_link.suspend",
+	"resale_link.unsuspend",
+	"risk_flag.review",
+	"risk_flag.dismiss",
+	"risk_flag.action",
+	"risk_flag.assign",
+	"review.photo_remove",
+] as const;
+
+export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
+
+/**
+ * Append-only. Writes are closed to every request including admins; the only
+ * writer is services/moderation.ts via overrideAccess, in the same operation
+ * that changes the target. An action cannot be applied without leaving a
+ * trace, and a trace cannot be rewritten afterwards.
+ */
+export const ModerationLog: CollectionConfig = {
+	slug: "moderation-log",
+	admin: {
+		useAsTitle: "action",
+		defaultColumns: ["action", "actor", "targetType", "targetId", "createdAt"],
+		description:
+			"Immutable history of moderation actions. Written by the moderation endpoints; cannot be edited or removed.",
+	},
+	access: {
+		read: ({ req: { user } }) => isModerator(user),
+		create: () => false,
+		update: () => false,
+		delete: () => false,
+		admin: ({ req: { user } }) => isAdmin(user),
+	},
+	fields: [
+		{
+			type: "row",
+			fields: [
+				{
+					/**
+					 * Optional only for system entries: scheduled expiry of a draft
+					 * request and a stale-claim release have no human behind them, and
+					 * `actorRole: "system"` is what the entry means. Every human action
+					 * still fails validation without an actor, so an action cannot be
+					 * taken anonymously by leaving the field out.
+					 */
+					name: "actor",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					admin: { width: "33%", readOnly: true },
+					validate: (
+						value: unknown,
+						{ siblingData }: { siblingData: { actorRole?: string } },
+					) =>
+						value || siblingData?.actorRole === "system"
+							? true
+							: "An actor is required unless the entry is a system entry.",
+				},
+				{
+					// Snapshot, not a join: roles change, the entry must keep saying what
+					// authority the action was taken under.
+					name: "actorRole",
+					type: "text",
+					required: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "action",
+					type: "select",
+					required: true,
+					index: true,
+					options: MODERATION_ACTIONS.map((value) => ({ label: value, value })),
+					admin: { width: "33%", readOnly: true },
+				},
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{
+					name: "targetType",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "Listing", value: "listing" },
+						{ label: "User", value: "user" },
+						{ label: "Report", value: "report" },
+						{ label: "Shop", value: "shop" },
+						{ label: "Verification request", value: "verification-request" },
+						{ label: "Order", value: "order" },
+						{ label: "Commission invoice", value: "commission-invoice" },
+						{ label: "Dispute", value: "dispute" },
+						{ label: "Resale link", value: "resale-link" },
+						{ label: "Risk flag", value: "risk-flag" },
+						{ label: "Review", value: "review" },
+					],
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "targetId",
+					type: "text",
+					required: true,
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "reason",
+					type: "text",
+					admin: { width: "33%", readOnly: true },
+				},
+			],
+		},
+		{
+			name: "note",
+			type: "textarea",
+			admin: {
+				readOnly: true,
+				description: "Internal. Never surfaced to the affected account.",
+			},
+		},
+		{
+			// Everything needed to undo or explain: previous status, duration,
+			// ids of the listings taken down alongside.
+			name: "metadata",
+			type: "json",
+			admin: { readOnly: true },
+		},
+	],
+	timestamps: true,
+};

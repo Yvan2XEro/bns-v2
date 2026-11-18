@@ -1,64 +1,60 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
-import { getNotchPayProvider } from "@/lib/payments";
+import { appRedirectPage } from "@/lib/appRedirectPage";
+import { getProvider } from "@/lib/payments";
+import { type SettleOutcome, settlePayment } from "@/services/payments";
+
+type CallbackStatus = "success" | "pending" | "failed";
+
+function callbackStatus(result: SettleOutcome): CallbackStatus {
+	if (result.outcome === "unknown_reference") return "failed";
+	const { status } = result.intent;
+	if (status === "succeeded") return "success";
+	if (status === "pending" || status === "created") return "pending";
+	return "failed";
+}
 
 /**
- * Callback GET après paiement (NotchPay et Stripe Checkout).
- * Query params : provider, listingId, appReturnUrl
- *   NotchPay ajoute aussi : reference
- *   Stripe ajoute aussi  : status (success|cancelled)
+ * GET redirect after a hosted checkout. It never activates anything by
+ * itself: NotchPay payments are verified with the provider and go through
+ * the same idempotent settlement as the webhook, in whichever order the two
+ * arrive.
  */
 export async function GET(request: Request) {
 	const url = new URL(request.url);
 	const provider = url.searchParams.get("provider") ?? "notchpay";
-	const reference = url.searchParams.get("reference") ?? "";
+	const providerReference = url.searchParams.get("reference") ?? "";
 	const appReturnUrl = url.searchParams.get("appReturnUrl") ?? "";
 	const listingId = url.searchParams.get("listingId") ?? "";
 
-	let status = "failed";
+	let status: CallbackStatus = "failed";
 
 	if (provider === "stripe") {
 		// L'activation est gérée par le webhook Stripe ; on relaie juste le statut
-		const stripeStatus = url.searchParams.get("status") ?? "";
-		status = stripeStatus === "success" ? "success" : "failed";
-	} else {
-		// NotchPay : vérifier le paiement et activer le boost
-		if (reference) {
-			try {
-				const notchpay = getNotchPayProvider();
-				const paymentStatus = await notchpay.verifyPayment(reference);
-
-				if (paymentStatus === "completed") {
-					status = "success";
-					await activateBoost(reference);
-				} else if (paymentStatus === "pending") {
-					status = "pending";
-				}
-			} catch (err) {
-				console.error("NotchPay callback error:", err);
-			}
+		status =
+			url.searchParams.get("status") === "success" ? "success" : "failed";
+	} else if (providerReference) {
+		try {
+			const payload = await getPayload({ config });
+			const verified =
+				await getProvider("notchpay").verifyPayment(providerReference);
+			const result = await settlePayment(payload, {
+				...verified,
+				source: "callback",
+			});
+			status = callbackStatus(result);
+		} catch (error) {
+			console.error(
+				"[boost callback] verification failed:",
+				error instanceof Error ? error.message : error,
+			);
 		}
 	}
 
 	// Retour vers l'app mobile via deep link
 	if (appReturnUrl) {
 		const deepLink = `${appReturnUrl}?status=${status}&listingId=${encodeURIComponent(listingId)}`;
-		return new Response(
-			`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Retour vers l'app…</title>
-  <script>window.location.replace(${JSON.stringify(deepLink)});</script>
-  <meta http-equiv="refresh" content="0;url=${deepLink}" />
-</head>
-<body style="font-family:sans-serif;text-align:center;padding-top:80px">
-  <p>Redirection vers l'application…</p>
-  <p><a href="${deepLink}">Appuyer ici si la redirection ne fonctionne pas</a></p>
-</body>
-</html>`,
-			{ headers: { "Content-Type": "text/html; charset=utf-8" } },
-		);
+		return appRedirectPage(deepLink);
 	}
 
 	// Retour web — redirection vers le frontend (pas le backend)
@@ -67,36 +63,4 @@ export async function GET(request: Request) {
 		? `/listing/${listingId}?boostStatus=${status}`
 		: "/";
 	return Response.redirect(`${webUrl}${webPath}`, 302);
-}
-
-async function activateBoost(reference: string): Promise<void> {
-	const payload = await getPayload({ config });
-	const paymentId = reference.replace(/^BOOST-/, "");
-
-	const payment = await payload
-		.findByID({ collection: "boost-payments", id: paymentId })
-		.catch(() => null);
-
-	if (!payment || payment.status === "completed") return; // idempotent
-
-	await payload.update({
-		collection: "boost-payments",
-		id: paymentId,
-		data: { status: "completed" },
-	});
-
-	const days = Number.parseInt(String(payment.duration), 10);
-	const boostedUntil = new Date();
-	boostedUntil.setDate(boostedUntil.getDate() + days);
-
-	const listingId =
-		typeof payment.listing === "object"
-			? (payment.listing as { id: string }).id
-			: String(payment.listing);
-
-	await payload.update({
-		collection: "listings",
-		id: listingId,
-		data: { boostedUntil: boostedUntil.toISOString() },
-	});
 }

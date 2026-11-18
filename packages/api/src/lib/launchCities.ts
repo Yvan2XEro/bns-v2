@@ -1,0 +1,185 @@
+/**
+ * COMPAT SHIM, removed with the P10 literals guard (Task 25's release): the
+ * market-cities collection is the source of truth. `LAUNCH_CITIES` stays as
+ * SEED DATA ONLY (Task 7 seeds the CM rows from it); read cities through
+ * `lib/marketCities.ts`. The sync predicates below serve the callers not yet
+ * migrated and are deleted with the file.
+ */
+import type { MarketCity } from "../contracts/marketCity";
+
+export type LaunchCityKey = "douala" | "yaounde";
+
+export interface LaunchCity {
+	key: LaunchCityKey;
+	label: string;
+	defaultDeliveryFee: number;
+	/** District slugs, without the city prefix. P7 reuses them for zones. */
+	districts: readonly string[];
+}
+
+const DOUALA_DISTRICTS = [
+	"akwa",
+	"bonanjo",
+	"bonapriso",
+	"bali",
+	"deido",
+	"bonaberi",
+	"bepanda",
+	"makepe",
+	"bonamoussadi",
+	"kotto",
+	"logbessou",
+	"logpom",
+	"ndokoti",
+	"new-bell",
+	"nyalla",
+	"pk8-pk14",
+	"yassa",
+	"village",
+	"japoma",
+	"bonadibong",
+] as const;
+
+const YAOUNDE_DISTRICTS = [
+	"bastos",
+	"centre-ville",
+	"mvog-mbi",
+	"essos",
+	"mokolo",
+	"biyem-assi",
+	"mendong",
+	"nkolbisson",
+	"ngousso",
+	"omnisport",
+	"emana",
+	"etoudi",
+	"nsimeyong",
+	"odza",
+	"mimboman",
+	"ekounou",
+	"melen",
+	"nlongkak",
+	"mvan",
+	"efoulan",
+] as const;
+
+/** Display labels, accents included; the slug is what is stored. */
+const DISTRICT_LABELS: Record<string, string> = {
+	"douala.akwa": "Akwa",
+	"douala.bonanjo": "Bonanjo",
+	"douala.bonapriso": "Bonapriso",
+	"douala.bali": "Bali",
+	"douala.deido": "Deïdo",
+	"douala.bonaberi": "Bonabéri",
+	"douala.bepanda": "Bépanda",
+	"douala.makepe": "Makepe",
+	"douala.bonamoussadi": "Bonamoussadi",
+	"douala.kotto": "Kotto",
+	"douala.logbessou": "Logbessou",
+	"douala.logpom": "Logpom",
+	"douala.ndokoti": "Ndokoti",
+	"douala.new-bell": "New Bell",
+	"douala.nyalla": "Nyalla",
+	"douala.pk8-pk14": "PK8–PK14",
+	"douala.yassa": "Yassa",
+	"douala.village": "Village",
+	"douala.japoma": "Japoma",
+	"douala.bonadibong": "Bonadibong",
+	"yaounde.bastos": "Bastos",
+	"yaounde.centre-ville": "Centre-ville",
+	"yaounde.mvog-mbi": "Mvog-Mbi",
+	"yaounde.essos": "Essos",
+	"yaounde.mokolo": "Mokolo",
+	"yaounde.biyem-assi": "Biyem-Assi",
+	"yaounde.mendong": "Mendong",
+	"yaounde.nkolbisson": "Nkolbisson",
+	"yaounde.ngousso": "Ngousso",
+	"yaounde.omnisport": "Omnisport",
+	"yaounde.emana": "Emana",
+	"yaounde.etoudi": "Etoudi",
+	"yaounde.nsimeyong": "Nsimeyong",
+	"yaounde.odza": "Odza",
+	"yaounde.mimboman": "Mimboman",
+	"yaounde.ekounou": "Ekounou",
+	"yaounde.melen": "Melen",
+	"yaounde.nlongkak": "Nlongkak",
+	"yaounde.mvan": "Mvan",
+	"yaounde.efoulan": "Efoulan",
+};
+
+export const LAUNCH_CITIES: Record<LaunchCityKey, LaunchCity> = {
+	douala: {
+		key: "douala",
+		label: "Douala",
+		defaultDeliveryFee: 2000,
+		districts: DOUALA_DISTRICTS,
+	},
+	yaounde: {
+		key: "yaounde",
+		label: "Yaoundé",
+		defaultDeliveryFee: 3500,
+		districts: YAOUNDE_DISTRICTS,
+	},
+};
+
+export const LAUNCH_CITY_KEYS: readonly LaunchCityKey[] = ["douala", "yaounde"];
+
+export function isLaunchCityKey(value: unknown): value is LaunchCityKey {
+	return typeof value === "string" && value in LAUNCH_CITIES;
+}
+
+const fold = (value: string) =>
+	value
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.trim()
+		.toLowerCase();
+
+/**
+ * The launch city a stored place names, by key or by label: shops keep the
+ * city as typed or picked ("Douala", "Yaoundé"), while checkout, carts and
+ * zones speak in keys. Null for any other place.
+ */
+export function launchCityKeyOf(value: unknown): LaunchCityKey | null {
+	if (typeof value !== "string") return null;
+	const folded = fold(value);
+	return (
+		LAUNCH_CITY_KEYS.find(
+			(key) => key === folded || fold(LAUNCH_CITIES[key].label) === folded,
+		) ?? null
+	);
+}
+
+export function districtKeysOf(city: LaunchCityKey): readonly string[] {
+	return LAUNCH_CITIES[city].districts.map((slug) => `${city}.${slug}`);
+}
+
+/** `{city}.other` is always accepted; it carries a free-text `districtOther`. */
+export function isDistrictKey(city: LaunchCityKey, key: string): boolean {
+	return key === `${city}.other` || districtKeysOf(city).includes(key);
+}
+
+export function districtLabel(key: string): string | null {
+	if (key.endsWith(".other")) {
+		const [city] = key.split(".");
+		return isLaunchCityKey(city) ? "Autre" : null;
+	}
+	return DISTRICT_LABELS[key] ?? null;
+}
+
+/** The seed constants as `market-cities` rows for one market. */
+export function launchCitySeedRows(market: string): MarketCity[] {
+	return LAUNCH_CITY_KEYS.map((key, index) => ({
+		id: `${market}:${key}`,
+		market,
+		key,
+		label: LAUNCH_CITIES[key].label,
+		defaultDeliveryFee: LAUNCH_CITIES[key].defaultDeliveryFee,
+		districts: LAUNCH_CITIES[key].districts.map((slug) => ({
+			slug,
+			label: DISTRICT_LABELS[`${key}.${slug}`] ?? slug,
+		})),
+		active: true,
+		sortOrder: index,
+	}));
+}

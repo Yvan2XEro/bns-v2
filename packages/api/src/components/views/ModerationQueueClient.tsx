@@ -2,6 +2,15 @@
 
 import { Banner, Button, Pill, ShimmerEffect } from "@payloadcms/ui";
 import { useCallback, useEffect, useState } from "react";
+import type { MarketConfig } from "../../contracts/marketConfig";
+import { formatMoney } from "../../contracts/money";
+import {
+	EMPTY_REJECTION,
+	type RejectionDraft,
+	RejectionReasonFields,
+	rejectionReady,
+	rejectListingRequest,
+} from "./RejectionReasonFields";
 
 interface ListingDoc {
 	id: string;
@@ -10,15 +19,36 @@ interface ListingDoc {
 	price: number;
 	createdAt: string;
 	seller?: { name?: string; email: string } | string;
+	shop?: { location?: { countryCode?: string } } | string;
 	category?: { name?: string } | string;
 	images?: { image?: { url?: string; thumbnailURL?: string } | string }[];
 }
 
+function countryOf(listing: ListingDoc): string | undefined {
+	return typeof listing.shop === "object"
+		? listing.shop.location?.countryCode?.toUpperCase()
+		: undefined;
+}
+
+function priceOf(
+	listing: ListingDoc,
+	markets: Record<string, MarketConfig>,
+): string {
+	const code = countryOf(listing);
+	const format = code
+		? markets[code]?.formats.find((f) => f.locale === "en")
+		: undefined;
+	return format
+		? formatMoney(listing.price, format)
+		: listing.price.toLocaleString();
+}
+
 export function ModerationQueueClient() {
 	const [listings, setListings] = useState<ListingDoc[]>([]);
+	const [markets, setMarkets] = useState<Record<string, MarketConfig>>({});
 	const [loading, setLoading] = useState(true);
 	const [rejectId, setRejectId] = useState<string | null>(null);
-	const [reason, setReason] = useState("");
+	const [draft, setDraft] = useState<RejectionDraft>(EMPTY_REJECTION);
 	const [acting, setActing] = useState(false);
 
 	const fetchListings = useCallback(() => {
@@ -27,7 +57,21 @@ export function ModerationQueueClient() {
 			"/api/listings?where[status][equals]=pending&sort=-createdAt&depth=1&limit=50",
 		)
 			.then((r) => r.json())
-			.then((data) => setListings(data.docs || []))
+			.then((data) => {
+				const docs: ListingDoc[] = data.docs || [];
+				setListings(docs);
+				for (const code of new Set(docs.map(countryOf))) {
+					if (!code) continue;
+					fetch(`/api/public/config?country=${code}`)
+						.then((r) => r.json())
+						.then((config) => {
+							if (config.market) {
+								setMarkets((known) => ({ ...known, [code]: config.market }));
+							}
+						})
+						.catch(() => {});
+				}
+			})
 			.catch(() => {})
 			.finally(() => setLoading(false));
 	}, []);
@@ -54,17 +98,12 @@ export function ModerationQueueClient() {
 	};
 
 	const handleReject = async (id: string) => {
-		if (!reason.trim()) return;
+		if (!rejectionReady(draft)) return;
 		setActing(true);
 		try {
-			const res = await fetch(`/api/listings/${id}`, {
-				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ status: "rejected", rejectionReason: reason }),
-			});
-			if (!res.ok) throw new Error("Failed");
+			await rejectListingRequest(id, draft);
 			setRejectId(null);
-			setReason("");
+			setDraft(EMPTY_REJECTION);
 			fetchListings();
 		} catch {
 			/* ignore */
@@ -167,7 +206,7 @@ export function ModerationQueueClient() {
 										}}
 									>
 										{seller?.name || seller?.email || "Unknown"} ·{" "}
-										{listing.price.toLocaleString()} XAF ·{" "}
+										{priceOf(listing, markets)} ·{" "}
 										{formatDate(listing.createdAt)}
 									</div>
 									{listing.description && (
@@ -192,21 +231,9 @@ export function ModerationQueueClient() {
 												gap: "0.5rem",
 											}}
 										>
-											<textarea
-												value={reason}
-												onChange={(e) => setReason(e.target.value)}
-												placeholder="Rejection reason..."
-												rows={2}
-												style={{
-													width: "100%",
-													padding: "0.5rem",
-													border: "1px solid var(--theme-elevation-200)",
-													borderRadius: "var(--style-radius-s)",
-													fontSize: "0.8125rem",
-													resize: "vertical",
-													background: "var(--theme-input-bg)",
-													color: "var(--theme-text)",
-												}}
+											<RejectionReasonFields
+												value={draft}
+												onChange={setDraft}
 											/>
 											<div style={{ display: "flex", gap: "0.5rem" }}>
 												<Button
@@ -222,7 +249,7 @@ export function ModerationQueueClient() {
 													size="small"
 													onClick={() => {
 														setRejectId(null);
-														setReason("");
+														setDraft(EMPTY_REJECTION);
 													}}
 												>
 													Cancel

@@ -8,7 +8,7 @@ interface UserDoc {
 	name?: string;
 	email: string;
 	role: string;
-	verified?: boolean;
+	identityVerifiedAt?: string | null;
 	rating?: number;
 	totalReviews?: number;
 	createdAt: string;
@@ -92,7 +92,7 @@ export function UserManagementClient() {
 								"Name",
 								"Email",
 								"Role",
-								"Verified",
+								"Identity verified",
 								"Rating",
 								"Joined",
 								"Actions",
@@ -143,10 +143,10 @@ export function UserManagementClient() {
 								</td>
 								<td style={{ padding: "0.75rem 0.5rem" }}>
 									<Pill
-										pillStyle={u.verified ? "success" : "light-gray"}
+										pillStyle={u.identityVerifiedAt ? "success" : "light-gray"}
 										size="small"
 									>
-										{u.verified ? "Yes" : "No"}
+										{u.identityVerifiedAt ? "Yes" : "No"}
 									</Pill>
 								</td>
 								<td
@@ -167,14 +167,6 @@ export function UserManagementClient() {
 								</td>
 								<td style={{ padding: "0.75rem 0.5rem" }}>
 									<div style={{ display: "flex", gap: "0.25rem" }}>
-										<Button
-											buttonStyle={u.verified ? "secondary" : "primary"}
-											size="xsmall"
-											onClick={() => patchUser(u.id, { verified: !u.verified })}
-											disabled={acting === u.id}
-										>
-											{u.verified ? "Unverify" : "Verify"}
-										</Button>
 										{u.role !== "admin" && (
 											<Button
 												buttonStyle="secondary"

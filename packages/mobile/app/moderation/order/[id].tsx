@@ -1,0 +1,175 @@
+import { useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import { ScrollView, StyleSheet } from "react-native";
+import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
+import {
+	type DecisionResult,
+	DecisionSheet,
+} from "@/src/components/moderation/DecisionSheet";
+import {
+	DetailSkeleton,
+	LoadError,
+} from "@/src/components/moderation/ModerationKit";
+import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
+import {
+	OrderItemsCard,
+	OrderTimelineCard,
+} from "@/src/components/moderation/OrderItemsTimeline";
+import {
+	OrderDeliveryCard,
+	OrderRiskCard,
+	OrderSummaryCard,
+} from "@/src/components/moderation/OrderSheetCards";
+import { StaffOrderActionBar } from "@/src/components/moderation/StaffOrderActionBar";
+import { useModerationTheme } from "@/src/components/moderation/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
+import {
+	useModerationOrder,
+	useStaffCancelOrder,
+} from "@/src/hooks/useModerationOrder";
+import { useOrderReceipt } from "@/src/hooks/usePurchases";
+import { useResponsive } from "@/src/hooks/useResponsive";
+import { resolveErrorMessage } from "@/src/lib/apiError";
+import { useTranslation } from "@/src/lib/i18n";
+import { shareHtmlDocument } from "@/src/lib/shareHtmlDocument";
+import {
+	STAFF_CANCEL_REASON_KEYS,
+	STAFF_CANCEL_REASONS,
+	staffCancelDraft,
+	staffSheetActions,
+} from "@/src/lib/staffOrderSheet";
+
+/**
+ * The staff order sheet: the order's own staff projection, and the one lever
+ * a moderator holds on it. Which buttons show is `availableActions`' answer
+ * for the staff audience — this screen decides nothing itself.
+ */
+export default function ModerateOrderScreen() {
+	const { id } = useLocalSearchParams<{ id: string }>();
+	const c = useModerationTheme();
+	const { t } = useTranslation();
+	const locale = useLocaleKey();
+	const { centeredContent } = useResponsive();
+	const { showError, showSuccess } = useAlert();
+	const [cancelling, setCancelling] = useState(false);
+	// Shown inside the open sheet: an alert cannot be presented over it.
+	const [sheetError, setSheetError] = useState<string | null>(null);
+
+	const sheet = useModerationOrder(id);
+	const cancel = useStaffCancelOrder(id);
+	// Fetched on tap only: the receipt is HTML behind the caller's token.
+	const receipt = useOrderReceipt(id, locale, false);
+
+	const reasons = STAFF_CANCEL_REASONS.map((value) => ({
+		value,
+		label: t(STAFF_CANCEL_REASON_KEYS[value]),
+	}));
+
+	const onCancel = ({ choice, text }: DecisionResult) => {
+		const draft = staffCancelDraft(choice, text);
+		if (!draft.ok) {
+			setSheetError(t(draft.errorKey));
+			return;
+		}
+		setSheetError(null);
+		cancel.mutate(draft.input, {
+			onSuccess: () => {
+				setCancelling(false);
+				showSuccess(
+					t("moderationOrder.cancelledTitle"),
+					t("moderationOrder.cancelledMessage"),
+				);
+			},
+			onError: (error) => setSheetError(resolveErrorMessage(error, t)),
+		});
+	};
+
+	const onReceipt = async () => {
+		const result = await receipt.refetch();
+		if (result.data === undefined || !sheet.data) {
+			showError(
+				t("moderationOrder.receiptFailed"),
+				resolveErrorMessage(result.error, t),
+			);
+			return;
+		}
+		try {
+			await shareHtmlDocument(
+				result.data,
+				sheet.data.orderNumber,
+				t("moderationOrder.receipt"),
+			);
+		} catch (error) {
+			showError(
+				t("moderationOrder.receiptFailed"),
+				resolveErrorMessage(error, t),
+			);
+		}
+	};
+
+	const order = sheet.data;
+	const actions = order ? staffSheetActions(order) : null;
+
+	return (
+		<ModerationScreen
+			title={t("moderationOrder.title")}
+			subtitle={order?.orderNumber}
+		>
+			{sheet.isPending ? (
+				<DetailSkeleton />
+			) : sheet.isError || !order || !actions ? (
+				<LoadError
+					title={t("moderationOrder.loadError")}
+					message={
+						sheet.error ? resolveErrorMessage(sheet.error, t) : undefined
+					}
+					error={sheet.error}
+					onRetry={() => void sheet.refetch()}
+				/>
+			) : (
+				<>
+					<ScrollView contentContainerStyle={[styles.content, centeredContent]}>
+						<OrderSummaryCard order={order} locale={locale} c={c} t={t} />
+						<OrderRiskCard order={order} c={c} t={t} />
+						<OrderDeliveryCard order={order} c={c} t={t} />
+						<OrderItemsCard order={order} locale={locale} c={c} t={t} />
+						<OrderTimelineCard order={order} locale={locale} c={c} t={t} />
+					</ScrollView>
+
+					<StaffOrderActionBar
+						canCancel={actions.canCancel}
+						canReceipt={actions.canReceipt}
+						receiptPending={receipt.isFetching}
+						onCancel={() => {
+							setSheetError(null);
+							setCancelling(true);
+						}}
+						onReceipt={onReceipt}
+						c={c}
+						t={t}
+					/>
+
+					<DecisionSheet
+						visible={cancelling}
+						title={t("moderationOrder.cancelSheetTitle")}
+						subtitle={t("moderationOrder.cancelSheetSubtitle")}
+						choices={reasons}
+						choicesLabel={t("moderationOrder.reasonLabel")}
+						textLabel={t("moderationOrder.noteLabel")}
+						textPlaceholder={t("moderationOrder.notePlaceholder")}
+						confirmLabel={t("moderationOrder.cancel")}
+						destructive
+						pending={cancel.isPending}
+						error={sheetError}
+						onConfirm={onCancel}
+						onClose={() => setCancelling(false)}
+					/>
+				</>
+			)}
+		</ModerationScreen>
+	);
+}
+
+const styles = StyleSheet.create({
+	content: { padding: 16, gap: 14, paddingBottom: 24 },
+});

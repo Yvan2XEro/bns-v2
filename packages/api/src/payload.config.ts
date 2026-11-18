@@ -4,34 +4,254 @@ import { mongooseAdapter } from "@payloadcms/db-mongodb";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { buildConfig } from "payload";
 import sharp from "sharp";
+import { monitoringWarnings } from "@/lib/monitoring";
+import { Addresses } from "./collections/Addresses";
 import { BlockedUsers } from "./collections/BlockedUsers";
 import { BoostPayments } from "./collections/BoostPayments";
+import { BuyerFeeInvoiceFiles } from "./collections/BuyerFeeInvoiceFiles";
+import { BuyerFeeInvoices } from "./collections/BuyerFeeInvoices";
+import { BuyerPhoneScores } from "./collections/BuyerPhoneScores";
+import { Carts } from "./collections/Carts";
 import { Categories } from "./collections/Categories";
+import { CommissionInvoices } from "./collections/CommissionInvoices";
+import { CommissionLines } from "./collections/CommissionLines";
+import { ConnectedAccounts } from "./collections/ConnectedAccounts";
+import { ContactReveals } from "./collections/ContactReveals";
+import { ConversationReads } from "./collections/ConversationReads";
 import { Conversations } from "./collections/Conversations";
+import { CourierMembers } from "./collections/CourierMembers";
+import { Couriers } from "./collections/Couriers";
+import { DeliveryProofs } from "./collections/DeliveryProofs";
+import { DeliveryZones } from "./collections/DeliveryZones";
+import { DisputeEvidence } from "./collections/DisputeEvidence";
+import { DisputeEvidenceViews } from "./collections/DisputeEvidenceViews";
+import { DisputeGateEvidence } from "./collections/DisputeGateEvidence";
+import { DisputeMessages } from "./collections/DisputeMessages";
+import { Disputes } from "./collections/Disputes";
 import { Favorites } from "./collections/Favorites";
+import { LedgerAccounts } from "./collections/LedgerAccounts";
+import { LedgerTransactions } from "./collections/LedgerTransactions";
 import { Listings } from "./collections/Listings";
+import { ListingViewFlushes } from "./collections/ListingViewFlushes";
+import { MarketCities } from "./collections/MarketCities";
+import { Markets } from "./collections/Markets";
 import { Media } from "./collections/Media";
 import { Messages } from "./collections/Messages";
+import { ModerationLog } from "./collections/ModerationLog";
+import { OrderEvents } from "./collections/OrderEvents";
+import { OrderItems } from "./collections/OrderItems";
+import { Orders } from "./collections/Orders";
+import { PaymentGateEvidence } from "./collections/PaymentGateEvidence";
+import { PaymentIntents } from "./collections/PaymentIntents";
+import { PayoutAccounts } from "./collections/PayoutAccounts";
+import { PayoutHolds } from "./collections/PayoutHolds";
+import { Payouts } from "./collections/Payouts";
+import { Products } from "./collections/Products";
+import { ProductVariants } from "./collections/ProductVariants";
+import { PurchaseOrders } from "./collections/PurchaseOrders";
+import { ReconciliationMismatches } from "./collections/ReconciliationMismatches";
+import { ReconciliationRuns } from "./collections/ReconciliationRuns";
+import { Refunds } from "./collections/Refunds";
 import { Reports } from "./collections/Reports";
+import { ResaleLinks } from "./collections/ResaleLinks";
+import { ResaleTerms } from "./collections/ResaleTerms";
+import { ResaleTermsAcceptances } from "./collections/ResaleTermsAcceptances";
+import { ResellerCharges } from "./collections/ResellerCharges";
+import { ResellerCommissions } from "./collections/ResellerCommissions";
+import { ResellerPayouts } from "./collections/ResellerPayouts";
+import { ReturnCases } from "./collections/ReturnCases";
 import { Reviews } from "./collections/Reviews";
+import { RiskFlags } from "./collections/RiskFlags";
+import { RiskSignalOutbox } from "./collections/RiskSignalOutbox";
 import { SavedSearches } from "./collections/SavedSearches";
+import { Sequences } from "./collections/Sequences";
+import { ShipmentEvents } from "./collections/ShipmentEvents";
+import { Shipments } from "./collections/Shipments";
+import { ShopActivityLog } from "./collections/ShopActivityLog";
+import { ShopDailyStats } from "./collections/ShopDailyStats";
+import { ShopInvitations } from "./collections/ShopInvitations";
+import { ShopLocations } from "./collections/ShopLocations";
+import { ShopMembers } from "./collections/ShopMembers";
+import { ShopStrikes } from "./collections/ShopStrikes";
+import { Shops } from "./collections/Shops";
+import { StockCountSessions } from "./collections/StockCountSessions";
+import { StockMovements } from "./collections/StockMovements";
 import { Tags } from "./collections/Tags";
 import { Users } from "./collections/Users";
+import { VerificationDocuments } from "./collections/VerificationDocuments";
+import { VerificationDocumentViews } from "./collections/VerificationDocumentViews";
+import { VerificationRequests } from "./collections/VerificationRequests";
+import { WebhookEvents } from "./collections/WebhookEvents";
 import { AppSettings } from "./globals/AppSettings";
-import { isNotificationProviderConfigured } from "./services/notificationProvider";
+import { registerNotificationLocales } from "./hooks/notificationEvents";
+import {
+	abandonCartsTask,
+	advanceDisputesTask,
+	advanceReturnCasesTask,
+	aggregateShopDailyStatsTask,
+	applyResalePriceChangesTask,
+	checkSearchAlertsTask,
+	completeOrdersTask,
+	consumeRiskSignalOutboxTask,
+	dispatchOrderEventTask,
+	enforceCommissionOverdueTask,
+	enforceResaleTermsTask,
+	expireBoostsTask,
+	expireListingsTask,
+	expireOrdersTask,
+	expirePayoutHoldsTask,
+	expirePickupHoldsTask,
+	expirePurchaseOrdersTask,
+	expireRiderLinksTask,
+	expireStrikesTask,
+	failStaleOrdersTask,
+	finalizeFailedShipmentsTask,
+	flagLateShipmentsTask,
+	flushListingViewsTask,
+	issueCommissionInvoicesTask,
+	liftExpiredShopSuspensionsTask,
+	markOverdueResellerChargesTask,
+	payResellerCommissionsTask,
+	pollCourierShipmentsTask,
+	processCourierWebhookEventTask,
+	processKycEventTask,
+	processWebhookEventTask,
+	publishHeldReviewsTask,
+	purgeCaseEvidenceTask,
+	purgeDeliveryProofsTask,
+	purgeRiskDataTask,
+	purgeShopActivityTask,
+	purgeVerificationDataTask,
+	recomputeShopRankingsTask,
+	reconcileLedgerTask,
+	reconcilePendingPaymentsTask,
+	reconcileStockCachesTask,
+	recoverSellerReceivablesTask,
+	refreshResaleLinkStatsTask,
+	releaseEligibleFundsTask,
+	releaseResellerCommissionsTask,
+	remindReturnsTask,
+	renderDisputeCertificateTask,
+	retryResellerPayoutsTask,
+	sendWeeklyInsightsTask,
+	submitRefundTask,
+	sweepBuyerFeeInvoicesTask,
+	syncConnectedAccountTask,
+} from "./jobs";
+import { emailAdapter } from "./lib/email";
+import { registerConfiguredAdapters } from "./lib/payments/registerAdapters";
+import { registerResaleAdjuster } from "./lib/resale";
+import { reportServerError } from "./lib/serverErrors";
+import { buildStoragePlugins } from "./plugins/storage";
+import { registerShipmentOrderEvents } from "./services/delivery/shipments";
+import {
+	adjustResellerCommission,
+	registerPurchaseOrderOrderEvents,
+} from "./services/purchaseOrders";
+import { registerRefundSubmissionQueue } from "./services/refunds";
+import { registerShopTeamLevelListener } from "./services/shopTeamLevel";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
+// P3's reaction to a level change. Explicit rather than a module side effect,
+// so nothing depends on which file happened to be imported first.
+registerShopTeamLevelListener();
+registerConfiguredAdapters();
+registerShipmentOrderEvents();
+registerPurchaseOrderOrderEvents();
+registerResaleAdjuster({ adjustResellerCommission });
+registerRefundSubmissionQueue((payload, { refundId, waitUntil }) =>
+	payload.jobs.queue({
+		task: "submitRefund",
+		queue: "payments",
+		input: { refundId },
+		waitUntil,
+	}),
+);
+
+// Payload's scheduler reads crons in the server's zone, UTC in the api image.
+// The release and reconcile sweeps run hourly and gate on each market's own
+// local hour (markets.moneyCalendar); the daily rows below are fixed UTC times.
+// The P5 jobs are scheduled here rather than in their own files so the whole
+// money calendar reads in one place.
+const PAYMENTS = "payments";
+const paymentTasks = [
+	submitRefundTask,
+	{
+		...syncConnectedAccountTask,
+		schedule: [{ cron: "0 */6 * * *", queue: PAYMENTS }],
+	},
+	{
+		...releaseEligibleFundsTask,
+		schedule: [{ cron: "0 * * * *", queue: PAYMENTS }],
+	},
+	{
+		...expirePayoutHoldsTask,
+		schedule: [{ cron: "*/15 * * * *", queue: PAYMENTS }],
+	},
+	{
+		...reconcileLedgerTask,
+		schedule: [{ cron: "0 * * * *", queue: PAYMENTS }],
+	},
+	{
+		...recoverSellerReceivablesTask,
+		schedule: [{ cron: "0 2 * * *", queue: PAYMENTS }], // 03:00 WAT
+	},
+	{
+		...sweepBuyerFeeInvoicesTask,
+		schedule: [{ cron: "0 * * * *", queue: PAYMENTS }],
+	},
+];
+
+// Delivery calendar, same UTC rule as the money calendar above. The polling
+// task rides the frequent "delivery" queue; the lifecycle sweeps share the
+// hourly queue and the nightly ones the nightly queue.
+const deliveryTasks = [
+	processCourierWebhookEventTask,
+	{
+		...pollCourierShipmentsTask,
+		schedule: [{ cron: "*/15 * * * *", queue: "delivery" }],
+	},
+	{
+		...finalizeFailedShipmentsTask,
+		schedule: [{ cron: "0 * * * *", queue: "hourly" }],
+	},
+	{
+		...expirePickupHoldsTask,
+		schedule: [{ cron: "0 * * * *", queue: "hourly" }],
+	},
+	{
+		...flagLateShipmentsTask,
+		schedule: [{ cron: "0 * * * *", queue: "hourly" }],
+	},
+	{
+		...remindReturnsTask,
+		schedule: [{ cron: "30 6 * * *", queue: "nightly" }], // 07:30 WAT
+	},
+	{
+		...expireRiderLinksTask,
+		schedule: [{ cron: "45 2 * * *", queue: "nightly" }], // 03:45 WAT
+	},
+	{
+		...purgeDeliveryProofsTask,
+		schedule: [{ cron: "15 2 * * *", queue: "nightly" }], // 03:15 WAT
+	},
+];
+
 export default buildConfig({
+	// Notifications are written in each recipient's language, read off their
+	// account when an event is sent (hooks/notificationEvents.ts).
+	// Email verification and password reset: Resend or SMTP (lib/email.ts).
+	email: emailAdapter(),
+	onInit: async (payload) => {
+		registerNotificationLocales(payload);
+		for (const warning of monitoringWarnings()) payload.logger.warn(warning);
+	},
 	admin: {
 		user: Users.slug,
 		meta: {
-			icons: [
-				{
-					url: "/logo.png",
-				},
-			],
+			icons: [{ url: "/logo.png" }],
 		},
 		importMap: {
 			baseDir: path.resolve(dirname),
@@ -67,19 +287,115 @@ export default buildConfig({
 		Users,
 		Media,
 		Listings,
+		ListingViewFlushes,
 		Categories,
 		Favorites,
 		Conversations,
+		ConversationReads,
 		Messages,
 		Reviews,
 		Reports,
+		ResaleLinks,
+		ResaleTerms,
+		ResaleTermsAcceptances,
 		BoostPayments,
+		PaymentIntents,
+		WebhookEvents,
+		ContactReveals,
+		DeliveryZones,
+		Markets,
+		MarketCities,
+		ShopLocations,
+		Couriers,
+		CourierMembers,
+		Shipments,
+		ShipmentEvents,
+		DeliveryProofs,
 		SavedSearches,
+		Addresses,
 		BlockedUsers,
 		Tags,
+		ModerationLog,
+		Shops,
+		ShopMembers,
+		ShopActivityLog,
+		ShopInvitations,
+		Products,
+		PurchaseOrders,
+		ResellerCommissions,
+		ResellerCharges,
+		ResellerPayouts,
+		ProductVariants,
+		StockMovements,
+		StockCountSessions,
+		VerificationRequests,
+		VerificationDocuments,
+		VerificationDocumentViews,
+		Sequences,
+		Carts,
+		Orders,
+		OrderItems,
+		OrderEvents,
+		BuyerPhoneScores,
+		CommissionLines,
+		CommissionInvoices,
+		ReturnCases,
+		ShopDailyStats,
+		RiskFlags,
+		PaymentGateEvidence,
+		DisputeGateEvidence,
+		Disputes,
+		DisputeMessages,
+		DisputeEvidence,
+		DisputeEvidenceViews,
+		ShopStrikes,
+		RiskSignalOutbox,
+		ConnectedAccounts,
+		PayoutAccounts,
+		Refunds,
+		Payouts,
+		PayoutHolds,
+		LedgerAccounts,
+		LedgerTransactions,
+		BuyerFeeInvoices,
+		BuyerFeeInvoiceFiles,
+		ReconciliationRuns,
+		ReconciliationMismatches,
 	],
 	globals: [AppSettings],
+	hooks: {
+		// Payload answers its own errors; only the unexpected ones reach Sentry.
+		afterError: [
+			({ error, req }) => {
+				const status =
+					"status" in error && typeof error.status === "number"
+						? error.status
+						: 500;
+				if (status >= 500) {
+					void reportServerError(error, { path: req.pathname ?? null });
+				}
+			},
+		],
+	},
+	// Only the category labels are localised. French is the default: a read
+	// with no locale, and an English label nobody has written, get the French.
+	localization: {
+		locales: [
+			{ code: "fr", label: "Français" },
+			{ code: "en", label: "English" },
+		],
+		defaultLocale: "fr",
+		fallback: true,
+	},
 	editor: lexicalEditor(),
+	// One knob for every `logger.debug`/`info`/`warn` call in the app, rather
+	// than a feature-specific env var per thing that wants to be visible in
+	// `docker compose logs api`.
+	logger: {
+		options: {
+			level: process.env.LOG_LEVEL || "info",
+		},
+	},
 	secret: process.env.PAYLOAD_SECRET || "default-secret-change-me",
 	typescript: {
 		outputFile: path.resolve(dirname, "payload-types.ts"),
@@ -88,277 +404,76 @@ export default buildConfig({
 		url: process.env.DATABASE_URI || "",
 	}),
 	sharp,
-	plugins: [],
+	plugins: await buildStoragePlugins(),
 	cors: ["*", ...(process.env.PAYLOAD_ALLOWED_ORIGINS?.split(",") || [])],
 	jobs: {
 		tasks: [
-			{
-				slug: "expireListings",
-				retries: 1,
-				inputSchema: [],
-				schedule: [
-					{
-						cron: "0 0 * * *",
-						queue: "nightly",
-					},
-				],
-				handler: async ({ req }) => {
-					const now = new Date().toISOString();
-
-					const expired = await req.payload.find({
-						collection: "listings",
-						where: {
-							and: [
-								{ expiresAt: { less_than_equal: now } },
-								{ status: { in: ["published", "pending"] } },
-							],
-						},
-						limit: 500,
-					});
-
-					let expiredCount = 0;
-					for (const listing of expired.docs) {
-						await req.payload.update({
-							collection: "listings",
-							id: listing.id,
-							data: { status: "expired" },
-						});
-						expiredCount++;
-
-						// Notify seller about listing expiry
-						if (isNotificationProviderConfigured()) {
-							const sellerId =
-								typeof listing.seller === "string"
-									? listing.seller
-									: (listing.seller as { id: string })?.id;
-							if (sellerId) {
-								try {
-									const { triggerNotificationEvent } = await import(
-										"./hooks/notificationEvents"
-									);
-									await triggerNotificationEvent({
-										event: "listing-expired",
-										subscriberId: sellerId,
-										payload: {
-											listingId: listing.id as string,
-											listingTitle: listing.title,
-										},
-									});
-								} catch (error) {
-									console.error(
-										"[notifications] Failed to notify listing expiry:",
-										error,
-									);
-								}
-							}
-						}
-					}
-
-					return { output: { expiredCount } };
-				},
-			},
-			{
-				slug: "checkSearchAlerts",
-				retries: 1,
-				inputSchema: [],
-				schedule: [
-					{
-						cron: "0 */6 * * *",
-						queue: "nightly",
-					},
-				],
-				handler: async ({ req }) => {
-					const now = new Date();
-					const sixHoursAgo = new Date(
-						now.getTime() - 6 * 60 * 60 * 1000,
-					).toISOString();
-					let notifiedCount = 0;
-					let page = 1;
-					let hasMore = true;
-
-					// saved-searches types not yet regenerated — use `as any` for collection references
-					while (hasMore) {
-						const searches = await (req.payload as any).find({
-							collection: "saved-searches",
-							where: {
-								alertEnabled: { equals: true },
-							},
-							limit: 100,
-							page,
-							depth: 0,
-						});
-
-						for (const search of searches.docs as any[]) {
-							try {
-								const filters = (search.filters ?? {}) as Record<
-									string,
-									unknown
-								>;
-								const since = (search.lastCheckedAt as string) || sixHoursAgo;
-								const userId =
-									typeof search.user === "string"
-										? search.user
-										: search.user?.id;
-								if (!userId) continue;
-
-								const where: any[] = [
-									{ status: { equals: "published" } },
-									{ createdAt: { greater_than: since } },
-								];
-
-								if (search.query) {
-									where.push({
-										or: [
-											{ title: { like: search.query } },
-											{ description: { like: search.query } },
-										],
-									});
-								}
-								if (filters.category) {
-									where.push({
-										category: { equals: filters.category },
-									});
-								}
-								if (filters.minPrice) {
-									where.push({
-										price: {
-											greater_than_equal: Number(filters.minPrice),
-										},
-									});
-								}
-								if (filters.maxPrice) {
-									where.push({
-										price: {
-											less_than_equal: Number(filters.maxPrice),
-										},
-									});
-								}
-								if (filters.location) {
-									where.push({
-										location: { like: filters.location as string },
-									});
-								}
-
-								const matches = await req.payload.find({
-									collection: "listings",
-									where: { and: where } as any,
-									limit: 1,
-									depth: 0,
-								});
-
-								if (matches.totalDocs > 0) {
-									const { triggerNotificationEvent } = await import(
-										"./hooks/notificationEvents"
-									);
-									await triggerNotificationEvent({
-										event: "search-alert",
-										subscriberId: userId,
-										payload: {
-											searchName: search.name,
-											matchCount: matches.totalDocs,
-											searchUrl: search.url,
-										},
-									});
-									notifiedCount++;
-								}
-
-								await (req.payload as any).update({
-									collection: "saved-searches",
-									id: search.id,
-									data: { lastCheckedAt: now.toISOString() },
-								});
-							} catch (error) {
-								console.error(
-									`[checkSearchAlerts] Error processing search ${search.id}:`,
-									error,
-								);
-							}
-						}
-
-						hasMore = searches.hasNextPage;
-						page++;
-					}
-
-					return { output: { notifiedCount } };
-				},
-			},
-			{
-				slug: "expireBoosts",
-				retries: 1,
-				inputSchema: [],
-				schedule: [
-					{
-						cron: "0 0 * * *",
-						queue: "nightly",
-					},
-				],
-				handler: async ({ req }) => {
-					const now = new Date().toISOString();
-
-					const boosted = await req.payload.find({
-						collection: "listings",
-						where: {
-							and: [
-								{ boostedUntil: { less_than_equal: now } },
-								{ boostedUntil: { exists: true } },
-							],
-						},
-						limit: 500,
-					});
-
-					let expiredBoostCount = 0;
-					for (const listing of boosted.docs) {
-						await req.payload.update({
-							collection: "listings",
-							id: listing.id,
-							data: { boostedUntil: null },
-						});
-						expiredBoostCount++;
-
-						// Notify seller about boost expiry
-						if (isNotificationProviderConfigured()) {
-							const sellerId =
-								typeof listing.seller === "string"
-									? listing.seller
-									: (listing.seller as { id: string })?.id;
-							if (sellerId) {
-								try {
-									const { triggerNotificationEvent } = await import(
-										"./hooks/notificationEvents"
-									);
-									await triggerNotificationEvent({
-										event: "boost-expired",
-										subscriberId: sellerId,
-										payload: {
-											listingId: listing.id as string,
-											listingTitle: listing.title,
-										},
-									});
-								} catch (error) {
-									console.error(
-										"[notifications] Failed to notify boost expiry:",
-										error,
-									);
-								}
-							}
-						}
-					}
-
-					return { output: { expiredBoostCount } };
-				},
-			},
+			expireListingsTask,
+			expireBoostsTask,
+			checkSearchAlertsTask,
+			consumeRiskSignalOutboxTask,
+			processWebhookEventTask,
+			reconcilePendingPaymentsTask,
+			liftExpiredShopSuspensionsTask,
+			processKycEventTask,
+			purgeVerificationDataTask,
+			purgeShopActivityTask,
+			purgeRiskDataTask,
+			abandonCartsTask,
+			applyResalePriceChangesTask,
+			advanceReturnCasesTask,
+			advanceDisputesTask,
+			purgeCaseEvidenceTask,
+			expireStrikesTask,
+			publishHeldReviewsTask,
+			issueCommissionInvoicesTask,
+			enforceCommissionOverdueTask,
+			enforceResaleTermsTask,
+			refreshResaleLinkStatsTask,
+			reconcileStockCachesTask,
+			renderDisputeCertificateTask,
+			dispatchOrderEventTask,
+			expireOrdersTask,
+			expirePurchaseOrdersTask,
+			failStaleOrdersTask,
+			flushListingViewsTask,
+			aggregateShopDailyStatsTask,
+			recomputeShopRankingsTask,
+			sendWeeklyInsightsTask,
+			completeOrdersTask,
+			markOverdueResellerChargesTask,
+			payResellerCommissionsTask,
+			releaseResellerCommissionsTask,
+			retryResellerPayoutsTask,
+			...paymentTasks,
+			...deliveryTasks,
 		],
 		autoRun: [
-			{
-				cron: "0 0 * * *",
-				queue: "nightly",
-				limit: 10,
-			},
-			{
-				cron: "0 */6 * * *",
-				queue: "nightly",
-				limit: 10,
-			},
+			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },
+			{ cron: "0 */6 * * *", queue: "nightly", limit: 10 },
+			{ cron: "* * * * *", queue: PAYMENTS, limit: 50 },
+			// A vendor result must reach a person promptly, not on the nightly
+			// sweep: `processKycEvent` is queued on the default queue (Payload's
+			// implicit target when `payload.jobs.queue()` gets no `queue`), so
+			// that queue needs its own frequent run alongside "payments".
+			{ cron: "* * * * *", queue: "default", limit: 20 },
+			// Commission runs on its own queue so a weekly invoicing pass can
+			// never be starved by, or starve, the nightly sweeps.
+			{ cron: "*/15 * * * *", queue: "commission", limit: 20 },
+			{ cron: "0 5 * * 1", queue: "commission", limit: 20 },
+			// Weekly seller summaries: the schedule queues at 07:00 UTC Monday and
+			// this drains it, retrying through the morning.
+			{ cron: "*/15 7-8 * * 1", queue: "insights", limit: 20 },
+			{ cron: "0 6 * * *", queue: "commission", limit: 20 },
+			// The order lifecycle: `expireOrders` and the `dispatchOrderEvent`
+			// retries it enqueues share the five-minute "orders" queue, while
+			// `failStaleOrders` and `completeOrders` only ever act on deadlines
+			// measured in days.
+			{ cron: "*/5 * * * *", queue: "orders", limit: 50 },
+			{ cron: "0 * * * *", queue: "hourly", limit: 20 },
+			{ cron: "*/15 * * * *", queue: "cases", limit: 50 },
+			{ cron: "*/5 * * * *", queue: "cases", limit: 100 },
+			{ cron: "*/15 * * * *", queue: "delivery", limit: 50 },
 		],
 	},
 });

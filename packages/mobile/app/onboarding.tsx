@@ -4,11 +4,11 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
-	Dimensions,
 	FlatList,
 	Pressable,
 	StyleSheet,
 	Text,
+	useWindowDimensions,
 	View,
 	type ViewToken,
 } from "react-native";
@@ -16,6 +16,7 @@ import Animated, {
 	Easing,
 	useAnimatedProps,
 	useAnimatedStyle,
+	useReducedMotion,
 	useSharedValue,
 	withDelay,
 	withRepeat,
@@ -23,7 +24,10 @@ import Animated, {
 	withSpring,
 	withTiming,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import Svg, {
 	Circle,
 	Ellipse,
@@ -35,9 +39,10 @@ import Svg, {
 } from "react-native-svg";
 import { Colors, Fonts, shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { ShellPattern } from "@/src/components/brand/BackgroundPattern";
+import { useOnboarding } from "@/src/contexts/OnboardingContext";
 import { useTranslation } from "@/src/lib/i18n";
-
-const { width: SW } = Dimensions.get("window");
+import { LANG_STORAGE_KEY } from "@/src/screens/account/SettingsScreen";
 
 // ─── Animated SVG primitives ──────────────────────────────────────────────────
 const AnimatedG = Animated.createAnimatedComponent(G);
@@ -49,20 +54,20 @@ const _AnimatedLine = Animated.createAnimatedComponent(Line);
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const P = {
-	blueDark: "#1e3a8a",
-	blue: "#1e40af",
+	blueDark: "#2448ab",
+	blue: "#2f5bd4",
 	blueMid: "#3b82f6",
-	blueLight: "#93c5fd",
-	bluePale: "#dbeafe",
-	yellowDark: "#b45309",
-	yellow: "#d97706",
-	yellowMid: "#f59e0b",
-	yellowLight: "#fbbf24",
-	yellowPale: "#fef3c7",
-	amber: "#f59e0b",
-	amberLight: "#fde68a",
+	blueLight: "#a9b4f0",
+	bluePale: "#e3e9fb",
+	yellowDark: "#8a5a00",
+	yellow: "#9a6a00",
+	yellowMid: "#ffb81c",
+	yellowLight: "#ffc94a",
+	yellowPale: "#fff1c7",
+	amber: "#ffb81c",
+	amberLight: "#ffe08a",
 	white: "#ffffff",
-	dark: "#0f172a",
+	dark: "#12163a",
 };
 
 // ─── Slide data ───────────────────────────────────────────────────────────────
@@ -70,29 +75,21 @@ function getSlides(t: (key: string) => string) {
 	return [
 		{
 			id: "welcome",
-			bgLight: "#eff6ff",
-			bgDark: "#1a2540",
 			title: t("onboarding.slide1Title"),
 			description: t("onboarding.slide1Desc"),
 		},
 		{
 			id: "browse",
-			bgLight: "#f0f9ff",
-			bgDark: "#0c2233",
 			title: t("onboarding.slide2Title"),
 			description: t("onboarding.slide2Desc"),
 		},
 		{
 			id: "sell",
-			bgLight: "#fff7ed",
-			bgDark: "#261508",
 			title: t("onboarding.slide3Title"),
 			description: t("onboarding.slide3Desc"),
 		},
 		{
 			id: "chat",
-			bgLight: "#f0fdf4",
-			bgDark: "#0a2015",
 			title: t("onboarding.slide4Title"),
 			description: t("onboarding.slide4Desc"),
 		},
@@ -526,7 +523,7 @@ function IllustrationSearch() {
 			/>
 			<Rect x="54" y="14" width="112" height="194" rx="17" fill={P.blueMid} />
 			{/* Screen */}
-			<Rect x="58" y="26" width="104" height="172" rx="11" fill="#f8fafc" />
+			<Rect x="58" y="26" width="104" height="172" rx="11" fill="#f4f5f9" />
 			{/* Notch */}
 			<Rect x="87" y="22" width="46" height="7" rx="3.5" fill={P.blueDark} />
 			{/* Home bar */}
@@ -607,8 +604,8 @@ function IllustrationSearch() {
 					width="90"
 					height="46"
 					rx="8"
-					fill="#fffbeb"
-					stroke="#fde68a"
+					fill="#fff9e8"
+					stroke="#ffe08a"
 					strokeWidth="1"
 				/>
 				<Rect
@@ -1387,21 +1384,18 @@ const ILLUSTRATIONS = [
 ];
 
 // ─── Dot indicator ────────────────────────────────────────────────────────────
-function Dot({
-	index,
-	currentIndex,
-	colors,
-}: {
-	index: number;
-	currentIndex: number;
-	colors: (typeof Colors)["light"];
-}) {
+function Dot({ index, currentIndex }: { index: number; currentIndex: number }) {
 	const isActive = index === currentIndex;
+	const reduceMotion = useReducedMotion();
 	const w = useSharedValue(isActive ? 28 : 8);
 
 	useEffect(() => {
-		w.value = withSpring(isActive ? 28 : 8, { damping: 14, stiffness: 280 });
-	}, [isActive, w]);
+		const target = isActive ? 28 : 8;
+		// Reduce Motion: the active dot changes width at once.
+		w.value = reduceMotion
+			? target
+			: withSpring(target, { damping: 14, stiffness: 280 });
+	}, [isActive, w, reduceMotion]);
 
 	const style = useAnimatedStyle(() => ({ width: w.value }));
 
@@ -1409,7 +1403,11 @@ function Dot({
 		<Animated.View
 			style={[
 				dotStyles.dot,
-				{ backgroundColor: isActive ? colors.primary : colors.border },
+				{
+					// White on the shell: the signage yellow stays for prices
+					// and selling (DESIGN.md).
+					backgroundColor: isActive ? "#ffffff" : "rgba(255,255,255,0.28)",
+				},
 				style,
 			]}
 		/>
@@ -1423,18 +1421,34 @@ const dotStyles = StyleSheet.create({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function OnboardingScreen() {
 	const isDark = useColorScheme() === "dark";
-	const colors = isDark ? Colors.dark : Colors.light;
-	const { t } = useTranslation();
+	const shell = isDark ? Colors.dark.shell : Colors.light.shell;
+	const { t, i18n } = useTranslation();
+	const { hasSeenOnboarding, isLoading, markOnboardingSeen } = useOnboarding();
+	// Live width — the pager measures each slide against it, so a stale
+	// module-scope value breaks paging after rotation / Stage Manager resize.
+	const { width: SW, height: SH } = useWindowDimensions();
+	// A 360×640 phone (or large system text) must fit the card, the title,
+	// the text and the buttons without clipping: the card follows the height.
+	const compact = SH < 700;
+	const cardSize = Math.round(Math.min(248, SH * 0.32));
+	const locale = i18n.language?.slice(0, 2) === "en" ? "en" : "fr";
+	const changeLanguage = (next: "fr" | "en") => {
+		void i18n.changeLanguage(next);
+		void AsyncStorage.setItem(LANG_STORAGE_KEY, next).catch(() => {
+			// Not stored: the choice still holds for this session.
+		});
+	};
+	const insets = useSafeAreaInsets();
 	const SLIDES = getSlides(t);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const flatListRef = useRef<FlatList>(null);
 
 	// Guard: if already seen, skip immediately (handles Expo Router state restore)
 	useEffect(() => {
-		AsyncStorage.getItem("hasSeenOnboarding").then((value) => {
-			if (value !== null) router.replace("/(tabs)/home");
-		});
-	}, []);
+		if (!isLoading && hasSeenOnboarding) {
+			router.replace("/(tabs)/home");
+		}
+	}, [hasSeenOnboarding, isLoading]);
 
 	const isLast = currentIndex === SLIDES.length - 1;
 
@@ -1455,8 +1469,16 @@ export default function OnboardingScreen() {
 	};
 
 	const handleComplete = async () => {
-		await AsyncStorage.setItem("hasSeenOnboarding", "true");
+		await markOnboardingSeen();
 		router.replace("/(tabs)/home");
+	};
+
+	// The tour ends on the first real choice: an account now, or a look
+	// around first.
+	const handleCreateAccount = async () => {
+		await markOnboardingSeen();
+		router.replace("/(tabs)/home");
+		router.push("/auth/register");
 	};
 
 	const renderSlide = ({
@@ -1467,30 +1489,49 @@ export default function OnboardingScreen() {
 		index: number;
 	}) => {
 		const IllustrationComponent = ILLUSTRATIONS[index];
-		const bg = isDark ? item.bgDark : item.bgLight;
+		// One card colour for every slide: the indigo field does the talking.
+		const bg = isDark ? "#1a1f4a" : "#ffffff";
 
 		return (
-			<View style={[styles.slide, { width: SW }]}>
-				{/* Illustration card */}
-				<View style={[styles.illustCard, { backgroundColor: bg }]}>
-					<IllustrationComponent />
+			<View
+				style={[styles.slide, { width: SW }, compact && styles.slideCompact]}
+			>
+				{/* Illustration card, scaled with the screen's height */}
+				<View
+					style={[
+						styles.illustCard,
+						{
+							backgroundColor: bg,
+							width: cardSize,
+							height: cardSize,
+							borderRadius: Math.round(cardSize / 7.75),
+						},
+					]}
+				>
+					<View style={{ transform: [{ scale: cardSize / 248 }] }}>
+						<IllustrationComponent />
+					</View>
 				</View>
 
 				{/* Logo + title */}
 				<View style={styles.textBlock}>
-					{index === 0 && (
+					{index === 0 && !compact && (
 						<View style={styles.logoRow}>
 							<Image
-								source={require("@/assets/icon2.png")}
+								source={require("@/assets/icon2-dark.png")}
 								style={styles.logoImg}
 								contentFit="contain"
 							/>
 						</View>
 					)}
-					<Text style={[styles.slideTitle, { color: colors.foreground }]}>
+					<Text
+						accessibilityRole="header"
+						maxFontSizeMultiplier={1.3}
+						style={[styles.slideTitle, compact && styles.slideTitleCompact]}
+					>
 						{item.title}
 					</Text>
-					<Text style={[styles.slideDesc, { color: colors.mutedForeground }]}>
+					<Text maxFontSizeMultiplier={1.4} style={styles.slideDesc}>
 						{item.description}
 					</Text>
 				</View>
@@ -1499,17 +1540,53 @@ export default function OnboardingScreen() {
 	};
 
 	return (
-		<SafeAreaView
-			style={[styles.container, { backgroundColor: colors.background }]}
-		>
-			<StatusBar style={isDark ? "light" : "dark"} />
+		<SafeAreaView style={[styles.container, { backgroundColor: shell }]}>
+			<StatusBar style="light" />
+			<ShellPattern />
+
+			{/* The language, chosen before anything is read */}
+			{currentIndex === 0 ? (
+				<View
+					style={[styles.langRow, { top: insets.top + 4 }]}
+					accessibilityRole="radiogroup"
+				>
+					{(
+						[
+							["fr", "FR", "Français"],
+							["en", "EN", "English"],
+						] as const
+					).map(([code, short, name]) => {
+						const active = locale === code;
+						return (
+							<Pressable
+								key={code}
+								onPress={() => changeLanguage(code)}
+								accessibilityRole="radio"
+								accessibilityLabel={name}
+								accessibilityState={{ checked: active }}
+								hitSlop={6}
+								style={[styles.langChip, active && styles.langChipActive]}
+							>
+								<Text
+									style={[styles.langText, active && styles.langTextActive]}
+								>
+									{short}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
+			) : null}
 
 			{/* Skip */}
 			{!isLast && (
-				<Pressable style={styles.skipBtn} onPress={handleComplete} hitSlop={12}>
-					<Text style={[styles.skipText, { color: colors.mutedForeground }]}>
-						{t("onboarding.skip")}
-					</Text>
+				<Pressable
+					style={[styles.skipBtn, { top: insets.top + 4 }]}
+					onPress={handleComplete}
+					hitSlop={8}
+					accessibilityRole="button"
+				>
+					<Text style={styles.skipText}>{t("onboarding.skip")}</Text>
 				</Pressable>
 			)}
 
@@ -1524,60 +1601,104 @@ export default function OnboardingScreen() {
 				showsHorizontalScrollIndicator={false}
 				onViewableItemsChanged={onViewableItemsChanged}
 				viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
+				extraData={SW}
 			/>
 
 			{/* Bottom controls */}
-			<View style={styles.bottomBar}>
-				<View style={styles.dotsRow}>
+			<View
+				style={[
+					styles.bottomBar,
+					SW >= 768 && { alignSelf: "center", width: "100%", maxWidth: 520 },
+				]}
+			>
+				<View
+					style={styles.dotsRow}
+					accessible
+					accessibilityRole="progressbar"
+					accessibilityLabel={`${currentIndex + 1} / ${SLIDES.length}`}
+				>
 					{SLIDES.map((_, i) => (
-						<Dot
-							key={i}
-							index={i}
-							currentIndex={currentIndex}
-							colors={colors}
-						/>
+						<Dot key={i} index={i} currentIndex={currentIndex} />
 					))}
 				</View>
 
-				<Pressable
-					style={({ pressed }) => [
-						styles.nextBtn,
-						{ backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
-					]}
-					onPress={goNext}
-				>
-					<Text style={styles.nextBtnText}>
-						{isLast ? t("onboarding.start") : t("onboarding.next")}
-					</Text>
-				</Pressable>
+				{isLast ? (
+					<>
+						<Pressable
+							style={({ pressed }) => [
+								styles.nextBtn,
+								{ opacity: pressed ? 0.85 : 1 },
+							]}
+							onPress={handleCreateAccount}
+							accessibilityRole="button"
+						>
+							<Text style={styles.nextBtnText}>
+								{t("account.createAccount")}
+							</Text>
+						</Pressable>
+						<Pressable
+							style={({ pressed }) => [
+								styles.exploreBtn,
+								{ opacity: pressed ? 0.85 : 1 },
+							]}
+							onPress={handleComplete}
+							accessibilityRole="button"
+						>
+							<Text style={styles.exploreBtnText}>
+								{t("onboarding.explore", {
+									defaultValue: "Explorer sans compte",
+								})}
+							</Text>
+						</Pressable>
+					</>
+				) : (
+					<Pressable
+						style={({ pressed }) => [
+							styles.nextBtn,
+							{ opacity: pressed ? 0.85 : 1 },
+						]}
+						onPress={goNext}
+						accessibilityRole="button"
+						// The visible label may carry an arrow; it is not read out.
+						accessibilityLabel={t("common.next")}
+					>
+						<Text style={styles.nextBtnText}>{t("onboarding.next")}</Text>
+					</Pressable>
+				)}
 			</View>
 		</SafeAreaView>
 	);
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+/** Quiet words on the shell: 4.6:1 on the day blue, 11:1 on the night one. */
+const SHELL_MUTED = Colors.light.shellMuted;
+
 const styles = StyleSheet.create({
 	container: { flex: 1 },
 	skipBtn: {
 		position: "absolute",
-		top: 56,
-		right: 24,
+		right: 12,
 		zIndex: 10,
-		paddingVertical: 6,
+		minHeight: 44,
+		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	skipText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	skipText: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 22,
+		color: SHELL_MUTED,
+	},
 	slide: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingHorizontal: 28,
-		gap: 28,
+		gap: 32,
 	},
+	slideCompact: { gap: 20 },
 	illustCard: {
-		width: 240,
-		height: 240,
-		borderRadius: 36,
 		alignItems: "center",
 		justifyContent: "center",
 		...shadows.lg,
@@ -1588,16 +1709,47 @@ const styles = StyleSheet.create({
 	slideTitle: {
 		fontFamily: Fonts.displayExtrabold,
 		fontSize: 30,
-		letterSpacing: -0.5,
+		letterSpacing: -0.9,
 		textAlign: "center",
 		lineHeight: 38,
+		color: "#ffffff",
 	},
+	slideTitleCompact: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 30,
+		lineHeight: 38,
+		letterSpacing: -0.7,
+	},
+	langRow: {
+		position: "absolute",
+		left: 12,
+		zIndex: 10,
+		flexDirection: "row",
+		gap: 4,
+	},
+	langChip: {
+		minHeight: 44,
+		minWidth: 44,
+		paddingHorizontal: 10,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	langChipActive: { backgroundColor: "rgba(255,255,255,0.16)" },
+	langText: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 22,
+		color: SHELL_MUTED,
+	},
+	langTextActive: { color: "#ffffff" },
 	slideDesc: {
 		fontFamily: Fonts.body,
-		fontSize: 15,
-		lineHeight: 23,
+		fontSize: 16,
+		lineHeight: 24,
 		textAlign: "center",
-		maxWidth: 310,
+		maxWidth: 320,
+		color: SHELL_MUTED,
 	},
 	bottomBar: {
 		paddingHorizontal: 24,
@@ -1610,16 +1762,34 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 6,
 	},
+	// The shell's own button: white with ink letters. The signage yellow is
+	// for prices, selling and boosts, which the tour has not shown yet.
 	nextBtn: {
-		height: 54,
-		borderRadius: 16,
+		minHeight: 56,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
-		...shadows.md,
+		backgroundColor: "#ffffff",
 	},
 	nextBtnText: {
-		fontFamily: Fonts.displayBold,
+		fontFamily: Fonts.bodyBold,
 		fontSize: 16,
+		lineHeight: 22,
+		color: "#12163a",
+	},
+	exploreBtn: {
+		minHeight: 52,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+		borderWidth: 1,
+		borderColor: "rgba(255,255,255,0.35)",
+		marginTop: -8,
+	},
+	exploreBtnText: {
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
+		lineHeight: 22,
 		color: "#ffffff",
 	},
 });

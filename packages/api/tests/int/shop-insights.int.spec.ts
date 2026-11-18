@@ -1,0 +1,671 @@
+// @vitest-environment node
+import { describe, expect, it } from "vitest";
+import { getShopInsights } from "../../src/services/shopInsights";
+import { fakePayload } from "./helpers/fakePayload";
+
+describe("getShopInsights", () => {
+	it("suppresses rates when their denominator is below five", async () => {
+		const payload = fakePayload(
+			{
+				shops: [{ id: "shop-1", owner: "owner-1", status: "active", level: 2 }],
+				"shop-members": [
+					{
+						id: "member-1",
+						shop: "shop-1",
+						user: "owner-1",
+						role: "owner",
+						status: "active",
+					},
+				],
+				"shop-daily-stats": [
+					{
+						id: "current",
+						shop: "shop-1",
+						date: "2026-10-04",
+						views: 4,
+						ordersPlaced: 2,
+						ordersAccepted: 1,
+						ordersDelivered: 1,
+						codShipped: 4,
+						codRefused: 2,
+					},
+				],
+			},
+			{ globals: { "app-settings": { insights: { enabled: true } } } },
+		);
+
+		const result = await getShopInsights(
+			payload,
+			{ id: "owner-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+
+		expect(result.funnel.conversion).toBeNull();
+		expect(result.rates).toEqual({
+			sellerCancellation: null,
+			codRefusal: null,
+			deliveryCompletion: null,
+		});
+	});
+
+	it("aggregates the selected Douala window, deltas, funnel, rates and product ranking", async () => {
+		const payload = fakePayload(
+			{
+				shops: [
+					{
+						id: "shop-1",
+						owner: "owner-1",
+						status: "active",
+						level: 2,
+					},
+				],
+				"shop-members": [
+					{
+						id: "member-1",
+						shop: "shop-1",
+						user: "owner-1",
+						role: "owner",
+						status: "active",
+					},
+				],
+				products: [
+					{
+						id: "product-1",
+						shop: "shop-1",
+						title: "Product one",
+						status: "active",
+					},
+					{
+						id: "product-2",
+						shop: "shop-1",
+						title: "Product two",
+						status: "active",
+					},
+				],
+				"product-variants": [
+					{
+						id: "variant-1",
+						shop: "shop-1",
+						product: "product-1",
+						trackInventory: true,
+						stockOnHand: 10,
+						stockReserved: 8,
+					},
+					{
+						id: "variant-2",
+						shop: "shop-1",
+						product: "product-2",
+						trackInventory: true,
+						stockOnHand: 5,
+						stockReserved: 5,
+					},
+				],
+				"shop-daily-stats": [
+					{
+						id: "current-1",
+						shop: "shop-1",
+						date: "2026-10-04",
+						views: 100,
+						phoneReveals: 10,
+						conversationsStarted: 20,
+						ordersPlaced: 8,
+						ordersAccepted: 6,
+						ordersDelivered: 4,
+						ordersCancelledBySeller: 1,
+						codShipped: 5,
+						codRefused: 1,
+						gmvDelivered: 40000,
+						unitsDelivered: 5,
+						cogsDelivered: 20000,
+						inventoryCostValue: 100000,
+						responseBuckets: {
+							m5: 0,
+							m15: 0,
+							h1: 0,
+							h4: 4,
+							unanswered: 1,
+						},
+						topProducts: [
+							{
+								product: "product-1",
+								listing: "listing-1",
+								views: 90,
+								ordersPlaced: 1,
+								unitsDelivered: 100,
+								gmvDelivered: 10000,
+							},
+							{
+								product: "product-1",
+								listing: "listing-1",
+								views: 200,
+								ordersPlaced: 0,
+								unitsDelivered: 0,
+								gmvDelivered: 0,
+							},
+							{
+								product: "product-2",
+								listing: "listing-2",
+								views: 10,
+								ordersPlaced: 7,
+								unitsDelivered: 3,
+								gmvDelivered: 30000,
+							},
+						],
+					},
+					{
+						id: "previous-1",
+						shop: "shop-1",
+						date: "2026-09-27",
+						views: 50,
+						conversationsStarted: 5,
+						ordersPlaced: 2,
+						ordersDelivered: 1,
+						gmvDelivered: 10000,
+						unitsDelivered: 1,
+					},
+				],
+			},
+			{ globals: { "app-settings": { insights: { enabled: true } } } },
+		);
+
+		const result = await getShopInsights(
+			payload,
+			{ id: "owner-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+
+		expect(result.totals.current).toMatchObject({
+			views: 100,
+			conversationsStarted: 20,
+			ordersPlaced: 8,
+			ordersDelivered: 4,
+			gmvDelivered: 40000,
+			unitsDelivered: 5,
+		});
+		expect(result.totals.previous.views).toBe(50);
+		expect(result.totals.delta.views).toBe(50);
+		expect(result.from).toBe("2026-09-28");
+		expect(result.daily).toHaveLength(7);
+		expect(result.daily[0]).toMatchObject({
+			date: "2026-09-28",
+			views: 0,
+			ordersPlaced: 0,
+			gmvDelivered: 0,
+		});
+		expect(result.funnel).toMatchObject({
+			views: 100,
+			engaged: 30,
+			ordersPlaced: 8,
+			ordersDelivered: 4,
+			conversion: 0.08,
+		});
+		expect(result.rates).toMatchObject({
+			sellerCancellation: 0.125,
+			codRefusal: 0.2,
+			deliveryCompletion: 2 / 3,
+		});
+		expect(result.responseTime.medianBucket).toBe("h4");
+		expect(result.actions.map((action) => action.type)).toEqual([
+			"out_of_stock_views",
+			"restock",
+			"cod_refusal_rate",
+			"seller_cancellation_rate",
+		]);
+		expect(result.actions).toHaveLength(4);
+		expect(result.topProducts.map((product) => product.productId)).toEqual([
+			"product-2",
+			"product-1",
+		]);
+		expect(result.topProducts.map((product) => product.productTitle)).toEqual([
+			"Product two",
+			"Product one",
+		]);
+		expect(result.stock.restock).toContainEqual(
+			expect.objectContaining({
+				variantId: "variant-1",
+				available: 2,
+				daysOfCover: 0.6,
+			}),
+		);
+		expect(result.stock.outOfStockWithViews).toContainEqual(
+			expect.objectContaining({ variantId: "variant-2", views: 10 }),
+		);
+	});
+
+	it("fails closed when insights are disabled and refuses staff access", async () => {
+		const payload = fakePayload(
+			{
+				shops: [{ id: "shop-1", owner: "owner-1", status: "active", level: 2 }],
+				"shop-members": [
+					{
+						id: "staff",
+						shop: "shop-1",
+						user: "staff-user",
+						role: "staff",
+						status: "active",
+					},
+				],
+			},
+			{ globals: { "app-settings": { insights: { enabled: false } } } },
+		);
+		await expect(
+			getShopInsights(payload, { id: "owner-1", role: "user" }, "shop-1", "7d"),
+		).rejects.toMatchObject({ status: 404 });
+		payload.globals["app-settings"].insights = { enabled: true };
+		await expect(
+			getShopInsights(
+				payload,
+				{ id: "staff-user", role: "user" },
+				"shop-1",
+				"7d",
+			),
+		).rejects.toMatchObject({ status: 403 });
+	});
+	it("adds eight weekly windows, acceptance time, dormant stock and the action thresholds", async () => {
+		const payload = fakePayload(
+			{
+				shops: [{ id: "shop-1", owner: "owner-1", status: "active", level: 2 }],
+				"shop-members": [
+					{
+						id: "member-1",
+						shop: "shop-1",
+						user: "owner-1",
+						role: "owner",
+						status: "active",
+					},
+				],
+				products: [
+					{ id: "p-sold", shop: "shop-1", title: "Sold", status: "active" },
+					{ id: "p-idle", shop: "shop-1", title: "Idle", status: "active" },
+				],
+				"product-variants": [
+					{
+						id: "v-sold",
+						shop: "shop-1",
+						product: "p-sold",
+						trackInventory: true,
+						stockOnHand: 4,
+						stockReserved: 0,
+						cost: 1000,
+					},
+					{
+						id: "v-idle",
+						shop: "shop-1",
+						product: "p-idle",
+						trackInventory: true,
+						stockOnHand: 3,
+						stockReserved: 0,
+						cost: 5000,
+					},
+				],
+				orders: [
+					{
+						id: "o-1",
+						shop: "shop-1",
+						createdAt: "2026-10-02T08:00:00.000Z",
+						timestamps: {
+							placedAt: "2026-10-02T08:00:00.000Z",
+							acceptedAt: "2026-10-02T08:30:00.000Z",
+						},
+					},
+					{
+						id: "o-2",
+						shop: "shop-1",
+						createdAt: "2026-10-03T08:00:00.000Z",
+						timestamps: {
+							placedAt: "2026-10-03T08:00:00.000Z",
+							acceptedAt: "2026-10-03T09:30:00.000Z",
+						},
+					},
+				],
+				"shop-daily-stats": [
+					{
+						id: "today",
+						shop: "shop-1",
+						date: "2026-10-04",
+						gmvDelivered: 2000,
+						ordersDelivered: 1,
+						topProducts: [{ product: "p-sold", unitsDelivered: 1 }],
+					},
+					{
+						id: "seven-weeks-ago",
+						shop: "shop-1",
+						date: "2026-08-16",
+						gmvDelivered: 7000,
+						ordersDelivered: 2,
+					},
+					{
+						id: "too-old",
+						shop: "shop-1",
+						date: "2026-08-01",
+						gmvDelivered: 99000,
+						ordersDelivered: 9,
+					},
+				],
+			},
+			{ globals: { "app-settings": { insights: { enabled: true } } } },
+		);
+
+		const result = await getShopInsights(
+			payload,
+			{ id: "owner-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+
+		expect(result.weekly).toHaveLength(8);
+		expect(result.weekly?.[0]).toEqual({
+			from: "2026-08-10",
+			to: "2026-08-16",
+			gmvDelivered: 7000,
+			ordersDelivered: 2,
+		});
+		expect(result.weekly?.[7]).toMatchObject({
+			to: "2026-10-04",
+			gmvDelivered: 2000,
+		});
+		expect(result.totals.previous.gmvDelivered).toBe(0);
+		expect(result.acceptance).toEqual({ medianMinutes: 60, sample: 2 });
+		expect(result.thresholds).toEqual({
+			sellerCancellation: 0.1,
+			codRefusal: 0.2,
+		});
+		expect(result.stock.dormant).toEqual([
+			{
+				productId: "p-idle",
+				productTitle: "Idle",
+				available: 3,
+				costValue: 15000,
+				lastSaleAt: null,
+				daysSinceLastSale: null,
+				boostListingId: null,
+			},
+		]);
+		expect(result.stock.dormantValue).toBe(15000);
+	});
+
+	it("compares the low-converting product's price with other sellers' listings in its city, and splits reply time by day (W35)", async () => {
+		const owner = {
+			id: "member-1",
+			shop: "shop-1",
+			user: "owner-1",
+			role: "owner",
+			status: "active",
+		};
+		const similar = (id: string, price: number, extra = {}) => ({
+			id,
+			status: "published",
+			category: "phones-android",
+			location: "Douala",
+			shop: "shop-2",
+			price,
+			...extra,
+		});
+		const seed = (prices: number[]) =>
+			fakePayload(
+				{
+					shops: [
+						{
+							id: "shop-1",
+							owner: "owner-1",
+							status: "active",
+							level: 2,
+							location: { city: "Douala" },
+						},
+					],
+					"shop-members": [owner],
+					categories: [
+						{ id: "phones", name: "Téléphones" },
+						{ id: "phones-android", name: "Android", parent: "phones" },
+					],
+					products: [
+						{ id: "p-1", shop: "shop-1", title: "iPad", status: "active" },
+					],
+					listings: [
+						{
+							id: "l-own",
+							status: "published",
+							category: "phones",
+							location: "Douala",
+							shop: "shop-1",
+							price: 106000,
+						},
+						{
+							id: "l-own-2",
+							status: "published",
+							category: "phones",
+							location: "Douala",
+							shop: "shop-1",
+							price: 1,
+						},
+						similar("l-yaounde", 1, { location: "Yaoundé" }),
+						similar("l-draft", 1, { status: "draft" }),
+						...prices.map((price, index) => similar(`l-${index}`, price)),
+					],
+					"shop-daily-stats": [
+						{
+							id: "today",
+							shop: "shop-1",
+							date: "2026-10-04",
+							views: 400,
+							topProducts: [
+								{
+									product: "p-1",
+									listing: "l-own",
+									views: 400,
+									ordersPlaced: 1,
+								},
+							],
+						},
+					],
+					conversations: [
+						{
+							id: "c-1",
+							shop: "shop-1",
+							lastMessageAt: "2026-10-04T10:00:00.000Z",
+						},
+						{
+							id: "c-other",
+							shop: "shop-2",
+							lastMessageAt: "2026-10-04T10:00:00.000Z",
+						},
+					],
+					messages: [
+						{
+							id: "m-1",
+							conversation: "c-1",
+							senderSide: "buyer",
+							createdAt: "2026-10-03T08:00:00.000Z",
+						},
+						{
+							id: "m-2",
+							conversation: "c-1",
+							senderSide: "shop",
+							createdAt: "2026-10-03T08:40:00.000Z",
+						},
+						{
+							id: "m-3",
+							conversation: "c-1",
+							senderSide: "buyer",
+							createdAt: "2026-10-04T08:00:00.000Z",
+						},
+						{
+							id: "m-4",
+							conversation: "c-1",
+							senderSide: "shop",
+							createdAt: "2026-10-04T10:00:00.000Z",
+						},
+						{
+							id: "m-other",
+							conversation: "c-other",
+							senderSide: "shop",
+							createdAt: "2026-10-04T08:01:00.000Z",
+						},
+					],
+				},
+				{ globals: { "app-settings": { insights: { enabled: true } } } },
+			);
+		const run = (prices: number[]) =>
+			getShopInsights(
+				seed(prices),
+				{ id: "owner-1", role: "user" },
+				"shop-1",
+				"7d",
+				{ now: new Date("2026-10-04T12:00:00.000Z") },
+			);
+
+		const result = await run([90000, 95000, 100000, 110000, 120000]);
+		expect(result.funnel.priceComparison).toEqual({
+			productId: "p-1",
+			medianPrice: 100000,
+			yourPrice: 106000,
+			sample: 5,
+		});
+		expect(result.responseTime.daily).toHaveLength(7);
+		expect(result.responseTime.daily?.slice(-2)).toEqual([
+			{ date: "2026-10-03", medianMinutes: 40, answered: 1 },
+			{ date: "2026-10-04", medianMinutes: 120, answered: 1 },
+		]);
+		expect(result.responseTime.daily?.[0]).toEqual({
+			date: "2026-09-28",
+			medianMinutes: null,
+			answered: 0,
+		});
+
+		expect(
+			(await run([90000, 95000, 100000, 110000])).funnel.priceComparison,
+		).toBeNull();
+	});
+
+	it("dates a dormant product's last delivered sale (W35)", async () => {
+		const payload = fakePayload(
+			{
+				shops: [{ id: "shop-1", owner: "owner-1", status: "active", level: 2 }],
+				"shop-members": [
+					{
+						id: "member-1",
+						shop: "shop-1",
+						user: "owner-1",
+						role: "owner",
+						status: "active",
+					},
+				],
+				products: [
+					{
+						id: "p-idle",
+						shop: "shop-1",
+						title: "Idle",
+						status: "active",
+						listing: "l-idle",
+					},
+				],
+				listings: [
+					{
+						id: "l-idle",
+						shop: "shop-1",
+						seller: "owner-1",
+						status: "published",
+					},
+				],
+				"product-variants": [
+					{
+						id: "v-idle",
+						shop: "shop-1",
+						product: "p-idle",
+						trackInventory: true,
+						stockOnHand: 3,
+						stockReserved: 0,
+						cost: 5000,
+					},
+				],
+				orders: [
+					{
+						id: "o-old",
+						shop: "shop-1",
+						createdAt: "2026-07-01T08:00:00.000Z",
+						timestamps: { deliveredAt: "2026-07-03T08:00:00.000Z" },
+					},
+					{
+						id: "o-cancelled",
+						shop: "shop-1",
+						createdAt: "2026-09-30T08:00:00.000Z",
+						timestamps: {},
+					},
+				],
+				"order-items": [
+					{
+						id: "oi-old",
+						order: "o-old",
+						product: "p-idle",
+						quantity: 1,
+						fulfillmentStatus: "delivered",
+						updatedAt: "2026-07-03T08:05:00.000Z",
+					},
+					{
+						id: "oi-cancelled",
+						order: "o-cancelled",
+						product: "p-idle",
+						quantity: 1,
+						fulfillmentStatus: "cancelled",
+						updatedAt: "2026-09-30T09:00:00.000Z",
+					},
+				],
+			},
+			{ globals: { "app-settings": { insights: { enabled: true } } } },
+		);
+
+		const result = await getShopInsights(
+			payload,
+			{ id: "owner-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+
+		expect(result.stock.dormant?.[0]).toMatchObject({
+			productId: "p-idle",
+			lastSaleAt: "2026-07-03T08:00:00.000Z",
+			daysSinceLastSale: 93,
+			boostListingId: "l-idle",
+		});
+
+		// A manager is not the listing's seller: the boost route would refuse them.
+		await payload.create({
+			collection: "shop-members",
+			data: {
+				id: "member-2",
+				shop: "shop-1",
+				user: "manager-1",
+				role: "manager",
+				status: "active",
+			},
+		});
+		const asManager = await getShopInsights(
+			payload,
+			{ id: "manager-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+		expect(asManager.stock.dormant?.[0]?.boostListingId).toBeNull();
+
+		await payload.update({
+			collection: "listings",
+			id: "l-idle",
+			data: { boostedUntil: "2026-10-10T00:00:00.000Z" },
+		});
+		const boosted = await getShopInsights(
+			payload,
+			{ id: "owner-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+		expect(boosted.stock.dormant?.[0]?.boostListingId).toBeNull();
+	});
+});

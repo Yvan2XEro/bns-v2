@@ -29,7 +29,7 @@ export const seedReviews = async (payload: unknown, users: User[]) => {
 			reviewedUser = faker.helpers.arrayElement(users);
 		}
 
-		const pairKey = `${reviewer.id}-${reviewedUser.id}-${i}`;
+		const pairKey = `${reviewer.id}-${reviewedUser.id}`;
 		if (reviewPairs.has(pairKey)) continue;
 		reviewPairs.add(pairKey);
 

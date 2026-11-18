@@ -1,0 +1,369 @@
+import { Ionicons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
+import { router } from "expo-router";
+import { useReducer } from "react";
+import {
+	ActivityIndicator,
+	Image,
+	Pressable,
+	RefreshControl,
+	StyleSheet,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
+import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
+import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { StatusTag } from "@/src/components/shop/Tags";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { useActiveShop } from "@/src/hooks/useActiveShop";
+import { useShopPurchaseOrders } from "@/src/hooks/usePurchaseOrders";
+import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import type { PurchaseOrderListRow } from "../../../../../api/src/contracts/purchaseOrders";
+
+type Side = "supplier" | "reseller";
+interface State {
+	side: Side;
+	search: string;
+}
+function reducer(state: State, patch: Partial<State>): State {
+	return { ...state, ...patch };
+}
+
+export default function ResalePurchaseOrdersScreen() {
+	const c = useShopTheme();
+	const { t, i18n } = useTranslation();
+	const { shop, isLoading: shopLoading } = useActiveShop();
+	const [state, patch] = useReducer(reducer, { side: "supplier", search: "" });
+	const q = useDebouncedValue(state.search.trim(), 300);
+	const orders = useShopPurchaseOrders(shop?.shopId, {
+		side: state.side,
+		q: q || undefined,
+	});
+	const rows = orders.data?.pages.flatMap((page) => page.docs) ?? [];
+	const locale = i18n.language?.startsWith("en") ? "en" : "fr";
+
+	if (shopLoading) {
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("sellerResale.title")} />
+				<ListSkeleton />
+			</SafeAreaView>
+		);
+	}
+	if (!shop) {
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("sellerResale.title")} />
+				<EmptyState
+					illustration="empty"
+					title={t("sellerResale.noShopTitle")}
+					subtitle={t("sellerResale.noShopBody")}
+				/>
+			</SafeAreaView>
+		);
+	}
+
+	return (
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: c.bg }]}
+		>
+			<SellerHeader title={t("sellerResale.title")} subtitle={shop.name} />
+			<Pressable
+				onPress={() => router.push("/seller/resale/finance")}
+				accessibilityRole="button"
+				accessibilityLabel={t("sellerResale.financeLink")}
+				style={({ pressed }) => [
+					styles.financeLink,
+					{ borderColor: c.border, backgroundColor: c.card },
+					pressed && styles.pressed,
+				]}
+			>
+				<Ionicons name="stats-chart-outline" size={18} color={c.link} />
+				<Text style={[styles.financeLinkText, { color: c.link }]}>
+					{t("sellerResale.financeLink")}
+				</Text>
+				<Ionicons name="chevron-forward" size={18} color={c.link} />
+			</Pressable>
+			<View
+				accessibilityRole="tablist"
+				style={[styles.tabs, { backgroundColor: c.neutralSoft }]}
+			>
+				{(["supplier", "reseller"] as const).map((side) => {
+					const selected = state.side === side;
+					return (
+						<Pressable
+							key={side}
+							onPress={() => patch({ side })}
+							accessibilityRole="tab"
+							accessibilityState={{ selected }}
+							style={({ pressed }) => [
+								styles.tab,
+								selected && [styles.tabActive, { backgroundColor: c.card }],
+								pressed && !selected && styles.pressed,
+							]}
+						>
+							<Text
+								style={[
+									styles.tabText,
+									{ color: selected ? c.text : c.body },
+									selected && styles.tabTextActive,
+								]}
+							>
+								{t(`sellerResale.${side}`)}
+							</Text>
+						</Pressable>
+					);
+				})}
+			</View>
+			<View
+				style={[
+					styles.search,
+					{ backgroundColor: c.input, borderColor: c.border },
+				]}
+			>
+				<Ionicons name="search" size={18} color={c.muted} />
+				<TextInput
+					value={state.search}
+					onChangeText={(search) => patch({ search })}
+					placeholder={t("sellerResale.search")}
+					placeholderTextColor={c.muted}
+					accessibilityLabel={t("sellerResale.search")}
+					maxLength={120}
+					returnKeyType="search"
+					style={[styles.input, { color: c.text }]}
+				/>
+			</View>
+			{orders.isLoading ? (
+				<ListSkeleton />
+			) : orders.isError ? (
+				<EmptyState
+					illustration="notFound"
+					title={t("sellerResale.loadError")}
+					ctaLabel={t("common.retry")}
+					onCta={() => orders.refetch()}
+				/>
+			) : rows.length === 0 ? (
+				<EmptyState
+					illustration={q ? "searching" : "empty"}
+					title={
+						q
+							? t("sellerResale.emptySearch", { query: q })
+							: t("sellerResale.empty")
+					}
+				/>
+			) : (
+				<ScreenColumn width="wide">
+					<FlashList
+						data={rows}
+						keyExtractor={(row) => row.id}
+						contentContainerStyle={styles.list}
+						ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+						renderItem={({ item }) => (
+							<PurchaseOrderRow
+								row={item}
+								side={state.side}
+								locale={locale}
+								onPress={() =>
+									router.push({
+										pathname: "/seller/resale/purchase-orders/[id]",
+										params: { id: item.id, side: state.side },
+									})
+								}
+							/>
+						)}
+						refreshControl={
+							<RefreshControl
+								refreshing={orders.isRefetching && !orders.isFetchingNextPage}
+								onRefresh={() => orders.refetch()}
+								tintColor={c.primary}
+								colors={[c.primary]}
+								progressBackgroundColor={c.card}
+							/>
+						}
+						onEndReached={() => {
+							if (orders.hasNextPage && !orders.isFetchingNextPage)
+								orders.fetchNextPage();
+						}}
+						onEndReachedThreshold={0.5}
+						ListFooterComponent={
+							orders.isFetchingNextPage ? (
+								<ActivityIndicator style={styles.spinner} color={c.primary} />
+							) : null
+						}
+					/>
+				</ScreenColumn>
+			)}
+		</SafeAreaView>
+	);
+}
+
+function PurchaseOrderRow({
+	row,
+	side,
+	locale,
+	onPress,
+}: {
+	row: PurchaseOrderListRow;
+	side: Side;
+	locale: "fr" | "en";
+	onPress: () => void;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const status = t(`sellerResale.status_${row.status}`);
+	const counterparty =
+		side === "supplier" ? row.counterparty.name : row.counterparty.name;
+	const thumbnail = resolveImageUrl(
+		row.items.find((item) => item.imageUrl)?.imageUrl,
+	);
+	return (
+		<Pressable
+			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={`${row.number}, ${status}, ${counterparty}`}
+			style={({ pressed }) => [
+				styles.card,
+				{ backgroundColor: c.card, borderColor: c.border },
+				pressed && styles.pressed,
+			]}
+		>
+			<View style={styles.line}>
+				<Text style={[styles.number, { color: c.text }]} numberOfLines={1}>
+					{row.number}
+				</Text>
+				<Text style={[styles.amount, { color: c.text }]}>
+					{formatPrice(row.collectAmount, locale)}
+				</Text>
+			</View>
+			<View style={styles.itemsLine}>
+				{thumbnail ? (
+					<Image source={{ uri: thumbnail }} style={styles.thumbnail} />
+				) : null}
+				<Text
+					style={[styles.meta, styles.itemsText, { color: c.body }]}
+					numberOfLines={1}
+				>
+					{counterparty} ·{" "}
+					{row.items
+						.map((item) => `${item.quantity} × ${item.title}`)
+						.join(", ")}
+				</Text>
+			</View>
+			<View style={styles.line}>
+				<StatusTag label={status} tone="info" />
+				<Ionicons name="chevron-forward" size={18} color={c.muted} />
+			</View>
+		</Pressable>
+	);
+}
+
+const styles = StyleSheet.create({
+	safe: { flex: 1 },
+	spinner: { marginTop: 40 },
+	pressed: { opacity: 0.7 },
+	financeLink: {
+		alignItems: "center",
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		flexDirection: "row",
+		gap: 10,
+		marginHorizontal: 16,
+		marginTop: 12,
+		minHeight: 48,
+		paddingHorizontal: 14,
+	},
+	financeLinkText: {
+		flex: 1,
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+		lineHeight: 22,
+	},
+	tabs: {
+		flexDirection: "row",
+		gap: 4,
+		padding: 4,
+		borderRadius: 12,
+		marginHorizontal: 16,
+		marginTop: 12,
+	},
+	tab: {
+		flex: 1,
+		minHeight: 44,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 8,
+	},
+	tabActive: {
+		shadowColor: "#12163a",
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.08,
+		shadowRadius: 2,
+		elevation: 1,
+	},
+	tabText: {
+		fontFamily: Fonts.bodyMedium,
+		fontSize: 15,
+		lineHeight: 22,
+		textAlign: "center",
+	},
+	tabTextActive: { fontFamily: Fonts.bodyBold },
+	search: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		marginHorizontal: 16,
+		marginTop: 12,
+		paddingHorizontal: 12,
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		minHeight: 48,
+	},
+	input: { flex: 1, minHeight: 48, fontSize: 16, fontFamily: Fonts.body },
+	list: { paddingHorizontal: 16, paddingVertical: 14 },
+	card: {
+		padding: 16,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		gap: 10,
+		minHeight: 48,
+	},
+	line: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: 8,
+	},
+	number: {
+		flex: 1,
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
+	amount: {
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+		fontVariant: ["tabular-nums"],
+	},
+	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	itemsLine: { flexDirection: "row", alignItems: "center", gap: 10 },
+	itemsText: { flex: 1 },
+	thumbnail: { width: 44, height: 44, borderRadius: 8 },
+});

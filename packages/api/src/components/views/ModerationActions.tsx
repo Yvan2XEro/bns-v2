@@ -4,13 +4,20 @@ import { toast } from "@payloadcms/ui";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import {
+	EMPTY_REJECTION,
+	type RejectionDraft,
+	RejectionReasonFields,
+	rejectionReady,
+	rejectListingRequest,
+} from "./RejectionReasonFields";
 
 export const ModerationActions: React.FC<{ listingId: string }> = ({
 	listingId,
 }) => {
 	const router = useRouter();
 	const [showReject, setShowReject] = useState(false);
-	const [reason, setReason] = useState("");
+	const [draft, setDraft] = useState<RejectionDraft>(EMPTY_REJECTION);
 	const [loading, setLoading] = useState(false);
 
 	const handleApprove = async () => {
@@ -34,18 +41,13 @@ export const ModerationActions: React.FC<{ listingId: string }> = ({
 	};
 
 	const handleReject = async () => {
-		if (!reason.trim()) {
-			toast.error("Please provide a rejection reason");
+		if (!rejectionReady(draft)) {
+			toast.error("Pick a reason, and explain it when it is “other”");
 			return;
 		}
 		setLoading(true);
 		try {
-			const res = await fetch(`/api/listings/${listingId}`, {
-				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ status: "rejected", rejectionReason: reason }),
-			});
-			if (!res.ok) throw new Error("Failed to reject listing");
+			await rejectListingRequest(listingId, draft);
 			toast.success("Listing rejected");
 			router.refresh();
 		} catch (err) {
@@ -55,7 +57,7 @@ export const ModerationActions: React.FC<{ listingId: string }> = ({
 		} finally {
 			setLoading(false);
 			setShowReject(false);
-			setReason("");
+			setDraft(EMPTY_REJECTION);
 		}
 	};
 
@@ -101,22 +103,7 @@ export const ModerationActions: React.FC<{ listingId: string }> = ({
 				<div
 					style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
 				>
-					<textarea
-						value={reason}
-						onChange={(e) => setReason(e.target.value)}
-						placeholder="Rejection reason..."
-						rows={3}
-						style={{
-							width: "100%",
-							padding: "0.5rem",
-							border: "1px solid var(--theme-elevation-300)",
-							borderRadius: "4px",
-							fontSize: "0.875rem",
-							resize: "vertical",
-							backgroundColor: "var(--theme-elevation-50)",
-							color: "var(--theme-text)",
-						}}
-					/>
+					<RejectionReasonFields value={draft} onChange={setDraft} />
 					<button
 						type="button"
 						onClick={handleReject}

@@ -1,0 +1,84 @@
+[
+	{
+		"key": "sync-account-create",
+		"request": { "method": "POST", "path": "/sync/accounts" },
+		"response": {
+			"status": 201,
+			"body": { "account": { "id": "acc_{shopId}", "status": "pending" } }
+		},
+		"binds": { "shopId": "body.metadata.shop_id" },
+		"sets": "account:acc_{shopId}=created",
+		"assumed": ["A1"]
+	},
+	{
+		"key": "sync-account-onboarding",
+		"request": { "method": "POST", "path": "/sync/accounts/{id}/onboarding" },
+		"response": {
+			"status": 200,
+			"body": { "url": "https://onboard.example/{id}" }
+		},
+		"assumed": ["A2"]
+	},
+	{
+		"key": "sync-account-fresh",
+		"request": {
+			"method": "GET",
+			"path": "/sync/accounts/{id}",
+			"when": "account:{id}=created"
+		},
+		"response": {
+			"status": 200,
+			"body": {
+				"account": {
+					"id": "{id}",
+					"status": "pending",
+					"name": "Fixture Shop",
+					"charges_enabled": false,
+					"payouts_enabled": false,
+					"requirements": { "currently_due": ["business_profile"] },
+					"verification": { "status": "unverified" }
+				}
+			}
+		},
+		"assumed": ["A3"]
+	},
+	{
+		"key": "sync-account-active",
+		"request": {
+			"method": "GET",
+			"path": "/sync/accounts/{id}",
+			"when": "account:{id}=active"
+		},
+		"response": {
+			"status": 200,
+			"body": {
+				"account": {
+					"id": "{id}",
+					"status": "active",
+					"name": "Fixture Shop",
+					"charges_enabled": true,
+					"payouts_enabled": true,
+					"requirements": { "currently_due": [] },
+					"verification": { "status": "verified", "name": "Fixture Owner" },
+					"payout_schedule": "manual"
+				}
+			}
+		},
+		"assumed": ["A3"]
+	},
+	{
+		"key": "sync-account-unknown",
+		"request": {
+			"method": "GET",
+			"path": "/sync/accounts/{id}",
+			"when": "account:{id}=initial"
+		},
+		"response": { "status": 404, "body": { "message": "Account not found" } }
+	},
+	{
+		"key": "sync-account-schedule",
+		"request": { "method": "PUT", "path": "/sync/accounts/{id}" },
+		"response": { "status": 200, "body": {} },
+		"assumed": ["A4"]
+	}
+]

@@ -1,6 +1,17 @@
 import type { CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
+import { inboxShopIds } from "../access/inboxShops";
+import { can, resolveShopRole } from "../access/shopRoles";
+import {
+	assertNotSuspended,
+	type SuspensionCheckable,
+} from "../hooks/suspensionGuard";
+import { ERROR_CODES } from "../lib/errors";
+import { relationId } from "../lib/relationId";
+import { isChatServiceAccount } from "../lib/serviceAccounts";
+import { CodedAPIError } from "../lib/serviceError";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
+import { INBOX_SERVICE_CONTEXT } from "./Conversations";
 
 export const Messages: CollectionConfig = {
 	slug: "messages",
@@ -9,66 +20,309 @@ export const Messages: CollectionConfig = {
 		defaultColumns: ["conversation", "sender", "content", "createdAt"],
 	},
 	hooks: {
+		beforeChange: [
+			async ({ req, data, operation }) => {
+				if (operation !== "create") return data;
+
+				// A system message trusts no field access check to close it: field
+				// access cannot see `req.context`, and the order service's own
+				// writes use `overrideAccess`, which skips field access entirely.
+				// This is the one place that actually closes the door, and it must
+				// do so before touching `req.payload` — the order service calls
+				// this with a minimal `req` that carries no live connection.
+				if (data.kind === "system") {
+					if (req.context?.orderService !== true) {
+						throw new CodedAPIError(ERROR_CODES.forbidden, 403);
+					}
+					data.sender = null;
+					return data;
+				}
+
+				// Only chat-service may name someone else as the sender. Every
+				// other caller sends as themselves, whatever the body says.
+				const named = relationId(data.sender);
+				const callerId = relationId(req.user);
+				const senderId = isChatServiceAccount(
+					req.user as { email?: string | null } | null,
+				)
+					? (named ?? callerId)
+					: callerId;
+				if (!senderId) {
+					throw new CodedAPIError(ERROR_CODES.messagesNotParticipant, 403);
+				}
+				data.sender = senderId;
+
+				await assertNotSuspended(
+					req.payload,
+					senderId,
+					req.user as SuspensionCheckable | null,
+				);
+
+				const conversationId = relationId(data.conversation);
+				if (!conversationId) {
+					throw new CodedAPIError(ERROR_CODES.messagesNotParticipant, 403);
+				}
+				const conversation = await req.payload
+					.findByID({
+						collection: "conversations",
+						id: conversationId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null);
+				if (!conversation) {
+					throw new CodedAPIError(ERROR_CODES.messagesNotParticipant, 403);
+				}
+
+				const participants = ((conversation.participants ?? []) as unknown[])
+					.map(relationId)
+					.filter((id): id is string => Boolean(id));
+				const shopId = relationId(conversation.shop);
+
+				// A participant, or a member of the shop holding `inbox.reply`.
+				// Membership is the second door, and the only one revoking a
+				// member has to close.
+				let isMember = false;
+				if (shopId && !participants.includes(senderId)) {
+					const role = await resolveShopRole(
+						req.payload,
+						senderId,
+						shopId,
+						req.context,
+					);
+					isMember = can(role, "inbox.reply");
+				}
+				if (!participants.includes(senderId) && !isMember) {
+					throw new CodedAPIError(ERROR_CODES.messagesNotParticipant, 403);
+				}
+
+				if (shopId) {
+					const shop = await req.payload
+						.findByID({
+							collection: "shops",
+							id: shopId,
+							depth: 0,
+							overrideAccess: true,
+							req,
+						})
+						.catch(() => null);
+					if (!shop || shop.status !== "active") {
+						throw new CodedAPIError(ERROR_CODES.shopInactive, 409);
+					}
+					const buyerId = relationId(conversation.buyer);
+					data.senderSide = senderId === buyerId ? "buyer" : "shop";
+				}
+
+				const others = participants.filter((id) => id !== senderId);
+				if (others.length === 0) return data;
+
+				// Blocking is enforced in both directions: neither party can keep
+				// messaging once either side has blocked the other. For a shop
+				// conversation `participants` is `[buyer, owner]`, so a block
+				// between the buyer and a staff member does not silence the shop.
+				const blocks = await req.payload.find({
+					collection: "blocked-users",
+					depth: 0,
+					limit: 1,
+					overrideAccess: true,
+					req,
+					where: {
+						or: [
+							{
+								and: [
+									{ blocker: { equals: senderId } },
+									{ blocked: { in: others } },
+								],
+							},
+							{
+								and: [
+									{ blocker: { in: others } },
+									{ blocked: { equals: senderId } },
+								],
+							},
+						],
+					},
+				});
+				if (blocks.docs.length > 0) {
+					throw new CodedAPIError(ERROR_CODES.messageBlocked, 403);
+				}
+
+				return data;
+			},
+		],
 		afterChange: [
 			async ({ doc, operation, req }) => {
 				if (operation !== "create") return;
-				if (!isNotificationProviderConfigured()) return;
 
+				const conversationId = relationId(doc.conversation);
+				if (!conversationId) return;
+				const senderId = relationId(doc.sender);
+				const isShopConversation =
+					doc.senderSide === "buyer" || doc.senderSide === "shop";
+
+				// One update, with the service flag, so `beforeChange`'s pinning
+				// lets it through and a buyer message reopens the conversation.
+				await req.payload.update({
+					collection: "conversations",
+					id: conversationId,
+					req,
+					overrideAccess: true,
+					context: INBOX_SERVICE_CONTEXT,
+					data: {
+						lastMessage: doc.id,
+						lastMessageAt: doc.createdAt,
+						...(isShopConversation
+							? {
+									awaitingReply: doc.senderSide === "buyer",
+									...(doc.senderSide === "buyer"
+										? { inboxStatus: "open" }
+										: {}),
+								}
+							: {}),
+					},
+				});
+
+				// Order notifications already cover a system message (`order-placed`,
+				// `order-shipped`, …); `new-message` would double it up.
+				if (doc.kind === "system") return;
+
+				if (!isNotificationProviderConfigured()) return;
 				try {
+					const conversation = await req.payload.findByID({
+						collection: "conversations",
+						id: conversationId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					});
+					const preview =
+						doc.content.length > 100
+							? `${doc.content.slice(0, 100)}...`
+							: doc.content;
+
+					if (doc.senderSide === "buyer") {
+						const { notifyShopInboxMessage } = await import(
+							"../services/shopMemberNotifications"
+						);
+						await notifyShopInboxMessage(req, {
+							conversationId,
+							shopId: relationId(conversation.shop) ?? "",
+							senderId: senderId ?? "",
+							preview,
+						});
+						return;
+					}
+
 					const { triggerNotificationEvent } = await import(
 						"../hooks/notificationEvents"
 					);
+					if (doc.senderSide === "shop") {
+						// The buyer sees the shop, not the member who typed.
+						const shopId = relationId(conversation.shop);
+						const shop = shopId
+							? await req.payload
+									.findByID({
+										collection: "shops",
+										id: shopId,
+										depth: 0,
+										overrideAccess: true,
+										req,
+									})
+									.catch(() => null)
+							: null;
+						const buyerId = relationId(conversation.buyer);
+						if (buyerId) {
+							await triggerNotificationEvent({
+								event: "new-message",
+								subscriberId: buyerId,
+								payload: {
+									senderName: shop?.name ?? "",
+									messagePreview: preview,
+									conversationId,
+								},
+							});
+						}
+						return;
+					}
 
-					const conversation = await req.payload.findByID({
-						collection: "conversations",
-						id:
-							typeof doc.conversation === "string"
-								? doc.conversation
-								: doc.conversation?.id,
-						depth: 1,
-					});
-
-					const senderId =
-						typeof doc.sender === "string" ? doc.sender : doc.sender?.id;
-
-					const sender =
-						typeof doc.sender === "object" && doc.sender?.name
-							? doc.sender
-							: await req.payload.findByID({
+					const sender = senderId
+						? await req.payload
+								.findByID({
 									collection: "users",
 									id: senderId,
-								});
-
-					const recipients = (
-						conversation.participants as Array<string | { id: string }>
-					)
-						.map((p) => (typeof p === "string" ? p : p.id))
-						.filter((id) => id !== senderId);
-
+									depth: 0,
+									overrideAccess: true,
+									req,
+								})
+								.catch(() => null)
+						: null;
+					const recipients = ((conversation.participants ?? []) as unknown[])
+						.map(relationId)
+						.filter((id): id is string => Boolean(id) && id !== senderId);
 					for (const recipientId of recipients) {
 						await triggerNotificationEvent({
 							event: "new-message",
 							subscriberId: recipientId,
 							payload: {
-								senderName: sender.name,
-								messagePreview:
-									doc.content.length > 100
-										? `${doc.content.slice(0, 100)}...`
-										: doc.content,
-								conversationId: conversation.id,
+								senderName: sender?.name ?? "",
+								messagePreview: preview,
+								conversationId,
 							},
 						});
 					}
 				} catch (error) {
-					console.error("[notifications] Failed to notify new message:", error);
+					req.payload.logger.error(
+						{ err: error, messageId: doc.id },
+						"[notifications] failed to notify a new message",
+					);
 				}
 			},
 		],
 	},
 	access: {
-		read: ({ req: { user } }) => {
+		read: async ({ req }) => {
+			const user = req.user;
 			if (!user) return false;
-			return true;
+
+			const role = (user as { role?: string }).role;
+			if (role === "admin" || role === "moderator") return true;
+
+			// Scope reads to conversations the user takes part in, plus the
+			// conversations of shops whose inbox they may read. Without this,
+			// any signed-in account can read every message in the database.
+			const cacheKey = "messageReadConversationIds";
+			let ids = req.context?.[cacheKey] as string[] | undefined;
+
+			if (!ids) {
+				const shops = await inboxShopIds(req);
+				const conversations = await req.payload.find({
+					collection: "conversations",
+					where:
+						shops.length > 0
+							? {
+									or: [
+										{ participants: { equals: user.id } },
+										{ shop: { in: shops } },
+									],
+								}
+							: { participants: { equals: user.id } },
+					limit: 0,
+					depth: 0,
+					pagination: false,
+					overrideAccess: true,
+				});
+				ids = conversations.docs.map((doc) => String(doc.id));
+				if (req.context) req.context[cacheKey] = ids;
+			}
+
+			if (ids.length === 0) return false;
+
+			return {
+				conversation: {
+					in: ids,
+				},
+			};
 		},
 		create: authenticated,
 		update: ({ req: { user } }) => {
@@ -84,19 +338,33 @@ export const Messages: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "conversation",
-			type: "relationship",
-			relationTo: "conversations",
-			required: true,
-		},
-		{
-			name: "sender",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "conversation",
+					type: "relationship",
+					relationTo: "conversations",
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "sender",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "50%", readOnly: true },
+					// Required for a `user` message, null for a `system` one — the
+					// `beforeChange` guard above is what actually enforces "null only
+					// from the order service"; this just keeps an ordinary message from
+					// being saved senderless.
+					validate: (
+						value: unknown,
+						{ siblingData }: { siblingData?: { kind?: string } },
+					) =>
+						value || siblingData?.kind === "system"
+							? true
+							: "A sender is required.",
+				},
+			],
 		},
 		{
 			name: "content",
@@ -104,15 +372,99 @@ export const Messages: CollectionConfig = {
 			required: true,
 		},
 		{
-			name: "listing",
-			type: "relationship",
-			relationTo: "listings",
-			required: false,
+			type: "row",
+			fields: [
+				{
+					name: "kind",
+					type: "select",
+					defaultValue: "user",
+					index: true,
+					options: [
+						{ label: "User", value: "user" },
+						{ label: "System", value: "system" },
+					],
+					admin: { width: "50%", readOnly: true },
+				},
+				{
+					name: "systemEvent",
+					type: "text",
+					admin: {
+						width: "50%",
+						readOnly: true,
+						description:
+							'An order-event type, e.g. "order.placed". System messages only.',
+					},
+				},
+			],
+		},
+		{ name: "systemParams", type: "json", admin: { readOnly: true } },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "listing",
+					type: "relationship",
+					relationTo: "listings",
+					required: false,
+					admin: { width: "33%" },
+				},
+				{
+					name: "read",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
-			name: "read",
-			type: "checkbox",
-			defaultValue: false,
+			type: "row",
+			fields: [
+				{
+					name: "senderSide",
+					type: "select",
+					index: true,
+					options: [
+						{ label: "Buyer", value: "buyer" },
+						{ label: "Shop", value: "shop" },
+					],
+					// Derived in `beforeChange` for a shop conversation only. Without
+					// this, a body-supplied `senderSide` on a classic conversation
+					// routes `afterChange` into the shop notification branch, which
+					// resolves no recipient and the message never notifies anyone.
+					// `overrideAccess` (the hook's own assignment, and the service
+					// paths) bypasses field access entirely, so this only closes the
+					// ordinary REST caller.
+					access: { create: () => false, update: () => false },
+					admin: {
+						width: "50%",
+						readOnly: true,
+						description:
+							"Set on shop conversations only; absent on a classic one.",
+					},
+				},
+				{
+					name: "formerMemberAuthor",
+					type: "checkbox",
+					defaultValue: false,
+					// Written only by account deletion, via `overrideAccess`. REST
+					// access control covers only incoming data from a request, not
+					// mutations made within a hook via `overrideAccess`.
+					access: { create: () => false, update: () => false },
+					admin: {
+						width: "50%",
+						readOnly: true,
+						description:
+							'The author deleted their account; the message is re-attributed to the shop owner and shown as "Former member".',
+					},
+				},
+			],
 		},
 		{
 			name: "createdAt",

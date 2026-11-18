@@ -1,13 +1,58 @@
 import Stripe from "stripe";
-import type {
-	CreatePaymentParams,
-	CreatePaymentResult,
-	PaymentProvider,
-	WebhookEvent,
+import {
+	type CreatePaymentParams,
+	type CreatePaymentResult,
+	isRecord,
+	type NormalizedPayment,
+	type NormalizedWebhookEvent,
+	type PaymentProvider,
+	type ProviderPaymentStatus,
+	WebhookSignatureError,
 } from "./types";
 
+/** Narrows to a Checkout Session, distinguishing it from other event payload shapes. */
+function isCheckoutSession(value: unknown): value is Stripe.Checkout.Session {
+	return isRecord(value) && value.object === "checkout.session";
+}
+
+export function stripeSessionStatus(
+	type: string,
+	session: Pick<Stripe.Checkout.Session, "payment_status" | "status">,
+): ProviderPaymentStatus {
+	if (type === "checkout.session.expired" || session.status === "expired")
+		return "expired";
+	if (type === "checkout.session.async_payment_failed") return "failed";
+	if (type === "checkout.session.async_payment_succeeded") return "succeeded";
+	return session.payment_status === "paid" ? "succeeded" : "pending";
+}
+
+/**
+ * Pure so it can also run outside a configured provider instance — the
+ * account-deletion cascade rebuilds a kept webhook body from exactly this
+ * shape, without needing STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET to exist.
+ */
+export function parseStripeWebhookEvent(raw: unknown): NormalizedWebhookEvent {
+	const event = isRecord(raw) ? raw : {};
+	const id = typeof event.id === "string" ? event.id : "";
+	const type = typeof event.type === "string" ? event.type : "";
+	const dataObject = isRecord(event.data) ? event.data.object : undefined;
+	const session =
+		type.startsWith("checkout.session.") && isCheckoutSession(dataObject)
+			? dataObject
+			: null;
+	return {
+		providerEventId: id,
+		type,
+		reference: session?.metadata?.reference ?? "",
+		status: session ? stripeSessionStatus(type, session) : "pending",
+		amount: session?.amount_total ?? null,
+		currency: session?.currency ? session.currency.toUpperCase() : null,
+		providerTransactionId: session?.id ?? null,
+	};
+}
+
 export class StripeProvider implements PaymentProvider {
-	readonly id = "stripe";
+	readonly id = "stripe" as const;
 
 	private readonly stripe: Stripe;
 
@@ -48,35 +93,36 @@ export class StripeProvider implements PaymentProvider {
 	async verifyWebhook(
 		rawBody: string,
 		headers: Record<string, string | undefined>,
-	): Promise<WebhookEvent> {
-		const sig = headers["stripe-signature"];
-		if (!sig)
-			throw new Error("Stripe webhook: missing Stripe-Signature header");
+	): Promise<NormalizedWebhookEvent> {
+		const signature = headers["stripe-signature"];
+		if (!signature) throw new WebhookSignatureError();
 
-		const event = this.stripe.webhooks.constructEvent(
-			rawBody,
-			sig,
-			this.webhookSecret,
-		);
-
-		if (event.type === "checkout.session.completed") {
-			const session = event.data.object as Stripe.Checkout.Session;
-			return {
-				reference: session.metadata?.reference ?? "",
-				status: "completed",
-				providerTransactionId: session.id,
-			};
+		let event: Stripe.Event;
+		try {
+			event = this.stripe.webhooks.constructEvent(
+				rawBody,
+				signature,
+				this.webhookSecret,
+			);
+		} catch {
+			throw new WebhookSignatureError();
 		}
+		return this.parseWebhookEvent(event);
+	}
 
-		if (event.type === "checkout.session.expired") {
-			const session = event.data.object as Stripe.Checkout.Session;
-			return {
-				reference: session.metadata?.reference ?? "",
-				status: "failed",
-				providerTransactionId: session.id,
-			};
-		}
+	parseWebhookEvent(raw: unknown): NormalizedWebhookEvent {
+		return parseStripeWebhookEvent(raw);
+	}
 
-		return { reference: "", status: "pending" };
+	async verifyPayment(providerReference: string): Promise<NormalizedPayment> {
+		const session =
+			await this.stripe.checkout.sessions.retrieve(providerReference);
+		return {
+			reference: session.metadata?.reference ?? "",
+			status: stripeSessionStatus("", session),
+			amount: session.amount_total ?? null,
+			currency: session.currency ? session.currency.toUpperCase() : null,
+			providerTransactionId: session.id,
+		};
 	}
 }

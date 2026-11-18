@@ -9,15 +9,16 @@ export async function POST(request: Request) {
 
 		if (!body.transferToken) {
 			return Response.json(
-				{ error: "transferToken is required" },
+				{ message: "transferToken is required" },
 				{ status: 400 },
 			);
 		}
 
-		const { userId } = await verifyMobileTransferToken(body.transferToken);
 		const payload = await getPayload({ config });
+		const { userId } = await verifyMobileTransferToken(body.transferToken);
 		const user = await payload.findByID({
 			collection: "users",
+			depth: 0,
 			id: userId,
 			overrideAccess: true,
 		});
@@ -30,14 +31,22 @@ export async function POST(request: Request) {
 			user,
 		});
 	} catch (error) {
+		const message =
+			error instanceof Error ? error.message : "Mobile OAuth exchange failed";
+		const status =
+			message === "Invalid mobile OAuth transfer token" ||
+			message.includes('"exp" claim timestamp check failed') ||
+			message.includes('"nbf" claim timestamp check failed')
+				? 401
+				: 500;
+
+		console.error("[oauth] mobile exchange failed:", error);
+
 		return Response.json(
 			{
-				error:
-					error instanceof Error
-						? error.message
-						: "Mobile OAuth exchange failed",
+				message,
 			},
-			{ status: 401 },
+			{ status },
 		);
 	}
 }

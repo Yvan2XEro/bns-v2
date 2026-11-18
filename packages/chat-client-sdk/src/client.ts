@@ -5,6 +5,7 @@ import type {
 	ChatMessage,
 	ClientToServerEvents,
 	ConnectionState,
+	InboxConversationUpdate,
 	SendMessagePayload,
 	ServerToClientEvents,
 	TypingEvent,
@@ -35,7 +36,10 @@ export class ChatClient {
 	private state: ConnectionState = "disconnected";
 	private listeners = new Map<string, Set<(...args: unknown[]) => void>>();
 	private joinedConversations = new Set<string>();
+	private joinedShopInboxes = new Set<string>();
 	private typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	/** Sent but not yet confirmed or refused, resent on every reconnect. */
+	private outbox = new Map<string, SendMessagePayload & { tempId: string }>();
 
 	constructor(options: ChatClientOptions) {
 		this.options = {
@@ -56,7 +60,8 @@ export class ChatClient {
 			transports: this.options.transports,
 			auth: { token: this.options.token },
 			reconnection: this.options.autoReconnect,
-			reconnectionAttempts: 10,
+			// A phone on 3G drops in and out all day: never give up.
+			reconnectionAttempts: Number.POSITIVE_INFINITY,
 			reconnectionDelay: 1000,
 			reconnectionDelayMax: 10000,
 		}) as TypedSocket;
@@ -66,6 +71,15 @@ export class ChatClient {
 			// Rejoin conversations after reconnect
 			for (const convId of this.joinedConversations) {
 				this.socket?.emit("conversation:join", { conversationId: convId });
+			}
+			// Rejoin shop inboxes after reconnect
+			for (const shopId of this.joinedShopInboxes) {
+				this.socket?.emit("shop:inbox:join", { shopId });
+			}
+			// The chat service drops a tempId it has already taken, so a
+			// message whose confirmation was lost is not stored twice.
+			for (const pending of this.outbox.values()) {
+				this.socket?.emit("message:send", pending);
 			}
 		});
 
@@ -78,16 +92,21 @@ export class ChatClient {
 			this.emit("error", err);
 		});
 
-		// Forward server events
+		// Forward server events. A system message (`kind: "system"`) arrives
+		// through this same event, with `systemEvent`/`systemParams` set and no
+		// real `sender` — forwarded as-is, since the thread-chip rendering is
+		// the consuming screen's concern, not this client's.
 		this.socket.on("message:new", (msg: ChatMessage) => {
 			this.emit("message:new", msg);
 		});
 
 		this.socket.on("message:confirmed", (payload) => {
+			this.outbox.delete(payload.tempId);
 			this.emit("message:confirmed", payload);
 		});
 
 		this.socket.on("message:failed", (payload) => {
+			this.outbox.delete(payload.tempId);
 			this.emit("message:failed", payload);
 		});
 
@@ -110,10 +129,24 @@ export class ChatClient {
 		this.socket.on("user:offline", (payload) => {
 			this.emit("user:offline", payload);
 		});
+
+		this.socket.on(
+			"inbox:conversation-updated",
+			(payload: InboxConversationUpdate) => {
+				this.emit("inbox:conversation-updated", payload);
+			},
+		);
+
+		this.socket.on("shop:access-revoked", (payload) => {
+			this.joinedShopInboxes.delete(payload.shopId);
+			this.emit("shop:access-revoked", payload);
+		});
 	}
 
 	disconnect(): void {
+		this.outbox.clear();
 		this.joinedConversations.clear();
+		this.joinedShopInboxes.clear();
 		for (const timer of this.typingTimers.values()) {
 			clearTimeout(timer);
 		}
@@ -173,22 +206,50 @@ export class ChatClient {
 		this.joinedConversations.clear();
 	}
 
+	// --- Shop inboxes ---
+
+	joinShopInbox(shopId: string): Promise<boolean> {
+		return new Promise((resolve) => {
+			if (!this.socket?.connected) {
+				this.joinedShopInboxes.add(shopId);
+				resolve(false);
+				return;
+			}
+			this.socket.emit("shop:inbox:join", { shopId }, (response) => {
+				if (response?.success) {
+					this.joinedShopInboxes.add(shopId);
+					resolve(true);
+				} else {
+					resolve(false);
+				}
+			});
+		});
+	}
+
+	leaveShopInbox(shopId: string): void {
+		this.joinedShopInboxes.delete(shopId);
+		this.socket?.emit("shop:inbox:leave", { shopId });
+	}
+
 	// --- Messages ---
 
 	/**
 	 * Send a message. Returns the tempId immediately for optimistic UI.
-	 * Listen to "message:confirmed" and "message:failed" for final status.
+	 * Offline, the message waits and goes out on reconnect; pass the same
+	 * tempId to retry one that failed. Listen to "message:confirmed" and
+	 * "message:failed" for final status.
 	 */
 	sendMessage(payload: SendMessagePayload): string {
-		if (!this.socket?.connected) {
-			const err = "Not connected";
-			this.emit("message:error", err);
-			throw new Error(err);
-		}
-
 		const tempId = payload.tempId || generateId();
-		this.socket.emit("message:send", { ...payload, tempId });
+		const pending = { ...payload, tempId };
+		this.outbox.set(tempId, pending);
+		if (this.socket?.connected) this.socket.emit("message:send", pending);
 		return tempId;
+	}
+
+	/** Whether a message is still waiting for the chat service's answer. */
+	isPending(tempId: string): boolean {
+		return this.outbox.has(tempId);
 	}
 
 	markDelivered(conversationId: string, messageId: string): void {

@@ -1,0 +1,355 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { Controller } from "react-hook-form";
+import {
+	ActivityIndicator,
+	Pressable,
+	StyleSheet,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
+import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { MovementTypePicker } from "@/src/components/seller/MovementTypePicker";
+import { VariantSummaryCard } from "@/src/components/seller/VariantSummaryCard";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
+import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { useStockAdjustForm } from "@/src/hooks/useStockAdjustForm";
+import { useTranslation } from "@/src/lib/i18n";
+import { currencySymbol } from "@/src/lib/market";
+import { STOCK_NOTE_MAX } from "@/src/lib/stockAdjust";
+import { variantLabel } from "@/src/lib/variants";
+
+export default function StockAdjustSheet() {
+	const { variantId } = useLocalSearchParams<{ variantId: string }>();
+	const c = useShopTheme();
+	const { t, i18n } = useTranslation();
+	const {
+		variant,
+		v,
+		current,
+		reserved,
+		form,
+		type,
+		result,
+		changeType,
+		submit,
+		isPending,
+	} = useStockAdjustForm(variantId);
+
+	const amountError = form.formState.errors.amount?.message;
+	const unitCostError = form.formState.errors.unitCost?.message;
+
+	return (
+		<SafeAreaView style={[styles.safe, { backgroundColor: c.card }]}>
+			<SellerHeader
+				title={t("stock.adjustTitle")}
+				icon="close"
+				onBack={() => router.back()}
+			/>
+
+			{!variantId || variant.isError ? (
+				<EmptyState
+					illustration="notFound"
+					title={t("stock.loadErrorTitle")}
+					subtitle={t("stock.loadErrorBody")}
+					ctaLabel={t("common.close")}
+					onCta={() => router.back()}
+				/>
+			) : variant.isLoading || !v ? (
+				<DetailSkeleton cards={1} />
+			) : (
+				<ScreenColumn width="reading">
+					<KeyboardAwareScrollView
+						contentContainerStyle={{ padding: 16, gap: 14 }}
+						keyboardShouldPersistTaps="handled"
+					>
+						<VariantSummaryCard
+							title={[
+								v.product.title,
+								variantLabel(v.optionValues ?? {}, v.product.options),
+							]
+								.filter(Boolean)
+								.join(" · ")}
+							current={current}
+							reserved={reserved}
+							lowStockThreshold={v.lowStockThreshold}
+							tracked={v.trackInventory}
+						/>
+
+						<MovementTypePicker value={type} onChange={changeType} />
+						{type === "return" ? (
+							<Text style={[styles.meta, { color: c.muted }]}>
+								{t("stock.returnNote")}
+							</Text>
+						) : null}
+
+						<View style={styles.amountRow}>
+							<Text style={[styles.label, styles.flex, { color: c.body }]}>
+								{t(`stock.valueLabel_${type}`)}
+							</Text>
+							<Controller
+								control={form.control}
+								name="amount"
+								render={({ field }) => {
+									const value = Number.parseInt(field.value || "0", 10) || 0;
+									return (
+										<View style={styles.stepper}>
+											<Pressable
+												onPress={() =>
+													field.onChange(String(Math.max(0, value - 1)))
+												}
+												disabled={value === 0}
+												accessibilityRole="button"
+												accessibilityLabel={t("stock.decrease")}
+												accessibilityState={{ disabled: value === 0 }}
+												style={[
+													styles.stepButton,
+													{ backgroundColor: c.card, borderColor: c.border },
+													value === 0 && { opacity: 0.4 },
+												]}
+											>
+												<Ionicons name="remove" size={22} color={c.text} />
+											</Pressable>
+											<TextInput
+												value={field.value}
+												onChangeText={field.onChange}
+												onBlur={field.onBlur}
+												keyboardType="number-pad"
+												placeholder="0"
+												placeholderTextColor={c.muted}
+												accessibilityLabel={t(`stock.valueLabel_${type}`)}
+												style={[styles.amountInput, { color: c.text }]}
+											/>
+											<Pressable
+												onPress={() => field.onChange(String(value + 1))}
+												accessibilityRole="button"
+												accessibilityLabel={t("stock.increase")}
+												style={[
+													styles.stepButton,
+													{
+														backgroundColor: fillOf(c),
+														borderColor: c.primary,
+													},
+												]}
+											>
+												<Ionicons name="add" size={22} color="#fff" />
+											</Pressable>
+										</View>
+									);
+								}}
+							/>
+						</View>
+						{amountError ? (
+							<Text
+								accessibilityRole="alert"
+								style={[styles.error, { color: dangerInk(c) }]}
+							>
+								{t(amountError, { reserved, count: current })}
+							</Text>
+						) : null}
+
+						<View style={styles.boxes}>
+							{type === "receipt" ? (
+								<View style={styles.box}>
+									<Text style={[styles.boxLabel, { color: c.body }]}>
+										{t("stock.unitCost")}
+									</Text>
+									<View
+										style={[
+											styles.boxField,
+											{
+												backgroundColor: c.input,
+												borderColor: unitCostError ? c.danger : c.border,
+											},
+										]}
+									>
+										<Controller
+											control={form.control}
+											name="unitCost"
+											render={({ field }) => (
+												<TextInput
+													value={field.value}
+													onChangeText={field.onChange}
+													onBlur={field.onBlur}
+													keyboardType="number-pad"
+													placeholder="0"
+													placeholderTextColor={c.muted}
+													accessibilityLabel={`${t("stock.unitCost")} (${currencySymbol(i18n.language)})`}
+													style={[styles.boxInput, { color: c.text }]}
+												/>
+											)}
+										/>
+										<Text style={[styles.suffix, { color: c.muted }]}>
+											{currencySymbol(i18n.language)}
+										</Text>
+									</View>
+								</View>
+							) : null}
+							<View style={styles.box}>
+								<Text style={[styles.boxLabel, { color: c.body }]}>
+									{t("stock.note")}
+								</Text>
+								<Controller
+									control={form.control}
+									name="note"
+									render={({ field }) => (
+										<TextInput
+											value={field.value}
+											onChangeText={field.onChange}
+											onBlur={field.onBlur}
+											maxLength={STOCK_NOTE_MAX}
+											placeholder={t("stock.notePlaceholder")}
+											placeholderTextColor={c.muted}
+											accessibilityLabel={t("stock.note")}
+											style={[
+												styles.noteInput,
+												{
+													color: c.text,
+													backgroundColor: c.input,
+													borderColor: c.border,
+												},
+											]}
+										/>
+									)}
+								/>
+							</View>
+						</View>
+						{unitCostError ? (
+							<Text
+								accessibilityRole="alert"
+								style={[styles.error, { color: dangerInk(c) }]}
+							>
+								{t(unitCostError)}
+							</Text>
+						) : null}
+
+						<View style={[styles.after, { backgroundColor: c.primarySoft }]}>
+							<Text style={[styles.afterLabel, { color: c.body }]}>
+								{t("stock.after")}
+							</Text>
+							<Text style={[styles.afterValue, { color: c.link }]}>
+								{current} → {result ? result.stockAfter : "—"}
+							</Text>
+						</View>
+
+						<Pressable
+							onPress={submit}
+							disabled={!result || Boolean(unitCostError) || isPending}
+							accessibilityRole="button"
+							accessibilityLabel={t(`stock.submit_${type}`)}
+							accessibilityState={{
+								disabled: !result || Boolean(unitCostError) || isPending,
+								busy: isPending,
+							}}
+							style={[
+								styles.submit,
+								{
+									backgroundColor: fillOf(c),
+									opacity: result && !unitCostError ? 1 : 0.5,
+								},
+							]}
+						>
+							{isPending ? (
+								<ActivityIndicator color="#fff" />
+							) : (
+								<Text style={styles.submitText}>
+									{t(`stock.submit_${type}`)}
+								</Text>
+							)}
+						</Pressable>
+					</KeyboardAwareScrollView>
+				</ScreenColumn>
+			)}
+		</SafeAreaView>
+	);
+}
+
+const styles = StyleSheet.create({
+	safe: { flex: 1 },
+	meta: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
+	label: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.bodySemibold },
+	after: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		padding: 14,
+		borderRadius: 12,
+	},
+	afterLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	afterValue: {
+		fontSize: 24,
+		lineHeight: 32,
+		fontFamily: Fonts.displayExtrabold,
+	},
+	flex: { flex: 1 },
+	amountRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+	stepper: { flexDirection: "row", alignItems: "center", gap: 8 },
+	stepButton: {
+		width: 48,
+		height: 48,
+		borderRadius: 14,
+		borderWidth: 1,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	amountInput: {
+		width: 72,
+		textAlign: "center",
+		fontSize: 30,
+		fontFamily: Fonts.displayExtrabold,
+		paddingVertical: 4,
+	},
+	// Stacked full width: two side-by-side boxes cut the note placeholder and
+	// left inputs too short for a thumb.
+	boxes: { gap: 14 },
+	box: { gap: 6 },
+	boxLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	boxField: {
+		flexDirection: "row",
+		alignItems: "center",
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 12,
+	},
+	boxInput: {
+		flex: 1,
+		fontSize: 16,
+		fontFamily: Fonts.body,
+		paddingVertical: 10,
+	},
+	noteInput: {
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 12,
+		fontSize: 16,
+		fontFamily: Fonts.body,
+	},
+	suffix: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		marginLeft: 8,
+	},
+	error: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	submit: {
+		minHeight: 52,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
+});

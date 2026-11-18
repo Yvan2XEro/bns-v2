@@ -1,5 +1,22 @@
-import type { CollectionConfig } from "payload";
+import type { CollectionBeforeChangeHook, CollectionConfig } from "payload";
 import { anyone } from "../access/anyone";
+import { isModerator } from "../access/roles";
+import {
+	getDisputeSettings,
+	hasWithdrawalExclusionApproval,
+} from "../lib/caseSettings";
+import { ERROR_CODES } from "../lib/errors";
+import { decorateCategoryWithFormPreset } from "../lib/listingFormPreset";
+import { relationId } from "../lib/relationId";
+import { CodedAPIError } from "../lib/serviceError";
+import { syncListingKinds } from "../services/listingKinds";
+
+const staffOnlyWrite = {
+	create: ({ req: { user } }: { req: { user: { role?: string } | null } }) =>
+		isModerator(user),
+	update: ({ req: { user } }: { req: { user: { role?: string } | null } }) =>
+		isModerator(user),
+};
 
 export interface CategoryAttribute {
 	name: string;
@@ -7,8 +24,42 @@ export interface CategoryAttribute {
 	type: "text" | "number" | "select" | "boolean" | "date";
 	required: boolean;
 	filterable: boolean;
-	options?: string[];
+	options?: { value: string; label?: string | null }[];
+	/** Suffix rendered after the value, e.g. "km", "m²", "ch". */
+	unit?: string | null;
+	/** Section heading used to group attributes in the form and on the listing. */
+	group?: string | null;
+	/** Inclusive bounds, number attributes only. */
+	min?: number | null;
+	max?: number | null;
 }
+
+const LISTING_FORM_FIELD_MODES = [
+	{ label: "Inherit from parent category", value: "auto" },
+	{ label: "Hidden — never shown", value: "hidden" },
+	{ label: "Optional — shown, may be left empty", value: "optional" },
+	{ label: "Required — shown, must be filled", value: "required" },
+];
+
+/** Same four modes as the other core fields, worded for a picture. */
+const LISTING_FORM_PHOTO_MODES = [
+	{ label: "Inherit from parent category", value: "auto" },
+	{ label: "Hidden — the seller is never asked for a photo", value: "hidden" },
+	{ label: "Optional — photos allowed, none required", value: "optional" },
+	{ label: "Required — at least one photo must be added", value: "required" },
+];
+
+const enforceWithdrawalExclusionGate: CollectionBeforeChangeHook = async ({
+	data,
+	req,
+}) => {
+	if (data.withdrawalExcluded !== true) return data;
+	const settings = await getDisputeSettings(req.payload);
+	if (!hasWithdrawalExclusionApproval(settings.gates)) {
+		throw new CodedAPIError(ERROR_CODES.badRequest, 400);
+	}
+	return data;
+};
 
 export const Categories: CollectionConfig = {
 	slug: "categories",
@@ -35,21 +86,61 @@ export const Categories: CollectionConfig = {
 			return userWithRole?.role === "admin";
 		},
 	},
+	hooks: {
+		beforeChange: [enforceWithdrawalExclusionGate],
+		afterChange: [
+			async ({ doc, previousDoc, operation, req }) => {
+				// Every category below inherits the kind, and each listing stores
+				// its own copy: resync them all when the kind or the parent moves.
+				const kindOrParentMoved =
+					operation === "update" &&
+					(doc.listingForm?.type !== previousDoc?.listingForm?.type ||
+						relationId(doc.parent) !== relationId(previousDoc?.parent));
+				if (kindOrParentMoved) await syncListingKinds(req.payload, { req });
+				return doc;
+			},
+		],
+		afterRead: [
+			({ doc }) => {
+				if (!doc || typeof doc !== "object") return doc;
+				return decorateCategoryWithFormPreset(doc);
+			},
+		],
+	},
 	fields: [
 		{
-			name: "name",
-			type: "text",
-			required: true,
-		},
-		{
-			name: "slug",
-			type: "text",
-			required: true,
-			unique: true,
+			type: "row",
+			fields: [
+				{
+					name: "name",
+					type: "text",
+					required: true,
+					localized: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "slug",
+					type: "text",
+					required: true,
+					unique: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "description",
 			type: "textarea",
+			localized: true,
+		},
+		{
+			name: "searchAliases",
+			type: "textarea",
+			required: false,
+			label: "Search aliases",
+			admin: {
+				description:
+					"Words a seller is likely to type in an ad title for this category, separated by commas — brands, slang and the other language: “voiture, bagnole, toyota, hyundai”. They are what lets the ad form guess the category from the title, and they also widen the category search. Nothing here is ever shown to buyers.",
+			},
 		},
 		{
 			name: "icon",
@@ -67,69 +158,275 @@ export const Categories: CollectionConfig = {
 			hasMany: false,
 		},
 		{
-			name: "active",
-			type: "checkbox",
-			defaultValue: true,
+			type: "row",
+			fields: [
+				{
+					name: "active",
+					type: "checkbox",
+					defaultValue: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "withdrawalExcluded",
+					type: "checkbox",
+					defaultValue: false,
+					admin: {
+						width: "50%",
+						description:
+							"Enable only when a documented legal exception applies.",
+					},
+				},
+			],
+		},
+		{
+			name: "listingForm",
+			type: "group",
+			label: "Listing form",
+			admin: {
+				description:
+					"Decides which of the two built-in fields — price and photos — the ad form shows for this category. Leave everything on “Inherit” to keep the current behaviour: the setting is then taken from the closest parent category that defines one. An item's condition is an ordinary attribute below (« État », slug “condition”).",
+			},
+			fields: [
+				{
+					name: "type",
+					type: "select",
+					required: false,
+					defaultValue: "auto",
+					label: "Kind of ad",
+					options: [
+						{ label: "Inherit from parent category", value: "auto" },
+						{
+							label: "Product — price required, photo required",
+							value: "product",
+						},
+						{
+							label: "Service — price optional, photo optional",
+							value: "service",
+						},
+						{
+							label: "Job offer — no price, no photos",
+							value: "job",
+						},
+						{
+							label: "Rental — price required, photo required",
+							value: "rental",
+						},
+						{
+							label: "Generic — no price, photo optional",
+							value: "generic",
+						},
+					],
+					admin: {
+						description:
+							"Pick the closest match and the fields below follow automatically. Set this on a top-level category and every category underneath inherits it.",
+					},
+				},
+				{
+					name: "price",
+					type: "select",
+					required: false,
+					defaultValue: "auto",
+					label: "Price field",
+					options: LISTING_FORM_FIELD_MODES,
+					admin: {
+						description:
+							"Overrides the price rule that “Kind of ad” would give. Use it for the odd category that does not fit its preset.",
+					},
+				},
+				{
+					name: "photos",
+					type: "select",
+					required: false,
+					defaultValue: "auto",
+					label: "Photos",
+					options: LISTING_FORM_PHOTO_MODES,
+					admin: {
+						description:
+							"Whether the seller is asked for pictures. Hide it where there is nothing to photograph, such as a job offer, and choose “Optional” where a picture is welcome but not expected, such as a service. Changing this only changes what the form asks for — pictures already added to existing ads are kept.",
+					},
+				},
+				{
+					name: "priceLabel",
+					type: "text",
+					required: false,
+					localized: true,
+					label: "Price label",
+					admin: {
+						description:
+							"Wording shown above the price box, when “Price” is not the right word — for example “Loyer mensuel”, “Salaire” or “Tarif”. Leave empty for the default.",
+					},
+				},
+			],
 		},
 		{
 			name: "attributes",
 			type: "array",
 			required: false,
+			admin: {
+				description:
+					"Extra fields specific to this category. They appear in the ad form in the order listed here — drag a row to move it.",
+			},
 			fields: [
 				{
-					name: "name",
-					type: "text",
-					required: true,
-				},
-				{
-					name: "slug",
-					type: "text",
-					required: true,
-				},
-				{
-					name: "type",
-					type: "select",
-					required: true,
-					options: [
-						{ label: "Text", value: "text" },
-						{ label: "Number", value: "number" },
-						{ label: "Select", value: "select" },
-						{ label: "Boolean", value: "boolean" },
-						{ label: "Date", value: "date" },
+					type: "row",
+					fields: [
+						{
+							name: "name",
+							type: "text",
+							required: true,
+							localized: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "slug",
+							type: "text",
+							required: true,
+							admin: { width: "50%" },
+						},
 					],
 				},
 				{
-					name: "required",
-					type: "checkbox",
-					defaultValue: false,
-				},
-				{
-					name: "filterable",
-					type: "checkbox",
-					defaultValue: false,
+					type: "row",
+					fields: [
+						{
+							name: "type",
+							type: "select",
+							required: true,
+							options: [
+								{ label: "Text", value: "text" },
+								{ label: "Number", value: "number" },
+								{ label: "Select", value: "select" },
+								{ label: "Boolean", value: "boolean" },
+								{ label: "Date", value: "date" },
+							],
+							admin: { width: "50%" },
+						},
+						{
+							name: "required",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "25%" },
+						},
+						{
+							name: "filterable",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "25%" },
+						},
+					],
 				},
 				{
 					name: "options",
 					type: "array",
 					fields: [
 						{
-							name: "value",
-							type: "text",
-							required: true,
+							type: "row",
+							fields: [
+								{
+									name: "value",
+									type: "text",
+									required: true,
+									admin: {
+										width: "50%",
+										description:
+											"Stored on the ad and matched by the search filter. Do not change it once ads use it.",
+									},
+								},
+								{
+									name: "label",
+									type: "text",
+									required: false,
+									localized: true,
+									admin: {
+										width: "50%",
+										description:
+											"Shown to people instead of the value, e.g. “Comme neuf” for like_new. Leave empty to show the value.",
+									},
+								},
+							],
 						},
 					],
 					admin: {
 						condition: (_data, siblingData) => siblingData?.type === "select",
 					},
 				},
+				{
+					name: "unit",
+					type: "text",
+					required: false,
+					localized: true,
+					label: "Unit",
+					admin: {
+						description:
+							"Shown after the value, e.g. “km”, “m²”, “ch”. Leave empty when the field needs no unit.",
+					},
+				},
+				{
+					name: "group",
+					type: "text",
+					required: false,
+					localized: true,
+					label: "Section",
+					admin: {
+						description:
+							"Heading this field is filed under in the form and on the ad, e.g. “Engine” or “Surface”. Fields sharing a section are shown together. Leave empty to keep it ungrouped.",
+					},
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							name: "min",
+							type: "number",
+							required: false,
+							label: "Minimum value",
+							admin: {
+								width: "50%",
+								condition: (_data, siblingData) =>
+									siblingData?.type === "number",
+								description:
+									"Smallest value accepted, inclusive. Leave empty for no lower bound.",
+							},
+						},
+						{
+							name: "max",
+							type: "number",
+							required: false,
+							label: "Maximum value",
+							admin: {
+								width: "50%",
+								condition: (_data, siblingData) =>
+									siblingData?.type === "number",
+								description:
+									"Largest value accepted, inclusive. Leave empty for no upper bound.",
+							},
+						},
+					],
+				},
 			],
 		},
 		{
-			name: "createdAt",
-			type: "date",
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					// Overrides `AppSettings.orders.defaultCommissionRateBps` for every
+					// order item filed under this category. Collection-level access
+					// already restricts writes to staff; this is the same rule stated
+					// again at the field, since it is the one field here with money
+					// consequences.
+					name: "commissionRateBps",
+					type: "number",
+					min: 0,
+					max: 2000,
+					access: staffOnlyWrite,
+					admin: { width: "50%" },
+				},
+				{
+					name: "createdAt",
+					type: "date",
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 	],
 	timestamps: true,

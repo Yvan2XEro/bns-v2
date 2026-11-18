@@ -1,0 +1,427 @@
+import {
+	formatMoney,
+	formatMoneyFallback,
+	type MoneyFormat,
+} from "../contracts/money";
+import type { CommissionInvoice, CommissionLine } from "../payload-types";
+import { formatXaf } from "./orderFormat";
+import { type PdfLine, renderTextPdf } from "./textPdf";
+
+/** What a document knows of its money: the currency and the market's formats frozen at issue. */
+export interface DocumentMoney {
+	currency?: string | null;
+	formatSnapshot?: readonly MoneyFormat[] | null;
+}
+
+/**
+ * A document renders through the snapshot it was issued with. A document
+ * from before snapshots is XAF and keeps `formatXaf`; any other currency
+ * without a row for the language reads as "CODE 1 410", never a silent local symbol.
+ */
+function moneyFormatter(
+	{ currency, formatSnapshot }: DocumentMoney,
+	lang: "fr" | "en",
+): (amount: number) => string {
+	const row = formatSnapshot?.find((format) => format.locale === lang);
+	if (row) return (amount) => formatMoney(amount, row);
+	if (currency && currency !== "XAF") {
+		return (amount) => formatMoneyFallback(amount, currency, 0);
+	}
+	return (amount) => formatXaf(amount, lang);
+}
+
+export interface InvoiceDocumentLine {
+	orderNumber: string;
+	baseAmount: number;
+	amount: number;
+	kind: CommissionLine["kind"];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function str(value: unknown, key: string): string | null {
+	if (!isRecord(value)) return null;
+	const field = value[key];
+	return typeof field === "string" ? field : null;
+}
+
+/** Same rule as `orderReceipt.ts`'s `escapeHtml`: every interpolated value
+ * goes through this, including a shop's own display name, which it is free
+ * to fill with anything. */
+function escapeHtml(value: string): string {
+	return value
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+}
+
+function formatDate(iso: string, lang: "fr" | "en"): string {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return escapeHtml(iso);
+	return new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", {
+		dateStyle: "medium",
+	}).format(date);
+}
+
+const copy = {
+	fr: {
+		title: "Facture de commission",
+		invoice: "Facture",
+		period: "Periode",
+		issuedOn: "Emise le",
+		dueOn: "Echeance",
+		issuer: "Emetteur",
+		seller: "Vendeur",
+		order: "Commande",
+		kind: "Nature",
+		base: "Base",
+		amount: "Montant",
+		commissionTotal: "Total commission",
+		marginIncluded: "dont marge revendeur reversee, hors TVA",
+		vat: "TVA",
+		totalDue: "Total a payer",
+		kinds: {
+			charge: "Commission",
+			credit: "Avoir",
+			carry_over: "Report",
+			resale_margin: "Marge revendeur reversee (hors TVA)",
+			dispute_fee: "Frais de litige perdu",
+		},
+	},
+	en: {
+		title: "Commission invoice",
+		invoice: "Invoice",
+		period: "Period",
+		issuedOn: "Issued on",
+		dueOn: "Due",
+		issuer: "Issuer",
+		seller: "Seller",
+		order: "Order",
+		kind: "Kind",
+		base: "Base",
+		amount: "Amount",
+		commissionTotal: "Commission total",
+		marginIncluded: "of which reseller margin passed through, no VAT",
+		vat: "VAT",
+		totalDue: "Total due",
+		kinds: {
+			charge: "Commission",
+			credit: "Credit",
+			carry_over: "Carry-over",
+			resale_margin: "Reseller margin passed through (no VAT)",
+			dispute_fee: "Lost dispute fee",
+		},
+	},
+} as const;
+
+/**
+ * A self-contained HTML document for
+ * `GET /api/commission-invoices/{id}/document`: the issuer and seller
+ * snapshots as they were captured when the invoice was issued, never from
+ * the shop's current record, so a later edit to the shop's legal details
+ * does not retroactively change a document already sent.
+ */
+export function renderInvoiceHtml(
+	invoice: CommissionInvoice,
+	lines: ReadonlyArray<InvoiceDocumentLine>,
+	lang: "fr" | "en",
+): string {
+	const t = copy[lang];
+	const money = moneyFormatter(invoice, lang);
+	const seller = invoice.sellerSnapshot;
+	const issuer = invoice.issuerSnapshot;
+
+	const rows = lines
+		.map(
+			(line) => `
+			<tr>
+				<td>${escapeHtml(line.orderNumber)}</td>
+				<td>${escapeHtml(t.kinds[line.kind])}</td>
+				<td>${escapeHtml(money(line.baseAmount))}</td>
+				<td>${escapeHtml(money(line.amount))}</td>
+			</tr>`,
+		)
+		.join("");
+	const marginTotal = lines
+		.filter((line) => line.kind === "resale_margin")
+		.reduce((sum, line) => sum + line.amount, 0);
+
+	return `<!doctype html>
+<html lang="${lang}">
+<head>
+<meta charset="utf-8" />
+<title>${t.title} — ${escapeHtml(invoice.invoiceNumber)}</title>
+<style>
+	body { font-family: sans-serif; color: #111; }
+	table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+	td, th { padding: 4px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+	@media print { body { color: #000; } }
+</style>
+</head>
+<body>
+<h1>${t.title}</h1>
+<p>${t.invoice}: ${escapeHtml(invoice.invoiceNumber)}</p>
+<p>${t.period}: ${formatDate(invoice.periodStart ?? "", lang)} — ${formatDate(invoice.periodEnd ?? "", lang)}</p>
+<p>${t.issuedOn}: ${formatDate(invoice.issuedAt ?? "", lang)}</p>
+<p>${t.dueOn}: ${formatDate(invoice.dueAt ?? "", lang)}</p>
+<p>${t.issuer}: ${escapeHtml(str(issuer, "legalName") ?? "")}</p>
+<p>${t.seller}: ${escapeHtml(str(seller, "name") ?? "")}${
+		str(seller, "legalName")
+			? ` (${escapeHtml(str(seller, "legalName") ?? "")})`
+			: ""
+	}</p>
+<table>
+	<thead>
+		<tr>
+			<th>${t.order}</th>
+			<th>${t.kind}</th>
+			<th>${t.base}</th>
+			<th>${t.amount}</th>
+		</tr>
+	</thead>
+	<tbody>${rows}</tbody>
+</table>
+<p>${t.commissionTotal}: ${escapeHtml(money(invoice.commissionTotal ?? 0))}</p>${
+		marginTotal > 0
+			? `\n<p>${t.marginIncluded}: ${escapeHtml(money(marginTotal))}</p>`
+			: ""
+	}
+<p>${t.vat}: ${escapeHtml(money(invoice.vatAmount ?? 0))}</p>
+<p>${t.totalDue}: ${escapeHtml(money(invoice.totalDue ?? 0))}</p>
+</body>
+</html>`;
+}
+
+// ─── Series F: the buyer protection fee invoice and its credit note ─────────
+
+export interface BuyerFeeDocument extends DocumentMoney {
+	kind: "invoice" | "credit_note";
+	number: string;
+	/** The invoice a credit note cancels. */
+	creditsNumber: string | null;
+	issuedAt: string;
+	/** When the buyer's payment succeeded; invoices only. */
+	paidAt: string | null;
+	orderNumber: string;
+	customerName: string;
+	amountHt: number;
+	vat: number;
+	amountTtc: number;
+	vatRateBps: number;
+	issuer: { legalName: string; supportEmail: string };
+	/** The order's market zone: the day the dates read on. */
+	timezone: string;
+}
+
+/** French first: Law 2011/012 art. 6 wants both, these are PDFs, so accented. */
+export const BUYER_FEE_DOCUMENT_COPY = {
+	fr: {
+		invoiceTitle: "Facture — frais de protection acheteur",
+		creditNoteTitle: "Avoir — frais de protection acheteur",
+		number: "Numéro",
+		issuedOn: "Date d'émission",
+		credits: "Avoir sur la facture",
+		order: "Commande",
+		customer: "Client",
+		description: "Désignation",
+		service: "Service de protection acheteur",
+		amountHt: "Montant HT",
+		vat: "TVA",
+		amountTtc: "Montant TTC",
+		paidOn: "Payée par mobile money le",
+		refunded: "Montant remboursé au client",
+		issuer: "Émetteur",
+		contact: "Contact",
+	},
+	en: {
+		invoiceTitle: "Invoice — buyer protection fee",
+		creditNoteTitle: "Credit note — buyer protection fee",
+		number: "Number",
+		issuedOn: "Issue date",
+		credits: "Credits invoice",
+		order: "Order",
+		customer: "Customer",
+		description: "Description",
+		service: "Buyer protection service",
+		amountHt: "Amount excl. VAT",
+		vat: "VAT",
+		amountTtc: "Amount incl. VAT",
+		paidOn: "Paid by mobile money on",
+		refunded: "Amount refunded to the customer",
+		issuer: "Issuer",
+		contact: "Contact",
+	},
+} as const;
+
+function longDate(iso: string, lang: "fr" | "en", timezone: string): string {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return iso;
+	return new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", {
+		dateStyle: "long",
+		timeZone: timezone,
+	}).format(date);
+}
+
+/** `1925` → `19,25 %` / `19.25%`. */
+export function formatVatRate(bps: number, lang: "fr" | "en"): string {
+	const percent = (bps / 100).toFixed(2).replace(/\.?0+$/, "");
+	return lang === "fr" ? `${percent.replace(".", ",")} %` : `${percent}%`;
+}
+
+function feeSection(doc: BuyerFeeDocument, lang: "fr" | "en"): PdfLine[] {
+	const t = BUYER_FEE_DOCUMENT_COPY[lang];
+	const money = moneyFormatter(doc, lang);
+	const credit = doc.kind === "credit_note";
+	// French typography puts a space before the colon.
+	const colon = lang === "fr" ? " :" : ":";
+	const lines: PdfLine[] = [
+		{
+			text: credit ? t.creditNoteTitle : t.invoiceTitle,
+			bold: true,
+			size: 14,
+			gap: 12,
+		},
+		{ text: `${t.number}${colon} ${doc.number}` },
+		{
+			text: `${t.issuedOn}${colon} ${longDate(doc.issuedAt, lang, doc.timezone)}`,
+		},
+	];
+	if (credit && doc.creditsNumber) {
+		lines.push({ text: `${t.credits}${colon} ${doc.creditsNumber}` });
+	}
+	lines.push(
+		{ text: `${t.issuer}${colon} ${doc.issuer.legalName}` },
+		{ text: `${t.contact}${colon} ${doc.issuer.supportEmail}` },
+		{ text: `${t.order}${colon} ${doc.orderNumber}` },
+		{ text: `${t.customer}${colon} ${doc.customerName}` },
+		{ text: `${t.description}${colon} ${t.service}`, gap: 6 },
+		{ text: `${t.amountHt}${colon} ${money(doc.amountHt)}` },
+		{
+			text: `${t.vat} (${formatVatRate(doc.vatRateBps, lang)})${colon} ${money(doc.vat)}`,
+		},
+		{
+			text: `${t.amountTtc}${colon} ${money(doc.amountTtc)}`,
+			bold: true,
+		},
+	);
+	if (credit) {
+		lines.push({ text: t.refunded, gap: 6 });
+	} else if (doc.paidAt) {
+		lines.push({
+			text: `${t.paidOn} ${longDate(doc.paidAt, lang, doc.timezone)}`,
+			gap: 6,
+		});
+	}
+	return lines;
+}
+
+/** Pure: the document's text, French section then English. */
+export function buyerFeeDocumentLines(doc: BuyerFeeDocument): PdfLine[] {
+	return [...feeSection(doc, "fr"), ...feeSection(doc, "en")];
+}
+
+export function renderBuyerFeeDocumentPdf(doc: BuyerFeeDocument): Buffer {
+	return renderTextPdf(buyerFeeDocumentLines(doc));
+}
+
+// ─── Series A: the commission credit note ──────────────────────────────────
+
+export interface CreditNoteDocument extends DocumentMoney {
+	number: string;
+	/** The invoice the note credits. */
+	creditsNumber: string;
+	issuedAt: string;
+	sellerName: string;
+	orderNumbers: string[];
+	amountHt: number;
+	vat: number;
+	vatRateBps: number;
+	/** The note documents a reversal P5's ledger already made. */
+	documentsLedgerReversal: boolean;
+	issuer: { legalName: string };
+	/** The issuing shop's market zone: the day the dates read on. */
+	timezone: string;
+}
+
+export const CREDIT_NOTE_DOCUMENT_COPY = {
+	fr: {
+		title: "Avoir — commission",
+		number: "Numéro",
+		issuedOn: "Date d'émission",
+		credits: "Avoir sur la facture",
+		issuer: "Émetteur",
+		seller: "Vendeur",
+		orders: "Commande(s)",
+		description: "Désignation",
+		service: "Remboursement de la commission sur marchandise remboursée",
+		amountHt: "Montant HT",
+		vat: "TVA",
+		amountTtc: "Montant TTC",
+		netted: "Ce montant est déduit de votre prochaine facture de commission.",
+		documented:
+			"Ce montant a déjà été restitué par le règlement protégé ; cet avoir le documente.",
+	},
+	en: {
+		title: "Credit note — commission",
+		number: "Number",
+		issuedOn: "Issue date",
+		credits: "Credits invoice",
+		issuer: "Issuer",
+		seller: "Seller",
+		orders: "Order(s)",
+		description: "Description",
+		service: "Commission refund on refunded goods",
+		amountHt: "Amount excl. VAT",
+		vat: "VAT",
+		amountTtc: "Amount incl. VAT",
+		netted: "This amount is deducted from your next commission invoice.",
+		documented:
+			"This amount was already returned through the protected settlement; this note documents it.",
+	},
+} as const;
+
+function creditNoteSection(
+	doc: CreditNoteDocument,
+	lang: "fr" | "en",
+): PdfLine[] {
+	const t = CREDIT_NOTE_DOCUMENT_COPY[lang];
+	const money = moneyFormatter(doc, lang);
+	const colon = lang === "fr" ? " :" : ":";
+	return [
+		{ text: t.title, bold: true, size: 14, gap: 12 },
+		{ text: `${t.number}${colon} ${doc.number}` },
+		{
+			text: `${t.issuedOn}${colon} ${longDate(doc.issuedAt, lang, doc.timezone)}`,
+		},
+		{ text: `${t.credits}${colon} ${doc.creditsNumber}` },
+		{ text: `${t.issuer}${colon} ${doc.issuer.legalName}` },
+		{ text: `${t.seller}${colon} ${doc.sellerName}` },
+		{ text: `${t.orders}${colon} ${doc.orderNumbers.join(", ")}` },
+		{ text: `${t.description}${colon} ${t.service}`, gap: 6 },
+		{ text: `${t.amountHt}${colon} ${money(doc.amountHt)}` },
+		{
+			text: `${t.vat} (${formatVatRate(doc.vatRateBps, lang)})${colon} ${money(doc.vat)}`,
+		},
+		{
+			text: `${t.amountTtc}${colon} ${money(doc.amountHt + doc.vat)}`,
+			bold: true,
+		},
+		{
+			text: doc.documentsLedgerReversal ? t.documented : t.netted,
+			gap: 6,
+		},
+	];
+}
+
+/** Pure: the credit note's text, French section then English. */
+export function creditNoteDocumentLines(doc: CreditNoteDocument): PdfLine[] {
+	return [...creditNoteSection(doc, "fr"), ...creditNoteSection(doc, "en")];
+}
+
+export function renderCreditNotePdf(doc: CreditNoteDocument): Buffer {
+	return renderTextPdf(creditNoteDocumentLines(doc));
+}

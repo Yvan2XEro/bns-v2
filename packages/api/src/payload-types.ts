@@ -70,37 +70,169 @@ export interface Config {
     users: User;
     media: Media;
     listings: Listing;
+    'listing-view-flushes': ListingViewFlush;
     categories: Category;
     favorites: Favorite;
     conversations: Conversation;
+    'conversation-reads': ConversationRead;
     messages: Message;
     reviews: Review;
     reports: Report;
+    'resale-links': ResaleLink;
+    'resale-terms': ResaleTerm;
+    'resale-terms-acceptances': ResaleTermsAcceptance;
     'boost-payments': BoostPayment;
+    'payment-intents': PaymentIntent;
+    'webhook-events': WebhookEvent;
+    'contact-reveals': ContactReveal;
+    'delivery-zones': DeliveryZone;
+    markets: Market;
+    'market-cities': MarketCity;
+    'shop-locations': ShopLocation;
+    couriers: Courier;
+    'courier-members': CourierMember;
+    shipments: Shipment;
+    'shipment-events': ShipmentEvent;
+    'delivery-proofs': DeliveryProof;
     'saved-searches': SavedSearch;
+    addresses: Address;
     'blocked-users': BlockedUser;
     tags: Tag;
+    'moderation-log': ModerationLog;
+    shops: Shop;
+    'shop-members': ShopMember;
+    'shop-activity-log': ShopActivityLog;
+    'shop-invitations': ShopInvitation;
+    products: Product;
+    'purchase-orders': PurchaseOrder;
+    'reseller-commissions': ResellerCommission;
+    'reseller-charges': ResellerCharge;
+    'reseller-payouts': ResellerPayout;
+    'product-variants': ProductVariant;
+    'stock-movements': StockMovement;
+    'stock-count-sessions': StockCountSession;
+    'verification-requests': VerificationRequest;
+    'verification-documents': VerificationDocument;
+    'verification-document-views': VerificationDocumentView;
+    sequences: Sequence;
+    carts: Cart;
+    orders: Order;
+    'order-items': OrderItem;
+    'order-events': OrderEvent;
+    'buyer-phone-scores': BuyerPhoneScore;
+    'commission-lines': CommissionLine;
+    'commission-invoices': CommissionInvoice;
+    'return-cases': ReturnCase;
+    'shop-daily-stats': ShopDailyStat;
+    'risk-flags': RiskFlag;
+    'payment-gate-evidence': PaymentGateEvidence;
+    'dispute-gate-evidence': DisputeGateEvidence;
+    disputes: Dispute;
+    'dispute-messages': DisputeMessage;
+    'dispute-evidence': DisputeEvidence;
+    'dispute-evidence-views': DisputeEvidenceView;
+    'shop-strikes': ShopStrike;
+    'risk-signal-outbox': RiskSignalOutbox;
+    'connected-accounts': ConnectedAccount;
+    'payout-accounts': PayoutAccount;
+    refunds: Refund;
+    payouts: Payout;
+    'payout-holds': PayoutHold;
+    'ledger-accounts': LedgerAccount;
+    'ledger-transactions': LedgerTransaction;
+    'buyer-fee-invoices': BuyerFeeInvoice;
+    'buyer-fee-invoice-files': BuyerFeeInvoiceFile;
+    'reconciliation-runs': ReconciliationRun;
+    'reconciliation-mismatches': ReconciliationMismatch;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    'verification-requests': {
+      documents: 'verification-documents';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     listings: ListingsSelect<false> | ListingsSelect<true>;
+    'listing-view-flushes': ListingViewFlushesSelect<false> | ListingViewFlushesSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     favorites: FavoritesSelect<false> | FavoritesSelect<true>;
     conversations: ConversationsSelect<false> | ConversationsSelect<true>;
+    'conversation-reads': ConversationReadsSelect<false> | ConversationReadsSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     reports: ReportsSelect<false> | ReportsSelect<true>;
+    'resale-links': ResaleLinksSelect<false> | ResaleLinksSelect<true>;
+    'resale-terms': ResaleTermsSelect<false> | ResaleTermsSelect<true>;
+    'resale-terms-acceptances': ResaleTermsAcceptancesSelect<false> | ResaleTermsAcceptancesSelect<true>;
     'boost-payments': BoostPaymentsSelect<false> | BoostPaymentsSelect<true>;
+    'payment-intents': PaymentIntentsSelect<false> | PaymentIntentsSelect<true>;
+    'webhook-events': WebhookEventsSelect<false> | WebhookEventsSelect<true>;
+    'contact-reveals': ContactRevealsSelect<false> | ContactRevealsSelect<true>;
+    'delivery-zones': DeliveryZonesSelect<false> | DeliveryZonesSelect<true>;
+    markets: MarketsSelect<false> | MarketsSelect<true>;
+    'market-cities': MarketCitiesSelect<false> | MarketCitiesSelect<true>;
+    'shop-locations': ShopLocationsSelect<false> | ShopLocationsSelect<true>;
+    couriers: CouriersSelect<false> | CouriersSelect<true>;
+    'courier-members': CourierMembersSelect<false> | CourierMembersSelect<true>;
+    shipments: ShipmentsSelect<false> | ShipmentsSelect<true>;
+    'shipment-events': ShipmentEventsSelect<false> | ShipmentEventsSelect<true>;
+    'delivery-proofs': DeliveryProofsSelect<false> | DeliveryProofsSelect<true>;
     'saved-searches': SavedSearchesSelect<false> | SavedSearchesSelect<true>;
+    addresses: AddressesSelect<false> | AddressesSelect<true>;
     'blocked-users': BlockedUsersSelect<false> | BlockedUsersSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
+    'moderation-log': ModerationLogSelect<false> | ModerationLogSelect<true>;
+    shops: ShopsSelect<false> | ShopsSelect<true>;
+    'shop-members': ShopMembersSelect<false> | ShopMembersSelect<true>;
+    'shop-activity-log': ShopActivityLogSelect<false> | ShopActivityLogSelect<true>;
+    'shop-invitations': ShopInvitationsSelect<false> | ShopInvitationsSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
+    'purchase-orders': PurchaseOrdersSelect<false> | PurchaseOrdersSelect<true>;
+    'reseller-commissions': ResellerCommissionsSelect<false> | ResellerCommissionsSelect<true>;
+    'reseller-charges': ResellerChargesSelect<false> | ResellerChargesSelect<true>;
+    'reseller-payouts': ResellerPayoutsSelect<false> | ResellerPayoutsSelect<true>;
+    'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
+    'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
+    'stock-count-sessions': StockCountSessionsSelect<false> | StockCountSessionsSelect<true>;
+    'verification-requests': VerificationRequestsSelect<false> | VerificationRequestsSelect<true>;
+    'verification-documents': VerificationDocumentsSelect<false> | VerificationDocumentsSelect<true>;
+    'verification-document-views': VerificationDocumentViewsSelect<false> | VerificationDocumentViewsSelect<true>;
+    sequences: SequencesSelect<false> | SequencesSelect<true>;
+    carts: CartsSelect<false> | CartsSelect<true>;
+    orders: OrdersSelect<false> | OrdersSelect<true>;
+    'order-items': OrderItemsSelect<false> | OrderItemsSelect<true>;
+    'order-events': OrderEventsSelect<false> | OrderEventsSelect<true>;
+    'buyer-phone-scores': BuyerPhoneScoresSelect<false> | BuyerPhoneScoresSelect<true>;
+    'commission-lines': CommissionLinesSelect<false> | CommissionLinesSelect<true>;
+    'commission-invoices': CommissionInvoicesSelect<false> | CommissionInvoicesSelect<true>;
+    'return-cases': ReturnCasesSelect<false> | ReturnCasesSelect<true>;
+    'shop-daily-stats': ShopDailyStatsSelect<false> | ShopDailyStatsSelect<true>;
+    'risk-flags': RiskFlagsSelect<false> | RiskFlagsSelect<true>;
+    'payment-gate-evidence': PaymentGateEvidenceSelect<false> | PaymentGateEvidenceSelect<true>;
+    'dispute-gate-evidence': DisputeGateEvidenceSelect<false> | DisputeGateEvidenceSelect<true>;
+    disputes: DisputesSelect<false> | DisputesSelect<true>;
+    'dispute-messages': DisputeMessagesSelect<false> | DisputeMessagesSelect<true>;
+    'dispute-evidence': DisputeEvidenceSelect<false> | DisputeEvidenceSelect<true>;
+    'dispute-evidence-views': DisputeEvidenceViewsSelect<false> | DisputeEvidenceViewsSelect<true>;
+    'shop-strikes': ShopStrikesSelect<false> | ShopStrikesSelect<true>;
+    'risk-signal-outbox': RiskSignalOutboxSelect<false> | RiskSignalOutboxSelect<true>;
+    'connected-accounts': ConnectedAccountsSelect<false> | ConnectedAccountsSelect<true>;
+    'payout-accounts': PayoutAccountsSelect<false> | PayoutAccountsSelect<true>;
+    refunds: RefundsSelect<false> | RefundsSelect<true>;
+    payouts: PayoutsSelect<false> | PayoutsSelect<true>;
+    'payout-holds': PayoutHoldsSelect<false> | PayoutHoldsSelect<true>;
+    'ledger-accounts': LedgerAccountsSelect<false> | LedgerAccountsSelect<true>;
+    'ledger-transactions': LedgerTransactionsSelect<false> | LedgerTransactionsSelect<true>;
+    'buyer-fee-invoices': BuyerFeeInvoicesSelect<false> | BuyerFeeInvoicesSelect<true>;
+    'buyer-fee-invoice-files': BuyerFeeInvoiceFilesSelect<false> | BuyerFeeInvoiceFilesSelect<true>;
+    'reconciliation-runs': ReconciliationRunsSelect<false> | ReconciliationRunsSelect<true>;
+    'reconciliation-mismatches': ReconciliationMismatchesSelect<false> | ReconciliationMismatchesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -110,7 +242,7 @@ export interface Config {
   db: {
     defaultIDType: string;
   };
-  fallbackLocale: null;
+  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('fr' | 'en') | ('fr' | 'en')[];
   globals: {
     'app-settings': AppSetting;
     'payload-jobs-stats': PayloadJobsStat;
@@ -119,7 +251,7 @@ export interface Config {
     'app-settings': AppSettingsSelect<false> | AppSettingsSelect<true>;
     'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>;
   };
-  locale: null;
+  locale: 'fr' | 'en';
   widgets: {
     collections: CollectionsWidget;
   };
@@ -127,8 +259,57 @@ export interface Config {
   jobs: {
     tasks: {
       expireListings: TaskExpireListings;
-      checkSearchAlerts: TaskCheckSearchAlerts;
       expireBoosts: TaskExpireBoosts;
+      checkSearchAlerts: TaskCheckSearchAlerts;
+      consumeRiskSignalOutbox: TaskConsumeRiskSignalOutbox;
+      processWebhookEvent: TaskProcessWebhookEvent;
+      reconcilePendingPayments: TaskReconcilePendingPayments;
+      liftExpiredShopSuspensions: TaskLiftExpiredShopSuspensions;
+      processKycEvent: TaskProcessKycEvent;
+      purgeVerificationData: TaskPurgeVerificationData;
+      purgeShopActivity: TaskPurgeShopActivity;
+      purgeRiskData: TaskPurgeRiskData;
+      abandonCarts: TaskAbandonCarts;
+      applyResalePriceChanges: TaskApplyResalePriceChanges;
+      advanceReturnCases: TaskAdvanceReturnCases;
+      advanceDisputes: TaskAdvanceDisputes;
+      purgeCaseEvidence: TaskPurgeCaseEvidence;
+      expireStrikes: TaskExpireStrikes;
+      publishHeldReviews: TaskPublishHeldReviews;
+      issueCommissionInvoices: TaskIssueCommissionInvoices;
+      enforceCommissionOverdue: TaskEnforceCommissionOverdue;
+      enforceResaleTerms: TaskEnforceResaleTerms;
+      refreshResaleLinkStats: TaskRefreshResaleLinkStats;
+      reconcileStockCaches: TaskReconcileStockCaches;
+      renderDisputeCertificate: TaskRenderDisputeCertificate;
+      dispatchOrderEvent: TaskDispatchOrderEvent;
+      expireOrders: TaskExpireOrders;
+      expirePurchaseOrders: TaskExpirePurchaseOrders;
+      failStaleOrders: TaskFailStaleOrders;
+      flushListingViews: TaskFlushListingViews;
+      aggregateShopDailyStats: TaskAggregateShopDailyStats;
+      recomputeShopRankings: TaskRecomputeShopRankings;
+      sendWeeklyInsights: TaskSendWeeklyInsights;
+      completeOrders: TaskCompleteOrders;
+      markOverdueResellerCharges: TaskMarkOverdueResellerCharges;
+      payResellerCommissions: TaskPayResellerCommissions;
+      releaseResellerCommissions: TaskReleaseResellerCommissions;
+      retryResellerPayouts: TaskRetryResellerPayouts;
+      submitRefund: TaskSubmitRefund;
+      syncConnectedAccount: TaskSyncConnectedAccount;
+      releaseEligibleFunds: TaskReleaseEligibleFunds;
+      expirePayoutHolds: TaskExpirePayoutHolds;
+      reconcileLedger: TaskReconcileLedger;
+      recoverSellerReceivables: TaskRecoverSellerReceivables;
+      sweepBuyerFeeInvoices: TaskSweepBuyerFeeInvoices;
+      processCourierWebhookEvent: TaskProcessCourierWebhookEvent;
+      pollCourierShipments: TaskPollCourierShipments;
+      finalizeFailedShipments: TaskFinalizeFailedShipments;
+      expirePickupHolds: TaskExpirePickupHolds;
+      flagLateShipments: TaskFlagLateShipments;
+      remindReturns: TaskRemindReturns;
+      expireRiderLinks: TaskExpireRiderLinks;
+      purgeDeliveryProofs: TaskPurgeDeliveryProofs;
       inline: {
         input: unknown;
         output: unknown;
@@ -168,23 +349,73 @@ export interface User {
   providerAccountId: string;
   authProviders?:
     | {
-        provider: 'local' | 'google' | 'apple' | 'facebook';
+        provider: 'local' | 'google' | 'apple' | 'facebook' | 'oidc';
         providerAccountId: string;
+        refreshToken?: string | null;
         id?: string | null;
       }[]
     | null;
   rating?: number | null;
   totalReviews?: number | null;
   bio?: string | null;
+  language?: ('fr' | 'en') | null;
+  emailVerificationSentAt?: string | null;
   phone?: string | null;
+  phoneVerified?: boolean | null;
   pendingPhone?: string | null;
   phoneVerifiedAt?: string | null;
   phoneVerificationCodeHash?: string | null;
   phoneVerificationExpiresAt?: string | null;
   phoneVerificationAttempts?: number | null;
   phoneVerificationLastSentAt?: string | null;
+  /**
+   * Free-text place shown on the public profile. Typed by the user; not derived from GPS.
+   */
   location?: string | null;
+  /**
+   * Structured place last confirmed by the user, kept in sync with the mobile app.
+   */
+  homeLocation?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+    /**
+     * ISO 3166-1 alpha-2, uppercase.
+     */
+    countryCode?: string | null;
+    source?: ('device' | 'manual') | null;
+    /**
+     * Conflict resolution between the device copy and this one — last write wins.
+     */
+    updatedAt?: string | null;
+  };
+  /**
+   * Derived from identityVerifiedAt. Not stored.
+   */
   verified?: boolean | null;
+  /**
+   * Set when a level-2 request is approved, cleared on revoke or expiry. Written only by services/verification.ts.
+   */
+  identityVerifiedAt?: string | null;
+  identityVerification?: (string | null) | VerificationRequest;
+  legacyVerifiedAt?: string | null;
+  /**
+   * When the current suspension was applied. Empty means the account has never been suspended, or the sanction was lifted.
+   */
+  suspendedAt?: string | null;
+  /**
+   * When the suspension lifts. Empty while suspendedAt is set means the suspension is indefinite.
+   */
+  suspendedUntil?: string | null;
+  /**
+   * Shared with the suspended account.
+   */
+  suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
+  /**
+   * Internal. Never shown to the suspended account.
+   */
+  suspendedNote?: string | null;
+  suspendedBy?: (string | null) | User;
   createdAt: string;
   updatedAt: string;
   email: string;
@@ -192,6 +423,8 @@ export interface User {
   resetPasswordExpiration?: string | null;
   salt?: string | null;
   hash?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   sessions?:
@@ -225,13 +458,425 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-requests".
+ */
+export interface VerificationRequest {
+  id: string;
+  shop: string | Shop;
+  /**
+   * 2 = identity, 3 = business.
+   */
+  requestedLevel: number;
+  submittedBy: string | User;
+  status: 'draft' | 'submitted' | 'in_review' | 'needs_info' | 'approved' | 'rejected' | 'revoked' | 'expired';
+  statusHistory?:
+    | {
+        status: 'draft' | 'submitted' | 'in_review' | 'needs_info' | 'approved' | 'rejected' | 'revoked' | 'expired';
+        at: string;
+        actor?: (string | null) | User;
+        source: 'seller' | 'reviewer' | 'vendor' | 'system';
+        id?: string | null;
+      }[]
+    | null;
+  openKey?: string | null;
+  consent?: {
+    acceptedAt?: string | null;
+    version?: string | null;
+    locale?: ('fr' | 'en') | null;
+  };
+  /**
+   * Level 2 only. No biometric or image data is ever stored here.
+   */
+  kyc?: {
+    provider?: ('didit' | 'smileid') | null;
+    sessionRef?: string | null;
+    status?: ('not_started' | 'pending' | 'approved' | 'declined' | 'review' | 'abandoned' | 'error') | null;
+    attempts?: number | null;
+    decidedAt?: string | null;
+    documentType?: ('national_id' | 'passport' | 'residence_permit') | null;
+    documentCountry?: string | null;
+    documentNumberHash?: string | null;
+    documentNumberLast4?: string | null;
+    documentExpiresAt?: string | null;
+    givenNames?: string | null;
+    familyName?: string | null;
+    adult?: boolean | null;
+    livenessPassed?: boolean | null;
+    faceMatchScore?: number | null;
+    vendorWarnings?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    vendorReviewUrl?: string | null;
+    vendorDataDeletedAt?: string | null;
+  };
+  /**
+   * Level 3 only.
+   */
+  business?: {
+    businessType?: ('entreprenant' | 'sole_trader' | 'company' | 'cooperative') | null;
+    legalName?: string | null;
+    tradeName?: string | null;
+    rccmNumber?: string | null;
+    entreprenantDeclarationNumber?: string | null;
+    niu?: string | null;
+    registeredAddress?: string | null;
+    city?: string | null;
+    legalRepresentativeName?: string | null;
+    legalRepresentativeIsOwner?: boolean | null;
+  };
+  reviewSignals?:
+    | {
+        code:
+          | 'identity_reused'
+          | 'name_mismatch'
+          | 'underage'
+          | 'kyc_declined'
+          | 'kyc_review'
+          | 'document_reused'
+          | 'rccm_reused'
+          | 'niu_reused'
+          | 'niu_format';
+        detail?: string | null;
+        relatedRequest?: (string | null) | VerificationRequest;
+        id?: string | null;
+      }[]
+    | null;
+  assignee?: (string | null) | User;
+  claimedAt?: string | null;
+  infoRequests?:
+    | {
+        reasonCode: 'document_unreadable' | 'document_missing' | 'information_inconsistent' | 'kyc_retry' | 'other';
+        message: string;
+        requestedBy?: (string | null) | User;
+        requestedAt: string;
+        respondedAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  decision?: {
+    decidedBy?: (string | null) | User;
+    decidedAt?: string | null;
+    reasonCode?: string | null;
+    sellerMessage?: string | null;
+    internalNote?: string | null;
+    checklist?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  submittedAt?: string | null;
+  approvedAt?: string | null;
+  expiresAt?: string | null;
+  revokedAt?: string | null;
+  supersedes?: (string | null) | VerificationRequest;
+  previousRequest?: (string | null) | VerificationRequest;
+  documents?: {
+    docs?: (string | VerificationDocument)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shops".
+ */
+export interface Shop {
+  id: string;
+  handle: string;
+  previousHandles?:
+    | {
+        handle: string;
+        until: string;
+        id?: string | null;
+      }[]
+    | null;
+  handleChangedAt?: string | null;
+  name: string;
+  description?: string | null;
+  returnPolicy?: string | null;
+  logo?: (string | null) | Media;
+  banner?: (string | null) | Media;
+  brandColor?: string | null;
+  contact?: {
+    phone?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+  };
+  location?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+    countryCode?: string | null;
+  };
+  /**
+   * The kind of business: a store sells goods from a catalogue; an agency, an employer and a provider publish rentals, job offers and services as ads, without stock or orders (contracts/listingKinds.ts).
+   */
+  profile: 'store' | 'agency' | 'employer' | 'provider';
+  categories?: (string | Category)[] | null;
+  owner: string | User;
+  status: 'active' | 'suspended' | 'closed';
+  level?: number | null;
+  /**
+   * Earliest expiry among the requests backing the current level. Read through shopCapabilities, which compares it at read time — never trust a job to have lowered `level` already.
+   */
+  levelExpiresAt?: string | null;
+  /**
+   * When level 2 was first reached.
+   */
+  verifiedAt?: string | null;
+  /**
+   * The expiry-notice threshold (30 or 7 days) last sent for the current levelExpiresAt, so the nightly purge fires each one once. Written only by jobs/purgeVerificationData.ts through writeShop.
+   */
+  notifiedExpiryDays?: number | null;
+  /**
+   * Start of the Douala week the weekly insights notice was last sent for; jobs/sendWeeklyInsights.ts sends each shop once per week.
+   */
+  weeklyInsightsSentFor?: string | null;
+  /**
+   * Prevents duplicate P7 migration notices to the shop owner.
+   */
+  deliveryMigrationNoticeSentAt?: string | null;
+  legal?: {
+    businessType?: ('entreprenant' | 'sole_trader' | 'company' | 'cooperative') | null;
+    legalName?: string | null;
+    rccmNumber?: string | null;
+    niu?: string | null;
+    verifiedAt?: string | null;
+  };
+  closedAt?: string | null;
+  suspendedAt?: string | null;
+  suspendedUntil?: string | null;
+  suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
+  suspendedNote?: string | null;
+  suspendedBy?: (string | null) | User;
+  suspensionLogId?: string | null;
+  publishedListingCount?: number | null;
+  orderSettings?: {
+    codEnabled?: boolean | null;
+    sellerDeliveryEnabled?: boolean | null;
+    /**
+     * Deprecated: replaced by delivery zones; retained for the transition release.
+     */
+    deliveryFee?: number | null;
+    /**
+     * Deprecated: replaced by delivery zone ETA; retained for the transition release.
+     */
+    deliveryEtaText?: string | null;
+    pickupEnabled?: boolean | null;
+    /**
+     * Deprecated: replaced by shop locations; retained for the transition release.
+     */
+    pickupPoint?: {
+      address?: string | null;
+      landmark?: string | null;
+      gps?: {
+        lat?: number | null;
+        lng?: number | null;
+      };
+      hours?: string | null;
+    };
+    recentExternalRiders?:
+      | {
+          name: string;
+          phone: string;
+          lastUsedAt: string;
+          id?: string | null;
+        }[]
+      | null;
+    salesTermsExtra?: string | null;
+  };
+  ordersRestrictedAt?: string | null;
+  ordersRestrictedReason?: ('commission_overdue' | 'staff') | null;
+  rating?: number | null;
+  totalReviews?: number | null;
+  stats?: {
+    ordersDelivered?: number | null;
+    ordersCancelledBySeller?: number | null;
+    ordersAutoCancelled?: number | null;
+    ordersDeliveryFailed?: number | null;
+  };
+  resaleStats?: {
+    medianShipHours?: number | null;
+    medianResponseHours?: number | null;
+    computedAt?: string | null;
+  };
+  trustStats?: {
+    responseTime?: ('under_1h' | 'under_3h' | 'same_day' | 'few_days') | null;
+    responseSample?: number | null;
+    computedAt?: string | null;
+  };
+  rankingScore?: number | null;
+  rankingSignals?: {
+    ordersPlaced?: number | null;
+    ordersAccepted?: number | null;
+    ordersDelivered?: number | null;
+    catalogueUpdatedAt?: string | null;
+  };
+  featured?: {
+    until?: string | null;
+    /**
+     * Empty: every city.
+     */
+    cities?: string[] | null;
+    /**
+     * Empty: every category.
+     */
+    categories?: (string | Category)[] | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  /**
+   * Words a seller is likely to type in an ad title for this category, separated by commas — brands, slang and the other language: “voiture, bagnole, toyota, hyundai”. They are what lets the ad form guess the category from the title, and they also widen the category search. Nothing here is ever shown to buyers.
+   */
+  searchAliases?: string | null;
+  icon?: string | null;
+  image?: (string | null) | Media;
+  parent?: (string | null) | Category;
+  active?: boolean | null;
+  /**
+   * Enable only when a documented legal exception applies.
+   */
+  withdrawalExcluded?: boolean | null;
+  /**
+   * Decides which of the two built-in fields — price and photos — the ad form shows for this category. Leave everything on “Inherit” to keep the current behaviour: the setting is then taken from the closest parent category that defines one. An item's condition is an ordinary attribute below (« État », slug “condition”).
+   */
+  listingForm?: {
+    /**
+     * Pick the closest match and the fields below follow automatically. Set this on a top-level category and every category underneath inherits it.
+     */
+    type?: ('auto' | 'product' | 'service' | 'job' | 'rental' | 'generic') | null;
+    /**
+     * Overrides the price rule that “Kind of ad” would give. Use it for the odd category that does not fit its preset.
+     */
+    price?: ('auto' | 'hidden' | 'optional' | 'required') | null;
+    /**
+     * Whether the seller is asked for pictures. Hide it where there is nothing to photograph, such as a job offer, and choose “Optional” where a picture is welcome but not expected, such as a service. Changing this only changes what the form asks for — pictures already added to existing ads are kept.
+     */
+    photos?: ('auto' | 'hidden' | 'optional' | 'required') | null;
+    /**
+     * Wording shown above the price box, when “Price” is not the right word — for example “Loyer mensuel”, “Salaire” or “Tarif”. Leave empty for the default.
+     */
+    priceLabel?: string | null;
+  };
+  /**
+   * Extra fields specific to this category. They appear in the ad form in the order listed here — drag a row to move it.
+   */
+  attributes?:
+    | {
+        name: string;
+        slug: string;
+        type: 'text' | 'number' | 'select' | 'boolean' | 'date';
+        required?: boolean | null;
+        filterable?: boolean | null;
+        options?:
+          | {
+              /**
+               * Stored on the ad and matched by the search filter. Do not change it once ads use it.
+               */
+              value: string;
+              /**
+               * Shown to people instead of the value, e.g. “Comme neuf” for like_new. Leave empty to show the value.
+               */
+              label?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        /**
+         * Shown after the value, e.g. “km”, “m²”, “ch”. Leave empty when the field needs no unit.
+         */
+        unit?: string | null;
+        /**
+         * Heading this field is filed under in the form and on the ad, e.g. “Engine” or “Surface”. Fields sharing a section are shown together. Leave empty to keep it ungrouped.
+         */
+        group?: string | null;
+        /**
+         * Smallest value accepted, inclusive. Leave empty for no lower bound.
+         */
+        min?: number | null;
+        /**
+         * Largest value accepted, inclusive. Leave empty for no upper bound.
+         */
+        max?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  commissionRateBps?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-documents".
+ */
+export interface VerificationDocument {
+  id: string;
+  request: string | VerificationRequest;
+  shop: string | Shop;
+  kind:
+    | 'rccm_extract'
+    | 'entreprenant_declaration'
+    | 'niu_certificate'
+    | 'legal_representative_id'
+    | 'mandate'
+    | 'other';
+  sha256?: string | null;
+  originalFilename?: string | null;
+  uploadedBy?: (string | null) | User;
+  duplicateOf?: (string | VerificationDocument)[] | null;
+  purgedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "listings".
  */
 export interface Listing {
   id: string;
   title: string;
   description: string;
-  price: number;
+  price?: number | null;
+  /**
+   * What the price covers: a month's rent, a night, an hourly rate. Empty means a one-off price. Only the units the ad's kind allows are accepted (contracts/listingKinds.ts).
+   */
+  priceUnit?: ('total' | 'month' | 'week' | 'day' | 'night' | 'hour') | null;
+  /**
+   * Copied from the category's “Kind of ad” on every write that touches the category; decides the ad page's actions. Never set by a client.
+   */
+  kind?: ('product' | 'service' | 'job' | 'rental' | 'generic') | null;
   images?:
     | {
         image: string | Media;
@@ -259,43 +904,75 @@ export interface Listing {
     lng?: number | null;
   };
   /**
-   * Reason for rejection (visible to seller)
+   * Why the listing was refused, shown to the seller in their language.
+   */
+  rejectionCode?:
+    | (
+        | 'prohibited_item'
+        | 'misleading'
+        | 'wrong_category'
+        | 'poor_photos'
+        | 'missing_details'
+        | 'price_issue'
+        | 'duplicate'
+        | 'contact_details'
+        | 'offensive'
+        | 'suspected_scam'
+        | 'other'
+      )
+    | null;
+  /**
+   * The moderator's own words to the seller, beside the reason. Optional, except for “other”.
    */
   rejectionReason?: string | null;
-  condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
   tags?: (string | Tag)[] | null;
-  createdAt: string;
-  updatedAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories".
- */
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  icon?: string | null;
-  image?: (string | null) | Media;
-  parent?: (string | null) | Category;
-  active?: boolean | null;
-  attributes?:
-    | {
-        name: string;
-        slug: string;
-        type: 'text' | 'number' | 'select' | 'boolean' | 'date';
-        required?: boolean | null;
-        filterable?: boolean | null;
-        options?:
-          | {
-              value: string;
-              id?: string | null;
-            }[]
-          | null;
-        id?: string | null;
-      }[]
-    | null;
+  shop?: (string | null) | Shop;
+  product?: (string | null) | Product;
+  /**
+   * Derived from the product's variants by the product service.
+   */
+  productSummary?: {
+    priceMin?: number | null;
+    priceMax?: number | null;
+    /**
+     * Buyer-safe purchasability signal, not a unit count — the exact aggregate stays on the privileged catalogue view only.
+     */
+    available?: boolean | null;
+    variantCount?: number | null;
+    trackInventory?: boolean | null;
+  };
+  resale: {
+    supplierShop?: (string | null) | Shop;
+    link?: (string | null) | ResaleLink;
+    prices?:
+      | {
+          variant: string | ProductVariant;
+          price: number;
+          id?: string | null;
+        }[]
+      | null;
+    desiredStatus: 'published' | 'draft';
+    holds?:
+      | (
+          | 'price_below_minimum'
+          | 'link_inactive'
+          | 'product_unavailable'
+          | 'supplier_unavailable'
+          | 'reseller_ineligible'
+          | 'reseller_level_too_low'
+          | 'terms_not_accepted'
+          | 'moderation'
+        )[]
+      | null;
+  };
+  /**
+   * Set when a moderator takes this listing down and chooses not to restore it. Blocks the product service from republishing it on an ordinary sync (a stock movement, a product edit) until a moderator clears it.
+   */
+  moderationHold?: boolean | null;
+  /**
+   * Derived at read time from order settings, the shop and the product (lib/orderable.ts#isListingOrderable). Not stored.
+   */
+  orderable?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -314,6 +991,176 @@ export interface Tag {
    * Optional emoji to display with the tag (e.g. 🤝)
    */
   emoji?: string | null;
+  /**
+   * Categories this tag is offered in. A category also gets the tags of every category above it, so pick the highest one where the tag still makes sense. A tag with no category is offered nowhere.
+   */
+  categories?: (string | Category)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: string;
+  shop: string | Shop;
+  title: string;
+  description?: string | null;
+  category: string | Category;
+  attributes?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  images?:
+    | {
+        image: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  status: 'draft' | 'active' | 'archived';
+  options?:
+    | {
+        name: string;
+        values: string[];
+        id?: string | null;
+      }[]
+    | null;
+  delivery?: {
+    handlingHours?: number | null;
+    weightGrams?: number | null;
+    codAllowed?: boolean | null;
+    pickupAllowed?: boolean | null;
+  };
+  resale?: {
+    enabled?: boolean | null;
+    approvalRequired?: boolean | null;
+    handlingHours?: number | null;
+    codAccepted?: boolean | null;
+    minResellerLevel?: number | null;
+    resellerNotes?: string | null;
+    enabledAt?: string | null;
+    resellerCount?: number | null;
+    pendingChange?: {
+      effectiveAt?: string | null;
+      variants?:
+        | {
+            variant?: (string | null) | ProductVariant;
+            supplierPrice?: number | null;
+            minRetailPrice?: number | null;
+            suggestedRetailPrice?: number | null;
+            id?: string | null;
+          }[]
+        | null;
+    };
+  };
+  returnPolicy?: string | null;
+  /**
+   * Shop warranty shown to buyers, in months.
+   */
+  warrantyMonths?: number | null;
+  /**
+   * The published listing, written by the product service.
+   */
+  listing?: (string | null) | Listing;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-variants".
+ */
+export interface ProductVariant {
+  id: string;
+  product: string | Product;
+  shop: string | Shop;
+  optionValues?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  sku?: string | null;
+  price: number;
+  cost?: number | null;
+  barcode?: string | null;
+  trackInventory?: boolean | null;
+  stockOnHand?: number | null;
+  stockReserved?: number | null;
+  lowStockThreshold?: number | null;
+  /**
+   * Buyer-safe purchasability signal: true when the variant can be bought right now.
+   */
+  available?: boolean | null;
+  /**
+   * Set when the variant is removed from its product; movements are kept.
+   */
+  archivedAt?: string | null;
+  resale?: {
+    enabled?: boolean | null;
+    supplierPrice?: number | null;
+    minRetailPrice?: number | null;
+    suggestedRetailPrice?: number | null;
+    /**
+     * Set by the resale service whenever the minimum retail price changes; empty for minimums set before it was recorded.
+     */
+    minRetailPriceChangedAt?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "resale-links".
+ */
+export interface ResaleLink {
+  id: string;
+  supplierShop: string | Shop;
+  resellerShop: string | Shop;
+  status: 'requested' | 'approved' | 'suspended' | 'revoked';
+  requestedBy?: (string | null) | User;
+  message?: string | null;
+  resellerTermsVersion?: string | null;
+  resellerTermsAcceptedAt?: string | null;
+  decidedBy?: (string | null) | User;
+  decidedAt?: string | null;
+  /**
+   * When the supplier approved or declined the latest request; feeds the supplier's usual response time.
+   */
+  respondedAt?: string | null;
+  suspendedBy?: ('supplier' | 'moderator' | 'system') | null;
+  suspendedReason?: ('quality' | 'pricing' | 'fraud_review' | 'terms' | 'other') | null;
+  note?: string | null;
+  revokedAt?: string | null;
+  revokedBy?: ('supplier' | 'moderator' | 'reseller') | null;
+  riskHold?: boolean | null;
+  stats?: {
+    publishedListings?: number | null;
+    deliveredOrders30d?: number | null;
+    cancelledPurchaseOrders30d?: number | null;
+    refusedDeliveries30d?: number | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-view-flushes".
+ */
+export interface ListingViewFlush {
+  id: string;
+  listing: string | Listing;
+  date: string;
+  views: number;
+  purgeAt: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -337,6 +1184,15 @@ export interface Conversation {
   participants: (string | User)[];
   listing?: (string | null) | Listing;
   lastMessage?: (string | null) | Message;
+  shop?: (string | null) | Shop;
+  buyer?: (string | null) | User;
+  order?: (string | null) | Order;
+  assignee?: (string | null) | User;
+  assignedAt?: string | null;
+  assignedBy?: (string | null) | User;
+  inboxStatus?: ('open' | 'done') | null;
+  lastMessageAt?: string | null;
+  awaitingReply?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -347,12 +1203,1417 @@ export interface Conversation {
 export interface Message {
   id: string;
   conversation: string | Conversation;
-  sender: string | User;
+  sender?: (string | null) | User;
   content: string;
+  kind?: ('user' | 'system') | null;
+  /**
+   * An order-event type, e.g. "order.placed". System messages only.
+   */
+  systemEvent?: string | null;
+  systemParams?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  order?: (string | null) | Order;
   listing?: (string | null) | Listing;
   read?: boolean | null;
+  /**
+   * Set on shop conversations only; absent on a classic one.
+   */
+  senderSide?: ('buyer' | 'shop') | null;
+  /**
+   * The author deleted their account; the message is re-attributed to the shop owner and shown as "Former member".
+   */
+  formerMemberAuthor?: boolean | null;
   createdAt: string;
   updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders".
+ */
+export interface Order {
+  id: string;
+  orderNumber: string;
+  market?: (string | null) | Market;
+  checkoutGroup?: string | null;
+  idempotencyKey?: string | null;
+  buyer?: (string | null) | User;
+  buyerDeletedAt?: string | null;
+  shop: string | Shop;
+  status:
+    | 'placed'
+    | 'confirmed'
+    | 'paid'
+    | 'accepted'
+    | 'shipped'
+    | 'delivered'
+    | 'completed'
+    | 'cancelled'
+    | 'delivery_failed'
+    | 'returned'
+    | 'disputed';
+  paymentMethod: 'cod' | 'mobile_money';
+  paymentStatus:
+    | 'unpaid'
+    | 'awaiting_payment'
+    | 'paid'
+    | 'cod_pending'
+    | 'cod_collected'
+    | 'cod_refused'
+    | 'refunded'
+    | 'partially_refunded'
+    | 'failed';
+  confirmation?: {
+    method?: ('verified_phone' | 'sms_code' | 'seller_call') | null;
+    codeHash?: string | null;
+    codeExpiresAt?: string | null;
+    attempts?: number | null;
+    sentAt?: string | null;
+    resendCount?: number | null;
+    confirmedAt?: string | null;
+    confirmedBy?: (string | null) | User;
+  };
+  handover?: {
+    codeHash?: string | null;
+    attempts?: number | null;
+    lockedAt?: string | null;
+    sentAt?: string | null;
+    regenerateCount?: number | null;
+    method?: ('otp' | 'buyer_confirmation' | 'seller_declaration' | 'carrier_pod') | null;
+    verifiedAt?: string | null;
+    verifiedBy?: (string | null) | User;
+    contestBy?: string | null;
+  };
+  delivery: {
+    method?: ('seller_delivery' | 'courier' | 'pickup') | null;
+    recipientName: string;
+    phone: string;
+    city?: ('douala' | 'yaounde') | null;
+    district?: string | null;
+    districtOther?: string | null;
+    landmark?: string | null;
+    gps?: {
+      lat?: number | null;
+      lng?: number | null;
+      accuracyMeters?: number | null;
+      capturedAt?: string | null;
+    };
+    instructions?: string | null;
+    pickupPoint?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    fee?: number | null;
+    etaText?: string | null;
+    optionId?: string | null;
+    zone?: (string | null) | DeliveryZone;
+    pickupLocation?: (string | null) | ShopLocation;
+    etaMinHours?: number | null;
+    etaMaxHours?: number | null;
+    promisedBy?: string | null;
+  };
+  shipments?: (string | Shipment)[] | null;
+  amounts: {
+    subtotal?: number | null;
+    deliveryFee?: number | null;
+    discount?: number | null;
+    buyerProtectionFee?: number | null;
+    total?: number | null;
+    currency: string;
+    buyerProtectionFeeVat?: number | null;
+    commission?: number | null;
+    commissionVat?: number | null;
+    applicationFee?: number | null;
+    destinationAmount?: number | null;
+  };
+  settlement?: {
+    mode?: ('provider_split' | 'direct_to_seller' | 'platform_collects') | null;
+    releaseModel?: ('provider_hold' | 'provider_schedule') | null;
+    connectedAccount?: (string | null) | ConnectedAccount;
+    releaseEligibleAt?: string | null;
+    releasedAt?: string | null;
+    payout?: (string | null) | Payout;
+    refundedAmount?: number | null;
+  };
+  commission?: {
+    rateBps?: number | null;
+    amount?: number | null;
+    line?: (string | null) | CommissionLine;
+  };
+  risk?: {
+    phoneTier?: ('new' | 'regular' | 'trusted' | 'watch') | null;
+    refusalsAtPlacement?: number | null;
+    capsApplied?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  deadlines?: {
+    confirmBy?: string | null;
+    acceptBy?: string | null;
+    staleAt?: string | null;
+    completeAt?: string | null;
+    withdrawalUntil?: string | null;
+  };
+  timestamps?: {
+    placedAt?: string | null;
+    confirmedAt?: string | null;
+    acceptedAt?: string | null;
+    shippedAt?: string | null;
+    deliveredAt?: string | null;
+    completedAt?: string | null;
+    cancelledAt?: string | null;
+    failedAt?: string | null;
+  };
+  cancellation?: {
+    by?: ('buyer' | 'seller' | 'staff' | 'system') | null;
+    reason?:
+      | (
+          | 'buyer_changed_mind'
+          | 'buyer_ordered_by_mistake'
+          | 'seller_out_of_stock'
+          | 'seller_cannot_deliver'
+          | 'seller_buyer_unreachable'
+          | 'seller_other'
+          | 'confirmation_expired'
+          | 'seller_timeout'
+          | 'payment_expired'
+          | 'staff_fraud'
+          | 'staff_policy'
+          | 'staff_other'
+        )
+      | null;
+    note?: string | null;
+  };
+  deliveryFailure?: {
+    reason?: ('refused' | 'unreachable' | 'absent' | 'address_not_found' | 'timeout' | 'other') | null;
+    attempts?: number | null;
+    note?: string | null;
+  };
+  completionHold?: ('none' | 'return_case' | 'dispute') | null;
+  returnCase?: (string | null) | ReturnCase;
+  activeDispute?: (string | null) | Dispute;
+  conversation?: (string | null) | Conversation;
+  contract?: {
+    termsVersion?: string | null;
+    locale?: ('fr' | 'en') | null;
+    acceptedAt?: string | null;
+    snapshot?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    snapshotHash?: string | null;
+    receiptSentAt?: string | null;
+  };
+  source?: ('web' | 'ios' | 'android') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "markets".
+ */
+export interface Market {
+  id: string;
+  countryCode: string;
+  name: string;
+  status: 'draft' | 'review' | 'live' | 'suspended';
+  currency: {
+    code: string;
+    minorUnit: number;
+    rounding: 'half_up' | 'half_even' | 'down';
+  };
+  formatting?:
+    | {
+        locale: 'fr' | 'en';
+        symbol: string;
+        position: 'before' | 'after';
+        groupSeparator: string;
+        decimalSeparator: string;
+        /**
+         * Display-only check string.
+         */
+        patternExample?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  phone: {
+    pattern: string;
+    examples?: {
+      valid?:
+        | {
+            [k: string]: unknown;
+          }
+        | unknown[]
+        | string
+        | number
+        | boolean
+        | null;
+      invalid?:
+        | {
+            [k: string]: unknown;
+          }
+        | unknown[]
+        | string
+        | number
+        | boolean
+        | null;
+    };
+    displayExample?: string | null;
+  };
+  timezone: string;
+  languages: ('fr' | 'en')[];
+  vatRateBps: number;
+  payments: {
+    provider: 'notchpay';
+    settlementMode: 'provider_split' | 'direct_to_seller' | 'platform_collects';
+    channels?: string[] | null;
+    enabled?: boolean | null;
+  };
+  features?: {
+    cod?: boolean | null;
+    protectedPayment?: boolean | null;
+    deliveryZones?: boolean | null;
+    couriers?: boolean | null;
+    disputes?: boolean | null;
+    resale?: boolean | null;
+    resalePrepaid?: boolean | null;
+    boosts?: boolean | null;
+  };
+  /**
+   * Integers in the market's minor units.
+   */
+  amounts: {
+    minPayout: number;
+    maxOrderAmount: number;
+    exposureLevel2: number;
+    exposureLevel3: number;
+    buyerProtectionMin: number;
+    buyerProtectionMax: number;
+    defaultDeliveryFeeFallback: number;
+  };
+  regulatoryReview?: {
+    reviewedBy?: string | null;
+    reviewedAt?: string | null;
+    evidence?: (string | null) | PaymentGateEvidence;
+    note?: string | null;
+  };
+  moneyCalendar?: {
+    releaseHourLocal?: number | null;
+    reconcileHourLocal?: number | null;
+    vatPeriod?: 'calendar_month' | null;
+    lastReleaseLocalDate?: string | null;
+    lastReconcileLocalDate?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-gate-evidence".
+ */
+export interface PaymentGateEvidence {
+  id: string;
+  scope?: ('gate' | 'market') | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "delivery-zones".
+ */
+export interface DeliveryZone {
+  id: string;
+  shop: string | Shop;
+  name: string;
+  scope: 'same_city' | 'intercity';
+  city: 'douala' | 'yaounde';
+  /**
+   * Empty means the whole city.
+   */
+  districts?:
+    | {
+        key: string;
+        id?: string | null;
+      }[]
+    | null;
+  destinationCities?: ('douala' | 'yaounde')[] | null;
+  method: 'seller_delivery' | 'courier';
+  courier?: (string | null) | Courier;
+  fee: number;
+  freeAboveSubtotal?: number | null;
+  minOrderSubtotal?: number | null;
+  etaMinHours: number;
+  etaMaxHours: number;
+  cutoffTime?: string | null;
+  deliveryDays: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
+  codAllowed?: boolean | null;
+  active?: boolean | null;
+  sortOrder?: number | null;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "couriers".
+ */
+export interface Courier {
+  id: string;
+  key: string;
+  name: string;
+  logo?: (string | null) | Media;
+  provider: 'manual' | 'yango' | 'campost';
+  scopes: ('same_city' | 'intercity')[];
+  cities: ('douala' | 'yaounde')[];
+  destinationCities?: ('douala' | 'yaounde')[] | null;
+  supportsCod?: boolean | null;
+  tariffs?:
+    | {
+        city: 'douala' | 'yaounde';
+        district?: string | null;
+        amount: number;
+        etaMinHours: number;
+        etaMaxHours: number;
+        id?: string | null;
+      }[]
+    | null;
+  trackingUrlTemplate?: string | null;
+  contact?: {
+    phone?: string | null;
+    email?: string | null;
+  };
+  status: 'active' | 'paused' | 'disabled';
+  billingMode: 'shop_account' | 'platform_account';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-locations".
+ */
+export interface ShopLocation {
+  id: string;
+  shop: string | Shop;
+  name: string;
+  city: 'douala' | 'yaounde';
+  district: string;
+  address?: string | null;
+  landmark: string;
+  gps: {
+    lat: number;
+    lng: number;
+  };
+  /**
+   * Optional public E.164 phone for this pickup point.
+   */
+  phone?: string | null;
+  openingHours?:
+    | {
+        day: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+        opens: string;
+        closes: string;
+        id?: string | null;
+      }[]
+    | null;
+  openingHoursNote?: string | null;
+  pickupEnabled?: boolean | null;
+  pickupFee?: number | null;
+  holdDays?: number | null;
+  preparationHours?: number | null;
+  isDispatchOrigin?: boolean | null;
+  isDefaultOrigin?: boolean | null;
+  active?: boolean | null;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shipments".
+ */
+export interface Shipment {
+  id: string;
+  shipmentNumber: string;
+  order: string | Order;
+  storefrontShop: string | Shop;
+  fulfillingShop: string | Shop;
+  items?:
+    | {
+        orderItem: string | OrderItem;
+        quantity: number;
+        id?: string | null;
+      }[]
+    | null;
+  method: 'seller_delivery' | 'courier' | 'pickup';
+  carrier: 'self' | 'courier';
+  courier?: (string | null) | Courier;
+  provider?: ('manual' | 'yango' | 'campost') | null;
+  providerShipmentId?: string | null;
+  providerStatus?: {
+    providerStatus?: string | null;
+    status?: ('pending' | 'picked_up' | 'in_transit' | 'delivered' | 'failed' | 'returned' | 'cancelled') | null;
+    occurredAt?: string | null;
+    providerEventId?: string | null;
+  };
+  trackingCode?: string | null;
+  trackingUrl?: string | null;
+  courierEta?: string | null;
+  zone?: (string | null) | DeliveryZone;
+  pickupLocation?: (string | null) | ShopLocation;
+  origin:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  destination:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  fee: number;
+  courierCost?: number | null;
+  rider?: {
+    user?: (string | null) | User;
+    name?: string | null;
+    phone?: string | null;
+    vehicle?: string | null;
+    assignedAt?: string | null;
+    assignedBy?: (string | null) | User;
+  };
+  riderLink?: {
+    tokenHash?: string | null;
+    createdAt?: string | null;
+    expiresAt?: string | null;
+    revokedAt?: string | null;
+    lastUsedAt?: string | null;
+  };
+  status: 'pending' | 'picked_up' | 'in_transit' | 'delivered' | 'failed' | 'returned' | 'cancelled';
+  attempts?:
+    | {
+        number: number;
+        outcome: 'delivered' | 'failed';
+        reason?:
+          | (
+              | 'refused'
+              | 'absent'
+              | 'unreachable'
+              | 'address_not_found'
+              | 'rescheduled_by_buyer'
+              | 'not_collected'
+              | 'damaged'
+              | 'other'
+            )
+          | null;
+        note?: string | null;
+        gps?: {
+          lat?: number | null;
+          lng?: number | null;
+          accuracyMeters?: number | null;
+        };
+        photo?: (string | null) | DeliveryProof;
+        actorType:
+          | 'seller'
+          | 'rider'
+          | 'rider_link'
+          | 'dispatcher'
+          | 'courier_webhook'
+          | 'courier_poll'
+          | 'staff'
+          | 'system';
+        actor?: (string | null) | User;
+        at: string;
+        id?: string | null;
+      }[]
+    | null;
+  finalFailure?: {
+    reason?:
+      | (
+          | 'refused'
+          | 'absent'
+          | 'unreachable'
+          | 'address_not_found'
+          | 'rescheduled_by_buyer'
+          | 'not_collected'
+          | 'damaged'
+          | 'other'
+        )
+      | null;
+    at?: string | null;
+    returnInitiatedAt?: string | null;
+  };
+  redelivery?: {
+    scheduledFor?: string | null;
+    window?: ('morning' | 'afternoon' | 'evening') | null;
+    requestedBy?: ('buyer' | 'seller') | null;
+    rescheduleBy?: string | null;
+    note?: string | null;
+  };
+  proof?: {
+    handoverMethod?: ('otp' | 'buyer_confirmation' | 'seller_declaration' | 'carrier_pod') | null;
+    otpVerifiedAt?: string | null;
+    photo?: (string | null) | DeliveryProof;
+    gps?: {
+      lat?: number | null;
+      lng?: number | null;
+      accuracyMeters?: number | null;
+    };
+    distanceFromDestinationMeters?: number | null;
+    recipientName?: string | null;
+    providerPodUrl?: string | null;
+    capturedBy?: (string | null) | User;
+    capturedAt?: string | null;
+  };
+  codCollection?: {
+    expectedAmount?: number | null;
+    collectedBy?: ('seller' | 'rider' | 'courier') | null;
+    collectedAmount?: number | null;
+    remittanceStatus?: ('not_applicable' | 'pending' | 'declared_remitted' | 'confirmed' | 'disputed') | null;
+    declaredRemittedAt?: string | null;
+    confirmedAt?: string | null;
+    note?: string | null;
+  };
+  failureCostBearer?: ('shop' | 'reseller' | 'supplier' | 'buyer' | 'none') | null;
+  readyForPickupAt?: string | null;
+  pickupDeadline?: string | null;
+  pickedUpAt?: string | null;
+  inTransitAt?: string | null;
+  deliveredAt?: string | null;
+  failedAt?: string | null;
+  returnedAt?: string | null;
+  cancelledAt?: string | null;
+  promisedBy?: string | null;
+  flags?:
+    | (
+        | 'gps_far'
+        | 'delivered_without_code'
+        | 'late'
+        | 'return_overdue'
+        | 'cod_remittance_disputed'
+        | 'courier_cancel_refused'
+      )[]
+    | null;
+  lastProviderSyncAt?: string | null;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "order-items".
+ */
+export interface OrderItem {
+  id: string;
+  order: string | Order;
+  lineNumber?: number | null;
+  listing?: (string | null) | Listing;
+  product: string | Product;
+  variant: string | ProductVariant;
+  sourcing?: ('own' | 'resale') | null;
+  fulfillingShop: string | Shop;
+  purchaseOrder?: (string | null) | PurchaseOrder;
+  resaleLink?: (string | null) | ResaleLink;
+  supplierUnitPrice?: number | null;
+  snapshot?: {
+    title?: string | null;
+    variantLabel?: string | null;
+    sku?: string | null;
+    imageUrl?: string | null;
+    categoryId?: string | null;
+    condition?: string | null;
+    returnPolicy?: string | null;
+  };
+  unitPrice: number;
+  quantity: number;
+  lineSubtotal?: number | null;
+  commissionRateBps?: number | null;
+  commissionAmount?: number | null;
+  fulfillmentStatus: 'unfulfilled' | 'shipped' | 'delivered' | 'failed' | 'cancelled' | 'return_requested' | 'returned';
+  stockTracked?: boolean | null;
+  returnedQuantity?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "purchase-orders".
+ */
+export interface PurchaseOrder {
+  id: string;
+  number: string;
+  order: string | Order;
+  supplierShop: string | Shop;
+  resellerShop: string | Shop;
+  link: string | ResaleLink;
+  status: 'sent' | 'accepted' | 'shipped' | 'delivered' | 'cancelled' | 'returned';
+  paymentMethod: 'cod' | 'mobile_money';
+  items: {
+    orderItem: string | OrderItem;
+    variant: string | ProductVariant;
+    title: string;
+    variantLabel?: string | null;
+    sku?: string | null;
+    quantity: number;
+    supplierUnitPrice: number;
+    resellerUnitPrice: number;
+    id?: string | null;
+  }[];
+  supplierAmount: number;
+  deliveryFee: number;
+  collectAmount: number;
+  platformCommission: number;
+  resellerCommission: number;
+  branding: {
+    name: string;
+    handle: string;
+    logo?: (string | null) | Media;
+    phone?: string | null;
+  };
+  sentAt: string;
+  acceptBy: string;
+  acceptedAt?: string | null;
+  shipBy?: string | null;
+  tracking?: {
+    carrier?: ('own_courier' | 'yango' | 'other') | null;
+    trackingNumber?: string | null;
+    trackingUrl?: string | null;
+    shipment?: (string | null) | Shipment;
+  };
+  cancellation?: {
+    by?: ('supplier' | 'reseller' | 'buyer' | 'system' | 'staff') | null;
+    reason?: string | null;
+    note?: string | null;
+    at?: string | null;
+  };
+  return?: {
+    reason?: string | null;
+    liability?: ('supplier' | 'reseller' | 'buyer') | null;
+    failedDeliveryCost?: number | null;
+    receivedAt?: string | null;
+    condition?: ('resellable' | 'damaged') | null;
+  };
+  statusHistory?:
+    | {
+        status: string;
+        actor?: (string | null) | User;
+        source: string;
+        at: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "delivery-proofs".
+ */
+export interface DeliveryProof {
+  id: string;
+  shipment: string | Shipment;
+  kind: 'attempt' | 'handover' | 'declaration';
+  uploadedBy?: (string | null) | User;
+  uploadedVia: 'seller_app' | 'rider_app' | 'rider_link' | 'courier_webhook';
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "connected-accounts".
+ */
+export interface ConnectedAccount {
+  id: string;
+  shop: string | Shop;
+  provider: 'notchpay';
+  providerAccountId?: string | null;
+  accountType: 'express' | 'custom' | 'standard';
+  status: 'created' | 'onboarding' | 'restricted' | 'active' | 'disabled' | 'deauthorized';
+  chargesEnabled?: boolean | null;
+  payoutsEnabled?: boolean | null;
+  requirementsDue?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  kycStatus?: string | null;
+  kycName?: string | null;
+  payoutSchedule?: ('manual' | 'daily' | 'weekly' | 'monthly') | null;
+  lastSyncedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payouts".
+ */
+export interface Payout {
+  id: string;
+  shop: string | Shop;
+  connectedAccount: string | ConnectedAccount;
+  payoutAccount?: (string | null) | PayoutAccount;
+  amount: number;
+  fee?: number | null;
+  currency: string;
+  orders?:
+    | {
+        order: string | Order;
+        amount: number;
+        id?: string | null;
+      }[]
+    | null;
+  origin: 'platform_release' | 'provider_schedule';
+  status: 'scheduled' | 'pending' | 'sent' | 'processing' | 'complete' | 'failed' | 'reversed' | 'cancelled';
+  statusHistory?:
+    | {
+        status: 'scheduled' | 'pending' | 'sent' | 'processing' | 'complete' | 'failed' | 'reversed' | 'cancelled';
+        source: 'webhook' | 'reconcile' | 'system';
+        at: string;
+        id?: string | null;
+      }[]
+    | null;
+  providerTransferId?: string | null;
+  failureReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payout-accounts".
+ */
+export interface PayoutAccount {
+  id: string;
+  shop: string | Shop;
+  method: 'mtn_momo' | 'orange_money' | 'bank';
+  accountName: string;
+  accountNumber: string;
+  accountNumberMasked?: string | null;
+  status: 'pending_verification' | 'pending_review' | 'active' | 'rejected' | 'replaced';
+  nameMatch?: {
+    identityName?: string | null;
+    providerName?: string | null;
+    result?: ('match' | 'partial' | 'mismatch') | null;
+    score?: number | null;
+    checkedAt?: string | null;
+  };
+  providerRecipientId?: string | null;
+  activatedAt?: string | null;
+  replacedAt?: string | null;
+  createdBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "commission-lines".
+ */
+export interface CommissionLine {
+  id: string;
+  shop: string | Shop;
+  order?: (string | null) | Order;
+  kind: 'charge' | 'credit' | 'carry_over' | 'resale_margin' | 'dispute_fee';
+  paymentMethod?: ('cod' | 'mobile_money') | null;
+  baseAmount?: number | null;
+  amount: number;
+  reason?: string | null;
+  status?: ('open' | 'invoiced' | 'waived') | null;
+  invoice?: (string | null) | CommissionInvoice;
+  accruedAt?: string | null;
+  sourceType?: ('dispute' | 'return-case') | null;
+  sourceId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "commission-invoices".
+ */
+export interface CommissionInvoice {
+  id: string;
+  kind: 'invoice' | 'credit_note';
+  creditsInvoice?: (string | null) | CommissionInvoice;
+  sourceType?: ('dispute' | 'return-case') | null;
+  sourceId?: string | null;
+  invoiceNumber: string;
+  shop: string | Shop;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  lines?: (string | CommissionLine)[] | null;
+  ordersCount?: number | null;
+  commissionTotal?: number | null;
+  vatRateBps?: number | null;
+  vatAmount?: number | null;
+  totalDue?: number | null;
+  currency: string;
+  formatSnapshot?:
+    | {
+        locale: 'fr' | 'en';
+        symbol: string;
+        position: 'before' | 'after';
+        groupSeparator: string;
+        decimalSeparator: string;
+        minorUnit: number;
+        id?: string | null;
+      }[]
+    | null;
+  status?: ('issued' | 'paid' | 'overdue' | 'waived' | 'void') | null;
+  settlement?: ('mobile_money' | 'application_fee') | null;
+  issuedAt?: string | null;
+  dueAt?: string | null;
+  paidAt?: string | null;
+  restrictedAt?: string | null;
+  dueSoonReminderSentAt?: string | null;
+  paymentIntents?: (string | PaymentIntent)[] | null;
+  sellerSnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  issuerSnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  waivedBy?: (string | null) | User;
+  waivedNote?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-intents".
+ */
+export interface PaymentIntent {
+  id: string;
+  purpose: 'boost' | 'commission' | 'checkout' | 'reseller_charge';
+  targetType: 'boost-payment' | 'commission-invoice' | 'order' | 'reseller-charge';
+  targetId: string;
+  customer?: (string | null) | User;
+  customerDeletedAt?: string | null;
+  amount: number;
+  currency: string;
+  provider: 'notchpay' | 'stripe';
+  providerReference?: string | null;
+  reference?: string | null;
+  status: 'created' | 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'expired';
+  statusHistory?:
+    | {
+        status: 'created' | 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'expired';
+        source: 'webhook' | 'callback' | 'reconcile' | 'system';
+        at: string;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  idempotencyKey: string;
+  checkoutUrl?: string | null;
+  expiresAt?: string | null;
+  settledAmount?: number | null;
+  settledCurrency?: string | null;
+  channel?: ('cm.mtn' | 'cm.orange') | null;
+  payerPhone?: string | null;
+  connectedAccount?: (string | null) | ConnectedAccount;
+  destinationAmount?: number | null;
+  applicationFee?: number | null;
+  attempt?: number | null;
+  failureCode?:
+    | ('declined' | 'insufficient_funds' | 'timeout' | 'limit_exceeded' | 'invalid_number' | 'provider_error')
+    | null;
+  lateSuccess?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "return-cases".
+ */
+export interface ReturnCase {
+  id: string;
+  number: string;
+  basis: 'withdrawal' | 'non_conformity' | 'late_delivery' | 'unavailable';
+  order: string | Order;
+  shop: string | Shop;
+  buyer: string | User;
+  items?:
+    | {
+        orderItem: string | OrderItem;
+        variant?: (string | null) | ProductVariant;
+        quantity?: number | null;
+        unitPrice?: number | null;
+        buyerCondition?: ('unopened' | 'opened' | 'used' | 'damaged') | null;
+        inspection?: {
+          outcome?: ('restock' | 'damaged_by_buyer' | 'damaged_in_transit' | 'not_matching' | 'missing') | null;
+          deductionAmount?: number | null;
+          note?: string | null;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  reasonText?: string | null;
+  openedByType: 'buyer' | 'seller' | 'system';
+  openedBy?: (string | null) | User;
+  dispute?: (string | null) | Dispute;
+  returnRequired?: boolean | null;
+  returnMethod?: ('buyer_drop_off' | 'courier' | 'seller_pickup') | null;
+  returnTracking?: string | null;
+  deadlines?: {
+    requestDeadline?: string | null;
+    shipBy?: string | null;
+    pickupBy?: string | null;
+    inspectBy?: string | null;
+    deductionRespondBy?: string | null;
+    refundBy?: string | null;
+    refundOverdueNotifiedAt?: string | null;
+    refundOverdueEscalatedAt?: string | null;
+  };
+  shippedAt?: string | null;
+  receivedAt?: string | null;
+  inspectedAt?: string | null;
+  closedAt?: string | null;
+  refund?: {
+    amount?: number | null;
+    breakdown?: {
+      goods?: number | null;
+      outboundDelivery?: number | null;
+      returnShipping?: number | null;
+      buyerProtectionFee?: number | null;
+      deduction?: number | null;
+    };
+    channel?: ('provider' | 'seller_direct') | null;
+    providerRefund?: (string | null) | Refund;
+    sellerProof?: {
+      method?: ('cash' | 'mtn_momo' | 'orange_money') | null;
+      transactionId?: string | null;
+      amount?: number | null;
+      evidence?: (string | null) | DisputeEvidence;
+      submittedAt?: string | null;
+    };
+    buyerConfirmedAt?: string | null;
+    contestedAt?: string | null;
+  };
+  rejectionReason?: string | null;
+  creditNote?: (string | null) | CommissionInvoice;
+  status:
+    | 'requested'
+    | 'approved'
+    | 'rejected'
+    | 'cancelled'
+    | 'awaiting_shipment'
+    | 'in_transit'
+    | 'received'
+    | 'inspected'
+    | 'disputed'
+    | 'refund_pending'
+    | 'refunded'
+    | 'closed'
+    | 'expired';
+  statusHistory?:
+    | {
+        status?:
+          | (
+              | 'requested'
+              | 'approved'
+              | 'rejected'
+              | 'cancelled'
+              | 'awaiting_shipment'
+              | 'in_transit'
+              | 'received'
+              | 'inspected'
+              | 'disputed'
+              | 'refund_pending'
+              | 'refunded'
+              | 'closed'
+              | 'expired'
+            )
+          | null;
+        actorType?: ('buyer' | 'seller' | 'system' | 'moderator') | null;
+        actor?: (string | null) | User;
+        at?: string | null;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "disputes".
+ */
+export interface Dispute {
+  id: string;
+  number: string;
+  order: string | Order;
+  shop: string | Shop;
+  buyer: string | User;
+  subject: 'goods' | 'refund';
+  items?:
+    | {
+        orderItem: string | OrderItem;
+        quantity: number;
+        id?: string | null;
+      }[]
+    | null;
+  returnCase?: (string | null) | ReturnCase;
+  reason:
+    | 'not_received'
+    | 'not_as_described'
+    | 'damaged'
+    | 'counterfeit'
+    | 'wrong_item'
+    | 'seller_no_show'
+    | 'cod_refused_abuse';
+  openedByType: 'buyer' | 'seller' | 'system';
+  openedBy?: (string | null) | User;
+  description: string;
+  requestedOutcome: 'full_refund' | 'partial_refund' | 'return_and_refund' | 'no_refund';
+  requestedAmount?: number | null;
+  paymentMethod: 'cod' | 'mobile_money';
+  amountAtStake: number;
+  status:
+    | 'open'
+    | 'awaiting_seller'
+    | 'awaiting_buyer'
+    | 'under_review'
+    | 'resolved_buyer'
+    | 'resolved_seller'
+    | 'resolved_split'
+    | 'withdrawn';
+  statusHistory?:
+    | {
+        status?:
+          | (
+              | 'open'
+              | 'awaiting_seller'
+              | 'awaiting_buyer'
+              | 'under_review'
+              | 'resolved_buyer'
+              | 'resolved_seller'
+              | 'resolved_split'
+              | 'withdrawn'
+            )
+          | null;
+        actorType?: ('buyer' | 'seller' | 'supplier' | 'moderator' | 'system') | null;
+        actor?: (string | null) | User;
+        at?: string | null;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  deadlines?: {
+    submitBy?: string | null;
+    respondBy?: string | null;
+    reviewDueAt?: string | null;
+    reminderSentAt?: string | null;
+    reviewOverdueNotifiedAt?: string | null;
+  };
+  proposal?: {
+    amount?: number | null;
+    returnRequired?: boolean | null;
+    byType?: ('buyer' | 'seller' | 'supplier' | 'moderator' | 'system') | null;
+    by?: (string | null) | User;
+    at?: string | null;
+    expiresAt?: string | null;
+    round?: number | null;
+    status?: ('open' | 'accepted' | 'rejected' | 'lapsed') | null;
+  };
+  infoRequests?: number | null;
+  assignedTo?: (string | null) | User;
+  resolution?: {
+    outcome?:
+      | (
+          | 'open'
+          | 'awaiting_seller'
+          | 'awaiting_buyer'
+          | 'under_review'
+          | 'resolved_buyer'
+          | 'resolved_seller'
+          | 'resolved_split'
+          | 'withdrawn'
+        )
+      | null;
+    refundAmount?: number | null;
+    breakdown?: {
+      goods?: number | null;
+      outboundDelivery?: number | null;
+      returnShipping?: number | null;
+      buyerProtectionFee?: number | null;
+      deduction?: number | null;
+    };
+    returnRequired?: boolean | null;
+    returnShippingPaidBy?: ('seller' | 'buyer') | null;
+    liableParty?: ('seller' | 'supplier' | 'reseller' | 'courier' | 'buyer' | 'none') | null;
+    reasonCode?:
+      | (
+          | 'seller_no_proof'
+          | 'delivery_proven'
+          | 'item_conforms'
+          | 'item_not_conforming'
+          | 'counterfeit_confirmed'
+          | 'counterfeit_not_established'
+          | 'damage_in_transit'
+          | 'buyer_damage'
+          | 'buyer_abuse'
+          | 'review_extortion'
+          | 'partial_fault'
+          | 'agreement'
+          | 'other'
+        )
+      | null;
+    publicStatement?: {
+      fr?: string | null;
+      en?: string | null;
+    };
+    decidedByType?: ('system' | 'agreement' | 'moderator') | null;
+    decidedBy?: (string | null) | User;
+    decidedAt?: string | null;
+  };
+  effects?: {
+    returnCase?: (string | null) | ReturnCase;
+    refund?: (string | null) | Refund;
+    creditNote?: (string | null) | CommissionInvoice;
+    holdsReleased?: boolean | null;
+    strikes?: (string | ShopStrike)[] | null;
+    riskSignals?: (string | RiskSignalOutbox)[] | null;
+    reviewAction?: ('none' | 'published' | 'removed') | null;
+    certificate?: (string | null) | DisputeEvidence;
+  };
+  resale?: {
+    supplierShop?: (string | null) | Shop;
+    resellerShop?: (string | null) | Shop;
+    purchaseOrder?: string | null;
+  };
+  legalHold?: boolean | null;
+  lastMessageNotifiedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refunds".
+ */
+export interface Refund {
+  id: string;
+  order: string | Order;
+  paymentIntent: string | PaymentIntent;
+  buyer?: (string | null) | User;
+  shop?: (string | null) | Shop;
+  amount: number;
+  breakdown?: {
+    seller?: number | null;
+    commission?: number | null;
+    commissionVat?: number | null;
+    buyerProtectionFee?: number | null;
+  };
+  reason:
+    | 'order_cancelled'
+    | 'seller_declined'
+    | 'acceptance_timeout'
+    | 'late_payment'
+    | 'duplicate_payment'
+    | 'withdrawal'
+    | 'dispute'
+    | 'unavailable'
+    | 'moderation';
+  sourceType: 'order' | 'return-case' | 'dispute' | 'payment-intent' | 'moderation';
+  sourceId: string;
+  status: 'created' | 'pending' | 'processing' | 'succeeded' | 'failed';
+  statusHistory?:
+    | {
+        status: 'created' | 'pending' | 'processing' | 'succeeded' | 'failed';
+        source: 'webhook' | 'reconcile' | 'system';
+        at: string;
+        id?: string | null;
+      }[]
+    | null;
+  providerRefundId?: string | null;
+  fundedBy?: ('connected_account' | 'platform_advance') | null;
+  idempotencyKey: string;
+  attempts?: number | null;
+  retryOf?: (string | null) | Refund;
+  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-strikes".
+ */
+export interface ShopStrike {
+  id: string;
+  shop: string | Shop;
+  kind:
+    | 'dispute_lost'
+    | 'refund_overdue'
+    | 'counterfeit_confirmed'
+    | 'no_response'
+    | 'unavailable_after_confirmation'
+    | 'review_extortion';
+  weight: number;
+  sourceType: 'dispute' | 'return-case';
+  sourceId: string;
+  status: 'active' | 'expired' | 'revoked';
+  expiresAt: string;
+  revokedBy?: (string | null) | User;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "risk-signal-outbox".
+ */
+export interface RiskSignalOutbox {
+  id: string;
+  subjectType: 'shop' | 'user' | 'phone';
+  subjectId: string;
+  signal:
+    | 'dispute_lost_seller'
+    | 'counterfeit_confirmed'
+    | 'refund_overdue'
+    | 'seller_no_response'
+    | 'unavailable_after_confirmation'
+    | 'dispute_abuse_buyer'
+    | 'cod_refusal_abuse'
+    | 'serial_withdrawal'
+    | 'evidence_reused'
+    | 'review_extortion'
+    | 'resale_collusion_suspected'
+    | 'commission_credit_unpaid';
+  severity: 'low' | 'medium' | 'high';
+  sourceType: 'dispute' | 'return-case';
+  sourceId: string;
+  occurredAt: string;
+  consumedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-evidence".
+ */
+export interface DisputeEvidence {
+  id: string;
+  dispute?: (string | null) | Dispute;
+  returnCase?: (string | null) | ReturnCase;
+  uploadedByType: 'buyer' | 'seller' | 'supplier' | 'moderator' | 'system';
+  uploadedBy?: (string | null) | User;
+  kind: 'photo' | 'video' | 'document' | 'payment_proof' | 'shipping_proof';
+  size?: number | null;
+  sha256?: string | null;
+  capturedAt?: string | null;
+  exifStripped?: boolean | null;
+  visibility: 'parties' | 'staff';
+  purgeAfter?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversation-reads".
+ */
+export interface ConversationRead {
+  id: string;
+  conversation: string | Conversation;
+  user: string | User;
+  lastReadAt?: string | null;
+  lastReadMessage?: (string | null) | Message;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -361,10 +2622,15 @@ export interface Message {
 export interface Review {
   id: string;
   reviewer: string | User;
+  status?: ('published' | 'held_dispute' | 'removed') | null;
   reviewedUser: string | User;
   listing?: (string | null) | Listing;
+  order?: (string | null) | Order;
+  shop?: (string | null) | Shop;
+  verifiedPurchase?: boolean | null;
   rating: number;
   comment?: string | null;
+  photos?: (string | Media)[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -375,9 +2641,18 @@ export interface Review {
 export interface Report {
   id: string;
   reporter: string | User;
-  targetType: 'listing' | 'user' | 'message';
+  targetType: 'listing' | 'user' | 'message' | 'shop' | 'order' | 'shipment';
   targetId: string;
-  reason: 'spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other';
+  reason:
+    | 'spam'
+    | 'inappropriate'
+    | 'fraud'
+    | 'prohibited'
+    | 'harassment'
+    | 'other'
+    | 'delivery_contested'
+    | 'cod_remittance'
+    | 'return_overdue';
   description?: string | null;
   status: 'pending' | 'reviewed' | 'resolved';
   resolution?: string | null;
@@ -387,20 +2662,235 @@ export interface Report {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "resale-terms".
+ */
+export interface ResaleTerm {
+  id: string;
+  role: 'supplier' | 'reseller';
+  version: string;
+  bodyFr: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  bodyEn: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  summaryFr?: string | null;
+  summaryEn?: string | null;
+  publishedAt?: string | null;
+  requiresReacceptance?: boolean | null;
+  enforceAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "resale-terms-acceptances".
+ */
+export interface ResaleTermsAcceptance {
+  id: string;
+  shop: string | Shop;
+  role: 'supplier' | 'reseller';
+  terms: string | ResaleTerm;
+  version: string;
+  acceptedBy: string | User;
+  acceptedAt: string;
+  locale: 'fr' | 'en';
+  client: 'web' | 'ios' | 'android';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "boost-payments".
  */
 export interface BoostPayment {
   id: string;
   listing: string | Listing;
-  user: string | User;
+  user?: (string | null) | User;
   amount: number;
   duration: '7' | '14' | '30';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   paymentProvider: 'notchpay' | 'stripe';
   paymentReference?: string | null;
   paymentUrl?: string | null;
+  boostedUntil?: string | null;
+  paymentIntent?: (string | null) | PaymentIntent;
+  customerDeletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "webhook-events".
+ */
+export interface WebhookEvent {
+  id: string;
+  provider: 'notchpay' | 'stripe' | 'didit' | 'smileid' | 'fake' | 'yango' | 'campost';
+  providerEventId: string;
+  type?: string | null;
+  reference?: string | null;
+  providerReference?: string | null;
+  payloadHash: string;
+  raw?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  receivedAt: string;
+  processedAt?: string | null;
+  attempts?: number | null;
+  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-reveals".
+ */
+export interface ContactReveal {
+  id: string;
+  listing: string | Listing;
+  seller: string | User;
+  viewer: string | User;
+  revealWindow: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-cities".
+ */
+export interface MarketCity {
+  id: string;
+  market: string | Market;
+  key: string;
+  label: string;
+  /**
+   * {city}.other is implicit and always accepted.
+   */
+  districts?:
+    | {
+        slug: string;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  defaultDeliveryFee: number;
+  active?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "courier-members".
+ */
+export interface CourierMember {
+  id: string;
+  courier: string | Courier;
+  user: string | User;
+  role: 'dispatcher' | 'rider';
+  vehicle?: ('moto' | 'car' | 'bicycle' | 'foot') | null;
+  status: 'active' | 'revoked';
+  phoneSharingConsentAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shipment-events".
+ */
+export interface ShipmentEvent {
+  id: string;
+  shipment: string | Shipment;
+  order?: (string | null) | Order;
+  type:
+    | 'shipment.created'
+    | 'shipment.carrier_set'
+    | 'shipment.rider_assigned'
+    | 'shipment.rider_link_created'
+    | 'shipment.rider_link_revoked'
+    | 'shipment.ready_for_pickup'
+    | 'shipment.picked_up'
+    | 'shipment.in_transit'
+    | 'shipment.attempt_failed'
+    | 'shipment.rescheduled'
+    | 'shipment.redelivery_started'
+    | 'shipment.delivered'
+    | 'shipment.failed_final'
+    | 'shipment.return_initiated'
+    | 'shipment.returned'
+    | 'shipment.cancelled'
+    | 'shipment.provider_status'
+    | 'shipment.cod_remittance_declared'
+    | 'shipment.cod_remittance_confirmed'
+    | 'shipment.cod_remittance_disputed'
+    | 'shipment.rider_phone_revealed';
+  statusFrom?: string | null;
+  statusTo?: string | null;
+  actorType?:
+    | (
+        | 'seller'
+        | 'rider'
+        | 'rider_link'
+        | 'dispatcher'
+        | 'courier_webhook'
+        | 'courier_poll'
+        | 'staff'
+        | 'buyer'
+        | 'system'
+      )
+    | null;
+  actor?: (string | null) | User;
+  providerEventId?: string | null;
+  webhookEvent?: (string | null) | WebhookEvent;
+  gps?: {
+    lat?: number | null;
+    lng?: number | null;
+    accuracyMeters?: number | null;
+  };
+  note?: string | null;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  visibility: 'buyer' | 'shop' | 'courier' | 'both' | 'staff';
+  occurredAt: string;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -428,12 +2918,926 @@ export interface SavedSearch {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "addresses".
+ */
+export interface Address {
+  id: string;
+  user: string | User;
+  label?: string | null;
+  recipientName: string;
+  phone: string;
+  city: string;
+  district: string;
+  districtOther?: string | null;
+  landmark?: string | null;
+  instructions?: string | null;
+  gps?: {
+    lat?: number | null;
+    lng?: number | null;
+    accuracyMeters?: number | null;
+  };
+  isDefault?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "blocked-users".
  */
 export interface BlockedUser {
   id: string;
   blocker: string | User;
   blocked: string | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Immutable history of moderation actions. Written by the moderation endpoints; cannot be edited or removed.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "moderation-log".
+ */
+export interface ModerationLog {
+  id: string;
+  actor?: (string | null) | User;
+  actorRole: string;
+  action:
+    | 'listing.approve'
+    | 'listing.reject'
+    | 'listing.takedown'
+    | 'listing.holdRelease'
+    | 'user.suspend'
+    | 'user.unsuspend'
+    | 'shop.suspend'
+    | 'shop.unsuspend'
+    | 'report.resolve'
+    | 'report.dismiss'
+    | 'verification.claim'
+    | 'verification.release'
+    | 'verification.request_info'
+    | 'verification.approve'
+    | 'verification.reject'
+    | 'verification.revoke'
+    | 'verification.expire'
+    | 'order.cancel'
+    | 'commission.waive'
+    | 'payout.hold'
+    | 'payout.release'
+    | 'payout.account_approve'
+    | 'payout.account_reject'
+    | 'dispute.resolve'
+    | 'dispute.request_info'
+    | 'dispute.redact_message'
+    | 'dispute.assign'
+    | 'strike.revoke'
+    | 'resale_link.suspend'
+    | 'resale_link.unsuspend'
+    | 'risk_flag.review'
+    | 'risk_flag.dismiss'
+    | 'risk_flag.action'
+    | 'risk_flag.assign'
+    | 'review.photo_remove';
+  targetType:
+    | 'listing'
+    | 'user'
+    | 'report'
+    | 'shop'
+    | 'verification-request'
+    | 'order'
+    | 'commission-invoice'
+    | 'dispute'
+    | 'resale-link'
+    | 'risk-flag'
+    | 'review';
+  targetId: string;
+  reason?: string | null;
+  /**
+   * Internal. Never surfaced to the affected account.
+   */
+  note?: string | null;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-members".
+ */
+export interface ShopMember {
+  id: string;
+  shop: string | Shop;
+  user: string | User;
+  role: 'owner' | 'manager' | 'staff';
+  status: 'active' | 'revoked';
+  /**
+   * The invitation that created or reactivated this row; empty for the owner.
+   */
+  invitation?: (string | null) | ShopInvitation;
+  joinedAt?: string | null;
+  revokedAt?: string | null;
+  /**
+   * Empty for a system revocation.
+   */
+  revokedBy?: (string | null) | User;
+  revokedReason?: ('removed' | 'left' | 'shop_closed' | 'account_deleted') | null;
+  inboxNotifications: 'all' | 'assigned' | 'none';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-invitations".
+ */
+export interface ShopInvitation {
+  id: string;
+  shop: string | Shop;
+  role: 'manager' | 'staff';
+  channel: 'phone' | 'email';
+  phone?: string | null;
+  email?: string | null;
+  pendingKey?: string | null;
+  tokenHash: string;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
+  invitedBy: string | User;
+  expiresAt: string;
+  sendCount: number;
+  lastSentAt?: string | null;
+  acceptedBy?: (string | null) | User;
+  respondedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-activity-log".
+ */
+export interface ShopActivityLog {
+  id: string;
+  shop: string | Shop;
+  actor?: (string | null) | User;
+  /**
+   * Snapshot at the time of the action: owner, manager, staff or system.
+   */
+  actorRole: string;
+  action:
+    | 'member.invited'
+    | 'member.invitation_resent'
+    | 'member.invitation_revoked'
+    | 'member.joined'
+    | 'member.role_changed'
+    | 'member.removed'
+    | 'member.left'
+    | 'member.paused'
+    | 'member.resumed'
+    | 'product.created'
+    | 'product.updated'
+    | 'product.published'
+    | 'product.archived'
+    | 'variant.price_changed'
+    | 'variant.cost_changed'
+    | 'stock.moved'
+    | 'listing.attached'
+    | 'listing.detached'
+    | 'shop.updated'
+    | 'shop.handle_changed'
+    | 'shop.closed'
+    | 'conversation.assigned'
+    | 'conversation.status_changed'
+    | 'verification.submitted';
+  targetType:
+    | 'shop'
+    | 'member'
+    | 'invitation'
+    | 'product'
+    | 'variant'
+    | 'listing'
+    | 'conversation'
+    | 'verification-request';
+  targetId: string;
+  /**
+   * Before and after values of the changed fields. Cost values only on variant.cost_changed.
+   */
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reseller-commissions".
+ */
+export interface ResellerCommission {
+  id: string;
+  resellerShop: string | Shop;
+  supplierShop: string | Shop;
+  purchaseOrder: string | PurchaseOrder;
+  order: string | Order;
+  saleAmount: number;
+  supplierAmount: number;
+  platformCommission: number;
+  amount: number;
+  paymentMethod: 'cod' | 'mobile_money';
+  status: 'accrued' | 'payable' | 'held' | 'paid' | 'cancelled' | 'clawed_back';
+  holdReasons?: ('invoice_unpaid' | 'dispute_open' | 'collusion_review' | 'moderation')[] | null;
+  marginLine?: (string | null) | CommissionLine;
+  payout?: (string | null) | ResellerPayout;
+  paidAt?: string | null;
+  cancelReason?: ('returned' | 'refunded' | 'fraud' | 'moderation') | null;
+  adjustments?:
+    | {
+        source: 'dispute' | 'return' | 'cod_refusal';
+        sourceId: string;
+        delta: number;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reseller-payouts".
+ */
+export interface ResellerPayout {
+  id: string;
+  reference: string;
+  resellerShop: string | Shop;
+  payoutAccount: string | PayoutAccount;
+  commissions?: (string | ResellerCommission)[] | null;
+  charges?: (string | ResellerCharge)[] | null;
+  grossAmount: number;
+  offsetAmount: number;
+  amount: number;
+  fee: number;
+  status:
+    | 'scheduled'
+    | 'awaiting_approval'
+    | 'pending'
+    | 'sent'
+    | 'processing'
+    | 'complete'
+    | 'failed'
+    | 'reversed'
+    | 'cancelled';
+  approvedBy?: (string | null) | User;
+  approvedAt?: string | null;
+  providerTransferId?: string | null;
+  statusHistory?:
+    | {
+        status: string;
+        actor?: (string | null) | User;
+        source: string;
+        at: string;
+        id?: string | null;
+      }[]
+    | null;
+  failureReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reseller-charges".
+ */
+export interface ResellerCharge {
+  id: string;
+  resellerShop: string | Shop;
+  supplierShop?: (string | null) | Shop;
+  purchaseOrder?: (string | null) | PurchaseOrder;
+  type: 'cod_refusal_delivery_cost' | 'clawback';
+  amount: number;
+  status: 'open' | 'offset' | 'overdue' | 'paid' | 'waived';
+  offsetBy?: (string | null) | ResellerPayout;
+  paymentIntents?: (string | PaymentIntent)[] | null;
+  waivedBy?: (string | null) | User;
+  waivedNote?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-count-sessions".
+ */
+export interface StockCountSession {
+  id: string;
+  shop: string | Shop;
+  status: 'open' | 'completed' | 'cancelled';
+  location?: (string | null) | ShopLocation;
+  startedBy?: (string | null) | User;
+  startedAt: string;
+  counts?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedBy?: (string | null) | User;
+  completedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements".
+ */
+export interface StockMovement {
+  id: string;
+  variant: string | ProductVariant;
+  product?: (string | null) | Product;
+  shop: string | Shop;
+  type: 'receipt' | 'adjustment' | 'loss' | 'return' | 'sale' | 'reservation' | 'release';
+  quantity: number;
+  unitCost?: number | null;
+  stockAfter: number;
+  note?: string | null;
+  actor?: (string | null) | User;
+  orderRef?: string | null;
+  order?: (string | null) | Order;
+  reservedAfter?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-document-views".
+ */
+export interface VerificationDocumentView {
+  id: string;
+  document: string | VerificationDocument;
+  request: string | VerificationRequest;
+  viewer: string | User;
+  viewerRole?: string | null;
+  ipHash?: string | null;
+  userAgent?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sequences".
+ */
+export interface Sequence {
+  id: string;
+  key: string;
+  value: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "carts".
+ */
+export interface Cart {
+  id: string;
+  user: string | User;
+  market?: (string | null) | Market;
+  status: 'active' | 'converted' | 'abandoned';
+  items?:
+    | {
+        listing: string | Listing;
+        product: string | Product;
+        variant: string | ProductVariant;
+        shop: string | Shop;
+        quantity: number;
+        priceAtAdd: number;
+        addedAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  convertedOrders?: (string | Order)[] | null;
+  lastActivityAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "order-events".
+ */
+export interface OrderEvent {
+  id: string;
+  order: string | Order;
+  type:
+    | 'order.disputed'
+    | 'order.dispute_resolved'
+    | 'order.dispute_withdrawn'
+    | 'order.returned'
+    | 'order.placed'
+    | 'order.receipt_sent'
+    | 'order.confirmation_code_sent'
+    | 'order.confirmed'
+    | 'order.accepted'
+    | 'order.purchase_order_sent'
+    | 'order.purchase_order_accepted'
+    | 'order.declined'
+    | 'order.accept_reminder_sent'
+    | 'order.shipped'
+    | 'order.handover_code_sent'
+    | 'order.handover_code_regenerated'
+    | 'order.handover_failed_attempt'
+    | 'order.handover_locked'
+    | 'order.delivery_attempt_failed'
+    | 'order.delivered'
+    | 'order.delivery_contested'
+    | 'order.delivery_failed'
+    | 'order.cancelled'
+    | 'order.withdrawal_requested'
+    | 'order.return_cancelled'
+    | 'order.return_expired'
+    | 'order.return_refunded'
+    | 'order.completed'
+    | 'order.commission_accrued'
+    | 'order.note_added'
+    | 'order.address_updated';
+  actorType?: ('buyer' | 'seller' | 'staff' | 'system' | 'courier') | null;
+  actor?: (string | null) | User;
+  actorShopRole?: ('owner' | 'manager' | 'staff') | null;
+  statusFrom?: string | null;
+  statusTo?: string | null;
+  paymentStatusFrom?: string | null;
+  paymentStatusTo?: string | null;
+  items?:
+    | {
+        orderItem?: (string | null) | OrderItem;
+        fulfillmentFrom?: string | null;
+        fulfillmentTo?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  reason?: string | null;
+  note?: string | null;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  visibility: 'buyer' | 'shop' | 'both' | 'staff';
+  source?: ('web' | 'ios' | 'android' | 'job' | 'staff_console' | 'webhook') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-phone-scores".
+ */
+export interface BuyerPhoneScore {
+  id: string;
+  phoneHash: string;
+  ordersPlaced?: number | null;
+  ordersDelivered?: number | null;
+  refusals?:
+    | {
+        order?: (string | null) | Order;
+        reason?: ('refused' | 'unreachable' | 'absent' | 'refused_abuse') | null;
+        at?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  cancelledAfterAccept?: number | null;
+  tier?: ('new' | 'regular' | 'trusted' | 'watch' | 'blocked') | null;
+  blockedOverride?: ('none' | 'unblocked' | 'blocked') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-daily-stats".
+ */
+export interface ShopDailyStat {
+  id: string;
+  shop: string | Shop;
+  date: string;
+  views?: number | null;
+  phoneReveals?: number | null;
+  favouritesAdded?: number | null;
+  conversationsStarted?: number | null;
+  ordersPlaced?: number | null;
+  ordersConfirmed?: number | null;
+  ordersAccepted?: number | null;
+  ordersDelivered?: number | null;
+  ordersCancelledBySeller?: number | null;
+  ordersCancelledByBuyer?: number | null;
+  codShipped?: number | null;
+  codRefused?: number | null;
+  unitsDelivered?: number | null;
+  outOfStockVariants?: number | null;
+  lowStockVariants?: number | null;
+  awaitingReply?: number | null;
+  gmvDelivered?: number | null;
+  cogsDelivered?: number | null;
+  inventoryCostValue?: number | null;
+  responseBuckets?: {
+    m5?: number | null;
+    m15?: number | null;
+    h1?: number | null;
+    h4?: number | null;
+    h24?: number | null;
+    over24h?: number | null;
+    unanswered?: number | null;
+  };
+  topProducts?:
+    | {
+        product?: (string | null) | Product;
+        listing?: (string | null) | Listing;
+        views?: number | null;
+        ordersPlaced?: number | null;
+        unitsDelivered?: number | null;
+        gmvDelivered?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  resale?: {
+    purchaseOrdersReceived?: number | null;
+    purchaseOrdersAcceptedInTime?: number | null;
+    purchaseOrdersCancelledBySupplier?: number | null;
+    resaleDelivered?: number | null;
+    commissionAccrued?: number | null;
+  };
+  computedAt?: string | null;
+  version?: number | null;
+  metricsHash: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "risk-flags".
+ */
+export interface RiskFlag {
+  id: string;
+  subjectType: 'user' | 'shop' | 'phone' | 'device';
+  subjectKey: string;
+  subjectRef?:
+    | ({
+        relationTo: 'users';
+        value: string | User;
+      } | null)
+    | ({
+        relationTo: 'shops';
+        value: string | Shop;
+      } | null);
+  subjectLabel?: string | null;
+  signal:
+    | 'velocity.orders_per_phone'
+    | 'velocity.checkout_attempts'
+    | 'velocity.payout_account_changes'
+    | 'velocity.shop_creation'
+    | 'velocity.accounts_per_device'
+    | 'identity.duplicate_document'
+    | 'identity.duplicate_payout_account'
+    | 'orders.seller_cancellation_ratio'
+    | 'orders.dispute_ratio'
+    | 'cod.refusal_streak'
+    | 'cod.refusal_ratio_shop'
+    | 'resale.self_dealing'
+    | 'resale.shared_identity'
+    | 'resale.handover_at_supplier'
+    | 'resale.buyer_concentration'
+    | 'resale.cancellation_pattern'
+    | 'resale.refusal_pattern'
+    | 'dispute_lost_seller'
+    | 'counterfeit_confirmed'
+    | 'refund_overdue'
+    | 'seller_no_response'
+    | 'unavailable_after_confirmation'
+    | 'dispute_abuse_buyer'
+    | 'cod_refusal_abuse'
+    | 'serial_withdrawal'
+    | 'evidence_reused'
+    | 'review_extortion'
+    | 'resale_collusion_suspected'
+    | 'commission_credit_unpaid';
+  score: number;
+  severity: 'low' | 'medium' | 'high';
+  status: 'open' | 'reviewed' | 'dismissed' | 'actioned';
+  evidence:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  occurrences?: number | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  related?: (string | RiskFlag)[] | null;
+  autoEffects?: ('payout_hold' | 'commission_hold' | 'limit_applied')[] | null;
+  assignedTo?: (string | null) | User;
+  reviewedBy?: (string | null) | User;
+  reviewedAt?: string | null;
+  resolution?:
+    | (
+        | 'none'
+        | 'warned'
+        | 'limited'
+        | 'user_suspended'
+        | 'shop_suspended'
+        | 'payouts_held'
+        | 'resale_link_suspended'
+        | 'order_cancelled'
+        | 'false_positive'
+      )
+    | null;
+  resolutionNote?: string | null;
+  purgeAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-gate-evidence".
+ */
+export interface DisputeGateEvidence {
+  id: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-messages".
+ */
+export interface DisputeMessage {
+  id: string;
+  dispute: string | Dispute;
+  authorType: 'buyer' | 'seller' | 'supplier' | 'moderator' | 'system';
+  author?: (string | null) | User;
+  kind: 'message' | 'proposal' | 'proposal_response' | 'info_request' | 'decision' | 'system';
+  body?: string | null;
+  evidence?: (string | DisputeEvidence)[] | null;
+  visibility: 'parties' | 'staff';
+  redactedAt?: string | null;
+  redactedBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-evidence-views".
+ */
+export interface DisputeEvidenceView {
+  id: string;
+  evidence: string | DisputeEvidence;
+  dispute?: (string | null) | Dispute;
+  returnCase?: (string | null) | ReturnCase;
+  viewer: string | User;
+  viewerRole?: string | null;
+  ipHash?: string | null;
+  userAgent?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payout-holds".
+ */
+export interface PayoutHold {
+  id: string;
+  scope: 'shop' | 'order';
+  shop: string | Shop;
+  order?: (string | null) | Order;
+  reason:
+    | 'payout_account_changed'
+    | 'fraud_signal'
+    | 'reconciliation_mismatch'
+    | 'dispute_open'
+    | 'return_open'
+    | 'moderation'
+    | 'payout_failed_repeatedly'
+    | 'shop_suspended';
+  blocksCharges?: boolean | null;
+  status: 'active' | 'released' | 'expired';
+  until?: string | null;
+  createdByType: 'system' | 'moderator';
+  createdBy?: (string | null) | User;
+  releasedBy?: (string | null) | User;
+  releasedAt?: string | null;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ledger-accounts".
+ */
+export interface LedgerAccount {
+  id: string;
+  key: string;
+  category:
+    | 'provider_position'
+    | 'seller_pending'
+    | 'seller_releasable'
+    | 'seller_payout_in_transit'
+    | 'seller_receivable'
+    | 'buyer_refund_in_transit'
+    | 'platform_fee_unearned'
+    | 'platform_revenue_commission'
+    | 'platform_revenue_protection_fee'
+    | 'vat_payable'
+    | 'provider_fee_expense'
+    | 'buyer_guarantee_expense'
+    | 'reseller_commission_payable'
+    | 'reseller_payout_in_transit';
+  type: 'asset' | 'liability' | 'revenue' | 'expense';
+  shop?: (string | null) | Shop;
+  currency: string;
+  balance: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ledger-transactions".
+ */
+export interface LedgerTransaction {
+  id: string;
+  idempotencyKey: string;
+  kind:
+    | 'charge'
+    | 'provider_fee'
+    | 'release'
+    | 'commission_earned'
+    | 'payout_submitted'
+    | 'payout_complete'
+    | 'payout_failed'
+    | 'payout_reversed'
+    | 'refund_submitted'
+    | 'refund_complete'
+    | 'refund_failed'
+    | 'clawback_recovered'
+    | 'guarantee_writeoff'
+    | 'netting_reversed'
+    | 'reseller_commission_payable'
+    | 'reseller_commission_reduced'
+    | 'reseller_payout_submitted'
+    | 'reseller_payout_failed'
+    | 'reseller_payout_complete'
+    | 'reseller_payout_reversed';
+  occurredAt: string;
+  postedAt: string;
+  sourceType: 'webhook-event' | 'reconciliation-run' | 'order-event' | 'resale-event';
+  sourceId: string;
+  order?: (string | null) | Order;
+  shop?: (string | null) | Shop;
+  paymentIntent?: (string | null) | PaymentIntent;
+  refund?: (string | null) | Refund;
+  payout?: (string | null) | Payout;
+  entries: {
+    account: string | LedgerAccount;
+    debit: number;
+    credit: number;
+    id?: string | null;
+  }[];
+  reverses?: (string | null) | LedgerTransaction;
+  memo?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-fee-invoices".
+ */
+export interface BuyerFeeInvoice {
+  id: string;
+  number: string;
+  kind: 'invoice' | 'credit_note';
+  creditsInvoice?: (string | null) | BuyerFeeInvoice;
+  order: string | Order;
+  buyer?: (string | null) | User;
+  amountHt: number;
+  vat: number;
+  amountTtc: number;
+  vatRateBps: number;
+  currency: string;
+  formatSnapshot?:
+    | {
+        locale: 'fr' | 'en';
+        symbol: string;
+        position: 'before' | 'after';
+        groupSeparator: string;
+        decimalSeparator: string;
+        minorUnit: number;
+        id?: string | null;
+      }[]
+    | null;
+  pdf?: (string | null) | BuyerFeeInvoiceFile;
+  issuedAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-fee-invoice-files".
+ */
+export interface BuyerFeeInvoiceFile {
+  id: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reconciliation-runs".
+ */
+export interface ReconciliationRun {
+  id: string;
+  startedAt: string;
+  finishedAt?: string | null;
+  window?: {
+    from?: string | null;
+    to?: string | null;
+  };
+  status: 'running' | 'succeeded' | 'failed';
+  counts?: {
+    checked?: number | null;
+    matched?: number | null;
+    autoFixed?: number | null;
+    mismatches?: number | null;
+  };
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reconciliation-mismatches".
+ */
+export interface ReconciliationMismatch {
+  id: string;
+  run?: (string | null) | ReconciliationRun;
+  kind:
+    | 'missing_locally'
+    | 'missing_at_provider'
+    | 'amount_mismatch'
+    | 'status_mismatch'
+    | 'balance_mismatch'
+    | 'unbalanced_ledger';
+  entityType?: string | null;
+  providerId?: string | null;
+  localId?: string | null;
+  expected?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  actual?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  shop?: (string | null) | Shop;
+  status: 'open' | 'auto_fixed' | 'resolved' | 'ignored';
+  resolvedBy?: (string | null) | User;
+  note?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -506,7 +3910,60 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'expireListings' | 'checkSearchAlerts' | 'expireBoosts';
+        taskSlug:
+          | 'inline'
+          | 'expireListings'
+          | 'expireBoosts'
+          | 'checkSearchAlerts'
+          | 'consumeRiskSignalOutbox'
+          | 'processWebhookEvent'
+          | 'reconcilePendingPayments'
+          | 'liftExpiredShopSuspensions'
+          | 'processKycEvent'
+          | 'purgeVerificationData'
+          | 'purgeShopActivity'
+          | 'purgeRiskData'
+          | 'abandonCarts'
+          | 'applyResalePriceChanges'
+          | 'advanceReturnCases'
+          | 'advanceDisputes'
+          | 'purgeCaseEvidence'
+          | 'expireStrikes'
+          | 'publishHeldReviews'
+          | 'issueCommissionInvoices'
+          | 'enforceCommissionOverdue'
+          | 'enforceResaleTerms'
+          | 'refreshResaleLinkStats'
+          | 'reconcileStockCaches'
+          | 'renderDisputeCertificate'
+          | 'dispatchOrderEvent'
+          | 'expireOrders'
+          | 'expirePurchaseOrders'
+          | 'failStaleOrders'
+          | 'flushListingViews'
+          | 'aggregateShopDailyStats'
+          | 'recomputeShopRankings'
+          | 'sendWeeklyInsights'
+          | 'completeOrders'
+          | 'markOverdueResellerCharges'
+          | 'payResellerCommissions'
+          | 'releaseResellerCommissions'
+          | 'retryResellerPayouts'
+          | 'submitRefund'
+          | 'syncConnectedAccount'
+          | 'releaseEligibleFunds'
+          | 'expirePayoutHolds'
+          | 'reconcileLedger'
+          | 'recoverSellerReceivables'
+          | 'sweepBuyerFeeInvoices'
+          | 'processCourierWebhookEvent'
+          | 'pollCourierShipments'
+          | 'finalizeFailedShipments'
+          | 'expirePickupHolds'
+          | 'flagLateShipments'
+          | 'remindReturns'
+          | 'expireRiderLinks'
+          | 'purgeDeliveryProofs';
         taskID: string;
         input?:
           | {
@@ -539,7 +3996,63 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'expireListings' | 'checkSearchAlerts' | 'expireBoosts') | null;
+  taskSlug?:
+    | (
+        | 'inline'
+        | 'expireListings'
+        | 'expireBoosts'
+        | 'checkSearchAlerts'
+        | 'consumeRiskSignalOutbox'
+        | 'processWebhookEvent'
+        | 'reconcilePendingPayments'
+        | 'liftExpiredShopSuspensions'
+        | 'processKycEvent'
+        | 'purgeVerificationData'
+        | 'purgeShopActivity'
+        | 'purgeRiskData'
+        | 'abandonCarts'
+        | 'applyResalePriceChanges'
+        | 'advanceReturnCases'
+        | 'advanceDisputes'
+        | 'purgeCaseEvidence'
+        | 'expireStrikes'
+        | 'publishHeldReviews'
+        | 'issueCommissionInvoices'
+        | 'enforceCommissionOverdue'
+        | 'enforceResaleTerms'
+        | 'refreshResaleLinkStats'
+        | 'reconcileStockCaches'
+        | 'renderDisputeCertificate'
+        | 'dispatchOrderEvent'
+        | 'expireOrders'
+        | 'expirePurchaseOrders'
+        | 'failStaleOrders'
+        | 'flushListingViews'
+        | 'aggregateShopDailyStats'
+        | 'recomputeShopRankings'
+        | 'sendWeeklyInsights'
+        | 'completeOrders'
+        | 'markOverdueResellerCharges'
+        | 'payResellerCommissions'
+        | 'releaseResellerCommissions'
+        | 'retryResellerPayouts'
+        | 'submitRefund'
+        | 'syncConnectedAccount'
+        | 'releaseEligibleFunds'
+        | 'expirePayoutHolds'
+        | 'reconcileLedger'
+        | 'recoverSellerReceivables'
+        | 'sweepBuyerFeeInvoices'
+        | 'processCourierWebhookEvent'
+        | 'pollCourierShipments'
+        | 'finalizeFailedShipments'
+        | 'expirePickupHolds'
+        | 'flagLateShipments'
+        | 'remindReturns'
+        | 'expireRiderLinks'
+        | 'purgeDeliveryProofs'
+      )
+    | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -575,6 +4088,10 @@ export interface PayloadLockedDocument {
         value: string | Listing;
       } | null)
     | ({
+        relationTo: 'listing-view-flushes';
+        value: string | ListingViewFlush;
+      } | null)
+    | ({
         relationTo: 'categories';
         value: string | Category;
       } | null)
@@ -585,6 +4102,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'conversations';
         value: string | Conversation;
+      } | null)
+    | ({
+        relationTo: 'conversation-reads';
+        value: string | ConversationRead;
       } | null)
     | ({
         relationTo: 'messages';
@@ -599,12 +4120,76 @@ export interface PayloadLockedDocument {
         value: string | Report;
       } | null)
     | ({
+        relationTo: 'resale-links';
+        value: string | ResaleLink;
+      } | null)
+    | ({
+        relationTo: 'resale-terms';
+        value: string | ResaleTerm;
+      } | null)
+    | ({
+        relationTo: 'resale-terms-acceptances';
+        value: string | ResaleTermsAcceptance;
+      } | null)
+    | ({
         relationTo: 'boost-payments';
         value: string | BoostPayment;
       } | null)
     | ({
+        relationTo: 'payment-intents';
+        value: string | PaymentIntent;
+      } | null)
+    | ({
+        relationTo: 'webhook-events';
+        value: string | WebhookEvent;
+      } | null)
+    | ({
+        relationTo: 'contact-reveals';
+        value: string | ContactReveal;
+      } | null)
+    | ({
+        relationTo: 'delivery-zones';
+        value: string | DeliveryZone;
+      } | null)
+    | ({
+        relationTo: 'markets';
+        value: string | Market;
+      } | null)
+    | ({
+        relationTo: 'market-cities';
+        value: string | MarketCity;
+      } | null)
+    | ({
+        relationTo: 'shop-locations';
+        value: string | ShopLocation;
+      } | null)
+    | ({
+        relationTo: 'couriers';
+        value: string | Courier;
+      } | null)
+    | ({
+        relationTo: 'courier-members';
+        value: string | CourierMember;
+      } | null)
+    | ({
+        relationTo: 'shipments';
+        value: string | Shipment;
+      } | null)
+    | ({
+        relationTo: 'shipment-events';
+        value: string | ShipmentEvent;
+      } | null)
+    | ({
+        relationTo: 'delivery-proofs';
+        value: string | DeliveryProof;
+      } | null)
+    | ({
         relationTo: 'saved-searches';
         value: string | SavedSearch;
+      } | null)
+    | ({
+        relationTo: 'addresses';
+        value: string | Address;
       } | null)
     | ({
         relationTo: 'blocked-users';
@@ -613,6 +4198,190 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'tags';
         value: string | Tag;
+      } | null)
+    | ({
+        relationTo: 'moderation-log';
+        value: string | ModerationLog;
+      } | null)
+    | ({
+        relationTo: 'shops';
+        value: string | Shop;
+      } | null)
+    | ({
+        relationTo: 'shop-members';
+        value: string | ShopMember;
+      } | null)
+    | ({
+        relationTo: 'shop-activity-log';
+        value: string | ShopActivityLog;
+      } | null)
+    | ({
+        relationTo: 'shop-invitations';
+        value: string | ShopInvitation;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: string | Product;
+      } | null)
+    | ({
+        relationTo: 'purchase-orders';
+        value: string | PurchaseOrder;
+      } | null)
+    | ({
+        relationTo: 'reseller-commissions';
+        value: string | ResellerCommission;
+      } | null)
+    | ({
+        relationTo: 'reseller-charges';
+        value: string | ResellerCharge;
+      } | null)
+    | ({
+        relationTo: 'reseller-payouts';
+        value: string | ResellerPayout;
+      } | null)
+    | ({
+        relationTo: 'product-variants';
+        value: string | ProductVariant;
+      } | null)
+    | ({
+        relationTo: 'stock-movements';
+        value: string | StockMovement;
+      } | null)
+    | ({
+        relationTo: 'stock-count-sessions';
+        value: string | StockCountSession;
+      } | null)
+    | ({
+        relationTo: 'verification-requests';
+        value: string | VerificationRequest;
+      } | null)
+    | ({
+        relationTo: 'verification-documents';
+        value: string | VerificationDocument;
+      } | null)
+    | ({
+        relationTo: 'verification-document-views';
+        value: string | VerificationDocumentView;
+      } | null)
+    | ({
+        relationTo: 'sequences';
+        value: string | Sequence;
+      } | null)
+    | ({
+        relationTo: 'carts';
+        value: string | Cart;
+      } | null)
+    | ({
+        relationTo: 'orders';
+        value: string | Order;
+      } | null)
+    | ({
+        relationTo: 'order-items';
+        value: string | OrderItem;
+      } | null)
+    | ({
+        relationTo: 'order-events';
+        value: string | OrderEvent;
+      } | null)
+    | ({
+        relationTo: 'buyer-phone-scores';
+        value: string | BuyerPhoneScore;
+      } | null)
+    | ({
+        relationTo: 'commission-lines';
+        value: string | CommissionLine;
+      } | null)
+    | ({
+        relationTo: 'commission-invoices';
+        value: string | CommissionInvoice;
+      } | null)
+    | ({
+        relationTo: 'return-cases';
+        value: string | ReturnCase;
+      } | null)
+    | ({
+        relationTo: 'shop-daily-stats';
+        value: string | ShopDailyStat;
+      } | null)
+    | ({
+        relationTo: 'risk-flags';
+        value: string | RiskFlag;
+      } | null)
+    | ({
+        relationTo: 'payment-gate-evidence';
+        value: string | PaymentGateEvidence;
+      } | null)
+    | ({
+        relationTo: 'dispute-gate-evidence';
+        value: string | DisputeGateEvidence;
+      } | null)
+    | ({
+        relationTo: 'disputes';
+        value: string | Dispute;
+      } | null)
+    | ({
+        relationTo: 'dispute-messages';
+        value: string | DisputeMessage;
+      } | null)
+    | ({
+        relationTo: 'dispute-evidence';
+        value: string | DisputeEvidence;
+      } | null)
+    | ({
+        relationTo: 'dispute-evidence-views';
+        value: string | DisputeEvidenceView;
+      } | null)
+    | ({
+        relationTo: 'shop-strikes';
+        value: string | ShopStrike;
+      } | null)
+    | ({
+        relationTo: 'risk-signal-outbox';
+        value: string | RiskSignalOutbox;
+      } | null)
+    | ({
+        relationTo: 'connected-accounts';
+        value: string | ConnectedAccount;
+      } | null)
+    | ({
+        relationTo: 'payout-accounts';
+        value: string | PayoutAccount;
+      } | null)
+    | ({
+        relationTo: 'refunds';
+        value: string | Refund;
+      } | null)
+    | ({
+        relationTo: 'payouts';
+        value: string | Payout;
+      } | null)
+    | ({
+        relationTo: 'payout-holds';
+        value: string | PayoutHold;
+      } | null)
+    | ({
+        relationTo: 'ledger-accounts';
+        value: string | LedgerAccount;
+      } | null)
+    | ({
+        relationTo: 'ledger-transactions';
+        value: string | LedgerTransaction;
+      } | null)
+    | ({
+        relationTo: 'buyer-fee-invoices';
+        value: string | BuyerFeeInvoice;
+      } | null)
+    | ({
+        relationTo: 'buyer-fee-invoice-files';
+        value: string | BuyerFeeInvoiceFile;
+      } | null)
+    | ({
+        relationTo: 'reconciliation-runs';
+        value: string | ReconciliationRun;
+      } | null)
+    | ({
+        relationTo: 'reconciliation-mismatches';
+        value: string | ReconciliationMismatch;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -671,12 +4440,16 @@ export interface UsersSelect<T extends boolean = true> {
     | {
         provider?: T;
         providerAccountId?: T;
+        refreshToken?: T;
         id?: T;
       };
   rating?: T;
   totalReviews?: T;
   bio?: T;
+  language?: T;
+  emailVerificationSentAt?: T;
   phone?: T;
+  phoneVerified?: T;
   pendingPhone?: T;
   phoneVerifiedAt?: T;
   phoneVerificationCodeHash?: T;
@@ -684,7 +4457,25 @@ export interface UsersSelect<T extends boolean = true> {
   phoneVerificationAttempts?: T;
   phoneVerificationLastSentAt?: T;
   location?: T;
+  homeLocation?:
+    | T
+    | {
+        city?: T;
+        region?: T;
+        country?: T;
+        countryCode?: T;
+        source?: T;
+        updatedAt?: T;
+      };
   verified?: T;
+  identityVerifiedAt?: T;
+  identityVerification?: T;
+  legacyVerifiedAt?: T;
+  suspendedAt?: T;
+  suspendedUntil?: T;
+  suspendedReason?: T;
+  suspendedNote?: T;
+  suspendedBy?: T;
   createdAt?: T;
   updatedAt?: T;
   email?: T;
@@ -692,6 +4483,8 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  _verified?: T;
+  _verificationToken?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:
@@ -728,6 +4521,8 @@ export interface ListingsSelect<T extends boolean = true> {
   title?: T;
   description?: T;
   price?: T;
+  priceUnit?: T;
+  kind?: T;
   images?:
     | T
     | {
@@ -748,11 +4543,51 @@ export interface ListingsSelect<T extends boolean = true> {
         lat?: T;
         lng?: T;
       };
+  rejectionCode?: T;
   rejectionReason?: T;
-  condition?: T;
   tags?: T;
+  shop?: T;
+  product?: T;
+  productSummary?:
+    | T
+    | {
+        priceMin?: T;
+        priceMax?: T;
+        available?: T;
+        variantCount?: T;
+        trackInventory?: T;
+      };
+  resale?:
+    | T
+    | {
+        supplierShop?: T;
+        link?: T;
+        prices?:
+          | T
+          | {
+              variant?: T;
+              price?: T;
+              id?: T;
+            };
+        desiredStatus?: T;
+        holds?: T;
+      };
+  moderationHold?: T;
+  orderable?: T;
   createdAt?: T;
   updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-view-flushes_select".
+ */
+export interface ListingViewFlushesSelect<T extends boolean = true> {
+  listing?: T;
+  date?: T;
+  views?: T;
+  purgeAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -762,10 +4597,20 @@ export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   description?: T;
+  searchAliases?: T;
   icon?: T;
   image?: T;
   parent?: T;
   active?: T;
+  withdrawalExcluded?: T;
+  listingForm?:
+    | T
+    | {
+        type?: T;
+        price?: T;
+        photos?: T;
+        priceLabel?: T;
+      };
   attributes?:
     | T
     | {
@@ -778,10 +4623,16 @@ export interface CategoriesSelect<T extends boolean = true> {
           | T
           | {
               value?: T;
+              label?: T;
               id?: T;
             };
+        unit?: T;
+        group?: T;
+        min?: T;
+        max?: T;
         id?: T;
       };
+  commissionRateBps?: T;
   createdAt?: T;
   updatedAt?: T;
 }
@@ -803,6 +4654,27 @@ export interface ConversationsSelect<T extends boolean = true> {
   participants?: T;
   listing?: T;
   lastMessage?: T;
+  shop?: T;
+  buyer?: T;
+  order?: T;
+  assignee?: T;
+  assignedAt?: T;
+  assignedBy?: T;
+  inboxStatus?: T;
+  lastMessageAt?: T;
+  awaitingReply?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversation-reads_select".
+ */
+export interface ConversationReadsSelect<T extends boolean = true> {
+  conversation?: T;
+  user?: T;
+  lastReadAt?: T;
+  lastReadMessage?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -814,8 +4686,14 @@ export interface MessagesSelect<T extends boolean = true> {
   conversation?: T;
   sender?: T;
   content?: T;
+  kind?: T;
+  systemEvent?: T;
+  systemParams?: T;
+  order?: T;
   listing?: T;
   read?: T;
+  senderSide?: T;
+  formerMemberAuthor?: T;
   createdAt?: T;
   updatedAt?: T;
 }
@@ -825,10 +4703,15 @@ export interface MessagesSelect<T extends boolean = true> {
  */
 export interface ReviewsSelect<T extends boolean = true> {
   reviewer?: T;
+  status?: T;
   reviewedUser?: T;
   listing?: T;
+  order?: T;
+  shop?: T;
+  verifiedPurchase?: T;
   rating?: T;
   comment?: T;
+  photos?: T;
   createdAt?: T;
   updatedAt?: T;
 }
@@ -850,6 +4733,71 @@ export interface ReportsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "resale-links_select".
+ */
+export interface ResaleLinksSelect<T extends boolean = true> {
+  supplierShop?: T;
+  resellerShop?: T;
+  status?: T;
+  requestedBy?: T;
+  message?: T;
+  resellerTermsVersion?: T;
+  resellerTermsAcceptedAt?: T;
+  decidedBy?: T;
+  decidedAt?: T;
+  respondedAt?: T;
+  suspendedBy?: T;
+  suspendedReason?: T;
+  note?: T;
+  revokedAt?: T;
+  revokedBy?: T;
+  riskHold?: T;
+  stats?:
+    | T
+    | {
+        publishedListings?: T;
+        deliveredOrders30d?: T;
+        cancelledPurchaseOrders30d?: T;
+        refusedDeliveries30d?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "resale-terms_select".
+ */
+export interface ResaleTermsSelect<T extends boolean = true> {
+  role?: T;
+  version?: T;
+  bodyFr?: T;
+  bodyEn?: T;
+  summaryFr?: T;
+  summaryEn?: T;
+  publishedAt?: T;
+  requiresReacceptance?: T;
+  enforceAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "resale-terms-acceptances_select".
+ */
+export interface ResaleTermsAcceptancesSelect<T extends boolean = true> {
+  shop?: T;
+  role?: T;
+  terms?: T;
+  version?: T;
+  acceptedBy?: T;
+  acceptedAt?: T;
+  locale?: T;
+  client?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "boost-payments_select".
  */
 export interface BoostPaymentsSelect<T extends boolean = true> {
@@ -861,8 +4809,505 @@ export interface BoostPaymentsSelect<T extends boolean = true> {
   paymentProvider?: T;
   paymentReference?: T;
   paymentUrl?: T;
+  boostedUntil?: T;
+  paymentIntent?: T;
+  customerDeletedAt?: T;
   createdAt?: T;
   updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-intents_select".
+ */
+export interface PaymentIntentsSelect<T extends boolean = true> {
+  purpose?: T;
+  targetType?: T;
+  targetId?: T;
+  customer?: T;
+  customerDeletedAt?: T;
+  amount?: T;
+  currency?: T;
+  provider?: T;
+  providerReference?: T;
+  reference?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        source?: T;
+        at?: T;
+        note?: T;
+        id?: T;
+      };
+  idempotencyKey?: T;
+  checkoutUrl?: T;
+  expiresAt?: T;
+  settledAmount?: T;
+  settledCurrency?: T;
+  channel?: T;
+  payerPhone?: T;
+  connectedAccount?: T;
+  destinationAmount?: T;
+  applicationFee?: T;
+  attempt?: T;
+  failureCode?: T;
+  lateSuccess?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "webhook-events_select".
+ */
+export interface WebhookEventsSelect<T extends boolean = true> {
+  provider?: T;
+  providerEventId?: T;
+  type?: T;
+  reference?: T;
+  providerReference?: T;
+  payloadHash?: T;
+  raw?: T;
+  receivedAt?: T;
+  processedAt?: T;
+  attempts?: T;
+  lastError?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-reveals_select".
+ */
+export interface ContactRevealsSelect<T extends boolean = true> {
+  listing?: T;
+  seller?: T;
+  viewer?: T;
+  revealWindow?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "delivery-zones_select".
+ */
+export interface DeliveryZonesSelect<T extends boolean = true> {
+  shop?: T;
+  name?: T;
+  scope?: T;
+  city?: T;
+  districts?:
+    | T
+    | {
+        key?: T;
+        id?: T;
+      };
+  destinationCities?: T;
+  method?: T;
+  courier?: T;
+  fee?: T;
+  freeAboveSubtotal?: T;
+  minOrderSubtotal?: T;
+  etaMinHours?: T;
+  etaMaxHours?: T;
+  cutoffTime?: T;
+  deliveryDays?: T;
+  codAllowed?: T;
+  active?: T;
+  sortOrder?: T;
+  metadata?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "markets_select".
+ */
+export interface MarketsSelect<T extends boolean = true> {
+  countryCode?: T;
+  name?: T;
+  status?: T;
+  currency?:
+    | T
+    | {
+        code?: T;
+        minorUnit?: T;
+        rounding?: T;
+      };
+  formatting?:
+    | T
+    | {
+        locale?: T;
+        symbol?: T;
+        position?: T;
+        groupSeparator?: T;
+        decimalSeparator?: T;
+        patternExample?: T;
+        id?: T;
+      };
+  phone?:
+    | T
+    | {
+        pattern?: T;
+        examples?:
+          | T
+          | {
+              valid?: T;
+              invalid?: T;
+            };
+        displayExample?: T;
+      };
+  timezone?: T;
+  languages?: T;
+  vatRateBps?: T;
+  payments?:
+    | T
+    | {
+        provider?: T;
+        settlementMode?: T;
+        channels?: T;
+        enabled?: T;
+      };
+  features?:
+    | T
+    | {
+        cod?: T;
+        protectedPayment?: T;
+        deliveryZones?: T;
+        couriers?: T;
+        disputes?: T;
+        resale?: T;
+        resalePrepaid?: T;
+        boosts?: T;
+      };
+  amounts?:
+    | T
+    | {
+        minPayout?: T;
+        maxOrderAmount?: T;
+        exposureLevel2?: T;
+        exposureLevel3?: T;
+        buyerProtectionMin?: T;
+        buyerProtectionMax?: T;
+        defaultDeliveryFeeFallback?: T;
+      };
+  regulatoryReview?:
+    | T
+    | {
+        reviewedBy?: T;
+        reviewedAt?: T;
+        evidence?: T;
+        note?: T;
+      };
+  moneyCalendar?:
+    | T
+    | {
+        releaseHourLocal?: T;
+        reconcileHourLocal?: T;
+        vatPeriod?: T;
+        lastReleaseLocalDate?: T;
+        lastReconcileLocalDate?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-cities_select".
+ */
+export interface MarketCitiesSelect<T extends boolean = true> {
+  market?: T;
+  key?: T;
+  label?: T;
+  districts?:
+    | T
+    | {
+        slug?: T;
+        label?: T;
+        id?: T;
+      };
+  defaultDeliveryFee?: T;
+  active?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-locations_select".
+ */
+export interface ShopLocationsSelect<T extends boolean = true> {
+  shop?: T;
+  name?: T;
+  city?: T;
+  district?: T;
+  address?: T;
+  landmark?: T;
+  gps?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+      };
+  phone?: T;
+  openingHours?:
+    | T
+    | {
+        day?: T;
+        opens?: T;
+        closes?: T;
+        id?: T;
+      };
+  openingHoursNote?: T;
+  pickupEnabled?: T;
+  pickupFee?: T;
+  holdDays?: T;
+  preparationHours?: T;
+  isDispatchOrigin?: T;
+  isDefaultOrigin?: T;
+  active?: T;
+  metadata?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "couriers_select".
+ */
+export interface CouriersSelect<T extends boolean = true> {
+  key?: T;
+  name?: T;
+  logo?: T;
+  provider?: T;
+  scopes?: T;
+  cities?: T;
+  destinationCities?: T;
+  supportsCod?: T;
+  tariffs?:
+    | T
+    | {
+        city?: T;
+        district?: T;
+        amount?: T;
+        etaMinHours?: T;
+        etaMaxHours?: T;
+        id?: T;
+      };
+  trackingUrlTemplate?: T;
+  contact?:
+    | T
+    | {
+        phone?: T;
+        email?: T;
+      };
+  status?: T;
+  billingMode?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "courier-members_select".
+ */
+export interface CourierMembersSelect<T extends boolean = true> {
+  courier?: T;
+  user?: T;
+  role?: T;
+  vehicle?: T;
+  status?: T;
+  phoneSharingConsentAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shipments_select".
+ */
+export interface ShipmentsSelect<T extends boolean = true> {
+  shipmentNumber?: T;
+  order?: T;
+  storefrontShop?: T;
+  fulfillingShop?: T;
+  items?:
+    | T
+    | {
+        orderItem?: T;
+        quantity?: T;
+        id?: T;
+      };
+  method?: T;
+  carrier?: T;
+  courier?: T;
+  provider?: T;
+  providerShipmentId?: T;
+  providerStatus?:
+    | T
+    | {
+        providerStatus?: T;
+        status?: T;
+        occurredAt?: T;
+        providerEventId?: T;
+      };
+  trackingCode?: T;
+  trackingUrl?: T;
+  courierEta?: T;
+  zone?: T;
+  pickupLocation?: T;
+  origin?: T;
+  destination?: T;
+  fee?: T;
+  courierCost?: T;
+  rider?:
+    | T
+    | {
+        user?: T;
+        name?: T;
+        phone?: T;
+        vehicle?: T;
+        assignedAt?: T;
+        assignedBy?: T;
+      };
+  riderLink?:
+    | T
+    | {
+        tokenHash?: T;
+        createdAt?: T;
+        expiresAt?: T;
+        revokedAt?: T;
+        lastUsedAt?: T;
+      };
+  status?: T;
+  attempts?:
+    | T
+    | {
+        number?: T;
+        outcome?: T;
+        reason?: T;
+        note?: T;
+        gps?:
+          | T
+          | {
+              lat?: T;
+              lng?: T;
+              accuracyMeters?: T;
+            };
+        photo?: T;
+        actorType?: T;
+        actor?: T;
+        at?: T;
+        id?: T;
+      };
+  finalFailure?:
+    | T
+    | {
+        reason?: T;
+        at?: T;
+        returnInitiatedAt?: T;
+      };
+  redelivery?:
+    | T
+    | {
+        scheduledFor?: T;
+        window?: T;
+        requestedBy?: T;
+        rescheduleBy?: T;
+        note?: T;
+      };
+  proof?:
+    | T
+    | {
+        handoverMethod?: T;
+        otpVerifiedAt?: T;
+        photo?: T;
+        gps?:
+          | T
+          | {
+              lat?: T;
+              lng?: T;
+              accuracyMeters?: T;
+            };
+        distanceFromDestinationMeters?: T;
+        recipientName?: T;
+        providerPodUrl?: T;
+        capturedBy?: T;
+        capturedAt?: T;
+      };
+  codCollection?:
+    | T
+    | {
+        expectedAmount?: T;
+        collectedBy?: T;
+        collectedAmount?: T;
+        remittanceStatus?: T;
+        declaredRemittedAt?: T;
+        confirmedAt?: T;
+        note?: T;
+      };
+  failureCostBearer?: T;
+  readyForPickupAt?: T;
+  pickupDeadline?: T;
+  pickedUpAt?: T;
+  inTransitAt?: T;
+  deliveredAt?: T;
+  failedAt?: T;
+  returnedAt?: T;
+  cancelledAt?: T;
+  promisedBy?: T;
+  flags?: T;
+  lastProviderSyncAt?: T;
+  metadata?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shipment-events_select".
+ */
+export interface ShipmentEventsSelect<T extends boolean = true> {
+  shipment?: T;
+  order?: T;
+  type?: T;
+  statusFrom?: T;
+  statusTo?: T;
+  actorType?: T;
+  actor?: T;
+  providerEventId?: T;
+  webhookEvent?: T;
+  gps?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+        accuracyMeters?: T;
+      };
+  note?: T;
+  metadata?: T;
+  visibility?: T;
+  occurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "delivery-proofs_select".
+ */
+export interface DeliveryProofsSelect<T extends boolean = true> {
+  shipment?: T;
+  kind?: T;
+  uploadedBy?: T;
+  uploadedVia?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -876,6 +5321,31 @@ export interface SavedSearchesSelect<T extends boolean = true> {
   url?: T;
   alertEnabled?: T;
   lastCheckedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "addresses_select".
+ */
+export interface AddressesSelect<T extends boolean = true> {
+  user?: T;
+  label?: T;
+  recipientName?: T;
+  phone?: T;
+  city?: T;
+  district?: T;
+  districtOther?: T;
+  landmark?: T;
+  instructions?: T;
+  gps?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+        accuracyMeters?: T;
+      };
+  isDefault?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -897,6 +5367,1703 @@ export interface TagsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   emoji?: T;
+  categories?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "moderation-log_select".
+ */
+export interface ModerationLogSelect<T extends boolean = true> {
+  actor?: T;
+  actorRole?: T;
+  action?: T;
+  targetType?: T;
+  targetId?: T;
+  reason?: T;
+  note?: T;
+  metadata?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shops_select".
+ */
+export interface ShopsSelect<T extends boolean = true> {
+  handle?: T;
+  previousHandles?:
+    | T
+    | {
+        handle?: T;
+        until?: T;
+        id?: T;
+      };
+  handleChangedAt?: T;
+  name?: T;
+  description?: T;
+  returnPolicy?: T;
+  logo?: T;
+  banner?: T;
+  brandColor?: T;
+  contact?:
+    | T
+    | {
+        phone?: T;
+        whatsapp?: T;
+        email?: T;
+      };
+  location?:
+    | T
+    | {
+        city?: T;
+        region?: T;
+        country?: T;
+        countryCode?: T;
+      };
+  profile?: T;
+  categories?: T;
+  owner?: T;
+  status?: T;
+  level?: T;
+  levelExpiresAt?: T;
+  verifiedAt?: T;
+  notifiedExpiryDays?: T;
+  weeklyInsightsSentFor?: T;
+  deliveryMigrationNoticeSentAt?: T;
+  legal?:
+    | T
+    | {
+        businessType?: T;
+        legalName?: T;
+        rccmNumber?: T;
+        niu?: T;
+        verifiedAt?: T;
+      };
+  closedAt?: T;
+  suspendedAt?: T;
+  suspendedUntil?: T;
+  suspendedReason?: T;
+  suspendedNote?: T;
+  suspendedBy?: T;
+  suspensionLogId?: T;
+  publishedListingCount?: T;
+  orderSettings?:
+    | T
+    | {
+        codEnabled?: T;
+        sellerDeliveryEnabled?: T;
+        deliveryFee?: T;
+        deliveryEtaText?: T;
+        pickupEnabled?: T;
+        pickupPoint?:
+          | T
+          | {
+              address?: T;
+              landmark?: T;
+              gps?:
+                | T
+                | {
+                    lat?: T;
+                    lng?: T;
+                  };
+              hours?: T;
+            };
+        recentExternalRiders?:
+          | T
+          | {
+              name?: T;
+              phone?: T;
+              lastUsedAt?: T;
+              id?: T;
+            };
+        salesTermsExtra?: T;
+      };
+  ordersRestrictedAt?: T;
+  ordersRestrictedReason?: T;
+  rating?: T;
+  totalReviews?: T;
+  stats?:
+    | T
+    | {
+        ordersDelivered?: T;
+        ordersCancelledBySeller?: T;
+        ordersAutoCancelled?: T;
+        ordersDeliveryFailed?: T;
+      };
+  resaleStats?:
+    | T
+    | {
+        medianShipHours?: T;
+        medianResponseHours?: T;
+        computedAt?: T;
+      };
+  trustStats?:
+    | T
+    | {
+        responseTime?: T;
+        responseSample?: T;
+        computedAt?: T;
+      };
+  rankingScore?: T;
+  rankingSignals?:
+    | T
+    | {
+        ordersPlaced?: T;
+        ordersAccepted?: T;
+        ordersDelivered?: T;
+        catalogueUpdatedAt?: T;
+      };
+  featured?:
+    | T
+    | {
+        until?: T;
+        cities?: T;
+        categories?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-members_select".
+ */
+export interface ShopMembersSelect<T extends boolean = true> {
+  shop?: T;
+  user?: T;
+  role?: T;
+  status?: T;
+  invitation?: T;
+  joinedAt?: T;
+  revokedAt?: T;
+  revokedBy?: T;
+  revokedReason?: T;
+  inboxNotifications?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-activity-log_select".
+ */
+export interface ShopActivityLogSelect<T extends boolean = true> {
+  shop?: T;
+  actor?: T;
+  actorRole?: T;
+  action?: T;
+  targetType?: T;
+  targetId?: T;
+  metadata?: T;
+  createdAt?: T;
+  updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-invitations_select".
+ */
+export interface ShopInvitationsSelect<T extends boolean = true> {
+  shop?: T;
+  role?: T;
+  channel?: T;
+  phone?: T;
+  email?: T;
+  pendingKey?: T;
+  tokenHash?: T;
+  status?: T;
+  invitedBy?: T;
+  expiresAt?: T;
+  sendCount?: T;
+  lastSentAt?: T;
+  acceptedBy?: T;
+  respondedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products_select".
+ */
+export interface ProductsSelect<T extends boolean = true> {
+  shop?: T;
+  title?: T;
+  description?: T;
+  category?: T;
+  attributes?: T;
+  images?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  status?: T;
+  options?:
+    | T
+    | {
+        name?: T;
+        values?: T;
+        id?: T;
+      };
+  delivery?:
+    | T
+    | {
+        handlingHours?: T;
+        weightGrams?: T;
+        codAllowed?: T;
+        pickupAllowed?: T;
+      };
+  resale?:
+    | T
+    | {
+        enabled?: T;
+        approvalRequired?: T;
+        handlingHours?: T;
+        codAccepted?: T;
+        minResellerLevel?: T;
+        resellerNotes?: T;
+        enabledAt?: T;
+        resellerCount?: T;
+        pendingChange?:
+          | T
+          | {
+              effectiveAt?: T;
+              variants?:
+                | T
+                | {
+                    variant?: T;
+                    supplierPrice?: T;
+                    minRetailPrice?: T;
+                    suggestedRetailPrice?: T;
+                    id?: T;
+                  };
+            };
+      };
+  returnPolicy?: T;
+  warrantyMonths?: T;
+  listing?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "purchase-orders_select".
+ */
+export interface PurchaseOrdersSelect<T extends boolean = true> {
+  number?: T;
+  order?: T;
+  supplierShop?: T;
+  resellerShop?: T;
+  link?: T;
+  status?: T;
+  paymentMethod?: T;
+  items?:
+    | T
+    | {
+        orderItem?: T;
+        variant?: T;
+        title?: T;
+        variantLabel?: T;
+        sku?: T;
+        quantity?: T;
+        supplierUnitPrice?: T;
+        resellerUnitPrice?: T;
+        id?: T;
+      };
+  supplierAmount?: T;
+  deliveryFee?: T;
+  collectAmount?: T;
+  platformCommission?: T;
+  resellerCommission?: T;
+  branding?:
+    | T
+    | {
+        name?: T;
+        handle?: T;
+        logo?: T;
+        phone?: T;
+      };
+  sentAt?: T;
+  acceptBy?: T;
+  acceptedAt?: T;
+  shipBy?: T;
+  tracking?:
+    | T
+    | {
+        carrier?: T;
+        trackingNumber?: T;
+        trackingUrl?: T;
+        shipment?: T;
+      };
+  cancellation?:
+    | T
+    | {
+        by?: T;
+        reason?: T;
+        note?: T;
+        at?: T;
+      };
+  return?:
+    | T
+    | {
+        reason?: T;
+        liability?: T;
+        failedDeliveryCost?: T;
+        receivedAt?: T;
+        condition?: T;
+      };
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        actor?: T;
+        source?: T;
+        at?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reseller-commissions_select".
+ */
+export interface ResellerCommissionsSelect<T extends boolean = true> {
+  resellerShop?: T;
+  supplierShop?: T;
+  purchaseOrder?: T;
+  order?: T;
+  saleAmount?: T;
+  supplierAmount?: T;
+  platformCommission?: T;
+  amount?: T;
+  paymentMethod?: T;
+  status?: T;
+  holdReasons?: T;
+  marginLine?: T;
+  payout?: T;
+  paidAt?: T;
+  cancelReason?: T;
+  adjustments?:
+    | T
+    | {
+        source?: T;
+        sourceId?: T;
+        delta?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reseller-charges_select".
+ */
+export interface ResellerChargesSelect<T extends boolean = true> {
+  resellerShop?: T;
+  supplierShop?: T;
+  purchaseOrder?: T;
+  type?: T;
+  amount?: T;
+  status?: T;
+  offsetBy?: T;
+  paymentIntents?: T;
+  waivedBy?: T;
+  waivedNote?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reseller-payouts_select".
+ */
+export interface ResellerPayoutsSelect<T extends boolean = true> {
+  reference?: T;
+  resellerShop?: T;
+  payoutAccount?: T;
+  commissions?: T;
+  charges?: T;
+  grossAmount?: T;
+  offsetAmount?: T;
+  amount?: T;
+  fee?: T;
+  status?: T;
+  approvedBy?: T;
+  approvedAt?: T;
+  providerTransferId?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        actor?: T;
+        source?: T;
+        at?: T;
+        id?: T;
+      };
+  failureReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-variants_select".
+ */
+export interface ProductVariantsSelect<T extends boolean = true> {
+  product?: T;
+  shop?: T;
+  optionValues?: T;
+  sku?: T;
+  price?: T;
+  cost?: T;
+  barcode?: T;
+  trackInventory?: T;
+  stockOnHand?: T;
+  stockReserved?: T;
+  lowStockThreshold?: T;
+  available?: T;
+  archivedAt?: T;
+  resale?:
+    | T
+    | {
+        enabled?: T;
+        supplierPrice?: T;
+        minRetailPrice?: T;
+        suggestedRetailPrice?: T;
+        minRetailPriceChangedAt?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-count-sessions_select".
+ */
+export interface StockCountSessionsSelect<T extends boolean = true> {
+  shop?: T;
+  status?: T;
+  location?: T;
+  startedBy?: T;
+  startedAt?: T;
+  counts?: T;
+  completedBy?: T;
+  completedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements_select".
+ */
+export interface StockMovementsSelect<T extends boolean = true> {
+  variant?: T;
+  product?: T;
+  shop?: T;
+  type?: T;
+  quantity?: T;
+  unitCost?: T;
+  stockAfter?: T;
+  note?: T;
+  actor?: T;
+  orderRef?: T;
+  order?: T;
+  reservedAfter?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-requests_select".
+ */
+export interface VerificationRequestsSelect<T extends boolean = true> {
+  shop?: T;
+  requestedLevel?: T;
+  submittedBy?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        at?: T;
+        actor?: T;
+        source?: T;
+        id?: T;
+      };
+  openKey?: T;
+  consent?:
+    | T
+    | {
+        acceptedAt?: T;
+        version?: T;
+        locale?: T;
+      };
+  kyc?:
+    | T
+    | {
+        provider?: T;
+        sessionRef?: T;
+        status?: T;
+        attempts?: T;
+        decidedAt?: T;
+        documentType?: T;
+        documentCountry?: T;
+        documentNumberHash?: T;
+        documentNumberLast4?: T;
+        documentExpiresAt?: T;
+        givenNames?: T;
+        familyName?: T;
+        adult?: T;
+        livenessPassed?: T;
+        faceMatchScore?: T;
+        vendorWarnings?: T;
+        vendorReviewUrl?: T;
+        vendorDataDeletedAt?: T;
+      };
+  business?:
+    | T
+    | {
+        businessType?: T;
+        legalName?: T;
+        tradeName?: T;
+        rccmNumber?: T;
+        entreprenantDeclarationNumber?: T;
+        niu?: T;
+        registeredAddress?: T;
+        city?: T;
+        legalRepresentativeName?: T;
+        legalRepresentativeIsOwner?: T;
+      };
+  reviewSignals?:
+    | T
+    | {
+        code?: T;
+        detail?: T;
+        relatedRequest?: T;
+        id?: T;
+      };
+  assignee?: T;
+  claimedAt?: T;
+  infoRequests?:
+    | T
+    | {
+        reasonCode?: T;
+        message?: T;
+        requestedBy?: T;
+        requestedAt?: T;
+        respondedAt?: T;
+        id?: T;
+      };
+  decision?:
+    | T
+    | {
+        decidedBy?: T;
+        decidedAt?: T;
+        reasonCode?: T;
+        sellerMessage?: T;
+        internalNote?: T;
+        checklist?: T;
+      };
+  submittedAt?: T;
+  approvedAt?: T;
+  expiresAt?: T;
+  revokedAt?: T;
+  supersedes?: T;
+  previousRequest?: T;
+  documents?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-documents_select".
+ */
+export interface VerificationDocumentsSelect<T extends boolean = true> {
+  request?: T;
+  shop?: T;
+  kind?: T;
+  sha256?: T;
+  originalFilename?: T;
+  uploadedBy?: T;
+  duplicateOf?: T;
+  purgedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-document-views_select".
+ */
+export interface VerificationDocumentViewsSelect<T extends boolean = true> {
+  document?: T;
+  request?: T;
+  viewer?: T;
+  viewerRole?: T;
+  ipHash?: T;
+  userAgent?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sequences_select".
+ */
+export interface SequencesSelect<T extends boolean = true> {
+  key?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "carts_select".
+ */
+export interface CartsSelect<T extends boolean = true> {
+  user?: T;
+  market?: T;
+  status?: T;
+  items?:
+    | T
+    | {
+        listing?: T;
+        product?: T;
+        variant?: T;
+        shop?: T;
+        quantity?: T;
+        priceAtAdd?: T;
+        addedAt?: T;
+        id?: T;
+      };
+  convertedOrders?: T;
+  lastActivityAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders_select".
+ */
+export interface OrdersSelect<T extends boolean = true> {
+  orderNumber?: T;
+  market?: T;
+  checkoutGroup?: T;
+  idempotencyKey?: T;
+  buyer?: T;
+  buyerDeletedAt?: T;
+  shop?: T;
+  status?: T;
+  paymentMethod?: T;
+  paymentStatus?: T;
+  confirmation?:
+    | T
+    | {
+        method?: T;
+        codeHash?: T;
+        codeExpiresAt?: T;
+        attempts?: T;
+        sentAt?: T;
+        resendCount?: T;
+        confirmedAt?: T;
+        confirmedBy?: T;
+      };
+  handover?:
+    | T
+    | {
+        codeHash?: T;
+        attempts?: T;
+        lockedAt?: T;
+        sentAt?: T;
+        regenerateCount?: T;
+        method?: T;
+        verifiedAt?: T;
+        verifiedBy?: T;
+        contestBy?: T;
+      };
+  delivery?:
+    | T
+    | {
+        method?: T;
+        recipientName?: T;
+        phone?: T;
+        city?: T;
+        district?: T;
+        districtOther?: T;
+        landmark?: T;
+        gps?:
+          | T
+          | {
+              lat?: T;
+              lng?: T;
+              accuracyMeters?: T;
+              capturedAt?: T;
+            };
+        instructions?: T;
+        pickupPoint?: T;
+        fee?: T;
+        etaText?: T;
+        optionId?: T;
+        zone?: T;
+        pickupLocation?: T;
+        etaMinHours?: T;
+        etaMaxHours?: T;
+        promisedBy?: T;
+      };
+  shipments?: T;
+  amounts?:
+    | T
+    | {
+        subtotal?: T;
+        deliveryFee?: T;
+        discount?: T;
+        buyerProtectionFee?: T;
+        total?: T;
+        currency?: T;
+        buyerProtectionFeeVat?: T;
+        commission?: T;
+        commissionVat?: T;
+        applicationFee?: T;
+        destinationAmount?: T;
+      };
+  settlement?:
+    | T
+    | {
+        mode?: T;
+        releaseModel?: T;
+        connectedAccount?: T;
+        releaseEligibleAt?: T;
+        releasedAt?: T;
+        payout?: T;
+        refundedAmount?: T;
+      };
+  commission?:
+    | T
+    | {
+        rateBps?: T;
+        amount?: T;
+        line?: T;
+      };
+  risk?:
+    | T
+    | {
+        phoneTier?: T;
+        refusalsAtPlacement?: T;
+        capsApplied?: T;
+      };
+  deadlines?:
+    | T
+    | {
+        confirmBy?: T;
+        acceptBy?: T;
+        staleAt?: T;
+        completeAt?: T;
+        withdrawalUntil?: T;
+      };
+  timestamps?:
+    | T
+    | {
+        placedAt?: T;
+        confirmedAt?: T;
+        acceptedAt?: T;
+        shippedAt?: T;
+        deliveredAt?: T;
+        completedAt?: T;
+        cancelledAt?: T;
+        failedAt?: T;
+      };
+  cancellation?:
+    | T
+    | {
+        by?: T;
+        reason?: T;
+        note?: T;
+      };
+  deliveryFailure?:
+    | T
+    | {
+        reason?: T;
+        attempts?: T;
+        note?: T;
+      };
+  completionHold?: T;
+  returnCase?: T;
+  activeDispute?: T;
+  conversation?: T;
+  contract?:
+    | T
+    | {
+        termsVersion?: T;
+        locale?: T;
+        acceptedAt?: T;
+        snapshot?: T;
+        snapshotHash?: T;
+        receiptSentAt?: T;
+      };
+  source?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "order-items_select".
+ */
+export interface OrderItemsSelect<T extends boolean = true> {
+  order?: T;
+  lineNumber?: T;
+  listing?: T;
+  product?: T;
+  variant?: T;
+  sourcing?: T;
+  fulfillingShop?: T;
+  purchaseOrder?: T;
+  resaleLink?: T;
+  supplierUnitPrice?: T;
+  snapshot?:
+    | T
+    | {
+        title?: T;
+        variantLabel?: T;
+        sku?: T;
+        imageUrl?: T;
+        categoryId?: T;
+        condition?: T;
+        returnPolicy?: T;
+      };
+  unitPrice?: T;
+  quantity?: T;
+  lineSubtotal?: T;
+  commissionRateBps?: T;
+  commissionAmount?: T;
+  fulfillmentStatus?: T;
+  stockTracked?: T;
+  returnedQuantity?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "order-events_select".
+ */
+export interface OrderEventsSelect<T extends boolean = true> {
+  order?: T;
+  type?: T;
+  actorType?: T;
+  actor?: T;
+  actorShopRole?: T;
+  statusFrom?: T;
+  statusTo?: T;
+  paymentStatusFrom?: T;
+  paymentStatusTo?: T;
+  items?:
+    | T
+    | {
+        orderItem?: T;
+        fulfillmentFrom?: T;
+        fulfillmentTo?: T;
+        id?: T;
+      };
+  reason?: T;
+  note?: T;
+  metadata?: T;
+  visibility?: T;
+  source?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-phone-scores_select".
+ */
+export interface BuyerPhoneScoresSelect<T extends boolean = true> {
+  phoneHash?: T;
+  ordersPlaced?: T;
+  ordersDelivered?: T;
+  refusals?:
+    | T
+    | {
+        order?: T;
+        reason?: T;
+        at?: T;
+        id?: T;
+      };
+  cancelledAfterAccept?: T;
+  tier?: T;
+  blockedOverride?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "commission-lines_select".
+ */
+export interface CommissionLinesSelect<T extends boolean = true> {
+  shop?: T;
+  order?: T;
+  kind?: T;
+  paymentMethod?: T;
+  baseAmount?: T;
+  amount?: T;
+  reason?: T;
+  status?: T;
+  invoice?: T;
+  accruedAt?: T;
+  sourceType?: T;
+  sourceId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "commission-invoices_select".
+ */
+export interface CommissionInvoicesSelect<T extends boolean = true> {
+  kind?: T;
+  creditsInvoice?: T;
+  sourceType?: T;
+  sourceId?: T;
+  invoiceNumber?: T;
+  shop?: T;
+  periodStart?: T;
+  periodEnd?: T;
+  lines?: T;
+  ordersCount?: T;
+  commissionTotal?: T;
+  vatRateBps?: T;
+  vatAmount?: T;
+  totalDue?: T;
+  currency?: T;
+  formatSnapshot?:
+    | T
+    | {
+        locale?: T;
+        symbol?: T;
+        position?: T;
+        groupSeparator?: T;
+        decimalSeparator?: T;
+        minorUnit?: T;
+        id?: T;
+      };
+  status?: T;
+  settlement?: T;
+  issuedAt?: T;
+  dueAt?: T;
+  paidAt?: T;
+  restrictedAt?: T;
+  dueSoonReminderSentAt?: T;
+  paymentIntents?: T;
+  sellerSnapshot?: T;
+  issuerSnapshot?: T;
+  waivedBy?: T;
+  waivedNote?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "return-cases_select".
+ */
+export interface ReturnCasesSelect<T extends boolean = true> {
+  number?: T;
+  basis?: T;
+  order?: T;
+  shop?: T;
+  buyer?: T;
+  items?:
+    | T
+    | {
+        orderItem?: T;
+        variant?: T;
+        quantity?: T;
+        unitPrice?: T;
+        buyerCondition?: T;
+        inspection?:
+          | T
+          | {
+              outcome?: T;
+              deductionAmount?: T;
+              note?: T;
+            };
+        id?: T;
+      };
+  reasonText?: T;
+  openedByType?: T;
+  openedBy?: T;
+  dispute?: T;
+  returnRequired?: T;
+  returnMethod?: T;
+  returnTracking?: T;
+  deadlines?:
+    | T
+    | {
+        requestDeadline?: T;
+        shipBy?: T;
+        pickupBy?: T;
+        inspectBy?: T;
+        deductionRespondBy?: T;
+        refundBy?: T;
+        refundOverdueNotifiedAt?: T;
+        refundOverdueEscalatedAt?: T;
+      };
+  shippedAt?: T;
+  receivedAt?: T;
+  inspectedAt?: T;
+  closedAt?: T;
+  refund?:
+    | T
+    | {
+        amount?: T;
+        breakdown?:
+          | T
+          | {
+              goods?: T;
+              outboundDelivery?: T;
+              returnShipping?: T;
+              buyerProtectionFee?: T;
+              deduction?: T;
+            };
+        channel?: T;
+        providerRefund?: T;
+        sellerProof?:
+          | T
+          | {
+              method?: T;
+              transactionId?: T;
+              amount?: T;
+              evidence?: T;
+              submittedAt?: T;
+            };
+        buyerConfirmedAt?: T;
+        contestedAt?: T;
+      };
+  rejectionReason?: T;
+  creditNote?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        actorType?: T;
+        actor?: T;
+        at?: T;
+        note?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-daily-stats_select".
+ */
+export interface ShopDailyStatsSelect<T extends boolean = true> {
+  shop?: T;
+  date?: T;
+  views?: T;
+  phoneReveals?: T;
+  favouritesAdded?: T;
+  conversationsStarted?: T;
+  ordersPlaced?: T;
+  ordersConfirmed?: T;
+  ordersAccepted?: T;
+  ordersDelivered?: T;
+  ordersCancelledBySeller?: T;
+  ordersCancelledByBuyer?: T;
+  codShipped?: T;
+  codRefused?: T;
+  unitsDelivered?: T;
+  outOfStockVariants?: T;
+  lowStockVariants?: T;
+  awaitingReply?: T;
+  gmvDelivered?: T;
+  cogsDelivered?: T;
+  inventoryCostValue?: T;
+  responseBuckets?:
+    | T
+    | {
+        m5?: T;
+        m15?: T;
+        h1?: T;
+        h4?: T;
+        h24?: T;
+        over24h?: T;
+        unanswered?: T;
+      };
+  topProducts?:
+    | T
+    | {
+        product?: T;
+        listing?: T;
+        views?: T;
+        ordersPlaced?: T;
+        unitsDelivered?: T;
+        gmvDelivered?: T;
+        id?: T;
+      };
+  resale?:
+    | T
+    | {
+        purchaseOrdersReceived?: T;
+        purchaseOrdersAcceptedInTime?: T;
+        purchaseOrdersCancelledBySupplier?: T;
+        resaleDelivered?: T;
+        commissionAccrued?: T;
+      };
+  computedAt?: T;
+  version?: T;
+  metricsHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "risk-flags_select".
+ */
+export interface RiskFlagsSelect<T extends boolean = true> {
+  subjectType?: T;
+  subjectKey?: T;
+  subjectRef?: T;
+  subjectLabel?: T;
+  signal?: T;
+  score?: T;
+  severity?: T;
+  status?: T;
+  evidence?: T;
+  occurrences?: T;
+  firstSeenAt?: T;
+  lastSeenAt?: T;
+  related?: T;
+  autoEffects?: T;
+  assignedTo?: T;
+  reviewedBy?: T;
+  reviewedAt?: T;
+  resolution?: T;
+  resolutionNote?: T;
+  purgeAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-gate-evidence_select".
+ */
+export interface PaymentGateEvidenceSelect<T extends boolean = true> {
+  scope?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-gate-evidence_select".
+ */
+export interface DisputeGateEvidenceSelect<T extends boolean = true> {
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "disputes_select".
+ */
+export interface DisputesSelect<T extends boolean = true> {
+  number?: T;
+  order?: T;
+  shop?: T;
+  buyer?: T;
+  subject?: T;
+  items?:
+    | T
+    | {
+        orderItem?: T;
+        quantity?: T;
+        id?: T;
+      };
+  returnCase?: T;
+  reason?: T;
+  openedByType?: T;
+  openedBy?: T;
+  description?: T;
+  requestedOutcome?: T;
+  requestedAmount?: T;
+  paymentMethod?: T;
+  amountAtStake?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        actorType?: T;
+        actor?: T;
+        at?: T;
+        note?: T;
+        id?: T;
+      };
+  deadlines?:
+    | T
+    | {
+        submitBy?: T;
+        respondBy?: T;
+        reviewDueAt?: T;
+        reminderSentAt?: T;
+        reviewOverdueNotifiedAt?: T;
+      };
+  proposal?:
+    | T
+    | {
+        amount?: T;
+        returnRequired?: T;
+        byType?: T;
+        by?: T;
+        at?: T;
+        expiresAt?: T;
+        round?: T;
+        status?: T;
+      };
+  infoRequests?: T;
+  assignedTo?: T;
+  resolution?:
+    | T
+    | {
+        outcome?: T;
+        refundAmount?: T;
+        breakdown?:
+          | T
+          | {
+              goods?: T;
+              outboundDelivery?: T;
+              returnShipping?: T;
+              buyerProtectionFee?: T;
+              deduction?: T;
+            };
+        returnRequired?: T;
+        returnShippingPaidBy?: T;
+        liableParty?: T;
+        reasonCode?: T;
+        publicStatement?:
+          | T
+          | {
+              fr?: T;
+              en?: T;
+            };
+        decidedByType?: T;
+        decidedBy?: T;
+        decidedAt?: T;
+      };
+  effects?:
+    | T
+    | {
+        returnCase?: T;
+        refund?: T;
+        creditNote?: T;
+        holdsReleased?: T;
+        strikes?: T;
+        riskSignals?: T;
+        reviewAction?: T;
+        certificate?: T;
+      };
+  resale?:
+    | T
+    | {
+        supplierShop?: T;
+        resellerShop?: T;
+        purchaseOrder?: T;
+      };
+  legalHold?: T;
+  lastMessageNotifiedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-messages_select".
+ */
+export interface DisputeMessagesSelect<T extends boolean = true> {
+  dispute?: T;
+  authorType?: T;
+  author?: T;
+  kind?: T;
+  body?: T;
+  evidence?: T;
+  visibility?: T;
+  redactedAt?: T;
+  redactedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-evidence_select".
+ */
+export interface DisputeEvidenceSelect<T extends boolean = true> {
+  dispute?: T;
+  returnCase?: T;
+  uploadedByType?: T;
+  uploadedBy?: T;
+  kind?: T;
+  size?: T;
+  sha256?: T;
+  capturedAt?: T;
+  exifStripped?: T;
+  visibility?: T;
+  purgeAfter?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-evidence-views_select".
+ */
+export interface DisputeEvidenceViewsSelect<T extends boolean = true> {
+  evidence?: T;
+  dispute?: T;
+  returnCase?: T;
+  viewer?: T;
+  viewerRole?: T;
+  ipHash?: T;
+  userAgent?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-strikes_select".
+ */
+export interface ShopStrikesSelect<T extends boolean = true> {
+  shop?: T;
+  kind?: T;
+  weight?: T;
+  sourceType?: T;
+  sourceId?: T;
+  status?: T;
+  expiresAt?: T;
+  revokedBy?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "risk-signal-outbox_select".
+ */
+export interface RiskSignalOutboxSelect<T extends boolean = true> {
+  subjectType?: T;
+  subjectId?: T;
+  signal?: T;
+  severity?: T;
+  sourceType?: T;
+  sourceId?: T;
+  occurredAt?: T;
+  consumedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "connected-accounts_select".
+ */
+export interface ConnectedAccountsSelect<T extends boolean = true> {
+  shop?: T;
+  provider?: T;
+  providerAccountId?: T;
+  accountType?: T;
+  status?: T;
+  chargesEnabled?: T;
+  payoutsEnabled?: T;
+  requirementsDue?: T;
+  kycStatus?: T;
+  kycName?: T;
+  payoutSchedule?: T;
+  lastSyncedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payout-accounts_select".
+ */
+export interface PayoutAccountsSelect<T extends boolean = true> {
+  shop?: T;
+  method?: T;
+  accountName?: T;
+  accountNumber?: T;
+  accountNumberMasked?: T;
+  status?: T;
+  nameMatch?:
+    | T
+    | {
+        identityName?: T;
+        providerName?: T;
+        result?: T;
+        score?: T;
+        checkedAt?: T;
+      };
+  providerRecipientId?: T;
+  activatedAt?: T;
+  replacedAt?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refunds_select".
+ */
+export interface RefundsSelect<T extends boolean = true> {
+  order?: T;
+  paymentIntent?: T;
+  buyer?: T;
+  shop?: T;
+  amount?: T;
+  breakdown?:
+    | T
+    | {
+        seller?: T;
+        commission?: T;
+        commissionVat?: T;
+        buyerProtectionFee?: T;
+      };
+  reason?: T;
+  sourceType?: T;
+  sourceId?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        source?: T;
+        at?: T;
+        id?: T;
+      };
+  providerRefundId?: T;
+  fundedBy?: T;
+  idempotencyKey?: T;
+  attempts?: T;
+  retryOf?: T;
+  lastError?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payouts_select".
+ */
+export interface PayoutsSelect<T extends boolean = true> {
+  shop?: T;
+  connectedAccount?: T;
+  payoutAccount?: T;
+  amount?: T;
+  fee?: T;
+  currency?: T;
+  orders?:
+    | T
+    | {
+        order?: T;
+        amount?: T;
+        id?: T;
+      };
+  origin?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        source?: T;
+        at?: T;
+        id?: T;
+      };
+  providerTransferId?: T;
+  failureReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payout-holds_select".
+ */
+export interface PayoutHoldsSelect<T extends boolean = true> {
+  scope?: T;
+  shop?: T;
+  order?: T;
+  reason?: T;
+  blocksCharges?: T;
+  status?: T;
+  until?: T;
+  createdByType?: T;
+  createdBy?: T;
+  releasedBy?: T;
+  releasedAt?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ledger-accounts_select".
+ */
+export interface LedgerAccountsSelect<T extends boolean = true> {
+  key?: T;
+  category?: T;
+  type?: T;
+  shop?: T;
+  currency?: T;
+  balance?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ledger-transactions_select".
+ */
+export interface LedgerTransactionsSelect<T extends boolean = true> {
+  idempotencyKey?: T;
+  kind?: T;
+  occurredAt?: T;
+  postedAt?: T;
+  sourceType?: T;
+  sourceId?: T;
+  order?: T;
+  shop?: T;
+  paymentIntent?: T;
+  refund?: T;
+  payout?: T;
+  entries?:
+    | T
+    | {
+        account?: T;
+        debit?: T;
+        credit?: T;
+        id?: T;
+      };
+  reverses?: T;
+  memo?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-fee-invoices_select".
+ */
+export interface BuyerFeeInvoicesSelect<T extends boolean = true> {
+  number?: T;
+  kind?: T;
+  creditsInvoice?: T;
+  order?: T;
+  buyer?: T;
+  amountHt?: T;
+  vat?: T;
+  amountTtc?: T;
+  vatRateBps?: T;
+  currency?: T;
+  formatSnapshot?:
+    | T
+    | {
+        locale?: T;
+        symbol?: T;
+        position?: T;
+        groupSeparator?: T;
+        decimalSeparator?: T;
+        minorUnit?: T;
+        id?: T;
+      };
+  pdf?: T;
+  issuedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-fee-invoice-files_select".
+ */
+export interface BuyerFeeInvoiceFilesSelect<T extends boolean = true> {
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reconciliation-runs_select".
+ */
+export interface ReconciliationRunsSelect<T extends boolean = true> {
+  startedAt?: T;
+  finishedAt?: T;
+  window?:
+    | T
+    | {
+        from?: T;
+        to?: T;
+      };
+  status?: T;
+  counts?:
+    | T
+    | {
+        checked?: T;
+        matched?: T;
+        autoFixed?: T;
+        mismatches?: T;
+      };
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reconciliation-mismatches_select".
+ */
+export interface ReconciliationMismatchesSelect<T extends boolean = true> {
+  run?: T;
+  kind?: T;
+  entityType?: T;
+  providerId?: T;
+  localId?: T;
+  expected?: T;
+  actual?: T;
+  shop?: T;
+  status?: T;
+  resolvedBy?: T;
+  note?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -978,8 +7145,12 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface AppSetting {
   id: string;
+  auth?: {
+    enabledProviders?: ('google' | 'apple' | 'facebook')[] | null;
+    enableLocalAuth?: boolean | null;
+  };
   sms: {
-    provider: 'avlytext' | 'mtarget';
+    provider: 'avlytext' | 'mtarget' | 'console';
     defaultSender?: string | null;
     avlytext?: {
       apiKey?: string | null;
@@ -989,6 +7160,344 @@ export interface AppSetting {
       apiKey?: string | null;
       sender?: string | null;
     };
+  };
+  shops?: {
+    /**
+     * Off: clients hide shop entry points and POST /api/shops returns shop.disabled. Existing shop pages keep resolving.
+     */
+    enabled?: boolean | null;
+    maxPerUser?: number | null;
+  };
+  sharing?: {
+    /**
+     * On: listings and shops get generated share images — the link preview (WhatsApp, Facebook, LinkedIn, X), a 9:16 card for WhatsApp Status and stories, a square post — and the share buttons offer them. Off: link previews keep the listing's first photo and the card URLs answer 404.
+     */
+    cardsEnabled?: boolean | null;
+  };
+  media?: {
+    /**
+     * Photos a seller can add to a classified listing or a shop product (at most 10). Content that already has more keeps its photos but cannot add any. Extra photos will become a paid option.
+     */
+    photosIncluded?: number | null;
+  };
+  verification: {
+    /**
+     * Off: clients hide verification entry points and the seller write routes return verification.disabled. Existing requests stay readable, reviewers keep deciding, and the retention job keeps running.
+     */
+    enabled?: boolean | null;
+    kycProvider: 'didit' | 'smileid';
+    /**
+     * Off at launch: every identity decision is taken by a person. On, a level-2 request the vendor approved with no review signal is approved automatically.
+     */
+    autoApproveIdentity?: boolean | null;
+    /**
+     * Recorded in the processing register. Verification cannot be enabled until all four are set.
+     */
+    authorisation?: {
+      reference?: string | null;
+      grantedAt?: string | null;
+      transfersAuthorised?: boolean | null;
+      /**
+       * The consent text version the clients must send back, e.g. "kyc-2026-10-v1".
+       */
+      consentVersion?: string | null;
+    };
+  };
+  orders?: {
+    /**
+     * Off: clients hide checkout entry points and the order write routes return order.codUnavailable. Read by lib/orderSettings.ts.
+     */
+    enabled?: boolean | null;
+    /**
+     * Off: a cart holds one storefront and one fulfilling shop (cart.singleShop, cart.singleFulfilment). On: lines group per (storefront, fulfilling shop), up to 5 groups and 30 lines. Read by lib/orderSettings.ts.
+     */
+    multiShopCartEnabled?: boolean | null;
+    /**
+     * Cities where checkout is open and their delivery fee. Read by lib/orderSettings.ts (deliveryFeeFor); a city absent here fails checkout.cityNotServed.
+     */
+    launchCities?:
+      | {
+          key: 'douala' | 'yaounde';
+          deliveryFee: number;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Basis points kept by the platform. Read by lib/orderSettings.ts.
+     */
+    defaultCommissionRateBps?: number | null;
+    /**
+     * Basis points of VAT applied to invoices.
+     */
+    vatRateBps?: number | null;
+    /**
+     * Smallest commission invoice the platform will issue.
+     */
+    minInvoiceAmount?: number | null;
+    /**
+     * Days a shop has to pay a commission invoice.
+     */
+    invoiceDueDays?: number | null;
+    /**
+     * Days an invoice may stay overdue before new COD orders are refused.
+     */
+    restrictAfterOverdueDays?: number | null;
+    /**
+     * Hours a shop has to confirm a new order.
+     */
+    confirmHours?: number | null;
+    /**
+     * Hours a buyer has to accept delivery before escalation.
+     */
+    acceptHours?: number | null;
+    /**
+     * Days after delivery before collected cash is withdrawable. Exposed at GET /api/public/config.
+     */
+    withdrawalDays?: number | null;
+    /**
+     * Days an order may sit 'shipped' before it is flagged stale.
+     */
+    staleShippedDays?: number | null;
+    /**
+     * Per-level overrides merged onto lib/shopCapabilities.ts's codCaps() defaults.
+     */
+    shopCaps?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    /**
+     * Per-tier overrides merged onto lib/orderSettings.ts's BUYER_CAPS defaults.
+     */
+    buyerCaps?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    /**
+     * COD terms version a buyer must have accepted to check out.
+     */
+    termsVersion?: string | null;
+    /**
+     * Empty means every eligible shop; non-empty restricts COD to this whitelist. Read by lib/orderSettings.ts's isPilotShop().
+     */
+    pilotShopIds?: string[] | null;
+  };
+  /**
+   * P7 zone-based delivery. Flags default off, so the existing flat-fee COD flow remains active until delivery zones are configured.
+   */
+  delivery?: {
+    zonesEnabled?: boolean | null;
+    couriersEnabled?: boolean | null;
+    riderLinksEnabled?: boolean | null;
+    intercityEnabled?: boolean | null;
+    maxAttempts?: number | null;
+    rescheduleHours?: number | null;
+    pickupHoldDaysDefault?: number | null;
+    gpsFarThresholdMeters?: number | null;
+    providers?: {
+      yango?: {
+        enabled?: boolean | null;
+      };
+    };
+  };
+  /**
+   * Read by lib/paymentSettings.ts. Enabling the flag or a market is refused until the gate record below holds evidence for G1, G2, G4, G5, G6 (and G3 under provider_hold) and the API runs with PROTECTED_PAYMENT_ALLOWED=true.
+   */
+  payments: {
+    protectedPayment?: {
+      /**
+       * Off: checkout offers COD only, payment setup screens say Coming soon, intent creation returns payment.protectedDisabled. Webhooks, refunds, payouts and reconciliation keep running. Exposed at GET /api/public/config.
+       */
+      enabled?: boolean | null;
+    };
+    /**
+     * provider_hold needs gate G3 cleared; provider_schedule is the fallback when it is not.
+     */
+    releaseModel: 'provider_hold' | 'provider_schedule';
+    /**
+     * One row per country. Only provider_split can be saved; the VAT rate must equal orders.vatRateBps.
+     */
+    markets?:
+      | {
+          /**
+           * ISO 3166-1 alpha-2, e.g. CM.
+           */
+          countryCode: string;
+          /**
+           * ISO 4217, e.g. XAF.
+           */
+          currency: string;
+          provider: 'notchpay';
+          settlementMode: 'provider_split' | 'direct_to_seller' | 'platform_collects';
+          channels?: ('cm.mtn' | 'cm.orange')[] | null;
+          vatRateBps: number;
+          enabled?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Fee the buyer pays on a protected order: bps of the order total, clamped to [min, max] XAF, VAT included.
+     */
+    buyerProtection?: {
+      bps?: number | null;
+      min?: number | null;
+      max?: number | null;
+    };
+    checkoutExpiryMinutes?: number | null;
+    payoutAccountChangeHoldHours?: number | null;
+    minPayout?: number | null;
+    maxOrderAmount?: number | null;
+    /**
+     * Protected-payment amount a shop may have in flight, by verification level.
+     */
+    exposureCaps?: {
+      level2?: number | null;
+      level3?: number | null;
+    };
+    earlyRelease?: {
+      enabled?: boolean | null;
+    };
+    providerFeeBearer: 'platform' | 'seller';
+    /**
+     * The launch gate record (P5 spec, Gates). A row counts once its evidence is filed.
+     */
+    gates?:
+      | {
+          gate: 'G1' | 'G2' | 'G3' | 'G4' | 'G5' | 'G6';
+          clearedAt?: string | null;
+          clearedBy?: string | null;
+          evidence?: (string | null) | PaymentGateEvidence;
+          note?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Resale uses COD by default. Prepaid resale requires protected payments and a filed NotchPay affiliate-flow evidence gate.
+   */
+  resale?: {
+    enabled?: boolean | null;
+    prepaidEnabled?: boolean | null;
+    gates?:
+      | {
+          gate: 'notchpay_affiliate';
+          clearedAt?: string | null;
+          clearedBy?: string | null;
+          evidence?: (string | null) | PaymentGateEvidence;
+          note?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    poAcceptHours?: number | null;
+    newResellerWeeklyCap?: number | null;
+    minPayout?: number | null;
+    payoutApprovalAbove?: number | null;
+  };
+  /**
+   * Read by lib/caseSettings.ts. These are the spec's legal minimums, not a feature switch — there is no returns.enabled. The withdrawal period stays orders.withdrawalDays; it and returns.refundDays are refused below 15 days until the gate record holds evidence for G1.
+   */
+  returns?: {
+    shipByDays?: number | null;
+    nonConformityShipByDays?: number | null;
+    sellerPickupDays?: number | null;
+    inspectDays?: number | null;
+    receivePresumptionDays?: number | null;
+    /**
+     * Refused below 15 days until G1 is filed.
+     */
+    refundDays?: number | null;
+    codRefundConfirmSilenceDays?: number | null;
+    lateDeliveryGraceDays?: number | null;
+    returnWaiverMaxGoodsValue?: number | null;
+    refundOutboundDeliveryOnWithdrawal?: boolean | null;
+    maxReturnShippingReimbursement?: number | null;
+  };
+  /**
+   * Read by lib/caseSettings.ts. Off: dispute creation answers dispute.disabled and clients route Report a problem to /contact; open disputes keep running. Enabling it is refused until the gate record below holds evidence for G2 and G3; strikeEffectsEnabled and a sellerLossFee above 0 are refused until it holds evidence for G4. Exposed at GET /api/public/config as disputesEnabled, re-checked against the gates on every read.
+   */
+  disputes?: {
+    enabled?: boolean | null;
+    submitAutoHours?: number | null;
+    respondHours?: number | null;
+    reminderHours?: number | null;
+    proposalHours?: number | null;
+    maxProposalRounds?: number | null;
+    reviewBusinessDays?: number | null;
+    maxInfoRequests?: number | null;
+    moderatorRefundLimit?: number | null;
+    notReceivedMaxDays?: number | null;
+    conformityWindowDays?: number | null;
+    counterfeitWindowDays?: number | null;
+    noShowWindowDays?: number | null;
+    evidenceRetentionDays?: number | null;
+    evidenceLimit?: {
+      perParty?: number | null;
+      total?: number | null;
+    };
+    /**
+     * Refused above false until G4 is filed.
+     */
+    strikeEffectsEnabled?: boolean | null;
+    /**
+     * Refused above 0 until G4 is filed.
+     */
+    sellerLossFee?: number | null;
+    /**
+     * The dispute gate record (G1 covers the returns/withdrawal minimum above). A row counts once its evidence is filed.
+     */
+    gates?:
+      | {
+          gate: 'G1' | 'G2' | 'G3' | 'G4';
+          clearedAt?: string | null;
+          clearedBy?: string | null;
+          evidence?: (string | null) | DisputeGateEvidence;
+          note?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  insights?: {
+    enabled?: boolean | null;
+  };
+  risk?: {
+    enabled?: boolean | null;
+    autoEffectsEnabled?: boolean | null;
+    newLimitsEnabled?: boolean | null;
+  };
+  company?: {
+    /**
+     * Legal name printed on commission invoices.
+     */
+    legalName?: string | null;
+    /**
+     * RCCM trade register number printed on invoices.
+     */
+    rccm?: string | null;
+    /**
+     * Tax identification number (NIU) printed on invoices.
+     */
+    niu?: string | null;
+    /**
+     * Registered address printed on invoices.
+     */
+    address?: string | null;
+    /**
+     * Support contact shown to buyers and shops.
+     */
+    supportEmail?: string | null;
+    /**
+     * Support contact shown to buyers and shops.
+     */
+    supportPhone?: string | null;
   };
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -1016,6 +7525,12 @@ export interface PayloadJobsStat {
  * via the `definition` "app-settings_select".
  */
 export interface AppSettingsSelect<T extends boolean = true> {
+  auth?:
+    | T
+    | {
+        enabledProviders?: T;
+        enableLocalAuth?: T;
+      };
   sms?:
     | T
     | {
@@ -1033,6 +7548,232 @@ export interface AppSettingsSelect<T extends boolean = true> {
               apiKey?: T;
               sender?: T;
             };
+      };
+  shops?:
+    | T
+    | {
+        enabled?: T;
+        maxPerUser?: T;
+      };
+  sharing?:
+    | T
+    | {
+        cardsEnabled?: T;
+      };
+  media?:
+    | T
+    | {
+        photosIncluded?: T;
+      };
+  verification?:
+    | T
+    | {
+        enabled?: T;
+        kycProvider?: T;
+        autoApproveIdentity?: T;
+        authorisation?:
+          | T
+          | {
+              reference?: T;
+              grantedAt?: T;
+              transfersAuthorised?: T;
+              consentVersion?: T;
+            };
+      };
+  orders?:
+    | T
+    | {
+        enabled?: T;
+        multiShopCartEnabled?: T;
+        launchCities?:
+          | T
+          | {
+              key?: T;
+              deliveryFee?: T;
+              id?: T;
+            };
+        defaultCommissionRateBps?: T;
+        vatRateBps?: T;
+        minInvoiceAmount?: T;
+        invoiceDueDays?: T;
+        restrictAfterOverdueDays?: T;
+        confirmHours?: T;
+        acceptHours?: T;
+        withdrawalDays?: T;
+        staleShippedDays?: T;
+        shopCaps?: T;
+        buyerCaps?: T;
+        termsVersion?: T;
+        pilotShopIds?: T;
+      };
+  delivery?:
+    | T
+    | {
+        zonesEnabled?: T;
+        couriersEnabled?: T;
+        riderLinksEnabled?: T;
+        intercityEnabled?: T;
+        maxAttempts?: T;
+        rescheduleHours?: T;
+        pickupHoldDaysDefault?: T;
+        gpsFarThresholdMeters?: T;
+        providers?:
+          | T
+          | {
+              yango?:
+                | T
+                | {
+                    enabled?: T;
+                  };
+            };
+      };
+  payments?:
+    | T
+    | {
+        protectedPayment?:
+          | T
+          | {
+              enabled?: T;
+            };
+        releaseModel?: T;
+        markets?:
+          | T
+          | {
+              countryCode?: T;
+              currency?: T;
+              provider?: T;
+              settlementMode?: T;
+              channels?: T;
+              vatRateBps?: T;
+              enabled?: T;
+              id?: T;
+            };
+        buyerProtection?:
+          | T
+          | {
+              bps?: T;
+              min?: T;
+              max?: T;
+            };
+        checkoutExpiryMinutes?: T;
+        payoutAccountChangeHoldHours?: T;
+        minPayout?: T;
+        maxOrderAmount?: T;
+        exposureCaps?:
+          | T
+          | {
+              level2?: T;
+              level3?: T;
+            };
+        earlyRelease?:
+          | T
+          | {
+              enabled?: T;
+            };
+        providerFeeBearer?: T;
+        gates?:
+          | T
+          | {
+              gate?: T;
+              clearedAt?: T;
+              clearedBy?: T;
+              evidence?: T;
+              note?: T;
+              id?: T;
+            };
+      };
+  resale?:
+    | T
+    | {
+        enabled?: T;
+        prepaidEnabled?: T;
+        gates?:
+          | T
+          | {
+              gate?: T;
+              clearedAt?: T;
+              clearedBy?: T;
+              evidence?: T;
+              note?: T;
+              id?: T;
+            };
+        poAcceptHours?: T;
+        newResellerWeeklyCap?: T;
+        minPayout?: T;
+        payoutApprovalAbove?: T;
+      };
+  returns?:
+    | T
+    | {
+        shipByDays?: T;
+        nonConformityShipByDays?: T;
+        sellerPickupDays?: T;
+        inspectDays?: T;
+        receivePresumptionDays?: T;
+        refundDays?: T;
+        codRefundConfirmSilenceDays?: T;
+        lateDeliveryGraceDays?: T;
+        returnWaiverMaxGoodsValue?: T;
+        refundOutboundDeliveryOnWithdrawal?: T;
+        maxReturnShippingReimbursement?: T;
+      };
+  disputes?:
+    | T
+    | {
+        enabled?: T;
+        submitAutoHours?: T;
+        respondHours?: T;
+        reminderHours?: T;
+        proposalHours?: T;
+        maxProposalRounds?: T;
+        reviewBusinessDays?: T;
+        maxInfoRequests?: T;
+        moderatorRefundLimit?: T;
+        notReceivedMaxDays?: T;
+        conformityWindowDays?: T;
+        counterfeitWindowDays?: T;
+        noShowWindowDays?: T;
+        evidenceRetentionDays?: T;
+        evidenceLimit?:
+          | T
+          | {
+              perParty?: T;
+              total?: T;
+            };
+        strikeEffectsEnabled?: T;
+        sellerLossFee?: T;
+        gates?:
+          | T
+          | {
+              gate?: T;
+              clearedAt?: T;
+              clearedBy?: T;
+              evidence?: T;
+              note?: T;
+              id?: T;
+            };
+      };
+  insights?:
+    | T
+    | {
+        enabled?: T;
+      };
+  risk?:
+    | T
+    | {
+        enabled?: T;
+        autoEffectsEnabled?: T;
+        newLimitsEnabled?: T;
+      };
+  company?:
+    | T
+    | {
+        legalName?: T;
+        rccm?: T;
+        niu?: T;
+        address?: T;
+        supportEmail?: T;
+        supportPhone?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -1068,6 +7809,14 @@ export interface TaskExpireListings {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpireBoosts".
+ */
+export interface TaskExpireBoosts {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "TaskCheckSearchAlerts".
  */
 export interface TaskCheckSearchAlerts {
@@ -1076,9 +7825,491 @@ export interface TaskCheckSearchAlerts {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskExpireBoosts".
+ * via the `definition` "TaskConsumeRiskSignalOutbox".
  */
-export interface TaskExpireBoosts {
+export interface TaskConsumeRiskSignalOutbox {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskProcessWebhookEvent".
+ */
+export interface TaskProcessWebhookEvent {
+  input: {
+    eventId: string;
+  };
+  output: {
+    outcome?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReconcilePendingPayments".
+ */
+export interface TaskReconcilePendingPayments {
+  input?: unknown;
+  output: {
+    checked?: number | null;
+    settled?: number | null;
+    expired?: number | null;
+    errors?: number | null;
+    refundsApplied?: number | null;
+    payoutsApplied?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskLiftExpiredShopSuspensions".
+ */
+export interface TaskLiftExpiredShopSuspensions {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskProcessKycEvent".
+ */
+export interface TaskProcessKycEvent {
+  input: {
+    webhookEventId: string;
+    provider: string;
+    sessionRef: string;
+  };
+  output: {
+    handled?: boolean | null;
+    requestId?: string | null;
+    status?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPurgeVerificationData".
+ */
+export interface TaskPurgeVerificationData {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPurgeShopActivity".
+ */
+export interface TaskPurgeShopActivity {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPurgeRiskData".
+ */
+export interface TaskPurgeRiskData {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskAbandonCarts".
+ */
+export interface TaskAbandonCarts {
+  input?: unknown;
+  output: {
+    abandoned?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskApplyResalePriceChanges".
+ */
+export interface TaskApplyResalePriceChanges {
+  input?: unknown;
+  output: {
+    appliedCount?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskAdvanceReturnCases".
+ */
+export interface TaskAdvanceReturnCases {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskAdvanceDisputes".
+ */
+export interface TaskAdvanceDisputes {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPurgeCaseEvidence".
+ */
+export interface TaskPurgeCaseEvidence {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpireStrikes".
+ */
+export interface TaskExpireStrikes {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPublishHeldReviews".
+ */
+export interface TaskPublishHeldReviews {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskIssueCommissionInvoices".
+ */
+export interface TaskIssueCommissionInvoices {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskEnforceCommissionOverdue".
+ */
+export interface TaskEnforceCommissionOverdue {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskEnforceResaleTerms".
+ */
+export interface TaskEnforceResaleTerms {
+  input?: unknown;
+  output: {
+    shopsHeld?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskRefreshResaleLinkStats".
+ */
+export interface TaskRefreshResaleLinkStats {
+  input?: unknown;
+  output: {
+    linksUpdated?: number | null;
+    productsRepaired?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReconcileStockCaches".
+ */
+export interface TaskReconcileStockCaches {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskRenderDisputeCertificate".
+ */
+export interface TaskRenderDisputeCertificate {
+  input: {
+    disputeId: string;
+  };
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskDispatchOrderEvent".
+ */
+export interface TaskDispatchOrderEvent {
+  input: {
+    orderId: string;
+    eventId: string;
+    attempt?: number | null;
+    handlers?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  output: {
+    attempt?: number | null;
+    failed?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    requeued?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpireOrders".
+ */
+export interface TaskExpireOrders {
+  input?: unknown;
+  output: {
+    paymentExpired?: number | null;
+    confirmationExpired?: number | null;
+    sellerTimedOut?: number | null;
+    remindersSent?: number | null;
+    errors?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpirePurchaseOrders".
+ */
+export interface TaskExpirePurchaseOrders {
+  input?: unknown;
+  output: {
+    expiredCount?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskFailStaleOrders".
+ */
+export interface TaskFailStaleOrders {
+  input?: unknown;
+  output: {
+    remindersSent?: number | null;
+    failed?: number | null;
+    errors?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskFlushListingViews".
+ */
+export interface TaskFlushListingViews {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskAggregateShopDailyStats".
+ */
+export interface TaskAggregateShopDailyStats {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskRecomputeShopRankings".
+ */
+export interface TaskRecomputeShopRankings {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSendWeeklyInsights".
+ */
+export interface TaskSendWeeklyInsights {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskCompleteOrders".
+ */
+export interface TaskCompleteOrders {
+  input?: unknown;
+  output: {
+    completed?: number | null;
+    errors?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskMarkOverdueResellerCharges".
+ */
+export interface TaskMarkOverdueResellerCharges {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPayResellerCommissions".
+ */
+export interface TaskPayResellerCommissions {
+  input?: unknown;
+  output: {
+    createdCount?: number | null;
+    submittedCount?: number | null;
+    skippedCount?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReleaseResellerCommissions".
+ */
+export interface TaskReleaseResellerCommissions {
+  input?: unknown;
+  output: {
+    releasedCount?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskRetryResellerPayouts".
+ */
+export interface TaskRetryResellerPayouts {
+  input?: unknown;
+  output: {
+    submittedCount?: number | null;
+    skippedCount?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSubmitRefund".
+ */
+export interface TaskSubmitRefund {
+  input: {
+    refundId: string;
+  };
+  output: {
+    status?: string | null;
+    attempts?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSyncConnectedAccount".
+ */
+export interface TaskSyncConnectedAccount {
+  input: {
+    connectedAccountId?: string | null;
+  };
+  output: {
+    synced?: number | null;
+    failed?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReleaseEligibleFunds".
+ */
+export interface TaskReleaseEligibleFunds {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpirePayoutHolds".
+ */
+export interface TaskExpirePayoutHolds {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReconcileLedger".
+ */
+export interface TaskReconcileLedger {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskRecoverSellerReceivables".
+ */
+export interface TaskRecoverSellerReceivables {
+  input?: unknown;
+  output: {
+    debits?: number | null;
+    writtenOff?: number | null;
+    suspended?: number | null;
+    failed?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSweepBuyerFeeInvoices".
+ */
+export interface TaskSweepBuyerFeeInvoices {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskProcessCourierWebhookEvent".
+ */
+export interface TaskProcessCourierWebhookEvent {
+  input: {
+    eventId: string;
+  };
+  output: {
+    outcome?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPollCourierShipments".
+ */
+export interface TaskPollCourierShipments {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskFinalizeFailedShipments".
+ */
+export interface TaskFinalizeFailedShipments {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpirePickupHolds".
+ */
+export interface TaskExpirePickupHolds {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskFlagLateShipments".
+ */
+export interface TaskFlagLateShipments {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskRemindReturns".
+ */
+export interface TaskRemindReturns {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpireRiderLinks".
+ */
+export interface TaskExpireRiderLinks {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPurgeDeliveryProofs".
+ */
+export interface TaskPurgeDeliveryProofs {
   input?: unknown;
   output?: unknown;
 }

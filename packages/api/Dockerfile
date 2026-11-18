@@ -27,7 +27,11 @@ WORKDIR /app/packages/api
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV TURBOPACK_ROOT=/app
 RUN mkdir -p public
-RUN bun run generate:importmap
+# The import map lists the admin components of the plugins the config loads,
+# and the storage plugin depends on STORAGE_PROVIDER: generate it as for S3 so
+# production's S3 client-upload component is in it (placeholder buckets; the
+# real ones come from the runtime environment).
+RUN STORAGE_PROVIDER=s3 S3_BUCKET=build S3_PRIVATE_BUCKET=build-private bun run generate:importmap
 RUN bun run build
 
 # --- Runner ---

@@ -9,7 +9,8 @@ import {
 	ZoomOut,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
 
 interface ImageGalleryProps {
 	images: string[];
@@ -18,10 +19,14 @@ interface ImageGalleryProps {
 }
 
 export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
+	const t = useTranslations("Listing");
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [lightboxOpen, setLightboxOpen] = useState(false);
 	const [lightboxIdx, setLightboxIdx] = useState(0);
 	const [zoomed, setZoomed] = useState(false);
+	// Swiping the main photo on a phone, as every marketplace app does.
+	const touchStartX = useRef<number | null>(null);
+	const swiped = useRef(false);
 
 	useEffect(() => {
 		if (!lightboxOpen) return;
@@ -41,8 +46,8 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 
 	if (images.length === 0) {
 		return (
-			<div className="flex aspect-[4/3] items-center justify-center bg-[#F1F5F9]">
-				<span className="text-[#94A3B8]">No images</span>
+			<div className="flex aspect-[4/3] items-center justify-center bg-subtle">
+				<span className="text-ink-faint">{t("noImages")}</span>
 			</div>
 		);
 	}
@@ -66,17 +71,43 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 	return (
 		<>
 			<div>
-				<div className="relative aspect-[4/3]">
+				<div
+					className="relative aspect-[4/3] touch-pan-y"
+					onTouchStart={(e) => {
+						touchStartX.current = e.touches[0]?.clientX ?? null;
+						swiped.current = false;
+					}}
+					onTouchEnd={(e) => {
+						const start = touchStartX.current;
+						const end = e.changedTouches[0]?.clientX;
+						touchStartX.current = null;
+						if (start === null || end === undefined || images.length < 2)
+							return;
+						const dx = end - start;
+						if (Math.abs(dx) < 40) return;
+						swiped.current = true;
+						if (dx < 0) next();
+						else prev();
+					}}
+				>
 					<button
 						type="button"
 						className="block h-full w-full cursor-zoom-in"
-						onClick={() => openLightbox(currentIndex)}
-						aria-label="View full size"
+						onClick={() => {
+							// The tap that ends a swipe is not a request to zoom.
+							if (swiped.current) {
+								swiped.current = false;
+								return;
+							}
+							openLightbox(currentIndex);
+						}}
+						aria-label={t("viewFullSize")}
 					>
 						<Image
 							src={images[currentIndex]}
 							alt={`${title} ${currentIndex + 1}`}
 							fill
+							sizes="(min-width: 1024px) 760px, 100vw"
 							className="object-cover"
 							priority
 						/>
@@ -84,7 +115,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 					{isBoosted && (
 						<span className="pointer-events-none absolute top-3 left-3 flex items-center gap-1 rounded bg-[#F59E0B] px-2 py-1 font-bold text-white text-xs shadow">
 							<Zap className="h-3 w-3" />
-							Featured
+							{t("listingFeatured")}
 						</span>
 					)}
 					{images.length > 1 && (
@@ -95,7 +126,8 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 									e.stopPropagation();
 									prev();
 								}}
-								className="-translate-y-1/2 absolute top-1/2 left-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-[#0F172A] shadow backdrop-blur-sm transition-colors hover:bg-white"
+								aria-label={t("previousPhoto")}
+								className="-translate-y-1/2 absolute top-1/2 left-2 flex h-11 w-11 items-center justify-center rounded-full bg-surface/80 text-ink shadow backdrop-blur-sm transition-colors hover:bg-surface"
 							>
 								<ChevronLeft className="h-5 w-5" />
 							</button>
@@ -105,7 +137,8 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 									e.stopPropagation();
 									next();
 								}}
-								className="-translate-y-1/2 absolute top-1/2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-[#0F172A] shadow backdrop-blur-sm transition-colors hover:bg-white"
+								aria-label={t("nextPhoto")}
+								className="-translate-y-1/2 absolute top-1/2 right-2 flex h-11 w-11 items-center justify-center rounded-full bg-surface/80 text-ink shadow backdrop-blur-sm transition-colors hover:bg-surface"
 							>
 								<ChevronRight className="h-5 w-5" />
 							</button>
@@ -116,22 +149,23 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 					)}
 				</div>
 				{images.length > 1 && (
-					<div className="flex gap-1 overflow-x-auto border-[#E2E8F0] border-t p-2">
+					<div className="grid grid-cols-6 gap-2 p-3">
 						{images.map((url, i) => (
 							<button
 								type="button"
 								key={i}
 								onClick={() => goTo(i)}
-								className={`relative h-16 w-20 shrink-0 overflow-hidden rounded-md border-2 transition-colors ${
+								className={`relative h-12 overflow-hidden rounded-lg border-2 transition-colors sm:h-[72px] ${
 									i === currentIndex
-										? "border-[#1E40AF]"
-										: "border-[#E2E8F0] hover:border-[#94A3B8]"
+										? "border-brand"
+										: "border-transparent hover:border-ink-faint"
 								}`}
 							>
 								<Image
 									src={url}
 									alt={`${title} ${i + 1}`}
 									fill
+									sizes="(min-width: 1024px) 128px, 17vw"
 									className="object-cover"
 								/>
 							</button>
@@ -146,7 +180,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 					{/* Backdrop close button */}
 					<button
 						type="button"
-						aria-label="Close lightbox"
+						aria-label={t("closeLightbox")}
 						className="absolute inset-0 w-full cursor-default"
 						onClick={() => {
 							setLightboxOpen(false);
@@ -160,7 +194,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 							type="button"
 							onClick={() => setZoomed((z) => !z)}
 							className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-							aria-label={zoomed ? "Zoom out" : "Zoom in"}
+							aria-label={zoomed ? t("zoomOut") : t("zoomIn")}
 						>
 							{zoomed ? (
 								<ZoomOut className="h-5 w-5" />
@@ -175,7 +209,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 								setZoomed(false);
 							}}
 							className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-							aria-label="Close"
+							aria-label={t("closeLightbox")}
 						>
 							<X className="h-5 w-5" />
 						</button>
@@ -186,7 +220,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 						<button
 							type="button"
 							onClick={() => setZoomed((z) => !z)}
-							aria-label={zoomed ? "Zoom out" : "Zoom in"}
+							aria-label={zoomed ? t("zoomOut") : t("zoomIn")}
 							className="rounded focus:outline-none"
 						>
 							<img

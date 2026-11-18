@@ -8,7 +8,12 @@
 		"clean": "rimraf -g ./**/node_modules",
 		"check": "biome check --write .",
 		"check-types": "turbo run check-types",
-		"prepare": "husky"
+		"prepare": "husky",
+		"infra:stack:init": "ENV_BASE_DIR=\"$PWD\" bun run --cwd infra stack:init",
+		"infra:env:check": "ENV_BASE_DIR=\"$PWD\" bun run --cwd infra env:check",
+		"infra:env:apply": "ENV_BASE_DIR=\"$PWD\" bun run --cwd infra env:apply",
+		"infra:preview": "bun run --cwd infra preview",
+		"infra:up": "bun run --cwd infra up"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.8",
@@ -23,8 +28,8 @@
 		"typescript": "^5"
 	},
 	"overrides": {
-		"react": "19.1.0",
-		"react-dom": "19.1.0",
+		"react": "19.2.3",
+		"react-dom": "19.2.3",
 		"@types/react": "^19",
 		"@types/react-dom": "^19"
 	},

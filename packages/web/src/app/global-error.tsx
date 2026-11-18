@@ -1,5 +1,11 @@
 "use client";
 
+import { useReportError } from "~/hooks/use-report-error";
+
+/**
+ * Replaces the root layout, so no translations are loaded here: the copy is
+ * French first, the site's default, with English after it.
+ */
 export default function GlobalError({
 	error,
 	reset,
@@ -7,8 +13,9 @@ export default function GlobalError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
+	useReportError(error);
 	return (
-		<html lang="en">
+		<html lang="fr">
 			<body
 				style={{
 					margin: 0,
@@ -45,12 +52,13 @@ export default function GlobalError({
 							margin: "0 0 0.5rem",
 						}}
 					>
-						Something went wrong
+						Une erreur est survenue · Something went wrong
 					</h1>
 					<p
 						style={{ color: "#64748B", margin: "0 0 2rem", maxWidth: "400px" }}
 					>
-						A critical error occurred. Please try again.
+						Une erreur critique s&apos;est produite. Réessayez. — A critical
+						error occurred. Please try again.
 					</p>
 					{error.digest && (
 						<p
@@ -61,7 +69,7 @@ export default function GlobalError({
 								margin: "0 0 1rem",
 							}}
 						>
-							Error ID: {error.digest}
+							Réf. / Error ID: {error.digest}
 						</p>
 					)}
 					<div
@@ -81,7 +89,7 @@ export default function GlobalError({
 								cursor: "pointer",
 							}}
 						>
-							Try again
+							Réessayer · Try again
 						</button>
 						<a
 							href="/"
@@ -97,7 +105,7 @@ export default function GlobalError({
 								display: "inline-block",
 							}}
 						>
-							Back to home
+							Accueil · Home
 						</a>
 					</div>
 				</div>

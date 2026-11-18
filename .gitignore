@@ -21,6 +21,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.test.local
 .env.production.local
 .env.local
+# Any copied environment (.env.prod, .env.proxmox-staging…), never committed;
+# the examples are.
+.env.*
+!.env.example
 
 # caches
 .eslintcache
@@ -40,3 +44,20 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .claude
 
 *.apk
+*.aab
+
+# SDD workspaces
+.superpowers/
+
+# MongoDB replica-set key file
+mongo-keyfile
+.mcp.json
+
+# Pulumi stack config: written by `pulumi config set` and env-to-stack, holds
+# the encryption salt, encrypted secrets and plain app values. Local only;
+# `bun run stack:init` creates it from infra/stacks/<stack>.example.yaml.
+infra/.stacks/
+infra/Pulumi.*.yaml
+
+# Google service account keys (private): never committed
+*.service.json

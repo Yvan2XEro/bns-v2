@@ -234,3 +234,68 @@ When the user taps a push notification while the app is in background or killed,
 | `conversationId` | `/messages/{conversationId}` |
 
 This is handled by `PushNotificationHandler` in `_layout.tsx`.
+
+## Native push: what each side needs
+
+A push reaches a phone only when every link holds:
+
+1. **The app gets a token.** On Android, the build must carry Firebase's
+   `google-services.json`; without it, `getExpoPushTokenAsync` fails and the
+   app registers nothing (it reports the failure to Sentry). The file is
+   committed at `packages/mobile/google-services.json` and named by
+   `android.googleServicesFile` in `app.json`: it is public configuration
+   (Firebase project, app ids), shipped inside every APK anyway. It is not
+   the service account key — that one holds a `private_key`, is a secret,
+   and never enters the repository (`*.service.json` is ignored). A new
+   `google-services.json` is a native change: a new build, not an OTA update.
+2. **Expo can send to FCM.** The FCM V1 service account key is uploaded to
+   EAS (`eas credentials -p android`, Google Service Account, FCM V1). iOS
+   uses the APNs key EAS manages.
+3. **The token reaches Novu.** The app posts it to
+   `/api/public/novu/register-token` once the permission is granted (asked in
+   context: a first message, a first order). The API appends it to the
+   subscriber's Expo credentials, so every signed-in device keeps receiving.
+4. **Novu sends through Expo.** An active **Expo Push** integration in Novu
+   (Integrations, Push, Expo, with an Expo access token);
+   `NOVU_EXPO_INTEGRATION_IDENTIFIER` names it when there are several.
+5. **The workflow has a push step,** which every synced workflow does.
+
+To check one device: Novu, Subscribers, the account's id, Channels: an Expo
+credential with a device token must be listed. None means step 1 or 3
+failed; one listed but nothing received means step 2 or 4.
+
+## Self-hosted Novu
+
+Every part of BuyNSellem reads where Novu lives from three variables, read
+once by `contracts/novuEndpoints.ts`; nothing else names a Novu host.
+
+| Variable | Read by | Novu Cloud | Self-hosted |
+|---|---|---|---|
+| `NOVU_API_URL` | API (sends, tokens, workflow sync), web inbox, app inbox via `/api/public/config` | `https://api.novu.co` (or unset) | `https://novu-api.buynsellem.com` |
+| `NOVU_SOCKET_URL` | web inbox, app inbox via `/api/public/config` | unset | `https://novu-ws.buynsellem.com` |
+| `NOVU_APPLICATION_IDENTIFIER`, `NOVU_SECRET_KEY` | API, web | from Novu Cloud | from your instance's dashboard |
+
+Novu Cloud's address, or nothing, leaves the SDKs on their defaults, so a
+Cloud setup needs neither URL. Every docker-compose file, the Kubernetes
+configmap and the K3s env catalog (`infra/src/app-env.ts`) pass both URLs to
+the API and the web.
+
+**The instance's three services,** one subdomain each, on one level so
+Cloudflare's universal certificate covers them, all over HTTPS (iOS refuses
+plain HTTP):
+
+| Service | Port | Subdomain |
+|---|---|---|
+| Dashboard | 4000 | `novu.buynsellem.com` |
+| API | 3000 | `novu-api.buynsellem.com` |
+| WebSocket | 3002 | `novu-ws.buynsellem.com` (WebSockets allowed at the proxy) |
+
+The instance itself must know these addresses (in its own environment:
+`API_ROOT_URL`, `FRONT_BASE_URL`, and the dashboard's API and WebSocket
+hostnames, whose names depend on the Novu release).
+
+**Moving from Cloud:** set the three variables above and redeploy the API and
+the web. The API recreates every workflow at boot (no plan limit when
+self-hosted); recreate the Expo Push integration in the new dashboard; each
+app re-registers its device token at sign-in or on its next return to the
+foreground. In-app notifications already received on Cloud do not move.

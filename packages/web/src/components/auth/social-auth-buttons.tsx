@@ -1,12 +1,15 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type React from "react";
-import { Button } from "~/components/ui/button";
+import { useEffect, useState } from "react";
 import { type SocialAuthProvider, useAuth } from "~/hooks/use-auth";
+import { orderedProviders, SOCIAL_PROVIDER_ORDER } from "~/lib/auth-form";
+import { cn } from "~/lib/utils";
 
 function GoogleIcon() {
 	return (
-		<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+		<svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true">
 			<path
 				d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"
 				fill="#4285F4"
@@ -30,13 +33,13 @@ function GoogleIcon() {
 function AppleIcon() {
 	return (
 		<svg
-			width="18"
-			height="18"
-			viewBox="0 0 814 1000"
+			width="20"
+			height="20"
+			viewBox="0 0 24 24"
 			aria-hidden="true"
 			fill="currentColor"
 		>
-			<path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 484 0 367.5 0 255.8c0-207.1 135.5-316.5 269.4-316.5 71 0 130.1 47.3 173.8 47.3 41.5 0 106.5-50.4 188.6-50.4zm-174 -150.8c-11.2 47.5-41.5 95.3-74.1 124.9-33.9 30.8-82.5 54.3-131.1 54.3-5.8 0-11.5-.6-17.4-1.3 0-50.4 33.3-101.5 63-134.2 31.5-35.3 81.7-61.6 124.9-62.8 1.3 6.5 1.3 13 1.3 19.1z" />
+			<path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
 		</svg>
 	);
 }
@@ -44,58 +47,170 @@ function AppleIcon() {
 function FacebookIcon() {
 	return (
 		<svg
-			width="18"
-			height="18"
+			width="20"
+			height="20"
 			viewBox="0 0 24 24"
 			aria-hidden="true"
-			fill="#1877F2"
+			fill="currentColor"
 		>
 			<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
 		</svg>
 	);
 }
 
-const providers: Array<{
+// Each mark on its own brand surface: Google's white button with the
+// four-colour G, Apple's black, Facebook's blue with the white "f".
+const PROVIDERS: Record<
+	SocialAuthProvider,
+	{ label: string; Icon: () => React.ReactElement; className: string }
+> = {
+	google: {
+		label: "Google",
+		Icon: GoogleIcon,
+		className:
+			"border border-[#747775] bg-white text-[#1F1F1F] hover:bg-[#F8FAFC] focus-visible:ring-brand dark:border-[#8E918F] dark:bg-[#131314] dark:text-[#E3E3E3] dark:hover:bg-[#1F1F1F]",
+	},
+	apple: {
+		label: "Apple",
+		Icon: AppleIcon,
+		className:
+			"border border-black bg-black text-white hover:bg-[#1F1F1F] focus-visible:ring-brand dark:border-white dark:bg-white dark:text-black dark:hover:bg-[#E5E5E5]",
+	},
+	facebook: {
+		label: "Facebook",
+		Icon: FacebookIcon,
+		className:
+			"border border-[#1877F2] bg-[#1877F2] text-white hover:bg-[#166FE5] focus-visible:ring-brand",
+	},
+};
+
+/**
+ * Providers the API has enabled, in display order. `null` while loading; a
+ * failed lookup falls back to all three, as before.
+ */
+const PROVIDERS_CACHE = "bns.auth.providers";
+
+export function useSocialProviders(): SocialAuthProvider[] | null {
+	const [providers, setProviders] = useState<SocialAuthProvider[] | null>(null);
+	useEffect(() => {
+		// The last answer is shown at once, so a return visit never reshapes the card.
+		try {
+			const cached = localStorage.getItem(PROVIDERS_CACHE);
+			const parsed: unknown = cached ? JSON.parse(cached) : null;
+			if (Array.isArray(parsed)) setProviders(orderedProviders(parsed));
+		} catch {
+			// No storage (private mode): the skeleton shows until the answer.
+		}
+		fetch("/api/public/auth/providers")
+			.then((r) => r.json())
+			.then((data: { providers: string[] }) => {
+				const list = orderedProviders(data.providers ?? []);
+				setProviders(list);
+				try {
+					localStorage.setItem(PROVIDERS_CACHE, JSON.stringify(list));
+				} catch {
+					// Not cached; the next visit shows the skeleton again.
+				}
+			})
+			.catch(() =>
+				setProviders((current) => current ?? [...SOCIAL_PROVIDER_ORDER]),
+			);
+	}, []);
+	return providers;
+}
+
+/** The SSO button's wording and icon, from the API. */
+export interface SsoOption {
 	label: string;
-	value: SocialAuthProvider;
-	Icon: () => React.ReactElement;
-}> = [
-	{ label: "Google", value: "google", Icon: GoogleIcon },
-	{ label: "Apple", value: "apple", Icon: AppleIcon },
-	{ label: "Facebook", value: "facebook", Icon: FacebookIcon },
-];
+	icon: string;
+}
+
+/** The `?sso=` values that show Overbrand's single sign-on on the sign-in. */
+const SSO_PARAM_VALUES = new Set(["overbrand", "ob"]);
+
+/** Whether the sign-in page was opened asking for the SSO button. */
+export function ssoRequested(value: string | null): boolean {
+	return value !== null && SSO_PARAM_VALUES.has(value.trim().toLowerCase());
+}
+
+/**
+ * Overbrand's single sign-on, for system administrators: asked for only when
+ * the sign-in page is opened with `?sso=overbrand` (or `?sso=ob`), so the
+ * public never sees it; null when not asked for, or while the SSO is off.
+ * Hiding it is only tidiness: the role at Overbrand and the administrator
+ * account decide.
+ */
+export function useSsoOption(requested: boolean): SsoOption | null {
+	const [option, setOption] = useState<SsoOption | null>(null);
+	useEffect(() => {
+		if (!requested) return;
+		fetch("/api/public/auth/sso/button")
+			.then((r) => (r.ok ? r.json() : null))
+			.then((data: (SsoOption & { enabled: boolean }) | null) => {
+				if (data?.enabled) setOption({ label: data.label, icon: data.icon });
+			})
+			.catch(() => undefined);
+	}, [requested]);
+	return option;
+}
+
+const BUTTON_CLASS =
+	"flex h-12 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-2xl px-4 font-medium text-sm shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-all duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98]";
 
 export function SocialAuthButtons({
+	providers,
 	redirectTo = "/",
+	sso = null,
 }: {
+	providers: SocialAuthProvider[] | null;
 	redirectTo?: string;
+	sso?: SsoOption | null;
 }) {
-	const { loginWithProvider } = useAuth();
+	const t = useTranslations("Auth");
+	const { loginWithProvider, loginWithSso } = useAuth();
 
-	return (
-		<div className="space-y-3">
-			<div className="flex items-center gap-3">
-				<div className="h-px flex-1 bg-[#E2E8F0]" />
-				<span className="text-[#64748B] text-xs uppercase tracking-[0.18em]">
-					Or continue with
-				</span>
-				<div className="h-px flex-1 bg-[#E2E8F0]" />
-			</div>
-
-			<div className="grid gap-2">
-				{providers.map(({ label, value, Icon }) => (
-					<Button
-						className="w-full justify-start gap-3 rounded-xl border-[#E2E8F0] bg-white px-4 text-[#0F172A] hover:bg-[#F8FAFC]"
-						key={value}
-						onClick={() => loginWithProvider(value, redirectTo)}
-						type="button"
-						variant="outline"
-					>
-						<Icon />
-						Continue with {label}
-					</Button>
+	if (providers === null)
+		return (
+			<div className="grid gap-3" aria-hidden="true">
+				{SOCIAL_PROVIDER_ORDER.map((p) => (
+					<div key={p} className="h-12 animate-pulse rounded-2xl bg-subtle" />
 				))}
 			</div>
-		</div>
+		);
+
+	return (
+		<ul className="grid gap-3">
+			{providers.map((value) => {
+				const { label, Icon, className } = PROVIDERS[value];
+				return (
+					<li key={value}>
+						<button
+							type="button"
+							onClick={() => loginWithProvider(value, redirectTo)}
+							className={cn(BUTTON_CLASS, className)}
+						>
+							<Icon />
+							{t("continueWith", { provider: label })}
+						</button>
+					</li>
+				);
+			})}
+			{sso ? (
+				<li>
+					<button
+						type="button"
+						onClick={() => loginWithSso(redirectTo)}
+						className={cn(
+							BUTTON_CLASS,
+							"border border-line bg-surface text-ink hover:bg-subtle focus-visible:ring-brand",
+						)}
+					>
+						{/* biome-ignore lint/performance/noImgElement: a small mark served by the API, behind a redirect next/image cannot follow */}
+						<img src={sso.icon} alt="" width={20} height={20} />
+						{t("continueWith", { provider: sso.label })}
+					</button>
+				</li>
+			) : null}
+		</ul>
 	);
 }

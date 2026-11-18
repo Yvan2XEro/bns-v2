@@ -1,21 +1,24 @@
 import { MeiliSearch } from "meilisearch";
 
-const MEILISEARCH_HOST =
-	process.env.MEILISEARCH_HOST || "http://localhost:7700";
-const MEILISEARCH_API_KEY = process.env.MEILISEARCH_API_KEY || "";
 const INDEX_NAME = "listings";
+
+/** The MEILISEARCH_* names are read for one release only, then removed. */
+export function resolveMeiliConfig(
+	env: Record<string, string | undefined> = process.env,
+): { host: string; apiKey: string } {
+	return {
+		host: env.MEILI_HOST || env.MEILISEARCH_HOST || "http://localhost:7700",
+		apiKey: env.MEILI_MASTER_KEY || env.MEILISEARCH_API_KEY || "",
+	};
+}
 
 let client: MeiliSearch | null = null;
 
 function getClient(): MeiliSearch {
 	if (!client) {
-		console.log(
-			`[search-indexer] meilisearch connecting to ${MEILISEARCH_HOST}`,
-		);
-		client = new MeiliSearch({
-			host: MEILISEARCH_HOST,
-			apiKey: MEILISEARCH_API_KEY,
-		});
+		const { host, apiKey } = resolveMeiliConfig();
+		console.log(`[search-indexer] meilisearch connecting to ${host}`);
+		client = new MeiliSearch({ host, apiKey });
 	}
 	return client;
 }
@@ -30,17 +33,33 @@ export type ListingDocument = {
 	description: string;
 	price: number;
 	location: string;
+	/** Folded `location` forms the API's city filter matches on. */
+	locationKeys: string[];
 	category: string | null;
 	categoryId: string;
 	sellerId: string;
 	status: string;
-	condition: string | null;
 	tags: string[];
 	boostedUntil: string | null;
 	views: number;
 	images: unknown[];
 	createdAt: string;
 	updatedAt: string;
+	shopId: string | null;
+	shopHandle: string | null;
+	shopName: string | null;
+	shopLevel: number | null;
+	priceMax: number | null;
+	/** Buyer-safe purchasability signal, not the exact unit count — see the API's `isProductAvailable`. */
+	available: boolean | null;
+	/**
+	 * Copied verbatim from the API's `listings.orderable` virtual
+	 * (lib/orderable.ts#isListingOrderable) — the indexer never recomputes
+	 * this rule, only carries the value through. See `transformListing`.
+	 */
+	orderable: boolean;
+	kind: string | null;
+	priceUnit: string | null;
 	[key: string]: unknown;
 };
 
@@ -99,55 +118,121 @@ export async function indexDocuments(docs: ListingDocument[]): Promise<void> {
 const PAYLOAD_API_URL =
 	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";
 
-async function fetchFilterableAttributeSlugs(): Promise<string[]> {
-	try {
-		const res = await fetch(`${PAYLOAD_API_URL}/categories?limit=200&depth=0`);
-		if (!res.ok) return [];
-		const data = (await res.json()) as {
-			docs: Array<{
-				attributes?: Array<{ slug: string; filterable?: boolean }>;
-			}>;
-		};
-		const slugs = new Set<string>();
-		for (const cat of data.docs) {
-			for (const attr of cat.attributes || []) {
-				if (attr.filterable) {
-					slugs.add(attr.slug);
+const sleep = (ms: number) =>
+	new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Every attribute slug a category declares filterable.
+ *
+ * Returns `null` when Payload could not be reached at all, which is a very
+ * different thing from "no category declares one" — and conflating the two is
+ * what broke search filtering in production. This worker starts alongside the
+ * API (compose only waits for the container to *start*, not for Next to
+ * listen), so the first request here regularly lands before anything answers.
+ * The old version swallowed that, returned an empty list, and the index was
+ * configured with only the static attributes — every category filter then made
+ * Meilisearch reject the query for the lifetime of the deployment.
+ */
+async function fetchFilterableAttributeSlugs(
+	attempts = 10,
+	delayMs = 3000,
+): Promise<string[] | null> {
+	for (let attempt = 1; attempt <= attempts; attempt++) {
+		try {
+			const res = await fetch(`${PAYLOAD_API_URL}/categories?limit=0&depth=0`);
+			if (res.ok) {
+				const data = (await res.json()) as {
+					docs: Array<{
+						attributes?: Array<{ slug: string; filterable?: boolean }>;
+					}>;
+				};
+				const slugs = new Set<string>();
+				for (const cat of data.docs) {
+					for (const attr of cat.attributes || []) {
+						if (attr.filterable && attr.slug) {
+							slugs.add(attr.slug);
+						}
+					}
 				}
+				return Array.from(slugs);
 			}
+			console.warn(
+				`[search-indexer] categories request returned ${res.status} (attempt ${attempt}/${attempts})`,
+			);
+		} catch (error) {
+			console.warn(
+				`[search-indexer] cannot reach Payload at ${PAYLOAD_API_URL} (attempt ${attempt}/${attempts}):`,
+				error instanceof Error ? error.message : error,
+			);
 		}
-		return Array.from(slugs);
-	} catch (error) {
-		console.warn(
-			"[search-indexer] failed to fetch category attributes:",
-			error,
-		);
-		return [];
+
+		if (attempt < attempts) await sleep(delayMs);
 	}
+
+	return null;
 }
 
-export async function configureIndex(): Promise<void> {
+/** Filterable regardless of what the categories declare. */
+export const STATIC_FILTERABLE_ATTRIBUTES = [
+	"status",
+	"categoryId",
+	"price",
+	"location",
+	"locationKeys",
+	"boostedUntil",
+	"sellerId",
+	"tags",
+	"_geo",
+	"shopId",
+	"shopLevel",
+	"orderable",
+	"kind",
+];
+
+/** What the index was last configured with, to skip no-op settings updates. */
+let configuredAttributes: string[] | null = null;
+
+export async function configureIndex(
+	attempts = 10,
+	delayMs = 3000,
+): Promise<void> {
 	const index = getIndex();
 
-	const dynamicAttrs = await fetchFilterableAttributeSlugs();
+	const dynamicAttrs = await fetchFilterableAttributeSlugs(attempts, delayMs);
+	if (dynamicAttrs === null) {
+		// Crashing is the honest outcome: this worker cannot index a listing
+		// without Payload either, and carrying on would quietly publish an index
+		// that rejects every category filter. Docker restarts us, and by then the
+		// API is usually up.
+		throw new Error(
+			`Could not read category attributes from ${PAYLOAD_API_URL}. Refusing to configure the index without them — every category filter would fail.`,
+		);
+	}
+
 	if (dynamicAttrs.length > 0) {
 		console.log(
 			`[search-indexer] meilisearch dynamic filterable attributes: ${dynamicAttrs.join(", ")}`,
 		);
+	} else {
+		console.warn(
+			"[search-indexer] no category declares a filterable attribute — category filters will match nothing",
+		);
 	}
 
 	const filterableAttributes = [
-		"status",
-		"categoryId",
-		"condition",
-		"price",
-		"location",
-		"boostedUntil",
-		"sellerId",
-		"tags",
-		"_geo",
+		...STATIC_FILTERABLE_ATTRIBUTES,
 		...dynamicAttrs,
 	];
+
+	// A settings update makes Meilisearch reindex, so it is worth not repeating
+	// one that changes nothing.
+	if (
+		configuredAttributes !== null &&
+		configuredAttributes.length === filterableAttributes.length &&
+		configuredAttributes.every((slug, i) => slug === filterableAttributes[i])
+	) {
+		return;
+	}
 
 	try {
 		await index.updateSettings({
@@ -157,6 +242,7 @@ export async function configureIndex(): Promise<void> {
 				"location",
 				"category",
 				"tags",
+				"shopName",
 			],
 			filterableAttributes,
 			sortableAttributes: [
@@ -166,7 +252,11 @@ export async function configureIndex(): Promise<void> {
 				"boostedUntil",
 				"_geo",
 			],
+			// The category counts per city facet on every category, well over
+			// Meilisearch's default of 100 values.
+			faceting: { maxValuesPerFacet: 1000 },
 		});
+		configuredAttributes = filterableAttributes;
 		console.log(
 			`[search-indexer] meilisearch index "${INDEX_NAME}" configured with ${filterableAttributes.length} filterable attributes`,
 		);
@@ -177,6 +267,32 @@ export async function configureIndex(): Promise<void> {
 		);
 		throw error;
 	}
+}
+
+/**
+ * Re-reads the categories periodically and updates the index settings when the
+ * filterable attributes have changed.
+ *
+ * An attribute added in the admin is otherwise invisible to Meilisearch until
+ * this worker restarts, and the symptom is not an error but a filter that
+ * quietly matches nothing. One attempt per tick — the next tick is the retry.
+ */
+export function startFilterableAttributeRefresh(
+	intervalMs = 15 * 60 * 1000,
+): () => void {
+	const timer = setInterval(() => {
+		configureIndex(1, 0).catch((error) => {
+			console.warn(
+				"[search-indexer] filterable attribute refresh failed:",
+				error instanceof Error ? error.message : error,
+			);
+		});
+	}, intervalMs);
+
+	// Never hold the process open on account of the refresh alone.
+	timer.unref?.();
+
+	return () => clearInterval(timer);
 }
 
 export async function clearIndex(): Promise<void> {
@@ -193,4 +309,140 @@ export async function clearIndex(): Promise<void> {
 		);
 		throw error;
 	}
+}
+
+const SHOPS_INDEX_NAME = "shops";
+
+export type ShopDocument = {
+	id: string;
+	handle: string;
+	name: string;
+	description: string | null;
+	city: string | null;
+	region: string | null;
+	countryCode: string | null;
+	categoryIds: string[];
+	level: number;
+	/**
+	 * When the current `level` expires — the exact field `shopCapabilities`
+	 * (and `toShopSearchHit`'s `badge`) reads to tell an *effective* level
+	 * from a stale stored one. Without this the Meilisearch path always
+	 * computes the badge from the raw `level`, disagreeing with the Payload
+	 * fallback path for the same shop once its approval has expired but the
+	 * nightly recompute job has not run yet.
+	 */
+	levelExpiresAt: string | null;
+	publishedListingCount: number;
+	createdAt: string;
+	logoUrl: string | null;
+	ownerRating: number;
+	ownerReviews: number;
+	/** The shop's own rating, for the "Note" sort. */
+	rating: number;
+	totalReviews: number;
+	/** The API's organic ranking (contracts/shopRanking.ts), carried through. */
+	rankingScore: number;
+	deliveryCities: string[];
+};
+
+export function getShopsIndex() {
+	return getClient().index(SHOPS_INDEX_NAME);
+}
+
+export async function configureShopsIndex(): Promise<void> {
+	await getShopsIndex().updateSettings({
+		searchableAttributes: ["name", "handle", "description", "city"],
+		filterableAttributes: [
+			"city",
+			"countryCode",
+			"categoryIds",
+			"level",
+			"deliveryCities",
+		],
+		sortableAttributes: [
+			"publishedListingCount",
+			"createdAt",
+			"rankingScore",
+			"rating",
+			"totalReviews",
+		],
+	});
+	console.log(
+		`[search-indexer] meilisearch index "${SHOPS_INDEX_NAME}" configured`,
+	);
+}
+
+export async function indexShopDocument(doc: ShopDocument): Promise<void> {
+	await getShopsIndex().addDocuments([doc], { primaryKey: "id" });
+}
+
+export async function indexShopDocuments(docs: ShopDocument[]): Promise<void> {
+	if (docs.length === 0) return;
+	await getShopsIndex().addDocuments(docs, { primaryKey: "id" });
+}
+
+export async function deleteShopDocument(id: string): Promise<void> {
+	await getShopsIndex().deleteDocument(id);
+	console.log(`[search-indexer] meilisearch deleted shop ${id}`);
+}
+
+export async function clearShopsIndex(): Promise<void> {
+	await getShopsIndex().deleteAllDocuments();
+}
+
+// ─── Automatic reindex bookkeeping ───────────────────────────────────────────
+
+type DocumentIndex = ReturnType<typeof getIndex>;
+
+/** A rebuild queues every batch first; the marker waits behind all of them. */
+const TASK_TIMEOUT_MS = 10 * 60 * 1000;
+
+/** Every document id an index holds, page by page. */
+async function documentIds(index: DocumentIndex): Promise<string[]> {
+	const ids: string[] = [];
+	const limit = 1000;
+	for (let offset = 0; ; offset += limit) {
+		const page = await index.getDocuments<{ id: string }>({
+			fields: ["id"],
+			limit,
+			offset,
+		});
+		for (const doc of page.results) ids.push(String(doc.id));
+		if (page.results.length < limit) return ids;
+	}
+}
+
+/** Deletes every document whose id is not in `keep`; returns how many. */
+async function prune(index: DocumentIndex, keep: Set<string>): Promise<number> {
+	const stale = (await documentIds(index)).filter((id) => !keep.has(id));
+	if (stale.length > 0)
+		await index.deleteDocuments(stale).waitTask({ timeout: TASK_TIMEOUT_MS });
+	return stale.length;
+}
+
+export const pruneListings = (keep: Set<string>) => prune(getIndex(), keep);
+export const pruneShops = (keep: Set<string>) => prune(getShopsIndex(), keep);
+
+const META_INDEX_NAME = "indexer-meta";
+const VERSION_DOC_ID = "documents";
+
+/** The document version the indexes were last fully rebuilt with. */
+export async function readDocumentVersion(): Promise<string | null> {
+	try {
+		const doc = await getClient()
+			.index(META_INDEX_NAME)
+			.getDocument<{ version?: unknown }>(VERSION_DOC_ID);
+		return typeof doc.version === "string" ? doc.version : null;
+	} catch {
+		// No meta index or no document yet: never rebuilt automatically.
+		return null;
+	}
+}
+
+/** Waits for Meilisearch to apply it, so it lands after every queued batch. */
+export async function writeDocumentVersion(version: string): Promise<void> {
+	await getClient()
+		.index(META_INDEX_NAME)
+		.addDocuments([{ id: VERSION_DOC_ID, version }], { primaryKey: "id" })
+		.waitTask({ timeout: TASK_TIMEOUT_MS });
 }

@@ -9,7 +9,6 @@ describe("transformListing", () => {
 		price: 450000,
 		location: "Douala",
 		status: "published",
-		condition: "new",
 		boostedUntil: null,
 		views: 42,
 		images: [{ image: { url: "/media/img1.jpg" } }],
@@ -38,7 +37,7 @@ describe("transformListing", () => {
 		expect(doc.categoryId).toBe("cat-1");
 		expect(doc.sellerId).toBe("user-1");
 		expect(doc.status).toBe("published");
-		expect(doc.condition).toBe("new");
+		expect(doc.condition).toBeUndefined();
 		expect(doc.views).toBe(42);
 		expect(doc.images).toEqual([
 			{
@@ -55,6 +54,20 @@ describe("transformListing", () => {
 			},
 		]);
 		expect(doc.createdAt).toBe("2026-01-15T10:00:00Z");
+	});
+
+	test("indexes condition as the filterable attribute it now is", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: {
+				id: "cat-1",
+				name: "Électronique",
+				attributes: [{ slug: "condition", filterable: true }],
+			},
+			attributes: { condition: "like_new" },
+			seller: "user-1",
+		});
+		expect(doc.condition).toBe("like_new");
 	});
 
 	test("handles seller as a string ID (not populated)", () => {
@@ -154,7 +167,7 @@ describe("transformListing", () => {
 
 		const doc = transformListing(listing);
 
-		expect(doc.condition).toBeNull();
+		expect(doc.condition).toBeUndefined();
 		expect(doc.boostedUntil).toBeNull();
 		expect(doc.views).toBe(0);
 		expect(doc.images).toEqual([]);
@@ -176,6 +189,94 @@ describe("transformListing", () => {
 				image: { id: "media-123" },
 			},
 		]);
+	});
+
+	test("adds shop fields when the shop is populated", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "Téléphones", attributes: [] },
+			seller: "user-1",
+			shop: {
+				id: "shop-1",
+				handle: "akwatech",
+				name: "Akwa Tech Store",
+				level: 1,
+			},
+			productSummary: { priceMin: 285000, priceMax: 330000, available: true },
+		});
+		expect(doc.shopId).toBe("shop-1");
+		expect(doc.shopHandle).toBe("akwatech");
+		expect(doc.shopName).toBe("Akwa Tech Store");
+		expect(doc.shopLevel).toBe(1);
+		expect(doc.priceMax).toBe(330000);
+		expect(doc.available).toBe(true);
+	});
+
+	// C1: the aggregate stock count used to reach the public index verbatim.
+	// A stale/legacy document carrying a number for `available` must not be
+	// forwarded as one — only a real boolean survives.
+	test("drops a leftover numeric available instead of forwarding it", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "Téléphones", attributes: [] },
+			seller: "user-1",
+			productSummary: { priceMin: 285000, priceMax: 330000, available: 13 },
+		});
+		expect(doc.available).toBeNull();
+	});
+
+	test("leaves shop fields null for a classified listing", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+		});
+		expect(doc.shopId).toBeNull();
+		expect(doc.shopName).toBeNull();
+		expect(doc.priceMax).toBeNull();
+	});
+
+	test("copies orderable through when the API computed it true", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+			orderable: true,
+		});
+		expect(doc.orderable).toBe(true);
+	});
+
+	// The one implementation of the rule lives on the API side
+	// (lib/orderable.ts#isListingOrderable); the indexer only ever carries its
+	// answer through. A listing fetched before that virtual existed, or any
+	// other falsy/missing value, must not be forwarded as orderable.
+	test("defaults orderable to false when absent", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+		});
+		expect(doc.orderable).toBe(false);
+	});
+
+	test("defaults orderable to false for a non-boolean leftover value", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+			orderable: "true",
+		});
+		expect(doc.orderable).toBe(false);
+	});
+
+	test("indexes the folded location keys a city filter matches", () => {
+		const doc = transformListing({
+			...baseListing,
+			location: "Akwa, DOUALA",
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+		});
+		expect(doc.locationKeys).toEqual(["akwa, douala", "akwa", "douala"]);
 	});
 
 	test("skips filterable attributes that are not present in listing data", () => {

@@ -1,6 +1,9 @@
 import { createHash, randomInt } from "node:crypto";
 import type { Payload } from "payload";
+import { ERROR_CODES, type ErrorCode } from "@/lib/errors";
+import { ServiceError } from "@/lib/serviceError";
 import type { User } from "@/payload-types";
+import { inLocale } from "../contracts/notificationLocale";
 import { sendSms } from "./smsProvider";
 
 const OTP_LENGTH = 6;
@@ -28,17 +31,20 @@ type PhoneVerificationStatus = {
 	resendAvailableAt: null | string;
 };
 
-export class PhoneVerificationError extends Error {
-	status: number;
-
-	constructor(message: string, status = 400) {
-		super(message);
+/** Message-first, unlike its siblings: its messages are written per call site. */
+export class PhoneVerificationError extends ServiceError {
+	constructor(
+		message: string,
+		status = 400,
+		code: ErrorCode = ERROR_CODES.badRequest,
+	) {
+		super(code, status, message);
 		this.name = "PhoneVerificationError";
-		this.status = status;
 	}
 }
 
-function normalizePhoneNumber(input: string): string {
+/** Exported for P3 invitations: one normaliser, or two that disagree on the same number. */
+export function normalizePhoneNumber(input: string): string {
 	const trimmed = input.trim();
 	const digitsOnly = trimmed.replace(/[^\d+]/g, "");
 	const normalized = digitsOnly.startsWith("+")
@@ -47,7 +53,9 @@ function normalizePhoneNumber(input: string): string {
 
 	if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
 		throw new PhoneVerificationError(
-			"Phone number must use international format like +2376XXXXXXXX",
+			"Phone number must use international format like +CCXXXXXXXXX",
+			400,
+			ERROR_CODES.phoneInvalid,
 		);
 	}
 
@@ -143,6 +151,7 @@ export async function startPhoneVerification(
 			throw new PhoneVerificationError(
 				"Please wait before requesting another code",
 				429,
+				ERROR_CODES.phoneCooldown,
 			);
 		}
 	}
@@ -152,7 +161,15 @@ export async function startPhoneVerification(
 
 	await sendSms(payload, {
 		from: OTP_MESSAGE_SENDER,
-		message: `Your Buy'N'Sellem verification code is ${code}. It expires in 10 minutes.`,
+		// In the account's language; é is in the GSM-7 alphabet, so the
+		// French costs no extra SMS part.
+		message: inLocale(
+			{
+				fr: `Votre code de vérification Buy'N'Sellem est ${code}. Il expire dans 10 minutes.`,
+				en: `Your Buy'N'Sellem verification code is ${code}. It expires in 10 minutes.`,
+			},
+			user.language,
+		),
 		to: phone,
 	});
 
@@ -176,11 +193,19 @@ export async function verifyPhoneVerificationCode(
 	const pendingPhone = user.pendingPhone;
 
 	if (!pendingPhone || !user.phoneVerificationCodeHash) {
-		throw new PhoneVerificationError("No phone verification is pending");
+		throw new PhoneVerificationError(
+			"No phone verification is pending",
+			400,
+			ERROR_CODES.phoneCodeExpired,
+		);
 	}
 
 	if (!/^\d{6}$/.test(code)) {
-		throw new PhoneVerificationError("Verification code must contain 6 digits");
+		throw new PhoneVerificationError(
+			"Verification code must contain 6 digits",
+			400,
+			ERROR_CODES.phoneCodeInvalid,
+		);
 	}
 
 	const attempts = user.phoneVerificationAttempts || 0;
@@ -188,6 +213,7 @@ export async function verifyPhoneVerificationCode(
 		throw new PhoneVerificationError(
 			"Too many invalid attempts. Request a new code",
 			429,
+			ERROR_CODES.phoneTooManyAttempts,
 		);
 	}
 
@@ -198,6 +224,8 @@ export async function verifyPhoneVerificationCode(
 		await persistVerificationState(payload, user, clearVerificationFields());
 		throw new PhoneVerificationError(
 			"Verification code has expired. Request a new one",
+			400,
+			ERROR_CODES.phoneCodeExpired,
 		);
 	}
 
@@ -219,6 +247,9 @@ export async function verifyPhoneVerificationCode(
 				? "Too many invalid attempts. Request a new code"
 				: "Invalid verification code",
 			nextAttempts >= MAX_OTP_ATTEMPTS ? 429 : 400,
+			nextAttempts >= MAX_OTP_ATTEMPTS
+				? ERROR_CODES.phoneTooManyAttempts
+				: ERROR_CODES.phoneCodeInvalid,
 		);
 	}
 

@@ -71,7 +71,6 @@ export const syncListingToMeilisearch = async ({
 			category: category?.name || null,
 			categoryId: doc.category,
 			status: doc.status,
-			condition: doc.condition,
 			tags: tagSlugs,
 			boostedUntil: doc.boostedUntil,
 			views: doc.views,
@@ -111,7 +110,6 @@ export const configureMeilisearchIndex = async () => {
 			filterableAttributes: [
 				"status",
 				"categoryId",
-				"condition",
 				"tags",
 				"price",
 				"location",

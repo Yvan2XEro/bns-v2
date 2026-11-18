@@ -57,18 +57,25 @@ export const BlockedUsers: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "blocker",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			index: true,
-		},
-		{
-			name: "blocked",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "blocker",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "blocked",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 	],
 	timestamps: true,

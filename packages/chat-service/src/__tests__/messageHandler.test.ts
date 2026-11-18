@@ -1,13 +1,35 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { mockFetch } from "./testFetch.ts";
 
 let rateLimitCounter = 0;
+let rateLimitIncrementCalls = 0;
+let rateLimitExpireCalls = 0;
+
+const sentStore = new Map<string, string>();
 
 const mockRedis = {
-	incr: mock(() => {
+	send: mock((command: string, args: string[]) => {
+		if (command === "SET") {
+			const [key, value] = args as [string, string];
+			if (args.includes("NX") && sentStore.has(key))
+				return Promise.resolve(null);
+			sentStore.set(key, value);
+			return Promise.resolve("OK");
+		}
+		if (command === "GET")
+			return Promise.resolve(sentStore.get(args[0] as string) ?? null);
+		if (command === "DEL") {
+			sentStore.delete(args[0] as string);
+			return Promise.resolve(1);
+		}
+		if (command !== "EVAL")
+			throw new Error(`Unexpected Redis command: ${command}`);
+		rateLimitIncrementCalls++;
+		rateLimitExpireCalls++;
+		if (args[1] !== "1") throw new Error("Expected one Redis key");
 		rateLimitCounter++;
 		return Promise.resolve(rateLimitCounter);
 	}),
-	expire: mock(() => Promise.resolve()),
 };
 
 mock.module("../redis.ts", () => ({
@@ -15,10 +37,15 @@ mock.module("../redis.ts", () => ({
 }));
 
 mock.module("../cache.ts", () => ({
-	getParticipants: mock(() => Promise.resolve(["user-1", "user-2"])),
 	hasConversationAccess: mock(() => Promise.resolve(true)),
+	getConversationMeta: mock(() =>
+		Promise.resolve({ participants: ["user-1", "user-2"], shopId: null }),
+	),
+	getInboxMembers: mock(() => Promise.resolve([])),
+	invalidateConversationMeta: mock(() => Promise.resolve()),
+	invalidateInboxMembers: mock(() => Promise.resolve()),
+	fetchInboxMembers: mock(() => Promise.resolve([])),
 	verifyTokenCached: mock(() => Promise.resolve({ userId: "user-1" })),
-	invalidateParticipants: mock(() => Promise.resolve()),
 }));
 
 mock.module("../serviceAuth.ts", () => ({
@@ -26,18 +53,21 @@ mock.module("../serviceAuth.ts", () => ({
 	invalidateServiceToken: mock(() => {}),
 }));
 
+import { getConversationMeta, hasConversationAccess } from "../cache.ts";
 import { registerMessageHandlers } from "../messageHandler.ts";
 
 const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
+	sentStore.clear();
 	rateLimitCounter = 0;
-	mockRedis.incr.mockImplementation(() => {
-		rateLimitCounter++;
-		return Promise.resolve(rateLimitCounter);
+	rateLimitIncrementCalls = 0;
+	rateLimitExpireCalls = 0;
+	(hasConversationAccess as ReturnType<typeof mock>).mockResolvedValue(true);
+	(getConversationMeta as ReturnType<typeof mock>).mockResolvedValue({
+		participants: ["user-1", "user-2"],
+		shopId: null,
 	});
-	mockRedis.incr.mockClear();
-	mockRedis.expire.mockClear();
 });
 
 afterEach(() => {
@@ -90,7 +120,7 @@ describe("registerMessageHandlers", () => {
 	test("registers message:send, message:delivered, and message:read handlers", () => {
 		const { socket, io, handlers } = createMockSocketAndIo();
 
-		registerMessageHandlers(io as any, socket as any, "user-1");
+		registerMessageHandlers(io as never, socket as never, "user-1");
 
 		expect(handlers.has("message:send")).toBe(true);
 		expect(handlers.has("message:delivered")).toBe(true);
@@ -102,7 +132,7 @@ describe("message:send", () => {
 	test("persists message and emits message:new to room on success", async () => {
 		const { socket, io, handlers, socketEmitted, emittedToIoRoom } =
 			createMockSocketAndIo();
-		registerMessageHandlers(io as any, socket as any, "user-1");
+		registerMessageHandlers(io as never, socket as never, "user-1");
 
 		const mockMessage = {
 			id: "msg-1",
@@ -112,7 +142,7 @@ describe("message:send", () => {
 			createdAt: "2026-03-08T10:00:00Z",
 		};
 
-		globalThis.fetch = mock((_url: string, opts?: RequestInit) => {
+		globalThis.fetch = mockFetch((_url, opts) => {
 			if (opts?.method === "POST") {
 				return Promise.resolve(
 					new Response(JSON.stringify({ doc: mockMessage }), {
@@ -121,7 +151,7 @@ describe("message:send", () => {
 				);
 			}
 			return Promise.resolve(new Response("OK", { status: 200 }));
-		}) as unknown as typeof fetch;
+		});
 
 		const handler = handlers.get("message:send")!;
 		handler({ conversationId: "conv-1", content: "Hello!", tempId: "temp-1" });
@@ -142,9 +172,73 @@ describe("message:send", () => {
 		expect(confirmed?.data.message.id).toBe("msg-1");
 	});
 
+	test("a resent tempId is confirmed again without a second message", async () => {
+		const { socket, io, handlers, socketEmitted } = createMockSocketAndIo();
+		registerMessageHandlers(io as never, socket as never, "user-1");
+
+		let posts = 0;
+		globalThis.fetch = mockFetch((_url, opts) => {
+			if (opts?.method === "POST") {
+				posts++;
+				return Promise.resolve(
+					new Response(
+						JSON.stringify({
+							doc: {
+								id: "msg-r",
+								conversation: "conv-1",
+								sender: "user-1",
+								content: "Again",
+								createdAt: "2026-03-08T10:00:00Z",
+							},
+						}),
+						{ status: 201 },
+					),
+				);
+			}
+			return Promise.resolve(new Response("OK", { status: 200 }));
+		});
+
+		const handler = handlers.get("message:send")!;
+		const payload = {
+			conversationId: "conv-1",
+			content: "Again",
+			tempId: "t-r",
+		};
+		handler(payload);
+		await new Promise((r) => setTimeout(r, 50));
+		await handler(payload);
+
+		expect(posts).toBe(1);
+		const confirmations = socketEmitted.filter(
+			(e) => e.event === "message:confirmed",
+		);
+		expect(confirmations).toHaveLength(2);
+		expect(confirmations[1]?.data.message.id).toBe("msg-r");
+	});
+
+	test("a send that failed can be retried with the same tempId", async () => {
+		const { socket, io, handlers } = createMockSocketAndIo();
+		registerMessageHandlers(io as never, socket as never, "user-1");
+
+		let posts = 0;
+		globalThis.fetch = mockFetch(() => {
+			posts++;
+			return Promise.resolve(new Response("down", { status: 500 }));
+		});
+
+		const handler = handlers.get("message:send")!;
+		const payload = { conversationId: "conv-1", content: "x", tempId: "t-f" };
+		handler(payload);
+		await new Promise((r) => setTimeout(r, 50));
+		handler(payload);
+		await new Promise((r) => setTimeout(r, 50));
+
+		expect(posts).toBe(2);
+	});
+
 	test("emits message:failed when conversationId is missing and tempId provided", async () => {
 		const { socket, io, handlers, socketEmitted } = createMockSocketAndIo();
-		registerMessageHandlers(io as any, socket as any, "user-1");
+		registerMessageHandlers(io as never, socket as never, "user-1");
 
 		const handler = handlers.get("message:send")!;
 		await handler({ conversationId: "", content: "Hello!", tempId: "temp-x" });
@@ -156,7 +250,7 @@ describe("message:send", () => {
 
 	test("emits message:failed when content is empty and tempId provided", async () => {
 		const { socket, io, handlers, socketEmitted } = createMockSocketAndIo();
-		registerMessageHandlers(io as any, socket as any, "user-1");
+		registerMessageHandlers(io as never, socket as never, "user-1");
 
 		const handler = handlers.get("message:send")!;
 		await handler({
@@ -172,13 +266,9 @@ describe("message:send", () => {
 
 	test("emits message:failed when rate limit is exceeded and tempId provided", async () => {
 		const { socket, io, handlers, socketEmitted } = createMockSocketAndIo();
-		registerMessageHandlers(io as any, socket as any, "user-1");
+		registerMessageHandlers(io as never, socket as never, "user-1");
 
 		rateLimitCounter = 5;
-		mockRedis.incr.mockImplementation(() => {
-			rateLimitCounter++;
-			return Promise.resolve(rateLimitCounter);
-		});
 
 		const handler = handlers.get("message:send")!;
 		await handler({
@@ -194,11 +284,11 @@ describe("message:send", () => {
 
 	test("emits message:failed on persistence failure", async () => {
 		const { socket, io, handlers, socketEmitted } = createMockSocketAndIo();
-		registerMessageHandlers(io as any, socket as any, "user-1");
+		registerMessageHandlers(io as never, socket as never, "user-1");
 
-		globalThis.fetch = mock(() =>
+		globalThis.fetch = mockFetch(() =>
 			Promise.resolve(new Response("Internal Server Error", { status: 500 })),
-		) as unknown as typeof fetch;
+		);
 
 		const handler = handlers.get("message:send")!;
 		handler({
@@ -217,7 +307,7 @@ describe("message:send", () => {
 	test("works without tempId (no confirmed/failed events expected)", async () => {
 		const { socket, io, handlers, socketEmitted, emittedToIoRoom } =
 			createMockSocketAndIo();
-		registerMessageHandlers(io as any, socket as any, "user-1");
+		registerMessageHandlers(io as never, socket as never, "user-1");
 
 		const mockMessage = {
 			id: "msg-2",
@@ -227,11 +317,11 @@ describe("message:send", () => {
 			createdAt: "2026-03-08T10:00:00Z",
 		};
 
-		globalThis.fetch = mock(() =>
+		globalThis.fetch = mockFetch(() =>
 			Promise.resolve(
 				new Response(JSON.stringify({ doc: mockMessage }), { status: 201 }),
 			),
-		) as unknown as typeof fetch;
+		);
 
 		const handler = handlers.get("message:send")!;
 		handler({ conversationId: "conv-1", content: "No tempId" });
@@ -246,12 +336,102 @@ describe("message:send", () => {
 		);
 		expect(confirmed).toBeUndefined();
 	});
+
+	test("refuses message:send when the sender has no access to the conversation", async () => {
+		(hasConversationAccess as ReturnType<typeof mock>).mockResolvedValue(false);
+		const { socket, io, handlers, socketEmitted } = createMockSocketAndIo();
+		registerMessageHandlers(io as never, socket as never, "user-9");
+		await handlers.get("message:send")?.({
+			conversationId: "conv-1",
+			content: "hello",
+			tempId: "tmp-1",
+		});
+		expect(socketEmitted).toEqual([
+			{
+				event: "message:failed",
+				data: { tempId: "tmp-1", error: "Access denied to conversation" },
+			},
+		]);
+	});
+
+	test("checks access before it counts against the rate limit", async () => {
+		(hasConversationAccess as ReturnType<typeof mock>).mockResolvedValue(false);
+		const { socket, io, handlers } = createMockSocketAndIo();
+		registerMessageHandlers(io as never, socket as never, "user-9");
+		rateLimitIncrementCalls = 0;
+		rateLimitExpireCalls = 0;
+		await handlers.get("message:send")?.({
+			conversationId: "conv-1",
+			content: "x",
+			tempId: "t",
+		});
+		expect(rateLimitIncrementCalls).toBe(0);
+		expect(rateLimitExpireCalls).toBe(0);
+	});
+
+	test("broadcasts a shop conversation to the shop-inbox room as well", async () => {
+		(hasConversationAccess as ReturnType<typeof mock>).mockResolvedValue(true);
+		(getConversationMeta as ReturnType<typeof mock>).mockResolvedValue({
+			participants: ["u-buyer", "u-owner"],
+			shopId: "s-1",
+		});
+		globalThis.fetch = mockFetch(
+			async () =>
+				new Response(
+					JSON.stringify({
+						doc: {
+							id: "msg-1",
+							content: "hello",
+							createdAt: "2026-10-01T00:00:00.000Z",
+						},
+					}),
+					{ status: 200 },
+				),
+		);
+		const { socket, io, handlers, emittedToIoRoom } = createMockSocketAndIo();
+		registerMessageHandlers(io as never, socket as never, "u-buyer");
+		await handlers.get("message:send")?.({
+			conversationId: "conv-1",
+			content: "hello",
+		});
+		await Bun.sleep(10);
+		expect(emittedToIoRoom.map((entry) => entry.room)).toContain(
+			"shop-inbox:s-1",
+		);
+	});
+
+	test("message:read calls the read route once, not one PATCH per message", async () => {
+		const calls: Array<{ url: string; method?: string; body?: string }> = [];
+		globalThis.fetch = mockFetch(async (url, init) => {
+			calls.push({
+				url: String(url),
+				method: init?.method,
+				body: String(init?.body ?? ""),
+			});
+			return new Response(JSON.stringify({ lastReadAt: "x", unreadCount: 0 }), {
+				status: 200,
+			});
+		});
+		const { socket, io, handlers } = createMockSocketAndIo();
+		registerMessageHandlers(io as never, socket as never, "u-staff");
+		handlers.get("message:read")?.({
+			conversationId: "conv-1",
+			messageIds: ["m-1", "m-2", "m-3"],
+		});
+		await Bun.sleep(10);
+		expect(calls).toHaveLength(1);
+		expect(calls[0]?.url).toContain("/conversations/conv-1/read");
+		expect(JSON.parse(calls[0]?.body ?? "{}")).toEqual({
+			lastMessageId: "m-3",
+			userId: "u-staff",
+		});
+	});
 });
 
 describe("message:delivered", () => {
 	test("emits delivery confirmation to the room", () => {
 		const { socket, io, handlers, emittedToRoom } = createMockSocketAndIo();
-		registerMessageHandlers(io as any, socket as any, "user-1");
+		registerMessageHandlers(io as never, socket as never, "user-1");
 
 		const handler = handlers.get("message:delivered")!;
 		handler({ conversationId: "conv-1", messageId: "msg-100" });
@@ -264,17 +444,16 @@ describe("message:delivered", () => {
 });
 
 describe("message:read", () => {
-	test("emits read confirmation and patches messages via service token", async () => {
+	test("emits read confirmation to the room", async () => {
 		const { socket, io, handlers, emittedToRoom } = createMockSocketAndIo();
-		registerMessageHandlers(io as any, socket as any, "user-1");
+		registerMessageHandlers(io as never, socket as never, "user-1");
 
-		const patchCalls: string[] = [];
-		globalThis.fetch = mock((url: string, opts?: RequestInit) => {
-			if (opts?.method === "PATCH") {
-				patchCalls.push(url as string);
-			}
-			return Promise.resolve(new Response("OK", { status: 200 }));
-		}) as unknown as typeof fetch;
+		globalThis.fetch = mockFetch(
+			async () =>
+				new Response(JSON.stringify({ lastReadAt: "x", unreadCount: 0 }), {
+					status: 200,
+				}),
+		);
 
 		const handler = handlers.get("message:read")!;
 		handler({ conversationId: "conv-1", messageIds: ["msg-1", "msg-2"] });
@@ -283,10 +462,6 @@ describe("message:read", () => {
 		expect(emittedToRoom[0]?.event).toBe("message:read");
 		expect(emittedToRoom[0]?.data.messageIds).toEqual(["msg-1", "msg-2"]);
 
-		// Wait for fire-and-forget PATCH calls
 		await new Promise((r) => setTimeout(r, 50));
-		expect(patchCalls.length).toBe(2);
-		expect(patchCalls.some((u) => u.includes("/msg-1"))).toBe(true);
-		expect(patchCalls.some((u) => u.includes("/msg-2"))).toBe(true);
 	});
 });

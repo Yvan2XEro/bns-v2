@@ -1,0 +1,49 @@
+// Straight from libphonenumber-js, not "react-phone-number-input": the root
+// layout (a server component) imports this module, and that package's entry
+// also exports its React components, which crash under the server build.
+import parsePhoneNumber, { type CountryCode } from "libphonenumber-js";
+
+type Country = CountryCode;
+
+/** Cameroon: the market. Every other country stays reachable through the picker. */
+export const DEFAULT_PHONE_COUNTRY: Country = "CM";
+
+/**
+ * The one E.164 shape `PhoneInput` ever emits, and the only shape
+ * `normalizePhoneNumber` in `packages/api/src/services/phoneVerification.ts`
+ * accepts. Every schema behind a `PhoneInput` field validates against this
+ * same pattern rather than each defining its own.
+ */
+export const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
+
+/**
+ * The stored value, as `PhoneInput` should display it — and nothing more:
+ * this never writes back. Numbers already on file predate the control and
+ * are not normalized by the server, so they arrive in whatever shape an
+ * older screen produced (`+237 6 99 12 44 08`, `699124408`,
+ * `00237699124408`, or already in E.164). Parsed under the default
+ * country, every one of those shapes resolves to the same number, so the
+ * field shows one consistent thing regardless of which shape is on file —
+ * and the outer form's held value is untouched until somebody edits it, so
+ * saving without editing still sends back exactly what was stored.
+ *
+ * A value that fails to parse is returned as-is rather than hidden: hiding
+ * it would invite someone to "fill in" a number that is actually there.
+ */
+export function readStoredPhone(
+	stored: string,
+	country: Country = DEFAULT_PHONE_COUNTRY,
+): string | undefined {
+	return stored === ""
+		? undefined
+		: (parsePhoneNumber(stored, country)?.number ?? stored);
+}
+
+/**
+ * `react-phone-number-input` reports an empty control as `undefined`; every
+ * schema behind this field spells "empty" as `""`. Never `null` and never a
+ * stray `+` — an empty control must yield an empty string outright.
+ */
+export function emitPhone(next?: string): string {
+	return next ?? "";
+}

@@ -1,0 +1,224 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
+import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk } from "@/src/components/shop/ink";
+import { ShopBrandingCard } from "@/src/components/shop/manage/ShopBrandingCard";
+import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
+import { useMyShop } from "@/src/hooks/useShops";
+import { resolveErrorMessage } from "@/src/lib/apiError";
+import { useTranslation } from "@/src/lib/i18n";
+import {
+	type RowValue,
+	type SettingsRow,
+	shopSettingsGroups,
+} from "@/src/lib/shopSettingsRows";
+import { isShopOwner } from "@/src/lib/variants";
+
+export default function ShopSettingsScreen() {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const { data, isLoading, isError, error, refetch } = useMyShop();
+	const { webUrl } = useAppConfig();
+	const shop = data?.shop;
+
+	if (isLoading) {
+		return (
+			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
+				<SellerHeader title={t("shop.settingsTitle")} />
+				<DetailSkeleton cards={3} />
+			</SafeAreaView>
+		);
+	}
+
+	// A failed read retries; no shop at all (closed, or the role was removed)
+	// sends the seller back instead of holding a skeleton forever.
+	if (!shop) {
+		return (
+			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
+				<SellerHeader title={t("shop.settingsTitle")} />
+				<EmptyState
+					illustration="notFound"
+					title={t("shop.settingsTitle")}
+					subtitle={isError ? resolveErrorMessage(error, t) : undefined}
+					ctaLabel={isError ? t("common.retry") : t("common.back")}
+					onCta={
+						isError
+							? () => refetch()
+							: () =>
+									router.canGoBack() ? router.back() : router.replace("/seller")
+					}
+				/>
+			</SafeAreaView>
+		);
+	}
+
+	const readOnly = shop.status !== "active";
+	const groups = shopSettingsGroups(shop, isShopOwner(data?.role), webUrl);
+
+	return (
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: c.bg }]}
+		>
+			<SellerHeader title={t("shop.settingsTitle")} subtitle={shop.name} />
+			<ScreenColumn width="wide">
+				<ScrollView contentContainerStyle={styles.content}>
+					<ShopBrandingCard shop={shop} readOnly={readOnly} />
+
+					{groups.map((group) => (
+						<View key={group.titleKey} style={styles.group}>
+							<Text
+								accessibilityRole="header"
+								style={[styles.groupTitle, { color: c.muted }]}
+							>
+								{t(group.titleKey)}
+							</Text>
+							<View
+								style={[
+									styles.panel,
+									{ backgroundColor: c.card, borderColor: c.border },
+								]}
+							>
+								{group.rows.map((row, index) => (
+									<SettingsRowButton
+										key={row.id}
+										row={row}
+										first={index === 0}
+										onPress={() =>
+											router.push({
+												pathname: "/shop/settings/[section]",
+												params: { section: row.section },
+											})
+										}
+									/>
+								))}
+								{group.titleKey === "shop.settingsRows.pageTitle" ? (
+									<Pressable
+										onPress={() => router.push("/shop/move-listings")}
+										disabled={readOnly}
+										accessibilityRole="button"
+										accessibilityLabel={t("seller.stepMove")}
+										accessibilityState={{ disabled: readOnly }}
+										style={[
+											styles.row,
+											styles.rowDivider,
+											{ borderTopColor: c.border, opacity: readOnly ? 0.5 : 1 },
+										]}
+									>
+										<Text style={[styles.rowLabel, { color: c.text }]}>
+											{t("seller.stepMove")}
+										</Text>
+										<Ionicons
+											name="chevron-forward"
+											size={16}
+											color={c.muted}
+										/>
+									</Pressable>
+								) : null}
+							</View>
+						</View>
+					))}
+				</ScrollView>
+			</ScreenColumn>
+		</SafeAreaView>
+	);
+}
+
+function useRowValue(value: RowValue): string {
+	const { t } = useTranslation();
+	if (!value) return t("shop.settingsRows.empty");
+	if ("text" in value) return value.text;
+	return t(value.key, value.values);
+}
+
+function SettingsRowButton({
+	row,
+	first,
+	onPress,
+}: {
+	row: SettingsRow;
+	first: boolean;
+	onPress: () => void;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const label = t(row.labelKey);
+	const value = useRowValue(row.value);
+	const danger = row.tone === "danger";
+
+	return (
+		<Pressable
+			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={`${label}, ${value}`}
+			android_ripple={{ color: c.border }}
+			style={({ pressed }) => [
+				styles.row,
+				!first && [styles.rowDivider, { borderTopColor: c.border }],
+				pressed && { backgroundColor: c.primarySoft },
+			]}
+		>
+			{danger ? (
+				<View style={styles.dangerText}>
+					<Text style={[styles.rowLabel, { color: dangerInk(c) }]}>
+						{label}
+					</Text>
+					<Text style={[styles.rowHint, { color: c.muted }]} numberOfLines={2}>
+						{value}
+					</Text>
+				</View>
+			) : (
+				<>
+					<Text style={[styles.rowLabel, { color: c.text }]}>{label}</Text>
+					<Text style={[styles.rowValue, { color: c.muted }]} numberOfLines={1}>
+						{value}
+					</Text>
+				</>
+			)}
+			<Ionicons name="chevron-forward" size={16} color={c.muted} />
+		</Pressable>
+	);
+}
+
+const styles = StyleSheet.create({
+	safe: { flex: 1 },
+	content: { padding: 16, gap: 18, paddingBottom: 40 },
+	group: { gap: 8 },
+	groupTitle: {
+		fontSize: 13,
+		lineHeight: 18,
+		fontFamily: Fonts.bodySemibold,
+		paddingHorizontal: 4,
+	},
+	panel: {
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
+	},
+	row: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		minHeight: 50,
+		paddingHorizontal: 14,
+		paddingVertical: 10,
+	},
+	rowDivider: { borderTopWidth: StyleSheet.hairlineWidth },
+	rowLabel: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodyMedium },
+	rowValue: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+		textAlign: "right",
+	},
+	dangerText: { flex: 1, gap: 2 },
+	rowHint: { fontSize: 12, lineHeight: 16, fontFamily: Fonts.body },
+});

@@ -1,13 +1,16 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
-const mockAddDocuments = mock(() => Promise.resolve());
+const mockAddDocuments = mock((_documents: unknown[]) => Promise.resolve());
 const mockDeleteDocument = mock(() => Promise.resolve());
 const mockDeleteAllDocuments = mock(() => Promise.resolve());
 const mockUpdateSettings = mock(() => Promise.resolve());
 
+const indexNames: string[] = [];
+
 mock.module("meilisearch", () => ({
 	MeiliSearch: class {
-		index() {
+		index(name: string) {
+			indexNames.push(name);
 			return {
 				addDocuments: mockAddDocuments,
 				deleteDocument: mockDeleteDocument,
@@ -21,6 +24,10 @@ mock.module("meilisearch", () => ({
 import { handleListingCreated } from "../handlers/listingCreated.ts";
 import { handleListingDeleted } from "../handlers/listingDeleted.ts";
 import { handleListingUpdated } from "../handlers/listingUpdated.ts";
+import {
+	handleShopDeleted,
+	handleShopUpdated,
+} from "../handlers/shopUpdated.ts";
 
 const sampleApiResponse = {
 	id: "listing-123",
@@ -29,7 +36,6 @@ const sampleApiResponse = {
 	price: 85000,
 	location: "Douala",
 	status: "published",
-	condition: "good",
 	boostedUntil: null,
 	views: 10,
 	images: [],
@@ -45,6 +51,7 @@ const originalFetch = globalThis.fetch;
 beforeEach(() => {
 	mockAddDocuments.mockClear();
 	mockDeleteDocument.mockClear();
+	indexNames.length = 0;
 });
 
 afterEach(() => {
@@ -150,5 +157,95 @@ describe("handleListingDeleted", () => {
 
 		expect(mockDeleteDocument).toHaveBeenCalledTimes(1);
 		expect(mockDeleteDocument).toHaveBeenCalledWith("listing-456");
+	});
+});
+
+const jsonResponse = (body: unknown, status = 200) =>
+	new Response(JSON.stringify(body), {
+		status,
+		headers: { "Content-Type": "application/json" },
+	});
+
+describe("handleShopUpdated", () => {
+	test("indexes an active shop and its active delivery cities", async () => {
+		globalThis.fetch = mock((url: string) =>
+			Promise.resolve(
+				url.includes("/delivery-cities")
+					? jsonResponse({ deliveryCities: ["douala"] })
+					: jsonResponse({
+							id: "shop-1",
+							handle: "akwatech",
+							name: "Akwa",
+							status: "active",
+							categories: [],
+							createdAt: "x",
+						}),
+			),
+		) as unknown as typeof fetch;
+		await handleShopUpdated("shop-1");
+		expect(indexNames).toContain("shops");
+		expect(mockAddDocuments).toHaveBeenCalledTimes(1);
+		expect(mockAddDocuments.mock.calls[0]?.[0]?.[0]).toMatchObject({
+			deliveryCities: ["douala"],
+		});
+	});
+
+	test("removes a shop the public API no longer returns", async () => {
+		globalThis.fetch = mock(() =>
+			Promise.resolve(jsonResponse({ errors: [] }, 404)),
+		) as unknown as typeof fetch;
+		await handleShopUpdated("shop-1");
+		expect(mockDeleteDocument).toHaveBeenCalledWith("shop-1");
+		expect(mockAddDocuments).not.toHaveBeenCalled();
+	});
+
+	test("reindexes the shop's listings page by page when asked", async () => {
+		const calls: string[] = [];
+		globalThis.fetch = mock((url: string) => {
+			calls.push(url);
+			if (url.includes("/shops/"))
+				return Promise.resolve(
+					jsonResponse({
+						id: "shop-1",
+						handle: "akwatech",
+						name: "Akwa",
+						status: "active",
+						categories: [],
+						createdAt: "x",
+					}),
+				);
+			const page = Number(new URL(url).searchParams.get("page"));
+			return Promise.resolve(
+				jsonResponse({
+					docs: [
+						{
+							...sampleApiResponse,
+							id: `listing-${page}`,
+							shop: {
+								id: "shop-1",
+								handle: "akwatech",
+								name: "Akwa",
+								level: 1,
+							},
+						},
+					],
+					hasNextPage: page < 2,
+					totalDocs: 2,
+				}),
+			);
+		}) as unknown as typeof fetch;
+
+		await handleShopUpdated("shop-1", { reindexListings: true });
+		expect(
+			calls.filter((u) => u.includes("where[shop][equals]=shop-1")).length,
+		).toBe(2);
+		expect(mockAddDocuments).toHaveBeenCalledTimes(3);
+	});
+});
+
+describe("handleShopDeleted", () => {
+	test("removes the shop document", async () => {
+		await handleShopDeleted("shop-9");
+		expect(mockDeleteDocument).toHaveBeenCalledWith("shop-9");
 	});
 });

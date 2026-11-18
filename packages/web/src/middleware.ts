@@ -1,11 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 const protectedRoutes = [
+	"/courier",
 	"/create",
 	"/favorites",
 	"/messages",
+	"/print",
 	"/profile/me",
+	"/seller",
 	"/settings",
+	"/shop",
 ];
 
 const authRoutes = ["/auth/login", "/auth/register"];
@@ -37,11 +41,15 @@ export function middleware(request: NextRequest) {
 
 export const config = {
 	matcher: [
+		"/courier/:path*",
 		"/create/:path*",
 		"/favorites/:path*",
 		"/messages/:path*",
+		"/print/:path*",
 		"/profile/me/:path*",
+		"/seller/:path*",
 		"/settings/:path*",
+		"/shop/:path*",
 		"/auth/:path*",
 	],
 };

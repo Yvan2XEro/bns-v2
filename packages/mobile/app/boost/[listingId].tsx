@@ -1,322 +1,147 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import { useEffect, useState } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { AnimatedPressable } from "@/src/components/AnimatedPressable";
-import { useAlert } from "@/src/contexts/AlertContext";
+import { ShareSheet } from "@/src/components/share/ShareSheet";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
-import { ApiError, api } from "@/src/lib/api";
-import { useAuth } from "@/src/lib/auth";
+import { useListing } from "@/src/hooks/useListings";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
+import type { ListingDoc } from "@/src/types/api";
 
-const DEEP_LINK_RETURN = "buynsellem://boost/callback";
-
-interface BoostPaymentResponse {
-	paymentId: string;
-	provider: "notchpay" | "stripe";
-	checkoutUrl?: string;
-}
-
-type PaymentMethod = "notchpay" | "stripe";
+// Deliberately no link out to the web listing page: that page renders the paid
+// boost dialog, so sending the user there from inside the app is an App Review
+// 3.1.1 external-purchase link-out for a digital in-app benefit. What it
+// offers instead is free reach: sharing the listing where buyers already are.
 
 export default function BoostModal() {
 	const { listingId } = useLocalSearchParams<{ listingId: string }>();
 	const isDark = useColorScheme() === "dark";
-	const { showError, showSuccess } = useAlert();
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
-	const queryClient = useQueryClient();
-	const { stripePublishableKey } = useAppConfig();
-	const { user } = useAuth();
-	const [selected, setSelected] = useState(1);
-	const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("notchpay");
+	// The listing the seller came to boost, named by its title and photo. A raw
+	// id means nothing to them; until the listing loads (or if it fails) the
+	// card simply goes without it.
+	const { data } = useListing(listingId ?? "");
+	const listing = ((data as { doc?: ListingDoc } | undefined)?.doc ?? data) as
+		| ListingDoc
+		| undefined;
+	const listingTitle = listing?.title?.trim();
+	const thumbnail = resolveListingImageUrl(listing?.images?.[0], "thumbnail");
+	const { webUrl, shareCardsEnabled } = useAppConfig();
 
-	const stripeAvailable = !!stripePublishableKey;
-
-	useEffect(() => {
-		if (!user) {
-			router.replace("/auth/login");
-		}
-	}, [user]);
-
-	const PLANS = [
-		{ duration: "7" as const, price: 500, label: t("boost.week1") },
-		{
-			duration: "14" as const,
-			price: 900,
-			label: t("boost.week2"),
-			popular: true,
-		},
-		{ duration: "30" as const, price: 1500, label: t("boost.month1") },
-	];
-
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-
-	const selectedPlan = PLANS[selected]!;
-
-	const { mutate: handlePay, isPending } = useMutation({
-		mutationFn: async () => {
-			const data = await api.post<BoostPaymentResponse>("/api/public/boost", {
-				listingId,
-				duration: selectedPlan.duration,
-				provider: paymentMethod,
-				returnUrl: DEEP_LINK_RETURN,
+	const share = async () => {
+		if (!listingId) return;
+		if (shareCardsEnabled && webUrl && listingTitle) {
+			await ShareSheet.call({
+				kind: "listing",
+				id: listingId,
+				title: listingTitle,
 			});
+			return;
+		}
+		const url = `${(webUrl || "https://buynsellem.com").replace(/\/+$/, "")}/listing/${listingId}`;
+		Share.share({
+			title: listingTitle,
+			url,
+			message: listingTitle ? `${listingTitle}\n${url}` : url,
+		});
+	};
 
-			if (!data.checkoutUrl) throw new Error(t("boost.noCheckoutUrl"));
-
-			const result = await WebBrowser.openAuthSessionAsync(
-				data.checkoutUrl,
-				DEEP_LINK_RETURN,
-				{ showTitle: false, enableDefaultShareMenuItem: false },
-			);
-
-			if (result.type === "success") {
-				const qs = result.url.split("?")[1] ?? "";
-				const params = new URLSearchParams(qs);
-				const status = params.get("status");
-				const lid = params.get("listingId") ?? listingId ?? "";
-
-				if (status === "success") {
-					await queryClient.invalidateQueries({ queryKey: ["listing", lid] });
-					showSuccess(t("boost.successTitle"), t("boost.successMessage"));
-					router.dismiss();
-				} else if (status === "failed" || status === "cancelled") {
-					showError(t("boost.errorTitle"), t("boost.paymentFailed"));
-				}
-			} else {
-				// L'utilisateur a fermé le navigateur — vérifier si le paiement est passé
-				try {
-					const payment = await api.get<{ status: string }>(
-						`/api/boost-payments/${data.paymentId}`,
-					);
-					if (payment.status === "completed") {
-						await queryClient.invalidateQueries({
-							queryKey: ["listing", listingId ?? ""],
-						});
-						showSuccess(t("boost.successTitle"), t("boost.successMessage"));
-						router.dismiss();
-					}
-				} catch {
-					// annulé, on ignore
-				}
-			}
-		},
-		onError: (err: unknown) => {
-			if (err instanceof ApiError && err.status === 401) {
-				router.replace("/auth/login");
-				return;
-			}
-			showError(
-				t("boost.errorTitle"),
-				err instanceof Error ? err.message : t("common.error"),
-			);
-		},
-	});
+	const c = isDark ? Colors.dark : Colors.light;
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const bodyColor = c.body;
+	const borderColor = c.border;
+	// White stays legible on the deeper indigo in dark mode.
+	const filledColor = c.primaryFill;
 
 	return (
 		<SafeAreaView
 			edges={["top"]}
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
-			<View style={styles.container}>
-				{/* Header */}
+			<View style={[styles.container, centeredContent]}>
+				{/* The status first: boosting is not here yet. Then what the
+				    seller can do today for the same listing. */}
 				<View style={styles.header}>
-					<View style={styles.rocketIconWrap}>
-						<Ionicons name="rocket-outline" size={44} color="#f59e0b" />
+					<View
+						style={[styles.rocketIconWrap, { backgroundColor: c.sun }]}
+						accessibilityElementsHidden
+						importantForAccessibility="no-hide-descendants"
+					>
+						<Ionicons name="flash" size={36} color={c.sunForeground} />
 					</View>
-					<Text style={[styles.title, { color: textColor }]}>
-						{t("boost.boostTitle")}
+					<Text
+						style={[styles.title, { color: textColor }]}
+						accessibilityRole="header"
+					>
+						{t("boost.soonTitle")}
 					</Text>
-					<Text style={[styles.subtitle, { color: mutedColor }]}>
-						{t("boost.boostSubtitle")}
+					<Text style={[styles.subtitle, { color: bodyColor }]}>
+						{t("boost.soonBody")}
 					</Text>
 				</View>
 
-				{/* Plans */}
-				<View style={styles.plans}>
-					{PLANS.map((plan, i) => (
-						<Pressable
-							key={plan.duration}
-							onPress={() => setSelected(i)}
-							style={[
-								styles.planCard,
-								{
-									backgroundColor:
-										selected === i ? (isDark ? "#1e3a5f" : "#dbeafe") : cardBg,
-									borderColor: selected === i ? primaryColor : borderColor,
-									borderWidth: selected === i ? 2 : 1,
-								},
-							]}
+				{listingTitle ? (
+					<View
+						style={[
+							styles.listingCard,
+							{ backgroundColor: cardBg, borderColor },
+						]}
+					>
+						{thumbnail ? (
+							<Image
+								source={{ uri: thumbnail }}
+								style={[styles.listingThumb, { backgroundColor: c.well }]}
+								contentFit="cover"
+								accessibilityIgnoresInvertColors
+							/>
+						) : null}
+						<Text
+							style={[styles.listingTitle, { color: textColor }]}
+							numberOfLines={2}
 						>
-							{plan.popular && (
-								<View style={styles.popularBadge}>
-									<Text style={styles.popularText}>
-										{t("boost.popularBadge")}
-									</Text>
-								</View>
-							)}
-							<View style={styles.planRadio}>
-								<View
-									style={[
-										styles.radio,
-										{ borderColor: selected === i ? primaryColor : mutedColor },
-									]}
-								>
-									{selected === i && (
-										<View
-											style={[
-												styles.radioDot,
-												{ backgroundColor: primaryColor },
-											]}
-										/>
-									)}
-								</View>
-								<View style={styles.planInfo}>
-									<Text style={[styles.planLabel, { color: textColor }]}>
-										{plan.label}
-									</Text>
-									<Text style={[styles.planPrice, { color: primaryColor }]}>
-										{plan.price.toLocaleString()} XAF
-									</Text>
-								</View>
-							</View>
-						</Pressable>
-					))}
-				</View>
+							{listingTitle}
+						</Text>
+					</View>
+				) : null}
 
-				{/* Payment method selector */}
-				<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-					{t("boost.paymentMethod")}
+				<Text style={[styles.shareHint, { color: bodyColor }]}>
+					{t("boost.shareHint")}
 				</Text>
-				<View style={styles.methodRow}>
-					{/* Mobile Money */}
-					<Pressable
-						onPress={() => setPaymentMethod("notchpay")}
-						style={[
-							styles.methodCard,
-							{
-								backgroundColor: cardBg,
-								borderColor:
-									paymentMethod === "notchpay" ? "#f59e0b" : borderColor,
-								borderWidth: paymentMethod === "notchpay" ? 2 : 1,
-							},
-						]}
-					>
-						<Ionicons
-							name="phone-portrait-outline"
-							size={22}
-							color={paymentMethod === "notchpay" ? "#f59e0b" : mutedColor}
-						/>
-						<Text
-							style={[
-								styles.methodLabel,
-								{ color: paymentMethod === "notchpay" ? "#f59e0b" : textColor },
-							]}
-						>
-							{t("boost.mobileMoney")}
-						</Text>
-						<Text style={[styles.methodDesc, { color: mutedColor }]}>
-							{t("boost.mobileMoneyDesc")}
-						</Text>
-					</Pressable>
 
-					{/* Card (Stripe Checkout) */}
-					<Pressable
-						onPress={() => stripeAvailable && setPaymentMethod("stripe")}
-						style={[
-							styles.methodCard,
-							{
-								backgroundColor: cardBg,
-								borderColor:
-									paymentMethod === "stripe" ? primaryColor : borderColor,
-								borderWidth: paymentMethod === "stripe" ? 2 : 1,
-								opacity: stripeAvailable ? 1 : 0.4,
-							},
-						]}
-					>
-						<Ionicons
-							name="card-outline"
-							size={22}
-							color={paymentMethod === "stripe" ? primaryColor : mutedColor}
-						/>
-						<Text
-							style={[
-								styles.methodLabel,
-								{
-									color: paymentMethod === "stripe" ? primaryColor : textColor,
-								},
-							]}
-						>
-							{t("boost.card")}
-						</Text>
-						<Text style={[styles.methodDesc, { color: mutedColor }]}>
-							{stripeAvailable
-								? t("boost.cardDesc")
-								: t("boost.cardUnavailable")}
-						</Text>
-					</Pressable>
-				</View>
-
-				{/* Pay Button */}
-				<AnimatedPressable
-					onPress={() => handlePay()}
-					disabled={isPending}
-					scaleTo={0.97}
-					style={[
-						styles.payBtn,
+				<Pressable
+					onPress={() => void share()}
+					accessibilityRole="button"
+					style={({ pressed }) => [
+						styles.primaryAction,
+						{ backgroundColor: filledColor, opacity: pressed ? 0.85 : 1 },
+					]}
+				>
+					<Ionicons name="share-social-outline" size={19} color="#ffffff" />
+					<Text style={styles.primaryActionText}>
+						{t("boost.shareListing")}
+					</Text>
+				</Pressable>
+				<Pressable
+					onPress={() => router.dismiss()}
+					accessibilityRole="button"
+					style={({ pressed }) => [
+						styles.secondaryAction,
 						{
-							backgroundColor:
-								paymentMethod === "stripe" ? primaryColor : "#f59e0b",
+							borderColor: c.borderStrong,
+							backgroundColor: pressed ? c.well : "transparent",
 						},
 					]}
 				>
-					{isPending ? (
-						<ActivityIndicator color="#fff" />
-					) : (
-						<>
-							<Ionicons
-								name="flash"
-								size={18}
-								color={paymentMethod === "stripe" ? "#fff" : "#0f172a"}
-							/>
-							<Text
-								style={[
-									styles.payBtnText,
-									{ color: paymentMethod === "stripe" ? "#fff" : "#0f172a" },
-								]}
-							>
-								{paymentMethod === "stripe"
-									? t("boost.cardPayBtn", {
-											amount: selectedPlan.price.toLocaleString(),
-										})
-									: t("boost.payBtn", {
-											amount: selectedPlan.price.toLocaleString(),
-										})}
-							</Text>
-						</>
-					)}
-				</AnimatedPressable>
-
-				{/* Cancel */}
-				<Pressable onPress={() => router.dismiss()} style={styles.cancelBtn}>
-					<Text style={[styles.cancelText, { color: mutedColor }]}>
-						{t("boost.cancelBtn")}
+					<Text style={[styles.secondaryActionText, { color: textColor }]}>
+						{t("common.close")}
 					</Text>
 				</Pressable>
 			</View>
@@ -326,90 +151,89 @@ export default function BoostModal() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	container: { flex: 1, padding: 24, justifyContent: "center" },
-	header: { alignItems: "center", marginBottom: 24 },
-	rocketIconWrap: {
-		width: 80,
-		height: 80,
-		borderRadius: 40,
-		backgroundColor: "rgba(245,158,11,0.12)",
-		alignItems: "center",
+	container: {
+		flex: 1,
 		justifyContent: "center",
-		marginBottom: 16,
+		padding: 24,
+	},
+	header: {
+		alignItems: "center",
+		marginBottom: 24,
+	},
+	// The signage plaque of the sell tab, squared, ink on yellow.
+	rocketIconWrap: {
+		alignItems: "center",
+		borderRadius: 18,
+		height: 72,
+		justifyContent: "center",
+		marginBottom: 18,
+		width: 72,
 	},
 	title: {
-		fontSize: 24,
 		fontFamily: Fonts.displayExtrabold,
-		textAlign: "center",
+		fontSize: 24,
+		lineHeight: 32,
+		letterSpacing: -0.6,
 		marginBottom: 8,
+		textAlign: "center",
 	},
 	subtitle: {
-		fontSize: 14,
 		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 22,
 		textAlign: "center",
+	},
+	listingCard: {
+		alignItems: "center",
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+		flexDirection: "row",
+		gap: 12,
+		padding: 14,
+	},
+	listingThumb: {
+		borderRadius: 8,
+		height: 48,
+		width: 48,
+	},
+	listingTitle: {
+		flex: 1,
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
 		lineHeight: 20,
 	},
-	plans: { gap: 10, marginBottom: 20 },
-	planCard: {
-		borderRadius: 14,
-		padding: 16,
-		position: "relative",
-		overflow: "hidden",
+	shareHint: {
+		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 22,
+		marginTop: 16,
 	},
-	popularBadge: {
-		position: "absolute",
-		top: 0,
-		right: 0,
-		backgroundColor: "#f59e0b",
-		borderBottomLeftRadius: 10,
-		paddingHorizontal: 10,
-		paddingVertical: 4,
-	},
-	popularText: { color: "#fff", fontSize: 11, fontFamily: Fonts.bodySemibold },
-	planRadio: { flexDirection: "row", alignItems: "center", gap: 12 },
-	radio: {
-		width: 22,
-		height: 22,
-		borderRadius: 11,
-		borderWidth: 2,
+	primaryAction: {
 		alignItems: "center",
-		justifyContent: "center",
-	},
-	radioDot: { width: 12, height: 12, borderRadius: 6 },
-	planInfo: {},
-	planLabel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	planPrice: { fontSize: 18, fontFamily: Fonts.displayExtrabold },
-	sectionLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-		marginBottom: 8,
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
-	},
-	methodRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
-	methodCard: {
-		flex: 1,
-		borderRadius: 14,
-		padding: 12,
-		alignItems: "center",
-		gap: 6,
-	},
-	methodLabel: {
-		fontSize: 13,
-		fontFamily: Fonts.bodySemibold,
-		textAlign: "center",
-	},
-	methodDesc: { fontSize: 11, fontFamily: Fonts.body, textAlign: "center" },
-	payBtn: {
+		borderRadius: 12,
 		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
 		gap: 8,
-		borderRadius: 14,
-		paddingVertical: 16,
-		marginBottom: 12,
+		justifyContent: "center",
+		marginTop: 20,
+		minHeight: 52,
 	},
-	payBtnText: { fontSize: 17, fontFamily: Fonts.displayExtrabold },
-	cancelBtn: { alignItems: "center", padding: 12 },
-	cancelText: { fontSize: 14 },
+	primaryActionText: {
+		color: "#ffffff",
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
+		lineHeight: 22,
+	},
+	secondaryAction: {
+		alignItems: "center",
+		borderRadius: 12,
+		borderWidth: 1.5,
+		justifyContent: "center",
+		marginTop: 10,
+		minHeight: 52,
+	},
+	secondaryActionText: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 16,
+		lineHeight: 22,
+	},
 });

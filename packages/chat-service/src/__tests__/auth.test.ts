@@ -1,13 +1,41 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { verifyToken } from "../auth.ts";
+import { mockFetch as makeFetch } from "./testFetch.ts";
 
-const mockFetch = mock(() =>
+// `verifyToken` caches through Redis, so importing `../auth.ts` without this
+// opens a real Valkey socket and the whole file fails with
+// `FailedToOpenSocket` for anyone without one running. Mocked here the same
+// way cache.test.ts does it, so the file tests `verifyToken` rather than the
+// presence of infrastructure.
+const redisStore = new Map<string, string>();
+const mockRedis = {
+	get: mock(async (key: string) => redisStore.get(key) ?? null),
+	set: mock(async (key: string, value: string) => {
+		redisStore.set(key, value);
+		return "OK";
+	}),
+	del: mock(async (key: string) => {
+		redisStore.delete(key);
+		return 1;
+	}),
+	// `verifyTokenCached` writes through `setex`. The file never reached this
+	// line before: it died opening the socket, so the caching path these tests
+	// exist to cover was never actually executed.
+	setex: mock(async (key: string, _ttl: number, value: string) => {
+		redisStore.set(key, value);
+		return "OK";
+	}),
+};
+mock.module("../redis.ts", () => ({ getRedis: () => mockRedis }));
+
+const { verifyToken } = await import("../auth.ts");
+
+const mockFetch = makeFetch(() =>
 	Promise.resolve(new Response(JSON.stringify({ user: null }))),
 );
 
 beforeEach(() => {
 	mockFetch.mockReset();
-	// @ts-expect-error - mock global fetch
+	redisStore.clear();
 	globalThis.fetch = mockFetch;
 });
 
@@ -37,7 +65,9 @@ describe("verifyToken", () => {
 			new Response("Unauthorized", { status: 401 }),
 		);
 
-		expect(verifyToken("bad-token")).rejects.toThrow("Payload auth failed");
+		await expect(verifyToken("bad-token")).rejects.toThrow(
+			"Payload auth failed",
+		);
 	});
 
 	test("rejects when Payload returns no user", async () => {
@@ -45,7 +75,7 @@ describe("verifyToken", () => {
 			new Response(JSON.stringify({ user: null }), { status: 200 }),
 		);
 
-		expect(verifyToken("empty-token")).rejects.toThrow(
+		await expect(verifyToken("empty-token")).rejects.toThrow(
 			"No user returned from Payload",
 		);
 	});

@@ -1,0 +1,256 @@
+"use client";
+
+import Link from "next/link";
+import { notFound, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { type ReactNode, useEffect, useReducer, useRef } from "react";
+import { CartShopHeader } from "~/components/shop/cart-shop-header";
+import { Button } from "~/components/ui/button";
+import { useAppConfig } from "~/hooks/use-app-config";
+import {
+	useAddCartItem,
+	useCart,
+	useRemoveCartItem,
+	useSetCartItemQuantity,
+} from "~/hooks/use-cart";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { resolveErrorMessage } from "~/lib/apiError";
+import {
+	type AddToCartRequest,
+	canCheckout,
+	cartTotals,
+	type SingleShopConflict,
+	singleShopConflict,
+} from "~/lib/cart-lines";
+import { isSplitCart } from "~/lib/checkout-group-flow";
+import type { CartView } from "~/types/order";
+import { CartDeliveryHint } from "./cart-delivery-hint";
+import { CartGroups } from "./cart-groups";
+import { CartLine } from "./cart-line";
+import { SingleShopDialog } from "./single-shop-dialog";
+
+type State = {
+	/** The refused add, kept so "replace" can re-send it. */
+	conflict: (SingleShopConflict & { request: AddToCartRequest }) | null;
+	actionError: string | null;
+};
+
+const initialState: State = { conflict: null, actionError: null };
+
+function reducer(state: State, patch: Partial<State>): State {
+	return { ...state, ...patch };
+}
+
+/**
+ * The empty state and the skeleton are static, so the page renders them on
+ * the server and hands them in as slots.
+ */
+export function CartClient({
+	addToCart,
+	emptyState,
+	skeleton,
+}: {
+	addToCart: AddToCartRequest | null;
+	emptyState: ReactNode;
+	skeleton: ReactNode;
+}) {
+	const t = useTranslations("Cart");
+	const tRoot = useTranslations();
+	const locale = useLocale() === "en" ? "en" : "fr";
+	const router = useRouter();
+	const { ordersEnabled } = useAppConfig();
+	const cart = useCart(ordersEnabled);
+	const add = useAddCartItem();
+	const setQuantity = useSetCartItemQuantity();
+	const remove = useRemoveCartItem();
+	const [state, patch] = useReducer(reducer, initialState);
+
+	// Replays the add a signed-out visitor started before signing in, once:
+	// the parameter is dropped from the URL straight away so a refresh does
+	// not add the item a second time.
+	const { mutate: replayAdd } = add;
+	const replayed = useRef(false);
+	useEffect(() => {
+		if (!addToCart || replayed.current) return;
+		replayed.current = true;
+		router.replace("/cart");
+		replayAdd(addToCart, {
+			onError: (error) => {
+				const conflict = singleShopConflict(error, null);
+				if (conflict) patch({ conflict: { ...conflict, request: addToCart } });
+				else patch({ actionError: resolveErrorMessage(error, tRoot) });
+			},
+		});
+	}, [addToCart, replayAdd, router, tRoot]);
+
+	if (!ordersEnabled) notFound();
+
+	async function run(action: () => Promise<unknown>) {
+		patch({ actionError: null });
+		try {
+			await action();
+		} catch (error) {
+			patch({ actionError: resolveErrorMessage(error, tRoot) });
+		}
+	}
+
+	const replaceCart = () =>
+		run(async () => {
+			if (!state.conflict) return;
+			await add.mutateAsync({ ...state.conflict.request, replace: true });
+			patch({ conflict: null });
+		});
+
+	if (cart.isPending) return skeleton;
+
+	if (cart.isError) {
+		return (
+			<div
+				role="alert"
+				className="rounded-2xl border border-line bg-surface px-6 py-12 text-center"
+			>
+				<p className="font-semibold text-ink">
+					{resolveErrorMessage(cart.error, tRoot)}
+				</p>
+				<Button className="mt-4 min-h-11" onClick={() => void cart.refetch()}>
+					{t("retry")}
+				</Button>
+			</div>
+		);
+	}
+
+	const view = cart.data;
+	const busy = setQuantity.isPending || remove.isPending || add.isPending;
+
+	return (
+		<div className="space-y-5">
+			{add.isPending && !state.conflict ? (
+				<output className="block text-ink-muted text-sm">{t("adding")}</output>
+			) : null}
+			{state.actionError ? (
+				<p
+					role="alert"
+					className="rounded-xl bg-red-50 px-4 py-3 text-red-700 text-sm"
+				>
+					{state.actionError}
+				</p>
+			) : null}
+
+			{isSplitCart(view) ? (
+				view.groups.length === 0 ? (
+					emptyState
+				) : (
+					<CartGroups
+						cart={view}
+						locale={locale}
+						busy={busy}
+						onQuantity={(lineId, quantity) =>
+							run(() => setQuantity.mutateAsync({ lineId, quantity }))
+						}
+						onRemoveLine={(lineId) => run(() => remove.mutateAsync(lineId))}
+						onRemoveGroup={(lineIds) =>
+							run(async () => {
+								for (const lineId of lineIds) await remove.mutateAsync(lineId);
+							})
+						}
+					/>
+				)
+			) : view.lines.length === 0 ? (
+				emptyState
+			) : (
+				<>
+					<section className="space-y-3">
+						{view.shop ? (
+							<h2 className="sr-only">
+								{t("shopHeader", { shop: view.shop.name })}
+							</h2>
+						) : null}
+						{view.shop ? <CartShopHeader shop={view.shop} /> : null}
+						<ul className="space-y-3">
+							{view.lines.map((line) => (
+								<CartLine
+									key={line.id}
+									line={line}
+									locale={locale}
+									busy={busy}
+									onQuantity={(quantity) =>
+										run(() =>
+											setQuantity.mutateAsync({ lineId: line.id, quantity }),
+										)
+									}
+									onRemove={() => run(() => remove.mutateAsync(line.id))}
+								/>
+							))}
+						</ul>
+					</section>
+					<CartSummary cart={view} locale={locale} />
+				</>
+			)}
+
+			<SingleShopDialog
+				conflict={state.conflict}
+				replacing={add.isPending}
+				onReplace={() => void replaceCart()}
+				onKeep={() => patch({ conflict: null })}
+			/>
+		</div>
+	);
+}
+
+function CartSummary({
+	cart,
+	locale,
+}: {
+	cart: CartView;
+	locale: "fr" | "en";
+}) {
+	const formatOrderMoney = useOrderMoney();
+	const t = useTranslations("Cart");
+	const { withdrawalDays } = useAppConfig();
+	const totals = cartTotals(cart.lines);
+	const ready = canCheckout(cart);
+
+	return (
+		<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+			<div className="flex items-center justify-between">
+				<span className="text-ink-muted">
+					{t("subtotal")} · {t("itemCount", { count: totals.itemCount })}
+				</span>
+				<span className="font-bold text-ink text-xl">
+					{formatOrderMoney(totals.subtotal, locale)}
+				</span>
+			</div>
+			{/* No address yet, so no quote: the fee is the next step's to state. */}
+			<div className="flex items-center justify-between text-sm">
+				<span className="text-ink-muted">{t("deliveryRow")}</span>
+				<span className="text-ink-muted">{t("deliveryNextStep")}</span>
+			</div>
+			{cart.shop ? (
+				<CartDeliveryHint shopId={cart.shop.id} handle={cart.shop.handle} />
+			) : null}
+			{totals.priceChangedCount > 0 ? (
+				<p className="text-amber-700 text-sm">
+					{t("priceChangedNotice", { count: totals.priceChangedCount })}
+				</p>
+			) : null}
+			{totals.unavailableCount > 0 ? (
+				<p className="text-red-600 text-sm">{t("unavailableBlocking")}</p>
+			) : null}
+			{cart.shopOrderable ? null : (
+				<p className="text-red-600 text-sm">{t("shopNotOrderable")}</p>
+			)}
+			<p className="text-ink-muted text-sm">
+				{t("summaryNote", { days: withdrawalDays })}
+			</p>
+			{ready ? (
+				<Button asChild size="lg" className="min-h-11 w-full">
+					<Link href="/checkout">{t("checkout")}</Link>
+				</Button>
+			) : (
+				<Button size="lg" className="min-h-11 w-full" disabled>
+					{t("checkout")}
+				</Button>
+			)}
+		</section>
+	);
+}

@@ -1,0 +1,543 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router, useFocusEffect } from "expo-router";
+import { setStatusBarStyle } from "expo-status-bar";
+import { useCallback } from "react";
+import {
+	RefreshControl,
+	ScrollView,
+	Share,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
+import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk } from "@/src/components/shop/ink";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
+import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
+import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import {
+	SellerHubBar,
+	SellerHubLinkCard,
+	useHubHeaderBg,
+} from "@/src/components/shop/SellerHubHeader";
+import { SellerInsightsSummary } from "@/src/components/shop/SellerInsightsSummary";
+import {
+	type ManageTile,
+	SellerManageCard,
+} from "@/src/components/shop/SellerManageCard";
+import { ShopSwitcher } from "@/src/components/shop/ShopSwitcher";
+import {
+	MyAccountButton,
+	SwitchModeButton,
+} from "@/src/components/shop/SwitchModeButton";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
+import { useIsSellerTabRoot } from "@/src/contexts/SellerTabRootContext";
+import { useActiveShop } from "@/src/hooks/useActiveShop";
+import { useShopReturns } from "@/src/hooks/useReturns";
+import { useSellerHomeActions } from "@/src/hooks/useSellerHomeActions";
+import { useSellerOrders } from "@/src/hooks/useSellerOrders";
+import { useSellerPayments } from "@/src/hooks/useSellerPayments";
+import { useSellerHome } from "@/src/hooks/useShopOnboarding";
+import { useMyShop } from "@/src/hooks/useShops";
+import { useShopVerification } from "@/src/hooks/useVerification";
+import { formatDate } from "@/src/lib/formatDate";
+import { useTranslation } from "@/src/lib/i18n";
+import { profileOf, shopProfileRules } from "@/src/lib/listingKind";
+import { stepTarget } from "@/src/lib/sellerHome";
+import { sellerPaymentsActionCount } from "@/src/lib/sellerPayments";
+import { showsOrdersTile, visibleSellerTiles } from "@/src/lib/sellerTiles";
+import { shopUrl } from "@/src/lib/shopHandle";
+import { can } from "@/src/lib/shopRoles";
+import { badgeLabelKey, canOpenRequest } from "@/src/lib/verification";
+import type {
+	BadgeLevel,
+	MyShop,
+	MyShopResponse,
+	MyShopRoleReason,
+	ShopRole,
+	ShopVerificationResponse,
+	VerificationStatus,
+} from "@/src/types/api";
+
+/**
+ * The status of whichever of the two upgrade levels currently has an open
+ * request — business takes priority over identity, since a seller working
+ * on both would be finishing the higher one. Reads `canOpenRequest`'s own
+ * "open" reason rather than re-deriving a status list here.
+ */
+function openRequestStatus(
+	view: ShopVerificationResponse | undefined,
+): VerificationStatus | null {
+	if (!view) return null;
+	for (const level of [3, 2] as const) {
+		const request = view.requests[level === 2 ? "level2" : "level3"];
+		if (!request) continue;
+		const result = canOpenRequest(view, level);
+		if (!result.ok && result.reason === "open") return request.status;
+	}
+	return null;
+}
+
+/**
+ * An open request's status takes priority over the badge — it is the more
+ * actionable thing to tell the seller about — falling back to the current
+ * badge, or "no level yet" when there is none.
+ */
+function verificationTileBody(
+	t: (key: string) => string,
+	badge: BadgeLevel | null,
+	view: ShopVerificationResponse | undefined,
+): string {
+	const openStatus = openRequestStatus(view);
+	if (openStatus) return t(`verification.timeline.status.${openStatus}`);
+	const labelKey = badgeLabelKey(badge);
+	return labelKey
+		? t(`shop.${labelKey}`)
+		: t("verification.statusCard.noLevel");
+}
+
+type ShopCounts = NonNullable<MyShopResponse["counts"]>;
+
+/**
+ * `useMyShop` reflects the owner's shop regardless of the shops-enabled
+ * flag — that flag gates opening a NEW shop only (see `shop/create.tsx`),
+ * so this screen never reads it: an existing owner keeps full access to
+ * their hub even while the flag is off.
+ */
+export default function SellerHubScreen() {
+	const c = useShopTheme();
+	const { t, i18n } = useTranslation();
+	const { webUrl } = useAppConfig();
+	const { data, isLoading, isError, refetch, isRefetching } = useMyShop();
+	const hubBg = useHubHeaderBg();
+	const locale = i18n.language?.startsWith("en") ? "en-US" : "fr-FR";
+	// The shell band needs white status-bar ink; the error and no-shop states
+	// sit on the light ground and keep the default.
+	const inkBand = isLoading || Boolean(!isError && data?.shop && data?.counts);
+	useFocusEffect(
+		useCallback(() => {
+			if (!inkBand) return;
+			setStatusBarStyle("light");
+			return () => setStatusBarStyle("auto");
+		}, [inkBand]),
+	);
+
+	if (isLoading) {
+		// The shell band is drawn straight away so the header does not flash in
+		// over a blank ground once the shop arrives.
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: hubBg }]}
+			>
+				<View style={styles.loadingBand} />
+				<View style={[styles.safe, { backgroundColor: c.bg }]}>
+					<ListSkeleton rows={4} />
+				</View>
+			</SafeAreaView>
+		);
+	}
+
+	const shop = data?.shop;
+	const counts = data?.counts;
+
+	if (isError || !shop || !counts) {
+		return (
+			<SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
+				<SellerHeader title={t("seller.space")} />
+				<EmptyState
+					illustration={isError ? "notFound" : "sell"}
+					title={isError ? t("seller.loadError") : t("seller.noShopTitle")}
+					subtitle={isError ? undefined : t("seller.noShopSubtitle")}
+					ctaLabel={isError ? t("common.retry") : t("account.openShop")}
+					onCta={() => (isError ? refetch() : router.replace("/shop/create"))}
+				/>
+			</SafeAreaView>
+		);
+	}
+
+	return (
+		<SellerHubContent
+			shop={shop}
+			role={data?.role ?? null}
+			roleReason={data?.roleReason ?? null}
+			counts={counts}
+			webUrl={webUrl}
+			locale={locale}
+			isRefetching={isRefetching}
+			onRefetch={refetch}
+		/>
+	);
+}
+
+function SellerHubContent({
+	shop,
+	role,
+	roleReason,
+	counts,
+	webUrl,
+	locale,
+	isRefetching,
+	onRefetch,
+}: {
+	shop: MyShop;
+	role: ShopRole | null;
+	roleReason: MyShopRoleReason | null;
+	counts: ShopCounts;
+	webUrl: string | null;
+	locale: string;
+	isRefetching: boolean;
+	onRefetch: () => void;
+}) {
+	const c = useShopTheme();
+	const hubBg = useHubHeaderBg();
+	const { t } = useTranslation();
+	const {
+		ordersEnabled,
+		insightsEnabled,
+		resaleEnabled,
+		deliveryZonesEnabled,
+	} = useAppConfig();
+	const verification = useShopVerification(shop.id);
+	const tabRoot = useIsSellerTabRoot();
+	const { shops } = useActiveShop();
+	const inboxUnread =
+		shops.find((entry) => entry.shopId === shop.id)?.inboxUnread ?? 0;
+	// The badge is the list's own `to_accept` count, not a second endpoint; a
+	// role without `orders.view` never reads the list.
+	const readsOrders = showsOrdersTile(role, ordersEnabled);
+	const toAcceptList = useSellerOrders(readsOrders ? shop.id : undefined, {
+		tab: "to_accept",
+	});
+	const toAccept = toAcceptList.data?.pages[0]?.counts.to_accept ?? 0;
+
+	// Same shape as the orders badge above: the tile's own hub screen reads
+	// everything else this view carries, so the hub fetches only what makes
+	// the badge honest rather than a second, lighter endpoint.
+	const readsPayments = ordersEnabled && can(role, "payments.view");
+	const paymentsView = useSellerPayments(readsPayments ? shop.id : undefined);
+	const paymentsHolds = sellerPaymentsActionCount(paymentsView.data);
+
+	// Returns waiting on the shop, and how many are past their deadline: a
+	// missed deadline costs money, so the tile says so on the hub.
+	const readsReturns =
+		can(role, "orders.view") && shopProfileRules(shop.profile).retail;
+	const shopReturns = useShopReturns(readsReturns ? shop.id : undefined);
+	const returnsAwaiting = shopReturns.data?.awaitingCount ?? 0;
+	const returnsOverdue =
+		shopReturns.data?.rows.filter((row) => row.overdue).length ?? 0;
+
+	const share = () => {
+		const url = shopUrl(shop.handle, webUrl);
+		Share.share({ message: `${shop.name}\n${url}`, url });
+	};
+	const createdToday =
+		new Date(shop.createdAt).toDateString() === new Date().toDateString();
+	// In seller mode the dashboard tab carries the checklist; this screen
+	// shows it only when reached outside the tabs, and only while setting up.
+	const home = useSellerHome(tabRoot ? undefined : shop.id);
+	const homeActions = useSellerHomeActions(shop);
+	const setup = home.model?.stage === "setup" ? home.model : null;
+
+	/**
+	 * Icon, copy and destination for every tile `visibleSellerTiles` can
+	 * return — permission filtering and badge counts live there, this is only
+	 * presentation. Keyed by `SellerTile.key` so a tile the role lacks never
+	 * needs an entry read here at all.
+	 */
+	const tileMeta: Record<
+		string,
+		Pick<ManageTile, "icon" | "title" | "body" | "onPress" | "alert">
+	> = {
+		returns: {
+			icon: "return-down-back-outline",
+			title: t("sellerReturns.title"),
+			body:
+				returnsOverdue > 0
+					? t("sellerReturns.tileOverdue", {
+							count: Math.max(returnsAwaiting, returnsOverdue),
+							overdue: returnsOverdue,
+						})
+					: returnsAwaiting > 0
+						? t("sellerReturns.tileAwaiting", { count: returnsAwaiting })
+						: t("sellerReturns.tileBody"),
+			alert: returnsOverdue > 0,
+			onPress: () => router.push("/seller/returns"),
+		},
+		orders: {
+			icon: "receipt-outline",
+			title: t("seller.tileOrders"),
+			body:
+				toAccept > 0
+					? t("seller.tileOrdersToAccept", { count: toAccept })
+					: t("seller.tileOrdersBody"),
+			alert: toAccept > 0,
+			onPress: () =>
+				router.push({
+					pathname: "/seller/orders",
+					params: toAccept > 0 ? { tab: "to_accept" } : {},
+				}),
+		},
+		resale: {
+			icon: "repeat-outline",
+			title: t("seller.tileResaleOrders"),
+			body: t("seller.tileResaleOrdersBody"),
+			onPress: () =>
+				router.push(
+					shop?.capabilities.supplier
+						? "/seller/resale/offered"
+						: "/seller/resale/catalogue",
+				),
+		},
+		delivery: {
+			icon: "bicycle-outline",
+			title: t("deliverySettings.title"),
+			body: t("deliverySettings.tileBody"),
+			onPress: () => router.push("/seller/delivery"),
+		},
+		billing: {
+			icon: "card-outline",
+			title: t("seller.tileBilling"),
+			body: t("seller.tileBillingBody"),
+			onPress: () => router.push("/seller/billing"),
+		},
+		payments: {
+			icon: "wallet-outline",
+			title: t("seller.tilePayments"),
+			body:
+				paymentsHolds > 0
+					? t("seller.tilePaymentsHold", { count: paymentsHolds })
+					: t("seller.tilePaymentsBody"),
+			alert: paymentsHolds > 0,
+			onPress: () => router.push("/seller/payments"),
+		},
+		catalogue: {
+			icon: "cube-outline",
+			title: t("seller.tileCatalogue"),
+			body: t("seller.tileCatalogueBody", {
+				count: counts.activeProducts,
+				drafts: counts.draftProducts,
+			}),
+			onPress: () => router.push("/seller/catalogue"),
+		},
+		listings: {
+			icon: "megaphone-outline",
+			title: t("sellerAds.title"),
+			body: t(`sellerAds.subtitle.${profileOf(shop.profile)}`),
+			onPress: () => router.push("/seller/listings"),
+		},
+		stock: {
+			icon: "layers-outline",
+			title: t("seller.tileStock"),
+			body:
+				counts.lowStockVariants > 0
+					? t("seller.tileStockAlerts", {
+							count: counts.lowStockVariants,
+							sample: counts.lowStockSample ?? "",
+						})
+					: t("seller.tileStockOk"),
+			alert: counts.lowStockVariants > 0,
+			onPress: () =>
+				router.push({
+					pathname: "/seller/catalogue",
+					params: { filter: "low" },
+				}),
+		},
+		inbox: {
+			icon: "chatbubbles-outline",
+			title: t("seller.tileInbox"),
+			body:
+				inboxUnread > 0
+					? t("seller.tileInboxUnread", { count: inboxUnread })
+					: t("seller.tileInboxBody"),
+			onPress: () => router.push("/seller/inbox"),
+		},
+		team: {
+			icon: "people-outline",
+			title: t("seller.tileTeam"),
+			body: t("seller.tileTeamBody"),
+			onPress: () => router.push("/seller/team"),
+		},
+		activity: {
+			icon: "time-outline",
+			title: t("seller.tileActivity"),
+			body: t("seller.tileActivityBody"),
+			onPress: () => router.push("/seller/activity"),
+		},
+		settings: {
+			icon: "settings-outline",
+			title: t("seller.tileSettings"),
+			body: t("seller.tileSettingsBody"),
+			onPress: () => router.push("/shop/manage"),
+		},
+		verification: {
+			icon: "shield-checkmark-outline",
+			title: t("seller.tileVerification"),
+			body: verificationTileBody(t, shop.badge, verification.data),
+			onPress: () => router.push("/seller/verification"),
+		},
+	};
+
+	const manageTiles: ManageTile[] = visibleSellerTiles(
+		role,
+		{
+			inboxUnread,
+			lowStock: counts.lowStockVariants,
+			toAccept,
+			paymentsHolds,
+			returnsAwaiting,
+		},
+		{
+			ordersEnabled,
+			resaleEnabled,
+			deliveryZonesEnabled,
+			retail: shopProfileRules(shop.profile).retail,
+		},
+	).map((tile) => ({
+		key: tile.key,
+		badge: tile.badge,
+		...tileMeta[tile.key],
+	}));
+
+	return (
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: hubBg }]}
+		>
+			<SellerHubBar shop={shop} />
+			<ScreenColumn width="wide">
+				<ScrollView
+					style={{ backgroundColor: c.bg }}
+					contentContainerStyle={{ paddingBottom: 40 }}
+					refreshControl={
+						<RefreshControl
+							refreshing={isRefetching}
+							onRefresh={() => {
+								onRefetch();
+								if (readsOrders) void toAcceptList.refetch();
+								if (readsReturns) void shopReturns.refetch();
+							}}
+							tintColor={c.primary}
+							colors={[c.primary]}
+							progressBackgroundColor={c.card}
+						/>
+					}
+				>
+					<SellerHubLinkCard shop={shop} webUrl={webUrl} onShare={share} />
+					<View style={styles.switcher}>
+						<ShopSwitcher />
+					</View>
+
+					<View style={styles.content}>
+						{shop.status === "suspended" && shop.suspension ? (
+							<View
+								style={[
+									styles.banner,
+									{ backgroundColor: c.dangerSoft, borderColor: c.danger },
+								]}
+							>
+								<Ionicons name="ban" size={20} color={dangerInk(c)} />
+								<View style={styles.bannerCopy}>
+									<Text style={[styles.bannerTitle, { color: dangerInk(c) }]}>
+										{shop.suspension.indefinite || !shop.suspension.until
+											? t("seller.suspendedIndefinitely")
+											: t("seller.suspendedUntil", {
+													date: formatDate(
+														shop.suspension.until,
+														{ day: "numeric", month: "long", year: "numeric" },
+														locale,
+													),
+												})}
+									</Text>
+									{shop.suspension.reason ? (
+										<Text style={[styles.meta, { color: c.body }]}>
+											{t(`report.${shop.suspension.reason}`)}
+										</Text>
+									) : null}
+									<Text style={[styles.meta, { color: c.muted }]}>
+										{t("seller.suspendedBody")}
+									</Text>
+								</View>
+							</View>
+						) : null}
+
+						{!role && roleReason && roleReason !== "shopSuspended" ? (
+							<View
+								style={[
+									styles.banner,
+									{ backgroundColor: c.neutralSoft, borderColor: c.border },
+								]}
+							>
+								<Ionicons name="lock-closed" size={20} color={c.muted} />
+								<View style={styles.bannerCopy}>
+									<Text style={[styles.bannerTitle, { color: c.text }]}>
+										{roleReason === "dormant"
+											? t("seller.hubLocked.dormant")
+											: t("apiErrors.moderation.accountSuspended")}
+									</Text>
+								</View>
+							</View>
+						) : null}
+
+						{role ? (
+							<>
+								{setup ? (
+									<SellerChecklistCard
+										steps={setup.steps}
+										mode="full"
+										welcome={{
+											badge: shop.badge,
+											createdToday,
+											firstName:
+												shop.owner.name.split(" ")[0] ?? shop.owner.name,
+											shopName: shop.name,
+										}}
+										onStep={(step) => homeActions.open(stepTarget(step))}
+									/>
+								) : null}
+
+								<SellerManageCard tiles={manageTiles} />
+								<SellerInsightsSummary
+									enabled={insightsEnabled}
+									role={role}
+									shopId={shop.id}
+								/>
+							</>
+						) : null}
+
+						{tabRoot ? (
+							<View style={styles.modeRows}>
+								<MyAccountButton />
+								<SwitchModeButton target="buyer" />
+							</View>
+						) : null}
+					</View>
+				</ScrollView>
+			</ScreenColumn>
+		</SafeAreaView>
+	);
+}
+
+const styles = StyleSheet.create({
+	safe: { flex: 1 },
+	loadingBand: { height: 136 },
+	switcher: { paddingHorizontal: 16 },
+	content: { padding: 16, gap: 16 },
+	banner: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		gap: 12,
+		padding: 16,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
+	bannerCopy: { flex: 1, gap: 4 },
+	bannerTitle: { fontSize: 16, lineHeight: 21, fontFamily: Fonts.displayBold },
+	meta: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+	// The two mode rows leave the shop's work behind: set apart from the tiles.
+	modeRows: { gap: 10, marginTop: 12 },
+});

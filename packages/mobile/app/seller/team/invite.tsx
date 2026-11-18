@@ -1,0 +1,310 @@
+import { router } from "expo-router";
+import { Controller, type FieldError } from "react-hook-form";
+import {
+	ActivityIndicator,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { dangerInk, fillOf } from "@/src/components/shop/ink";
+import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { RoleCard } from "@/src/components/shop/team/RoleMatrix";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { alerts } from "@/src/contexts/AlertContext";
+import { useInviteMemberForm } from "@/src/hooks/useInviteMemberForm";
+import { useMyShop } from "@/src/hooks/useShops";
+import { useTranslation } from "@/src/lib/i18n";
+import { phoneExample } from "@/src/lib/market";
+
+/**
+ * `inviteSchema`'s own issues carry "required" or "invalid" as their
+ * message — a key to translate here. A server refusal (`setError(..., {
+ * type: "server" })`) already carries the fully resolved, user-facing
+ * sentence, so it is shown exactly as given rather than remapped.
+ */
+function fieldMessage(
+	error: FieldError,
+	t: (key: string) => string,
+	keys: { required: string; invalid: string },
+): string {
+	if (error.type === "server") return error.message ?? "";
+	return t(error.message === "required" ? keys.required : keys.invalid);
+}
+
+export default function InviteMemberScreen() {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const myShop = useMyShop();
+	const shop = myShop.data?.shop;
+	const role = myShop.data?.role ?? null;
+	const { form, channel, roles, delivered, isPending, submit } =
+		useInviteMemberForm(shop?.id ?? "", role, () => {
+			// The owner leaves the screen knowing the message went out.
+			alerts.showSuccess(t("team.inviteSent"));
+			router.back();
+		});
+
+	const close = () => router.back();
+
+	return (
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: c.bg }]}
+		>
+			<SellerHeader title={t("team.inviteTitle")} icon="close" onBack={close} />
+
+			<ScreenColumn width="reading">
+				<ScrollView
+					contentContainerStyle={styles.content}
+					keyboardShouldPersistTaps="handled"
+				>
+					{delivered === false ? (
+						<View style={[styles.notice, { backgroundColor: c.warningSoft }]}>
+							<Text style={[styles.noticeText, { color: c.warningText }]}>
+								{t("team.deliveredFalse")}
+							</Text>
+							<Pressable
+								onPress={close}
+								accessibilityRole="button"
+								accessibilityLabel={t("common.close")}
+								style={[styles.submit, { backgroundColor: fillOf(c) }]}
+							>
+								<Text style={styles.submitText}>{t("common.close")}</Text>
+							</Pressable>
+						</View>
+					) : (
+						<>
+							<View
+								style={[styles.segment, { backgroundColor: c.neutralSoft }]}
+								accessibilityRole="radiogroup"
+							>
+								{(["phone", "email"] as const).map((option) => {
+									const active = channel === option;
+									return (
+										<Pressable
+											key={option}
+											onPress={() =>
+												form.setValue("channel", option, {
+													shouldValidate: true,
+												})
+											}
+											accessibilityRole="radio"
+											accessibilityState={{ checked: active }}
+											accessibilityLabel={t(
+												option === "phone"
+													? "team.channelPhone"
+													: "team.channelEmail",
+											)}
+											style={[
+												styles.segmentItem,
+												active && { backgroundColor: c.card },
+											]}
+										>
+											<Text
+												style={[
+													styles.segmentText,
+													{ color: active ? c.text : c.muted },
+												]}
+											>
+												{t(
+													option === "phone"
+														? "team.channelPhone"
+														: "team.channelEmail",
+												)}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
+
+							{channel === "phone" ? (
+								<View>
+									<Text style={[styles.label, { color: c.body }]}>
+										{t("team.phoneLabel")}
+									</Text>
+									<Controller
+										control={form.control}
+										name="phone"
+										render={({ field }) => (
+											<TextInput
+												value={field.value}
+												onChangeText={field.onChange}
+												onBlur={field.onBlur}
+												keyboardType="phone-pad"
+												autoComplete="off"
+												textContentType="none"
+												placeholder={phoneExample()}
+												placeholderTextColor={c.muted}
+												accessibilityLabel={t("team.phoneLabel")}
+												style={[
+													styles.input,
+													{
+														color: c.text,
+														backgroundColor: c.input,
+														borderColor: c.border,
+													},
+												]}
+											/>
+										)}
+									/>
+									{form.formState.errors.phone ? (
+										<Text
+											accessibilityRole="alert"
+											style={[styles.hint, { color: dangerInk(c) }]}
+										>
+											{fieldMessage(form.formState.errors.phone, t, {
+												required: "team.phoneRequired",
+												invalid: "team.phoneInvalid",
+											})}
+										</Text>
+									) : null}
+								</View>
+							) : (
+								<View>
+									<Text style={[styles.label, { color: c.body }]}>
+										{t("team.emailLabel")}
+									</Text>
+									<Controller
+										control={form.control}
+										name="email"
+										render={({ field }) => (
+											<TextInput
+												value={field.value}
+												onChangeText={field.onChange}
+												onBlur={field.onBlur}
+												keyboardType="email-address"
+												autoCapitalize="none"
+												autoCorrect={false}
+												autoComplete="off"
+												textContentType="none"
+												placeholder="name@example.com"
+												placeholderTextColor={c.muted}
+												accessibilityLabel={t("team.emailLabel")}
+												style={[
+													styles.input,
+													{
+														color: c.text,
+														backgroundColor: c.input,
+														borderColor: c.border,
+													},
+												]}
+											/>
+										)}
+									/>
+									{form.formState.errors.email ? (
+										<Text
+											accessibilityRole="alert"
+											style={[styles.hint, { color: dangerInk(c) }]}
+										>
+											{fieldMessage(form.formState.errors.email, t, {
+												required: "team.emailRequired",
+												invalid: "team.emailInvalid",
+											})}
+										</Text>
+									) : null}
+								</View>
+							)}
+
+							<View>
+								<Text style={[styles.label, { color: c.body }]}>
+									{t("team.roleLabel")}
+								</Text>
+								<View style={styles.roleList}>
+									{roles.map((option) => (
+										<RoleCard
+											key={option}
+											role={option}
+											selected={form.watch("role") === option}
+											onPress={() =>
+												form.setValue("role", option, { shouldValidate: true })
+											}
+										/>
+									))}
+								</View>
+							</View>
+
+							<Pressable
+								// Always active: a tap on an incomplete form shows what is
+								// missing under each field instead of a silent grey button.
+								onPress={submit}
+								disabled={isPending}
+								accessibilityRole="button"
+								accessibilityLabel={t("team.send")}
+								accessibilityState={{ disabled: isPending, busy: isPending }}
+								style={({ pressed }) => [
+									styles.submit,
+									{
+										backgroundColor: fillOf(c),
+										opacity: isPending ? 0.5 : pressed ? 0.85 : 1,
+									},
+								]}
+							>
+								{isPending ? (
+									<ActivityIndicator color="#fff" />
+								) : (
+									<Text style={styles.submitText}>{t("team.send")}</Text>
+								)}
+							</Pressable>
+						</>
+					)}
+				</ScrollView>
+			</ScreenColumn>
+		</SafeAreaView>
+	);
+}
+
+const styles = StyleSheet.create({
+	safe: { flex: 1 },
+	content: { padding: 16, gap: 16, paddingBottom: 40 },
+	segment: {
+		flexDirection: "row",
+		borderRadius: 12,
+		padding: 4,
+		gap: 4,
+	},
+	segmentItem: {
+		flex: 1,
+		minHeight: 44,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	segmentText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	label: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		marginBottom: 8,
+	},
+	input: {
+		minHeight: 48,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		fontSize: 16,
+		fontFamily: Fonts.body,
+	},
+	hint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body, marginTop: 6 },
+	roleList: { gap: 10, marginTop: 6 },
+	submit: {
+		minHeight: 52,
+		marginTop: 8,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	submitText: {
+		color: "#fff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
+	notice: { borderRadius: 14, padding: 16, gap: 12 },
+	noticeText: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.body },
+});

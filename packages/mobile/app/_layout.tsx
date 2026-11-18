@@ -1,74 +1,234 @@
 import "../src/lib/i18n";
 import { Ionicons } from "@expo/vector-icons";
 import {
-	DMSans_400Regular,
-	DMSans_500Medium,
-	DMSans_600SemiBold,
-	DMSans_700Bold,
-} from "@expo-google-fonts/dm-sans";
+	Inter_400Regular,
+	Inter_500Medium,
+	Inter_600SemiBold,
+	Inter_700Bold,
+} from "@expo-google-fonts/inter";
 import {
-	Outfit_500Medium,
-	Outfit_600SemiBold,
-	Outfit_700Bold,
-	Outfit_800ExtraBold,
-} from "@expo-google-fonts/outfit";
+	Poppins_500Medium,
+	Poppins_600SemiBold,
+	Poppins_700Bold,
+	Poppins_800ExtraBold,
+} from "@expo-google-fonts/poppins";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery } from "@tanstack/react-query";
+import { useFonts } from "expo-font";
+import * as Linking from "expo-linking";
+import * as Notifications from "expo-notifications";
+import {
+	router,
+	Stack,
+	usePathname,
+	useRootNavigationState,
+} from "expo-router";
 import {
 	DarkTheme,
 	DefaultTheme,
 	ThemeProvider,
-} from "@react-navigation/native";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useFonts } from "expo-font";
-import * as Linking from "expo-linking";
-import * as Notifications from "expo-notifications";
-import { router, Stack } from "expo-router";
+} from "expo-router/react-navigation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { Appearance } from "react-native";
+import {
+	Appearance,
+	AppState,
+	Pressable,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
+import { Colors, Fonts } from "@/constants/theme";
 import {
 	AppConfigProvider,
 	useAppConfig,
 } from "@/src/contexts/AppConfigContext";
+import {
+	LANG_STORAGE_KEY,
+	THEME_STORAGE_KEY,
+} from "@/src/screens/account/SettingsScreen";
 import i18n from "../src/lib/i18n";
-import { LANG_STORAGE_KEY, THEME_STORAGE_KEY } from "./settings";
 import "react-native-reanimated";
 import { NovuProvider } from "@novu/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import {
+	initialWindowMetrics,
+	SafeAreaProvider,
+} from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
-import { AlertProvider, useAlert } from "@/src/contexts/AlertContext";
+import { MonitoringBridge } from "@/src/components/MonitoringBridge";
+import { NotificationLanguageSync } from "@/src/components/NotificationLanguageSync";
+import { OfflineBanner } from "@/src/components/OfflineBanner";
+import { QueryPersistence } from "@/src/components/QueryPersistence";
+import { ShareSheet } from "@/src/components/share/ShareSheet";
+import { SellerBrandProvider } from "@/src/components/shop/sellerBrand";
+import { AlertProvider } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
 import { NotificationReadyContext } from "@/src/contexts/NotificationReadyContext";
-import { api } from "@/src/lib/api";
-import { AuthProvider, useAuth } from "@/src/lib/auth";
 import {
-	registerForPushNotificationsAsync,
-	syncPushTokenWithBackend,
-} from "@/src/lib/notifications";
+	OnboardingProvider,
+	useOnboarding,
+} from "@/src/contexts/OnboardingContext";
+import { usePhonePortraitLock } from "@/src/hooks/usePhonePortraitLock";
+import { api } from "@/src/lib/api";
+import "@/src/lib/appFocus";
+import { AuthProvider, useAuth } from "@/src/lib/auth";
+import { setContentLocale } from "@/src/lib/contentLocale";
+import {
+	canFollowPushTap,
+	notificationRoute,
+	pushTapTarget,
+} from "@/src/lib/deepLinks";
+import { loadFeedbackPreferences } from "@/src/lib/feedback";
+import { reportError } from "@/src/lib/monitoring";
+import { syncPushToken } from "@/src/lib/notifications";
 
-SplashScreen.preventAutoHideAsync();
+// Rejects if the splash is already hidden; never let that bubble up as an
+// unhandled rejection on the cold-start path.
+SplashScreen.preventAutoHideAsync().catch(() => {
+	// noop
+});
 
-console.log(process.env.EXPO_PUBLIC_CHAT_URL, process.env.EXPO_PUBLIC_API_URL);
+/**
+ * expo-router picks this up automatically for the whole route tree. Without it,
+ * any unhandled render error unmounts everything and leaves a blank white
+ * screen with no way back — which is what turns a single broken screen into an
+ * "app crashed during review" rejection.
+ */
+export function ErrorBoundary({
+	error,
+	retry,
+}: {
+	error: Error;
+	retry: () => Promise<void>;
+}) {
+	useEffect(() => reportError(error), [error]);
+	// Outside every provider: the scheme comes from the OS, the words straight
+	// from i18n, and a missing font falls back to the system face.
+	const c = Colors[Appearance.getColorScheme() === "dark" ? "dark" : "light"];
+	return (
+		<View style={[errorStyles.container, { backgroundColor: c.background }]}>
+			<Text
+				style={[errorStyles.title, { color: c.foreground }]}
+				accessibilityRole="header"
+			>
+				{i18n.t("common.error")}
+			</Text>
+			<Text style={[errorStyles.message, { color: c.body }]}>
+				{error?.message ?? i18n.t("home.errorSub")}
+			</Text>
+			<Pressable
+				accessibilityRole="button"
+				onPress={() => {
+					void retry();
+				}}
+				style={({ pressed }) => [
+					errorStyles.button,
+					{ backgroundColor: c.primaryFill },
+					pressed && { opacity: 0.85 },
+				]}
+			>
+				<Text style={errorStyles.buttonLabel}>{i18n.t("common.retry")}</Text>
+			</Pressable>
+		</View>
+	);
+}
+
+const errorStyles = StyleSheet.create({
+	container: {
+		alignItems: "center",
+		flex: 1,
+		gap: 12,
+		justifyContent: "center",
+		padding: 32,
+	},
+	title: {
+		fontFamily: Fonts.displayBold,
+		fontSize: 20,
+		lineHeight: 28,
+		textAlign: "center",
+	},
+	message: {
+		fontFamily: Fonts.body,
+		fontSize: 15,
+		lineHeight: 22,
+		maxWidth: 420,
+		textAlign: "center",
+	},
+	button: {
+		alignItems: "center",
+		borderRadius: 12,
+		justifyContent: "center",
+		marginTop: 12,
+		minHeight: 52,
+		paddingHorizontal: 24,
+	},
+	buttonLabel: {
+		color: Colors.light.primaryForeground,
+		fontFamily: Fonts.bodyBold,
+		fontSize: 16,
+		lineHeight: 22,
+	},
+});
+
 const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
 			staleTime: 5 * 60 * 1000,
+			// Kept an hour, not five minutes, so what was seen is still there
+			// to persist and to show offline after leaving a screen.
+			gcTime: 60 * 60 * 1000,
 			retry: 2,
 		},
 	},
+});
+
+// Category labels come back in the app's language, so answers cached in the
+// previous one are refetched.
+i18n.on("languageChanged", (language) => {
+	if (setContentLocale(language)) queryClient.invalidateQueries();
 });
 
 export const unstable_settings = { anchor: "(tabs)" };
 
 // ─── Root layout ──────────────────────────────────────────────────────────────
 
+// Navigation chrome (headers, back chevrons, screen grounds) in the Ndop
+// palette rather than React Navigation's stock blue and grey.
+const NdopLight = {
+	...DefaultTheme,
+	colors: {
+		...DefaultTheme.colors,
+		primary: Colors.light.primary,
+		background: Colors.light.background,
+		card: Colors.light.card,
+		text: Colors.light.foreground,
+		border: Colors.light.border,
+		notification: Colors.light.destructive,
+	},
+};
+const NdopDark = {
+	...DarkTheme,
+	colors: {
+		...DarkTheme.colors,
+		primary: Colors.dark.primary,
+		background: Colors.dark.background,
+		card: Colors.dark.background,
+		text: Colors.dark.foreground,
+		border: Colors.dark.border,
+		notification: Colors.dark.destructive,
+	},
+};
+
 export default function RootLayout() {
-	// Load saved language + theme preferences before first render
+	usePhonePortraitLock();
+	// Load saved language + theme + sound preferences before first render
 	useEffect(() => {
+		void loadFeedbackPreferences();
 		Promise.all([
 			AsyncStorage.getItem(LANG_STORAGE_KEY),
 			AsyncStorage.getItem(THEME_STORAGE_KEY),
@@ -82,46 +242,75 @@ export default function RootLayout() {
 		});
 	}, []);
 
-	const [fontsLoaded] = useFonts({
+	const [fontsLoaded, fontError] = useFonts({
 		...Ionicons.font,
-		DMSans_400Regular,
-		DMSans_500Medium,
-		DMSans_600SemiBold,
-		DMSans_700Bold,
-		Outfit_500Medium,
-		Outfit_600SemiBold,
-		Outfit_700Bold,
-		Outfit_800ExtraBold,
+		Inter_400Regular,
+		Inter_500Medium,
+		Inter_600SemiBold,
+		Inter_700Bold,
+		Poppins_500Medium,
+		Poppins_600SemiBold,
+		Poppins_700Bold,
+		Poppins_800ExtraBold,
 	});
 
-	useEffect(() => {
-		if (fontsLoaded) {
-			SplashScreen.hideAsync();
-		}
-	}, [fontsLoaded]);
+	// A font that fails to resolve must not strand the user on the splash
+	// screen forever — render with system fonts rather than not at all.
+	const fontsSettled = fontsLoaded || Boolean(fontError);
 
-	if (!fontsLoaded) return null;
+	// Backstop: if useFonts never settles at all (asset resolution wedged in a
+	// monorepo build), show the app anyway instead of hanging indefinitely.
+	const [fontTimedOut, setFontTimedOut] = useState(false);
+	useEffect(() => {
+		if (fontsSettled) return;
+		const id = setTimeout(() => setFontTimedOut(true), 8000);
+		return () => clearTimeout(id);
+	}, [fontsSettled]);
+
+	useEffect(() => {
+		if (fontsSettled || fontTimedOut) {
+			SplashScreen.hideAsync().catch(() => {
+				// noop
+			});
+		}
+	}, [fontTimedOut, fontsSettled]);
+
+	if (!fontsSettled && !fontTimedOut) return null;
 
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
-			<KeyboardProvider>
-				<QueryClientProvider client={queryClient}>
-					<AuthProvider>
-						<AppConfigProvider>
-							<NovuWrapper>
-								<ChatProvider>
-									<AlertProvider>
-										<PushTokenRegistrar />
-										<PushNotificationHandler />
-										<BoostDeepLinkHandler />
-										<RootLayoutNav />
-									</AlertProvider>
-								</ChatProvider>
-							</NovuWrapper>
-						</AppConfigProvider>
-					</AuthProvider>
-				</QueryClientProvider>
-			</KeyboardProvider>
+			{/* Mounted above the loader on purpose. expo-router only provides a
+			    SafeAreaProvider inside the navigator, which does not exist yet
+			    while RootLayoutNav is returning <LoadingScreen />; the first
+			    frame of the next screen then rendered with zero insets and the
+			    header sat under the status bar until they arrived.
+			    `initialWindowMetrics` is synchronous, so the first render is
+			    already correct. */}
+			<SafeAreaProvider initialMetrics={initialWindowMetrics}>
+				<KeyboardProvider>
+					<QueryClientProvider client={queryClient}>
+						<AuthProvider>
+							<OnboardingProvider>
+								<AppConfigProvider>
+									<NovuWrapper>
+										<ChatProvider>
+											<AlertProvider>
+												<ShareSheet />
+												<PushTokenRegistrar />
+												<RootLayoutNav />
+												<OfflineBanner />
+												<MonitoringBridge />
+												<NotificationLanguageSync />
+												<QueryPersistence />
+											</AlertProvider>
+										</ChatProvider>
+									</NovuWrapper>
+								</AppConfigProvider>
+							</OnboardingProvider>
+						</AuthProvider>
+					</QueryClientProvider>
+				</KeyboardProvider>
+			</SafeAreaProvider>
 		</GestureHandlerRootView>
 	);
 }
@@ -134,7 +323,7 @@ export default function RootLayout() {
 
 function NovuWrapper({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
-	const { novuAppId } = useAppConfig();
+	const { novuAppId, novuApiUrl, novuSocketUrl } = useAppConfig();
 	const appId = novuAppId ?? "";
 	const [ready, setReady] = useState(false);
 
@@ -169,6 +358,9 @@ function NovuWrapper({ children }: { children: React.ReactNode }) {
 			subscriberId={user.id}
 			applicationIdentifier={appId}
 			subscriberHash={data?.subscriberHash}
+			// Unset: Novu Cloud. Set by the API for a self-hosted instance.
+			backendUrl={novuApiUrl ?? undefined}
+			socketUrl={novuSocketUrl ?? undefined}
 		>
 			<NotificationReadyContext.Provider value={ready}>
 				{children}
@@ -178,137 +370,70 @@ function NovuWrapper({ children }: { children: React.ReactNode }) {
 }
 
 // ─── PushTokenRegistrar ───────────────────────────────────────────────────────
-// Requests push permission and syncs the Expo token with Novu once per session.
+// Syncs the Expo token with Novu once per session when push is already
+// allowed. Asking is left to the moment it helps (`askForPushInContext`).
 
 function PushTokenRegistrar() {
-	const { user } = useAuth();
-	const registeredRef = useRef<string | null>(null);
+	const userId = useAuth().user?.id;
 
 	useEffect(() => {
-		if (!user) return;
-		if (registeredRef.current === user.id) return;
-		registeredRef.current = user.id;
-
-		registerForPushNotificationsAsync().then((token) => {
-			if (token) syncPushTokenWithBackend(token);
+		if (!userId) return;
+		void syncPushToken(userId);
+		// Permission given in the system settings, or a rotated token: picked
+		// up on the way back, not at the next launch.
+		const sub = AppState.addEventListener("change", (state) => {
+			if (state === "active") void syncPushToken(userId);
 		});
-	}, [user]);
+		return () => sub.remove();
+	}, [userId]);
 
 	return null;
 }
 
-// ─── PushNotificationHandler ─────────────────────────────────────────────────
-// Handles deep-link navigation when the user taps a push notification.
-// Works for two scenarios:
-//   - Cold start: app was killed, notification tap launches it
-//   - Background: app was backgrounded, user taps notification
-// Navigation is deferred until auth is resolved and the user is logged in.
-
-function resolveNotificationUrl(data: Record<string, unknown>): string | null {
-	const directUrl =
-		(typeof data?.url === "string" && data.url) ||
-		(typeof data?.redirectUrl === "string" && data.redirectUrl) ||
-		(typeof data?.searchUrl === "string" && data.searchUrl) ||
-		(typeof data?.deepLink === "string" && data.deepLink);
-	if (directUrl) return directUrl;
-
-	const conversationId = data?.conversationId as string | undefined;
-	const listingId = data?.listingId as string | undefined;
-	if (conversationId) return `/messages/${conversationId}`;
-	if (listingId) return `/listing/${listingId}`;
-	return null;
-}
+// ─── PushTapNavigator ────────────────────────────────────────────────────────
+// Follows a tap on a push notification to the screen it names, whether the
+// tap launched the app (cold start) or brought it back from the background.
+// Rendered next to the Stack, so it only runs once the router exists — past
+// the loading screen and the onboarding. Launched by the tap, the app opens
+// on `/`, which redirects to home with a `replace`; a screen opened before
+// that redirect is the one replaced, so the tap waits for it
+// (`canFollowPushTap`). The destination then opens on top of home, so "back"
+// lands there. Signed-out, the tap waits for the sign-in.
 
 function navigateFromNotificationUrl(url: string) {
-	if (url.startsWith("/")) {
-		router.push(url as Parameters<typeof router.push>[0]);
+	const path = notificationRoute(url);
+	if (path) {
+		router.push(path as Parameters<typeof router.push>[0]);
 		return;
 	}
 
 	void Linking.openURL(url);
 }
 
-function PushNotificationHandler() {
-	const { isLoading, user } = useAuth();
-	const pendingUrlRef = useRef<string | null>(null);
-	const isReady = !isLoading && !!user;
+function PushTapNavigator() {
+	const { user } = useAuth();
+	const navigationReady = Boolean(useRootNavigationState()?.key);
+	const pathname = usePathname();
+	const response = Notifications.useLastNotificationResponse();
+	const followed = useRef<string | null>(null);
 
 	useEffect(() => {
-		Notifications.getLastNotificationResponseAsync().then((response) => {
-			if (!response) return;
-			const url = resolveNotificationUrl(
-				response.notification.request.content.data as Record<string, unknown>,
-			);
-			if (url) pendingUrlRef.current = url;
-		});
-	}, []);
-
-	useEffect(() => {
-		const sub = Notifications.addNotificationResponseReceivedListener(
-			(response) => {
-				const url = resolveNotificationUrl(
-					response.notification.request.content.data as Record<string, unknown>,
-				);
-				if (!url) return;
-				if (isReady) navigateFromNotificationUrl(url);
-				else pendingUrlRef.current = url;
-			},
+		const target = pushTapTarget(
+			response,
+			Notifications.DEFAULT_ACTION_IDENTIFIER,
 		);
-		return () => sub.remove();
-	}, [isReady]);
-
-	useEffect(() => {
-		if (isReady && pendingUrlRef.current) {
-			navigateFromNotificationUrl(pendingUrlRef.current);
-			pendingUrlRef.current = null;
-		}
-	}, [isReady]);
-
-	return null;
-}
-
-// ─── BoostDeepLinkHandler ─────────────────────────────────────────────────────
-// Listens for boost payment return deep-links:
-//   buynsellem://boost/callback?status=success&listingId=xxx
-// These are triggered when the user finishes/cancels NotchPay checkout and our
-// /api/public/boost/return page redirects back to the app.
-
-function BoostDeepLinkHandler() {
-	const { showSuccess, showError } = useAlert();
-	const queryClient = useQueryClient();
-
-	const handleUrl = (url: string) => {
-		if (!url.includes("boost/callback")) return;
-
-		const parsed = Linking.parse(url);
-		const status = parsed.queryParams?.status as string | undefined;
-		const listingId = parsed.queryParams?.listingId as string | undefined;
-
-		if (status === "success") {
-			if (listingId) {
-				void queryClient.invalidateQueries({
-					queryKey: ["listing", listingId],
-				});
-			}
-			showSuccess(
-				"Boost activé 🚀",
-				"Votre annonce est maintenant mise en avant.",
-			);
-		} else if (status === "failed") {
-			showError("Paiement échoué", "Le paiement n'a pas pu être traité.");
-		}
-	};
-
-	useEffect(() => {
-		// Handle cold-start (app launched from deep link)
-		Linking.getInitialURL().then((url) => {
-			if (url) handleUrl(url);
-		});
-
-		// Handle foreground deep links
-		const sub = Linking.addEventListener("url", ({ url }) => handleUrl(url));
-		return () => sub.remove();
-	}, [handleUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+		if (
+			!target ||
+			!canFollowPushTap({ navigationReady, pathname, signedIn: Boolean(user) })
+		)
+			return;
+		if (followed.current === target.id) return;
+		followed.current = target.id;
+		// Followed once: the app reloading or this screen remounting must not
+		// replay an old tap.
+		Notifications.clearLastNotificationResponse();
+		navigateFromNotificationUrl(target.url);
+	}, [response, navigationReady, pathname, user]);
 
 	return null;
 }
@@ -318,99 +443,403 @@ function BoostDeepLinkHandler() {
 function RootLayoutNav() {
 	const colorScheme = useColorScheme();
 	const { isLoading: authLoading } = useAuth();
+	const { hasSeenOnboarding, isLoading: onboardingLoading } = useOnboarding();
+	const pathname = usePathname();
+	const navigationReady = Boolean(useRootNavigationState()?.key);
+	const showLoader = authLoading || onboardingLoading;
+	const isOnboardingRoute = pathname === "/onboarding";
+	const launchTarget = showLoader
+		? null
+		: !hasSeenOnboarding && !isOnboardingRoute
+			? "/onboarding"
+			: hasSeenOnboarding && isOnboardingRoute
+				? "/(tabs)/home"
+				: null;
 
-	const [onboardingChecked, setOnboardingChecked] = useState(false);
-	const [isFirstLaunch, setIsFirstLaunch] = useState(false);
-
+	// The navigator stays mounted and the launch redirect is an effect, sent
+	// once per destination when the navigator is ready. A <Redirect> rendered
+	// in its place had no navigator to land in: the path never changed, the
+	// layout rendered the redirect again, and React stopped the loop with
+	// "Maximum update depth exceeded".
+	const redirected = useRef<string | null>(null);
 	useEffect(() => {
-		AsyncStorage.getItem("hasSeenOnboarding").then((value) => {
-			setIsFirstLaunch(value === null);
-			setOnboardingChecked(true);
-		});
-	}, []);
-
-	const showLoader = authLoading || !onboardingChecked;
-
-	useEffect(() => {
-		if (!showLoader && isFirstLaunch) {
-			router.replace("/onboarding");
+		if (!launchTarget) {
+			redirected.current = null;
+			return;
 		}
-	}, [showLoader, isFirstLaunch]);
+		if (!navigationReady || redirected.current === launchTarget) return;
+		redirected.current = launchTarget;
+		router.replace(launchTarget);
+	}, [launchTarget, navigationReady]);
+	const covered = showLoader || launchTarget !== null;
 
 	return (
-		<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-			<Stack>
-				<Stack.Screen name="onboarding" options={{ headerShown: false }} />
-				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-				<Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="listing/[id]/edit"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="account/edit-profile"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="account/favorites"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="account/listings"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen name="account/boosts" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="account/searches"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="account/notifications"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="profile/[userId]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="auth/login"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="auth/register"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="auth/forgot-password"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="filters"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="boost/[listingId]"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="report"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="messages/[conversationId]"
-					options={{ headerShown: false, animation: "slide_from_right" }}
-				/>
-				<Stack.Screen name="settings" options={{ headerShown: false }} />
-				<Stack.Screen name="security" options={{ headerShown: false }} />
-				<Stack.Screen name="contact" options={{ headerShown: false }} />
-				<Stack.Screen name="help" options={{ headerShown: false }} />
-				<Stack.Screen name="safety" options={{ headerShown: false }} />
-				<Stack.Screen name="terms" options={{ headerShown: false }} />
-				<Stack.Screen name="privacy" options={{ headerShown: false }} />
-			</Stack>
+		<ThemeProvider value={colorScheme === "dark" ? NdopDark : NdopLight}>
+			<SellerBrandProvider>
+				<Stack
+					// Every screen draws its own header today; a native one shown by
+					// mistake would still speak the app's type, not the system's.
+					screenOptions={{
+						headerTitleStyle: { fontFamily: Fonts.displayBold },
+						headerBackTitleStyle: { fontFamily: Fonts.body },
+					}}
+				>
+					<Stack.Screen name="onboarding" options={{ headerShown: false }} />
+					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+					<Stack.Screen name="(seller-tabs)" options={{ headerShown: false }} />
+					<Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="listing/[id]/edit"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/edit-profile"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/favorites"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/listings"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/boosts"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/overview"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/searches"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/notifications"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="profile/[userId]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="s/[handle]" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="shop/create"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen name="shop/manage" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="shop/settings/[section]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="shop/move-listings"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen name="seller/index" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="seller/verification/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/verification/identity"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/verification/return"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/verification/business"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/catalogue"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/stock-adjust"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/product/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="auth/login"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="auth/register"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="verify-phone"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="auth/check-email"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="auth/forgot-password"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="filters"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="boost/[listingId]"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="report"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="messages/[conversationId]"
+						options={{ headerShown: false, animation: "slide_from_right" }}
+					/>
+					<Stack.Screen
+						name="moderation/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/disputes/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/disputes/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/listing/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/report/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/user/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/shop/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/verification/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="settings" options={{ headerShown: false }} />
+					<Stack.Screen name="security" options={{ headerShown: false }} />
+					<Stack.Screen name="contact" options={{ headerShown: false }} />
+					<Stack.Screen name="help" options={{ headerShown: false }} />
+					<Stack.Screen name="safety" options={{ headerShown: false }} />
+					<Stack.Screen name="categories" options={{ headerShown: false }} />
+					<Stack.Screen name="terms" options={{ headerShown: false }} />
+					<Stack.Screen name="privacy" options={{ headerShown: false }} />
 
-			{showLoader && <LoadingScreen />}
+					{/* P3 team: four tasks each built a screen and reported its
+				    registration rather than editing this file, because four
+				    concurrent writers to one route table is how a wave loses
+				    work. Added here in one edit. */}
+					<Stack.Screen
+						name="invite/[token]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/team/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/team/invite"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/team/[memberId]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/activity"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/listings"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="seller/guide" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="seller/inbox/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/inbox/[conversationId]"
+						options={{ headerShown: false, animation: "slide_from_right" }}
+					/>
+
+					{/* Screens that draw their own header (SellerHeader, ModerationScreen):
+				    the stack's default one would stack the raw route path on top.
+				    `src/lib/routeRegistry.test.ts` fails when a new screen is missed. */}
+					<Stack.Screen
+						name="seller/insights"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/catalogue"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/offered"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/finance"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/purchase-orders/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/purchase-orders/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/risk/[id]"
+						options={{ headerShown: false }}
+					/>
+
+					{/* P4 orders. Checkout's own layout covers its four steps. */}
+					<Stack.Screen name="cart" options={{ headerShown: false }} />
+					<Stack.Screen name="checkout" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="purchases/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="disputes/[id]" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="account/disputes"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/returns"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/addresses"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="returns/[id]" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="purchases/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="purchases/group/[group]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="purchases/[id]/problem"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="purchases/[id]/withdrawal"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/orders/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/returns/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/orders/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/orders/[id]/handover"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/billing/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/billing/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/order-settings"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/order/[id]"
+						options={{ headerShown: false }}
+					/>
+
+					{/* P5 payments (Task 29). checkout/[orderId]/pay and
+				    checkout/[orderId]/pending need no entry of their own — they
+				    resolve to the existing "checkout" root above. */}
+					<Stack.Screen
+						name="seller/payments/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/payments/setup"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/payments/payouts/[id]"
+						options={{ headerShown: false }}
+					/>
+
+					{/* P7 delivery: settings, tracking reschedule, shipment, rider, courier. */}
+					<Stack.Screen
+						name="purchases/[id]/reschedule"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/delivery/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/delivery/zone/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/delivery/locations"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/delivery/location/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/shipment/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="rider/index" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="rider/shipment/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="courier/index" options={{ headerShown: false }} />
+				</Stack>
+				<PushTapNavigator />
+			</SellerBrandProvider>
+			{covered ? (
+				<View style={StyleSheet.absoluteFill}>
+					<LoadingScreen />
+				</View>
+			) : null}
 
 			<StatusBar style="auto" />
 		</ThemeProvider>

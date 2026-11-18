@@ -1,10 +1,27 @@
+import * as AppleAuthentication from "expo-apple-authentication";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
 import * as WebBrowser from "expo-web-browser";
 import type React from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useState,
+} from "react";
+import { AppState, Platform } from "react-native";
+import i18n from "@/src/lib/i18n";
 import type { LoginResponse, MeResponse, UserDoc } from "@/src/types/api";
-import { API_BASE_URL, api } from "./api";
+import { notificationLocaleOf } from "../../../api/src/contracts/notificationLocale";
+import {
+	API_BASE_URL,
+	ApiError,
+	api,
+	decodeJwtExp,
+	refreshToken as refreshApiToken,
+	setUnauthorizedHandler,
+} from "./api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -21,15 +38,26 @@ interface AuthContextType {
 		provider: SocialAuthProvider,
 		redirectTo?: string,
 	) => Promise<void>;
+	/** Exchanges a social-login transfer token once, whoever gets it first. */
+	completeOAuth: (transferToken: string) => Promise<void>;
 	register: (name: string, email: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
+	refreshToken: () => Promise<void>;
 	updateUser: (updates: Partial<UserDoc>) => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+/**
+ * A transfer token is single-use, and both the login screen (awaiting the
+ * browser session) and the callback route (opened by the same deep link, or
+ * on its own when Android relaunched the app meanwhile) may hold it: whichever
+ * asks first exchanges it, the other awaits the same exchange.
+ */
+const oauthExchanges = new Map<string, Promise<void>>();
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -38,6 +66,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [token, setToken] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
+	const fetchAuthenticatedUser = useCallback(async (): Promise<UserDoc> => {
+		const data = await api.get<MeResponse>("/api/users/me");
+		return data.user;
+	}, []);
+
+	const applyAuthenticatedSession = async (
+		data: LoginResponse,
+	): Promise<void> => {
+		await SecureStore.setItemAsync("auth_token", data.token);
+		setToken(data.token);
+
+		try {
+			const hydratedUser = await fetchAuthenticatedUser();
+			setUser(hydratedUser);
+		} catch {
+			setUser(data.user);
+		}
+	};
+
 	// Restore session on mount
 	useEffect(() => {
 		(async () => {
@@ -45,9 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				const stored = await SecureStore.getItemAsync("auth_token");
 				if (stored) {
 					setToken(stored);
-					// Payload v3: /api/users/me returns { user: {...} }
-					const data = await api.get<MeResponse>("/api/users/me");
-					setUser(data.user);
+					setUser(await fetchAuthenticatedUser());
 				}
 			} catch {
 				// Token is invalid or expired — clear it silently
@@ -58,22 +103,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				setIsLoading(false);
 			}
 		})();
-	}, []);
+	}, [fetchAuthenticatedUser]);
 
 	const login = async (email: string, password: string): Promise<void> => {
 		const data = await api.post<LoginResponse>("/api/users/login", {
 			email,
 			password,
 		});
-		await SecureStore.setItemAsync("auth_token", data.token);
-		setToken(data.token);
-		setUser(data.user);
+		await applyAuthenticatedSession(data);
+	};
+
+	/**
+	 * Native Sign in with Apple (the Face ID sheet), used on iOS.
+	 *
+	 * Returns `false` when the flow is unavailable rather than throwing, so the
+	 * caller can fall back to the browser flow — e.g. when the backend has no
+	 * APPLE_NATIVE_CLIENT_ID configured and answers 501.
+	 */
+	const loginWithAppleNative = async (): Promise<boolean> => {
+		if (Platform.OS !== "ios") return false;
+		if (!(await AppleAuthentication.isAvailableAsync())) return false;
+
+		let credential: AppleAuthentication.AppleAuthenticationCredential;
+		try {
+			credential = await AppleAuthentication.signInAsync({
+				requestedScopes: [
+					AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+					AppleAuthentication.AppleAuthenticationScope.EMAIL,
+				],
+			});
+		} catch (error) {
+			// The user dismissing the sheet is not an error worth surfacing, and
+			// must not silently fall through to the browser flow either.
+			if ((error as { code?: string })?.code === "ERR_REQUEST_CANCELED") {
+				throw new Error("Social login was cancelled");
+			}
+			return false;
+		}
+
+		if (!credential.identityToken) return false;
+
+		// Apple sends the name only on the very first authorization; the backend
+		// keeps whatever it already stored on later sign-ins.
+		const fullName = [
+			credential.fullName?.givenName,
+			credential.fullName?.familyName,
+		]
+			.filter(Boolean)
+			.join(" ")
+			.trim();
+
+		let data: LoginResponse;
+		try {
+			data = await api.post<LoginResponse>(
+				"/api/public/auth/oauth/apple/native",
+				{
+					authorizationCode: credential.authorizationCode,
+					fullName: fullName || undefined,
+					identityToken: credential.identityToken,
+				},
+			);
+		} catch (error) {
+			if (error instanceof ApiError && error.status === 501) return false;
+			throw error;
+		}
+
+		await applyAuthenticatedSession(data);
+		return true;
 	};
 
 	const loginWithProvider = async (
 		provider: SocialAuthProvider,
 		redirectTo?: string,
 	): Promise<void> => {
+		if (provider === "apple" && (await loginWithAppleNative())) {
+			return;
+		}
+
 		const callbackPath = redirectTo
 			? `/auth/callback?redirect=${encodeURIComponent(redirectTo)}`
 			: "/auth/callback";
@@ -103,14 +209,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			throw new Error("Missing mobile OAuth transfer token");
 		}
 
-		const data = await api.post<LoginResponse>(
-			"/api/public/auth/oauth/mobile/exchange",
-			{ transferToken },
-		);
+		await completeOAuth(transferToken);
+	};
 
-		await SecureStore.setItemAsync("auth_token", data.token);
-		setToken(data.token);
-		setUser(data.user);
+	const completeOAuth = (transferToken: string): Promise<void> => {
+		const pending = oauthExchanges.get(transferToken);
+		if (pending) return pending;
+		const exchange = api
+			.post<LoginResponse>("/api/public/auth/oauth/mobile/exchange", {
+				transferToken,
+			})
+			.then((data) => applyAuthenticatedSession(data));
+		oauthExchanges.set(transferToken, exchange);
+		return exchange;
 	};
 
 	const register = async (
@@ -118,9 +229,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		email: string,
 		password: string,
 	): Promise<void> => {
-		await api.post("/api/users", { name, email, password });
-		// Auto-login after successful registration
-		await login(email, password);
+		// The verification email is written in the app's language; signing in
+		// waits on the link it carries, so there is no sign-in here.
+		await api.post("/api/users", {
+			name,
+			email,
+			password,
+			language: notificationLocaleOf(i18n.language),
+		});
 	};
 
 	const logout = async (): Promise<void> => {
@@ -136,12 +252,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	const refreshUser = async (): Promise<void> => {
 		try {
-			const data = await api.get<MeResponse>("/api/users/me");
-			setUser(data.user);
+			setUser(await fetchAuthenticatedUser());
 		} catch {
 			// Silently fail — don't log out the user on a refresh error
 		}
 	};
+
+	/**
+	 * Proactively refresh the Payload JWT and persist the renewed token. Native
+	 * refresh only succeeds while the current token is still valid, so this is
+	 * called when the app returns to the foreground — keeping the rolling
+	 * 4-day session alive as long as the user keeps coming back.
+	 */
+	const refreshToken = useCallback(async (): Promise<void> => {
+		const stored = await SecureStore.getItemAsync("auth_token");
+		if (!stored) return;
+
+		const exp = decodeJwtExp(stored);
+		if (exp && exp * 1000 <= Date.now()) {
+			// Already expired — require re-authentication rather than looping.
+			await SecureStore.deleteItemAsync("auth_token");
+			setToken(null);
+			setUser(null);
+			return;
+		}
+
+		const refreshed = await refreshApiToken();
+		if (!refreshed) return;
+
+		const newToken = await SecureStore.getItemAsync("auth_token");
+		if (newToken) setToken(newToken);
+		try {
+			setUser(await fetchAuthenticatedUser());
+		} catch {
+			// Keep the refreshed token even if the user fetch fails.
+		}
+	}, [fetchAuthenticatedUser]);
+
+	// Proactively refresh on foreground and clear auth when a request is
+	// unrecoverable (token expired/revoked).
+	useEffect(() => {
+		setUnauthorizedHandler(() => {
+			SecureStore.deleteItemAsync("auth_token");
+			setToken(null);
+			setUser(null);
+		});
+		const sub = AppState.addEventListener("change", (state) => {
+			if (state === "active") {
+				void refreshToken();
+			}
+		});
+		return () => {
+			sub.remove();
+		};
+	}, [refreshToken]);
 
 	/** Optimistically update local user state (e.g. after profile edit) */
 	const updateUser = (updates: Partial<UserDoc>): void => {
@@ -154,9 +318,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		isLoading,
 		login,
 		loginWithProvider,
+		completeOAuth,
 		register,
 		logout,
 		refreshUser,
+		refreshToken,
 		updateUser,
 	};
 

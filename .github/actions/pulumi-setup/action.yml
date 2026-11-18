@@ -1,0 +1,88 @@
+name: Pulumi setup (production)
+description: >
+  Signs in to Azure with OIDC, installs bun, the infra dependencies and the
+  Pulumi CLI, logs in to the Azure Blob state backend, writes the stack
+  config from its secret and pins imageTag to the release being deployed.
+
+inputs:
+  stack:
+    required: true
+  tag:
+    required: true
+  stack-config:
+    description: base64 of infra/.stacks/Pulumi.<stack>.yaml (secret PULUMI_STACK_CONFIG)
+    required: true
+  passphrase:
+    required: true
+  azure-client-id:
+    required: true
+  azure-tenant-id:
+    required: true
+  azure-subscription-id:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check the one-time setup
+      shell: bash
+      env:
+        STACK_CONFIG: ${{ inputs.stack-config }}
+        PASSPHRASE: ${{ inputs.passphrase }}
+        CLIENT_ID: ${{ inputs.azure-client-id }}
+      run: |
+        missing=()
+        [ -n "$PULUMI_BACKEND_URL" ] || missing+=("variable PULUMI_BACKEND_URL")
+        [ -n "$STACK_CONFIG" ] || missing+=("secret PULUMI_STACK_CONFIG")
+        [ -n "$PASSPHRASE" ] || missing+=("secret PULUMI_CONFIG_PASSPHRASE")
+        [ -n "$CLIENT_ID" ] || missing+=("secret AZURE_CLIENT_ID")
+        if [ ${#missing[@]} -gt 0 ]; then
+          printf '::error::not set up for CI deploys: %s (docs/runbook-aks-production.md)\n' "${missing[*]}"
+          exit 1
+        fi
+
+    - uses: azure/login@v2
+      with:
+        client-id: ${{ inputs.azure-client-id }}
+        tenant-id: ${{ inputs.azure-tenant-id }}
+        subscription-id: ${{ inputs.azure-subscription-id }}
+
+    # azure-native authenticates with the same federated identity (OIDC).
+    - name: Azure provider environment
+      shell: bash
+      run: |
+        {
+          echo "ARM_USE_OIDC=true"
+          echo "ARM_CLIENT_ID=${{ inputs.azure-client-id }}"
+          echo "ARM_TENANT_ID=${{ inputs.azure-tenant-id }}"
+          echo "ARM_SUBSCRIPTION_ID=${{ inputs.azure-subscription-id }}"
+        } >> "$GITHUB_ENV"
+
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Install infra dependencies
+      shell: bash
+      working-directory: infra
+      run: bun install --frozen-lockfile
+
+    - uses: pulumi/actions@v6
+
+    - name: Log in to the state backend and write the stack config
+      shell: bash
+      working-directory: infra
+      env:
+        STACK_CONFIG: ${{ inputs.stack-config }}
+        PULUMI_CONFIG_PASSPHRASE: ${{ inputs.passphrase }}
+        STACK: ${{ inputs.stack }}
+        TAG: ${{ inputs.tag }}
+      run: |
+        set -euo pipefail
+        pulumi login "$PULUMI_BACKEND_URL"
+        mkdir -p .stacks
+        printf '%s' "$STACK_CONFIG" | base64 -d > ".stacks/Pulumi.$STACK.yaml"
+        pulumi stack select "$STACK"
+        # This run deploys this release; the stored config is not touched.
+        pulumi config set imageTag "$TAG" --stack "$STACK"
+        echo "stack $STACK, imageTag $TAG"

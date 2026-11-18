@@ -1,0 +1,185 @@
+import { router } from "expo-router";
+import { Controller } from "react-hook-form";
+import {
+	ActivityIndicator,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
+import { DetailSkeleton } from "@/src/components/checkout/DetailSkeleton";
+import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { fillOf } from "@/src/components/shop/ink";
+import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { ConsentNotice } from "@/src/components/verification/ConsentNotice";
+import { useIdentityConsentForm } from "@/src/hooks/useIdentityConsentForm";
+import { resolveErrorMessage } from "@/src/lib/apiError";
+import { useTranslation } from "@/src/lib/i18n";
+
+export default function IdentityConsentScreen() {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const {
+		myShop,
+		shop,
+		query,
+		canProceed,
+		isLoading,
+		isError,
+		form,
+		checkboxError,
+		onStart,
+		startDisabled,
+		isStarting,
+	} = useIdentityConsentForm();
+
+	return (
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: c.bg }]}
+		>
+			<SellerHeader
+				title={t("verification.identity.pageTitle")}
+				onBack={() => router.back()}
+			/>
+
+			{isLoading ? <DetailSkeleton cards={2} /> : null}
+
+			{!isLoading && isError ? (
+				<EmptyState
+					illustration="notFound"
+					title={t("verification.loadError")}
+					subtitle={resolveErrorMessage(myShop.error ?? query.error, t)}
+					ctaLabel={t("common.retry")}
+					onCta={() => {
+						void myShop.refetch();
+						void query.refetch();
+					}}
+				/>
+			) : null}
+
+			{!isLoading && !isError && myShop.data && !shop ? (
+				<EmptyState
+					illustration="sell"
+					title={t("seller.noShopTitle")}
+					subtitle={t("seller.noShopSubtitle")}
+					ctaLabel={t("account.openShop")}
+					onCta={() => router.replace("/shop/create" as never)}
+				/>
+			) : null}
+
+			{!isLoading && !isError && query.data && !canProceed ? (
+				<EmptyState
+					illustration="notFound"
+					title={t("verification.identity.blocked.title")}
+					subtitle={t("verification.identity.blocked.body")}
+					ctaLabel={t("verification.identity.blocked.backToHub")}
+					onCta={() => router.replace("/seller/verification" as never)}
+				/>
+			) : null}
+
+			{!isLoading && !isError && query.data && canProceed ? (
+				<ScreenColumn width="reading">
+					<ScrollView
+						contentContainerStyle={styles.content}
+						keyboardShouldPersistTaps="handled"
+					>
+						{!query.data.enabled ? (
+							<View style={[styles.banner, { backgroundColor: c.warningSoft }]}>
+								<Text style={[styles.bannerText, { color: c.warningText }]}>
+									{t("apiErrors.verification.disabled")}
+								</Text>
+							</View>
+						) : null}
+
+						<Controller
+							control={form.control}
+							name="accepted"
+							render={({ field }) => (
+								<ConsentNotice
+									checked={field.value}
+									onToggle={field.onChange}
+									error={checkboxError}
+								/>
+							)}
+						/>
+
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={t("verification.identity.consent.start")}
+							accessibilityState={{ disabled: startDisabled }}
+							disabled={startDisabled}
+							onPress={onStart}
+							style={[
+								styles.submit,
+								{
+									backgroundColor: fillOf(c),
+									opacity: startDisabled ? 0.5 : 1,
+								},
+							]}
+						>
+							{isStarting ? (
+								<ActivityIndicator color="#ffffff" />
+							) : (
+								<Text style={styles.submitLabel}>
+									{t("verification.identity.consent.start")}
+								</Text>
+							)}
+						</Pressable>
+					</ScrollView>
+				</ScreenColumn>
+			) : null}
+		</SafeAreaView>
+	);
+}
+
+const styles = StyleSheet.create({
+	safe: { flex: 1 },
+	center: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 12,
+		padding: 24,
+	},
+	errorText: {
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.bodySemibold,
+		textAlign: "center",
+	},
+	retryBtn: {
+		minHeight: 48,
+		minWidth: 44,
+		paddingHorizontal: 20,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	retryLabel: {
+		color: "#ffffff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
+	content: { padding: 16, gap: 16, paddingBottom: 40 },
+	banner: { borderRadius: 12, padding: 12 },
+	bannerText: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	submit: {
+		minHeight: 48,
+		borderRadius: 14,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	submitLabel: {
+		color: "#ffffff",
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.bodyBold,
+	},
+});

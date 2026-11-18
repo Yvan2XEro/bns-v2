@@ -1,0 +1,319 @@
+import { Calendar, Flag, MapPin, MessageCircle, Star } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { BlockUserButton } from "~/components/chat/block-user-button";
+import { ListingGrid } from "~/components/listing/listing-card";
+import { ReportDialog } from "~/components/listing/report-dialog";
+import { ReviewForm } from "~/components/listing/review-form";
+import { ReviewPhotos } from "~/components/review/review-photos";
+import { LevelBadge } from "~/components/shop/level-badge";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { Button } from "~/components/ui/button";
+import { getBlockedUsers } from "~/lib/actions";
+import { withContentLocale } from "~/lib/content-locale";
+import { populatedReviewPhotos } from "~/lib/review-photos";
+import {
+	getAuthUser,
+	serverContentLocale,
+	serverFetch,
+} from "~/lib/server-api";
+import { getUserShop } from "~/lib/server-shop";
+import type { Listing, Review, User } from "~/types";
+
+const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
+
+interface PageProps {
+	params: Promise<{ userId: string }>;
+}
+
+export async function generateMetadata({
+	params,
+}: PageProps): Promise<Metadata> {
+	const { userId } = await params;
+	const user = await getUser(userId);
+
+	if (!user) {
+		return {
+			title: "Profil introuvable",
+			robots: { index: false },
+		};
+	}
+
+	const title = `${user.name} — Vendeur`;
+	const description = user.bio
+		? (user.bio as string).slice(0, 155)
+		: `Découvrez les annonces de ${user.name} sur Buy'N'Sellem${user.location ? ` à ${user.location}` : ""}.`;
+	const canonical = `${WEB_URL}/profile/${userId}`;
+	const avatarUrl = (user.avatar as { url?: string })?.url;
+
+	return {
+		title,
+		description,
+		alternates: { canonical },
+		openGraph: {
+			title,
+			description,
+			url: canonical,
+			type: "profile",
+			...(avatarUrl && {
+				images: [{ url: avatarUrl, width: 400, height: 400, alt: user.name }],
+			}),
+		},
+		twitter: {
+			card: "summary",
+			title,
+			description,
+			...(avatarUrl && { images: [avatarUrl] }),
+		},
+	};
+}
+
+async function getUser(userId: string): Promise<User | null> {
+	try {
+		const res = await serverFetch(`/api/users/${userId}`);
+		if (!res.ok) return null;
+		return res.json();
+	} catch {
+		return null;
+	}
+}
+
+async function getUserListings(userId: string): Promise<Listing[]> {
+	try {
+		const res = await serverFetch(
+			withContentLocale(
+				`/api/listings?where[seller][equals]=${userId}&where[status][equals]=published&limit=20&sort=-createdAt&depth=1`,
+				await serverContentLocale(),
+			),
+		);
+		if (!res.ok) return [];
+		const data = await res.json();
+		return data.docs || [];
+	} catch {
+		return [];
+	}
+}
+
+async function getUserReviews(userId: string): Promise<Review[]> {
+	try {
+		const res = await serverFetch(
+			`/api/reviews?where[reviewedUser][equals]=${userId}&depth=1&limit=50&sort=-createdAt`,
+		);
+		if (!res.ok) return [];
+		const data = await res.json();
+		return data.docs || [];
+	} catch {
+		return [];
+	}
+}
+
+export default async function ProfilePage({ params }: PageProps) {
+	const t = await getTranslations("Profile");
+	const { userId } = await params;
+	const [user, listings, reviews, shop] = await Promise.all([
+		getUser(userId),
+		getUserListings(userId),
+		getUserReviews(userId),
+		getUserShop(userId),
+	]);
+	const currentUser = (await getAuthUser()) as { id: string } | null;
+	const blockedUserIds = currentUser ? await getBlockedUsers() : [];
+	const isOwnProfile = currentUser?.id === userId;
+	const isBlocked = blockedUserIds.includes(userId);
+
+	if (!user) {
+		notFound();
+	}
+
+	const averageRating =
+		reviews.length > 0
+			? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+			: 0;
+
+	const personJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "Person",
+		name: user.name,
+		url: `${WEB_URL}/profile/${userId}`,
+		...(user.location && { address: user.location }),
+		...(user.bio && { description: user.bio }),
+		...((user.avatar as { url?: string })?.url && {
+			image: (user.avatar as { url?: string }).url,
+		}),
+		...(averageRating > 0 && {
+			aggregateRating: {
+				"@type": "AggregateRating",
+				ratingValue: averageRating.toFixed(1),
+				reviewCount: reviews.length,
+				bestRating: 5,
+				worstRating: 1,
+			},
+		}),
+	};
+
+	return (
+		<div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+			<script
+				type="application/ld+json"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+			/>
+			<div className="grid gap-6 lg:grid-cols-3">
+				{/* Seller card */}
+				<div className="lg:col-span-1">
+					<div className="rounded-xl border border-line bg-surface p-6">
+						<div className="flex flex-col items-center text-center">
+							<Avatar className="h-24 w-24 ring-2 ring-line">
+								<AvatarImage src={(user.avatar as { url?: string })?.url} />
+								<AvatarFallback className="bg-brand-fill font-semibold text-2xl text-white">
+									{user.name?.charAt(0) || "?"}
+								</AvatarFallback>
+							</Avatar>
+							<h1 className="mt-4 font-bold text-2xl text-ink">{user.name}</h1>
+							{shop && (
+								<div className="mt-2">
+									<LevelBadge badge={shop.badge} />
+								</div>
+							)}
+							{user.location && (
+								<p className="mt-2 flex items-center text-ink-muted text-sm">
+									<MapPin className="mr-1 h-4 w-4 text-[#F59E0B]" />
+									{user.location}
+								</p>
+							)}
+							<p className="mt-2 flex items-center text-ink-muted text-sm">
+								<Calendar className="mr-1 h-4 w-4" />
+								{t("joined", {
+									date: new Date(user.createdAt).toLocaleDateString(),
+								})}
+							</p>
+
+							<div className="mt-4 flex items-center gap-1">
+								<Star className="h-5 w-5 fill-[#F59E0B] text-[#F59E0B]" />
+								<span className="font-semibold text-ink">
+									{averageRating.toFixed(1)}
+								</span>
+								<span className="text-ink-faint">
+									({t("userReviews", { count: reviews.length })})
+								</span>
+							</div>
+
+							{user.bio && (
+								<p className="mt-4 text-ink-muted text-sm leading-relaxed">
+									{user.bio}
+								</p>
+							)}
+
+							<div className="mt-5 w-full border-line border-t pt-5">
+								<Link href={"/messages?listing="}>
+									<Button className="w-full rounded-xl bg-brand-fill hover:bg-brand-strong">
+										<MessageCircle className="mr-2 h-4 w-4" />
+										{t("message")}
+									</Button>
+								</Link>
+							</div>
+							{currentUser && !isOwnProfile && (
+								<div className="mt-3 w-full">
+									<BlockUserButton
+										userId={user.id}
+										initialBlocked={isBlocked}
+										variant="full"
+									/>
+								</div>
+							)}
+							<div className="mt-4 text-center">
+								<ReportDialog targetType="user" targetId={String(user.id)}>
+									<button
+										type="button"
+										className="inline-flex items-center gap-1 text-ink-faint text-xs hover:text-red-500"
+									>
+										<Flag className="h-3 w-3" />
+										{t("reportThisUser")}
+									</button>
+								</ReportDialog>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{/* Listings + Reviews */}
+				<div className="space-y-8 lg:col-span-2">
+					<div>
+						<h2 className="mb-4 font-bold text-ink text-xl">
+							{t("listingsBy", { name: user.name })}
+						</h2>
+						{listings.length > 0 ? (
+							<ListingGrid listings={listings} />
+						) : (
+							<div className="rounded-xl border border-line bg-surface py-12 text-center">
+								<p className="text-ink-muted">{t("noListingsUser")}</p>
+							</div>
+						)}
+					</div>
+
+					{reviews.length > 0 && (
+						<div>
+							<h2 className="mb-4 font-bold text-ink text-xl">
+								{t("reviewsTitle")}
+							</h2>
+							<div className="space-y-3">
+								{reviews.map((review) => {
+									const reviewer = review.reviewer as User;
+									return (
+										<div
+											key={review.id}
+											className="rounded-xl border border-line bg-surface p-4"
+										>
+											<div className="flex items-center gap-3">
+												<Avatar className="h-8 w-8">
+													<AvatarImage
+														src={(reviewer?.avatar as { url?: string })?.url}
+													/>
+													<AvatarFallback className="bg-brand-fill font-semibold text-white text-xs">
+														{reviewer?.name?.charAt(0) || "?"}
+													</AvatarFallback>
+												</Avatar>
+												<div>
+													<p className="font-medium text-ink">
+														{reviewer?.name || "Unknown"}
+													</p>
+													<div className="flex items-center">
+														{[...Array(5)].map((_, i) => (
+															<Star
+																key={i}
+																className={`h-3.5 w-3.5 ${
+																	i < review.rating
+																		? "fill-[#F59E0B] text-[#F59E0B]"
+																		: "text-line"
+																}`}
+															/>
+														))}
+													</div>
+												</div>
+											</div>
+											{review.comment && (
+												<p className="mt-2 text-ink-muted text-sm leading-relaxed">
+													{review.comment}
+												</p>
+											)}
+											<ReviewPhotos
+												photos={populatedReviewPhotos(review.photos)}
+											/>
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					)}
+
+					{/* Review form - only show if logged in and not own profile */}
+					{currentUser && currentUser.id !== user.id && (
+						<ReviewForm reviewedUserId={user.id} />
+					)}
+				</div>
+			</div>
+		</div>
+	);
+}

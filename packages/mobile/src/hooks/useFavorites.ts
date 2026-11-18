@@ -5,6 +5,7 @@ import { useAlert } from "../contexts/AlertContext";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { getAuthModalParams } from "../lib/authRedirect";
+import i18n from "../lib/i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,12 +116,16 @@ export function useToggleFavorite() {
 					};
 				}
 
-				// Add a placeholder to cache (will be replaced by server data on settle)
+				// Add a placeholder to cache (will be replaced by server data on settle).
+				// Never store a bare ID here: the favorites screens feed this straight
+				// to ListingCard, which then rendered a blank title/price and a
+				// "NaNmois" timestamp. Always carry at least { id, createdAt }.
+				const now = new Date().toISOString();
 				const placeholder: Favorite = {
 					id: `__optimistic__${listingId}`,
-					listing: listing ?? listingId,
+					listing: { id: listingId, createdAt: now, ...(listing ?? {}) },
 					user: "",
-					createdAt: new Date().toISOString(),
+					createdAt: now,
 				};
 				return {
 					...old,
@@ -198,7 +203,10 @@ export function useFavoriteActions() {
 				{
 					onError: (err) => {
 						console.error(err);
-						showError("Favoris", "Impossible de mettre a jour les favoris.");
+						showError(
+							i18n.t("favorites.title"),
+							i18n.t("favorites.updateError"),
+						);
 					},
 				},
 			);
@@ -212,6 +220,7 @@ export function useFavoriteActions() {
 		isFavorite: (listingId: string) => favoriteIds.has(listingId),
 		toggleFavorite,
 		isLoading: favoritesQuery.isLoading,
+		isError: favoritesQuery.isError,
 		isPending: toggleMutation.isPending,
 		refetch: favoritesQuery.refetch,
 	};

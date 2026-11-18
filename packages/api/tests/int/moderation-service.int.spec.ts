@@ -1,0 +1,584 @@
+import type { Payload } from "payload";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+	approveListing,
+	clearListingHold,
+	decideReport,
+	ModerationError,
+	rejectListing,
+	suspendShop,
+	suspendUser,
+	unsuspendUser,
+} from "../../src/services/moderation";
+
+type Doc = Record<string, any>;
+
+/**
+ * In-memory stand-in for the Payload local API. Only the handful of methods
+ * the moderation service calls are implemented, which keeps the tests about
+ * the moderation rules rather than about Payload.
+ */
+function fakePayload(seed: Record<string, Doc[]>) {
+	const store: Record<string, Doc[]> = {
+		listings: [],
+		users: [],
+		reports: [],
+		"moderation-log": [],
+		...seed,
+	};
+	let logSeq = 0;
+
+	const matches = (doc: Doc, where: any): boolean => {
+		if (!where) return true;
+		if (where.and) return where.and.every((w: any) => matches(doc, w));
+		if (where.or) return where.or.some((w: any) => matches(doc, w));
+		return Object.entries(where).every(([field, cond]: [string, any]) => {
+			const value = doc[field];
+			if ("equals" in cond) return String(value) === String(cond.equals);
+			if ("in" in cond) return cond.in.map(String).includes(String(value));
+			return true;
+		});
+	};
+
+	const payload = {
+		store,
+		async findByID({ collection, id }: any) {
+			const doc = store[collection]?.find((d) => String(d.id) === String(id));
+			if (!doc) throw new Error("not found");
+			return { ...doc };
+		},
+		async find({ collection, where, sort }: any) {
+			let docs = (store[collection] ?? []).filter((d) => matches(d, where));
+			if (sort === "-createdAt") {
+				docs = [...docs].sort(
+					(a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0),
+				);
+			}
+			return { docs: docs.map((d) => ({ ...d })), totalDocs: docs.length };
+		},
+		async update({ collection, id, data }: any) {
+			const doc = store[collection]?.find((d) => String(d.id) === String(id));
+			if (!doc) throw new Error("not found");
+			Object.assign(doc, data);
+			return { ...doc };
+		},
+		async create({ collection, data }: any) {
+			const doc = {
+				id: `${collection}-${++logSeq}`,
+				createdAt: logSeq,
+				...data,
+			};
+			store[collection] = store[collection] ?? [];
+			store[collection].push(doc);
+			return { ...doc };
+		},
+	};
+
+	return payload as unknown as Payload & { store: Record<string, Doc[]> };
+}
+
+const MOD = { id: "mod-1", role: "moderator" };
+const ADMIN = { id: "admin-1", role: "admin" };
+
+const logs = (p: any) => p.store["moderation-log"] as Doc[];
+
+describe("listing moderation", () => {
+	let payload: any;
+
+	beforeEach(() => {
+		payload = fakePayload({
+			listings: [
+				{ id: "l-pending", status: "pending", title: "A", seller: "u-1" },
+				{ id: "l-live", status: "published", title: "B", seller: "u-1" },
+			],
+		});
+	});
+
+	it("approves a pending listing and clears any old rejection reason", async () => {
+		await approveListing(payload, MOD, "l-pending");
+		const listing = payload.store.listings.find(
+			(l: Doc) => l.id === "l-pending",
+		);
+		expect(listing.status).toBe("published");
+		expect(listing.rejectionReason).toBeNull();
+	});
+
+	it("refuses to approve a listing that is already published", async () => {
+		await expect(approveListing(payload, MOD, "l-live")).rejects.toBeInstanceOf(
+			ModerationError,
+		);
+	});
+
+	it("refuses a rejection with no known reason, or “other” without words", async () => {
+		await expect(
+			rejectListing(payload, MOD, "l-pending", "   "),
+		).rejects.toMatchObject({ code: "moderation.reasonRequired" });
+		await expect(
+			rejectListing(payload, MOD, "l-pending", "other", " "),
+		).rejects.toMatchObject({ code: "moderation.reasonRequired" });
+	});
+
+	it("logs a pending rejection as a reject, and keeps the code apart from the words", async () => {
+		await rejectListing(
+			payload,
+			MOD,
+			"l-pending",
+			"prohibited_item",
+			"Counterfeit goods",
+		);
+		expect(logs(payload)[0]).toMatchObject({
+			action: "listing.reject",
+			targetType: "listing",
+			targetId: "l-pending",
+			reason: "prohibited_item: Counterfeit goods",
+		});
+		expect(
+			payload.store.listings.find((listing) => listing.id === "l-pending"),
+		).toMatchObject({
+			status: "rejected",
+			rejectionCode: "prohibited_item",
+			rejectionReason: "Counterfeit goods",
+		});
+	});
+
+	it("logs pulling a live listing as a takedown, not a reject", async () => {
+		await rejectListing(payload, MOD, "l-live", "suspected_scam");
+		expect(logs(payload)[0]).toMatchObject({
+			action: "listing.takedown",
+			metadata: { previousStatus: "published" },
+		});
+	});
+
+	it("rejects a plain user outright", async () => {
+		await expect(
+			approveListing(payload, { id: "u-9", role: "user" }, "l-pending"),
+		).rejects.toMatchObject({ code: "moderation.forbidden" });
+	});
+
+	it("reports a missing listing as not found", async () => {
+		await expect(approveListing(payload, MOD, "nope")).rejects.toMatchObject({
+			status: 404,
+		});
+	});
+});
+
+// N1: moderationHold must never be a one-way door. approveListing (release +
+// republish) and clearListingHold (release, leave the next move to the
+// seller) are the two ways a moderator ends a hold.
+describe("listing moderation hold", () => {
+	let payload: any;
+
+	beforeEach(() => {
+		payload = fakePayload({
+			listings: [
+				{
+					id: "l-held",
+					status: "draft",
+					title: "Held",
+					seller: "u-1",
+					moderationHold: true,
+				},
+				{
+					id: "l-free",
+					status: "draft",
+					title: "Not held",
+					seller: "u-1",
+					moderationHold: false,
+				},
+				{
+					id: "l-held-attached",
+					status: "draft",
+					title: "Held, attached",
+					seller: "u-1",
+					product: "p-1",
+					moderationHold: true,
+				},
+			],
+		});
+	});
+
+	it("clears the hold when approving a held listing", async () => {
+		await approveListing(payload, MOD, "l-held");
+		const listing = payload.store.listings.find((l: Doc) => l.id === "l-held");
+		expect(listing.status).toBe("published");
+		expect(listing.moderationHold).toBe(false);
+	});
+
+	// This is the detached case: there is no product sync to leak through, so
+	// the seller's own next edit is what decides the status from here.
+	it("releases a held, detached listing without changing its status", async () => {
+		await clearListingHold(payload, MOD, "l-held");
+		const listing = payload.store.listings.find((l: Doc) => l.id === "l-held");
+		expect(listing.status).toBe("draft");
+		expect(listing.moderationHold).toBe(false);
+		expect(logs(payload)[0]).toMatchObject({
+			action: "listing.holdRelease",
+			targetType: "listing",
+			targetId: "l-held",
+		});
+	});
+
+	// N4: for a listing still attached to a product, leaving `status` as
+	// "draft" would let the seller's very next ordinary sync (a stock
+	// movement, a product edit) republish it silently — the defect this
+	// mechanism exists to prevent, coming back through the release lever.
+	// Moving it to "pending" keeps `listingStatusFor` from doing that; only
+	// an explicit, logged `approveListing` call can bring it back.
+	it("releases a held, product-backed listing into pending review, not draft", async () => {
+		await clearListingHold(payload, MOD, "l-held-attached");
+		const listing = payload.store.listings.find(
+			(l: Doc) => l.id === "l-held-attached",
+		);
+		expect(listing.status).toBe("pending");
+		expect(listing.moderationHold).toBe(false);
+		expect(logs(payload)[0]).toMatchObject({
+			action: "listing.holdRelease",
+			targetType: "listing",
+			targetId: "l-held-attached",
+		});
+	});
+
+	it("refuses to clear a hold that is not set", async () => {
+		await expect(
+			clearListingHold(payload, MOD, "l-free"),
+		).rejects.toMatchObject({
+			code: "moderation.invalidTransition",
+			status: 409,
+		});
+	});
+
+	it("rejects a plain user outright", async () => {
+		await expect(
+			clearListingHold(payload, { id: "u-9", role: "user" }, "l-held"),
+		).rejects.toMatchObject({ code: "moderation.forbidden" });
+	});
+
+	it("reports a missing listing as not found", async () => {
+		await expect(clearListingHold(payload, MOD, "nope")).rejects.toMatchObject({
+			status: 404,
+		});
+	});
+});
+
+describe("user suspension", () => {
+	let payload: any;
+
+	beforeEach(() => {
+		payload = fakePayload({
+			users: [
+				{ id: "u-1", role: "user", name: "Seller" },
+				{ id: "mod-2", role: "moderator", name: "Colleague" },
+				{ id: "admin-1", role: "admin", name: "Boss" },
+			],
+			listings: [
+				{ id: "l-1", status: "published", seller: "u-1" },
+				{ id: "l-2", status: "published", seller: "u-1" },
+				{ id: "l-3", status: "sold", seller: "u-1" },
+				{ id: "l-other", status: "published", seller: "u-2" },
+			],
+		});
+	});
+
+	it("takes the account's published listings down and records which ones", async () => {
+		const result = await suspendUser(payload, MOD, "u-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+
+		expect(result.unpublishedListingIds.sort()).toEqual(["l-1", "l-2"]);
+		expect(
+			payload.store.listings.filter((l: Doc) => l.status === "draft").length,
+		).toBe(2);
+	});
+
+	it("leaves listings that were not published alone", async () => {
+		await suspendUser(payload, MOD, "u-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		expect(payload.store.listings.find((l: Doc) => l.id === "l-3").status).toBe(
+			"sold",
+		);
+	});
+
+	it("never touches another seller's listings", async () => {
+		await suspendUser(payload, MOD, "u-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		expect(
+			payload.store.listings.find((l: Doc) => l.id === "l-other").status,
+		).toBe("published");
+	});
+
+	it("stores who suspended, why and until when", async () => {
+		await suspendUser(payload, MOD, "u-1", {
+			reason: "harassment",
+			durationDays: 7,
+			note: "Third complaint",
+		});
+		const user = payload.store.users.find((u: Doc) => u.id === "u-1");
+		expect(user.suspendedBy).toBe("mod-1");
+		expect(user.suspendedReason).toBe("harassment");
+		expect(user.suspendedNote).toBe("Third complaint");
+		expect(user.suspendedAt).toBeTruthy();
+		expect(user.suspendedUntil).toBeTruthy();
+	});
+
+	it("refuses a reason outside the agreed taxonomy", async () => {
+		await expect(
+			suspendUser(payload, MOD, "u-1", {
+				reason: "because I said so",
+				durationDays: 7,
+			}),
+		).rejects.toMatchObject({ code: "moderation.reasonRequired" });
+	});
+
+	it("stops a moderator suspending another moderator", async () => {
+		await expect(
+			suspendUser(payload, MOD, "mod-2", { reason: "spam", durationDays: 7 }),
+		).rejects.toMatchObject({ code: "moderation.rankTooLow" });
+	});
+
+	it("stops a moderator suspending an admin", async () => {
+		await expect(
+			suspendUser(payload, MOD, "admin-1", { reason: "spam", durationDays: 7 }),
+		).rejects.toMatchObject({ code: "moderation.rankTooLow" });
+	});
+
+	it("stops anyone suspending themselves", async () => {
+		await expect(
+			suspendUser(payload, ADMIN, "admin-1", {
+				reason: "spam",
+				durationDays: 7,
+			}),
+		).rejects.toMatchObject({ code: "moderation.rankTooLow" });
+	});
+
+	it("stops a moderator handing out an indefinite suspension", async () => {
+		await expect(
+			suspendUser(payload, MOD, "u-1", { reason: "fraud", durationDays: null }),
+		).rejects.toMatchObject({ code: "moderation.durationInvalid" });
+	});
+
+	it("stops a moderator exceeding the 30-day cap", async () => {
+		await expect(
+			suspendUser(payload, MOD, "u-1", { reason: "fraud", durationDays: 90 }),
+		).rejects.toMatchObject({ code: "moderation.durationInvalid" });
+	});
+
+	it("lets an admin suspend indefinitely", async () => {
+		const result = await suspendUser(payload, ADMIN, "u-1", {
+			reason: "fraud",
+			durationDays: null,
+		});
+		expect(result.until).toBeNull();
+	});
+
+	it("lets an admin suspend a moderator", async () => {
+		await expect(
+			suspendUser(payload, ADMIN, "mod-2", { reason: "spam", durationDays: 7 }),
+		).resolves.toBeTruthy();
+	});
+});
+
+describe("lifting a suspension", () => {
+	let payload: any;
+
+	beforeEach(async () => {
+		payload = fakePayload({
+			users: [{ id: "u-1", role: "user" }],
+			listings: [
+				{ id: "l-1", status: "published", seller: "u-1" },
+				{ id: "l-2", status: "published", seller: "u-1" },
+			],
+		});
+		await suspendUser(payload, MOD, "u-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+	});
+
+	it("clears every suspension field", async () => {
+		await unsuspendUser(payload, MOD, "u-1");
+		const user = payload.store.users.find((u: Doc) => u.id === "u-1");
+		expect(user.suspendedAt).toBeNull();
+		expect(user.suspendedUntil).toBeNull();
+		expect(user.suspendedReason).toBeNull();
+		expect(user.suspendedBy).toBeNull();
+	});
+
+	it("republishes exactly what the suspension took down", async () => {
+		const result = await unsuspendUser(payload, MOD, "u-1");
+		expect(result.restoredListingIds.sort()).toEqual(["l-1", "l-2"]);
+		expect(
+			payload.store.listings.every((l: Doc) => l.status === "published"),
+		).toBe(true);
+	});
+
+	it("does not drag back a listing whose status changed in the meantime", async () => {
+		payload.store.listings.find((l: Doc) => l.id === "l-2").status = "deleted";
+		const result = await unsuspendUser(payload, MOD, "u-1");
+		expect(result.restoredListingIds).toEqual(["l-1"]);
+		expect(payload.store.listings.find((l: Doc) => l.id === "l-2").status).toBe(
+			"deleted",
+		);
+	});
+
+	it("leaves listings down when the caller says not to restore", async () => {
+		const result = await unsuspendUser(payload, MOD, "u-1", {
+			restoreListings: false,
+		});
+		expect(result.restoredListingIds).toEqual([]);
+		expect(payload.store.listings.every((l: Doc) => l.status === "draft")).toBe(
+			true,
+		);
+	});
+
+	it("refuses to lift a suspension that does not exist", async () => {
+		await unsuspendUser(payload, MOD, "u-1");
+		await expect(unsuspendUser(payload, MOD, "u-1")).rejects.toMatchObject({
+			code: "moderation.invalidTransition",
+		});
+	});
+
+	it("writes both the suspension and the lifting to the log", async () => {
+		await unsuspendUser(payload, MOD, "u-1");
+		expect(logs(payload).map((l) => l.action)).toEqual([
+			"user.suspend",
+			"user.unsuspend",
+		]);
+	});
+});
+
+describe("report decisions", () => {
+	let payload: any;
+
+	beforeEach(() => {
+		payload = fakePayload({
+			reports: [
+				{
+					id: "r-1",
+					status: "pending",
+					targetType: "listing",
+					targetId: "l-1",
+				},
+				{ id: "r-done", status: "resolved", targetType: "user", targetId: "u" },
+			],
+		});
+	});
+
+	it("resolves a pending report with its resolution", async () => {
+		await decideReport(payload, MOD, "r-1", {
+			outcome: "resolved",
+			resolution: "Listing removed",
+		});
+		const report = payload.store.reports.find((r: Doc) => r.id === "r-1");
+		expect(report.status).toBe("resolved");
+		expect(report.resolution).toBe("Listing removed");
+		expect(report.resolvedBy).toBe("mod-1");
+	});
+
+	it("dismisses without requiring the moderator to type anything", async () => {
+		await decideReport(payload, MOD, "r-1", { outcome: "dismissed" });
+		expect(payload.store.reports.find((r: Doc) => r.id === "r-1").status).toBe(
+			"reviewed",
+		);
+	});
+
+	it("refuses to decide a report twice", async () => {
+		await expect(
+			decideReport(payload, MOD, "r-done", {
+				outcome: "resolved",
+				resolution: "x",
+			}),
+		).rejects.toMatchObject({ code: "moderation.invalidTransition" });
+	});
+
+	it("carries what was reported into the log", async () => {
+		await decideReport(payload, MOD, "r-1", { outcome: "dismissed" });
+		expect(logs(payload)[0]).toMatchObject({
+			action: "report.dismiss",
+			metadata: { reportedTargetType: "listing", reportedTargetId: "l-1" },
+		});
+	});
+});
+
+// I2-adjacent lesson for orders: a suspension is not a cancellation, and
+// must never be mistaken for one by anything downstream.
+describe("shop suspension leaves orders alone", () => {
+	let payload: any;
+
+	beforeEach(() => {
+		payload = fakePayload({
+			users: [{ id: "owner-1", role: "user" }],
+			shops: [
+				{ id: "s-1", status: "active", owner: "owner-1", handle: "boutique" },
+			],
+			orders: [
+				{
+					id: "o-open",
+					shop: "s-1",
+					status: "accepted",
+					orderNumber: "ORD-OPEN",
+				},
+				{
+					id: "o-terminal",
+					shop: "s-1",
+					status: "completed",
+					orderNumber: "ORD-DONE",
+				},
+			],
+			conversations: [
+				{ id: "c-open", order: "o-open", shop: "s-1" },
+				{ id: "c-terminal", order: "o-terminal", shop: "s-1" },
+			],
+			messages: [],
+		});
+	});
+
+	it("cancels no order", async () => {
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		expect(
+			payload.store.orders.find((o: Doc) => o.id === "o-open").status,
+		).toBe("accepted");
+		expect(
+			payload.store.orders.find((o: Doc) => o.id === "o-terminal").status,
+		).toBe("completed");
+	});
+
+	it("posts exactly one system message, into the one open order's conversation", async () => {
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		const messages = payload.store.messages as Doc[];
+		expect(messages).toHaveLength(1);
+		expect(messages[0]).toMatchObject({
+			conversation: "c-open",
+			kind: "system",
+			sender: null,
+			order: "o-open",
+		});
+	});
+});
+
+describe("user suspension leaves a buyer's own orders running", () => {
+	it("touches no order when suspending a buyer", async () => {
+		const payload = fakePayload({
+			users: [{ id: "u-1", role: "user" }],
+			orders: [{ id: "o-1", buyer: "u-1", shop: "s-1", status: "accepted" }],
+		});
+
+		await suspendUser(payload, MOD, "u-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+
+		const order = payload.store.orders.find((o: Doc) => o.id === "o-1");
+		expect(order?.status).toBe("accepted");
+	});
+});

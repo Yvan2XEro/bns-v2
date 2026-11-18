@@ -1,0 +1,48 @@
+"use client";
+
+import { Info } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { useLocaleKey } from "~/lib/use-locale-key";
+import type { OrderSettingsView } from "~/types/order";
+
+/** Prints the ceilings the API sent; it has no table of its own to fall back on. */
+export function CapsNotice({
+	caps,
+}: {
+	caps: NonNullable<OrderSettingsView["caps"]>;
+}) {
+	const formatOrderMoney = useOrderMoney();
+	const t = useTranslations("Billing");
+	const locale = useLocaleKey();
+
+	return (
+		<section
+			aria-labelledby="caps-title"
+			className="flex gap-3 rounded-2xl border border-[var(--shop-accent-border,var(--c-brand-tint-strong))] bg-[var(--shop-accent-soft,var(--c-brand-soft))] p-4 text-sm"
+		>
+			<Info
+				aria-hidden="true"
+				className="mt-0.5 h-5 w-5 shrink-0 text-[var(--shop-accent-text,var(--c-brand))]"
+			/>
+			<div className="space-y-1">
+				<h2
+					id="caps-title"
+					className="font-semibold text-[var(--shop-accent-text,var(--c-brand-strong))]"
+				>
+					{t("capsNotice")}
+				</h2>
+				<ul className="list-disc space-y-0.5 pl-4 text-[var(--shop-accent-text,var(--c-brand-strong))]">
+					<li>
+						{t("capsMaxOrderTotal", {
+							amount: formatOrderMoney(caps.maxOrderTotal, locale),
+						})}
+					</li>
+					<li>{t("capsMaxDailyOrders", { count: caps.maxDailyOrders })}</li>
+					<li>{t("capsMaxOpenOrders", { count: caps.maxOpenOrders })}</li>
+				</ul>
+				<p className="text-ink-mid text-xs">{t("capsHint")}</p>
+			</div>
+		</section>
+	);
+}

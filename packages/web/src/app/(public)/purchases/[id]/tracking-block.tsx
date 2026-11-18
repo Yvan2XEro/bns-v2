@@ -1,0 +1,187 @@
+"use client";
+
+import { ExternalLink, MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { useState } from "react";
+import { Button } from "~/components/ui/button";
+import type { OrderAction } from "~/hooks/use-order-actions";
+import { usePurchaseShipments } from "~/hooks/use-shipments";
+import { resolveErrorMessage } from "~/lib/apiError";
+import {
+	attemptRows,
+	formatDeliveryDate,
+	proofCard,
+	riderCardVisible,
+	trackingHeadlineKey,
+	trackingSteps,
+} from "~/lib/shipment-tracking";
+import type { OrderView } from "~/types/order";
+import {
+	arrivalClock,
+	type BuyerShipmentView,
+	isOutForDelivery,
+} from "../../../../../../api/src/contracts/shipments";
+import { RescheduleDialog } from "./reschedule-dialog";
+import {
+	AttemptList,
+	PickupCard,
+	ProofSection,
+	RiderCard,
+} from "./tracking-details";
+import { TrackingStepper } from "./tracking-stepper";
+
+const ENDED = new Set(["delivered", "returned", "cancelled"]);
+
+function ShipmentCard({
+	orderId,
+	conversationId,
+	shipment,
+	actions,
+	now,
+	onContest,
+}: {
+	orderId: string;
+	conversationId: string | null;
+	shipment: BuyerShipmentView;
+	actions: readonly OrderAction[];
+	now: Date;
+	onContest: () => void;
+}) {
+	const t = useTranslations("Tracking");
+	const tRoot = useTranslations();
+	const locale = useLocale() === "en" ? "en" : "fr";
+	const [rescheduling, setRescheduling] = useState(false);
+	const proof = proofCard(shipment, actions.includes("contest_delivery"));
+	const etaClock = arrivalClock(shipment.eta);
+	const redelivery = shipment.redelivery;
+
+	return (
+		<article className="space-y-4 rounded-2xl border border-line bg-surface p-5">
+			<header className="space-y-1">
+				<h2 className="font-semibold text-ink">
+					{tRoot(`Delivery.${trackingHeadlineKey(shipment)}`)}
+				</h2>
+				<p className="text-ink-muted text-xs">
+					{t("shipmentNumber", { number: shipment.shipmentNumber })}
+				</p>
+				{shipment.promisedBy && !ENDED.has(shipment.status) && (
+					<p className="text-ink-soft text-sm">
+						{t("promisedBy", {
+							date: formatDeliveryDate(shipment.promisedBy, locale),
+						})}
+					</p>
+				)}
+			</header>
+			<TrackingStepper steps={trackingSteps(shipment)} />
+			{riderCardVisible(shipment) && shipment.rider ? (
+				<RiderCard
+					shipmentId={shipment.id}
+					rider={shipment.rider}
+					eta={shipment.eta}
+				/>
+			) : (
+				etaClock && (
+					<p className="font-semibold text-brand text-sm">
+						{t("eta", { time: etaClock })}
+					</p>
+				)
+			)}
+			{shipment.method === "seller_delivery" &&
+				!shipment.rider &&
+				isOutForDelivery(shipment.status) &&
+				conversationId && (
+					<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-canvas p-3">
+						<p className="text-ink-soft text-sm">{t("shopDelivers")}</p>
+						<Link
+							href={`/messages?conversation=${encodeURIComponent(conversationId)}`}
+							className="inline-flex min-h-11 items-center gap-2 font-medium text-brand text-sm"
+						>
+							<MessageCircle aria-hidden className="h-4 w-4" />
+							{t("contactShop")}
+						</Link>
+					</div>
+				)}
+			{redelivery && (
+				<p className="rounded-xl bg-brand-soft p-3 text-brand text-sm">
+					{t("redeliveryScheduled", {
+						date: formatDeliveryDate(redelivery.scheduledFor, locale),
+						window: tRoot(`Delivery.window.${redelivery.window}`),
+					})}
+				</p>
+			)}
+			<AttemptList
+				rows={attemptRows(shipment)}
+				labelOf={(key) => tRoot(`Delivery.${key}`)}
+			/>
+			{shipment.canReschedule && (
+				<>
+					<Button className="min-h-11" onClick={() => setRescheduling(true)}>
+						{t("rescheduleCta")}
+					</Button>
+					{rescheduling && (
+						<RescheduleDialog
+							open
+							onOpenChange={setRescheduling}
+							orderId={orderId}
+							shipmentId={shipment.id}
+							now={now}
+						/>
+					)}
+				</>
+			)}
+			{shipment.pickup && <PickupCard pickup={shipment.pickup} now={now} />}
+			{shipment.trackingUrl && (
+				<a
+					href={shipment.trackingUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="inline-flex min-h-11 items-center gap-2 font-medium text-brand text-sm"
+				>
+					<ExternalLink aria-hidden className="h-4 w-4" /> {t("trackingLink")}
+				</a>
+			)}
+			{proof && <ProofSection proof={proof} onContest={onContest} />}
+		</article>
+	);
+}
+
+/** Renders what the shipments route serves for the buyer, one card per shipment. */
+export function TrackingBlock({
+	order,
+	actions,
+	now,
+	onContest,
+}: {
+	order: OrderView;
+	actions: readonly OrderAction[];
+	now: Date;
+	onContest: () => void;
+}) {
+	const t = useTranslations("Tracking");
+	const tRoot = useTranslations();
+	const shipments = usePurchaseShipments(order.id, order.status);
+	if (shipments.isError) {
+		return (
+			<p role="alert" className="text-red-700 text-sm">
+				{resolveErrorMessage(shipments.error, tRoot, t("loadError"))}
+			</p>
+		);
+	}
+	if (!shipments.data || shipments.data.length === 0) return null;
+	return (
+		<div className="space-y-3">
+			{shipments.data.map((shipment) => (
+				<ShipmentCard
+					key={shipment.id}
+					orderId={order.id}
+					conversationId={order.conversationId ?? null}
+					shipment={shipment}
+					actions={actions}
+					now={now}
+					onContest={onContest}
+				/>
+			))}
+		</div>
+	);
+}

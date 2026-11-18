@@ -1,0 +1,459 @@
+import type { Payload, PayloadRequest } from "payload";
+import type { LedgerCategory } from "../collections/LedgerAccounts";
+import { ERROR_CODES } from "../lib/errors";
+import { marketOfShop, timezoneOfShop } from "../lib/markets";
+import { marketMonthBounds } from "../lib/orderMath";
+import { getOrderSettings } from "../lib/orderSettings";
+import { getPaymentSettings } from "../lib/paymentSettings";
+import { relationId } from "../lib/relationId";
+import { ServiceError } from "../lib/serviceError";
+import { withTransaction } from "../lib/transactions";
+import type { Order, Payout, Shop } from "../payload-types";
+import {
+	holdsView,
+	marketOf,
+	type PaymentSetupView,
+	requirePaymentsViewer,
+} from "./connectedAccounts";
+import { accountBalance, balancesByOrder } from "./ledger";
+import { activeHolds } from "./payoutHolds";
+import { paidOut } from "./payouts";
+import { findShop } from "./shopGuards";
+import type { ServiceUser } from "./shops";
+
+/** `GET /api/shops/{id}/payments`: the seller payments screen. */
+export interface SellerPaymentsView {
+	amounts: {
+		awaitingDelivery: number;
+		inWithdrawalPeriod: number;
+		readyForPayout: number | null;
+		payoutInTransit: number;
+		paidThisMonth: number;
+		currency: string;
+	};
+	payouts: SellerPayoutRow[];
+	orders: Array<{
+		orderId: string;
+		orderNumber: string;
+		goods: number;
+		delivery: number;
+		commissionHt: number;
+		vat: number;
+		netToYou: number;
+		status: string;
+		releaseDate: string | null;
+	}>;
+	holds: PaymentSetupView["holds"];
+	/** For the column headers; null when no single rate holds for the rows shown. */
+	rates: SellerPaymentRates;
+}
+
+export interface SellerPaymentRates {
+	commissionBps: number | null;
+	vatBps: number | null;
+}
+
+export interface SellerPayoutRow {
+	id: string;
+	date: string;
+	amount: number;
+	fee: number;
+	destinationMasked: string;
+	status: string;
+	/** Summed off the orders the payout carries (`order.amounts`). */
+	orderCount: number;
+	commissionHt: number;
+	vat: number;
+	/** `amount` plus the commission and VAT taken before it was sent. */
+	gross: number;
+}
+
+/** `GET /api/shops/{id}/payments/payouts/{payoutId}`. */
+export interface SellerPayoutDetail extends SellerPayoutRow {
+	currency: string;
+	orders: Array<{ orderId: string; orderNumber: string; amount: number }>;
+	statusHistory: Array<{ status: string; at: string }>;
+}
+
+/** The screen lists the latest rows; the amounts above them cover everything. */
+export const SELLER_PAYMENTS_LIST_LIMIT = 50;
+
+/** Every protected order whose charge settled, whatever happened after. */
+const CHARGED_PAYMENT_STATUSES: readonly Order["paymentStatus"][] = [
+	"paid",
+	"partially_refunded",
+	"refunded",
+];
+
+type Balances = Partial<Record<LedgerCategory, number>>;
+
+const idOf = (value: unknown): string => relationId(value) ?? "";
+
+/**
+ * What the seller is owed on one order: what the provider still holds or is
+ * paying out for it, less what a refund after release took back. Payout
+ * postings carry no order, so a paid-out order keeps its figure.
+ */
+function sellerPosition(balances: Balances): number {
+	return (
+		(balances.seller_pending ?? 0) +
+		(balances.seller_releasable ?? 0) +
+		(balances.seller_payout_in_transit ?? 0) -
+		(balances.seller_receivable ?? 0)
+	);
+}
+
+/** When the provider's `complete` landed, from the payout's own history. */
+function completedAt(payout: Payout): string | null {
+	const entries = (payout.statusHistory ?? []).filter(
+		(entry) => entry.status === "complete",
+	);
+	return entries.at(-1)?.at ?? null;
+}
+
+function currencyOf(
+	settings: Awaited<ReturnType<typeof getPaymentSettings>>,
+	shop: Shop,
+): string {
+	const market = marketOf(settings, shop);
+	if (!market)
+		throw new ServiceError(ERROR_CODES.paymentMarketUnavailable, 400);
+	return market.currency;
+}
+
+async function maskedDestinations(
+	req: PayloadRequest,
+	payouts: readonly Payout[],
+): Promise<Map<string, string>> {
+	const ids = [
+		...new Set(payouts.map((p) => idOf(p.payoutAccount)).filter(Boolean)),
+	];
+	if (ids.length === 0) return new Map();
+	const { docs } = await req.payload.find({
+		collection: "payout-accounts",
+		where: { id: { in: ids } },
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	return new Map(
+		docs.map((row) => [String(row.id), row.accountNumberMasked ?? ""]),
+	);
+}
+
+type CommissionByOrder = Map<
+	string,
+	{ commission: number; vat: number; payable: number }
+>;
+
+async function commissionByOrder(
+	req: PayloadRequest,
+	payouts: readonly Payout[],
+): Promise<CommissionByOrder> {
+	const ids = [
+		...new Set(
+			payouts.flatMap((p) => (p.orders ?? []).map((line) => idOf(line.order))),
+		),
+	].filter(Boolean);
+	if (ids.length === 0) return new Map();
+	const { docs } = await req.payload.find({
+		collection: "orders",
+		where: { id: { in: ids } },
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	return new Map(
+		docs.map((order) => [
+			String(order.id),
+			{
+				commission: order.amounts?.commission ?? 0,
+				vat: order.amounts?.commissionVat ?? 0,
+				payable: order.amounts?.destinationAmount ?? 0,
+			},
+		]),
+	);
+}
+
+function payoutRow(
+	payout: Payout,
+	destinations: Map<string, string>,
+	commissions: CommissionByOrder,
+): SellerPayoutRow {
+	const lines = payout.orders ?? [];
+	let commissionHt = 0;
+	let vat = 0;
+	// The ledger keeps commission per order, not per payout line: a line paying
+	// part of an order (split payout, refund, netted debt) carries its share.
+	for (const line of lines) {
+		const entry = commissions.get(idOf(line.order));
+		if (!entry || entry.payable <= 0) continue;
+		const share = Math.min(1, line.amount / entry.payable);
+		commissionHt += Math.round(entry.commission * share);
+		vat += Math.round(entry.vat * share);
+	}
+	return {
+		id: String(payout.id),
+		date: payout.createdAt,
+		amount: payout.amount,
+		fee: payout.fee ?? 0,
+		destinationMasked: destinations.get(idOf(payout.payoutAccount)) ?? "",
+		status: payout.status,
+		orderCount: lines.length,
+		commissionHt,
+		vat,
+		gross: payout.amount + commissionHt + vat,
+	};
+}
+
+async function shopOrders(
+	req: PayloadRequest,
+	shopId: string,
+	extra: { status?: Order["status"]; limit?: number } = {},
+): Promise<Order[]> {
+	const { docs } = await req.payload.find({
+		collection: "orders",
+		where: {
+			and: [
+				{ shop: { equals: shopId } },
+				{ paymentMethod: { equals: "mobile_money" } },
+				{ paymentStatus: { in: [...CHARGED_PAYMENT_STATUSES] } },
+				...(extra.status ? [{ status: { equals: extra.status } }] : []),
+			],
+		},
+		sort: "-createdAt",
+		...(extra.limit ? { limit: extra.limit } : { limit: 0, pagination: false }),
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	return docs;
+}
+
+/**
+ * The rates the screen's rows were charged at. The commission is the one the
+ * orders recorded when it accrued; before any accrual it is the platform
+ * default, unless a category carries its own rate, in which case no single
+ * rate can be promised. VAT follows the commission invoice's own source: the
+ * shop's market, else the order settings' rate.
+ */
+export async function appliedRates(
+	payload: Payload,
+	shop: Shop,
+	orders: readonly Pick<Order, "commission">[],
+	req?: PayloadRequest,
+): Promise<SellerPaymentRates> {
+	const orderSettings = await getOrderSettings(payload);
+	const market = await marketOfShop(payload, shop).catch(() => null);
+	const vatBps = market?.vatRateBps ?? orderSettings.vatRateBps ?? null;
+
+	const recorded = orders
+		.map((order) => order.commission?.rateBps)
+		.filter((rate): rate is number => typeof rate === "number");
+	if (recorded.length > 0) {
+		const [first] = recorded;
+		return {
+			commissionBps: recorded.every((rate) => rate === first) ? first : null,
+			vatBps,
+		};
+	}
+	const overridden = await payload.count({
+		collection: "categories",
+		where: { commissionRateBps: { greater_than_equal: 0 } },
+		overrideAccess: true,
+		req,
+	});
+	return {
+		commissionBps:
+			overridden.totalDocs > 0 ? null : orderSettings.defaultCommissionRateBps,
+		vatBps,
+	};
+}
+
+/**
+ * Read in one transaction so the amounts are one snapshot of the ledger.
+ * Every amount comes from the ledger. `seller_pending` is split in two: the
+ * share of delivered orders still inside their withdrawal window, and the
+ * rest, awaiting delivery. `seller_releasable` also holds the money of
+ * orders under a hold (Task 16 posts `release` regardless), which must not
+ * read as ready: a shop hold or a suspension leaves nothing ready, and an
+ * order hold takes that order's unpaid releasable money out.
+ */
+export async function sellerPaymentsView(
+	payload: Payload,
+	user: ServiceUser,
+	shopId: string,
+	now: Date = new Date(),
+): Promise<SellerPaymentsView> {
+	const shop = await findShop(payload, shopId);
+	await requirePaymentsViewer(payload, user, shop);
+	const settings = await getPaymentSettings(payload);
+	const currency = currencyOf(settings, shop);
+	const id = String(shop.id);
+
+	return withTransaction(payload, async (req) => {
+		const balance = (category: LedgerCategory) =>
+			accountBalance(payload, category, id, currency, req);
+		// Sequential on purpose: one Mongo session runs one operation at a time.
+		const pending = await balance("seller_pending");
+		const releasable = await balance("seller_releasable");
+		const inTransit = await balance("seller_payout_in_transit");
+		const holds = await activeHolds(payload, { shop: id }, req);
+		const delivered = await shopOrders(req, id, { status: "delivered" });
+		const recent = await shopOrders(req, id, {
+			limit: SELLER_PAYMENTS_LIST_LIMIT,
+		});
+
+		const deliveredBalances = await balancesByOrder(
+			req,
+			delivered.map((o) => String(o.id)),
+		);
+		const inWithdrawalPeriod = [...deliveredBalances.values()].reduce(
+			(sum, b) => sum + Math.max(b.seller_pending ?? 0, 0),
+			0,
+		);
+
+		let readyForPayout: number | null = null;
+		if (settings.releaseModel === "provider_hold") {
+			const shopHeld =
+				shop.status === "suspended" || holds.some((h) => h.scope === "shop");
+			if (shopHeld) {
+				readyForPayout = 0;
+			} else {
+				const heldOrders = [
+					...new Set(
+						holds.filter((h) => h.scope === "order").map((h) => idOf(h.order)),
+					),
+				];
+				const heldBalances = await balancesByOrder(req, heldOrders);
+				let held = 0;
+				for (const orderId of heldOrders) {
+					const unpaid =
+						(heldBalances.get(orderId)?.seller_releasable ?? 0) -
+						(await paidOut(req, orderId));
+					held += Math.max(unpaid, 0);
+				}
+				readyForPayout = Math.max(releasable - held, 0);
+			}
+		}
+
+		const { docs: payouts } = await payload.find({
+			collection: "payouts",
+			where: { shop: { equals: id } },
+			sort: "-createdAt",
+			pagination: false,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		const month = marketMonthBounds(now, await timezoneOfShop(payload, shop));
+		const paidThisMonth = payouts
+			.filter((p) => p.status === "complete")
+			.filter((p) => {
+				const at = completedAt(p);
+				return at !== null && at >= month.start && at < month.end;
+			})
+			.reduce((sum, p) => sum + p.amount, 0);
+
+		const listed = payouts.slice(0, SELLER_PAYMENTS_LIST_LIMIT);
+		const destinations = await maskedDestinations(req, listed);
+		const commissions = await commissionByOrder(req, listed);
+		const recentBalances = await balancesByOrder(
+			req,
+			recent.map((o) => String(o.id)),
+		);
+		const rates = await appliedRates(payload, shop, recent, req);
+
+		return {
+			amounts: {
+				awaitingDelivery: Math.max(pending - inWithdrawalPeriod, 0),
+				inWithdrawalPeriod,
+				readyForPayout,
+				payoutInTransit: inTransit,
+				paidThisMonth,
+				currency,
+			},
+			payouts: listed.map((p) => payoutRow(p, destinations, commissions)),
+			orders: recent.map((order) => ({
+				orderId: String(order.id),
+				orderNumber: order.orderNumber,
+				goods: (order.amounts?.subtotal ?? 0) - (order.amounts?.discount ?? 0),
+				delivery: order.amounts?.deliveryFee ?? 0,
+				commissionHt: order.amounts?.commission ?? 0,
+				vat: order.amounts?.commissionVat ?? 0,
+				netToYou: sellerPosition(recentBalances.get(String(order.id)) ?? {}),
+				status: order.status,
+				releaseDate:
+					order.settlement?.releaseEligibleAt ??
+					(order.status === "delivered"
+						? (order.deadlines?.withdrawalUntil ?? null)
+						: null),
+			})),
+			holds: holdsView(holds),
+			rates,
+		};
+	});
+}
+
+/** A payout of another shop answers exactly like one that does not exist. */
+export async function sellerPayoutDetail(
+	payload: Payload,
+	user: ServiceUser,
+	shopId: string,
+	payoutId: string,
+): Promise<SellerPayoutDetail> {
+	const shop = await findShop(payload, shopId);
+	await requirePaymentsViewer(payload, user, shop);
+
+	return withTransaction(payload, async (req) => {
+		const { docs } = await payload.find({
+			collection: "payouts",
+			where: {
+				and: [
+					{ id: { equals: payoutId } },
+					{ shop: { equals: String(shop.id) } },
+				],
+			},
+			limit: 1,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		const payout = docs[0];
+		if (!payout) throw new ServiceError(ERROR_CODES.notFound, 404);
+
+		const lines = payout.orders ?? [];
+		const orderIds = lines.map((line) => idOf(line.order));
+		const { docs: orders } = orderIds.length
+			? await payload.find({
+					collection: "orders",
+					where: { id: { in: orderIds } },
+					pagination: false,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+			: { docs: [] };
+		const numbers = new Map(orders.map((o) => [String(o.id), o.orderNumber]));
+
+		return {
+			...payoutRow(
+				payout,
+				await maskedDestinations(req, [payout]),
+				await commissionByOrder(req, [payout]),
+			),
+			currency: payout.currency,
+			orders: lines.map((line) => ({
+				orderId: idOf(line.order),
+				orderNumber: numbers.get(idOf(line.order)) ?? "",
+				amount: line.amount,
+			})),
+			statusHistory: (payout.statusHistory ?? []).map((entry) => ({
+				status: entry.status,
+				at: entry.at,
+			})),
+		};
+	});
+}

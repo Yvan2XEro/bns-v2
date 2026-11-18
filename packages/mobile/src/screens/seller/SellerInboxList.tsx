@@ -1,0 +1,193 @@
+import { FlashList } from "@shopify/flash-list";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+	ActivityIndicator,
+	RefreshControl,
+	StyleSheet,
+	View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { EmptyState } from "@/src/components/EmptyState";
+import type { SplitListProps } from "@/src/components/layout/SplitScreen";
+import { SearchBar } from "@/src/components/SearchBar";
+import { SkeletonConversationRow } from "@/src/components/SkeletonCard";
+import { InboxFilterChips } from "@/src/components/shop/inbox/InboxFilterChips";
+import { InboxRow } from "@/src/components/shop/inbox/InboxRow";
+import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { useActiveShop } from "@/src/hooks/useActiveShop";
+import { useShopInbox } from "@/src/hooks/useShopInbox";
+import { useShopInboxSocket } from "@/src/hooks/useShopInboxSocket";
+import { useTranslation } from "@/src/lib/i18n";
+import { can } from "@/src/lib/shopRoles";
+import type { InboxConversationView, InboxFilter } from "@/src/types/api";
+
+/** The shop's conversations, by filter; one opens through `onOpen`. */
+export function SellerInboxList({ selectedId, onOpen }: SplitListProps) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const { shop, isLoading: shopLoading } = useActiveShop();
+	const shopId = shop?.shopId ?? null;
+	const [filter, setFilter] = useState<InboxFilter>("all");
+	// Searched on the server (buyer name, listing title), a beat after the
+	// last keystroke so each letter is not a request.
+	const [search, setSearch] = useState("");
+	const [query, setQuery] = useState("");
+	useEffect(() => {
+		const id = setTimeout(() => setQuery(search.trim()), 300);
+		return () => clearTimeout(id);
+	}, [search]);
+
+	useShopInboxSocket(shopId);
+
+	const inbox = useShopInbox(shopId ?? undefined, {
+		filter,
+		...(query ? { q: query } : {}),
+	});
+	const rows: InboxConversationView[] =
+		inbox.data?.pages.flatMap((page) => page.docs) ?? [];
+	const totals = inbox.data?.pages[0]?.totals;
+
+	if (shopLoading) {
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("inbox.title")} />
+				<View
+					accessibilityLabel={t("common.loading")}
+					accessibilityState={{ busy: true }}
+				>
+					{[0, 1, 2, 3, 4, 5].map((i) => (
+						<SkeletonConversationRow key={i} />
+					))}
+				</View>
+			</SafeAreaView>
+		);
+	}
+
+	if (!shop) {
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("inbox.title")} />
+				<EmptyState
+					illustration="messages"
+					title={t("inbox.noShopTitle")}
+					subtitle={t("inbox.noShopSub")}
+					ctaLabel={t("shop.createSubmit")}
+					onCta={() => router.push("/shop/create")}
+				/>
+			</SafeAreaView>
+		);
+	}
+
+	if (!can(shop.role, "inbox.reply")) {
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: c.bg }]}
+			>
+				<SellerHeader title={t("inbox.title")} subtitle={shop.name} />
+				<EmptyState
+					icon="lock-closed-outline"
+					title={t("inbox.lockedTitle")}
+					subtitle={t("inbox.lockedSubShop", { shop: shop.name })}
+				/>
+			</SafeAreaView>
+		);
+	}
+
+	return (
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: c.bg }]}
+		>
+			<SellerHeader title={t("inbox.title")} subtitle={shop.name} />
+			<SearchBar
+				value={search}
+				onChangeText={setSearch}
+				placeholder={t("inbox.searchPlaceholder")}
+			/>
+			<InboxFilterChips active={filter} totals={totals} onChange={setFilter} />
+
+			{inbox.isLoading ? (
+				<View
+					accessibilityLabel={t("common.loading")}
+					accessibilityState={{ busy: true }}
+				>
+					{[0, 1, 2, 3, 4, 5].map((i) => (
+						<SkeletonConversationRow key={i} />
+					))}
+				</View>
+			) : inbox.isError ? (
+				<EmptyState
+					icon="cloud-offline-outline"
+					title={t("home.errorTitle")}
+					subtitle={t("home.errorSub")}
+					ctaLabel={t("common.retry")}
+					onCta={() => inbox.refetch()}
+				/>
+			) : rows.length === 0 ? (
+				query ? (
+					<EmptyState
+						illustration="searching"
+						title={t("search.noResults")}
+						subtitle={t("messages.noConversationsForSearch", { query })}
+					/>
+				) : (
+					<EmptyState
+						illustration="messages"
+						title={t("inbox.emptyTitle")}
+						subtitle={t("inbox.emptySub")}
+					/>
+				)
+			) : (
+				<FlashList
+					data={rows}
+					keyboardDismissMode="on-drag"
+					keyboardShouldPersistTaps="handled"
+					keyExtractor={(row) => row.id}
+					extraData={selectedId}
+					renderItem={({ item }) => (
+						<InboxRow
+							item={item}
+							onPress={() => onOpen(item.id)}
+							selected={item.id === selectedId}
+						/>
+					)}
+					refreshControl={
+						<RefreshControl
+							refreshing={inbox.isRefetching && !inbox.isFetchingNextPage}
+							onRefresh={() => inbox.refetch()}
+							tintColor={c.primary}
+							colors={[c.primary]}
+						/>
+					}
+					onEndReached={() =>
+						inbox.hasNextPage &&
+						!inbox.isFetchingNextPage &&
+						inbox.fetchNextPage()
+					}
+					onEndReachedThreshold={0.5}
+					contentContainerStyle={{ paddingBottom: 24 }}
+					ListFooterComponent={
+						inbox.isFetchingNextPage ? (
+							<View style={{ paddingVertical: 16 }}>
+								<ActivityIndicator color={c.primary} />
+							</View>
+						) : null
+					}
+				/>
+			)}
+		</SafeAreaView>
+	);
+}
+
+const styles = StyleSheet.create({
+	safe: { flex: 1 },
+});

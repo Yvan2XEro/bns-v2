@@ -25,6 +25,15 @@ function makeRandomPassword(): string {
 	return randomBytes(32).toString("hex");
 }
 
+function _toRelationId(val: unknown): string | null | undefined {
+	if (val === undefined) return undefined;
+	if (val === null) return null;
+	if (typeof val === "string") return val;
+	if (typeof val === "object" && "id" in (val as object))
+		return (val as { id: string }).id;
+	return undefined;
+}
+
 function withProviderLink(
 	user: PayloadUser,
 	identity: OAuthIdentity,
@@ -38,17 +47,32 @@ function withProviderLink(
 			link.providerAccountId === identity.providerAccountId,
 	);
 
+	const authProviders = alreadyLinked
+		? existingLinks.map((link) =>
+				link.provider === identity.provider &&
+				link.providerAccountId === identity.providerAccountId
+					? {
+							...link,
+							...(identity.providerData?.refreshToken
+								? { refreshToken: identity.providerData.refreshToken }
+								: {}),
+						}
+					: link,
+			)
+		: [
+				...existingLinks,
+				{
+					provider: identity.provider,
+					providerAccountId: identity.providerAccountId,
+					...(identity.providerData?.refreshToken
+						? { refreshToken: identity.providerData.refreshToken }
+						: {}),
+				},
+			];
+
 	return {
 		authProvider: identity.provider,
-		authProviders: alreadyLinked
-			? existingLinks
-			: [
-					...existingLinks,
-					{
-						provider: identity.provider,
-						providerAccountId: identity.providerAccountId,
-					},
-				],
+		authProviders,
 		providerAccountId: identity.providerAccountId,
 	};
 }
@@ -122,15 +146,24 @@ export async function resolveOAuthUser(
 			throw new Error("This account is not allowed to access admin");
 		}
 
-		const nextData: Partial<PayloadUser> = {
+		const nextData = {
 			...withProviderLink(linkedUser, identity),
 			...(identity.name ? { name: identity.name } : {}),
 		};
+
+		payload.logger.info({
+			msg: "[oauth] resolveOAuthUser — about to update linkedUser",
+			userId: linkedUser.id,
+			"linkedUser.avatar": linkedUser.avatar,
+			avatarType: typeof linkedUser.avatar,
+			nextDataKeys: Object.keys(nextData),
+		});
 
 		return (await payload.update({
 			collection: "users",
 			context: { oauthFlow: true },
 			data: nextData,
+			depth: 0,
 			id: linkedUser.id,
 			overrideAccess: true,
 		})) as PayloadUser;
@@ -142,10 +175,22 @@ export async function resolveOAuthUser(
 			throw new Error("This account is not allowed to access admin");
 		}
 
+		payload.logger.info({
+			msg: "[oauth] resolveOAuthUser — about to update emailMatchedUser",
+			userId: emailMatchedUser.id,
+			"emailMatchedUser.avatar": emailMatchedUser.avatar,
+			avatarType: typeof emailMatchedUser.avatar,
+		});
+
 		return (await payload.update({
 			collection: "users",
 			context: { oauthFlow: true },
-			data: withProviderLink(emailMatchedUser, identity),
+			// The provider has just proved the inbox this account waits on.
+			data: {
+				...withProviderLink(emailMatchedUser, identity),
+				_verified: true,
+			},
+			depth: 0,
 			id: emailMatchedUser.id,
 			overrideAccess: true,
 		})) as PayloadUser;
@@ -164,6 +209,9 @@ export async function resolveOAuthUser(
 			{
 				provider: identity.provider,
 				providerAccountId: identity.providerAccountId,
+				...(identity.providerData?.refreshToken
+					? { refreshToken: identity.providerData.refreshToken }
+					: {}),
 			},
 		],
 		email,
@@ -171,12 +219,16 @@ export async function resolveOAuthUser(
 		password: makeRandomPassword(),
 		providerAccountId: identity.providerAccountId,
 		role: "user",
+		// The provider vouched for the address (or there is none to check):
+		// signing in never waits for a link.
+		_verified: true,
 	};
 
 	return (await payload.create({
 		collection: "users",
 		context: { oauthFlow: true },
 		data: createData,
+		disableVerificationEmail: true,
 		overrideAccess: true,
 	})) as PayloadUser;
 }

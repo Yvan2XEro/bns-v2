@@ -1,0 +1,320 @@
+import { Image } from "expo-image";
+import * as Linking from "expo-linking";
+import { StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
+import { dangerInk } from "@/src/components/shop/ink";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
+import { useRevealRiderPhone } from "@/src/hooks/useShipments";
+import { resolveErrorMessage } from "@/src/lib/apiError";
+import { useTranslation } from "@/src/lib/i18n";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import {
+	FAILURE_REASON_LABELS,
+	type FailureReason,
+	shipmentStatusLabel,
+	WINDOW_LABELS,
+} from "@/src/lib/shipmentStatus";
+import {
+	pickupCountdown,
+	rescheduleAllowed,
+	showRiderCard,
+	telHref,
+	trackingSteps,
+} from "@/src/lib/shipmentTracking";
+import {
+	arrivalClock,
+	type BuyerShipmentView,
+	isOutForDelivery,
+} from "../../../../api/src/contracts/shipments";
+import { Card, PurchaseButton } from "../purchases/ui";
+
+const when = (iso: string | null, lang: "fr" | "en") =>
+	iso
+		? new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-US", {
+				weekday: "short",
+				day: "numeric",
+				month: "short",
+				hour: "2-digit",
+				minute: "2-digit",
+				timeZone: "Africa/Douala",
+			}).format(new Date(iso))
+		: null;
+
+const reasonLabel = (reason: string) =>
+	reason in FAILURE_REASON_LABELS
+		? FAILURE_REASON_LABELS[reason as FailureReason]
+		: FAILURE_REASON_LABELS.other;
+
+/**
+ * Who carries the parcel, the provider's ETA and « Appeler le livreur ». The
+ * number is never in the view: the call goes through the logged, rate-limited
+ * reveal, and a second tap dials the number already in hand.
+ */
+function RiderCard({
+	shipmentId,
+	rider,
+	eta,
+}: {
+	shipmentId: string;
+	rider: NonNullable<BuyerShipmentView["rider"]>;
+	eta: string | null;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const { showError } = useAlert();
+	const reveal = useRevealRiderPhone(shipmentId);
+	const clock = arrivalClock(eta);
+	const dial = (phone: string) => {
+		Linking.openURL(telHref(phone)).catch(() =>
+			showError(t("tracking.callRider"), phone),
+		);
+	};
+	const onCall = () => {
+		if (reveal.data?.phone) return dial(reveal.data.phone);
+		reveal.mutate(undefined, {
+			onSuccess: ({ phone }) => dial(phone),
+			onError: (error) =>
+				showError(t("tracking.callRider"), resolveErrorMessage(error, t)),
+		});
+	};
+	const subtitle = [
+		rider.vehicle,
+		t(
+			rider.kind === "courier"
+				? "tracking.riderKindCourier"
+				: "tracking.riderKindShop",
+		),
+	]
+		.filter(Boolean)
+		.join(" · ");
+	return (
+		<View style={[styles.rider, { backgroundColor: c.primarySoft }]}>
+			<Text style={{ color: c.text, fontFamily: Fonts.bodySemibold }}>
+				{t("tracking.rider", { name: rider.firstName })}
+			</Text>
+			<Text
+				style={{
+					color: c.muted,
+					fontFamily: Fonts.body,
+					fontSize: 12,
+					lineHeight: 16,
+				}}
+			>
+				{subtitle}
+			</Text>
+			{clock ? (
+				<Text style={{ color: c.link, fontFamily: Fonts.bodySemibold }}>
+					{t("tracking.eta", { time: clock })}
+				</Text>
+			) : null}
+			{rider.canCall ? (
+				<PurchaseButton
+					tone="outline"
+					label={t("tracking.callRider")}
+					pending={reveal.isPending}
+					onPress={onCall}
+				/>
+			) : null}
+		</View>
+	);
+}
+
+/** One shipment of a purchase: stepper, rider, attempts, pickup deadline, proof. */
+export function TrackingBlock({
+	view,
+	lang,
+	now,
+	onReschedule,
+	onContest,
+}: {
+	view: BuyerShipmentView;
+	lang: "fr" | "en";
+	now: Date;
+	onReschedule: () => void;
+	onContest?: () => void;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const steps = trackingSteps(view);
+	const etaClock = arrivalClock(view.eta);
+	const countdown = pickupCountdown(view.pickup?.pickupDeadline ?? null, now);
+	const outcome =
+		view.status === "failed" ||
+		view.status === "returned" ||
+		view.status === "cancelled";
+	return (
+		<Card>
+			<Text style={[styles.title, { color: c.text }]}>
+				{t("tracking.title", { number: view.shipmentNumber })}
+			</Text>
+			{outcome ? (
+				<Text style={{ color: dangerInk(c), fontFamily: Fonts.bodySemibold }}>
+					{t(shipmentStatusLabel("buyer", view.status))}
+				</Text>
+			) : null}
+			{view.promisedBy && !outcome && view.status !== "delivered" ? (
+				<Text style={{ color: c.body, fontFamily: Fonts.body }}>
+					{t("tracking.promisedBy", { date: when(view.promisedBy, lang) })}
+				</Text>
+			) : null}
+			<View accessibilityRole="list" style={{ gap: 8 }}>
+				{steps.map((step) => (
+					<View key={step.labelKey} style={styles.step}>
+						<View
+							style={[
+								styles.dot,
+								{
+									backgroundColor:
+										step.state === "done"
+											? c.primary
+											: step.state === "current"
+												? c.warningText
+												: c.border,
+								},
+							]}
+						/>
+						<Text
+							style={{
+								flex: 1,
+								color: step.state === "upcoming" ? c.muted : c.text,
+								fontFamily:
+									step.state === "current" ? Fonts.bodySemibold : Fonts.body,
+							}}
+						>
+							{t(step.labelKey)}
+							{step.at ? ` · ${when(step.at, lang)}` : ""}
+						</Text>
+					</View>
+				))}
+			</View>
+
+			{showRiderCard(view) && view.rider ? (
+				<RiderCard shipmentId={view.id} rider={view.rider} eta={view.eta} />
+			) : etaClock ? (
+				<Text style={{ color: c.link, fontFamily: Fonts.bodySemibold }}>
+					{t("tracking.eta", { time: etaClock })}
+				</Text>
+			) : null}
+			{view.method === "seller_delivery" &&
+			!view.rider &&
+			isOutForDelivery(view.status) ? (
+				<Text style={{ color: c.body, fontFamily: Fonts.body }}>
+					{t("tracking.shopDelivers")}
+				</Text>
+			) : null}
+
+			{view.attempts.length > 0 ? (
+				<View style={styles.block}>
+					<Text style={{ color: c.text, fontFamily: Fonts.bodySemibold }}>
+						{t("tracking.attempts", { count: view.attempts.length })}
+					</Text>
+					{view.attempts.map((attempt) => (
+						<Text
+							key={attempt.number}
+							style={{ color: c.body, fontFamily: Fonts.body }}
+						>
+							{`${attempt.number}. ${t(reasonLabel(attempt.reason))} · ${when(attempt.at, lang)}`}
+						</Text>
+					))}
+				</View>
+			) : null}
+
+			{view.redelivery ? (
+				<Text style={{ color: c.body, fontFamily: Fonts.body }}>
+					{t("tracking.redelivery", {
+						date: when(view.redelivery.scheduledFor, lang),
+						window: t(WINDOW_LABELS[view.redelivery.window]),
+					})}
+				</Text>
+			) : null}
+			{rescheduleAllowed(view, now) ? (
+				<PurchaseButton
+					label={t("tracking.reschedule")}
+					onPress={onReschedule}
+				/>
+			) : null}
+
+			{view.pickup ? (
+				<View style={styles.block}>
+					<Text style={{ color: c.text, fontFamily: Fonts.bodySemibold }}>
+						{view.pickup.locationName}
+					</Text>
+					<Text style={{ color: c.body, fontFamily: Fonts.body }}>
+						{view.pickup.landmark}
+					</Text>
+					<Text style={{ color: c.body, fontFamily: Fonts.body }}>
+						{view.pickup.hours}
+					</Text>
+					{countdown.kind !== "none" ? (
+						<Text
+							style={{ color: c.warningText, fontFamily: Fonts.bodySemibold }}
+						>
+							{countdown.kind === "expired"
+								? t("tracking.pickupExpired")
+								: t(`tracking.pickupLeft_${countdown.kind}`, {
+										count: countdown.count,
+									})}
+						</Text>
+					) : null}
+				</View>
+			) : null}
+
+			{view.trackingUrl ? (
+				<>
+					{isOutForDelivery(view.status) ? (
+						<Text style={{ color: c.body, fontFamily: Fonts.body }}>
+							{t("tracking.liveTrackingHint")}
+						</Text>
+					) : null}
+					<PurchaseButton
+						tone="outline"
+						label={t("tracking.openTracking")}
+						onPress={() => void Linking.openURL(view.trackingUrl ?? "")}
+					/>
+				</>
+			) : null}
+
+			{view.proof ? (
+				<View style={styles.block}>
+					<Text style={{ color: c.text, fontFamily: Fonts.bodySemibold }}>
+						{t("tracking.proof", { date: when(view.proof.capturedAt, lang) })}
+					</Text>
+					{view.proof.codeVerified ? (
+						<Text
+							style={{ color: c.successText, fontFamily: Fonts.bodySemibold }}
+						>
+							{t("tracking.codeVerified")}
+						</Text>
+					) : null}
+					{view.proof.photoUrl ? (
+						<Image
+							source={{
+								uri: resolveImageUrl(view.proof.photoUrl) ?? undefined,
+							}}
+							accessibilityLabel={t("tracking.proofPhoto")}
+							style={styles.photo}
+							contentFit="cover"
+						/>
+					) : null}
+					{onContest ? (
+						<PurchaseButton
+							tone="outline"
+							label={t("tracking.contest")}
+							onPress={onContest}
+						/>
+					) : null}
+				</View>
+			) : null}
+		</Card>
+	);
+}
+
+const styles = StyleSheet.create({
+	title: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.displayBold },
+	step: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 28 },
+	dot: { width: 12, height: 12, borderRadius: 6 },
+	block: { gap: 6, marginTop: 6 },
+	photo: { width: 120, height: 120, borderRadius: 10 },
+	rider: { gap: 4, marginTop: 6, padding: 12, borderRadius: 12 },
+});

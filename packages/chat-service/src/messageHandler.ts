@@ -1,13 +1,19 @@
 import type { Server, Socket } from "socket.io";
-import { getParticipants } from "./cache.ts";
+import {
+	getConversationMeta,
+	hasConversationAccess,
+	invalidateConversationMeta,
+} from "./cache.ts";
 import { getRedis } from "./redis.ts";
-import { getRoomId } from "./rooms.ts";
+import { getRoomId, shopInboxRoom } from "./rooms.ts";
 import { getServiceToken, invalidateServiceToken } from "./serviceAuth.ts";
 
 const PAYLOAD_API_URL =
 	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW = 1;
+const RATE_LIMIT_SCRIPT =
+	"local count = redis.call('INCR', KEYS[1]); if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end; return count";
 
 type SendMessagePayload = {
 	conversationId: string;
@@ -34,9 +40,62 @@ type MessageResponse = {
 async function checkRateLimit(userId: string): Promise<boolean> {
 	const redis = getRedis();
 	const key = `ratelimit:msg:${userId}`;
-	const count = await redis.incr(key);
-	if (count === 1) await redis.expire(key, RATE_LIMIT_WINDOW);
+	const result: unknown = await redis.send("EVAL", [
+		RATE_LIMIT_SCRIPT,
+		"1",
+		key,
+		String(RATE_LIMIT_WINDOW),
+	]);
+	if (typeof result !== "number")
+		throw new Error("Redis returned an invalid message rate limit counter");
+	const count = result;
 	return count <= RATE_LIMIT_MAX;
+}
+
+// A client resends what it had not seen confirmed once it reconnects, so the
+// same tempId can arrive twice: the first claims it, a repeat is answered
+// with the stored confirmation or dropped while the first is still in flight.
+const SENT_TTL_SECONDS = 86_400;
+const sentKey = (userId: string, tempId: string) =>
+	`chat:sent:${userId}:${tempId}`;
+
+type SendClaim = { claimed: true } | { claimed: false; confirmed?: unknown };
+
+async function claimSend(userId: string, tempId: string): Promise<SendClaim> {
+	const redis = getRedis();
+	const key = sentKey(userId, tempId);
+	const set: unknown = await redis.send("SET", [
+		key,
+		"pending",
+		"NX",
+		"EX",
+		String(SENT_TTL_SECONDS),
+	]);
+	if (set !== null) return { claimed: true };
+	const stored: unknown = await redis.send("GET", [key]);
+	if (typeof stored !== "string" || stored === "pending")
+		return { claimed: false };
+	try {
+		return { claimed: false, confirmed: JSON.parse(stored) };
+	} catch {
+		return { claimed: false };
+	}
+}
+
+function settleSend(userId: string, tempId: string, confirmed: unknown) {
+	const key = sentKey(userId, tempId);
+	const write =
+		confirmed === null
+			? getRedis().send("DEL", [key])
+			: getRedis().send("SET", [
+					key,
+					JSON.stringify(confirmed),
+					"EX",
+					String(SENT_TTL_SECONDS),
+				]);
+	write.catch((err: unknown) =>
+		console.error("[chat] Failed to settle a send:", err),
+	);
 }
 
 async function fetchListingAttachment(
@@ -123,15 +182,43 @@ export function registerMessageHandlers(
 			return;
 		}
 
-		const allowed = await checkRateLimit(userId);
-		if (!allowed) {
+		// Before the rate limit: a refused send must not consume a caller's
+		// budget, and `conversation:join` was never the only way in — a client
+		// can emit `message:send` for any id it can guess.
+		if (!(await hasConversationAccess(userId, conversationId))) {
 			if (tempId)
-				socket.emit("message:failed", { tempId, error: "Rate limit exceeded" });
+				socket.emit("message:failed", {
+					tempId,
+					error: "Access denied to conversation",
+				});
 			return;
 		}
 
-		// Fetch participants from cache (no HTTP if cached) for broadcast
-		const participants = await getParticipants(conversationId);
+		if (tempId) {
+			const claim = await claimSend(userId, tempId);
+			if (!claim.claimed) {
+				if (claim.confirmed)
+					socket.emit("message:confirmed", {
+						tempId,
+						message: claim.confirmed,
+					});
+				return;
+			}
+		}
+
+		const allowed = await checkRateLimit(userId);
+		if (!allowed) {
+			if (tempId) {
+				settleSend(userId, tempId, null);
+				socket.emit("message:failed", { tempId, error: "Rate limit exceeded" });
+			}
+			return;
+		}
+
+		// Fetch meta from cache (no HTTP if cached) for broadcast
+		const meta = await getConversationMeta(conversationId);
+		const participants = meta?.participants ?? [];
+		const shopId = meta?.shopId ?? null;
 
 		// Persist async — no blocking broadcast
 		persistMessage(conversationId, userId, content.trim(), listingId)
@@ -166,6 +253,7 @@ export function registerMessageHandlers(
 
 				// Confirm to sender with real message id
 				if (tempId) {
+					settleSend(userId, tempId, msgPayload);
 					socket.emit("message:confirmed", { tempId, message: msgPayload });
 				}
 
@@ -184,6 +272,42 @@ export function registerMessageHandlers(
 					.catch((err) =>
 						console.error("[chat] Failed to update lastMessage:", err),
 					);
+
+				if (shopId) {
+					io.to(shopInboxRoom(shopId)).emit("message:new", {
+						...msgPayload,
+						shopId,
+					});
+					// The API's `Messages.afterChange` has already written
+					// `inboxStatus`, `awaitingReply` and `lastMessageAt`; the cache
+					// entry for the conversation is meta only, so this is one read.
+					await invalidateConversationMeta(conversationId);
+					const token = await getServiceToken();
+					const res = await fetch(
+						`${PAYLOAD_API_URL}/conversations/${conversationId}?depth=0`,
+						{ headers: { Authorization: `JWT ${token}` } },
+					);
+					if (res.ok) {
+						const conv = (await res.json()) as {
+							assignee?: unknown;
+							inboxStatus?: string;
+							awaitingReply?: boolean;
+							lastMessageAt?: string | null;
+						};
+						io.to(shopInboxRoom(shopId)).emit("inbox:conversation-updated", {
+							conversationId,
+							assignee:
+								conv.assignee &&
+								typeof conv.assignee === "object" &&
+								"id" in conv.assignee
+									? String((conv.assignee as { id: unknown }).id)
+									: ((conv.assignee as string | null | undefined) ?? null),
+							inboxStatus: (conv.inboxStatus ?? "open") as "open" | "done",
+							awaitingReply: conv.awaitingReply === true,
+							lastMessageAt: conv.lastMessageAt ?? null,
+						});
+					}
+				}
 
 				console.log(
 					JSON.stringify({
@@ -206,6 +330,7 @@ export function registerMessageHandlers(
 					}),
 				);
 				if (tempId) {
+					settleSend(userId, tempId, null);
 					socket.emit("message:failed", {
 						tempId,
 						error: "Failed to send message",
@@ -234,24 +359,28 @@ export function registerMessageHandlers(
 				userId,
 			});
 
-			// Mark messages as read via service token (fire-and-forget)
+			const lastMessageId = payload.messageIds[payload.messageIds.length - 1];
+			if (!lastMessageId) return;
+
+			// One call to the read route instead of N PATCHes: it also upserts
+			// the caller's `conversation-reads` row, which per-message PATCHes
+			// never did — that is what the shared inbox counts unread from.
 			getServiceToken()
 				.then((token) =>
-					Promise.all(
-						payload.messageIds.map((messageId) =>
-							fetch(`${PAYLOAD_API_URL}/messages/${messageId}`, {
-								method: "PATCH",
-								headers: {
-									"Content-Type": "application/json",
-									Authorization: `JWT ${token}`,
-								},
-								body: JSON.stringify({ read: true }),
-							}),
-						),
+					fetch(
+						`${PAYLOAD_API_URL}/conversations/${payload.conversationId}/read`,
+						{
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+								Authorization: `JWT ${token}`,
+							},
+							body: JSON.stringify({ lastMessageId, userId }),
+						},
 					),
 				)
 				.catch((err) =>
-					console.error("[chat] Failed to mark messages as read:", err),
+					console.error("[chat] Failed to mark the conversation read:", err),
 				);
 		},
 	);

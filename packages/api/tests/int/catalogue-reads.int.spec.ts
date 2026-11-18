@@ -1,0 +1,491 @@
+// @vitest-environment node
+import { describe, expect, it } from "vitest";
+import { getProductDetail, listCatalogue } from "../../src/services/catalogue";
+import { getMyShop } from "../../src/services/shops";
+import { fakePayload } from "./helpers/fakePayload";
+
+const U1 = { id: "u-1" };
+
+function seed() {
+	return fakePayload({
+		users: [
+			{
+				id: "u-1",
+				name: "Aïcha",
+				createdAt: "2024-03-01T00:00:00.000Z",
+				rating: 4.8,
+				totalReviews: 126,
+			},
+			{ id: "u-2", name: "Other" },
+		],
+		shops: [
+			{
+				id: "s-1",
+				handle: "akwatech",
+				name: "Akwa Tech",
+				owner: "u-1",
+				status: "active",
+				level: 2,
+				handleChangedAt: "2026-09-10T00:00:00.000Z",
+				publishedListingCount: 1,
+			},
+		],
+		"shop-members": [
+			{ id: "m-1", shop: "s-1", user: "u-1", role: "owner", status: "active" },
+			{ id: "m-2", shop: "s-1", user: "u-3", role: "staff", status: "active" },
+		],
+		products: [
+			{
+				id: "p-1",
+				// Shaped like a depth-populated relation, the way a real Payload
+				// read would return it: a leak here means the fix stopped shaping
+				// the response and started handing the raw document back.
+				shop: {
+					id: "s-1",
+					status: "active",
+					suspendedNote: "Reported for counterfeit goods",
+					suspendedBy: "u-mod",
+				},
+				title: "iPhone 13 Pro",
+				status: "active",
+				listing: "l-1",
+				images: [{ image: { id: "m-1", url: "/m1.jpg" } }],
+				updatedAt: "2026-09-15T10:00:00.000Z",
+			},
+			{
+				id: "p-2",
+				shop: "s-1",
+				title: "AirPods Pro",
+				status: "active",
+				listing: null,
+				images: [],
+				updatedAt: "2026-09-14T10:00:00.000Z",
+			},
+			{
+				id: "p-3",
+				shop: "s-1",
+				title: "Apple Watch SE",
+				status: "draft",
+				listing: null,
+				images: [],
+				updatedAt: "2026-09-13T10:00:00.000Z",
+			},
+		],
+		"product-variants": [
+			{
+				id: "v-1",
+				product: "p-1",
+				shop: "s-1",
+				optionValues: { Couleur: "Graphite" },
+				sku: "AT-IP13P-GR",
+				price: 285000,
+				cost: 238000,
+				trackInventory: true,
+				stockOnHand: 4,
+				stockReserved: 0,
+				lowStockThreshold: 2,
+			},
+			{
+				id: "v-2",
+				product: "p-1",
+				shop: "s-1",
+				optionValues: { Couleur: "Or" },
+				sku: "AT-IP13P-OR",
+				price: 330000,
+				cost: 276000,
+				trackInventory: true,
+				stockOnHand: 2,
+				stockReserved: 0,
+				lowStockThreshold: 1,
+			},
+			{
+				id: "v-3",
+				product: "p-2",
+				shop: "s-1",
+				optionValues: {},
+				sku: "AT-APP2",
+				price: 95000,
+				cost: 78000,
+				trackInventory: true,
+				stockOnHand: 2,
+				stockReserved: 0,
+				lowStockThreshold: 3,
+			},
+			{
+				id: "v-4",
+				product: "p-3",
+				shop: "s-1",
+				optionValues: {},
+				sku: null,
+				price: 140000,
+				trackInventory: true,
+				stockOnHand: 0,
+				stockReserved: 0,
+				lowStockThreshold: null,
+			},
+		],
+		listings: [
+			{
+				id: "l-1",
+				status: "published",
+				views: 184,
+				shop: "s-1",
+				product: "p-1",
+				seller: "u-1",
+			},
+			{ id: "l-9", status: "published", seller: "u-1", shop: null },
+			{ id: "l-10", status: "draft", seller: "u-1" },
+			{ id: "l-11", status: "sold", seller: "u-1" },
+		],
+		favorites: [{ id: "f-1", listing: "l-1", user: "u-2" }],
+		"stock-movements": [
+			{
+				id: "sm-1",
+				variant: "v-1",
+				product: "p-1",
+				shop: "s-1",
+				type: "receipt",
+				quantity: 4,
+				unitCost: 200000,
+				stockAfter: 4,
+				actor: "u-1",
+				createdAt: "2026-09-12T09:15:00.000Z",
+			},
+		],
+	});
+}
+
+const NOW = new Date("2026-09-15T12:00:00.000Z");
+
+describe("getMyShop", () => {
+	it("returns nulls for a user without a shop", async () => {
+		expect(await getMyShop(seed(), { id: "u-2" }, NOW)).toEqual({
+			shop: null,
+			role: null,
+			roleReason: null,
+			counts: null,
+		});
+	});
+
+	it("summarises the caller's shop", async () => {
+		const result = await getMyShop(seed(), U1, NOW);
+		expect(result.role).toBe("owner");
+		expect(result.roleReason).toBeNull();
+		expect(result.shop).toMatchObject({
+			handle: "akwatech",
+			status: "active",
+			nextHandleChangeAt: "2026-10-10T00:00:00.000Z",
+			suspension: null,
+		});
+		expect(result.counts).toEqual({
+			activeProducts: 2,
+			draftProducts: 1,
+			lowStockVariants: 1,
+			lowStockSample: "AirPods Pro",
+			personalListings: 2,
+		});
+	});
+
+	it("hands the members their shop's default return policy", async () => {
+		const payload = seed();
+		expect((await getMyShop(payload, U1, NOW)).shop?.returnPolicy).toBeNull();
+		payload.store.shops[0].returnPolicy = "Retour sous 7 jours";
+		expect((await getMyShop(payload, U1, NOW)).shop?.returnPolicy).toBe(
+			"Retour sous 7 jours",
+		);
+	});
+
+	it("ignores a closed shop", async () => {
+		const payload = seed();
+		payload.store.shops[0].status = "closed";
+		expect((await getMyShop(payload, U1, NOW)).shop).toBeNull();
+	});
+
+	// I10: the route used to hand back the raw `shop-members` row, so a staff
+	// member of a shop that dropped below level 2 was told "staff" and then
+	// 403ed on every tile. `m-2` (shop s-1, user u-3, staff, active) is the
+	// exact shape that shipped: an active row in a shop the server no longer
+	// grants them a role in.
+	it("resolves the server role for a staff member, not the raw membership row", async () => {
+		const payload = seed();
+		const result = await getMyShop(payload, { id: "u-3" }, NOW);
+		expect(result.role).toBe("staff");
+		expect(result.roleReason).toBeNull();
+	});
+
+	it("tells a staff member their team has gone dormant, and still returns the shop", async () => {
+		const payload = seed();
+		payload.store.shops[0].level = 1;
+		const result = await getMyShop(payload, { id: "u-3" }, NOW);
+		expect(result.role).toBeNull();
+		expect(result.roleReason).toBe("dormant");
+		expect(result.shop).toMatchObject({
+			status: "active",
+			capabilities: { teamMembers: false },
+		});
+	});
+
+	it("tells a staff member the shop itself is suspended, and still returns the shop", async () => {
+		const payload = seed();
+		payload.store.shops[0].status = "suspended";
+		const result = await getMyShop(payload, { id: "u-3" }, NOW);
+		expect(result.role).toBeNull();
+		expect(result.roleReason).toBe("shopSuspended");
+		expect(result.shop).toMatchObject({ status: "suspended" });
+	});
+
+	it("tells a personally suspended staff member, when the shop is otherwise healthy", async () => {
+		const payload = seed();
+		payload.store.users.push({
+			id: "u-3",
+			name: "Suspended staff",
+			suspendedAt: "2026-09-01T00:00:00.000Z",
+			suspendedUntil: "2030-01-01T00:00:00.000Z",
+		});
+		const result = await getMyShop(payload, { id: "u-3" }, NOW);
+		expect(result.role).toBeNull();
+		expect(result.roleReason).toBe("accountSuspended");
+		expect(result.shop).toMatchObject({
+			status: "active",
+			capabilities: { teamMembers: true },
+		});
+	});
+
+	it("keeps the owner's role when the shop has gone dormant", async () => {
+		const payload = seed();
+		payload.store.shops[0].level = 1;
+		const result = await getMyShop(payload, U1, NOW);
+		expect(result.role).toBe("owner");
+		expect(result.roleReason).toBeNull();
+	});
+
+	it("keeps the owner's role when the shop is suspended", async () => {
+		const payload = seed();
+		payload.store.shops[0].status = "suspended";
+		const result = await getMyShop(payload, U1, NOW);
+		expect(result.role).toBe("owner");
+		expect(result.roleReason).toBeNull();
+	});
+});
+
+describe("listCatalogue", () => {
+	it("builds rows with price range and stock, newest first", async () => {
+		const page = await listCatalogue(seed(), U1, "s-1", {});
+		expect(page.counts).toEqual({
+			all: 3,
+			active: 2,
+			draft: 1,
+			archived: 0,
+			low: 1,
+			out: 1,
+			resale: 0,
+		});
+		expect(page.docs[0]).toMatchObject({
+			id: "p-1",
+			variantCount: 2,
+			priceMin: 285000,
+			priceMax: 330000,
+			stockOnHand: 6,
+			available: 6,
+			lowStock: false,
+			outOfStock: false,
+			sku: "AT-IP13P-GR",
+			listingId: "l-1",
+			listingStatus: "published",
+			image: { url: "/m1.jpg" },
+			provenance: "own",
+			supplier: null,
+			skus: ["AT-IP13P-GR", "AT-IP13P-OR"],
+			singleVariantId: null,
+		});
+		expect(page.docs.find((r) => r.id === "p-2")?.singleVariantId).toBe("v-3");
+	});
+
+	it("sorts by title, price or stock", async () => {
+		const payload = seed();
+		const ids = async (sort: "title" | "price" | "stock") =>
+			(await listCatalogue(payload, U1, "s-1", { sort })).docs.map((r) => r.id);
+		expect(await ids("title")).toEqual(["p-2", "p-3", "p-1"]);
+		expect(await ids("price")).toEqual(["p-2", "p-3", "p-1"]);
+		expect(await ids("stock")).toEqual(["p-3", "p-2", "p-1"]);
+	});
+
+	it("filters by category, subcategories included", async () => {
+		const payload = seed();
+		payload.store.categories = [
+			{ id: "c-tech", parent: null },
+			{ id: "c-phones", parent: "c-tech" },
+			{ id: "c-watches", parent: null },
+		];
+		payload.store.products[0].category = "c-phones";
+		payload.store.products[2].category = "c-watches";
+		expect(
+			(
+				await listCatalogue(payload, U1, "s-1", { category: "c-tech" })
+			).docs.map((r) => r.id),
+		).toEqual(["p-1"]);
+	});
+
+	it("adds the shop's resale listings only when asked, with the supplier but never its stock", async () => {
+		const payload = seed();
+		payload.store.shops.push({ id: "s-sup", name: "Mboppi Accessoires" });
+		payload.store.listings.push({
+			id: "l-r1",
+			title: "Chargeur USB-C 20 W",
+			status: "published",
+			shop: "s-1",
+			seller: "u-1",
+			product: "p-sup",
+			updatedAt: "2026-09-16T10:00:00.000Z",
+			productSummary: { available: true, variantCount: 1 },
+			resale: {
+				supplierShop: "s-sup",
+				prices: [{ variant: "v-sup", price: 9000 }],
+			},
+		});
+
+		const own = await listCatalogue(payload, U1, "s-1", {});
+		expect(own.docs.map((r) => r.id)).not.toContain("l-r1");
+
+		const any = await listCatalogue(payload, U1, "s-1", { provenance: "any" });
+		expect(any.counts).toMatchObject({ all: 4, active: 3, resale: 1 });
+		expect(any.docs[0]).toMatchObject({
+			id: "l-r1",
+			provenance: "resale",
+			supplier: { id: "s-sup", name: "Mboppi Accessoires" },
+			supplierAvailable: true,
+			stockOnHand: 0,
+			priceMin: 9000,
+			listingId: "l-r1",
+		});
+
+		const resale = await listCatalogue(payload, U1, "s-1", {
+			provenance: "resale",
+			q: "mboppi",
+		});
+		expect(resale.docs.map((r) => r.id)).toEqual(["l-r1"]);
+	});
+
+	it("keeps resale rows from a member who cannot manage resale", async () => {
+		const payload = seed();
+		payload.store.listings.push({
+			id: "l-r1",
+			title: "Chargeur",
+			status: "published",
+			shop: "s-1",
+			resale: { supplierShop: "s-sup", prices: [] },
+		});
+		const page = await listCatalogue(payload, { id: "u-3" }, "s-1", {
+			provenance: "any",
+		});
+		expect(page.counts.resale).toBe(0);
+		expect(page.docs.map((r) => r.id)).not.toContain("l-r1");
+	});
+
+	it("filters by stock state, status and text", async () => {
+		const payload = seed();
+		expect(
+			(await listCatalogue(payload, U1, "s-1", { stock: "low" })).docs.map(
+				(r) => r.id,
+			),
+		).toEqual(["p-2"]);
+		expect(
+			(await listCatalogue(payload, U1, "s-1", { stock: "out" })).docs.map(
+				(r) => r.id,
+			),
+		).toEqual(["p-3"]);
+		expect(
+			(await listCatalogue(payload, U1, "s-1", { status: "draft" })).docs.map(
+				(r) => r.id,
+			),
+		).toEqual(["p-3"]);
+		expect(
+			(await listCatalogue(payload, U1, "s-1", { q: "app2" })).docs.map(
+				(r) => r.id,
+			),
+		).toEqual(["p-2"]);
+	});
+
+	it("finds a product by its exact barcode, and lists exact matches first", async () => {
+		const payload = seed();
+		await payload.update({
+			collection: "product-variants",
+			id: "v-3",
+			data: { barcode: "4006381333931" },
+		});
+		expect(
+			(
+				await listCatalogue(payload, U1, "s-1", { q: "4006381333931" })
+			).docs.map((r) => r.id),
+		).toEqual(["p-2"]);
+		await payload.update({
+			collection: "products",
+			id: "p-1",
+			data: { title: "Coque 4006381333931" },
+		});
+		expect(
+			(
+				await listCatalogue(payload, U1, "s-1", { q: "4006381333931" })
+			).docs.map((r) => r.id),
+		).toEqual(["p-2", "p-1"]);
+	});
+
+	it("refuses non-members", async () => {
+		await expect(
+			listCatalogue(seed(), { id: "u-2" }, "s-1", {}),
+		).rejects.toMatchObject({ code: "shop.notMember" });
+	});
+});
+
+describe("getProductDetail", () => {
+	it("returns variants with costs, listing stats and recent movements", async () => {
+		const detail = await getProductDetail(seed(), U1, "p-1");
+		expect(detail.variants.map((v) => v.cost)).toEqual([238000, 276000]);
+		expect(detail.variants.map((v) => v.lowStockThreshold)).toEqual([2, 1]);
+		expect(detail.listing).toEqual({
+			id: "l-1",
+			status: "published",
+			views: 184,
+			favorites: 1,
+		});
+		expect(detail.movements).toHaveLength(1);
+		expect(detail.movements[0].unitCost).toBe(200000);
+		expect(detail.role).toBe("owner");
+	});
+
+	it("reports an unknown product as not found", async () => {
+		await expect(getProductDetail(seed(), U1, "nope")).rejects.toMatchObject({
+			status: 404,
+		});
+	});
+
+	it("hides cost and the low-stock threshold from a staff member", async () => {
+		const detail = await getProductDetail(seed(), { id: "u-3" }, "p-1");
+		expect(detail.role).toBe("staff");
+		for (const variant of detail.variants) {
+			expect(Object.hasOwn(variant, "cost")).toBe(false);
+			expect(Object.hasOwn(variant, "lowStockThreshold")).toBe(false);
+		}
+	});
+
+	it("hides the movements' unit cost from a staff member", async () => {
+		const detail = await getProductDetail(seed(), { id: "u-3" }, "p-1");
+		expect(detail.movements).toHaveLength(1);
+		expect(detail.movements[0].unitCost).toBeNull();
+	});
+
+	it("never serves the shop's suspension details through the product", async () => {
+		const detail = await getProductDetail(seed(), U1, "p-1");
+		expect(detail.product).not.toHaveProperty("shop");
+		expect(JSON.stringify(detail.product)).not.toContain(
+			"Reported for counterfeit goods",
+		);
+		expect(JSON.stringify(detail.product)).not.toContain("u-mod");
+	});
+
+	it("refuses a non-member entirely", async () => {
+		await expect(
+			getProductDetail(seed(), { id: "u-2" }, "p-1"),
+		).rejects.toMatchObject({ code: "shop.notMember" });
+	});
+});

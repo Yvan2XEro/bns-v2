@@ -1,18 +1,97 @@
-import { StripeProvider } from "@stripe/stripe-react-native";
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext } from "react";
+import { createContext, Fragment, useContext } from "react";
 import { api } from "@/src/lib/api";
+import { setMarket } from "@/src/lib/market";
+import type { LaunchCityOption } from "@/src/types/order";
+import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
+import {
+	type MonitoringConfig,
+	NO_MONITORING,
+} from "../../../api/src/contracts/monitoring";
+import {
+	normalizePhotoLimit,
+	PHOTO_LIMIT,
+} from "../../../api/src/contracts/photoLimit";
+
+/** `AppSettings.payments.buyerProtection`, mirrored from web's own `useAppConfig`. */
+export interface BuyerProtectionConfig {
+	bps: number;
+	min: number;
+	max: number;
+}
 
 export interface AppConfig {
-	stripePublishableKey: string | null;
 	chatUrl: string | null;
 	novuAppId: string | null;
+	/** A self-hosted Novu's API and WebSocket; null keeps Novu Cloud. */
+	novuApiUrl: string | null;
+	novuSocketUrl: string | null;
+	webUrl: string | null;
+	/** Photon geocoder behind every place picker; `null` until config loads. */
+	photonUrl: string | null;
+	enabledAuthProviders: string[];
+	localAuthEnabled: boolean;
+	shopsEnabled: boolean;
+	ordersEnabled: boolean;
+	disputesEnabled: boolean;
+	/** The cities ordering is open in, with each one's default delivery fee. */
+	launchCities: LaunchCityOption[];
+	withdrawalDays: number;
+	/**
+	 * Server-decided (`isProtectedPaymentOpen`), fails closed like
+	 * `ordersEnabled`: a client that cannot read the flag shows "coming soon",
+	 * never a guess that it is on.
+	 */
+	protectedPaymentEnabled: boolean;
+	deliveryZonesEnabled: boolean;
+	couriersEnabled: boolean;
+	intercityEnabled: boolean;
+	insightsEnabled: boolean;
+	resaleEnabled: boolean;
+	resalePrepaidEnabled: boolean;
+	/** Generated share cards and the share panel (app-settings › Sharing). */
+	shareCardsEnabled: boolean;
+	/** Needed by Instagram and Facebook stories; null leaves them out. */
+	facebookAppId: string | null;
+	/** Rate, minimum and maximum for the buyer protection fee. */
+	buyerProtection: BuyerProtectionConfig;
+	/** Photos a listing or a product may carry (admin setting); the API refuses more. */
+	photosIncluded: number;
+	/** Sentry and PostHog, configured on the API; off until it sends them. */
+	monitoring: MonitoringConfig;
+	/** Absent from an API that predates markets; money and phone then use the M9 fallbacks. */
+	market?: MarketConfig;
 }
 
 const DEFAULT: AppConfig = {
-	stripePublishableKey: null,
 	chatUrl: null,
 	novuAppId: null,
+	novuApiUrl: null,
+	novuSocketUrl: null,
+	webUrl: null,
+	photonUrl: null,
+	enabledAuthProviders: ["google", "apple", "facebook"],
+	localAuthEnabled: true,
+	shopsEnabled: false,
+	// The same three values the config route falls back to on a settings
+	// outage: a client that cannot read the flag must hide ordering, not
+	// advertise it.
+	ordersEnabled: false,
+	disputesEnabled: false,
+	launchCities: [],
+	withdrawalDays: 15,
+	protectedPaymentEnabled: false,
+	deliveryZonesEnabled: false,
+	couriersEnabled: false,
+	intercityEnabled: false,
+	insightsEnabled: false,
+	resaleEnabled: false,
+	resalePrepaidEnabled: false,
+	shareCardsEnabled: false,
+	facebookAppId: null,
+	buyerProtection: { bps: 300, min: 100, max: 15_000 },
+	photosIncluded: PHOTO_LIMIT.default,
+	monitoring: NO_MONITORING,
 };
 
 const AppConfigContext = createContext<AppConfig>(DEFAULT);
@@ -20,18 +99,26 @@ const AppConfigContext = createContext<AppConfig>(DEFAULT);
 export function AppConfigProvider({ children }: { children: React.ReactNode }) {
 	const { data: config = DEFAULT } = useQuery<AppConfig>({
 		queryKey: ["app-config"],
-		queryFn: () => api.get<AppConfig>("/api/public/config"),
+		// A released API that predates a config key keeps that feature off by
+		// merging over the default rather than leaving the key undefined.
+		queryFn: async () => {
+			const raw = await api.get<Partial<AppConfig>>("/api/public/config");
+			setMarket(raw.market);
+			return {
+				...DEFAULT,
+				...raw,
+				photosIncluded: normalizePhotoLimit(raw.photosIncluded),
+			};
+		},
 		staleTime: Number.POSITIVE_INFINITY,
 		retry: 3,
 	});
 
+	// formatPrice call sites read a module store and never re-render on their
+	// own; remounting once when the market arrives replaces the M9 fallback.
 	return (
 		<AppConfigContext.Provider value={config}>
-			{/* StripeProvider lives here so children always have Stripe context.
-			    With an empty key, Stripe silently degrades — no crash. */}
-			<StripeProvider publishableKey={config.stripePublishableKey ?? ""}>
-				{children}
-			</StripeProvider>
+			<Fragment key={config.market?.countryCode ?? "none"}>{children}</Fragment>
 		</AppConfigContext.Provider>
 	);
 }

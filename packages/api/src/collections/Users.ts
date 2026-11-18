@@ -1,7 +1,22 @@
 import { randomUUID } from "node:crypto";
-import type { CollectionConfig } from "payload";
+import { type Access, type CollectionConfig, UnverifiedEmail } from "payload";
 import { anyone } from "@/access/anyone";
+import { isAdmin, suspensionSummary } from "../access/roles";
+import { selfOrStaffField, staffOnlyField } from "../access/staff";
 import type { AuthProvider } from "../auth/oauth/types";
+import {
+	DEFAULT_NOTIFICATION_LOCALE,
+	NOTIFICATION_LOCALES,
+} from "../contracts/notificationLocale";
+import {
+	type AuthEmailRecipient,
+	resetPasswordEmailHtml,
+	resetPasswordEmailSubject,
+	verificationEmailHtml,
+	verificationEmailSubject,
+} from "../lib/authEmails";
+import { ERROR_CODES } from "../lib/errors";
+import { deleteUserRelatedData } from "../services/accountDeletion";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 function ensureAuthProviders(data: Record<string, unknown>) {
@@ -27,25 +42,130 @@ function ensureAuthProviders(data: Record<string, unknown>) {
 	};
 }
 
+/**
+ * The person-level "Verified" badge is retired: badges belong to shops now.
+ * This survives only so released app versions, which read `user.verified`,
+ * show "Verified" for real identity verification instead of an admin's old
+ * tick — and nothing else.
+ *
+ * Derived from the stored `identityVerifiedAt` and nothing else, on purpose. A
+ * derivation that also asked "and is the owned shop still active?" would need
+ * one shop query per user document, on a collection whose `read` is `anyone`
+ * and which every listing populates: an N+1 across the whole public surface.
+ * The cost of not asking is narrow and known — an owner whose shop is
+ * suspended keeps a "Verified" badge in a released build until they update.
+ * Current clients read the badge from the shop's `capabilities`, where
+ * suspension is handled correctly.
+ */
+export function deriveVerified(doc: Record<string, unknown>): boolean {
+	return Boolean(doc.identityVerifiedAt);
+}
+
+const selfOrAdmin: Access = ({ req: { user } }) => {
+	if (!user) return false;
+	if ((user as { role?: string }).role === "admin") return true;
+
+	return {
+		id: {
+			equals: user.id,
+		},
+	};
+};
+
 export const Users: CollectionConfig = {
 	slug: "users",
 	admin: {
 		useAsTitle: "email",
 		defaultColumns: ["email", "name", "role", "rating", "createdAt"],
 	},
-	auth: true,
+	// 4-day rolling session: the native /refresh-token endpoint re-issues a JWT
+	// as long as the previous one is still within this window, so returning users
+	// stay logged in. Beyond 4 days of inactivity they must re-authenticate.
+	auth: {
+		tokenExpiration: 345600,
+		// Signing in waits for the link in this email: every session then
+		// belongs to a real inbox (docs/account-trust-2026-10.md). Payload sends
+		// it once, on create; services/emailVerification.ts resends it.
+		// Payload links its reset email to the admin panel; people reset from
+		// the website (lib/authEmails.ts), which posts the token back.
+		forgotPassword: {
+			generateEmailSubject: (args) =>
+				resetPasswordEmailSubject((args?.user ?? {}) as AuthEmailRecipient),
+			generateEmailHTML: (args) =>
+				resetPasswordEmailHtml(
+					(args?.user ?? {}) as AuthEmailRecipient,
+					args?.token ?? "",
+				),
+		},
+		verify: {
+			generateEmailSubject: ({ user }) =>
+				verificationEmailSubject(user as AuthEmailRecipient),
+			generateEmailHTML: ({ token, user }) =>
+				verificationEmailHtml(user as AuthEmailRecipient, token ?? ""),
+		},
+	},
 	access: {
 		create: anyone,
 		read: anyone,
+		// Without explicit update/delete rules Payload falls back to
+		// "any authenticated user", which let any signed-in account reset another
+		// user's password (beforeChange pins email/role/phone but never password)
+		// or delete them outright, triggering the full destructive cascade.
+		// Server-side flows (OAuth, phone verification, rating sync, account
+		// deletion) all pass overrideAccess and are unaffected.
+		update: selfOrAdmin,
+		delete: selfOrAdmin,
 		admin: ({ req }) =>
 			req.user?.role === "admin" || req.user?.role === "moderator",
 	},
 	hooks: {
+		// Payload words its refusal of an unverified sign-in in the request's
+		// language; the apps need the code to offer the resend.
+		afterError: [
+			({ error }) =>
+				error instanceof UnverifiedEmail
+					? {
+							status: 403,
+							response: {
+								errors: [
+									{
+										message: error.message,
+										data: { code: ERROR_CODES.emailNotVerified },
+									},
+								],
+							},
+						}
+					: undefined,
+		],
+		// Computed before field access runs: `phoneVerifiedAt` is unreadable to
+		// everyone, so a field-level afterRead would already see it stripped.
+		beforeRead: [
+			({ doc }) => {
+				doc.phoneVerified = Boolean(doc.phoneVerifiedAt);
+				doc.verified = deriveVerified(doc);
+				return doc;
+			},
+		],
 		beforeChange: [
 			({ req, data, operation, originalDoc }) => {
-				// Payload v3 merges originalDoc into data before beforeChange on updates.
-				// If avatar was populated (depth > 0), data.avatar is the full media object
-				// which MongoDB cannot cast to ObjectId. Extract the ID explicitly.
+				// Payload sends the verification email on create: the first
+				// resend counts its minute from here (services/emailVerification.ts).
+				if (operation === "create" && data._verified !== true) {
+					data.emailVerificationSentAt = new Date().toISOString();
+				}
+				// DEBUG — remove once root cause is confirmed
+				if (req.context?.oauthFlow) {
+					req.payload.logger.info({
+						msg: "[oauth] beforeChange",
+						operation,
+						"data.avatar": data.avatar,
+						dataAvatarType: typeof data.avatar,
+						"originalDoc.avatar": originalDoc?.avatar,
+						originalDocAvatarType: typeof originalDoc?.avatar,
+						avatarInData: "avatar" in data,
+					});
+				}
+
 				if (
 					data.avatar &&
 					typeof data.avatar === "object" &&
@@ -57,8 +177,14 @@ export const Users: CollectionConfig = {
 				const user = req.user as { role?: string } | undefined;
 				const isAdmin = user?.role === "admin";
 				const isOAuthFlow = req.context?.oauthFlow === true;
+				// Seeding runs through the local API with no authenticated user, so
+				// `isAdmin` is false and the guards below would strip the very roles
+				// the seed is trying to create. `context` is server-side only — a REST
+				// client cannot set it — so this is not a way to self-promote.
+				const isSeed = req.context?.seed === true;
 				const isPhoneVerificationFlow =
 					req.context?.phoneVerificationFlow === true;
+				const isModerationWrite = req.context?.moderationAction === true;
 
 				if (operation === "create") {
 					const authData = ensureAuthProviders(data as Record<string, unknown>);
@@ -66,11 +192,16 @@ export const Users: CollectionConfig = {
 					data.authProviders = authData.authProviders;
 					data.providerAccountId = authData.providerAccountId;
 
-					if (!isAdmin) {
+					if (!isAdmin && !isSeed) {
 						data.role = "user";
-						data.verified = undefined;
 						data.rating = undefined;
 						data.totalReviews = undefined;
+						// Same reason as `verified`: a public signup body is never the
+						// origin of a verification grant, only services/verification.ts
+						// updating an existing account is.
+						data.identityVerifiedAt = undefined;
+						data.identityVerification = undefined;
+						data.legacyVerifiedAt = undefined;
 					}
 				}
 
@@ -79,11 +210,39 @@ export const Users: CollectionConfig = {
 					if (!isAdmin) {
 						data.email = originalDoc.email;
 						data.role = originalDoc?.role;
-						data.verified = originalDoc.verified;
 						if (!isRatingUpdate) {
 							data.rating = originalDoc?.rating;
 							data.totalReviews = originalDoc.totalReviews;
 						}
+					}
+
+					// Pinned for admins too: lifting a sanction from the panel must
+					// not bypass the audit log. `context` is server-side only.
+					if (!isModerationWrite) {
+						data.suspendedAt = originalDoc?.suspendedAt;
+						data.suspendedUntil = originalDoc?.suspendedUntil;
+						data.suspendedReason = originalDoc?.suspendedReason;
+						data.suspendedNote = originalDoc?.suspendedNote;
+						data.suspendedBy = originalDoc?.suspendedBy;
+
+						// Idempotent cleanup piggybacking on a write that was happening
+						// anyway, so screens stop showing a sanction that is over.
+						if (suspensionSummary(originalDoc as never).expired) {
+							data.suspendedAt = null;
+							data.suspendedUntil = null;
+							data.suspendedReason = null;
+							data.suspendedNote = null;
+							data.suspendedBy = null;
+						}
+					}
+
+					// Pinned for admins too, for the same reason the suspension fields
+					// are: a level granted from the panel would bypass the log.
+					const isVerificationWrite = req.context?.verificationService === true;
+					if (!isVerificationWrite) {
+						data.identityVerifiedAt = originalDoc?.identityVerifiedAt;
+						data.identityVerification = originalDoc?.identityVerification;
+						data.legacyVerifiedAt = originalDoc?.legacyVerifiedAt;
 					}
 
 					if (!isAdmin && !isPhoneVerificationFlow) {
@@ -111,12 +270,13 @@ export const Users: CollectionConfig = {
 			},
 		],
 		afterChange: [
-			async ({ doc, operation, previousDoc }) => {
+			async ({ doc }) => {
 				if (!isNotificationProviderConfigured()) return;
 
 				try {
-					const { syncNotificationSubscriber, triggerNotificationEvent } =
-						await import("../hooks/notificationEvents");
+					const { syncNotificationSubscriber } = await import(
+						"../hooks/notificationEvents"
+					);
 
 					const avatarUrl =
 						typeof doc.avatar === "object" && doc.avatar?.url
@@ -129,23 +289,34 @@ export const Users: CollectionConfig = {
 						name: doc.name,
 						avatar: avatarUrl,
 					});
-
-					// Notify user when they become verified
-					if (
-						operation === "update" &&
-						doc.verified &&
-						previousDoc &&
-						!previousDoc.verified
-					) {
-						await triggerNotificationEvent({
-							event: "user-verified",
-							subscriberId: doc.id as string,
-							payload: { name: doc.name },
-						});
-					}
 				} catch (error) {
 					console.error("[notifications] Failed to sync subscriber:", error);
 				}
+			},
+		],
+		beforeDelete: [
+			async ({ req, id }) => {
+				const user = await req.payload.findByID({
+					collection: "users",
+					id,
+					depth: 0,
+					overrideAccess: true,
+				});
+
+				await deleteUserRelatedData(
+					req.payload as unknown as Parameters<typeof deleteUserRelatedData>[0],
+					{
+						authProviders: user.authProviders as
+							| Array<{
+									provider?: string;
+									providerAccountId?: string;
+									refreshToken?: string;
+							  }>
+							| undefined,
+						id: user.id,
+					},
+					req,
+				);
 			},
 		],
 	},
@@ -161,35 +332,43 @@ export const Users: CollectionConfig = {
 			relationTo: "media",
 		},
 		{
-			name: "role",
-			type: "select",
-			hasMany: false,
-			options: [
-				{ label: "User", value: "user" },
-				{ label: "Moderator", value: "moderator" },
-				{ label: "Admin", value: "admin" },
+			type: "row",
+			fields: [
+				{
+					name: "role",
+					type: "select",
+					hasMany: false,
+					options: [
+						{ label: "User", value: "user" },
+						{ label: "Moderator", value: "moderator" },
+						{ label: "Admin", value: "admin" },
+					],
+					defaultValue: "user",
+					required: true,
+					saveToJWT: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "authProvider",
+					type: "select",
+					defaultValue: "local",
+					options: [
+						{ label: "Local", value: "local" },
+						{ label: "Google", value: "google" },
+						{ label: "Apple", value: "apple" },
+						{ label: "Facebook", value: "facebook" },
+					],
+					required: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "providerAccountId",
+					type: "text",
+					index: true,
+					required: true,
+					admin: { width: "33%" },
+				},
 			],
-			defaultValue: "user",
-			required: true,
-			saveToJWT: true,
-		},
-		{
-			name: "authProvider",
-			type: "select",
-			defaultValue: "local",
-			options: [
-				{ label: "Local", value: "local" },
-				{ label: "Google", value: "google" },
-				{ label: "Apple", value: "apple" },
-				{ label: "Facebook", value: "facebook" },
-			],
-			required: true,
-		},
-		{
-			name: "providerAccountId",
-			type: "text",
-			index: true,
-			required: true,
 		},
 		{
 			name: "authProviders",
@@ -203,6 +382,8 @@ export const Users: CollectionConfig = {
 						{ label: "Google", value: "google" },
 						{ label: "Apple", value: "apple" },
 						{ label: "Facebook", value: "facebook" },
+						// Overbrand's single sign-on to the panel (auth/sso).
+						{ label: "SSO (OpenID Connect)", value: "oidc" },
 					],
 					required: true,
 				},
@@ -211,105 +392,314 @@ export const Users: CollectionConfig = {
 					type: "text",
 					required: true,
 				},
+				{
+					name: "refreshToken",
+					type: "text",
+					access: {
+						read: () => false,
+					},
+				},
 			],
 		},
 		{
-			name: "rating",
-			type: "number",
-			min: 0,
-			max: 5,
-			defaultValue: 0,
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "totalReviews",
-			type: "number",
-			defaultValue: 0,
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "rating",
+					type: "number",
+					min: 0,
+					max: 5,
+					defaultValue: 0,
+					admin: { width: "50%", readOnly: true },
+				},
+				{
+					name: "totalReviews",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 		{
 			name: "bio",
 			type: "textarea",
 		},
 		{
-			name: "phone",
-			type: "text",
+			// Notifications leave while the app is closed, so the language they
+			// are written in is kept on the account; each client sets it from
+			// its own interface language (contracts/notificationLocale.ts).
+			name: "language",
+			type: "select",
+			defaultValue: DEFAULT_NOTIFICATION_LOCALE,
+			options: NOTIFICATION_LOCALES.map((value) => ({ label: value, value })),
+			access: { read: selfOrStaffField },
 		},
 		{
-			name: "pendingPhone",
-			type: "text",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "phoneVerifiedAt",
+			// When the last verification email left: the resend waits a minute.
+			name: "emailVerificationSentAt",
 			type: "date",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
+			access: { read: staffOnlyField, update: () => false },
+			admin: { readOnly: true },
 		},
 		{
-			name: "phoneVerificationCodeHash",
-			type: "text",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "phone",
+					type: "text",
+					// Buyers get a seller's number from POST /api/listings/:id/contact-phone,
+					// which is rate limited and recorded; the public user document never carries it.
+					access: {
+						read: selfOrStaffField,
+					},
+					admin: { width: "33%" },
+				},
+				{
+					name: "phoneVerified",
+					type: "checkbox",
+					virtual: true,
+					access: {
+						read: selfOrStaffField,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "pendingPhone",
+					type: "text",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+			],
 		},
 		{
-			name: "phoneVerificationExpiresAt",
-			type: "date",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "phoneVerifiedAt",
+					type: "date",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "50%", readOnly: true },
+				},
+				{
+					name: "phoneVerificationCodeHash",
+					type: "text",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 		{
-			name: "phoneVerificationAttempts",
-			type: "number",
-			defaultValue: 0,
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "phoneVerificationExpiresAt",
+					type: "date",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "phoneVerificationAttempts",
+					type: "number",
+					defaultValue: 0,
+					access: {
+						read: () => false,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "phoneVerificationLastSentAt",
+					type: "date",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+			],
 		},
 		{
-			name: "phoneVerificationLastSentAt",
-			type: "date",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
+			// Free text the user typed into their profile ("Douala", "Bonabéri,
+			// derrière la mairie", …). Existing accounts hold arbitrary strings
+			// here, so its type never changes — the structured place lives in
+			// `homeLocation` beside it, and the two are independent.
 			name: "location",
 			type: "text",
+			admin: {
+				description:
+					"Free-text place shown on the public profile. Typed by the user; not derived from GPS.",
+			},
+		},
+		{
+			// The remembered location the mobile app pre-fills flows from: city
+			// selection, listing creation, search defaults. Written by the client
+			// (self-update is already allowed by `access.update`), so nothing here
+			// is pinned in `beforeChange` — but nothing here is trusted either: it
+			// is a convenience cache, never an authorisation input.
+			name: "homeLocation",
+			type: "group",
+			admin: {
+				description:
+					"Structured place last confirmed by the user, kept in sync with the mobile app.",
+			},
+			fields: [
+				{
+					type: "row",
+					fields: [
+						{
+							name: "city",
+							type: "text",
+							index: true,
+							admin: { width: "33%" },
+						},
+						{ name: "region", type: "text", admin: { width: "33%" } },
+						{ name: "country", type: "text", admin: { width: "33%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							name: "countryCode",
+							type: "text",
+							maxLength: 2,
+							admin: {
+								width: "33%",
+								description: "ISO 3166-1 alpha-2, uppercase.",
+							},
+						},
+						// No lat/lng here on purpose. The privacy policy states the profile
+						// location is "a place name you enter, not GPS coordinates", and
+						// that coordinates travel only with a single search request with no
+						// history kept. Storing them would contradict both and would change
+						// the App Privacy declaration. Coordinates stay on the device, which
+						// is all the "listings near you" search needs.
+						{
+							name: "source",
+							type: "select",
+							options: [
+								{ label: "Device", value: "device" },
+								{ label: "Chosen by user", value: "manual" },
+							],
+							admin: { width: "33%" },
+						},
+						{
+							name: "updatedAt",
+							type: "date",
+							admin: {
+								width: "33%",
+								description:
+									"Conflict resolution between the device copy and this one — last write wins.",
+							},
+						},
+					],
+				},
+			],
 		},
 		{
 			name: "verified",
 			type: "checkbox",
-			defaultValue: false,
+			virtual: true,
 			admin: {
 				position: "sidebar",
+				readOnly: true,
+				description: "Derived from identityVerifiedAt. Not stored.",
+			},
+		},
+		{
+			name: "identityVerifiedAt",
+			type: "date",
+			access: { read: selfOrStaffField },
+			admin: {
+				readOnly: true,
+				position: "sidebar",
+				description:
+					"Set when a level-2 request is approved, cleared on revoke or expiry. Written only by services/verification.ts.",
+			},
+		},
+		{
+			name: "identityVerification",
+			type: "relationship",
+			relationTo: "verification-requests",
+			access: { read: staffOnlyField },
+			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			// Filled by the P2 migration from the retired `verified` checkbox, so
+			// the fact that an admin had once ticked it is not lost. It grants
+			// nothing: the checkbox never checked anything.
+			name: "legacyVerifiedAt",
+			type: "date",
+			access: {
+				read: ({ req: { user } }) =>
+					isAdmin(user as { role?: string } | undefined),
+			},
+			admin: { readOnly: true, hidden: true },
+		},
+		// Written only by services/moderation.ts; beforeChange pins all five
+		// against every other write. No `suspended` boolean on purpose:
+		// suspendedAt is the flag and whether it still applies is derived from
+		// suspendedUntil at read time, so no scheduled job can lag behind it.
+		{
+			name: "suspendedAt",
+			type: "date",
+			index: true,
+			admin: {
+				position: "sidebar",
+				readOnly: true,
+				description:
+					"When the current suspension was applied. Empty means the account has never been suspended, or the sanction was lifted.",
+			},
+		},
+		{
+			name: "suspendedUntil",
+			type: "date",
+			admin: {
+				position: "sidebar",
+				readOnly: true,
+				description:
+					"When the suspension lifts. Empty while suspendedAt is set means the suspension is indefinite.",
+			},
+		},
+		{
+			name: "suspendedReason",
+			type: "select",
+			options: [
+				{ label: "Spam", value: "spam" },
+				{ label: "Inappropriate content", value: "inappropriate" },
+				{ label: "Fraud", value: "fraud" },
+				{ label: "Prohibited item", value: "prohibited" },
+				{ label: "Harassment", value: "harassment" },
+				{ label: "Other", value: "other" },
+			],
+			admin: {
+				position: "sidebar",
+				readOnly: true,
+				description: "Shared with the suspended account.",
+			},
+		},
+		{
+			name: "suspendedNote",
+			type: "textarea",
+			admin: {
+				position: "sidebar",
+				readOnly: true,
+				description: "Internal. Never shown to the suspended account.",
+			},
+		},
+		{
+			name: "suspendedBy",
+			type: "relationship",
+			relationTo: "users",
+			admin: {
+				position: "sidebar",
+				readOnly: true,
 			},
 		},
 		{

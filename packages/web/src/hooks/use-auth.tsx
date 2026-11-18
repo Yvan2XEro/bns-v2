@@ -8,11 +8,12 @@ import {
 	useEffect,
 	useState,
 } from "react";
+import { apiErrorFrom } from "~/lib/apiError";
 import type { User } from "~/types";
 
 export type SocialAuthProvider = "apple" | "facebook" | "google";
 
-interface AuthContextType {
+export interface AuthContextType {
 	user: User | null;
 	token: string | null;
 	isLoading: boolean;
@@ -21,37 +22,56 @@ interface AuthContextType {
 		provider: SocialAuthProvider,
 		redirectTo?: string,
 	) => void;
-	register: (email: string, password: string, name: string) => Promise<void>;
+	/** Overbrand's single sign-on, for system administrators. */
+	loginWithSso: (redirectTo?: string) => void;
+	/** Creates the account; signing in waits for the link sent to `email`. */
+	register: (
+		email: string,
+		password: string,
+		name: string,
+		language: string,
+	) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
 	refreshToken: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+/** Exported for tests that render a signed-in tree without the network. */
+export const AuthContext = createContext<AuthContextType | undefined>(
+	undefined,
+);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<User | null>(null);
 	const [token, setToken] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
+	const fetchAuthenticatedUser = useCallback(async () => {
+		const response = await fetch("/api/users/me", {
+			cache: "no-store",
+			credentials: "include",
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch current user (${response.status})`);
+		}
+
+		return response.json() as Promise<{ token?: string; user?: User }>;
+	}, []);
+
 	const checkAuth = useCallback(async () => {
 		try {
-			const response = await fetch("/api/users/me", {
-				credentials: "include",
-			});
-			if (response.ok) {
-				const data = await response.json();
-				if (data.user) {
-					setUser(data.user);
-					if (data.token) setToken(data.token);
-				}
+			const data = await fetchAuthenticatedUser();
+			if (data.user) {
+				setUser(data.user);
+				if (data.token) setToken(data.token);
 			}
 		} catch (error) {
 			console.error("Auth check failed:", error);
 		} finally {
 			setIsLoading(false);
 		}
-	}, []);
+	}, [fetchAuthenticatedUser]);
 
 	useEffect(() => {
 		checkAuth();
@@ -66,34 +86,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		});
 
 		if (!response.ok) {
-			const error = await response.json().catch(() => ({}));
-			throw new Error(
-				error.errors?.[0]?.message || error.message || "Login failed",
-			);
+			const body = await response.json().catch(() => ({}));
+			throw apiErrorFrom(response.status, body);
 		}
 
 		const data = await response.json();
-		setUser(data.user);
 		if (data.token) setToken(data.token);
+
+		try {
+			const hydrated = await fetchAuthenticatedUser();
+			if (hydrated.user) {
+				setUser(hydrated.user);
+				if (hydrated.token) setToken(hydrated.token);
+				return;
+			}
+		} catch (error) {
+			console.error("Post-login user hydration failed:", error);
+		}
+
+		setUser(data.user);
 	}
 
-	async function register(email: string, password: string, name: string) {
+	async function register(
+		email: string,
+		password: string,
+		name: string,
+		language: string,
+	) {
 		const response = await fetch("/api/users", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ email, password, name }),
+			// The verification email is written in the reader's language.
+			body: JSON.stringify({ email, password, name, language }),
 			credentials: "include",
 		});
 
 		if (!response.ok) {
-			const error = await response.json().catch(() => ({}));
-			throw new Error(
-				error.errors?.[0]?.message || error.message || "Registration failed",
-			);
+			const body = await response.json().catch(() => ({}));
+			throw apiErrorFrom(response.status, body);
 		}
-
-		// After registration, log in to get the auth cookie
-		await login(email, password);
+		// No sign-in here: the account waits on the link in its inbox.
 	}
 
 	function loginWithProvider(
@@ -106,6 +138,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		);
 		window.location.assign(
 			`/api/public/auth/oauth/${provider}/start?audience=web&redirectTo=${target}&returnTo=${returnTo}`,
+		);
+	}
+
+	function loginWithSso(redirectTo = "/") {
+		const returnTo = new URL(redirectTo, window.location.origin).toString();
+		window.location.assign(
+			`/api/public/auth/sso/start?returnTo=${encodeURIComponent(returnTo)}`,
 		);
 	}
 
@@ -124,22 +163,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	const refreshUser = useCallback(async () => {
 		try {
-			const response = await fetch("/api/users/me", {
-				credentials: "include",
-			});
-			if (response.ok) {
-				const data = await response.json();
-				if (data.user) {
-					setUser(data.user);
-					if (data.token) setToken(data.token);
-				}
+			const data = await fetchAuthenticatedUser();
+			if (data.user) {
+				setUser(data.user);
+				if (data.token) setToken(data.token);
 			}
 		} catch (error) {
 			console.error("Refresh user failed:", error);
 		}
-	}, []);
+	}, [fetchAuthenticatedUser]);
 
-	async function refreshToken() {
+	const refreshToken = useCallback(async () => {
 		try {
 			const response = await fetch("/api/users/refresh-token", {
 				method: "POST",
@@ -155,7 +189,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		} catch (error) {
 			console.error("Token refresh failed:", error);
 		}
-	}
+	}, []);
+
+	// Proactively refresh the Payload session when the tab regains focus or
+	// becomes visible, keeping the rolling session alive as long as the user
+	// keeps the app in use.
+	useEffect(() => {
+		const onVisible = () => {
+			if (document.visibilityState === "visible") {
+				refreshToken();
+			}
+		};
+		document.addEventListener("visibilitychange", onVisible);
+		window.addEventListener("focus", onVisible);
+		return () => {
+			document.removeEventListener("visibilitychange", onVisible);
+			window.removeEventListener("focus", onVisible);
+		};
+	}, [refreshToken]);
 
 	return (
 		<AuthContext.Provider
@@ -165,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				isLoading,
 				login,
 				loginWithProvider,
+				loginWithSso,
 				register,
 				logout,
 				refreshUser,

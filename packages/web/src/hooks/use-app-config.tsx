@@ -1,18 +1,12 @@
 "use client";
 
 import { createContext, useContext } from "react";
+import { type AppConfig, EMPTY_APP_CONFIG } from "~/lib/app-config";
+import { normalizePhotoLimit } from "../../../api/src/contracts/photoLimit";
 
-export interface AppConfig {
-	stripePublishableKey: string | null;
-	chatUrl: string | null;
-	novuAppId: string | null;
-}
+export type { AppConfig, BoostPrice } from "~/lib/app-config";
 
-const AppConfigContext = createContext<AppConfig>({
-	stripePublishableKey: null,
-	chatUrl: null,
-	novuAppId: null,
-});
+const AppConfigContext = createContext<AppConfig>(EMPTY_APP_CONFIG);
 
 interface Props {
 	initialConfig: AppConfig;
@@ -32,3 +26,7 @@ export function AppConfigProvider({ initialConfig, children }: Props) {
 }
 
 export const useAppConfig = () => useContext(AppConfigContext);
+
+/** The admin's photo limit for listings and products, from the public config. */
+export const usePhotoLimit = () =>
+	normalizePhotoLimit(useContext(AppConfigContext).photosIncluded);

@@ -1,8 +1,24 @@
 import type { CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
-import { updateUserRating } from "../hooks/reviews";
+import { REVIEW_PHOTOS_MAX } from "../contracts/reviewPhotos";
+import {
+	enforceReviewRules,
+	translateReviewWriteConflicts,
+	updateShopRating,
+	updateUserRating,
+} from "../hooks/reviews";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
+/**
+ * The (reviewer, reviewedUser) uniqueness constraint is not declared here: it
+ * is a raw-driver index built by migration 20260915_000100_p0_reviews_audit,
+ * and only once that migration finds no legacy duplicate reviews left to
+ * resolve first. `enforceReviewRules` (create) still rejects an obvious
+ * duplicate on every write, and `translateReviewWriteConflicts` (afterError)
+ * translates the index's own rejection when two creates race past that
+ * check — but if the migration skipped building the index, that race is not
+ * closed. Check its logs for whether the index actually exists.
+ */
 export const Reviews: CollectionConfig = {
 	slug: "reviews",
 	admin: {
@@ -10,7 +26,8 @@ export const Reviews: CollectionConfig = {
 		defaultColumns: ["reviewer", "reviewedUser", "rating", "createdAt"],
 	},
 	access: {
-		read: () => true,
+		read: ({ req }) =>
+			req.user?.role === "admin" ? true : { status: { equals: "published" } },
 		create: authenticated,
 		update: ({ req: { user } }) => {
 			if (!user) return false;
@@ -24,6 +41,8 @@ export const Reviews: CollectionConfig = {
 		},
 	},
 	hooks: {
+		beforeChange: [enforceReviewRules],
+		afterError: [translateReviewWriteConflicts],
 		afterChange: [
 			async ({ doc, req, operation }) => {
 				const reviewedUserId =
@@ -32,6 +51,11 @@ export const Reviews: CollectionConfig = {
 						: doc.reviewedUser?.id;
 				if (reviewedUserId) {
 					await updateUserRating({ req, reviewedUserId });
+				}
+
+				const shopId = typeof doc.shop === "string" ? doc.shop : doc.shop?.id;
+				if (shopId) {
+					await updateShopRating(req, shopId);
 				}
 
 				if (operation === "create" && isNotificationProviderConfigured()) {
@@ -80,41 +104,106 @@ export const Reviews: CollectionConfig = {
 				if (reviewedUserId) {
 					await updateUserRating({ req, reviewedUserId });
 				}
+
+				const shopId = typeof doc.shop === "string" ? doc.shop : doc.shop?.id;
+				if (shopId) {
+					await updateShopRating(req, shopId);
+				}
 			},
 		],
 	},
 	fields: [
 		{
-			name: "reviewer",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "reviewer",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "status",
+					type: "select",
+					defaultValue: "published",
+					options: ["published", "held_dispute", "removed"].map((value) => ({
+						label: value,
+						value,
+					})),
+					access: { create: () => false, update: () => false },
+					admin: { width: "33%" },
+				},
+				{
+					name: "reviewedUser",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
-			name: "reviewedUser",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
+			type: "row",
+			fields: [
+				{
+					name: "listing",
+					type: "relationship",
+					relationTo: "listings",
+					required: false,
+					admin: { width: "33%" },
+				},
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					admin: { width: "33%" },
+				},
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					index: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
-			name: "listing",
-			type: "relationship",
-			relationTo: "listings",
-			required: false,
-		},
-		{
-			name: "rating",
-			type: "number",
-			required: true,
-			min: 1,
-			max: 5,
+			type: "row",
+			fields: [
+				{
+					// Service-set: the order review path (a later task) is the only
+					// writer, matching P3's I1 — a client claiming this itself is a
+					// field-level rule, not a hook comment, so it is closed here even
+					// before that service exists.
+					name: "verifiedPurchase",
+					type: "checkbox",
+					defaultValue: false,
+					access: { create: () => false },
+					admin: { width: "50%" },
+				},
+				{
+					name: "rating",
+					type: "number",
+					required: true,
+					min: 1,
+					max: 5,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "comment",
 			type: "textarea",
+		},
+		{
+			// Attached by the reviewer at creation only; afterwards the list can
+			// only shrink (enforceReviewRules), which is how a moderator removes one.
+			name: "photos",
+			type: "relationship",
+			relationTo: "media",
+			hasMany: true,
+			maxRows: REVIEW_PHOTOS_MAX,
 		},
 		{
 			name: "createdAt",

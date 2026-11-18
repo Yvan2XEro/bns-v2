@@ -1,0 +1,58 @@
+import { ERROR_CODES, errorResponse } from "@/lib/errors";
+import {
+	handleModerationError,
+	readJson,
+	requireModerator,
+} from "@/lib/moderationRoute";
+import {
+	approveListing,
+	clearListingHold,
+	rejectListing,
+} from "@/services/moderation";
+
+export async function POST(
+	request: Request,
+	{ params }: { params: Promise<{ id: string }> },
+) {
+	const ctx = await requireModerator(request);
+	if (ctx instanceof Response) return ctx;
+
+	const { id } = await params;
+	const body = await readJson(request);
+	const action = body.action;
+	const note = typeof body.note === "string" ? body.note : null;
+
+	try {
+		if (action === "approve") {
+			return Response.json(
+				await approveListing(ctx.payload, ctx.actor, id, note),
+			);
+		}
+
+		if (action === "reject") {
+			// `reasonCode` is one of LISTING_REJECTION_REASONS; `message` is the
+			// moderator's own words to the seller.
+			const message = typeof body.message === "string" ? body.message : null;
+			return Response.json(
+				await rejectListing(
+					ctx.payload,
+					ctx.actor,
+					id,
+					body.reasonCode,
+					message,
+					note,
+				),
+			);
+		}
+
+		if (action === "clearHold") {
+			return Response.json(
+				await clearListingHold(ctx.payload, ctx.actor, id, note),
+			);
+		}
+
+		return errorResponse(ERROR_CODES.badRequest, 400);
+	} catch (error) {
+		return handleModerationError("listings", error);
+	}
+}

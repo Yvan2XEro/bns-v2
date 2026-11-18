@@ -1,0 +1,271 @@
+import type { Payload } from "payload";
+import { localDateString } from "../lib/marketTime";
+import { relationId } from "../lib/relationId";
+import { availableOf, isOutOfStock } from "../lib/variants";
+import type { ShopDailyStat } from "../payload-types";
+
+const DAY_MS = 86_400_000;
+
+function dayOffset(day: string, offset: number): string {
+	const date = new Date(`${day}T00:00:00.000Z`);
+	date.setTime(date.getTime() + offset * DAY_MS);
+	return date.toISOString().slice(0, 10);
+}
+
+/**
+ * When the product's latest delivered line arrived: the order's own
+ * `deliveredAt`, else the line's last update. Null when it never sold.
+ */
+async function lastDeliveredSaleAt(
+	payload: Payload,
+	productId: string,
+): Promise<string | null> {
+	const { docs } = await payload.find({
+		collection: "order-items",
+		where: {
+			and: [
+				{ product: { equals: productId } },
+				{ fulfillmentStatus: { equals: "delivered" } },
+			],
+		},
+		sort: "-updatedAt",
+		limit: 1,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const item = docs[0];
+	if (!item) return null;
+	const orderId = relationId(item.order);
+	const order = orderId
+		? await payload
+				.findByID({
+					collection: "orders",
+					id: orderId,
+					depth: 0,
+					overrideAccess: true,
+				})
+				.catch(() => null)
+		: null;
+	return order?.timestamps?.deliveredAt ?? item.updatedAt ?? null;
+}
+
+/**
+ * The product's listing when the viewer could boost it now: the boost route
+ * only takes a published listing whose seller is the caller.
+ */
+export async function boostableListing(
+	payload: Payload,
+	listingRef: unknown,
+	viewerId: string | undefined,
+	now: Date,
+): Promise<string | null> {
+	const listingId = relationId(listingRef);
+	if (!listingId || !viewerId) return null;
+	const listing = await payload
+		.findByID({
+			collection: "listings",
+			id: listingId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	if (
+		!listing ||
+		listing.status !== "published" ||
+		relationId(listing.seller) !== viewerId
+	) {
+		return null;
+	}
+	const boostedUntil = listing.boostedUntil
+		? Date.parse(listing.boostedUntil)
+		: Number.NaN;
+	return Number.isFinite(boostedUntil) && boostedUntil > now.getTime()
+		? null
+		: listingId;
+}
+
+export async function getShopStockInsights(
+	payload: Payload,
+	shopId: string,
+	now: Date,
+	timezone: string,
+	viewerId?: string,
+) {
+	const today = localDateString(now, timezone);
+	const [variants, stats] = await Promise.all([
+		payload.find({
+			collection: "product-variants",
+			where: {
+				and: [
+					{ shop: { equals: shopId } },
+					{ trackInventory: { equals: true } },
+					{
+						or: [
+							{ archivedAt: { exists: false } },
+							{ archivedAt: { equals: null } },
+						],
+					},
+				],
+			},
+			limit: 0,
+			pagination: false,
+			depth: 0,
+			overrideAccess: true,
+		}),
+		payload.find({
+			collection: "shop-daily-stats",
+			where: {
+				and: [
+					{ shop: { equals: shopId } },
+					{ date: { greater_than_equal: dayOffset(today, -29) } },
+					{ date: { less_than_equal: today } },
+				],
+			},
+			limit: 0,
+			pagination: false,
+			depth: 0,
+			overrideAccess: true,
+		}),
+	]);
+
+	const productIds = [
+		...new Set(variants.docs.map((variant) => relationId(variant.product))),
+	].filter((id): id is string => id !== null);
+	const products = productIds.length
+		? await payload.find({
+				collection: "products",
+				where: {
+					and: [{ id: { in: productIds } }, { status: { equals: "active" } }],
+				},
+				limit: 0,
+				pagination: false,
+				depth: 0,
+				overrideAccess: true,
+			})
+		: { docs: [] };
+	const productById = new Map(
+		products.docs.map((product) => [String(product.id), product]),
+	);
+	const soldByProduct = new Map<string, number>();
+	const viewedByProduct = new Map<string, number>();
+	for (const row of stats.docs as ShopDailyStat[]) {
+		for (const topProduct of row.topProducts ?? []) {
+			const productId = relationId(topProduct.product);
+			if (!productId) continue;
+			const delivered = Number(topProduct.unitsDelivered ?? 0);
+			soldByProduct.set(
+				productId,
+				(soldByProduct.get(productId) ?? 0) + delivered,
+			);
+			if (row.date >= dayOffset(today, -6)) {
+				viewedByProduct.set(
+					productId,
+					(viewedByProduct.get(productId) ?? 0) + Number(topProduct.views ?? 0),
+				);
+			}
+		}
+	}
+
+	const restock = variants.docs
+		.flatMap((variant) => {
+			const productId = relationId(variant.product);
+			const product = productId ? productById.get(productId) : undefined;
+			const available = availableOf(variant);
+			const averageDailyUnits = (soldByProduct.get(productId ?? "") ?? 0) / 30;
+			if (
+				!product ||
+				averageDailyUnits <= 0 ||
+				available / averageDailyUnits >= 7
+			) {
+				return [];
+			}
+			return [
+				{
+					variantId: String(variant.id),
+					productId: String(product.id),
+					productTitle: product.title,
+					daysOfCover: Number((available / averageDailyUnits).toFixed(1)),
+					available,
+					averageDailyUnits: Number(averageDailyUnits.toFixed(2)),
+				},
+			];
+		})
+		.sort((left, right) => left.daysOfCover - right.daysOfCover);
+	const outOfStockWithViews = variants.docs.flatMap((variant) => {
+		if (!isOutOfStock(variant)) return [];
+		const productId = relationId(variant.product);
+		const product = productId ? productById.get(productId) : undefined;
+		const views = productId ? (viewedByProduct.get(productId) ?? 0) : 0;
+		return product && views > 0
+			? [
+					{
+						variantId: String(variant.id),
+						productId: String(product.id),
+						productTitle: product.title,
+						views,
+					},
+				]
+			: [];
+	});
+	const availableByProduct: Record<string, number> = {};
+	const dormantByProduct = new Map<
+		string,
+		{
+			productId: string;
+			productTitle: string;
+			available: number;
+			costValue: number;
+		}
+	>();
+	for (const variant of variants.docs) {
+		const productId = relationId(variant.product);
+		const product = productId ? productById.get(productId) : undefined;
+		if (!productId || !product) continue;
+		const available = availableOf(variant);
+		availableByProduct[productId] =
+			(availableByProduct[productId] ?? 0) + available;
+		if (available <= 0 || (soldByProduct.get(productId) ?? 0) > 0) continue;
+		const entry = dormantByProduct.get(productId) ?? {
+			productId,
+			productTitle: product.title,
+			available: 0,
+			costValue: 0,
+		};
+		entry.available += available;
+		entry.costValue += available * Number(variant.cost ?? 0);
+		dormantByProduct.set(productId, entry);
+	}
+	const dormantAll = [...dormantByProduct.values()].sort(
+		(left, right) =>
+			right.costValue - left.costValue || right.available - left.available,
+	);
+	const dormant = await Promise.all(
+		dormantAll.slice(0, 5).map(async (entry) => {
+			const lastSaleAt = await lastDeliveredSaleAt(payload, entry.productId);
+			return {
+				...entry,
+				boostListingId: await boostableListing(
+					payload,
+					productById.get(entry.productId)?.listing,
+					viewerId,
+					now,
+				),
+				lastSaleAt,
+				daysSinceLastSale:
+					lastSaleAt === null
+						? null
+						: Math.max(
+								0,
+								Math.floor((now.getTime() - Date.parse(lastSaleAt)) / DAY_MS),
+							),
+			};
+		}),
+	);
+	return {
+		restock,
+		outOfStockWithViews,
+		dormant,
+		dormantValue: dormantAll.reduce((sum, entry) => sum + entry.costValue, 0),
+		availableByProduct,
+	};
+}

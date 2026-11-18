@@ -1,0 +1,65 @@
+[
+	{
+		"key": "refund-list-empty",
+		"request": {
+			"method": "GET",
+			"path": "/payments/{ref}/refunds",
+			"when": "refunds:{ref}=initial"
+		},
+		"response": { "status": 200, "body": { "refunds": [] } }
+	},
+	{
+		"key": "refund-list-made",
+		"request": {
+			"method": "GET",
+			"path": "/payments/{ref}/refunds",
+			"when": "refunds:{ref}=made"
+		},
+		"response": {
+			"status": 200,
+			"body": {
+				"refunds": [
+					{
+						"id": "ref_{refundKey}",
+						"status": "pending",
+						"amount": 3000,
+						"metadata": { "idempotency_key": "{refundKey}" }
+					}
+				]
+			}
+		},
+		"assumed": ["A8", "A9"]
+	},
+	{
+		"key": "refund-create",
+		"request": { "method": "POST", "path": "/refunds" },
+		"response": {
+			"status": 201,
+			"body": { "refund": { "id": "ref_{refundKey}", "status": "pending" } }
+		},
+		"binds": { "refundKey": "body.metadata.idempotency_key" },
+		"sets": "refunds:{payment}=made",
+		"assumed": ["A8"]
+	},
+	{
+		"key": "refund-get",
+		"request": { "method": "GET", "path": "/refunds/{id}" },
+		"response": {
+			"status": 200,
+			"body": {
+				"refund": {
+					"id": "{id}",
+					"status": "pending",
+					"amount": 3000,
+					"currency": "XAF",
+					"payment": "trx.{payment}",
+					"metadata": {
+						"idempotency_key": "{refundKey}",
+						"payment_reference": "{payment}"
+					}
+				}
+			}
+		},
+		"assumed": ["A9"]
+	}
+]

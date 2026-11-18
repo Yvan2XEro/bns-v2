@@ -1,0 +1,271 @@
+import { Ionicons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
+import { router } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
+import { SettingsShell } from "@/src/components/delivery/SettingsShell";
+import { EmptyState } from "@/src/components/EmptyState";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { SheetButton } from "@/src/components/sellerOrders/FormBits";
+import { ListSkeleton } from "@/src/components/shop/ListSkeleton";
+import { AmountTag, StatusTag } from "@/src/components/shop/Tags";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { useDeliveryZones } from "@/src/hooks/useDeliverySettings";
+import { resolveErrorMessage } from "@/src/lib/apiError";
+import { districtLabel, groupZonesByCity } from "@/src/lib/deliveryZoneForm";
+import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
+import { cityLabel } from "@/src/lib/sellerOrders";
+import type { DeliveryZone } from "../../../../api/src/payload-types";
+
+type Row =
+	| { kind: "city"; key: string; city: string }
+	| { kind: "zone"; key: string; zone: DeliveryZone };
+
+function ZoneRow({ zone }: { zone: DeliveryZone }) {
+	const c = useShopTheme();
+	const { t, i18n } = useTranslation();
+	const districts = (zone.districts ?? []).map(
+		(d) => districtLabel(d.key) ?? d.key,
+	);
+	return (
+		<Pressable
+			onPress={() =>
+				router.push({
+					pathname: "/seller/delivery/zone/[id]",
+					params: { id: String(zone.id) },
+				})
+			}
+			accessibilityRole="button"
+			accessibilityLabel={zone.name}
+			style={({ pressed }) => [
+				styles.row,
+				{ borderColor: c.border, backgroundColor: c.card },
+				pressed && styles.pressed,
+			]}
+		>
+			<View style={styles.rowBody}>
+				<View style={styles.rowHead}>
+					<Text
+						style={[
+							styles.rowTitle,
+							{ color: zone.active === false ? c.muted : c.text },
+						]}
+						numberOfLines={1}
+					>
+						{zone.name}
+					</Text>
+					{zone.active === false ? (
+						<StatusTag label={t("deliverySettings.inactive")} tone="neutral" />
+					) : null}
+				</View>
+				<Text style={[styles.rowText, { color: c.body }]} numberOfLines={2}>
+					{districts.length
+						? districts.join(", ")
+						: t("deliverySettings.wholeCity")}
+				</Text>
+				<View style={styles.rowFoot}>
+					<AmountTag
+						label={t("deliverySettings.zoneFee", {
+							fee: formatPrice(zone.fee, i18n.language),
+						})}
+						size="sm"
+					/>
+					<Text style={[styles.rowMeta, { color: c.muted }]} numberOfLines={2}>
+						{[
+							t("deliverySettings.zoneEta", {
+								min: zone.etaMinHours,
+								max: zone.etaMaxHours,
+							}),
+							zone.method === "courier"
+								? t("deliverySettings.methodCourier")
+								: t("deliverySettings.methodSeller"),
+							zone.codAllowed === false ? t("deliverySettings.codOff") : null,
+						]
+							.filter(Boolean)
+							.join(" · ")}
+					</Text>
+				</View>
+			</View>
+			<Ionicons name="chevron-forward" size={18} color={c.muted} />
+		</Pressable>
+	);
+}
+
+const openNewZone = () =>
+	router.push({
+		pathname: "/seller/delivery/zone/[id]",
+		params: { id: "new" },
+	});
+
+/** Pickup points live one level down; a row at the top keeps them in reach. */
+function PickupPointsRow() {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	return (
+		<Pressable
+			onPress={() => router.push("/seller/delivery/locations")}
+			accessibilityRole="button"
+			accessibilityLabel={t("deliverySettings.pickupPoints")}
+			style={({ pressed }) => [
+				styles.row,
+				styles.pickupRow,
+				{ borderColor: c.border, backgroundColor: c.card },
+				pressed && styles.pressed,
+			]}
+		>
+			<Ionicons name="storefront-outline" size={20} color={c.link} />
+			<Text style={[styles.rowTitle, { flex: 1, color: c.text }]}>
+				{t("deliverySettings.pickupPoints")}
+			</Text>
+			<Ionicons name="chevron-forward" size={18} color={c.muted} />
+		</Pressable>
+	);
+}
+
+function ZonesList({ shopId }: { shopId: string }) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
+	const zones = useDeliveryZones(shopId);
+	if (zones.isPending)
+		return (
+			<View style={styles.loading}>
+				<ListSkeleton rows={4} />
+			</View>
+		);
+	if (zones.isError)
+		return (
+			<EmptyState
+				illustration="notFound"
+				title={t("deliverySettings.zonesTitle")}
+				subtitle={resolveErrorMessage(zones.error, t)}
+				ctaLabel={t("common.retry")}
+				onCta={() => zones.refetch()}
+			/>
+		);
+	const rows: Row[] = groupZonesByCity(zones.data).flatMap((group) => [
+		{ kind: "city" as const, key: group.city, city: group.city },
+		...group.zones.map((zone) => ({
+			kind: "zone" as const,
+			key: String(zone.id),
+			zone,
+		})),
+	]);
+	return (
+		<ScreenColumn width="wide">
+			<FlashList
+				ListHeaderComponent={<PickupPointsRow />}
+				data={rows}
+				keyExtractor={(row) => row.key}
+				getItemType={(row) => row.kind}
+				contentContainerStyle={styles.content}
+				ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+				ListEmptyComponent={
+					<View
+						style={[
+							styles.empty,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Ionicons name="bicycle-outline" size={28} color={c.link} />
+						<Text style={[styles.rowText, { color: c.body }]}>
+							{t("deliverySettings.zonesEmpty")}
+						</Text>
+						<SheetButton
+							label={t("deliverySettings.addFirstZone")}
+							onPress={openNewZone}
+						/>
+					</View>
+				}
+				renderItem={({ item }) =>
+					item.kind === "city" ? (
+						<Text
+							accessibilityRole="header"
+							style={[styles.city, { color: c.text }]}
+						>
+							{cityLabel(item.city)}
+						</Text>
+					) : (
+						<ZoneRow zone={item.zone} />
+					)
+				}
+			/>
+			{rows.length > 0 ? (
+				// The main action stays in reach however many zones there are.
+				<View
+					style={[
+						styles.footer,
+						{
+							paddingBottom: insets.bottom + 12,
+							borderTopColor: c.border,
+							backgroundColor: c.bg,
+						},
+					]}
+				>
+					<SheetButton
+						label={t("deliverySettings.addZone")}
+						onPress={openNewZone}
+					/>
+				</View>
+			) : null}
+		</ScreenColumn>
+	);
+}
+
+export default function DeliveryZonesScreen() {
+	const { t } = useTranslation();
+	return (
+		<SettingsShell title={t("deliverySettings.zonesTitle")}>
+			{(shopId) => <ZonesList shopId={shopId} />}
+		</SettingsShell>
+	);
+}
+
+const styles = StyleSheet.create({
+	loading: { paddingTop: 16 },
+	content: { padding: 16, paddingBottom: 24 },
+	city: {
+		fontSize: 18,
+		lineHeight: 26,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: -0.3,
+		marginTop: 16,
+		marginBottom: 2,
+	},
+	row: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		padding: 16,
+		minHeight: 48,
+	},
+	pressed: { opacity: 0.7 },
+	rowBody: { flex: 1, gap: 6 },
+	rowHead: { flexDirection: "row", alignItems: "center", gap: 8 },
+	rowTitle: {
+		flexShrink: 1,
+		fontSize: 16,
+		lineHeight: 22,
+		fontFamily: Fonts.displayBold,
+	},
+	rowText: { fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
+	rowFoot: { flexDirection: "row", alignItems: "center", gap: 10 },
+	rowMeta: { flex: 1, fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
+	footer: {
+		paddingHorizontal: 16,
+		paddingTop: 12,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
+	pickupRow: { marginBottom: 8 },
+	empty: {
+		alignItems: "center",
+		gap: 10,
+		padding: 24,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
+});

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -12,10 +12,13 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
+import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
 const REASON_KEYS = [
@@ -33,17 +36,45 @@ export default function ReportModal() {
 		targetId: string;
 	}>();
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
 	const [reason, setReason] = useState("");
 	const [description, setDescription] = useState("");
+	const { user, isLoading: authLoading } = useAuth();
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	// Reports need an account. The entry points ask first; this is the
+	// backstop for a deep link, and it comes back here after signing in.
+	useEffect(() => {
+		if (authLoading || user) return;
+		const back = `/report?${new URLSearchParams({
+			targetType: targetType ?? "",
+			targetId: targetId ?? "",
+		}).toString()}`;
+		router.replace({ pathname: "/auth/login", params: { redirect: back } });
+	}, [authLoading, user, targetType, targetId]);
+
+	// "Other" says nothing by itself: it needs a few words to act on.
+	const needsDetails = reason === "other";
+	const detailsMissing = needsDetails && description.trim().length < 10;
+	const canSubmit = !!reason && !detailsMissing;
+
+	const c = isDark ? Colors.dark : Colors.light;
+	const bg = c.background;
+	const cardBg = c.card;
+	const textColor = c.foreground;
+	const mutedColor = c.mutedForeground;
+	const primaryColor = c.primary;
+	const borderColor = c.border;
+	// The title names what is reported, when we know it.
+	const title =
+		targetType === "listing"
+			? t("report.listingTitle")
+			: targetType === "user"
+				? t("report.userTitle")
+				: targetType === "shop"
+					? t("report.shopTitle")
+					: t("report.title");
 
 	const { mutate: submit, isPending } = useMutation({
 		mutationFn: () =>
@@ -52,7 +83,8 @@ export default function ReportModal() {
 			showSuccess(t("report.successTitle"), t("report.successMessage"));
 			router.dismiss();
 		},
-		onError: (err: any) => showError(t("report.errorTitle"), err.message),
+		onError: (err: any) =>
+			showError(t("report.errorTitle"), resolveErrorMessage(err, t)),
 	});
 
 	return (
@@ -61,59 +93,94 @@ export default function ReportModal() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-					<Ionicons name="flag-outline" size={20} color={textColor} />
-					<Text style={[styles.title, { color: textColor }]}>
-						{t("report.title")}
-					</Text>
-				</View>
-				<Pressable onPress={() => router.dismiss()}>
+				<Text
+					style={[styles.title, { color: textColor }]}
+					accessibilityRole="header"
+					numberOfLines={1}
+				>
+					{title}
+				</Text>
+				<Pressable
+					onPress={() => router.dismiss()}
+					style={styles.closeBtn}
+					accessibilityRole="button"
+					accessibilityLabel={t("common.close")}
+				>
 					<Ionicons name="close" size={24} color={textColor} />
 				</Pressable>
 			</View>
 			<KeyboardAwareScrollView
-				contentContainerStyle={{ padding: 20, gap: 12 }}
+				contentContainerStyle={[styles.body, centeredContent]}
 				keyboardShouldPersistTaps="handled"
 				bottomOffset={24}
 			>
-				<Text style={[styles.label, { color: mutedColor }]}>
+				<Text
+					style={[styles.label, { color: textColor }]}
+					nativeID="report-reason-label"
+				>
 					{t("report.reasonLabel")}
 				</Text>
-				{REASON_KEYS.map((key) => (
-					<Pressable
-						key={key}
-						onPress={() => setReason(key)}
-						style={[
-							styles.reasonBtn,
-							{
-								backgroundColor:
-									reason === key ? (isDark ? "#1e3a5f" : "#dbeafe") : cardBg,
-								borderColor: reason === key ? primaryColor : borderColor,
-								borderWidth: reason === key ? 2 : 1,
-							},
-						]}
-					>
-						<Text style={[styles.reasonText, { color: textColor }]}>
-							{t(`report.${key}Label` as any)}
-						</Text>
-						{reason === key && (
-							<Ionicons
-								name="checkmark-circle"
-								size={18}
-								color={primaryColor}
-							/>
-						)}
-					</Pressable>
-				))}
+				{/* One grouped list of radios, as a settings list reads. */}
+				<View
+					style={[styles.reasonList, { backgroundColor: cardBg, borderColor }]}
+					accessibilityRole="radiogroup"
+					accessibilityLabelledBy="report-reason-label"
+				>
+					{REASON_KEYS.map((key, i) => {
+						const on = reason === key;
+						return (
+							<Pressable
+								key={key}
+								onPress={() => setReason(key)}
+								accessibilityRole="radio"
+								accessibilityState={{ checked: on }}
+								style={({ pressed }) => [
+									styles.reasonBtn,
+									i > 0 && {
+										borderTopWidth: StyleSheet.hairlineWidth,
+										borderTopColor: borderColor,
+									},
+									{
+										backgroundColor: on
+											? c.primaryTint
+											: pressed
+												? c.well
+												: "transparent",
+									},
+								]}
+							>
+								<Text
+									style={[
+										styles.reasonText,
+										{
+											color: textColor,
+											fontFamily: on ? Fonts.bodySemibold : Fonts.body,
+										},
+									]}
+								>
+									{t(`report.${key}Label` as any)}
+								</Text>
+								<Ionicons
+									name={on ? "radio-button-on" : "radio-button-off"}
+									size={22}
+									color={on ? primaryColor : c.faint}
+								/>
+							</Pressable>
+						);
+					})}
+				</View>
 
-				<Text style={[styles.label, { color: mutedColor, marginTop: 8 }]}>
-					{t("report.descriptionLabel")}
+				<Text style={[styles.label, styles.labelSpaced, { color: textColor }]}>
+					{needsDetails ? t("report.otherHint") : t("report.descriptionLabel")}
 				</Text>
 				<TextInput
 					value={description}
 					onChangeText={setDescription}
+					accessibilityLabel={
+						needsDetails ? t("report.otherHint") : t("report.descriptionLabel")
+					}
 					placeholder={t("report.descriptionPlaceholder")}
-					placeholderTextColor={mutedColor}
+					placeholderTextColor={c.mutedForeground}
 					style={[
 						styles.textarea,
 						{ backgroundColor: cardBg, borderColor, color: textColor },
@@ -123,26 +190,30 @@ export default function ReportModal() {
 				/>
 
 				<Pressable
-					onPress={() => reason && submit()}
-					disabled={!reason || isPending}
-					style={[
+					onPress={() => canSubmit && submit()}
+					disabled={!canSubmit || isPending}
+					accessibilityRole="button"
+					accessibilityState={{
+						disabled: !canSubmit || isPending,
+						busy: isPending,
+					}}
+					style={({ pressed }) => [
 						styles.submitBtn,
 						{
-							backgroundColor: !reason
-								? isDark
-									? "#1e293b"
-									: "#e2e8f0"
-								: "#dc2626",
+							// The light destructive red in both themes: white on the
+							// dark-mode red falls under 4.5:1.
+							backgroundColor: !canSubmit ? c.well : Colors.light.destructive,
+							opacity: pressed && canSubmit ? 0.85 : 1,
 						},
 					]}
 				>
 					{isPending ? (
-						<ActivityIndicator color="#fff" />
+						<ActivityIndicator color="#ffffff" />
 					) : (
 						<Text
 							style={[
 								styles.submitText,
-								{ color: !reason ? mutedColor : "#fff" },
+								{ color: !canSubmit ? mutedColor : "#ffffff" },
 							]}
 						>
 							{t("report.submit")}
@@ -160,29 +231,59 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		padding: 16,
-		borderBottomWidth: 1,
+		paddingLeft: 20,
+		paddingRight: 8,
+		minHeight: 60,
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	title: { fontSize: 18, fontFamily: Fonts.displayBold },
-	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	title: {
+		flex: 1,
+		fontSize: 20,
+		lineHeight: 28,
+		fontFamily: Fonts.displayBold,
+	},
+	closeBtn: {
+		width: 48,
+		height: 48,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	body: { padding: 20, gap: 10, paddingBottom: 40 },
+	label: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	labelSpaced: { marginTop: 14 },
+	reasonList: {
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		overflow: "hidden",
+	},
 	reasonBtn: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		borderRadius: 12,
-		padding: 14,
+		gap: 12,
+		minHeight: 52,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
 	},
-	reasonText: { fontSize: 14, fontFamily: Fonts.body },
+	reasonText: { flex: 1, fontFamily: Fonts.body, fontSize: 15, lineHeight: 20 },
 	textarea: {
 		borderRadius: 12,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		fontSize: 14,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		paddingTop: 12,
+		paddingBottom: 12,
+		fontSize: 16,
+		lineHeight: 22,
 		fontFamily: Fonts.body,
-		minHeight: 100,
+		minHeight: 112,
 		textAlignVertical: "top",
 	},
-	submitBtn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
-	submitText: { fontSize: 16, fontFamily: Fonts.displayBold },
+	submitBtn: {
+		borderRadius: 12,
+		minHeight: 52,
+		alignItems: "center",
+		justifyContent: "center",
+		marginTop: 10,
+	},
+	submitText: { fontSize: 16, lineHeight: 22, fontFamily: Fonts.bodyBold },
 });

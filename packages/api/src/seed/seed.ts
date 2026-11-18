@@ -4,7 +4,9 @@ import { seedCategories } from "./seedCategories";
 import { seedConversations } from "./seedConversations";
 import { seedFavorites } from "./seedFavorites";
 import { seedListings } from "./seedListings";
+import { seedMarkets } from "./seedMarkets";
 import { seedReviews } from "./seedReviews";
+import { seedTags } from "./seedTags";
 import { seedUsers } from "./seedUsers";
 
 const clearCollections = async (
@@ -20,6 +22,7 @@ const clearCollections = async (
 		"conversations",
 		"favorites",
 		"listings",
+		"tags",
 		"categories",
 		"users",
 	] as const;
@@ -57,9 +60,16 @@ export const seed = async () => {
 		`Created: ${admins.length} admins, ${moderators.length} moderators, ${regularUsers.length} users`,
 	);
 
+	console.log("\n--- Seeding the market ---");
+	await seedMarkets(payload);
+
 	console.log("\n--- Seeding Categories ---");
 	const categories = await seedCategories(payload);
 	console.log(`Created: ${categories.length} categories`);
+
+	// After the categories: each tag is linked to them by slug.
+	console.log("\n--- Seeding Tags ---");
+	console.log(`Created: ${await seedTags(payload)} tags`);
 
 	console.log("\n--- Seeding Listings ---");
 	const listings = await seedListings(payload, categories, regularUsers);

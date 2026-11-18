@@ -1,119 +1,51 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useCounts } from "@novu/react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs } from "expo-router";
-import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { HapticTab } from "@/components/haptic-tab";
-import { Fonts } from "@/constants/theme";
+import { useEffect } from "react";
+import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+	QuietTabBar,
+	SellPlaque,
+	TabGlyph,
+} from "@/src/components/navigation/QuietTabBar";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
+import { useTabNavigatorOptions } from "@/src/hooks/useTabNavigatorOptions";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
-function MessagesBadge({ count }: { count: number }) {
-	if (count === 0) return null;
-	return (
-		<View style={styles.badge}>
-			<Text style={styles.badgeText}>{count > 9 ? "9+" : count}</Text>
-		</View>
-	);
-}
+/**
+ * The tabs open on home. A link that starts the app (a shared listing) mounts
+ * them under its screen; opening on `index`, whose only job is to redirect
+ * `/` to home, would fire that redirect underneath and replace the linked
+ * screen with home.
+ */
+export const unstable_settings = { initialRouteName: "home/index" };
 
-function NotificationsCount() {
-	const { counts } = useCounts({ filters: [{ read: false }] });
-	const count = counts?.[0]?.count ?? 0;
-	if (count === 0) return null;
-	return (
-		<View style={styles.badge}>
-			<Text style={styles.badgeText}>{count > 9 ? "9+" : count}</Text>
-		</View>
-	);
-}
-
-function AccountTabIcon({
-	color,
-	focused,
-}: {
-	color: string;
-	focused: boolean;
-}) {
+function AccountGlyph({ color, focused }: { color: string; focused: boolean }) {
 	const notificationReady = useNotificationReady();
-	return (
-		<View>
-			<AnimatedTabIcon
-				name="person-outline"
-				focusedName="person"
-				color={color}
-				focused={focused}
-			/>
-			{notificationReady && <NotificationsCount />}
-		</View>
+	return notificationReady ? (
+		<AccountGlyphWithNotifications color={color} focused={focused} />
+	) : (
+		<TabGlyph name="person" focused={focused} color={color} />
 	);
 }
 
-type IoniconsName = keyof typeof Ionicons.glyphMap;
-
-/** Tab icon with bounce animation using React Native Animated (more reliable in tab bar) */
-function AnimatedTabIcon({
-	name,
-	focusedName,
+/** Novu's hook only works under its provider, hence the split. */
+function AccountGlyphWithNotifications({
 	color,
 	focused,
-	size = 26,
 }: {
-	name: IoniconsName;
-	focusedName: IoniconsName;
 	color: string;
 	focused: boolean;
-	size?: number;
 }) {
-	const scale = useRef(new Animated.Value(1)).current;
-
-	useEffect(() => {
-		if (focused) {
-			Animated.sequence([
-				Animated.spring(scale, {
-					toValue: 1.22,
-					useNativeDriver: true,
-					speed: 50,
-					bounciness: 14,
-				}),
-				Animated.spring(scale, {
-					toValue: 1,
-					useNativeDriver: true,
-					speed: 20,
-					bounciness: 8,
-				}),
-			]).start();
-		}
-	}, [focused, scale]);
-
+	const { counts } = useCounts({ filters: [{ read: false }] });
+	const unseen = (counts?.[0]?.count ?? 0) > 0;
 	return (
-		<Animated.View
-			style={{
-				width: size + 4,
-				height: size + 4,
-				alignItems: "center",
-				justifyContent: "center",
-				transform: [{ scale }],
-			}}
-		>
-			<Ionicons name={focused ? focusedName : name} size={size} color={color} />
-		</Animated.View>
-	);
-}
-
-function SellButton() {
-	return (
-		<View style={styles.sellWrap}>
-			<View style={styles.sellBtn}>
-				<Ionicons name="add" size={28} color="#0f172a" />
-			</View>
-		</View>
+		<TabGlyph name="person" focused={focused} color={color} dot={unseen} />
 	);
 }
 
@@ -124,7 +56,6 @@ export default function TabLayout() {
 	const { user } = useAuth();
 	const { chatClient } = useChatClient();
 	const queryClient = useQueryClient();
-	const insets = useSafeAreaInsets();
 
 	const { data: unreadData } = useQuery({
 		queryKey: ["unread-messages"],
@@ -140,49 +71,33 @@ export default function TabLayout() {
 			queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
 		};
 		chatClient.on("message:new", onNewMessage);
-		return () => chatClient.off("message:new", onNewMessage);
+		return () => {
+			chatClient.off("message:new", onNewMessage);
+		};
 	}, [chatClient, queryClient]);
 
 	const unreadCount = unreadData?.count ?? 0;
 
-	const activeColor = isDark ? "#3b82f6" : "#1e40af";
-	const inactiveColor = "#94a3b8";
-	const bgColor = isDark ? "#0b1120" : "#ffffff";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const c = Colors[isDark ? "dark" : "light"];
+	const tabOptions = useTabNavigatorOptions(c.primary);
+	const { isExpanded } = useResponsive();
 
 	return (
 		<Tabs
-			screenOptions={{
-				tabBarActiveTintColor: activeColor,
-				tabBarInactiveTintColor: inactiveColor,
-				headerShown: false,
-				tabBarButton: HapticTab,
-				tabBarStyle: {
-					backgroundColor: bgColor,
-					borderTopColor: borderColor,
-					borderTopWidth: 1,
-					paddingTop: 10,
-					paddingBottom: Math.max(insets.bottom, 6),
-					height: 68 + insets.bottom,
-				},
-				tabBarLabelStyle: {
-					fontSize: 10,
-					fontFamily: Fonts.bodySemibold,
-					marginBottom: 4,
-				},
-			}}
+			screenOptions={tabOptions}
+			// The quiet bar at the bottom; the tablet rail keeps the navigator's.
+			tabBar={
+				isExpanded
+					? undefined
+					: (props) => <QuietTabBar {...props} actionRoute="create/index" />
+			}
 		>
 			<Tabs.Screen
 				name="home/index"
 				options={{
 					title: t("navigation.home"),
 					tabBarIcon: ({ color, focused }) => (
-						<AnimatedTabIcon
-							name="home-outline"
-							focusedName="home"
-							color={color}
-							focused={focused}
-						/>
+						<TabGlyph name="home" focused={focused} color={color as string} />
 					),
 				}}
 			/>
@@ -191,12 +106,7 @@ export default function TabLayout() {
 				options={{
 					title: t("navigation.favorites"),
 					tabBarIcon: ({ color, focused }) => (
-						<AnimatedTabIcon
-							name="heart-outline"
-							focusedName="heart"
-							color={color}
-							focused={focused}
-						/>
+						<TabGlyph name="heart" focused={focused} color={color as string} />
 					),
 				}}
 			/>
@@ -204,24 +114,26 @@ export default function TabLayout() {
 				name="create/index"
 				options={{
 					title: t("navigation.sell"),
-					tabBarIcon: () => <SellButton />,
-					tabBarLabel: () => null,
+					tabBarAccessibilityLabel: t("navigation.sellA11y"),
+					// Drawn by the rail only; the quiet bar draws its own plaque.
+					tabBarIcon: () => <SellPlaque />,
 				}}
 			/>
 			<Tabs.Screen
 				name="messages/index"
 				options={{
 					title: t("navigation.messages"),
+					tabBarAccessibilityLabel:
+						unreadCount > 0
+							? t("navigation.messagesWithCount", { count: unreadCount })
+							: undefined,
 					tabBarIcon: ({ color, focused }) => (
-						<View>
-							<AnimatedTabIcon
-								name="chatbubbles-outline"
-								focusedName="chatbubbles"
-								color={color}
-								focused={focused}
-							/>
-							<MessagesBadge count={unreadCount} />
-						</View>
+						<TabGlyph
+							name="chatbubbles"
+							focused={focused}
+							color={color as string}
+							badge={unreadCount}
+						/>
 					),
 				}}
 			/>
@@ -230,7 +142,7 @@ export default function TabLayout() {
 				options={{
 					title: t("navigation.account"),
 					tabBarIcon: ({ color, focused }) => (
-						<AccountTabIcon color={color} focused={focused} />
+						<AccountGlyph color={color as string} focused={focused} />
 					),
 				}}
 			/>
@@ -241,43 +153,3 @@ export default function TabLayout() {
 		</Tabs>
 	);
 }
-
-const styles = StyleSheet.create({
-	sellWrap: {
-		width: 52,
-		height: 52,
-		alignItems: "center",
-		justifyContent: "center",
-		marginTop: -16,
-	},
-	sellBtn: {
-		width: 52,
-		height: 52,
-		borderRadius: 26,
-		alignItems: "center",
-		justifyContent: "center",
-		backgroundColor: "#f59e0b",
-		shadowColor: "#f59e0b",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.4,
-		shadowRadius: 8,
-		elevation: 8,
-	},
-	badge: {
-		position: "absolute",
-		top: -4,
-		right: -8,
-		backgroundColor: "#dc2626",
-		borderRadius: 10,
-		minWidth: 18,
-		height: 18,
-		alignItems: "center",
-		justifyContent: "center",
-		paddingHorizontal: 4,
-	},
-	badgeText: {
-		color: "#fff",
-		fontSize: 10,
-		fontFamily: Fonts.displayExtrabold,
-	},
-});

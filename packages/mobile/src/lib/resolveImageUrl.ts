@@ -1,3 +1,5 @@
+import { type MediaSize, mediaUrl } from "../../../api/src/contracts/media";
+
 const API_ORIGIN = (() => {
 	const raw = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 	try {
@@ -39,14 +41,17 @@ export function resolveImageUrl(url: string | null | undefined): string | null {
 }
 
 /**
- * Extracts and resolves the image URL from a Payload listing image entry.
+ * Extracts and resolves the image URL from a Payload listing image entry, at
+ * the requested size (the original when that size was never generated).
  * Handles both shapes:
  *   - { url: "..." }                 (direct upload)
  *   - { image: { url: "..." } }      (array-of-upload field)
  */
-export function resolveListingImageUrl(entry: unknown): string | null {
+export function resolveListingImageUrl(
+	entry: unknown,
+	size?: MediaSize,
+): string | null {
 	if (!entry || typeof entry !== "object") return null;
-	const e = entry as Record<string, any>;
-	const raw: string | null | undefined = e.url ?? e.image?.url ?? null;
-	return resolveImageUrl(raw);
+	const media = "image" in entry ? entry.image : entry;
+	return resolveImageUrl(mediaUrl(media, size));
 }

@@ -1,0 +1,1783 @@
+import type { Payload, PayloadRequest } from "payload";
+import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
+import type { QuoteSummaryLine } from "../contracts/checkoutGroup";
+import { conditionLabelOf } from "../contracts/conditionAttribute";
+import {
+	deliveryAddressIssue,
+	normalizedDeliveryAddress,
+} from "../contracts/deliveryAddress";
+import type {
+	DeliveryMethod,
+	UnavailableOption,
+} from "../contracts/deliveryQuote";
+import { mediaUrl } from "../contracts/media";
+import { queueSearchEvent } from "../hooks/searchEvents";
+import { resolveSuspension } from "../hooks/suspensionGuard";
+import {
+	DELIVERY_PHONE_PATTERN,
+	marketAddressRules,
+} from "../lib/addressRules";
+import { getDeliverySettings } from "../lib/deliverySettings";
+import { ERROR_CODES, type ErrorCode } from "../lib/errors";
+import { type LaunchCityKey, launchCitySeedRows } from "../lib/launchCities";
+import {
+	getShopMarketCities,
+	type MarketCity,
+	marketCityKeyOf,
+} from "../lib/marketCities";
+import { liveMarketOfShop, type Market } from "../lib/markets";
+import { localDayStartIso } from "../lib/marketTime";
+import type { CapCheckInput } from "../lib/orderCaps";
+import { checkCaps, confirmationPathFor } from "../lib/orderCaps";
+import {
+	buildContractSnapshot,
+	type ContractSnapshot,
+	loadSalesTermsTemplate,
+	snapshotHash,
+} from "../lib/orderContract";
+import { commissionForLine } from "../lib/orderMath";
+import {
+	type BuyerTierKey,
+	getOrderSettings,
+	isPilotShop,
+	type OrderSettings,
+} from "../lib/orderSettings";
+import { splitAmounts } from "../lib/paymentMath";
+import {
+	getPaymentSettings,
+	isProtectedPaymentOpen,
+	type MarketRow,
+	type PaymentSettings,
+} from "../lib/paymentSettings";
+import { quoteHash } from "../lib/quoteHash";
+import {
+	type CounterStore,
+	getCounterStore,
+	hitRateLimit,
+	type RateLimitWindow,
+} from "../lib/rateLimit";
+import { relationId } from "../lib/relationId";
+import { getResaleSettings } from "../lib/resaleSettings";
+import { ServiceError } from "../lib/serviceError";
+import {
+	codCaps,
+	codCapsWithStanding,
+	type ShopCapabilities,
+	shopCapabilities,
+} from "../lib/shopCapabilities";
+import {
+	commitContextOf,
+	onCommit,
+	withTransaction,
+} from "../lib/transactions";
+import { availableOf } from "../lib/variants";
+import type { Cart, Order, ProductVariant, Shop } from "../payload-types";
+import {
+	type CartLineView,
+	loadActiveCart,
+	markCartConverted,
+	revalidateCartLines,
+} from "./cart";
+import { resolveCartOffer } from "./cartOffer";
+import { assertShopEligibleForProtectedPayment } from "./checkoutPayment";
+import {
+	placeSplit,
+	quoteSplit,
+	type SplitPlaceResponse,
+	type SplitQuoteView,
+} from "./checkoutSplit";
+import { marketOf, shopMarketCountry } from "./connectedAccounts";
+import { shopSellerDetails } from "./delivery/locations";
+import {
+	type DeliveryOption,
+	type DeliveryQuote,
+	type PickupPointSnapshot,
+	type QuoteItem,
+	quoteDelivery,
+} from "./deliveryQuote";
+import { issueConfirmationCode } from "./orders/confirmation";
+import { queueOrderEvent } from "./orders/events";
+import { recordPlacement, scoreCheckout } from "./orders/risk";
+import { receiptSms, sendOrderSms } from "./orders/sms";
+import { appendOrderEvent, applyTransition } from "./orders/transitions";
+import { nextNumber } from "./sequences";
+import { isUniqueViolation, type ServiceUser } from "./shops";
+import { reserve } from "./stock";
+import { shopStanding } from "./strikes";
+
+export class CheckoutError extends ServiceError {
+	constructor(
+		code: ErrorCode,
+		status: number,
+		message?: string,
+		details?: Record<string, unknown>,
+	) {
+		super(code, status, message, details);
+		this.name = "CheckoutError";
+	}
+}
+
+/**
+ * Quote and place share this limit (the spec's own words): 10 calls an hour
+ * per user, 30 an hour per IP. The IP window exists because quoting is a
+ * free look-up for the caller and a way to probe the fee table for anyone
+ * else — a per-user limit alone is not enough against a caller who signs up
+ * repeatedly.
+ */
+export const QUOTE_RATE_LIMITS: {
+	perUser: readonly RateLimitWindow[];
+	perIp: readonly RateLimitWindow[];
+} = {
+	perUser: [{ name: "checkout-quote:user", limit: 10, windowSeconds: 3600 }],
+	perIp: [{ name: "checkout-quote:ip", limit: 30, windowSeconds: 3600 }],
+};
+
+const OPEN_ORDER_STATUSES = ["placed", "confirmed", "accepted", "shipped"];
+
+async function countBuyerOpenOrders(
+	payload: Payload,
+	buyerId: string,
+): Promise<number> {
+	const { totalDocs } = await payload.count({
+		collection: "orders",
+		where: {
+			and: [
+				{ buyer: { equals: buyerId } },
+				{ status: { in: OPEN_ORDER_STATUSES } },
+			],
+		},
+		overrideAccess: true,
+	});
+	return totalDocs;
+}
+
+async function countShopDailyOrders(
+	payload: Payload,
+	shopId: string,
+	now: Date,
+	timezone: string,
+): Promise<number> {
+	const { totalDocs } = await payload.count({
+		collection: "orders",
+		where: {
+			and: [
+				{ shop: { equals: shopId } },
+				{
+					"timestamps.placedAt": {
+						greater_than_equal: localDayStartIso(now, timezone),
+					},
+				},
+			],
+		},
+		overrideAccess: true,
+	});
+	return totalDocs;
+}
+
+/**
+ * The eight checks shared with Task 19's `placeOrder`: this is the single
+ * implementation, called by the quote and re-run, unchanged, at placement —
+ * a client cannot skip a check by going straight to `/place`.
+ */
+export interface CheckoutContext {
+	settings: OrderSettings;
+	cart: Cart;
+	lines: CartLineView[];
+	shop: Shop;
+	capabilities: ShopCapabilities;
+}
+
+export async function assertCheckoutPreconditions(
+	payload: Payload,
+	user: ServiceUser,
+	options: { now?: Date } = {},
+): Promise<CheckoutContext> {
+	const now = options.now ?? new Date();
+	const { settings, cart } = await assertBuyerCanCheckout(payload, user);
+
+	// 5-7. Resolved from the raw cart item (not `revalidateCartLines`'s
+	// output) and checked before the line-level pass below:
+	// `revalidateCartLines` itself treats a shop gone inactive as "the line is
+	// unavailable" (`cart.itemUnavailable`), which is the right read for the
+	// cart screen but would shadow the more specific `order.shopUnavailable`/
+	// `order.codUnavailable` this precondition owes a checkout caller.
+	const shopId = relationId(cart.items?.[0]?.shop);
+	if (!shopId) throw new CheckoutError(ERROR_CODES.cartEmpty, 400);
+	const { shop, capabilities } = await assertShopCanSell(
+		payload,
+		shopId,
+		settings,
+		now,
+	);
+
+	// 8. Every line still available, at the requested quantity.
+	const lines = await revalidateCartLines(payload, cart);
+	const badLine = lines.find((line) => !line.available);
+	if (badLine) {
+		throw new CheckoutError(
+			badLine.unavailableCode ?? ERROR_CODES.cartItemUnavailable,
+			409,
+			undefined,
+			{ line: badLine },
+		);
+	}
+
+	return { settings, cart, lines, shop, capabilities };
+}
+
+/** Checks 1-4: the flag, the buyer and a non-empty cart; none depends on which shop sells. */
+export async function assertBuyerCanCheckout(
+	payload: Payload,
+	user: ServiceUser,
+): Promise<{ settings: OrderSettings; cart: Cart }> {
+	// 1. The feature flag.
+	const settings = await getOrderSettings(payload);
+	if (!settings.enabled) {
+		throw new CheckoutError(ERROR_CODES.checkoutDisabled, 403);
+	}
+
+	// 2. The buyer's own phone must be verified.
+	const account = await payload.findByID({
+		collection: "users",
+		id: user.id,
+		depth: 0,
+		overrideAccess: true,
+	});
+	if (!account.phone || !account.phoneVerifiedAt) {
+		throw new CheckoutError(ERROR_CODES.checkoutPhoneNotVerified, 403);
+	}
+
+	// 3. Not suspended.
+	if (await resolveSuspension(payload, user.id, account)) {
+		throw new CheckoutError(ERROR_CODES.accountSuspended, 403);
+	}
+
+	// 4. Cart non-empty.
+	const cart = await loadActiveCart(payload, user.id);
+	if (!cart || (cart.items?.length ?? 0) === 0) {
+		throw new CheckoutError(ERROR_CODES.cartEmpty, 400);
+	}
+	return { settings, cart };
+}
+
+/** Checks 5-7 for one shop: active and unrestricted, COD enabled at its level, inside the pilot list. */
+export async function assertShopCanSell(
+	payload: Payload,
+	shopId: string,
+	settings: OrderSettings,
+	now: Date,
+): Promise<{ shop: Shop; capabilities: ShopCapabilities }> {
+	const shop = await payload
+		.findByID({
+			collection: "shops",
+			id: shopId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	if (!shop || shop.status !== "active" || shop.ordersRestrictedAt) {
+		throw new CheckoutError(ERROR_CODES.orderShopUnavailable, 409);
+	}
+	const capabilities = shopCapabilities(shop, now);
+	if (shop.orderSettings?.codEnabled !== true || !capabilities.codOrders) {
+		throw new CheckoutError(ERROR_CODES.orderCodUnavailable, 409);
+	}
+	if (!isPilotShop(settings, shopId)) {
+		throw new CheckoutError(ERROR_CODES.orderCodUnavailable, 409);
+	}
+	return { shop, capabilities };
+}
+
+export interface CheckoutAddressInput {
+	recipientName?: unknown;
+	phone?: unknown;
+	city?: unknown;
+	district?: unknown;
+	districtOther?: unknown;
+	landmark?: unknown;
+	instructions?: unknown;
+	gps?: unknown;
+}
+
+export interface CheckoutQuoteInput {
+	address: CheckoutAddressInput;
+	deliveryOptionId?: unknown;
+	paymentMethod?: unknown;
+	locale?: unknown;
+	/** Flag on: the option picked per group key; an unnamed group is quoted at its first option. */
+	deliveryByGroup?: unknown;
+}
+
+export interface DeliveryAddress {
+	recipientName: string;
+	phone: string;
+	city: LaunchCityKey;
+	district: string;
+	districtOther: string | null;
+	landmark: string | null;
+	instructions: string | null;
+	gps: { lat: number; lng: number; accuracyMeters: number | null } | null;
+}
+
+export { DELIVERY_PHONE_PATTERN };
+
+function addressInvalid(field: string): never {
+	throw new CheckoutError(ERROR_CODES.checkoutAddressInvalid, 400, undefined, {
+		field,
+	});
+}
+
+/**
+ * Every field the Orders collection's `delivery` group stores, checked
+ * against the same bounds that collection declares — `checkout.addressInvalid`
+ * names the field path so a client can highlight it. The rules themselves
+ * are `contracts/deliveryAddress.ts`'s.
+ */
+export function parseDeliveryAddress(
+	raw: CheckoutAddressInput,
+	method: DeliveryMethod,
+	cities: readonly MarketCity[] = launchCitySeedRows("seed"),
+): DeliveryAddress {
+	const record = raw as Record<string, unknown>;
+	const issue = deliveryAddressIssue(
+		record,
+		method,
+		marketAddressRules(cities),
+	);
+	if (issue) addressInvalid(`delivery.${issue}`);
+	const address = normalizedDeliveryAddress(record);
+	// The Orders select still enumerates the launch keys; retyped with it.
+	return { ...address, city: address.city as LaunchCityKey };
+}
+
+export interface QuoteSummaryItem {
+	lineId: string;
+	listingId: string;
+	variantId: string;
+	title: string;
+	variantLabel: string;
+	condition: string | null;
+	imageUrl: string | null;
+	unitPrice: number;
+	quantity: number;
+	lineSubtotal: number;
+	/** Set only for a resale line: what `placeOrder` persists on the order item. */
+	resale?: {
+		supplierShop: string;
+		resaleLink: string;
+		supplierUnitPrice: number;
+	};
+}
+
+export type { QuoteSummaryLine };
+
+/**
+ * The address the quote echoes back, in the same shape the checkout form
+ * submitted — an absent optional field rather than an explicit null, so a
+ * screen can round-trip the echo straight back into `POST /checkout/place`.
+ */
+export interface QuoteAddress {
+	recipientName: string;
+	phone: string;
+	city: LaunchCityKey;
+	district: string;
+	districtOther?: string;
+	landmark?: string;
+	gps?: { lat: number; lng: number; accuracyMeters?: number };
+	instructions?: string;
+}
+
+export interface QuoteResponse {
+	summary: {
+		lines: QuoteSummaryLine[];
+		amounts: {
+			subtotal: number;
+			deliveryFee: number;
+			discount: number;
+			buyerProtectionFee: number;
+			total: number;
+			currency: string;
+		};
+		paymentMethod: "cod" | "mobile_money";
+		delivery: {
+			method: DeliveryMethod;
+			optionId: string;
+			etaText: string;
+			address: QuoteAddress;
+			pickupPoint?: PickupPointSnapshot;
+			zoneId?: string;
+			pickupLocationId?: string;
+			etaMinHours?: number;
+			etaMaxHours?: number;
+			promisedBy?: string;
+		};
+	};
+	preContract: ContractSnapshot;
+	confirmationRequired: "none" | "sms_code" | "seller_call";
+	quoteHash: string;
+	/** `POST /api/checkout/quote` only: the seller card's street address and opening year; outside the hash. */
+	seller?: { address: string | null; sinceYear: number | null };
+}
+
+/**
+ * What `placeOrder` needs from a quote and the buyer never sees: the shop it
+ * is for, the per-line ids and condition behind `summary.lines`, and the
+ * normalised address with its nulls resolved. `quoteCheckout` answers with
+ * the wire shape alone; `buildQuote` answers with both.
+ */
+export interface QuoteInternals {
+	shopId: string;
+	/** The market read once at quote entry; `placeOrder` copies it onto the order. */
+	marketId: string;
+	market: Pick<Market, "countryCode" | "timezone">;
+	items: QuoteSummaryItem[];
+	address: DeliveryAddress;
+	/** The chosen option's pickup point, which `placeOrder` snapshots onto the order so the view can show it after the shop's own point moves. */
+	pickupPoint: PickupPointSnapshot | null;
+}
+
+/** Drops the resolved nulls back to absent keys, so the echo is the same shape the form submitted. */
+function toQuoteAddress(address: DeliveryAddress): QuoteAddress {
+	const gps = address.gps;
+	return {
+		recipientName: address.recipientName,
+		phone: address.phone,
+		city: address.city,
+		district: address.district,
+		...(address.districtOther ? { districtOther: address.districtOther } : {}),
+		...(address.landmark ? { landmark: address.landmark } : {}),
+		...(gps
+			? {
+					gps: {
+						lat: gps.lat,
+						lng: gps.lng,
+						...(gps.accuracyMeters === null
+							? {}
+							: { accuracyMeters: gps.accuracyMeters }),
+					},
+				}
+			: {}),
+		...(address.instructions ? { instructions: address.instructions } : {}),
+	};
+}
+
+function variantLabelOf(variant: ProductVariant | null): string {
+	const values = variant?.optionValues;
+	if (!values || typeof values !== "object" || Array.isArray(values)) return "";
+	return Object.entries(values as Record<string, unknown>)
+		.map(([key, value]) => `${key}: ${String(value)}`)
+		.join(", ");
+}
+
+async function buildSummaryItems(
+	payload: Payload,
+	lines: readonly CartLineView[],
+	storefront: Shop,
+): Promise<QuoteSummaryItem[]> {
+	return Promise.all(
+		lines.map(async (line) => {
+			const [listing, variant] = await Promise.all([
+				line.listingId
+					? payload
+							.findByID({
+								collection: "listings",
+								id: line.listingId,
+								depth: 1,
+								overrideAccess: true,
+							})
+							.catch(() => null)
+					: null,
+				line.variantId
+					? payload
+							.findByID({
+								collection: "product-variants",
+								id: line.variantId,
+								depth: 0,
+								overrideAccess: true,
+							})
+							.catch(() => null)
+					: null,
+			]);
+			const unitPrice = line.unitPrice;
+			let resale: QuoteSummaryItem["resale"];
+			if (listing?.resale?.supplierShop && variant) {
+				const offer = await resolveCartOffer(
+					payload,
+					listing,
+					variant,
+					storefront,
+				);
+				if (
+					offer.sourcing === "resale" &&
+					offer.resaleLink &&
+					offer.supplierUnitPrice != null
+				) {
+					resale = {
+						supplierShop: String(offer.fulfillingShop.id),
+						resaleLink: String(relationId(offer.resaleLink)),
+						supplierUnitPrice: offer.supplierUnitPrice,
+					};
+				}
+			}
+			const firstImage = listing?.images?.[0]?.image;
+			return {
+				lineId: line.id,
+				listingId: line.listingId,
+				variantId: line.variantId,
+				title: listing?.title ?? line.title,
+				variantLabel: variantLabelOf(variant),
+				// The snapshot keeps what the buyer saw: the condition attribute's
+				// label, read off the category the depth-1 read populated.
+				condition: conditionLabelOf(
+					typeof listing?.category === "object"
+						? listing.category?.attributes
+						: null,
+					listing?.attributes,
+				),
+				imageUrl: mediaUrl(firstImage, "thumbnail"),
+				unitPrice,
+				quantity: line.quantity,
+				lineSubtotal: unitPrice * line.quantity,
+				...(resale ? { resale } : {}),
+			};
+		}),
+	);
+}
+
+/**
+ * The shop a delivery is quoted from: the supplier for resale lines (it
+ * delivers, from its own city and zones; pickup is never offered), the
+ * storefront otherwise. A cart whose lines are fulfilled by several shops has
+ * no single delivery to quote and is refused.
+ */
+async function resolveQuoteShop(
+	payload: Payload,
+	storefront: Shop,
+	items: readonly QuoteSummaryItem[],
+): Promise<{ shop: Shop; resale: boolean }> {
+	const fulfilling = new Set(
+		items.map((item) => item.resale?.supplierShop ?? String(storefront.id)),
+	);
+	if (fulfilling.size > 1) {
+		throw new CheckoutError(ERROR_CODES.cartSingleFulfilment, 409);
+	}
+	const supplierId = items.find((item) => item.resale)?.resale?.supplierShop;
+	if (!supplierId) return { shop: storefront, resale: false };
+	const supplier = await payload
+		.findByID({
+			collection: "shops",
+			id: supplierId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	if (!supplier) {
+		throw new CheckoutError(ERROR_CODES.orderShopUnavailable, 409);
+	}
+	return { shop: supplier, resale: true };
+}
+
+const withoutPickup = (options: DeliveryOption[]): DeliveryOption[] =>
+	options.filter((option) => option.method !== "pickup");
+
+interface CompanySettings {
+	legalName: string;
+	supportEmail: string | null;
+	supportPhone: string | null;
+}
+
+async function loadCompanySettings(payload: Payload): Promise<CompanySettings> {
+	try {
+		const global = await payload.findGlobal({
+			slug: "app-settings",
+			depth: 0,
+			overrideAccess: true,
+		});
+		const company = global.company;
+		return {
+			legalName:
+				typeof company?.legalName === "string" && company.legalName
+					? company.legalName
+					: "BuyNSellem",
+			supportEmail:
+				typeof company?.supportEmail === "string" ? company.supportEmail : null,
+			supportPhone:
+				typeof company?.supportPhone === "string" ? company.supportPhone : null,
+		};
+	} catch {
+		return { legalName: "BuyNSellem", supportEmail: null, supportPhone: null };
+	}
+}
+
+async function codAllowedByProduct(
+	payload: Payload,
+	lines: readonly CartLineView[],
+): Promise<Map<string, boolean>> {
+	const productIds = [
+		...new Set(lines.map((line) => line.productId).filter(Boolean)),
+	];
+	const products = await Promise.all(
+		productIds.map((id) =>
+			payload
+				.findByID({
+					collection: "products",
+					id,
+					depth: 0,
+					overrideAccess: true,
+				})
+				.catch(() => null),
+		),
+	);
+	const map = new Map<string, boolean>();
+	for (const product of products) {
+		if (!product) continue;
+		map.set(product.id, product.delivery?.codAllowed !== false);
+	}
+	return map;
+}
+
+/**
+ * The priced form of the cart every delivery and fee calculation starts from.
+ * Shared by the quote and by the delivery-option list so the two can never
+ * price the same cart differently.
+ */
+async function priceCartLines(
+	payload: Payload,
+	lines: readonly CartLineView[],
+): Promise<{ items: QuoteItem[]; subtotal: number }> {
+	const codAllowedMap = await codAllowedByProduct(payload, lines);
+	const items: QuoteItem[] = lines.map((line) => ({
+		variantId: line.variantId,
+		quantity: line.quantity,
+		// `CartLineView.lineSubtotal` is the one priced figure the serialiser
+		// publishes; recomputing it here is how the quote and the cart would
+		// drift apart again.
+		lineSubtotal: line.lineSubtotal,
+		codAllowed: codAllowedMap.get(line.productId) ?? true,
+	}));
+	return {
+		items,
+		subtotal: items.reduce((sum, item) => sum + item.lineSubtotal, 0),
+	};
+}
+
+export type DeliveryOptionView = DeliveryOption;
+
+/**
+ * The delivery step's own source of options, for the city the buyer is about
+ * to deliver to (the shop's own city when none is named — the only city
+ * `seller_delivery` is ever offered in).
+ *
+ * It runs the same preconditions as the quote and asks `quoteDelivery` for
+ * the answer rather than re-deriving which options exist: a step that
+ * offered an option the quote would then refuse is the bug this exists to
+ * avoid. No rate limit of its own — it reveals nothing the cart does not
+ * already show its owner, and `quoteCheckout` still counts the quote that
+ * follows.
+ */
+export async function listDeliveryOptions(
+	payload: Payload,
+	user: ServiceUser,
+	input: { city?: unknown; district?: unknown; paymentMethod?: unknown } = {},
+	options: { now?: Date } = {},
+): Promise<{
+	city: string;
+	options: DeliveryOptionView[];
+	unavailable: UnavailableOption[];
+}> {
+	const now = options.now ?? new Date();
+	const { settings, lines, shop } = await assertCheckoutPreconditions(
+		payload,
+		user,
+		{ now },
+	);
+	const summary = await buildSummaryItems(payload, lines, shop);
+	const quoteFrom = await resolveQuoteShop(payload, shop, summary);
+	const city =
+		typeof input.city === "string" && input.city.trim()
+			? input.city.trim()
+			: (marketCityKeyOf(
+					await getShopMarketCities(payload, quoteFrom.shop),
+					quoteFrom.shop.location?.city,
+				) ?? "");
+	const district =
+		typeof input.district === "string" && input.district.trim()
+			? input.district.trim()
+			: undefined;
+
+	const { items, subtotal } = await priceCartLines(payload, lines);
+	const quoted = await quoteDelivery({
+		payload,
+		shop: quoteFrom.shop,
+		items,
+		subtotal,
+		destination: { city, district },
+		settings,
+		now,
+		paymentMethod:
+			input.paymentMethod === "mobile_money" ? "mobile_money" : "cod",
+	});
+	return {
+		city,
+		options: quoteFrom.resale ? withoutPickup(quoted.options) : quoted.options,
+		unavailable: quoted.unavailable,
+	};
+}
+
+/** Counted before any lookup: a refused call is counted too. */
+export async function countQuoteAttempt(
+	user: ServiceUser,
+	options: { store?: CounterStore; now?: Date; ip?: string } = {},
+): Promise<void> {
+	const now = options.now ?? new Date();
+	const store = options.store ?? getCounterStore();
+
+	// The limit protects the fee table as much as the server.
+	const [userLimited, ipLimited] = await Promise.all([
+		hitRateLimit(
+			store,
+			`user:${user.id}`,
+			QUOTE_RATE_LIMITS.perUser,
+			now.getTime(),
+		),
+		hitRateLimit(
+			store,
+			`ip:${options.ip ?? "unknown"}`,
+			QUOTE_RATE_LIMITS.perIp,
+			now.getTime(),
+		),
+	]);
+	if (userLimited || ipLimited) {
+		throw new CheckoutError(ERROR_CODES.rateLimited, 429);
+	}
+}
+
+/**
+ * The buyer's own COD checkout quote: a priced promise computed fresh from
+ * the current cart, the shop's current settings and the buyer's current
+ * risk tier — never from anything stored. `placeOrder` (Task 19) re-runs
+ * every check here and recomputes `quoteHash` rather than trusting what the
+ * client hands back; a changed input (a price, a fee, the method, the city,
+ * the terms version) must change the hash so a mismatch is detectable.
+ *
+ * Nothing here writes: a quote is never stored.
+ */
+async function buildQuote(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutQuoteInput,
+	options: { store?: CounterStore; now?: Date; ip?: string } = {},
+): Promise<{ response: QuoteResponse; internals: QuoteInternals }> {
+	const now = options.now ?? new Date();
+	await countQuoteAttempt(user, options);
+	const ctx = await assertCheckoutPreconditions(payload, user, { now });
+	const { response, internals } = await quoteLines(
+		payload,
+		user,
+		input,
+		ctx,
+		now,
+	);
+	return { response, internals };
+}
+
+/** What a group's quote carries beyond the single-shop response: the full option list, the commission its VAT is taken on, and the market stamp. */
+export interface LinesQuote {
+	response: QuoteResponse;
+	internals: QuoteInternals;
+	delivery: DeliveryQuote;
+	commission: number;
+	marketUpdatedAt: string;
+	vatRateBps: number;
+	/** What the caps were checked against, so a split placement can re-check it with the siblings counted. */
+	capInput: CapCheckInput;
+}
+
+/**
+ * The single-shop quote over one set of lines and the shop that sells them.
+ * The flat quote runs it once over the whole cart; the split quote runs it
+ * once per group, so a group is priced by exactly the code a single-shop cart
+ * is. `scope` is set only by the split quote: the hash is then bound to the
+ * group and the market stamp, and an unnamed option falls to the first.
+ */
+export async function quoteLines(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutQuoteInput,
+	ctx: Pick<CheckoutContext, "settings" | "lines" | "shop" | "capabilities">,
+	now: Date,
+	scope?: { groupKey: string },
+): Promise<LinesQuote> {
+	const { settings, lines, shop, capabilities } = ctx;
+
+	if (input.paymentMethod !== "cod" && input.paymentMethod !== "mobile_money") {
+		throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
+	}
+	const paymentMethod: "cod" | "mobile_money" = input.paymentMethod;
+	const liveMarket = await liveMarketOfShop(payload, shop);
+	const currency = liveMarket.currency.code;
+	const items = await buildSummaryItems(payload, lines, shop);
+	const quoteFrom = await resolveQuoteShop(payload, shop, items);
+	if (quoteFrom.resale && paymentMethod === "mobile_money") {
+		const resaleSettings = await getResaleSettings(payload);
+		if (!resaleSettings.prepaidEnabled) {
+			throw new CheckoutError(ERROR_CODES.resalePrepaidUnavailable, 409);
+		}
+	}
+	// Set only for `mobile_money`: the market whose `vatRateBps` and the
+	// payment settings whose `buyerProtection` config price the fee below,
+	// the exact inputs `checkoutPayment.ts#amountsFor` prices from at intent
+	// time — so the two never drift apart.
+	let protectedPricing: {
+		market: MarketRow;
+		settings: PaymentSettings;
+	} | null = null;
+	if (paymentMethod === "mobile_money") {
+		// `mobile_money` is behind its own flag, re-checked here (not trusted
+		// from a stored setting) the same way `checkoutPayment.ts`'s intent
+		// creation re-checks it; a market/flag closed between two requests
+		// closes this at once too.
+		const paymentSettings = await getPaymentSettings(payload);
+		const countryCode = shopMarketCountry(shop, paymentSettings);
+		if (!isProtectedPaymentOpen(paymentSettings, countryCode)) {
+			throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
+		}
+		// Reuses checkoutPayment.ts's Rule 2 shop-eligibility check verbatim:
+		// the same connected-account/payout-account/hold rule a real intent
+		// would enforce, so no order is ever placed for a shop that could
+		// never actually take the payment.
+		await assertShopEligibleForProtectedPayment(payload, shop, now);
+		const market = marketOf(paymentSettings, shop);
+		// `isProtectedPaymentOpen` above already resolved this country to an
+		// enabled market; a miss here would mean the two checks disagree.
+		if (!market) {
+			throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
+		}
+		protectedPricing = { market, settings: paymentSettings };
+	}
+
+	const optionId =
+		typeof input.deliveryOptionId === "string" ? input.deliveryOptionId : "";
+	const method: DeliveryMethod = optionId.startsWith("pickup:")
+		? "pickup"
+		: optionId.startsWith("courier:")
+			? "courier"
+			: "seller_delivery";
+
+	const marketCities = await getShopMarketCities(payload, quoteFrom.shop);
+	const address = parseDeliveryAddress(input.address, method, marketCities);
+
+	const deliverySettings = await getDeliverySettings(payload);
+	if (
+		!deliverySettings.zonesEnabled &&
+		marketCityKeyOf(marketCities, quoteFrom.shop.location?.city) !==
+			address.city
+	) {
+		throw new CheckoutError(ERROR_CODES.checkoutCityNotServed, 409);
+	}
+
+	const { items: quoteItems, subtotal } = await priceCartLines(payload, lines);
+
+	const deliveryQuote = await quoteDelivery({
+		payload,
+		shop: quoteFrom.shop,
+		items: quoteItems,
+		subtotal,
+		destination: {
+			city: address.city,
+			district: address.district,
+			...(address.gps ? { gps: address.gps } : {}),
+		},
+		settings,
+		paymentMethod,
+		now,
+	});
+	const deliveryOptions = quoteFrom.resale
+		? withoutPickup(deliveryQuote.options)
+		: deliveryQuote.options;
+	const chosen =
+		scope && !optionId
+			? deliveryOptions[0]
+			: deliveryOptions.find((option) => option.optionId === optionId);
+	if (!chosen) {
+		throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
+	}
+	if (paymentMethod === "cod" && !chosen.codAllowed) {
+		throw new CheckoutError(ERROR_CODES.orderCodUnavailable, 409);
+	}
+
+	const account = await payload.findByID({
+		collection: "users",
+		id: user.id,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const { tier } = await scoreCheckout(
+		payload,
+		{ accountPhone: account.phone ?? null, deliveryPhone: address.phone },
+		now,
+	);
+	if (tier === "blocked") {
+		throw new CheckoutError(ERROR_CODES.orderCodUnavailable, 409);
+	}
+
+	const total = subtotal + chosen.fee;
+	const baseShopCaps = codCaps(capabilities.effectiveLevel, settings.shopCaps);
+	if (!baseShopCaps) {
+		throw new CheckoutError(ERROR_CODES.orderCodUnavailable, 409);
+	}
+	const standing = settings.strikeEffectsEnabled
+		? await shopStanding(payload, String(shop.id), now)
+		: null;
+	const shopCaps = codCapsWithStanding(
+		baseShopCaps,
+		standing?.restrictions.codCapHalved ?? false,
+	);
+	const buyerCapRow = settings.buyerCaps[tier as BuyerTierKey];
+
+	const [openOrders, dailyOrders] = await Promise.all([
+		countBuyerOpenOrders(payload, user.id),
+		countShopDailyOrders(payload, String(shop.id), now, liveMarket.timezone),
+	]);
+	const capInput: CapCheckInput = {
+		orderTotal: total,
+		openOrders,
+		dailyOrders,
+		shop: shopCaps,
+		buyer: buyerCapRow,
+	};
+	const breach = checkCaps(capInput);
+	if (breach) {
+		throw new CheckoutError(
+			breach.scope === "buyer"
+				? ERROR_CODES.orderBuyerCapReached
+				: ERROR_CODES.orderShopCapReached,
+			409,
+		);
+	}
+
+	const deliveryPhoneIsVerifiedAccountPhone = Boolean(
+		account.phoneVerifiedAt && account.phone && account.phone === address.phone,
+	);
+	// Payment is the confirmation of a protected order (placed -> paid); no
+	// confirmed state exists for it, and confirmed -> paid is not a transition.
+	const confirmationRequired =
+		paymentMethod === "cod"
+			? confirmationPathFor({ tier, deliveryPhoneIsVerifiedAccountPhone })
+			: "none";
+
+	const locale = input.locale === "en" ? "en" : "fr";
+	const [company, termsFr, termsEn] = await Promise.all([
+		loadCompanySettings(payload),
+		loadSalesTermsTemplate(settings.termsVersion, "fr"),
+		loadSalesTermsTemplate(settings.termsVersion, "en"),
+	]);
+
+	// Priced here, not left at zero: under `mobile_money` the fee the buyer
+	// will actually be charged, from the same `splitAmounts` math
+	// `checkoutPayment.ts#amountsFor` uses at intent time, with the same
+	// commission (the order's items don't exist yet, so summed per-line here
+	// rather than read back off `order-items`). `cod` keeps the fee-less total.
+	const commission = protectedPricing
+		? items.reduce(
+				(sum, item) =>
+					sum +
+					commissionForLine(
+						item.lineSubtotal,
+						settings.defaultCommissionRateBps,
+					),
+				0,
+			)
+		: 0;
+	const protectedAmounts = protectedPricing
+		? splitAmounts({
+				orderTotal: total,
+				commission,
+				vatRateBps: protectedPricing.market.vatRateBps,
+				protection: protectedPricing.settings.buyerProtection,
+			})
+		: null;
+	const buyerProtectionFeeAmount = protectedAmounts?.buyerProtectionFee ?? 0;
+	const quoteTotal = protectedAmounts?.buyerTotal ?? total;
+
+	const cityLabel =
+		marketCities.find((city) => city.key === address.city)?.label ??
+		address.city;
+	const preContract = buildContractSnapshot({
+		termsVersion: settings.termsVersion,
+		locale,
+		seller: {
+			name: shop.name,
+			handle: shop.handle,
+			city: shop.location?.city ?? null,
+			phone: shop.contact?.phone ?? null,
+		},
+		platform: {
+			legalName: company.legalName,
+			supportEmail: company.supportEmail,
+			supportPhone: company.supportPhone,
+		},
+		items: items.map((item) => ({
+			title: item.title,
+			variantLabel: item.variantLabel,
+			condition: item.condition,
+			imageUrl: item.imageUrl,
+			attributes: [],
+			unitPrice: item.unitPrice,
+			quantity: item.quantity,
+			lineSubtotal: item.lineSubtotal,
+		})),
+		amounts: { subtotal, deliveryFee: chosen.fee, total, currency },
+		delivery: {
+			areaText: {
+				fr: cityLabel,
+				en: cityLabel,
+			},
+			etaText: { fr: chosen.etaText, en: chosen.etaText },
+		},
+		acceptHours: settings.acceptHours,
+		withdrawalDays: settings.withdrawalDays,
+		salesTermsTemplate: { fr: termsFr, en: termsEn },
+		salesTermsExtra: shop.orderSettings?.salesTermsExtra ?? null,
+	});
+
+	const hash = quoteHash({
+		lines: lines.map((line) => ({
+			lineId: line.id,
+			variantId: line.variantId,
+			quantity: line.quantity,
+			unitPrice: line.unitPrice,
+			resale: items.find((item) => item.lineId === line.id)?.resale,
+		})),
+		deliveryFee: chosen.fee,
+		...(deliverySettings.zonesEnabled || scope
+			? {
+					optionId: chosen.optionId,
+					deliverySourceUpdatedAt: chosen.sourceUpdatedAt,
+				}
+			: {}),
+		...(scope
+			? { groupKey: scope.groupKey, marketUpdatedAt: liveMarket.updatedAt }
+			: {}),
+		method: chosen.method,
+		city: address.city,
+		paymentMethod,
+		termsVersion: settings.termsVersion,
+	});
+
+	return {
+		delivery: {
+			options: deliveryOptions,
+			unavailable: deliveryQuote.unavailable,
+		},
+		commission,
+		marketUpdatedAt: liveMarket.updatedAt,
+		vatRateBps: liveMarket.vatRateBps,
+		capInput,
+		response: {
+			summary: {
+				lines: items.map((item) => ({
+					title: item.title,
+					variantLabel: item.variantLabel,
+					unitPrice: item.unitPrice,
+					quantity: item.quantity,
+					lineSubtotal: item.lineSubtotal,
+					imageUrl: item.imageUrl,
+				})),
+				amounts: {
+					subtotal,
+					deliveryFee: chosen.fee,
+					discount: 0,
+					buyerProtectionFee: buyerProtectionFeeAmount,
+					total: quoteTotal,
+					currency,
+				},
+				paymentMethod,
+				delivery: {
+					method: chosen.method,
+					optionId: chosen.optionId,
+					etaText: chosen.etaText,
+					...(chosen.zoneId ? { zoneId: chosen.zoneId } : {}),
+					...(chosen.pickupLocationId
+						? { pickupLocationId: chosen.pickupLocationId }
+						: {}),
+					...(chosen.promisedBy
+						? {
+								promisedBy: chosen.promisedBy,
+								etaMinHours: chosen.etaMinHours,
+								etaMaxHours: chosen.etaMaxHours,
+							}
+						: {}),
+					address: toQuoteAddress(address),
+					...(chosen.pickupPoint ? { pickupPoint: chosen.pickupPoint } : {}),
+				},
+			},
+			preContract,
+			confirmationRequired,
+			quoteHash: hash,
+		},
+		internals: {
+			shopId: String(shop.id),
+			marketId: liveMarket.id,
+			market: {
+				countryCode: liveMarket.countryCode,
+				timezone: liveMarket.timezone,
+			},
+			items,
+			address,
+			pickupPoint: chosen.pickupPoint ?? null,
+		},
+	};
+}
+
+/**
+ * The quote a checkout screen reads. `buildQuote`'s internals — the shop id,
+ * the per-line ids and the normalised address — stay with `placeOrder`, which
+ * is the only caller that needs them.
+ */
+export async function quoteCheckout(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutQuoteInput,
+	options: { store?: CounterStore; now?: Date; ip?: string } = {},
+): Promise<QuoteResponse> {
+	const { response, internals } = await buildQuote(
+		payload,
+		user,
+		input,
+		options,
+	);
+	const shop = await payload
+		.findByID({
+			collection: "shops",
+			id: internals.shopId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	return { ...response, seller: await shopSellerDetails(payload, shop) };
+}
+
+/** What `POST /api/checkout/quote` answers: the flat quote, or one per group behind `multiShopCartEnabled`. */
+export async function quoteCheckoutResponse(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutQuoteInput,
+	options: { store?: CounterStore; now?: Date; ip?: string } = {},
+): Promise<QuoteResponse | SplitQuoteView> {
+	const settings = await getOrderSettings(payload);
+	return settings.multiShopCartEnabled
+		? quoteSplit(payload, user, input, options)
+		: quoteCheckout(payload, user, input, options);
+}
+
+export interface CheckoutPlaceInput extends CheckoutQuoteInput {
+	quoteHash?: unknown;
+	termsAccepted?: unknown;
+	idempotencyKey?: unknown;
+	/** Split placement only: the groups to place; absent means every available one. */
+	groupKeys?: unknown;
+}
+
+export interface PlaceResponse {
+	orderId: string;
+	orderNumber: string;
+	status: Order["status"];
+	paymentStatus: Order["paymentStatus"];
+	confirmationRequired: "none" | "sms_code" | "seller_call";
+	amounts: {
+		subtotal: number;
+		deliveryFee: number;
+		total: number;
+		currency: string;
+	};
+	deadlines: { confirmBy: string | null; acceptBy: string | null };
+}
+
+/**
+ * Mirrors `services/orders/notifications.ts`'s own (unexported)
+ * `resolveConfirmationRequired`: anything other than a pending SMS code or a
+ * pending seller call reads as settled, including the auto-confirmed
+ * `verified_phone` method.
+ */
+function confirmationRequiredOf(
+	order: Order,
+): "none" | "sms_code" | "seller_call" {
+	const method = order.confirmation?.method;
+	if (method === "sms_code" || method === "seller_call") return method;
+	return "none";
+}
+
+/** `scoreCheckout`'s tier never comes back `blocked` here: a blocked tier
+ * makes `quoteCheckout` itself refuse with `order.codUnavailable` before this
+ * function is ever reached, so this only narrows the type for the field's
+ * four-value select. */
+function riskTierOf(
+	tier: BuyerTierKey,
+): "new" | "regular" | "trusted" | "watch" {
+	return tier === "blocked" ? "watch" : tier;
+}
+
+/** `order.contract.snapshot` is a `json` field, so it has no named shape of
+ * its own on the Payload side; this is the one place a `ContractSnapshot`
+ * crosses into it. The spread produces a plain object rather than casting
+ * one type as another. */
+function contractSnapshotJson(
+	snapshot: ContractSnapshot,
+): Record<string, unknown> {
+	return { ...snapshot };
+}
+
+/** Same spread as `contractSnapshotJson`: an interface is not an index signature, and the field is a `json` column. */
+function pickupPointJson(
+	pickupPoint: PickupPointSnapshot | null,
+): Record<string, unknown> | null {
+	return pickupPoint ? { ...pickupPoint } : null;
+}
+
+function currencyOf(order: Order): string {
+	const currency = order.amounts?.currency;
+	if (!currency) throw new Error(`order ${order.id} carries no currency`);
+	return currency;
+}
+
+function responseFromOrder(order: Order): PlaceResponse {
+	return {
+		orderId: String(order.id),
+		orderNumber: order.orderNumber,
+		status: order.status,
+		paymentStatus: order.paymentStatus,
+		confirmationRequired: confirmationRequiredOf(order),
+		amounts: {
+			subtotal: order.amounts?.subtotal ?? 0,
+			deliveryFee: order.amounts?.deliveryFee ?? 0,
+			total: order.amounts?.total ?? 0,
+			currency: currencyOf(order),
+		},
+		deadlines: {
+			confirmBy: order.deadlines?.confirmBy ?? null,
+			acceptBy: order.deadlines?.acceptBy ?? null,
+		},
+	};
+}
+
+/** The pre-check `placeOrder` runs before doing any real work: the common,
+ * non-racing replay of an already-placed idempotency key is answered from
+ * this alone. The partial unique index (Task 6) is the actual guard against
+ * two concurrent requests for the same key — this is only the optimisation
+ * that keeps a replay from redoing the quote, the reservation and the rest. */
+export async function findOrderByIdempotencyKey(
+	payload: Payload,
+	buyerId: string,
+	idempotencyKey: string,
+): Promise<Order | null> {
+	const { docs } = await payload.find({
+		collection: "orders",
+		where: {
+			and: [
+				{ buyer: { equals: buyerId } },
+				{ idempotencyKey: { equals: idempotencyKey } },
+			],
+		},
+		limit: 1,
+		depth: 0,
+		pagination: false,
+		overrideAccess: true,
+	});
+	return (docs[0] as Order | undefined) ?? null;
+}
+
+export interface OrderDraft {
+	user: ServiceUser;
+	source: "web" | "ios" | "android";
+	settings: OrderSettings;
+	orderNumber: string;
+	idempotencyKey: string;
+	/** Set only by a split placement: the sibling orders' shared key. */
+	checkoutGroup?: string;
+	paymentMethod: "cod" | "mobile_money";
+	fresh: QuoteResponse;
+	internals: QuoteInternals;
+	tier: BuyerTierKey;
+	refusals: number;
+	placedAtIso: string;
+	confirmBy: string;
+	acceptBy: string;
+}
+
+/**
+ * The order row and its items, in the transaction `req` belongs to. `onItem`
+ * runs after each item is written: the flat path reserves there, line by
+ * line; a split placement defers every reservation until all its orders exist
+ * so it can take them in one global order.
+ */
+export async function createOrderRows(
+	req: PayloadRequest,
+	draft: OrderDraft,
+	onItem?: (
+		order: Order,
+		line: QuoteSummaryItem,
+		variant: ProductVariant,
+	) => Promise<void>,
+): Promise<Order> {
+	const {
+		user,
+		source,
+		settings,
+		orderNumber,
+		idempotencyKey,
+		checkoutGroup,
+		paymentMethod,
+		fresh,
+		internals,
+		tier,
+		refusals,
+		placedAtIso,
+		confirmBy,
+		acceptBy,
+	} = draft;
+	const shopId = internals.shopId;
+	const address = internals.address;
+	const createdOrder = await req.payload.create({
+		collection: "orders",
+		req,
+		overrideAccess: true,
+		context: ORDER_SERVICE_CONTEXT,
+		data: {
+			orderNumber,
+			idempotencyKey,
+			...(checkoutGroup ? { checkoutGroup } : {}),
+			buyer: user.id,
+			shop: shopId,
+			market: internals.marketId,
+			status: "placed",
+			paymentMethod,
+			paymentStatus:
+				paymentMethod === "mobile_money" ? "unpaid" : "cod_pending",
+			confirmation: {
+				method:
+					fresh.confirmationRequired === "seller_call" ? "seller_call" : null,
+			},
+			delivery: {
+				method: fresh.summary.delivery.method,
+				optionId: fresh.summary.delivery.optionId,
+				zone: fresh.summary.delivery.zoneId,
+				pickupLocation: fresh.summary.delivery.pickupLocationId,
+				etaMinHours: fresh.summary.delivery.etaMinHours,
+				etaMaxHours: fresh.summary.delivery.etaMaxHours,
+				promisedBy: fresh.summary.delivery.promisedBy,
+				recipientName: address.recipientName,
+				phone: address.phone,
+				city: address.city,
+				district: address.district,
+				districtOther: address.districtOther,
+				landmark: address.landmark,
+				instructions: address.instructions,
+				gps: address.gps
+					? { ...address.gps, capturedAt: placedAtIso }
+					: undefined,
+				pickupPoint: pickupPointJson(internals.pickupPoint),
+				fee: fresh.summary.amounts.deliveryFee,
+				etaText: fresh.summary.delivery.etaText,
+			},
+			amounts: {
+				subtotal: fresh.summary.amounts.subtotal,
+				deliveryFee: fresh.summary.amounts.deliveryFee,
+				discount: 0,
+				buyerProtectionFee: fresh.summary.amounts.buyerProtectionFee,
+				total: fresh.summary.amounts.total,
+				currency: fresh.summary.amounts.currency,
+			},
+			risk: {
+				phoneTier: riskTierOf(tier),
+				refusalsAtPlacement: refusals,
+				capsApplied: null,
+			},
+			deadlines: { confirmBy, acceptBy },
+			timestamps: { placedAt: placedAtIso },
+			contract: {
+				termsVersion: fresh.preContract.termsVersion,
+				locale: fresh.preContract.locale,
+				acceptedAt: placedAtIso,
+				snapshot: contractSnapshotJson(fresh.preContract),
+				snapshotHash: snapshotHash(fresh.preContract),
+			},
+			source,
+		},
+	});
+
+	let lineNumber = 0;
+	for (const line of internals.items) {
+		lineNumber += 1;
+
+		const variant = await req.payload.findByID({
+			collection: "product-variants",
+			id: line.variantId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		const listing = line.listingId
+			? await req.payload
+					.findByID({
+						collection: "listings",
+						id: line.listingId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null)
+			: null;
+		const productId = relationId(variant.product);
+		const product = productId
+			? await req.payload
+					.findByID({
+						collection: "products",
+						id: productId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null)
+			: null;
+
+		const commissionRateBps = settings.defaultCommissionRateBps;
+		const commissionAmount = commissionForLine(
+			line.lineSubtotal,
+			commissionRateBps,
+		);
+
+		await req.payload.create({
+			collection: "order-items",
+			req,
+			overrideAccess: true,
+			context: ORDER_SERVICE_CONTEXT,
+			// `draft: false` plus the explicit `fulfillmentStatus` below are
+			// required to pick the right overload of Payload's generated
+			// `create` types for this collection: without them TS resolves
+			// to the draft-discriminated union and asks for a `draft` flag
+			// this collection has no versions to support.
+			draft: false,
+			data: {
+				order: createdOrder.id,
+				lineNumber,
+				listing: line.listingId || undefined,
+				product: productId ?? "",
+				variant: line.variantId,
+				fulfillingShop: line.resale?.supplierShop ?? shopId,
+				...(line.resale
+					? {
+							sourcing: "resale" as const,
+							resaleLink: line.resale.resaleLink,
+							supplierUnitPrice: line.resale.supplierUnitPrice,
+						}
+					: {}),
+				fulfillmentStatus: "unfulfilled",
+				snapshot: {
+					title: line.title,
+					variantLabel: line.variantLabel,
+					sku: variant.sku ?? null,
+					imageUrl: line.imageUrl,
+					categoryId: listing ? relationId(listing.category) : null,
+					condition: line.condition,
+					returnPolicy: product?.returnPolicy ?? null,
+				},
+				unitPrice: line.unitPrice,
+				quantity: line.quantity,
+				lineSubtotal: line.lineSubtotal,
+				commissionRateBps,
+				commissionAmount,
+				stockTracked: variant.trackInventory === true,
+			},
+		});
+
+		await onItem?.(createdOrder, line, variant);
+	}
+	return createdOrder;
+}
+
+/** The placed event, the confirmation path the quote chose, and the receipt SMS; the order is the caller's, already written. */
+export async function finishPlacedOrder(
+	req: PayloadRequest,
+	createdOrder: Order,
+	draft: Pick<
+		OrderDraft,
+		"user" | "source" | "fresh" | "internals" | "placedAtIso" | "paymentMethod"
+	>,
+): Promise<Order> {
+	const { user, source, fresh, internals, placedAtIso, paymentMethod } = draft;
+	const address = internals.address;
+	const placedEvent = await appendOrderEvent(req, createdOrder, {
+		type: "order.placed",
+		actorType: "buyer",
+		actor: user.id,
+		visibility: "both",
+		source,
+	});
+	queueOrderEvent(req, createdOrder, placedEvent);
+
+	let finalOrder = createdOrder;
+	if (paymentMethod === "cod" && fresh.confirmationRequired === "none") {
+		const transitioned = await applyTransition(
+			req,
+			createdOrder,
+			{
+				status: "confirmed",
+				set: {
+					confirmation: {
+						...createdOrder.confirmation,
+						method: "verified_phone",
+						confirmedAt: placedAtIso,
+						confirmedBy: user.id,
+					},
+				},
+			},
+			{
+				type: "order.confirmed",
+				actorType: "system",
+				visibility: "both",
+			},
+		);
+		finalOrder = transitioned.order;
+	} else if (fresh.confirmationRequired === "sms_code") {
+		await issueConfirmationCode(req, createdOrder, { resend: false });
+		// `issueConfirmationCode` writes through `payload.update`, not
+		// `applyTransition`, so it never hands back the updated row —
+		// re-read it so the response reflects the `sms_code` method it
+		// just set rather than the pre-code snapshot.
+		finalOrder = await req.payload.findByID({
+			collection: "orders",
+			id: createdOrder.id,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+	}
+
+	const locale = fresh.preContract.locale;
+	const shopName = fresh.preContract.seller.name;
+	onCommit(commitContextOf(req), () =>
+		sendOrderSms(req.payload, {
+			to: address.phone,
+			text: receiptSms(
+				{
+					orderId: String(createdOrder.id),
+					orderNumber: createdOrder.orderNumber,
+					shopName,
+					total: fresh.summary.amounts.total,
+				},
+				locale,
+			),
+		}),
+	);
+	return finalOrder;
+}
+
+/** Spends one reservation; the flat path reads a lost race as a line out of stock. */
+async function reserveLine(
+	req: PayloadRequest,
+	order: Order,
+	line: QuoteSummaryItem,
+	variant: ProductVariant,
+): Promise<Awaited<ReturnType<typeof reserve>>> {
+	try {
+		return await reserve(req, {
+			variant,
+			quantity: line.quantity,
+			orderId: String(order.id),
+			orderRef: order.orderNumber,
+		});
+	} catch (error) {
+		if (
+			error instanceof ServiceError &&
+			error.code === ERROR_CODES.stockInsufficient
+		) {
+			throw new CheckoutError(ERROR_CODES.cartOutOfStock, 409, undefined, {
+				line: {
+					lineId: line.lineId,
+					listingId: line.listingId,
+					variantId: line.variantId,
+				},
+			});
+		}
+		throw error;
+	}
+}
+
+/**
+ * Places a cash-on-delivery order. The client's own quote is never trusted:
+ * every precondition `quoteCheckout` enforces runs again here — by calling
+ * `quoteCheckout` itself, not by re-implementing it — and the price charged
+ * is the one this fresh run computes, never the one the request body
+ * carries. A mismatch between the fresh hash and the one the client
+ * supplied means the world moved since the quote was shown, and the buyer
+ * must see the new numbers before anything is created: `checkout.quoteChanged`
+ * carries the fresh quote for exactly that, rather than making the client
+ * re-request it.
+ *
+ * Everything that must survive together or not at all — the order, its
+ * items, the stock reservations, the placement event, the cart's
+ * `converted` flag, the buyer's placement count — happens inside one
+ * `withTransaction` body. Everything that reaches outside the process — the
+ * receipt SMS, the order's conversation, the buyer/shop notifications, the
+ * search index — is queued through `onCommit` or the order-event registry
+ * and never runs until that transaction has actually committed; if it never
+ * commits, none of it ever runs either.
+ */
+export async function placeOrder(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutPlaceInput,
+	options: {
+		now?: Date;
+		store?: CounterStore;
+		ip?: string;
+		source?: "web" | "ios" | "android";
+	} = {},
+): Promise<PlaceResponse> {
+	const now = options.now ?? new Date();
+	const source = options.source ?? "web";
+
+	const idempotencyKey =
+		typeof input.idempotencyKey === "string" ? input.idempotencyKey.trim() : "";
+	if (!idempotencyKey) {
+		throw new CheckoutError(ERROR_CODES.validation, 400, undefined, {
+			field: "idempotencyKey",
+		});
+	}
+
+	const alreadyPlaced = await findOrderByIdempotencyKey(
+		payload,
+		user.id,
+		idempotencyKey,
+	);
+	if (alreadyPlaced) return responseFromOrder(alreadyPlaced);
+
+	const { response: fresh, internals } = await buildQuote(
+		payload,
+		user,
+		input,
+		{ now, store: options.store, ip: options.ip },
+	);
+	// `buildQuote` already refused anything else; recomputed from the
+	// validated input rather than trusted off `fresh.summary.paymentMethod`,
+	// which now carries the priced method but is still the quote's echo, not
+	// the order's own field.
+	const paymentMethod: "cod" | "mobile_money" =
+		input.paymentMethod === "mobile_money" ? "mobile_money" : "cod";
+
+	const suppliedHash =
+		typeof input.quoteHash === "string" ? input.quoteHash : "";
+	if (suppliedHash !== fresh.quoteHash) {
+		throw new CheckoutError(ERROR_CODES.checkoutQuoteChanged, 409, undefined, {
+			quote: fresh,
+		});
+	}
+
+	if (input.termsAccepted !== true) {
+		throw new CheckoutError(ERROR_CODES.checkoutTermsNotAccepted, 400);
+	}
+
+	const settings = await getOrderSettings(payload);
+	const account = await payload.findByID({
+		collection: "users",
+		id: user.id,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const address = internals.address;
+	const { tier, refusals } = await scoreCheckout(
+		payload,
+		{ accountPhone: account.phone ?? null, deliveryPhone: address.phone },
+		now,
+	);
+
+	const orderNumber = await nextNumber(payload, "BNS", now, internals.market);
+	const placedAtIso = now.toISOString();
+	const confirmBy = new Date(
+		now.getTime() + settings.confirmHours * 60 * 60 * 1000,
+	).toISOString();
+	const acceptBy = new Date(
+		now.getTime() + settings.acceptHours * 60 * 60 * 1000,
+	).toISOString();
+
+	const draft: OrderDraft = {
+		user,
+		source,
+		settings,
+		orderNumber,
+		idempotencyKey,
+		paymentMethod,
+		fresh,
+		internals,
+		tier,
+		refusals,
+		placedAtIso,
+		confirmBy,
+		acceptBy,
+	};
+
+	try {
+		return await withTransaction(
+			payload,
+			async (req) => {
+				const cart = await loadActiveCart(req.payload, user.id);
+				if (!cart) throw new CheckoutError(ERROR_CODES.cartEmpty, 400);
+
+				const zeroedListingIds = new Set<string>();
+				const createdOrder = await createOrderRows(
+					req,
+					draft,
+					async (order, line, variant) => {
+						const reservation = await reserveLine(req, order, line, variant);
+						if (reservation && line.listingId) {
+							if (availableOf(reservation.variant) === 0) {
+								zeroedListingIds.add(line.listingId);
+							}
+						}
+					},
+				);
+
+				await recordPlacement(req, {
+					phone: address.phone,
+					orderId: String(createdOrder.id),
+				});
+				await markCartConverted(req, String(cart.id), [
+					String(createdOrder.id),
+				]);
+
+				const finalOrder = await finishPlacedOrder(req, createdOrder, draft);
+
+				for (const listingId of zeroedListingIds) {
+					await queueSearchEvent(req, "listing.updated", listingId);
+				}
+
+				return responseFromOrder(finalOrder);
+			},
+			{ user },
+		);
+	} catch (error) {
+		if (isUniqueViolation(error)) {
+			const recovered = await findOrderByIdempotencyKey(
+				payload,
+				user.id,
+				idempotencyKey,
+			);
+			if (recovered) return responseFromOrder(recovered);
+		}
+		throw error;
+	}
+}
+
+/** What `POST /api/checkout/place` answers: one order, or the split placement behind `multiShopCartEnabled`. */
+export async function placeCheckoutResponse(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutPlaceInput,
+	options: Parameters<typeof placeOrder>[3] = {},
+): Promise<PlaceResponse | SplitPlaceResponse> {
+	const settings = await getOrderSettings(payload);
+	return settings.multiShopCartEnabled
+		? placeSplit(payload, user, input, options)
+		: placeOrder(payload, user, input, options);
+}

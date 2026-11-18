@@ -98,7 +98,7 @@ const phoneAttributes = () => {
 		"Nokia",
 	];
 	const storages = ["32GB", "64GB", "128GB", "256GB", "512GB", "1TB"];
-	const conditions = ["New", "Like New", "Good", "Fair"];
+	const conditions = ["new", "like_new", "good", "fair"];
 	const colors = ["Black", "White", "Blue", "Red", "Green", "Gold", "Silver"];
 
 	const brand = faker.helpers.arrayElement(brands);
@@ -124,7 +124,7 @@ const computerAttributes = () => {
 		"Apple M2",
 	];
 	const rams = ["8GB", "16GB", "32GB"];
-	const conditions = ["New", "Like New", "Good", "Fair"];
+	const conditions = ["new", "like_new", "good", "fair"];
 
 	const brand = faker.helpers.arrayElement(brands);
 	return {
@@ -149,7 +149,7 @@ const furnitureAttributes = () => {
 	];
 	const materials = ["Wood", "Metal", "Glass", "Leather", "Fabric", "Plastic"];
 	const colors = ["Black", "White", "Brown", "Gray", "Beige", "Blue", "Green"];
-	const conditions = ["New", "Used"];
+	const conditions = ["new", "good"];
 
 	return {
 		type: faker.helpers.arrayElement(types),
@@ -317,13 +317,6 @@ export const seedListings = async (
 				seller: seller.id,
 				status,
 				attributes,
-				condition: faker.helpers.arrayElement([
-					"new",
-					"like_new",
-					"good",
-					"fair",
-					"poor",
-				]),
 				images,
 				views: faker.number.int({ min: 0, max: 1000 }),
 			},

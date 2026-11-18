@@ -238,3 +238,84 @@ export function useFlicker(base: number, peak: number, delay = 0) {
 	}, [reduced, base, delay, peak, v]);
 	return useAnimatedProps(() => ({ opacity: v.value as number }));
 }
+
+// ─── Lighting hooks ───────────────────────────────────────────────────────────
+// The light sits upper-left at 35°, so an object that rises off the ground
+// throws a shadow that spreads and fades. These keep the two in step; a float
+// without its matching shadow is what made the old drawings read as stickers.
+
+/**
+ * The ground shadow belonging to a `useFloatG` of the same distance and
+ * timing. As the object rises the ellipse widens, flattens and thins out.
+ *
+ * Pass the resting geometry; `rise` must match the float it answers to.
+ *
+ *   const lift   = useFloatG(8, 2800);
+ *   const ground = useFloatShadow({ rx: 62, ry: 12, rise: 8, duration: 2800 });
+ *   <AG animatedProps={lift}>…</AG>
+ *   <AEllipse animatedProps={ground} cx={107} cy={165} fill={paint.ground} />
+ */
+export function useFloatShadow({
+	rx,
+	ry,
+	rise,
+	duration = 2500,
+	delay = 0,
+	opacity = 1,
+}: {
+	rx: number;
+	ry: number;
+	rise: number;
+	duration?: number;
+	delay?: number;
+	opacity?: number;
+}) {
+	const reduced = useReducedMotion();
+	const t = useSharedValue(0);
+	useEffect(() => {
+		if (reduced) return;
+		t.value = withDelay(
+			delay,
+			withRepeat(withTiming(1, { duration, easing: sine }), -1, true),
+		);
+	}, [reduced, delay, duration, t]);
+
+	// A 1px rise is worth roughly 1.1% of width and 2.6% of height; past that
+	// the shadow stops reading as contact and starts reading as a second object.
+	const spread = Math.min(rise * 0.011, 0.14);
+	const flatten = Math.min(rise * 0.026, 0.3);
+	const fade = Math.min(rise * 0.03, 0.34);
+
+	return useAnimatedProps(() => ({
+		rx: rx * (1 + spread * t.value),
+		ry: ry * (1 - flatten * t.value),
+		opacity: opacity * (1 - fade * t.value),
+	}));
+}
+
+/**
+ * A specular highlight travelling across a lit face, the way a sheen crosses
+ * a surface as it turns. Returns animatedProps { translateX } for a G that
+ * holds the highlight shape, clipped to the face.
+ */
+export function useSheen(distance: number, duration = 3200, delay = 0) {
+	const reduced = useReducedMotion();
+	const v = useSharedValue(-distance);
+	useEffect(() => {
+		if (reduced) {
+			v.value = 0;
+			return;
+		}
+		v.value = withDelay(
+			delay,
+			withRepeat(
+				withSequence(
+					withTiming(distance, { duration, easing: ease }),
+					withTiming(-distance, { duration: 0 }),
+				),
+				-1,
+			),
+		);
+	}, [reduced, delay, distance, duration, v]);
+	return useAnimatedProps(() => ({ translateX: v.value as number }));
+}

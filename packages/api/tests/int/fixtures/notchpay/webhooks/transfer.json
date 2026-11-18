@@ -1,0 +1,49 @@
+[
+	{
+		"key": "transfer-sent-sync",
+		"body": {
+			"id": "evt_{transferId}_sent",
+			"type": "transfer.sent",
+			"data": {
+				"id": "{transferId}",
+				"account": "{account}",
+				"merchant_reference": "{ref}",
+				"amount": "{amount}",
+				"currency": "XAF"
+			}
+		},
+		"assumed": ["A13", "A16"]
+	},
+	{
+		"key": "transfer-complete-sync",
+		"body": {
+			"id": "evt_{transferId}_complete",
+			"type": "transfer.complete",
+			"data": {
+				"id": "{transferId}",
+				"account": "{account}",
+				"merchant_reference": "{ref}",
+				"amount": "{amount}",
+				"currency": "XAF",
+				"fee": 50
+			}
+		},
+		"assumed": ["A13", "A16"]
+	},
+	{
+		"key": "transfer-complete-legacy",
+		"body": {
+			"id": "evt_{transferId}_complete",
+			"event": "transfer.complete",
+			"data": {
+				"id": "{transferId}",
+				"account": "{account}",
+				"merchant_reference": "{ref}",
+				"amount": "{amount}",
+				"currency": "XAF",
+				"fee": 50
+			}
+		},
+		"assumed": ["A13", "A16"]
+	}
+]

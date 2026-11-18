@@ -1,0 +1,49 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+import { useReturnAction } from "~/hooks/use-returns";
+import { resolveErrorMessage } from "~/lib/apiError";
+import { RETURN_ACTION_LABELS } from "~/lib/case-status";
+import { sellerReturnActions } from "~/lib/seller-return-actions";
+import type { ReturnCaseView } from "../../../../../api/src/contracts/returns";
+import { ReturnInspectionForm } from "./return-inspection-form";
+import { ReturnRefundProofForm } from "./return-refund-proof-form";
+
+export function SellerReturnActions({ view }: { view: ReturnCaseView }) {
+	const t = useTranslations("Returns");
+	const tRoot = useTranslations();
+	const action = useReturnAction();
+	const actions = sellerReturnActions(view.allowedActions);
+	if (!actions.length) return null;
+	return (
+		<section className="space-y-4 rounded-2xl border border-line bg-surface p-5">
+			<h2 className="font-semibold text-ink">{t("sellerActions")}</h2>
+			<div className="flex flex-wrap gap-2">
+				{(["pickup", "receive"] as const)
+					.filter((item) => actions.includes(item))
+					.map((item) => (
+						<button
+							key={item}
+							type="button"
+							disabled={action.isPending}
+							onClick={() => action.mutate({ caseId: view.id, action: item })}
+							className="min-h-11 rounded-xl bg-brand-fill px-4 font-medium text-sm text-white disabled:opacity-50"
+						>
+							{t(RETURN_ACTION_LABELS[item])}
+						</button>
+					))}
+			</div>
+			{actions.includes("inspect") ? (
+				<ReturnInspectionForm view={view} />
+			) : null}
+			{actions.includes("refund_proof") ? (
+				<ReturnRefundProofForm view={view} />
+			) : null}
+			{action.isError ? (
+				<p role="alert" className="text-red-700 text-sm">
+					{resolveErrorMessage(action.error, tRoot)}
+				</p>
+			) : null}
+		</section>
+	);
+}

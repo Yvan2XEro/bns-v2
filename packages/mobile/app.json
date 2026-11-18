@@ -2,26 +2,98 @@
 	"expo": {
 		"name": "BuyNSellem",
 		"slug": "buynsellem",
-		"version": "1.0.0",
-		"orientation": "portrait",
+		"owner": "yvan2ero",
+		"version": "1.3.0",
+		"orientation": "default",
 		"icon": "./assets/images/icon.png",
 		"scheme": "buynsellem",
 		"userInterfaceStyle": "automatic",
-		"newArchEnabled": true,
 		"ios": {
 			"supportsTablet": true,
-			"bundleIdentifier": "com.buynsellem.mobilev2"
+			"bundleIdentifier": "com.buynsellem.mobile",
+			"config": {
+				"usesNonExemptEncryption": false
+			},
+			"usesAppleSignIn": true,
+			"infoPlist": {
+				"CFBundleAllowMixedLocalizations": true
+			},
+			"associatedDomains": ["applinks:buynsellem.com"]
 		},
 		"android": {
+			"icon": "./assets/images/android-icon.png",
 			"adaptiveIcon": {
 				"backgroundColor": "#E6F4FE",
 				"foregroundImage": "./assets/images/android-icon-foreground.png",
-				"backgroundImage": "./assets/images/android-icon-background.png",
 				"monochromeImage": "./assets/images/android-icon-monochrome.png"
 			},
-			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false,
-			"package": "com.buynsellem.mobilev2"
+			"package": "com.buynsellem.mobile",
+			"googleServicesFile": "./google-services.json",
+			"intentFilters": [
+				{
+					"action": "VIEW",
+					"autoVerify": true,
+					"data": [
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/listing/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/s/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/profile/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/invite/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/purchases"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/returns/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/disputes/"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/messages"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/search"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/favorites"
+						},
+						{
+							"scheme": "https",
+							"host": "buynsellem.com",
+							"pathPrefix": "/cart"
+						}
+					],
+					"category": ["BROWSABLE", "DEFAULT"]
+				}
+			]
 		},
 		"web": {
 			"output": "static",
@@ -41,9 +113,82 @@
 					}
 				}
 			],
+			[
+				"expo-image-picker",
+				{
+					"photosPermission": "Allow BuyNSellem to access your photos so you can upload listing and profile images.",
+					"cameraPermission": "Allow BuyNSellem to access your camera so you can take photos for your listings and scan your verification documents.",
+					"microphonePermission": false
+				}
+			],
+			[
+				"expo-location",
+				{
+					"locationWhenInUsePermission": "Allow BuyNSellem to access your location to show nearby listings and improve local search.",
+					"locationAlwaysAndWhenInUsePermission": false,
+					"locationAlwaysPermission": false,
+					"motionUsagePermission": "BuyNSellem's location features may use motion activity to improve the accuracy of nearby listing results."
+				}
+			],
+			[
+				"expo-notifications",
+				{
+					"color": "#2f5bd4",
+					"defaultChannel": "default"
+				}
+			],
 			"expo-localization",
-			"expo-secure-store"
+			[
+				"expo-secure-store",
+				{
+					"faceIDPermission": false
+				}
+			],
+			"expo-font",
+			"expo-image",
+			"expo-sharing",
+			[
+				"react-native-share",
+				{
+					"ios": ["whatsapp", "instagram-stories", "facebook-stories"],
+					"android": [
+						"com.whatsapp",
+						"com.whatsapp.w4b",
+						"com.instagram.android",
+						"com.facebook.katana"
+					]
+				}
+			],
+			"expo-web-browser",
+			"expo-apple-authentication",
+			[
+				"react-native-document-scanner-plugin",
+				{
+					"cameraPermission": "Allow BuyNSellem to access your camera so you can take photos for your listings and scan your verification documents."
+				}
+			],
+			[
+				"expo-screen-orientation",
+				{
+					"initialOrientation": "DEFAULT"
+				}
+			],
+			"expo-build-properties"
 		],
+		"locales": {
+			"en": {
+				"ios": {
+					"NSCameraUsageDescription": "Allow BuyNSellem to access your camera so you can take photos for your listings and scan your verification documents.",
+					"NSPhotoLibraryUsageDescription": "Allow BuyNSellem to access your photos so you can upload listing and profile images."
+				}
+			},
+			"fr": {
+				"ios": {
+					"NSCameraUsageDescription": "Autorisez BuyNSellem à utiliser votre appareil photo pour photographier vos annonces et scanner vos documents de vérification.",
+					"NSPhotoLibraryUsageDescription": "Autorisez BuyNSellem à accéder à vos photos pour ajouter des images à vos annonces et à votre profil."
+				}
+			}
+		},
 		"experiments": {
 			"typedRoutes": true,
 			"reactCompiler": false
@@ -55,7 +200,7 @@
 			}
 		},
 		"runtimeVersion": {
-			"policy": "appVersion"
+			"policy": "fingerprint"
 		},
 		"updates": {
 			"url": "https://u.expo.dev/c5bebedf-e500-4243-8386-85cf6d62d233"

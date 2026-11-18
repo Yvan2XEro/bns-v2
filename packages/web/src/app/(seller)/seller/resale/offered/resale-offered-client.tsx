@@ -1,0 +1,155 @@
+"use client";
+
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { LoadError, LoadingRows } from "~/components/seller/load-states";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { useSupplierResaleProducts } from "~/hooks/use-resale";
+import { resolveErrorMessage } from "~/lib/apiError";
+
+export function ResaleOfferedClient({
+	shopId,
+	embedded = false,
+}: {
+	shopId: string;
+	embedded?: boolean;
+}) {
+	const t = useTranslations("SellerResaleOffered");
+	const tHub = useTranslations("SellerResaleHub");
+	const formatOrderMoney = useOrderMoney();
+	const tRoot = useTranslations();
+	const query = useSupplierResaleProducts(shopId);
+	const error = query.error
+		? resolveErrorMessage(query.error, tRoot, t("loadError"))
+		: null;
+	return (
+		<section className="space-y-6">
+			{embedded ? null : (
+				<header>
+					<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+					<p className="mt-1 max-w-2xl text-ink-muted text-sm">
+						{t("description")}
+					</p>
+				</header>
+			)}
+			{error ? (
+				<p
+					role="alert"
+					className="rounded-lg bg-red-50 p-3 text-red-800 text-sm"
+				>
+					{error}
+				</p>
+			) : null}
+			{query.isPending ? <LoadingRows /> : null}
+			{query.isError ? (
+				<LoadError
+					title={t("loadError")}
+					onRetry={() => void query.refetch()}
+				/>
+			) : null}
+			{query.data?.products.length === 0 ? (
+				<p className="rounded-2xl border border-line-strong border-dashed bg-surface px-6 py-14 text-center font-medium text-ink-mid">
+					{t("empty")}
+				</p>
+			) : null}
+			<div className="grid gap-4">
+				{query.data?.products.map((product) => (
+					<article
+						key={product.productId}
+						className="space-y-4 rounded-2xl border border-line bg-surface p-5"
+					>
+						<div className="flex flex-wrap items-start justify-between gap-4">
+							<div>
+								<h2 className="font-bold text-ink">{product.title}</h2>
+								<p className="mt-1 text-ink-muted text-sm">
+									{t("productStats", {
+										resellers: product.resellerCount,
+										units: product.unitsDelivered30d,
+									})}
+								</p>
+								<p className="mt-1 text-ink-muted text-xs">
+									{[
+										product.approvalRequired
+											? tHub("ruleApprovalAll")
+											: tHub("ruleApprovalNone"),
+										typeof product.handlingHours === "number"
+											? tHub("ruleHandling", {
+													hours: product.handlingHours,
+												})
+											: null,
+										product.codAccepted ? tHub("filterCod") : null,
+									]
+										.filter(Boolean)
+										.join(" · ")}
+								</p>
+							</div>
+							<Link
+								href={`/seller/resale/products/${encodeURIComponent(product.productId)}`}
+								className="inline-flex min-h-11 items-center rounded-lg bg-night px-4 font-semibold text-sm text-white"
+							>
+								{t("editProduct")}
+							</Link>
+						</div>
+						{product.pendingEffectiveAt ? (
+							<p className="rounded-lg bg-amber-50 p-3 text-amber-900 text-sm">
+								{t("pendingIncrease", {
+									date: new Intl.DateTimeFormat(undefined, {
+										dateStyle: "medium",
+										timeStyle: "short",
+									}).format(new Date(product.pendingEffectiveAt)),
+								})}
+							</p>
+						) : null}
+						<div className="overflow-x-auto">
+							<table className="w-full min-w-[680px] text-left text-sm">
+								<thead className="border-line border-b text-ink-muted">
+									<tr>
+										<th className="py-3 pr-4">{t("variant")}</th>
+										<th className="py-3 pr-4">{tHub("supplierStock")}</th>
+										<th className="py-3 pr-4">{t("supplierPrice")}</th>
+										<th className="py-3 pr-4">{t("minimum")}</th>
+										<th className="py-3 pr-4">{t("suggested")}</th>
+										<th className="py-3">{t("resellerPrices")}</th>
+									</tr>
+								</thead>
+								<tbody>
+									{product.variants.map((variant) => (
+										<tr key={variant.id} className="border-subtle border-b">
+											<th
+												scope="row"
+												className="py-3 pr-4 font-semibold text-ink"
+											>
+												{variant.sku || t("defaultVariant")}
+											</th>
+											<td className="py-3 pr-4">
+												{typeof variant.stock === "number"
+													? variant.stock
+													: tHub("stockUntracked")}
+											</td>
+											<td className="py-3 pr-4">
+												{formatOrderMoney(variant.supplierPrice)}
+											</td>
+											<td className="py-3 pr-4">
+												{formatOrderMoney(variant.minRetailPrice)}
+											</td>
+											<td className="py-3 pr-4">
+												{formatOrderMoney(variant.suggestedRetailPrice)}
+											</td>
+											<td className="py-3">
+												{variant.resellerPrices.length
+													? variant.resellerPrices
+															.map((price) => formatOrderMoney(price))
+															.join(" · ")
+													: "—"}
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					</article>
+				))}
+			</div>
+		</section>
+	);
+}

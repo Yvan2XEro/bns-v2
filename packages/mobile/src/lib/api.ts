@@ -1,7 +1,27 @@
+import { fetch as expoFetch } from "expo/fetch";
 import * as SecureStore from "expo-secure-store";
+import type {
+	InboxConversationView,
+	InboxFilter,
+	InboxNotificationPreference,
+	InboxPage,
+	MyShopsEntry,
+	PendingInvitationView,
+	PublicInvitationView,
+	ShopActivityAction,
+	ShopActivityTargetType,
+	ShopActivityView,
+	ShopRole,
+	TeamMemberView,
+	TeamView,
+} from "../types/api";
+import { ERROR_CODES, fallbackFor, normalizeApiError } from "./apiError";
+import { contentLocale } from "./contentLocale";
 
 export const API_BASE_URL =
 	process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+
+const REQUEST_TIMEOUT_MS = 15000;
 
 async function getToken(): Promise<string | null> {
 	return SecureStore.getItemAsync("auth_token");
@@ -15,23 +35,119 @@ async function removeToken(): Promise<void> {
 	await SecureStore.deleteItemAsync("auth_token");
 }
 
+export async function getInstallationId(): Promise<string> {
+	const key = "bns_install_id";
+	const stored = await SecureStore.getItemAsync(key);
+	if (stored) return stored;
+	const id =
+		globalThis.crypto?.randomUUID?.() ??
+		"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (part) => {
+			const random = Math.floor(Math.random() * 16);
+			return (part === "x" ? random : (random & 0x3) | 0x8).toString(16);
+		});
+	await SecureStore.setItemAsync(key, id);
+	return id;
+}
+
+/**
+ * Read the `exp` claim from a JWT without verifying it. Used only to decide
+ * whether a proactive refresh is worth attempting — the native /refresh-token
+ * endpoint requires the existing token to still be within its validity window.
+ */
+export function decodeJwtExp(token: string): number | null {
+	const parts = token.split(".");
+	if (parts.length < 2) return null;
+	try {
+		const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+		const bin = atob(b64);
+		const json = decodeURIComponent(
+			bin
+				.split("")
+				.map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, "0")}`)
+				.join(""),
+		);
+		const payload = JSON.parse(json) as { exp?: number };
+		return typeof payload.exp === "number" ? payload.exp : null;
+	} catch {
+		return null;
+	}
+}
+
+let refreshing: Promise<boolean> | null = null;
+let unauthorizedHandler: (() => void) | null = null;
+
+/** Register a callback fired when a request fails and cannot be recovered by refresh. */
+export function setUnauthorizedHandler(handler: () => void): void {
+	unauthorizedHandler = handler;
+}
+
+/**
+ * Attempt a native Payload token refresh. Returns true when a new token was
+ * stored. Guarded so concurrent requests share a single in-flight refresh.
+ * No-op (false) when there is no token or it has already expired.
+ */
+export function refreshToken(): Promise<boolean> {
+	if (refreshing) return refreshing;
+	refreshing = (async () => {
+		const token = await getToken();
+		if (!token) return false;
+		const exp = decodeJwtExp(token);
+		if (exp && exp * 1000 <= Date.now()) return false;
+		try {
+			const res = await fetch(`${API_BASE_URL}/api/users/refresh-token`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `JWT ${token}`,
+				},
+			});
+			if (!res.ok) return false;
+			const data = (await res.json()) as { refreshedToken?: string };
+			if (data.refreshedToken) {
+				await setToken(data.refreshedToken);
+				return true;
+			}
+			return false;
+		} catch {
+			return false;
+		} finally {
+			refreshing = null;
+		}
+	})();
+	return refreshing;
+}
+
 export class ApiError extends Error {
 	status: number;
 	data: unknown;
+	/** Translation key; resolve with resolveErrorMessage() before display. */
+	code: string;
 
-	constructor(message: string, status: number, data: unknown) {
+	constructor(
+		message: string,
+		status: number,
+		data: unknown,
+		code: string = ERROR_CODES.unknown,
+	) {
 		super(message);
 		this.name = "ApiError";
 		this.status = status;
 		this.data = data;
+		this.code = code;
 	}
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+	path: string,
+	options: RequestInit = {},
+	retried = false,
+	parse: "json" | "text" = "json",
+): Promise<T> {
 	const token = await getToken();
 
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
+		"Accept-Language": contentLocale(),
 		...(options.headers as Record<string, string>),
 	};
 
@@ -39,17 +155,58 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 		headers.Authorization = `JWT ${token}`;
 	}
 
-	const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+	// Without a timeout a stalled-but-open socket (captive portal, corporate
+	// wifi) leaves the auth bootstrap pending forever and the app sits on a
+	// full-screen loader indefinitely.
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+	let res: Response;
+	try {
+		res = await fetch(`${API_BASE_URL}${path}`, {
+			...options,
+			headers,
+			signal: controller.signal,
+		});
+	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") {
+			throw new ApiError(
+				fallbackFor(ERROR_CODES.timeout),
+				408,
+				{ path },
+				ERROR_CODES.timeout,
+			);
+		}
+		// Anything else thrown by fetch is a transport failure: no DNS, no
+		// route, TLS refused. The user needs "check your connection", not the
+		// underlying platform string.
+		throw new ApiError(
+			fallbackFor(ERROR_CODES.network),
+			0,
+			{ path },
+			ERROR_CODES.network,
+		);
+	} finally {
+		clearTimeout(timeoutId);
+	}
 
 	if (!res.ok) {
-		const error = (await res.json().catch(() => ({}))) as { message?: string };
+		if (res.status === 401 && !retried) {
+			// Try to recover a still-valid session with a single refresh, then
+			// retry the original request once with the new token.
+			const recovered = await refreshToken();
+			if (recovered) {
+				return request<T>(path, options, true, parse);
+			}
+			await removeToken();
+			unauthorizedHandler?.();
+		}
 
-		// Surface a typed error so callers can inspect `status`
-		throw new ApiError(
-			error.message ?? `Request failed with status ${res.status}`,
-			res.status,
-			error,
-		);
+		const body = await res.json().catch(() => ({}));
+		const { code, message } = normalizeApiError(res.status, body);
+
+		// message is the English fallback; screens resolve `code` through i18n.
+		throw new ApiError(message, res.status, body, code);
 	}
 
 	// 204 No Content — return empty object cast to T
@@ -57,16 +214,31 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 		return {} as T;
 	}
 
+	if (parse === "text") return res.text() as Promise<T>;
 	return res.json() as Promise<T>;
 }
 
 export const api = {
 	get: <T>(path: string): Promise<T> => request<T>(path),
 
-	post: <T>(path: string, body: unknown): Promise<T> =>
+	/** For the two routes that answer `text/html` rather than JSON: an order's
+	 * printable receipt and a commission invoice's document. Both need the
+	 * caller's token, so the markup is fetched here and handed to a WebView
+	 * rather than opened by URL. */
+	getText: (path: string): Promise<string> =>
+		request<string>(path, {}, false, "text"),
+
+	/** `headers` is for the rare route that needs one beyond auth and JSON
+	 * content type — `Idempotency-Key` on the payment-intents route, so far. */
+	post: <T>(
+		path: string,
+		body: unknown,
+		headers?: Record<string, string>,
+	): Promise<T> =>
 		request<T>(path, {
 			method: "POST",
 			body: JSON.stringify(body),
+			headers,
 		}),
 
 	patch: <T>(path: string, body: unknown): Promise<T> =>
@@ -94,22 +266,16 @@ export const api = {
 
 		// Do NOT set Content-Type here — the browser/RN sets it with the correct
 		// multipart boundary automatically when body is FormData.
-		const res = await fetch(`${API_BASE_URL}${path}`, {
+		const res = await expoFetch(`${API_BASE_URL}${path}`, {
 			method: "POST",
 			body: formData,
 			headers,
 		});
 
 		if (!res.ok) {
-			const error = (await res.json().catch(() => ({}))) as {
-				message?: string;
-				errors?: { message: string }[];
-			};
-			const msg =
-				error.message ??
-				error.errors?.[0]?.message ??
-				`Upload failed (${res.status})`;
-			throw new ApiError(msg, res.status, error);
+			const body = await res.json().catch(() => ({}));
+			const { code, message } = normalizeApiError(res.status, body);
+			throw new ApiError(message, res.status, body, code);
 		}
 
 		return res.json() as Promise<T>;
@@ -118,3 +284,140 @@ export const api = {
 
 // Re-export token helpers so AuthProvider can share the same storage key.
 export { getToken, setToken, removeToken };
+
+function query(
+	params: Record<string, string | number | undefined | null>,
+): string {
+	const search = new URLSearchParams();
+	for (const [key, value] of Object.entries(params)) {
+		if (value !== undefined && value !== null && value !== "") {
+			search.set(key, String(value));
+		}
+	}
+	const text = search.toString();
+	return text ? `?${text}` : "";
+}
+
+/**
+ * Transport for the team, invitation and inbox routes (Tasks 10, 11, 14).
+ * Mirrors `shopApi` in `packages/web/src/lib/shop-api.ts`, method for method:
+ * screens call the hooks in `useShopTeam.ts`, `useShopActivity.ts`,
+ * `useShopInbox.ts`, `useMyShops.ts` and `useInvitation.ts`, never this
+ * object directly.
+ */
+export const shopApi = {
+	listTeam: (shopId: string) =>
+		api.get<TeamView>(`/api/shops/${shopId}/members`),
+
+	invite: (
+		shopId: string,
+		input: {
+			channel: "phone" | "email";
+			phone?: string;
+			email?: string;
+			role: "manager" | "staff";
+		},
+	) =>
+		api.post<{ invitation: PendingInvitationView; delivered: boolean }>(
+			`/api/shops/${shopId}/invitations`,
+			input,
+		),
+
+	resendInvitation: (shopId: string, invitationId: string) =>
+		api.post<{ invitation: PendingInvitationView; delivered: boolean }>(
+			`/api/shops/${shopId}/invitations/${invitationId}/resend`,
+			{},
+		),
+
+	revokeInvitation: (shopId: string, invitationId: string) =>
+		api.delete<{ revoked: true }>(
+			`/api/shops/${shopId}/invitations/${invitationId}`,
+		),
+
+	changeMemberRole: (
+		shopId: string,
+		memberId: string,
+		role: "manager" | "staff",
+	) =>
+		api.patch<TeamMemberView>(`/api/shops/${shopId}/members/${memberId}`, {
+			role,
+		}),
+
+	removeMember: (shopId: string, memberId: string) =>
+		api.delete<{ removed: true }>(`/api/shops/${shopId}/members/${memberId}`),
+
+	leaveShop: (shopId: string) =>
+		api.post<{ left: true }>(`/api/shops/${shopId}/members/leave`, {}),
+
+	updateInboxPreference: (
+		shopId: string,
+		input: { inboxNotifications: InboxNotificationPreference },
+	) => api.patch<TeamMemberView>(`/api/shops/${shopId}/members/me`, input),
+
+	listActivity: (
+		shopId: string,
+		params: {
+			actor?: string;
+			action?: ShopActivityAction;
+			targetType?: ShopActivityTargetType;
+			cursor?: string;
+		} = {},
+	) =>
+		api.get<{ docs: ShopActivityView[]; nextCursor: string | null }>(
+			`/api/shops/${shopId}/activity${query(params)}`,
+		),
+
+	listInbox: (
+		shopId: string,
+		params: { filter?: InboxFilter; q?: string; cursor?: string } = {},
+	) => api.get<InboxPage>(`/api/shops/${shopId}/inbox${query(params)}`),
+
+	startConversation: (listingId: string) =>
+		api.post<{ conversationId: string; created: boolean }>(
+			"/api/conversations/start",
+			{ listingId },
+		),
+
+	startShopConversation: (shopId: string) =>
+		api.post<{ conversationId: string; created: boolean }>(
+			"/api/conversations/start",
+			{ shopId },
+		),
+
+	assignConversation: (conversationId: string, userId: string | null) =>
+		api.post<InboxConversationView>(
+			`/api/conversations/${conversationId}/assign`,
+			{ userId },
+		),
+
+	setConversationStatus: (conversationId: string, status: "open" | "done") =>
+		api.post<InboxConversationView>(
+			`/api/conversations/${conversationId}/status`,
+			{ status },
+		),
+
+	markConversationRead: (conversationId: string, lastMessageId: string) =>
+		api.post<{ lastReadAt: string; unreadCount: number }>(
+			`/api/conversations/${conversationId}/read`,
+			{ lastMessageId },
+		),
+
+	listMyShops: () => api.get<MyShopsEntry[]>("/api/me/shops"),
+
+	lookupInvitation: (token: string) =>
+		api.get<PublicInvitationView>(
+			`/api/public/invitations/${encodeURIComponent(token)}`,
+		),
+
+	acceptInvitation: (token: string) =>
+		api.post<{ shopId: string; role: ShopRole }>(
+			`/api/invitations/${encodeURIComponent(token)}/accept`,
+			{},
+		),
+
+	declineInvitation: (token: string) =>
+		api.post<{ declined: true }>(
+			`/api/invitations/${encodeURIComponent(token)}/decline`,
+			{},
+		),
+};

@@ -3,10 +3,8 @@ import type {
 	BoostPayment,
 	Category,
 	CategoryAttribute,
-	Conversation,
 	Favorite,
 	Listing,
-	Message,
 	Report,
 	ReportReason,
 	Review,
@@ -14,12 +12,33 @@ import type {
 	SearchResult,
 	User,
 } from "~/types";
+import { browserContentLocale, contentLocaleHeaders } from "./content-locale";
 
 class ApiClient {
 	private baseUrl: string;
+	private refreshing: Promise<boolean> | null = null;
 
 	constructor(baseUrl = "") {
 		this.baseUrl = baseUrl;
+	}
+
+	/** Single in-flight native Payload refresh; requires a still-valid cookie. */
+	private attemptRefresh(): Promise<boolean> {
+		if (this.refreshing) return this.refreshing;
+		this.refreshing = (async () => {
+			try {
+				const res = await fetch("/api/users/refresh-token", {
+					method: "POST",
+					credentials: "include",
+				});
+				return res.ok;
+			} catch {
+				return false;
+			} finally {
+				this.refreshing = null;
+			}
+		})();
+		return this.refreshing;
 	}
 
 	private async request<T>(
@@ -31,12 +50,29 @@ class ApiClient {
 			...options,
 			headers: {
 				"Content-Type": "application/json",
+				...contentLocaleHeaders(browserContentLocale()),
 				...options.headers,
 			},
 			credentials: "include",
 		});
 
 		if (!response.ok) {
+			if (response.status === 401) {
+				// Try to recover a still-valid session with one refresh, then retry.
+				const recovered = await this.attemptRefresh();
+				if (recovered) {
+					const retry = await fetch(url, {
+						...options,
+						headers: {
+							"Content-Type": "application/json",
+							...contentLocaleHeaders(browserContentLocale()),
+							...options.headers,
+						},
+						credentials: "include",
+					});
+					if (retry.ok) return retry.json() as Promise<T>;
+				}
+			}
 			const error = await response.json().catch(() => ({}));
 			throw new Error(error.message || `API error: ${response.status}`);
 		}
@@ -128,9 +164,9 @@ export const listingsApi = {
 
 	getFeatured: async (limit = 6): Promise<Listing[]> => {
 		const result = await api.get<SearchResult>(
-			`/api/public/search?limit=${limit}`,
+			`/api/public/search?limit=${limit}&boosted=true&sort=boosted`,
 		);
-		return result.hits.filter((l) => l.boostedUntil);
+		return result.hits;
 	},
 
 	getByUser: async (userId: string): Promise<Listing[]> => {
@@ -184,48 +220,6 @@ export const favoritesApi = {
 	},
 };
 
-export const conversationsApi = {
-	getAll: async (): Promise<Conversation[]> => {
-		return api.get<Conversation[]>("/api/public/conversations");
-	},
-
-	getById: async (id: string): Promise<Conversation> => {
-		return api.get<Conversation>(`/api/public/conversations/${id}`);
-	},
-
-	getMessages: async (conversationId: string): Promise<Message[]> => {
-		return api.get<Message[]>(
-			`/api/public/conversations/${conversationId}/messages`,
-		);
-	},
-
-	sendMessage: async (
-		conversationId: string,
-		content: string,
-	): Promise<Message> => {
-		return api.post<Message>(
-			`/api/public/conversations/${conversationId}/messages`,
-			{
-				content,
-			},
-		);
-	},
-
-	create: async (
-		listingId: string,
-		sellerId: string,
-	): Promise<Conversation> => {
-		return api.post<Conversation>("/api/public/conversations", {
-			listingId,
-			sellerId,
-		});
-	},
-
-	markAsRead: async (conversationId: string): Promise<void> => {
-		return api.post(`/api/public/conversations/${conversationId}/read`);
-	},
-};
-
 export const reviewsApi = {
 	getByUser: async (userId: string): Promise<Review[]> => {
 		return api.get<Review[]>(`/api/reviews?userId=${userId}`);
@@ -243,7 +237,7 @@ export const reviewsApi = {
 
 export const reportsApi = {
 	create: async (data: {
-		targetType: "listing" | "user" | "message";
+		targetType: "listing" | "user" | "message" | "shop";
 		targetId: string;
 		reason: ReportReason;
 		description?: string;
@@ -262,10 +256,6 @@ export const boostApi = {
 		paymentReference?: string;
 	}> => {
 		return api.post("/api/public/boost", { listingId, duration });
-	},
-
-	getStatus: async (listingId: string): Promise<BoostPayment | null> => {
-		return api.get<BoostPayment | null>(`/api/public/boost/${listingId}`);
 	},
 };
 

@@ -1,0 +1,60 @@
+# Template for the proxmox-staging stack. Never put real values here. Create the stack with:
+#   bun run stack:init --stack proxmox-staging [--ssh-key ~/.ssh/bns-k3s] [--env ../.env.proxmox-staging]
+# which writes .stacks/Pulumi.proxmox-staging.yaml (git-ignored) from this file.
+#
+# Full procedure: docs/runbook-proxmox-k3s.md
+#
+# K3s on Proxmox — one server VM plus `nodeCount` worker VMs, cloned from a
+# cloud-init template. `pulumi up --stack proxmox-staging`.
+#
+# Template (once, on the Proxmox node, as root): scripts/create-proxmox-template.sh
+# The guest agent is required: the provider waits for it to report the IP.
+#
+# API token, on the node (Proxmox 9; on 8 use VM.Monitor for VM.GuestAgent.Audit).
+# Sys.Console is needed because the template has a serial console:
+#   pveum role add PulumiK3s -privs "VM.Allocate VM.Clone VM.Audit VM.PowerMgmt VM.Config.CDROM VM.Config.CPU VM.Config.Cloudinit VM.Config.Disk VM.Config.HWType VM.Config.Memory VM.Config.Network VM.Config.Options VM.GuestAgent.Audit Datastore.AllocateSpace Datastore.Audit SDN.Use Sys.Audit Sys.Console"
+#   pveum user add pulumi@pve && pveum aclmod / -user pulumi@pve -role PulumiK3s
+#   pveum user token add pulumi@pve bns --privsep 0
+#   pulumi config set --secret proxmox:apiToken 'pulumi@pve!bns=<uuid>' --stack proxmox-staging
+#   pulumi config set --secret proxmox:sshPrivateKey "$(cat ~/.ssh/id_ed25519)" --stack proxmox-staging
+#   pulumi config set proxmox:sshPublicKey "$(cat ~/.ssh/id_ed25519.pub)" --stack proxmox-staging
+# then the app variables from the production .env: scripts/env-to-stack.ts (below).
+#
+# Ingress: K3s' ServiceLB exposes ingress-nginx on ports 80/443 of every
+# node, so point the domain's A records (@, www, api, chat) at the node IPs,
+# or forward 80/443 from the router to one of them. Volumes use K3s'
+# local-path class: each database's data lives on the node its pod first ran on.
+config:
+  # App variables: copied from the production .env, never typed by hand —
+  #   bun run infra:env:check --env <.env> --stack <this stack>   (repo root)
+  #   bun run infra:env:apply --env <.env> --stack <this stack>
+  # It writes appEnv, appSecrets (encrypted), domain, acmeEmail and ghcrToken.
+  bns-infra:cloudProvider: proxmox
+  bns-infra:nodeCount: "2"
+  bns-infra:instanceType: medium
+  bns-infra:imageRegistry: ghcr.io/yvan2xero/bns-v2
+  bns-infra:imageTag: dev
+  bns-infra:domain: staging.buynsellem.lan
+  bns-infra:acmeEmail: yvankanaj@gmail.com
+  proxmox:endpoint: https://192.168.0.101:8006
+  proxmox:insecure: "true"
+  proxmox:nodeName: pve
+  proxmox:templateVmId: "9000"
+  proxmox:firstVmId: "200"
+  proxmox:datastoreId: local-lvm
+  proxmox:bridge: vmbr0
+  proxmox:gateway: 192.168.0.1
+  proxmox:subnetPrefix: "24"
+  # A private domain (.lan on Pi-hole): no Let's Encrypt, the cluster signs
+  # with its own CA instead, and the VMs must resolve through the Pi-hole.
+  # bns-infra:tlsIssuer: local-ca
+  # proxmox:dnsServers: [192.168.0.98]   (the Pi-hole)
+  proxmox:dnsServers:
+    - 1.1.1.1
+    - 8.8.8.8
+  proxmox:sshUser: ubuntu
+  proxmox:controlPlaneIp: 192.168.0.160
+  proxmox:workerIps:
+    - 192.168.0.161
+    - 192.168.0.162
+  proxmox:k3sVersion: v1.31.4+k3s1

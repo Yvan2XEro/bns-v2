@@ -1,0 +1,846 @@
+"use client";
+
+import { Bookmark, Check, Search, SlidersHorizontal, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CategoryDropdown } from "~/components/category-picker";
+import { EmptyState } from "~/components/empty-state";
+import { ListingGrid } from "~/components/listing/listing-card";
+import { LocationField } from "~/components/location/location-field";
+import { LoadError } from "~/components/seller/load-states";
+import { Button } from "~/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "~/components/ui/dialog";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { NumberInput } from "~/components/ui/number-input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "~/components/ui/select";
+import { useCategoryTags } from "~/hooks/use-category-tags";
+import { useDebouncedValue } from "~/hooks/use-debounced-value";
+import {
+	type ListingSearchParams,
+	useListingSearch,
+} from "~/hooks/use-listing-search";
+import { useCurrencyCode } from "~/hooks/use-order-money";
+import { saveSearch } from "~/lib/actions";
+import { scopedTagSlugs } from "~/lib/category-tags";
+import { rememberSearch } from "~/lib/last-search";
+import type { Category, CategoryAttribute, Listing } from "~/types";
+import {
+	type Place,
+	placeCoords,
+} from "../../../../../api/src/contracts/places";
+import { ShopsSellingRow } from "./shops-selling-row";
+
+interface SearchClientProps {
+	categories: Category[];
+	initialListings: Listing[];
+	initialTotal: number;
+	initialParams: Record<string, string>;
+	favoriteIds?: string[];
+	/** The "shops that sell…" row; off when shops are disabled. */
+	showShopsRow?: boolean;
+}
+
+function initialAttributeFilters(
+	params: Record<string, string>,
+): Record<string, string> {
+	const filters: Record<string, string> = {};
+	if (params.condition) filters.condition = params.condition;
+	for (const [key, value] of Object.entries(params)) {
+		if (key.startsWith("attr_") && value) filters[key.slice(5)] = value;
+	}
+	return filters;
+}
+
+export function SearchClient({
+	categories,
+	initialListings,
+	initialTotal,
+	initialParams,
+	favoriteIds = [],
+	showShopsRow = false,
+}: SearchClientProps) {
+	const t = useTranslations("Search");
+	const currencyCode = useCurrencyCode();
+	const router = useRouter();
+
+	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+		null,
+	);
+	const [attributes, setAttributes] = useState<CategoryAttribute[]>([]);
+	const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+	// A neighbourhood or the user's own position searches a radius around it;
+	// a city filters on the city itself, which also finds listings that carry
+	// no coordinates.
+	const [geoPlace, setGeoPlace] = useState<Place | null>(null);
+	const geoCoords = placeCoords(geoPlace);
+	const nearMe = geoCoords !== null;
+	const [geoRadius, setGeoRadius] = useState(initialParams.radius || "10");
+
+	const [filters, setFilters] = useState({
+		q: initialParams.q || "",
+		category: initialParams.category || "",
+		minPrice: initialParams.minPrice || "",
+		maxPrice: initialParams.maxPrice || "",
+		location: initialParams.location || "",
+		sort: initialParams.sort || "newest",
+		tags: initialParams.tags || "",
+		verified: initialParams.verified === "1" ? "1" : "",
+		orderable: initialParams.orderable === "1" ? "1" : "",
+	});
+
+	// Typed prices apply when the field is left or Enter is pressed: one
+	// search per price, not one per digit.
+	const [priceDraft, setPriceDraft] = useState({
+		minPrice: initialParams.minPrice || "",
+		maxPrice: initialParams.maxPrice || "",
+	});
+	function commitPrice(key: "minPrice" | "maxPrice") {
+		if (priceDraft[key] !== filters[key]) updateFilter(key, priceDraft[key]);
+	}
+
+	// Local state for the top search input — avoids router.push on every keystroke
+	const [searchInput, setSearchInput] = useState(initialParams.q || "");
+	const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const handleSearchInputChange = (value: string) => {
+		setSearchInput(value);
+		if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+		searchDebounceRef.current = setTimeout(() => {
+			updateFilter("q", value);
+		}, 350);
+	};
+
+	// Tags are scoped to categories: only the searched category's are offered,
+	// none without a category, and a filter it cannot match is dropped.
+	const { tags: categoryTags } = useCategoryTags(filters.category || null);
+	const availableTags = categoryTags ?? [];
+	useEffect(() => {
+		if (!categoryTags) return;
+		setFilters((prev) => {
+			const current = prev.tags.split(",").filter(Boolean);
+			const kept = scopedTagSlugs(current, categoryTags);
+			return kept.length === current.length
+				? prev
+				: { ...prev, tags: kept.join(",") };
+		});
+	}, [categoryTags]);
+
+	// `attr_<slug>` params seed the attribute filters; an old `condition=`
+	// link is the condition attribute's filter now.
+	const [attributeFilters, setAttributeFilters] = useState<
+		Record<string, string>
+	>(() => initialAttributeFilters(initialParams));
+
+	const LIMIT = 20;
+
+	// Debounced the same way the top search input already was (350ms): a
+	// filter panel change (price, category, tags…) should not fire a request
+	// per keystroke or per click, but the query key itself — not a separate
+	// `shouldFetch` flag — is what TanStack Query reacts to.
+	const searchParams = useMemo<ListingSearchParams>(
+		() => ({
+			q: filters.q || undefined,
+			category: filters.category || undefined,
+			minPrice: filters.minPrice || undefined,
+			maxPrice: filters.maxPrice || undefined,
+			location: filters.location || undefined,
+			sort: filters.sort || undefined,
+			tags: (filters.category && filters.tags) || undefined,
+			// The API applies this floor twice — once against the index, once
+			// against live shop data after hydration — so it is never
+			// re-filtered client-side here; this only forwards the intent.
+			minShopLevel: filters.verified === "1" ? 2 : undefined,
+			orderable: filters.orderable === "1" || undefined,
+			attributes: attributeFilters,
+			lat: nearMe && geoCoords ? geoCoords.lat : undefined,
+			lng: nearMe && geoCoords ? geoCoords.lng : undefined,
+			radius: nearMe && geoCoords ? geoRadius : undefined,
+			limit: LIMIT,
+		}),
+		[filters, attributeFilters, nearMe, geoCoords, geoRadius],
+	);
+	const debouncedSearchParams = useDebouncedValue(searchParams, 300);
+	// The listing page's "Back to results" returns here, filters and all.
+	useEffect(() => {
+		rememberSearch(`${window.location.pathname}${window.location.search}`);
+	}, [debouncedSearchParams]);
+
+	const {
+		data: searchData,
+		isPending: isLoading,
+		isFetching,
+		isFetchingNextPage,
+		isError: isSearchError,
+		fetchNextPage,
+		hasNextPage,
+		refetch: refetchListings,
+	} = useListingSearch(debouncedSearchParams, {
+		initialPage: { hits: initialListings, total: initialTotal },
+	});
+	const listings = searchData?.pages.flatMap((p) => p.hits) ?? initialListings;
+	const total = searchData?.pages[0]?.total ?? initialTotal;
+
+	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+	const [saveName, setSaveName] = useState("");
+	const [saveStatus, setSaveStatus] = useState<
+		"idle" | "saving" | "saved" | "error"
+	>("idle");
+	const [saveError, setSaveError] = useState("");
+
+	function buildSearchUrl() {
+		const params = new URLSearchParams();
+		if (filters.q) params.set("q", filters.q);
+		if (filters.category) params.set("category", filters.category);
+		if (filters.minPrice) params.set("minPrice", filters.minPrice);
+		if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
+		if (filters.location) params.set("location", filters.location);
+		if (filters.sort && filters.sort !== "newest")
+			params.set("sort", filters.sort);
+		if (filters.category && filters.tags) params.set("tags", filters.tags);
+		if (filters.verified) params.set("verified", filters.verified);
+		if (filters.orderable) params.set("orderable", filters.orderable);
+		for (const [key, value] of Object.entries(attributeFilters)) {
+			if (value) params.set(`attr_${key}`, value);
+		}
+		const qs = params.toString();
+		return qs ? `/search?${qs}` : "/search";
+	}
+
+	async function handleSaveSearch() {
+		setSaveStatus("saving");
+		setSaveError("");
+		const result = await saveSearch({
+			name: saveName || filters.q || t("savedSearchDefault"),
+			query: filters.q,
+			filters: {
+				category: filters.category,
+				minPrice: filters.minPrice,
+				maxPrice: filters.maxPrice,
+				location: filters.location,
+				sort: filters.sort,
+				// Kept with the search so the alert and the reopened link match
+				// what the buyer was looking at.
+				...(filters.category && filters.tags ? { tags: filters.tags } : {}),
+				...(filters.verified ? { verified: true } : {}),
+				...(filters.orderable ? { orderable: true } : {}),
+				attributes: attributeFilters,
+			},
+			url: buildSearchUrl(),
+		});
+		if (result.success) {
+			setSaveStatus("saved");
+			setTimeout(() => {
+				setSaveDialogOpen(false);
+				setSaveStatus("idle");
+				setSaveName("");
+			}, 1500);
+		} else {
+			setSaveStatus("error");
+			setSaveError(result.error);
+		}
+	}
+
+	useEffect(() => {
+		if (filters.category) {
+			const cat = categories.find(
+				(c) => String(c.id) === filters.category || c.slug === filters.category,
+			);
+			if (cat) {
+				setSelectedCategory(cat);
+				setAttributes(cat.attributes || []);
+			}
+		} else {
+			setSelectedCategory(null);
+			setAttributes([]);
+		}
+	}, [filters.category, categories]);
+
+	function updateFilter(key: string, value: string) {
+		setFilters((prev) => ({ ...prev, [key]: value }));
+		const newParams = new URLSearchParams();
+		const updated = { ...filters, [key]: value };
+		for (const [k, v] of Object.entries(updated)) {
+			if (v) newParams.set(k, v);
+		}
+		for (const [key, value] of Object.entries(attributeFilters)) {
+			if (value) newParams.set(`attr_${key}`, value);
+		}
+		// A filter refines the same search: replacing keeps Back for leaving it.
+		router.replace(`/search?${newParams.toString()}`, { scroll: false });
+	}
+
+	function updateAttributeFilter(key: string, value: string) {
+		const newAttrs = { ...attributeFilters, [key]: value };
+		setAttributeFilters(newAttrs);
+
+		const newParams = new URLSearchParams();
+		for (const [k, v] of Object.entries(filters)) {
+			if (v) newParams.set(k, v);
+		}
+		for (const [k, v] of Object.entries(newAttrs)) {
+			if (v) newParams.set(`attr_${k}`, v);
+		}
+		router.replace(`/search?${newParams.toString()}`, { scroll: false });
+	}
+
+	function handlePlaceChange(place: Place | null) {
+		const radiusSearch =
+			place !== null &&
+			(place.kind === "district" || place.source === "device") &&
+			placeCoords(place) !== null;
+		setGeoPlace(radiusSearch ? place : null);
+		updateFilter("location", place && !radiusSearch ? place.name : "");
+	}
+
+	function handleRadiusChange(value: string) {
+		setGeoRadius(value);
+	}
+
+	function clearFilters() {
+		setGeoPlace(null);
+		setFilters({
+			q: "",
+			category: "",
+			minPrice: "",
+			maxPrice: "",
+			location: "",
+			sort: "newest",
+			tags: "",
+			verified: "",
+			orderable: "",
+		});
+		setAttributeFilters({});
+		setPriceDraft({ minPrice: "", maxPrice: "" });
+		router.push("/search");
+	}
+
+	function hasActiveFilters() {
+		return (
+			filters.q ||
+			filters.category ||
+			filters.minPrice ||
+			filters.maxPrice ||
+			filters.location ||
+			filters.tags ||
+			filters.verified ||
+			filters.orderable ||
+			nearMe ||
+			Object.values(attributeFilters).some(Boolean)
+		);
+	}
+
+	const selectedTags = filters.tags
+		? filters.tags.split(",").filter(Boolean)
+		: [];
+
+	function toggleTag(slug: string) {
+		const current = new Set(selectedTags);
+		if (current.has(slug)) {
+			current.delete(slug);
+		} else {
+			current.add(slug);
+		}
+		updateFilter("tags", Array.from(current).join(","));
+	}
+
+	const activeFilterCount = [
+		filters.category,
+		filters.minPrice,
+		filters.maxPrice,
+		filters.location,
+		filters.tags,
+		filters.verified,
+		nearMe ? "nearMe" : "",
+		...Object.values(attributeFilters),
+	].filter(Boolean).length;
+
+	// Sidebar filter panel (reused for desktop sidebar + mobile drawer)
+	const filterPanel = (
+		<div className="space-y-5">
+			{/* Category */}
+			<div className="space-y-2">
+				<Label className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
+					{t("category")}
+				</Label>
+				<CategoryDropdown
+					categories={categories}
+					value={filters.category || ""}
+					onChange={(v) => updateFilter("category", v)}
+					placeholder={t("allCategories")}
+					showAll
+				/>
+			</div>
+
+			{/* Price range */}
+			<div className="space-y-2">
+				<Label className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
+					{t("price", { currency: currencyCode })}
+				</Label>
+				<div className="flex gap-2">
+					<NumberInput
+						placeholder={t("minPrice")}
+						className="h-9 rounded-lg text-sm"
+						aria-label={t("minPrice")}
+						value={priceDraft.minPrice}
+						onValueChange={(minPrice) =>
+							setPriceDraft((d) => ({ ...d, minPrice }))
+						}
+						onBlur={() => commitPrice("minPrice")}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") commitPrice("minPrice");
+						}}
+					/>
+					<span className="flex items-center text-ink-faint">—</span>
+					<NumberInput
+						placeholder={t("maxPrice")}
+						className="h-9 rounded-lg text-sm"
+						aria-label={t("maxPrice")}
+						value={priceDraft.maxPrice}
+						onValueChange={(maxPrice) =>
+							setPriceDraft((d) => ({ ...d, maxPrice }))
+						}
+						onBlur={() => commitPrice("maxPrice")}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") commitPrice("maxPrice");
+						}}
+					/>
+				</div>
+			</div>
+
+			{/* Location */}
+			<div className="space-y-2">
+				<Label className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
+					{t("location")}
+				</Label>
+				<LocationField
+					value={geoPlace ?? filters.location}
+					onChange={handlePlaceChange}
+					title={t("location")}
+				/>
+				{nearMe && (
+					<Select value={geoRadius} onValueChange={handleRadiusChange}>
+						<SelectTrigger className="h-9 rounded-lg text-sm">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="5">5 km</SelectItem>
+							<SelectItem value="10">10 km</SelectItem>
+							<SelectItem value="25">25 km</SelectItem>
+							<SelectItem value="50">50 km</SelectItem>
+							<SelectItem value="100">100 km</SelectItem>
+						</SelectContent>
+					</Select>
+				)}
+			</div>
+
+			{/* Verified shops only */}
+			<div className="space-y-2">
+				<label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-canvas">
+					<input
+						type="checkbox"
+						checked={filters.verified === "1"}
+						onChange={(e) =>
+							updateFilter("verified", e.target.checked ? "1" : "")
+						}
+						className="h-4 w-4 rounded border-[#D1D5DB] text-brand focus:ring-brand-bright/20"
+					/>
+					<span className="text-ink-soft">{t("verifiedShopsOnly")}</span>
+				</label>
+				<label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-canvas">
+					<input
+						type="checkbox"
+						checked={filters.orderable === "1"}
+						onChange={(e) =>
+							updateFilter("orderable", e.target.checked ? "1" : "")
+						}
+						className="h-4 w-4 rounded border-[#D1D5DB] text-brand focus:ring-brand-bright/20"
+					/>
+					<span className="text-ink-soft">{t("orderableOnly")}</span>
+				</label>
+			</div>
+
+			{/* Tags */}
+			{availableTags.length > 0 && (
+				<div className="space-y-2">
+					<Label className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
+						{t("tags")}
+					</Label>
+					<div className="flex flex-wrap gap-1.5">
+						{availableTags.map((tag) => {
+							const active = selectedTags.includes(tag.slug);
+							return (
+								<button
+									key={tag.id}
+									type="button"
+									onClick={() => toggleTag(tag.slug)}
+									className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition-colors ${
+										active
+											? "border-brand bg-brand-fill text-white"
+											: "border-line bg-surface text-ink-mid hover:border-brand/50"
+									}`}
+								>
+									{tag.emoji && <span>{tag.emoji}</span>}
+									{tag.name}
+								</button>
+							);
+						})}
+					</div>
+				</div>
+			)}
+
+			{/* Dynamic attributes */}
+			{attributes.length > 0 && (
+				<div className="space-y-3 border-line border-t pt-4">
+					<p className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
+						{selectedCategory?.name}
+					</p>
+					{attributes.map((attr) => (
+						<div key={attr.slug} className="space-y-1.5">
+							<Label className="text-ink-soft text-sm">{attr.name}</Label>
+							{attr.type === "select" && attr.options ? (
+								<Select
+									value={attributeFilters[attr.slug] || "any"}
+									onValueChange={(v) =>
+										updateAttributeFilter(attr.slug, v === "any" ? "" : v)
+									}
+								>
+									<SelectTrigger className="h-9 rounded-lg text-sm">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="any">{t("any")}</SelectItem>
+										{attr.options.map((opt) => (
+											<SelectItem key={opt.value} value={opt.value}>
+												{opt.label || opt.value}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							) : attr.type === "boolean" ? (
+								<Select
+									value={attributeFilters[attr.slug] || "any"}
+									onValueChange={(v) =>
+										updateAttributeFilter(attr.slug, v === "any" ? "" : v)
+									}
+								>
+									<SelectTrigger className="h-9 rounded-lg text-sm">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="any">{t("any")}</SelectItem>
+										<SelectItem value="true">{t("yes")}</SelectItem>
+										<SelectItem value="false">{t("no")}</SelectItem>
+									</SelectContent>
+								</Select>
+							) : (
+								<Input
+									type={attr.type === "number" ? "number" : "text"}
+									placeholder={attr.name}
+									className="h-9 rounded-lg text-sm"
+									value={attributeFilters[attr.slug] || ""}
+									onChange={(e) =>
+										updateAttributeFilter(attr.slug, e.target.value)
+									}
+								/>
+							)}
+						</div>
+					))}
+				</div>
+			)}
+
+			{/* Clear */}
+			{hasActiveFilters() && (
+				<button
+					type="button"
+					onClick={clearFilters}
+					className="w-full text-center font-medium text-red-600 text-sm hover:underline"
+				>
+					{t("clearAllFilters")}
+				</button>
+			)}
+		</div>
+	);
+
+	return (
+		<div className="container mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+			{/* Top bar: search + sort + mobile filter toggle */}
+			<div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+				<div className="relative flex-1">
+					<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-ink-faint" />
+					<input
+						type="search"
+						placeholder={t("search")}
+						className="h-10 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-ink text-sm placeholder:text-ink-faint focus:border-brand-line focus:outline-none focus:ring-2 focus:ring-brand-bright/20"
+						value={searchInput}
+						onChange={(e) => handleSearchInputChange(e.target.value)}
+					/>
+				</div>
+				<div className="flex items-center gap-2">
+					<Select
+						value={filters.sort}
+						onValueChange={(v) => updateFilter("sort", v)}
+					>
+						<SelectTrigger className="h-10 w-[160px] rounded-lg text-sm">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{filters.q && (
+								<SelectItem value="relevance">{t("relevance")}</SelectItem>
+							)}
+							<SelectItem value="newest">{t("newest")}</SelectItem>
+							<SelectItem value="oldest">{t("oldest")}</SelectItem>
+							<SelectItem value="price_asc">{t("priceAsc")}</SelectItem>
+							<SelectItem value="price_desc">{t("priceDesc")}</SelectItem>
+						</SelectContent>
+					</Select>
+					<button
+						type="button"
+						className="flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-ink-mid text-sm hover:bg-canvas lg:hidden"
+						onClick={() => setShowMobileFilters(true)}
+					>
+						<SlidersHorizontal className="h-4 w-4" />
+						{t("filters")}
+						{activeFilterCount > 0 && (
+							<span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-fill font-bold text-[10px] text-white">
+								{activeFilterCount}
+							</span>
+						)}
+					</button>
+				</div>
+			</div>
+
+			{/* Layout: sidebar + results */}
+			<div className="flex gap-6">
+				{/* Desktop sidebar (Leboncoin style) */}
+				<aside className="hidden w-56 shrink-0 lg:block">
+					<div className="sticky top-20 rounded-xl border border-line bg-surface p-4">
+						<h3 className="mb-4 font-bold text-ink text-sm">{t("filters")}</h3>
+						{filterPanel}
+					</div>
+				</aside>
+
+				{/* Results */}
+				<div className="min-w-0 flex-1">
+					<div className="mb-4 flex items-center justify-between">
+						<p className="text-ink-muted text-sm">
+							{isFetching && !isFetchingNextPage ? (
+								t("loading")
+							) : (
+								<>
+									{t.rich("resultCount", {
+										count: total,
+										b: (chunk) => (
+											<span className="font-semibold text-ink">{chunk}</span>
+										),
+									})}
+								</>
+							)}
+						</p>
+
+						<Dialog
+							open={saveDialogOpen}
+							onOpenChange={(open) => {
+								setSaveDialogOpen(open);
+								if (open) {
+									setSaveName(filters.q || t("savedSearchDefault"));
+									setSaveStatus("idle");
+									setSaveError("");
+								}
+							}}
+						>
+							<DialogTrigger asChild>
+								<button
+									type="button"
+									className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 font-medium text-ink-mid text-sm transition-colors hover:bg-canvas hover:text-brand"
+								>
+									<Bookmark className="h-4 w-4" />
+									{t("saveSearch")}
+								</button>
+							</DialogTrigger>
+							<DialogContent className="sm:max-w-md">
+								<DialogHeader>
+									<DialogTitle>{t("saveThisSearch")}</DialogTitle>
+									<DialogDescription>{t("saveSearchDesc")}</DialogDescription>
+								</DialogHeader>
+								<div className="space-y-3 py-2">
+									<div className="space-y-1.5">
+										<Label htmlFor="search-name" className="text-sm">
+											{t("searchName")}
+										</Label>
+										<Input
+											id="search-name"
+											value={saveName}
+											onChange={(e) => setSaveName(e.target.value)}
+											placeholder={t("searchNamePlaceholder")}
+											className="h-9 rounded-lg"
+										/>
+									</div>
+									{saveError && (
+										<p className="text-red-600 text-sm">{saveError}</p>
+									)}
+								</div>
+								<DialogFooter>
+									<Button
+										onClick={handleSaveSearch}
+										disabled={saveStatus === "saving" || saveStatus === "saved"}
+										className="rounded-lg bg-brand-fill hover:bg-brand-strong"
+									>
+										{saveStatus === "saving" ? (
+											t("saving")
+										) : saveStatus === "saved" ? (
+											<>
+												<Check className="mr-1.5 h-4 w-4" />
+												{t("saved")}
+											</>
+										) : (
+											t("saveSearch")
+										)}
+									</Button>
+								</DialogFooter>
+							</DialogContent>
+						</Dialog>
+					</div>
+
+					{showShopsRow && (
+						<ShopsSellingRow
+							q={debouncedSearchParams.q ?? ""}
+							category={selectedCategory ? String(selectedCategory.id) : ""}
+							categoryName={selectedCategory?.name ?? null}
+							city={debouncedSearchParams.location ?? ""}
+						/>
+					)}
+
+					{isLoading ? (
+						<div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+							{[...Array(8)].map((_, i) => (
+								<div
+									key={i}
+									className="animate-pulse rounded-xl border border-line bg-canvas"
+									style={{ aspectRatio: "3/4" }}
+								/>
+							))}
+						</div>
+					) : isSearchError ? (
+						<LoadError
+							title={t("listingSearchError")}
+							onRetry={() => refetchListings()}
+						/>
+					) : listings.length > 0 ? (
+						<>
+							<ListingGrid
+								listings={listings}
+								favorites={favoriteIds}
+								className="md:grid-cols-3 xl:grid-cols-4"
+							/>
+							{hasNextPage && (
+								<div className="mt-6 text-center">
+									<button
+										type="button"
+										onClick={() => fetchNextPage()}
+										disabled={isFetchingNextPage}
+										className="rounded-xl border border-line bg-surface px-8 py-2.5 font-medium text-brand text-sm transition-colors hover:bg-canvas disabled:opacity-60"
+									>
+										{isFetchingNextPage
+											? t("loading")
+											: `${t("loadMore")} (${listings.length} ${t("of")} ${total})`}
+									</button>
+								</div>
+							)}
+						</>
+					) : (
+						<div className="text-center">
+							<EmptyState
+								illustration="searching"
+								title={t("noResults")}
+								subtitle={t("tryDifferentKeywords")}
+							/>
+							{/* Nothing today may be something tomorrow: offer the alert,
+							    and the wider net when a city is narrowing it. */}
+							<div className="mt-4 flex flex-wrap justify-center gap-2">
+								<button
+									type="button"
+									onClick={() => {
+										setSaveName(filters.q || t("savedSearchDefault"));
+										setSaveStatus("idle");
+										setSaveError("");
+										setSaveDialogOpen(true);
+									}}
+									className="inline-flex items-center gap-1.5 rounded-lg bg-brand-fill px-4 py-2 font-semibold text-sm text-white hover:bg-brand-strong"
+								>
+									<Bookmark aria-hidden className="h-4 w-4" />
+									{t("notifyMe")}
+								</button>
+								{filters.location && (
+									<button
+										type="button"
+										onClick={() => updateFilter("location", "")}
+										className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-4 py-2 font-medium text-ink text-sm hover:bg-canvas"
+									>
+										{t("allCities")}
+									</button>
+								)}
+							</div>
+							{hasActiveFilters() && (
+								<button
+									type="button"
+									onClick={clearFilters}
+									className="mt-3 font-medium text-brand text-sm hover:underline"
+								>
+									{t("clearAllFilters")}
+								</button>
+							)}
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* Mobile filter drawer */}
+			{showMobileFilters && (
+				<div className="fixed inset-0 z-50 lg:hidden">
+					<button
+						type="button"
+						className="absolute inset-0 bg-black/40"
+						onClick={() => setShowMobileFilters(false)}
+						aria-label={t("closeFilters")}
+					/>
+					<div className="absolute right-0 bottom-0 left-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-surface p-5 shadow-xl">
+						<div className="mb-4 flex items-center justify-between">
+							<h3 className="font-bold text-ink text-lg">{t("filters")}</h3>
+							<button
+								type="button"
+								onClick={() => setShowMobileFilters(false)}
+								className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-subtle"
+							>
+								<X className="h-5 w-5 text-ink-mid" />
+							</button>
+						</div>
+						{filterPanel}
+						<Button
+							className="mt-5 w-full rounded-lg"
+							onClick={() => setShowMobileFilters(false)}
+						>
+							{t("showResults", { count: total })}
+						</Button>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}

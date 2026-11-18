@@ -1,142 +1,59 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
-	ActivityIndicator,
+	AccessibilityInfo,
 	Pressable,
 	StyleSheet,
 	Text,
-	TextInput,
-	type TextInputProps,
+	type TextInput,
 	View,
 } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import {
+	AuthField,
+	AuthScreen,
+	AuthSubmit,
+	AuthSwitchLink,
+	authErrorMessage,
+} from "@/src/components/auth/AuthLayout";
 import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
+import { FormError } from "@/src/components/checkout/FormError";
+import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
-import { useAuth } from "@/src/lib/auth";
+import { type SocialAuthProvider, useAuth } from "@/src/lib/auth";
 import {
 	getAuthModalParams,
 	getSafeAuthRedirect,
 } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 
-function AppLogo({ isDark }: { isDark: boolean }) {
-	const baseColor = isDark ? "#e2e8f0" : "#0f172a";
-	return (
-		<View style={styles.logoBlock}>
-			<Image
-				source={require("@/assets/icon2.png")}
-				style={styles.logoImg}
-				contentFit="contain"
-			/>
-			<Text style={[styles.logoText, { color: baseColor }]}>
-				Buy
-				<Text style={{ color: "#f59e0b" }}>'</Text>
-				<Text style={{ color: "#f59e0b" }}>N</Text>
-				<Text style={{ color: "#f59e0b" }}>'</Text>Sellem
-			</Text>
-		</View>
-	);
-}
-
-interface RegisterFieldProps {
-	label: string;
-	value: string;
-	onChange: (v: string) => void;
-	placeholder: string;
-	keyboard?: TextInputProps["keyboardType"];
-	secure?: boolean;
-	showToggle?: boolean;
-	toggleShow?: () => void;
-	autoComplete?: TextInputProps["autoComplete"];
-	icon?: keyof typeof Ionicons.glyphMap;
-	mutedColor: string;
-	borderColor: string;
-	textColor: string;
-}
-
-function RegisterField({
-	label,
-	value,
-	onChange,
-	placeholder,
-	keyboard,
-	secure,
-	showToggle,
-	toggleShow,
-	autoComplete,
-	icon,
-	mutedColor,
-	borderColor,
-	textColor,
-}: RegisterFieldProps) {
-	return (
-		<View style={{ gap: 6 }}>
-			<Text style={[styles.fieldLabel, { color: mutedColor }]}>{label}</Text>
-			<View style={[styles.inputWrapper, { borderColor }]}>
-				{icon && (
-					<Ionicons
-						name={icon}
-						size={18}
-						color={mutedColor}
-						style={styles.inputIcon}
-					/>
-				)}
-				<TextInput
-					value={value}
-					onChangeText={onChange}
-					placeholder={placeholder}
-					placeholderTextColor={mutedColor}
-					style={[styles.input, { color: textColor }]}
-					keyboardType={keyboard ?? "default"}
-					secureTextEntry={secure}
-					autoCapitalize={keyboard === "email-address" ? "none" : "words"}
-					autoComplete={autoComplete}
-				/>
-				{showToggle && (
-					<Pressable onPress={toggleShow} hitSlop={8}>
-						<Ionicons
-							name={!secure ? "eye-off-outline" : "eye-outline"}
-							size={18}
-							color={mutedColor}
-						/>
-					</Pressable>
-				)}
-			</View>
-		</View>
-	);
-}
-
-function getErrorMessage(error: unknown, fallback: string): string {
-	return error instanceof Error ? error.message : fallback;
-}
-
 export default function RegisterScreen() {
-	const isDark = useColorScheme() === "dark";
+	const c = useShopTheme();
 	const { loginWithProvider, register } = useAuth();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
-	const params = useLocalSearchParams<{ redirect?: string }>();
-	const [name, setName] = useState("");
-	const [email, setEmail] = useState("");
+	// Back from "wrong address?" on the check-email screen, the form comes
+	// back filled.
+	const params = useLocalSearchParams<{
+		redirect?: string;
+		name?: string;
+		email?: string;
+	}>();
+	const [name, setName] = useState(params.name ?? "");
+	const [email, setEmail] = useState(params.email ?? "");
 	const [password, setPassword] = useState("");
-	const [confirm, setConfirm] = useState("");
-	const [showPwd, setShowPwd] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [socialLoading, setSocialLoading] = useState<SocialAuthProvider | null>(
+		null,
+	);
+	// What the form refuses is said on the form: the field's border and a
+	// line under it. The sheet is kept for what the server answers.
+	const [missing, setMissing] = useState(false);
+	// One password field: the reveal toggle replaces typing it twice.
+	const [passwordError, setPasswordError] = useState<string | null>(null);
+	const emailRef = useRef<TextInput>(null);
+	const passwordRef = useRef<TextInput>(null);
 
-	const bg = isDark ? "#0b1120" : "#f8fafc";
-	const cardBg = isDark ? "#1e293b" : "#ffffff";
-	const textColor = isDark ? "#e2e8f0" : "#0f172a";
-	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
-	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-
-	const fieldColors = { mutedColor, borderColor, textColor };
 	const redirectTo = getSafeAuthRedirect(params.redirect);
 
 	const finishAuth = () => {
@@ -149,242 +66,166 @@ export default function RegisterScreen() {
 	};
 
 	const handleRegister = async () => {
-		if (!name || !email || !password || !confirm) {
-			showError(t("auth.missingFieldsTitle"), t("auth.missingFieldsMessage"));
-			return;
-		}
-		if (password.length < 8) {
-			showError(
-				t("auth.passwordTooShortTitle"),
-				t("auth.passwordTooShortMessage"),
-			);
-			return;
-		}
-		if (password !== confirm) {
-			showError(
-				t("auth.passwordMismatchTitle"),
-				t("auth.passwordMismatchMessage"),
+		const empty = !name.trim() || !email.trim() || !password;
+		const tooShort = password.length > 0 && password.length < 8;
+		setMissing(empty);
+		setPasswordError(tooShort ? t("auth.passwordTooShortMessage") : null);
+		if (empty || tooShort) {
+			AccessibilityInfo.announceForAccessibility(
+				empty
+					? t("auth.missingFieldsMessage")
+					: t("auth.passwordTooShortMessage"),
 			);
 			return;
 		}
 		setLoading(true);
 		try {
-			await register(name.trim(), email.trim().toLowerCase(), password);
-			finishAuth();
+			const address = email.trim().toLowerCase();
+			await register(name.trim(), address, password);
+			// Signing in waits on the link just sent: say where to look.
+			router.replace({
+				pathname: "/auth/check-email",
+				params: { email: address, name: name.trim(), sent: "1" },
+			});
 		} catch (err: unknown) {
 			showError(
 				t("auth.registerFailedTitle"),
-				getErrorMessage(err, t("auth.registerFailedMessage")),
+				authErrorMessage(err, t("auth.registerFailedMessage")),
 			);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const handleSocialLogin = async (
-		provider: "apple" | "facebook" | "google",
-	) => {
-		setLoading(true);
+	const handleSocialLogin = async (provider: SocialAuthProvider) => {
+		setSocialLoading(provider);
 		try {
 			await loginWithProvider(provider, redirectTo);
 			finishAuth();
 		} catch (err: unknown) {
 			showError(
 				t("auth.registerFailedTitle"),
-				getErrorMessage(err, t("auth.socialLoginFailedMessage")),
+				authErrorMessage(err, t("auth.socialLoginFailedMessage")),
 			);
 		} finally {
-			setLoading(false);
+			setSocialLoading(null);
 		}
 	};
 
 	return (
-		<SafeAreaView
-			edges={["top"]}
-			style={[styles.safe, { backgroundColor: bg }]}
+		<AuthScreen
+			title={t("auth.registerTitle")}
+			subtitle={t("auth.registerSubtitleShort")}
+			onClose={() => router.dismiss()}
+			footer={
+				<AuthSwitchLink
+					prompt={t("auth.alreadyHaveAccount")}
+					action={t("auth.signIn")}
+					onPress={() =>
+						router.replace({
+							pathname: "/auth/login",
+							params: getAuthModalParams(params.redirect),
+						})
+					}
+				/>
+			}
 		>
-			<KeyboardAwareScrollView
-				style={{ flex: 1 }}
-				contentContainerStyle={{ flexGrow: 1 }}
-				keyboardShouldPersistTaps="handled"
-				bottomOffset={20}
-			>
-				<Pressable onPress={() => router.dismiss()} style={styles.closeBtn}>
-					<Ionicons name="arrow-back" size={24} color={textColor} />
-				</Pressable>
-
-				<View style={styles.container}>
-					{/* Logo */}
-					<View style={styles.logoWrap}>
-						<AppLogo isDark={isDark} />
-					</View>
-					<Text style={[styles.title, { color: textColor }]}>
-						{t("auth.registerTitle")}
-					</Text>
-					<Text style={[styles.subtitle, { color: mutedColor }]}>
-						{t("auth.registerSubtitleShort")}
-					</Text>
-
-					<View style={[styles.form, { backgroundColor: cardBg, borderColor }]}>
-						<SocialAuthButtons
-							borderColor={borderColor}
-							mutedColor={mutedColor}
-							onPress={handleSocialLogin}
-							primaryColor={primaryColor}
-						/>
-						<RegisterField
-							label={t("auth.name")}
-							value={name}
-							onChange={setName}
-							placeholder={t("auth.fullNamePlaceholder")}
-							autoComplete="name"
-							icon="person-outline"
-							{...fieldColors}
-						/>
-						<RegisterField
-							label={t("auth.email")}
-							value={email}
-							onChange={setEmail}
-							placeholder={t("auth.emailPlaceholder")}
-							keyboard="email-address"
-							autoComplete="email"
-							icon="mail-outline"
-							{...fieldColors}
-						/>
-						<RegisterField
-							label={t("auth.password")}
-							value={password}
-							onChange={setPassword}
-							placeholder={t("auth.passwordMinHint")}
-							secure={!showPwd}
-							showToggle
-							toggleShow={() => setShowPwd(!showPwd)}
-							autoComplete="new-password"
-							icon="lock-closed-outline"
-							{...fieldColors}
-						/>
-						<RegisterField
-							label={t("auth.confirmPassword")}
-							value={confirm}
-							onChange={setConfirm}
-							placeholder={t("auth.confirmPasswordPlaceholder")}
-							secure={!showPwd}
-							autoComplete="new-password"
-							icon="lock-closed-outline"
-							{...fieldColors}
-						/>
-
-						<AnimatedPressable
-							onPress={handleRegister}
-							disabled={loading}
-							scaleTo={0.97}
-							style={[
-								styles.submitBtn,
-								{ backgroundColor: primaryColor, opacity: loading ? 0.7 : 1 },
-							]}
-						>
-							{loading ? (
-								<ActivityIndicator color="#fff" />
-							) : (
-								<Text style={styles.submitText}>
-									{t("auth.createMyAccount")}
-								</Text>
-							)}
-						</AnimatedPressable>
-
-						<Text style={[styles.termsText, { color: mutedColor }]}>
-							{t("auth.termsPrefix")}{" "}
-							<Text
-								style={{ color: primaryColor }}
-								onPress={() => router.push("/terms")}
-							>
-								{t("auth.termsLink")}
-							</Text>{" "}
-							{t("auth.privacyPrefix")}{" "}
-							<Text
-								style={{ color: primaryColor }}
-								onPress={() => router.push("/privacy")}
-							>
-								{t("auth.privacyLink")}
-							</Text>
-							.
+			{/* One tap with Google beats four fields: the providers lead. */}
+			<SocialAuthButtons
+				onPress={handleSocialLogin}
+				disabled={loading || socialLoading !== null}
+				busy={socialLoading}
+				placement="above"
+			/>
+			<AuthField
+				label={t("auth.name")}
+				icon="person-outline"
+				value={name}
+				onChangeText={setName}
+				placeholder={t("auth.fullNamePlaceholder")}
+				autoCapitalize="words"
+				autoComplete="name"
+				returnKeyType="next"
+				submitBehavior="submit"
+				onSubmitEditing={() => emailRef.current?.focus()}
+				error={missing && !name.trim()}
+			/>
+			<AuthField
+				label={t("auth.email")}
+				icon="mail-outline"
+				inputRef={emailRef}
+				value={email}
+				onChangeText={setEmail}
+				placeholder={t("auth.emailPlaceholder")}
+				keyboardType="email-address"
+				autoCapitalize="none"
+				autoComplete="email"
+				returnKeyType="next"
+				submitBehavior="submit"
+				onSubmitEditing={() => passwordRef.current?.focus()}
+				error={missing && !email.trim()}
+			/>
+			<AuthField
+				label={t("auth.password")}
+				icon="lock-closed-outline"
+				inputRef={passwordRef}
+				value={password}
+				onChangeText={(text) => {
+					setPassword(text);
+					if (passwordError && text.length >= 8) setPasswordError(null);
+				}}
+				placeholder={t("auth.passwordMinHint")}
+				password
+				autoCapitalize="none"
+				autoComplete="new-password"
+				returnKeyType="go"
+				onSubmitEditing={handleRegister}
+				error={passwordError ?? (missing && !password)}
+			/>
+			<FormError message={missing ? t("auth.missingFieldsMessage") : null} />
+			<AuthSubmit
+				label={t("auth.createMyAccount")}
+				onPress={handleRegister}
+				loading={loading}
+				disabled={socialLoading !== null}
+			/>
+			{/* The sentence, then each document as its own 44pt target: inline
+			    13pt words were too small for a thumb. */}
+			<View style={styles.terms}>
+				<Text style={[styles.termsText, { color: c.muted }]}>
+					{t("auth.termsAgreement")}
+				</Text>
+				<View style={styles.termsLinks}>
+					<Pressable
+						onPress={() => router.push("/terms")}
+						accessibilityRole="link"
+						hitSlop={10}
+						style={styles.termsLinkHit}
+					>
+						<Text style={[styles.termsLink, { color: c.link }]}>
+							{t("auth.termsLink")}
 						</Text>
-					</View>
-
-					<View style={styles.loginRow}>
-						<Text style={[styles.loginText, { color: mutedColor }]}>
-							{t("auth.alreadyHaveAccount")}{" "}
+					</Pressable>
+					<Pressable
+						onPress={() => router.push("/privacy")}
+						accessibilityRole="link"
+						hitSlop={10}
+						style={styles.termsLinkHit}
+					>
+						<Text style={[styles.termsLink, { color: c.link }]}>
+							{t("auth.privacyLink")}
 						</Text>
-						<Pressable
-							onPress={() =>
-								router.replace({
-									pathname: "/auth/login",
-									params: getAuthModalParams(params.redirect),
-								})
-							}
-						>
-							<Text style={[styles.loginLink, { color: primaryColor }]}>
-								{t("auth.signIn")}
-							</Text>
-						</Pressable>
-					</View>
+					</Pressable>
 				</View>
-			</KeyboardAwareScrollView>
-		</SafeAreaView>
+			</View>
+		</AuthScreen>
 	);
 }
 
 const styles = StyleSheet.create({
-	safe: { flex: 1 },
-	closeBtn: { padding: 16, alignSelf: "flex-start" },
-	container: { flex: 1, padding: 24, paddingTop: 8 },
-	logoWrap: { alignItems: "center", marginBottom: 16 },
-	logoBlock: { alignItems: "center", gap: 10 },
-	logoImg: { width: 72, height: 72, borderRadius: 18 },
-	logoText: {
-		fontSize: 28,
-		fontFamily: Fonts.displayExtrabold,
-		letterSpacing: -0.5,
-	},
-	title: {
-		fontSize: 24,
-		fontFamily: Fonts.displayExtrabold,
-		textAlign: "center",
-		marginBottom: 8,
-	},
-	subtitle: {
-		fontSize: 14,
-		fontFamily: Fonts.body,
-		textAlign: "center",
-		marginBottom: 24,
-		lineHeight: 20,
-	},
-	form: { borderRadius: 16, borderWidth: 1, padding: 20, gap: 14 },
-	fieldLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	inputWrapper: {
-		flexDirection: "row",
-		alignItems: "center",
-		borderRadius: 10,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 12,
-	},
-	inputIcon: { marginRight: 10 },
-	input: { flex: 1, fontSize: 15, fontFamily: Fonts.body },
-	submitBtn: {
-		borderRadius: 12,
-		paddingVertical: 15,
-		alignItems: "center",
-		marginTop: 4,
-	},
-	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
-	termsText: { fontSize: 12, textAlign: "center", lineHeight: 18 },
-	loginRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		marginTop: 20,
-	},
-	loginText: { fontSize: 14, fontFamily: Fonts.body },
-	loginLink: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	terms: { gap: 4 },
+	termsText: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 22 },
+	termsLinks: { flexDirection: "row", flexWrap: "wrap", columnGap: 20 },
+	termsLinkHit: { minHeight: 44, justifyContent: "center" },
+	termsLink: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
 });

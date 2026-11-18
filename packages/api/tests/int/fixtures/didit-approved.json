@@ -1,0 +1,29 @@
+{
+	"session_id": "ddt-session-approved-1",
+	"status": "Approved",
+	"vendor_data": "VR-vr-1-1",
+	"id_verification": {
+		"document_type": "Identity Card",
+		"issuing_state": "CMR",
+		"document_number": "123456789",
+		"date_of_birth": "1990-05-14",
+		"expiration_date": "2030-01-01",
+		"first_name": "Amina",
+		"last_name": "Nkeng",
+		"nationality": "CMR",
+		"address": "12 Rue de la Paix, Douala",
+		"portrait_image": "base64-portrait-should-never-reach-our-database",
+		"document_front_image": "base64-front-should-never-reach-our-database",
+		"document_back_image": "base64-back-should-never-reach-our-database"
+	},
+	"liveness": {
+		"status": "Approved",
+		"reference_image": "base64-liveness-frame-should-never-reach-our-database"
+	},
+	"face_match": {
+		"score": 0.97
+	},
+	"warnings": [],
+	"email": "amina.nkeng@example.com",
+	"phone_number": "+237600000000"
+}

@@ -1,3 +1,4 @@
+import { locationKeys } from "../locationKeys.ts";
 import {
 	deleteDocument,
 	indexDocument,
@@ -92,12 +93,24 @@ export function transformListing(
 				.filter((s): s is string => !!s)
 		: [];
 
+	const shopValue = listing.shop as
+		| Record<string, unknown>
+		| string
+		| null
+		| undefined;
+	const shop = shopValue && typeof shopValue === "object" ? shopValue : null;
+	const summary = (listing.productSummary ?? null) as {
+		priceMax?: number | null;
+		available?: boolean | null;
+	} | null;
+
 	const doc: ListingDocument = {
 		id: listing.id as string,
 		title: listing.title as string,
 		description: listing.description as string,
 		price: listing.price as number,
 		location: listing.location as string,
+		locationKeys: locationKeys(listing.location),
 		category: category ? (category.name as string) : null,
 		categoryId: category
 			? (category.id as string)
@@ -107,13 +120,32 @@ export function transformListing(
 				? (seller.id as string)
 				: (seller as string),
 		status: listing.status as string,
-		condition: (listing.condition as string) || null,
 		tags,
 		boostedUntil: (listing.boostedUntil as string) || null,
 		views: (listing.views as number) || 0,
 		images,
 		createdAt: listing.createdAt as string,
 		updatedAt: listing.updatedAt as string,
+		shopId: shop
+			? String(shop.id)
+			: typeof shopValue === "string"
+				? shopValue
+				: null,
+		shopHandle: shop && typeof shop.handle === "string" ? shop.handle : null,
+		shopName: shop && typeof shop.name === "string" ? shop.name : null,
+		shopLevel: shop && typeof shop.level === "number" ? shop.level : null,
+		priceMax: typeof summary?.priceMax === "number" ? summary.priceMax : null,
+		available:
+			typeof summary?.available === "boolean" ? summary.available : null,
+		// Copied through, never recomputed: the API is the one place
+		// `isListingOrderable` runs (lib/orderable.ts). A listing fetched before
+		// that virtual existed carries no `orderable` key at all, and defaults
+		// to `false` rather than `undefined` reaching Meilisearch.
+		orderable: listing.orderable === true,
+		// Set by the API from the category (contracts/listingKinds.ts); cards
+		// print the price unit and the search can filter by kind.
+		kind: typeof listing.kind === "string" ? listing.kind : null,
+		priceUnit: typeof listing.priceUnit === "string" ? listing.priceUnit : null,
 	};
 
 	const coordinates = listing.coordinates as

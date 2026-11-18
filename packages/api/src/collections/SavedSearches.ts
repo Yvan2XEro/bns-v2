@@ -44,23 +44,28 @@ export const SavedSearches: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "user",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			index: true,
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "name",
-			type: "text",
-			required: true,
-		},
-		{
-			name: "query",
-			type: "text",
+			type: "row",
+			fields: [
+				{
+					name: "user",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "name",
+					type: "text",
+					required: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "query",
+					type: "text",
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
 			name: "filters",
@@ -72,17 +77,21 @@ export const SavedSearches: CollectionConfig = {
 			required: true,
 		},
 		{
-			name: "alertEnabled",
-			type: "checkbox",
-			defaultValue: true,
-			label: "Notify me of new listings",
-		},
-		{
-			name: "lastCheckedAt",
-			type: "date",
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "alertEnabled",
+					type: "checkbox",
+					defaultValue: true,
+					label: "Notify me of new listings",
+					admin: { width: "50%" },
+				},
+				{
+					name: "lastCheckedAt",
+					type: "date",
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 	],
 	timestamps: true,

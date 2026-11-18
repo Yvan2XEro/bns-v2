@@ -1,0 +1,510 @@
+/**
+ * The order, cart, checkout, billing and order-settings shapes the web client
+ * reads off the API, transcribed from the P4 plan's "API contracts" section.
+ *
+ * Nothing here is derived or inferred: every field name, union member and
+ * nullability below is the contract's own. The server stays the sole
+ * authority on every transition and every amount — these are read models, and
+ * no screen may compute a value the API already states (a cap, a commission,
+ * a status label).
+ *
+ * `packages/api/src/services/orders/serialize.ts` is what actually answers
+ * `GET /api/orders/{id}` today, and it does not yet produce this shape; see
+ * Task 29's report for the field-by-field divergence. The contract is kept
+ * here rather than the serialiser's current output because Tasks 30-35 are
+ * written against the contract and Task 28 (the backend checkpoint) is the
+ * step that reconciles the seam.
+ */
+
+import type { ShopOrderTab } from "~/lib/order-status";
+import type {
+	PaymentChannel,
+	PaymentFailureCode,
+	PaymentIntentStatus,
+} from "~/lib/payment-status";
+
+export type OrderStatus =
+	| "placed"
+	| "confirmed"
+	| "paid"
+	| "accepted"
+	| "shipped"
+	| "delivered"
+	| "completed"
+	| "cancelled"
+	| "delivery_failed"
+	| "returned"
+	| "disputed";
+
+export type PaymentStatus =
+	| "unpaid"
+	| "awaiting_payment"
+	| "paid"
+	| "cod_pending"
+	| "cod_collected"
+	| "cod_refused"
+	| "refunded"
+	| "partially_refunded"
+	| "failed";
+
+export type FulfillmentStatus =
+	| "unfulfilled"
+	| "shipped"
+	| "delivered"
+	| "failed"
+	| "cancelled"
+	| "return_requested"
+	| "returned";
+
+export type {
+	DeliveryMethod,
+	DeliveryOption,
+	PickupPointSnapshot,
+} from "../../../api/src/contracts/deliveryQuote";
+
+import type {
+	DeliveryMethod,
+	DeliveryOption,
+	PickupPointSnapshot,
+} from "../../../api/src/contracts/deliveryQuote";
+export type PaymentMethod = "cod" | "mobile_money";
+export type BuyerTier = "new" | "regular" | "trusted" | "watch" | "blocked";
+export type ConfirmationRequired = "none" | "sms_code" | "seller_call";
+export type OrderAudienceKind = "buyer" | "shop" | "staff";
+
+export interface CartLineView {
+	/** The array row id, which is what the line routes address. */
+	id: string;
+	listingId: string;
+	productId: string;
+	variantId: string;
+	shopId: string;
+	title: string;
+	variantLabel: string;
+	imageUrl: string | null;
+	quantity: number;
+	/** The price now, which is what the buyer will be charged. */
+	unitPrice: number;
+	priceAtAdd: number;
+	priceChanged: boolean;
+	lineSubtotal: number;
+	available: boolean;
+	/** Null when the variant is untracked. */
+	maxQuantity: number | null;
+	/** Units still on sale; null when untracked, absent from an older API. */
+	stockLeft?: number | null;
+}
+
+export interface CartView {
+	/** Null when the buyer has no active cart. */
+	id: string | null;
+	shop: {
+		id: string;
+		name: string;
+		handle: string;
+		city: string | null;
+		logoUrl?: string | null;
+		brandColor?: string | null;
+		badge?: "phone" | "identity" | "business" | null;
+		rating?: number;
+		totalReviews?: number;
+		/** The shop's first public pickup point, for the checkout seller card. */
+		address?: string | null;
+		sinceYear?: number | null;
+	} | null;
+	lines: CartLineView[];
+	subtotal: number;
+	shopOrderable: boolean;
+	currency: string;
+}
+
+export interface AddressInput {
+	recipientName: string;
+	/** E.164, validated against the market's served phone pattern. */
+	phone: string;
+	/** A launch city key. */
+	city: string;
+	/** `"douala.akwa"`, `"douala.other"`, … */
+	district: string;
+	districtOther?: string;
+	/** Required for `seller_delivery`. */
+	landmark?: string;
+	gps?: {
+		lat: number;
+		lng: number;
+		accuracyMeters?: number;
+		capturedAt?: string;
+	};
+	instructions?: string;
+}
+
+export interface OrderAmounts {
+	subtotal: number;
+	deliveryFee: number;
+	discount: 0;
+	buyerProtectionFee: 0;
+	total: number;
+	currency: string;
+}
+
+export interface ContractSnapshot {
+	termsVersion: string;
+	locale: "fr" | "en";
+	seller: {
+		name: string;
+		handle: string;
+		city: string | null;
+		phone: string | null;
+		rccm: string | null;
+		niu: string | null;
+	};
+	platform: {
+		legalName: string;
+		role: "hosting_platform";
+		supportEmail: string | null;
+		supportPhone: string | null;
+	};
+	items: Array<{
+		title: string;
+		variantLabel: string;
+		condition: string | null;
+		imageUrl: string | null;
+		attributes: Array<{ label: string; value: string }>;
+		unitPrice: number;
+		quantity: number;
+		lineSubtotal: number;
+	}>;
+	amounts: OrderAmounts;
+	terms: { fr: string[]; en: string[] };
+	withdrawal: {
+		days: number;
+		howTo: { fr: string; en: string };
+		costs: { fr: string; en: string };
+	};
+	/** The template plus the shop's `salesTermsExtra`. */
+	salesTerms: { fr: string; en: string };
+	complaints: { fr: string; en: string };
+}
+
+export interface QuoteResponse {
+	summary: {
+		lines: Array<{
+			title: string;
+			variantLabel: string;
+			unitPrice: number;
+			quantity: number;
+			lineSubtotal: number;
+			imageUrl: string | null;
+		}>;
+		amounts: OrderAmounts;
+		paymentMethod: PaymentMethod;
+		delivery: {
+			method: DeliveryMethod;
+			optionId: string;
+			etaText: string;
+			address: AddressInput;
+			pickupPoint?: PickupPointSnapshot;
+		};
+	};
+	preContract: ContractSnapshot;
+	confirmationRequired: ConfirmationRequired;
+	quoteHash: string;
+	seller?: { address: string | null; sinceYear: number | null };
+}
+
+// The split views are the server's own contracts now (the shipped slice), so
+// the mirror this file used to carry cannot drift.
+export type {
+	CartShopView as SplitShopView,
+	SplitCartGroup,
+	SplitCartView,
+	SplitPlaceResponse,
+	SplitQuoteGroup,
+	SplitQuoteView,
+} from "../../../api/src/contracts/checkoutGroup";
+
+export interface PlaceResponse {
+	orderId: string;
+	orderNumber: string;
+	status: OrderStatus;
+	confirmationRequired: ConfirmationRequired;
+}
+
+/**
+ * `POST /api/orders/{id}/payment-intents` (the P5 plan's contracts section,
+ * `services/checkoutPayment.ts#PaymentIntentResponse`). `status` is never
+ * `succeeded` here — a webhook can settle the intent before this answer is
+ * built, which is exactly what `/pending`'s poll is for.
+ */
+export interface PaymentIntentResponse {
+	intentId: string;
+	status: "created" | "pending";
+	expiresAt: string;
+	channel: PaymentChannel;
+	attempt: number;
+	attemptsLeft: number;
+	instructions: string | null;
+}
+
+/** `GET /api/orders/{id}/payment`, for the buyer or a member of the shop. */
+export interface PaymentStatusView {
+	orderPaymentStatus: PaymentStatus;
+	intent: null | {
+		id: string;
+		status: PaymentIntentStatus;
+		channel: PaymentChannel;
+		failureCode: PaymentFailureCode | null;
+		expiresAt: string;
+		attempt: number;
+		attemptsLeft: number;
+	};
+}
+
+export interface OrderItemView {
+	id: string;
+	lineNumber: number;
+	title: string;
+	variantLabel: string;
+	sku: string | null;
+	imageUrl: string | null;
+	unitPrice: number;
+	quantity: number;
+	lineSubtotal: number;
+	fulfillmentStatus: FulfillmentStatus;
+	returnPolicy: string | null;
+	/** Shop audience with `payments.view` only. */
+	commissionAmount?: number;
+}
+
+export interface OrderTimelineEntry {
+	id: string;
+	type: string;
+	at: string;
+	actorType: "buyer" | "seller" | "staff" | "system" | "courier";
+	actorName: string | null;
+	reason: string | null;
+	note: string | null;
+	metadata: Record<string, unknown> | null;
+}
+
+export interface OrderView {
+	id: string;
+	orderNumber: string;
+	status: OrderStatus;
+	paymentStatus: PaymentStatus;
+	paymentMethod: PaymentMethod;
+	amounts: OrderAmounts;
+	items: OrderItemView[];
+	timeline: OrderTimelineEntry[];
+	shop: {
+		id: string;
+		name: string;
+		handle: string;
+		logoUrl: string | null;
+		city: string | null;
+		phone: string | null;
+	};
+	/** Shop and staff audiences. */
+	buyer?: { id: string | null; name: string | null };
+	delivery: {
+		method: DeliveryMethod;
+		recipientName: string;
+		phone: string;
+		phoneMasked: boolean;
+		city: string;
+		district: string;
+		districtOther: string | null;
+		landmark: string | null;
+		gps: { lat: number; lng: number; accuracyMeters: number | null } | null;
+		instructions: string | null;
+		etaText: string;
+		fee: number;
+		pickupPoint: PickupPointSnapshot | null;
+	};
+	deadlines: {
+		confirmBy: string | null;
+		acceptBy: string | null;
+		staleAt: string | null;
+		completeAt: string | null;
+		withdrawalUntil: string | null;
+		contestBy: string | null;
+	};
+	timestamps: {
+		placedAt: string;
+		confirmedAt: string | null;
+		acceptedAt: string | null;
+		shippedAt: string | null;
+		deliveredAt: string | null;
+		completedAt: string | null;
+		cancelledAt: string | null;
+		failedAt: string | null;
+	};
+	confirmation: {
+		method: "verified_phone" | "sms_code" | "seller_call" | null;
+		required: ConfirmationRequired;
+		attemptsLeft: number;
+		resendsLeft: number;
+	};
+	handover: {
+		method:
+			| "otp"
+			| "buyer_confirmation"
+			| "seller_declaration"
+			| "carrier_pod"
+			| null;
+		locked: boolean;
+		attemptsLeft: number;
+		regenerationsLeft: number;
+	};
+	cancellation: { by: string; reason: string; note: string | null } | null;
+	deliveryFailure: {
+		reason: string;
+		attempts: number;
+		note: string | null;
+	} | null;
+	completionHold: "none" | "return_case" | "dispute";
+	returnCaseNumber: string | null;
+	conversationId: string | null;
+	reviewable: boolean;
+	/** Shop audience with `payments.view`, and staff. */
+	commission?: { rateBps: number; amount: number };
+	/** Shop and staff audiences. */
+	risk?: { phoneTier: BuyerTier; refusalsAtPlacement: number };
+}
+
+export interface OrderListEntry {
+	id: string;
+	orderNumber: string;
+	status: OrderStatus;
+	placedAt: string;
+	total: number;
+	itemCount: number;
+	firstItemTitle: string;
+	firstItemImageUrl: string | null;
+	/** Buyer role. */
+	shopName: string;
+	/** Buyer role: siblings of one split checkout share it. */
+	checkoutGroup?: string;
+	/** Buyer role: what `availableActions` reads besides the status. */
+	actionSubject?: Omit<OrderActionFields, "status">;
+	/** Buyer role: the delivery promise, never the address. */
+	arrival?: {
+		method: DeliveryMethod;
+		etaText: string;
+		promisedBy: string | null;
+		liveEta?: string | null;
+	};
+	/** Shop role. */
+	recipientName?: string;
+	/** Shop role. */
+	acceptBy?: string | null;
+	/** Shop role. */
+	phoneTier?: BuyerTier;
+	/** Buyer role: the card's shop logo and verification badge. */
+	shopLogoUrl?: string | null;
+	shopBadge?: "phone" | "identity" | "business" | null;
+	/** Both roles: the row's payment pill. */
+	paymentMethod?: PaymentMethod;
+	paymentStatus?: PaymentStatus;
+	/** Shop role: neighbourhood and city labels, either may be null. */
+	area?: { district: string | null; city: string | null };
+	/** Shop role: the first resold line's supplier and purchase order. */
+	resale?: {
+		purchaseOrderNumber: string | null;
+		supplierName: string | null;
+	} | null;
+	/** Shop role: a shipment exists, so shipping happens on the order page. */
+	hasShipment?: boolean;
+	/** Shop role: order lines, as opposed to `itemCount`'s units. */
+	lineCount?: number;
+	/** Shop role: the first lines in line order. */
+	lines?: { title: string; quantity: number }[];
+	deliveryFailureReason?: string | null;
+}
+
+type OrderActionFields = Pick<
+	OrderView,
+	| "status"
+	| "confirmation"
+	| "handover"
+	| "deadlines"
+	| "deliveryFailure"
+	| "completionHold"
+	| "returnCaseNumber"
+	| "reviewable"
+>;
+
+export interface OrderPage {
+	docs: OrderListEntry[];
+	nextCursor: string | null;
+}
+
+/**
+ * `counts` keys off Task 7's `SHOP_ORDER_TABS`, imported rather than
+ * restated: the six tabs are already a cross-package parity-tested table.
+ */
+export interface ShopOrderPage extends OrderPage {
+	counts: Record<ShopOrderTab, number>;
+	/** Shown to every member who can view orders, unlike the order settings. */
+	mentions?: { codEnabled: boolean; sellerDeliveryEnabled: boolean };
+}
+
+export interface CommissionInvoiceView {
+	id: string;
+	invoiceNumber: string;
+	periodStart: string;
+	periodEnd: string;
+	ordersCount: number;
+	commissionTotal: number;
+	vatAmount: number;
+	totalDue: number;
+	currency: string;
+	status: "issued" | "paid" | "overdue" | "waived" | "void";
+	issuedAt: string;
+	dueAt: string;
+	paidAt: string | null;
+	lines: Array<{
+		orderNumber: string;
+		baseAmount: number;
+		amount: number;
+		kind: "charge" | "credit" | "carry_over";
+	}>;
+}
+
+export interface BillingView {
+	invoices: CommissionInvoiceView[];
+	currentPeriod: {
+		periodStart: string;
+		periodEnd: string;
+		accrued: number;
+		ordersCount: number;
+	};
+	restricted: { since: string; reason: "commission_overdue" | "staff" } | null;
+}
+
+export interface OrderSettingsView {
+	codEnabled: boolean;
+	sellerDeliveryEnabled: boolean;
+	deliveryFee: number | null;
+	deliveryEtaText: string | null;
+	pickupEnabled: boolean;
+	pickupPoint: PickupPointSnapshot | null;
+	salesTermsExtra: string | null;
+	caps: {
+		maxOrderTotal: number;
+		maxDailyOrders: number;
+		maxOpenOrders: number;
+	} | null;
+	cityDefaultFee: number | null;
+}
+
+/**
+ * One entry of `GET /api/public/config`'s `launchCities`. The same shape
+ * mobile declares (`packages/mobile/src/types/order.ts`), because the two
+ * clients read the same route.
+ */
+export interface LaunchCityOption {
+	key: string;
+	label: string;
+	fee: number;
+}

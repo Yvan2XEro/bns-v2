@@ -1,0 +1,17 @@
+# Template for the aws-prod stack. Never put real values here. Create the stack with:
+#   bun run stack:init --stack aws-prod [--ssh-key ~/.ssh/bns-k3s] [--env ../.env.aws-prod]
+# which writes .stacks/Pulumi.aws-prod.yaml (git-ignored) from this file.
+#
+config:
+  # App variables: copied from the production .env, never typed by hand —
+  #   bun run infra:env:check --env <.env> --stack <this stack>   (repo root)
+  #   bun run infra:env:apply --env <.env> --stack <this stack>
+  # It writes appEnv, appSecrets (encrypted), domain, acmeEmail and ghcrToken.
+  bns-infra:cloudProvider: aws
+  bns-infra:region: us-east-1
+  bns-infra:nodeCount: "3"
+  bns-infra:instanceType: t3.large
+  bns-infra:imageRegistry: ghcr.io/yvan2xero/bns-v2
+  bns-infra:imageTag: latest
+  bns-infra:domain: buynsellem.com
+  bns-infra:acmeEmail: your@email.com

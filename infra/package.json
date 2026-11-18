@@ -1,0 +1,32 @@
+{
+	"name": "bns-infra",
+	"version": "1.0.0",
+	"private": true,
+	"main": "src/index.ts",
+	"scripts": {
+		"build": "tsc",
+		"typecheck": "tsc --noEmit",
+		"test": "bun test src",
+		"stack:init": "bun scripts/stack-init.ts",
+		"env:check": "bun scripts/env-to-stack.ts --dry-run",
+		"env:apply": "bun scripts/env-to-stack.ts",
+		"preview": "pulumi preview",
+		"up": "pulumi up",
+		"loadtest": "k6 run loadtest/traffic.js"
+	},
+	"dependencies": {
+		"@muhlba91/pulumi-proxmoxve": "6",
+		"@pulumi/aws": "^6",
+		"@pulumi/awsx": "^2",
+		"@pulumi/azure-native": "^2",
+		"@pulumi/command": "^1.2.1",
+		"@pulumi/eks": "^3",
+		"@pulumi/kubernetes": "^4",
+		"@pulumi/mongodbatlas": "^3",
+		"@pulumi/pulumi": "^3"
+	},
+	"devDependencies": {
+		"@types/node": "^20",
+		"typescript": "^5"
+	}
+}

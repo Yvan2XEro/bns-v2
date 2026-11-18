@@ -1,0 +1,383 @@
+# BNS — Docker Compose (pre-built images)
+#
+# The root docker-compose.yml with every `build:` replaced by the image CI
+# pushed to GHCR; compose-env-wiring.int.spec.ts holds the two to the same
+# services and environment. Dokploy redeploys it from the build workflow's
+# webhook, and `pull_policy: always` is what makes a redeploy fetch the new
+# `dev` image instead of reusing the one already on the host.
+#
+#   IMAGE_REGISTRY   ghcr.io/yvan2xero/bns-v2 (lowercase)
+#   IMAGE_TAG        dev | v1.2.3 | latest
+
+services:
+  # --- Infrastructure ---
+  mongodb:
+    image: ${MONGO_IMAGE:-mongo:7}
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-bns}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Set MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-bns}
+    # A single-node replica set, because Payload only runs multi-document
+    # transactions against one. Nothing to do on the host, ever: the key file
+    # an authenticated replica set requires is generated into its own volume
+    # on first start, and the healthcheck initiates the set the first time it
+    # finds it uninitiated — a fresh volume and an existing standalone
+    # database alike, data untouched.
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        keyfile=/data/keyfile/mongo-keyfile
+        if [ ! -s "$$keyfile" ]; then
+          tr -dc 'A-Za-z0-9+/' < /dev/urandom | head -c 756 > "$$keyfile"
+        fi
+        chown 999:999 "$$keyfile"
+        chmod 400 "$$keyfile"
+        exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$$keyfile"
+    # WiredTiger holds a file open per collection and per index; Docker's
+    # default soft limit (1024 on some hosts) crashes mongod mid-write.
+    ulimits:
+      nofile:
+        soft: 64000
+        hard: 64000
+    volumes:
+      - mongo_data:/data/db
+      - mongo_keyfile:/data/keyfile
+    networks:
+      - dokploy-network
+    healthcheck:
+      # Initiates the set when it has never been — its member is the name the
+      # api dials, mongodb:27017 — then reports healthy only once this node is
+      # the writable primary, about ten seconds after a start.
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'try { rs.status() } catch (e) { if (e.codeName !== "NotYetInitialized") throw e; rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "mongodb:27017" }] }) } quit(db.hello().isWritablePrimary ? 0 : 1)'
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - dokploy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.54
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?Set MEILI_MASTER_KEY}
+      MEILI_ENV: ${MEILI_ENV:-production}
+      # In-place dumpless upgrade when the PINNED image is deliberately bumped;
+      # one-way — snapshot the volume before changing the pin.
+      MEILI_UPGRADE_DB: "true"
+    volumes:
+      - meili_data:/meili_data
+    networks:
+      - dokploy-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:7700/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mongo-express:
+    image: mongo-express:latest
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER:-bns}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USER:-bns}:${MONGO_PASSWORD}@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.bns-mongo.rule=Host(`${DB_DOMAIN:-db.buynsellem.com}`)"
+      - "traefik.http.routers.bns-mongo.entrypoints=websecure"
+      - "traefik.http.routers.bns-mongo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bns-mongo.service=bns-mongo"
+      - "traefik.http.services.bns-mongo.loadbalancer.server.port=8081"
+
+  # --- Application ---
+  api:
+    image: ${IMAGE_REGISTRY:-ghcr.io/yvan2xero/bns-v2}/api:${IMAGE_TAG:?Set IMAGE_TAG}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      # replicaSet is what turns Payload transactions on; a DATABASE_URI
+      # without it is the rollback (mongod stays a replica set, harmlessly).
+      DATABASE_URI: ${DATABASE_URI:-mongodb://${MONGO_USER:-bns}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-bns}?authSource=admin&replicaSet=rs0}
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
+      RISK_HASH_SECRET: ${RISK_HASH_SECRET:-}
+      # HMAC key for buyer-phone-scores.phoneHash; rotating it resets every refusal score
+      ORDER_PHONE_PEPPER: ${ORDER_PHONE_PEPPER:?Set ORDER_PHONE_PEPPER}
+      PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
+      PAYLOAD_ALLOWED_ORIGINS: ${PAYLOAD_ALLOWED_ORIGINS:-https://${WEB_DOMAIN:-buynsellem.com},https://${WEB_WWW_DOMAIN:-www.buynsellem.com}}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # Hops of X-Forwarded-For to trust for the client IP used by rate
+      # limiting: 1 for Traefik, the single reverse proxy in front of this
+      # container here.
+      TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-1}
+      # Pino level for the Payload logger (trace/debug/info/warn/error/fatal).
+      # Empty leaves Payload at its own default ("info").
+      LOG_LEVEL: ${LOG_LEVEL:-}
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      NOVU_SECRET_KEY: ${NOVU_SECRET_KEY:-}
+      # Email verification and password reset: Resend or SMTP (api/src/lib/email.ts).
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-}
+      # The API recognises chat-service by this address: it is the one caller
+      # allowed to name a message's sender. Unset here, every websocket message
+      # is refused as "not a participant" (fail-closed by design).
+      CHAT_SERVICE_EMAIL: ${CHAT_SERVICE_EMAIL}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
+      APPLE_OAUTH_CLIENT_ID: ${APPLE_OAUTH_CLIENT_ID}
+      APPLE_OAUTH_TEAM_ID: ${APPLE_OAUTH_TEAM_ID}
+      APPLE_OAUTH_KEY_ID: ${APPLE_OAUTH_KEY_ID}
+      APPLE_OAUTH_PRIVATE_KEY: ${APPLE_OAUTH_PRIVATE_KEY}
+      # The iOS bundle identifier, for native Sign in with Apple. Distinct from
+      # APPLE_OAUTH_CLIENT_ID above, which is the Services ID used by the web
+      # flow — Apple binds the client secret to whichever one issued the token.
+      APPLE_NATIVE_CLIENT_ID: ${APPLE_NATIVE_CLIENT_ID:-}
+      FACEBOOK_OAUTH_APP_ID: ${FACEBOOK_OAUTH_APP_ID}
+      FACEBOOK_OAUTH_APP_SECRET: ${FACEBOOK_OAUTH_APP_SECRET}
+      # Overbrand's single sign-on to the Payload panel (system administrators).
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_AUTHORIZATION_ENDPOINT: ${OIDC_AUTHORIZATION_ENDPOINT:-}
+      OIDC_TOKEN_ENDPOINT: ${OIDC_TOKEN_ENDPOINT:-}
+      OIDC_USERINFO_ENDPOINT: ${OIDC_USERINFO_ENDPOINT:-}
+      OIDC_JWKS_URI: ${OIDC_JWKS_URI:-}
+      OIDC_REQUIRED_ROLE: ${OIDC_REQUIRED_ROLE:-}
+      OIDC_SCOPES: ${OIDC_SCOPES:-}
+      OIDC_LABEL: ${OIDC_LABEL:-}
+      OIDC_ICON: ${OIDC_ICON:-}
+      NOTCHPAY_PUBLIC_KEY: ${NOTCHPAY_PUBLIC_KEY}
+      NOTCHPAY_HASH_KEY: ${NOTCHPAY_HASH_KEY}
+      NOTCHPAY_BASE_URL: ${NOTCHPAY_BASE_URL:-https://api.notchpay.co}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      # Staging only: "fake" serves protected payment from the in-memory fake
+      # provider despite NODE_ENV=production. Leave empty in production.
+      PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-}
+      COURIER_PROVIDER: ${COURIER_PROVIDER:-}
+      YANGO_DELIVERY_BASE_URL: ${YANGO_DELIVERY_BASE_URL:-}
+      YANGO_DELIVERY_API_KEY: ${YANGO_DELIVERY_API_KEY:-}
+      YANGO_DELIVERY_WEBHOOK_SECRET: ${YANGO_DELIVERY_WEBHOOK_SECRET:-}
+      # Same staging/production gate as PAYMENTS_PROVIDER above: empty in
+      # production, so the protected-payment flag stays refused by policy
+      # (the AppSettings gate record), not by a missing variable.
+      NOTCHPAY_PRIVATE_KEY: ${NOTCHPAY_PRIVATE_KEY:-}
+      PROTECTED_PAYMENT_ALLOWED: ${PROTECTED_PAYMENT_ALLOWED:-}
+      NOVU_APPLICATION_IDENTIFIER: ${NOVU_APPLICATION_IDENTIFIER:-}
+      NOVU_API_URL: ${NOVU_API_URL:-https://api.novu.co}
+      NOVU_SOCKET_URL: ${NOVU_SOCKET_URL:-}
+      # Public id: Instagram and Facebook stories need it to accept a share.
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      NOVU_EXPO_INTEGRATION_IDENTIFIER: ${NOVU_EXPO_INTEGRATION_IDENTIFIER:-}
+      CHAT_PUBLIC_URL: ${CHAT_PUBLIC_URL:-https://${CHAT_DOMAIN:-chat.buynsellem.com}}
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-https://${WEB_DOMAIN:-buynsellem.com}}
+      # Photon geocoder (komoot/photon) served to web and mobile through
+      # /api/public/config — clients carry no geocoder setting of their own.
+      PHOTON_URL: ${PHOTON_URL:-https://photon.overbrand.net}
+      # Category photos for the taxonomy import (seed/taxonomy); without it the
+      # categories are still created, only their pictures are skipped.
+      PIXABAY_API_KEY: ${PIXABAY_API_KEY:-}
+      # Sentry and PostHog: set here only; /api/public/config hands the apps
+      # their send-only keys and /api/relay/* forwards their events.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_WEB_DSN: ${SENTRY_WEB_DSN:-}
+      SENTRY_MOBILE_DSN: ${SENTRY_MOBILE_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
+      POSTHOG_PROJECT_KEY: ${POSTHOG_PROJECT_KEY:-}
+      POSTHOG_HOST: ${POSTHOG_HOST:-https://eu.i.posthog.com}
+      # Storage
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-}
+      AZURE_STORAGE_ACCOUNT_BASEURL: ${AZURE_STORAGE_ACCOUNT_BASEURL:-}
+      AZURE_STORAGE_CONTAINER_NAME: ${AZURE_STORAGE_CONTAINER_NAME:-}
+      AZURE_STORAGE_ALLOW_CONTAINER_CREATE: ${AZURE_STORAGE_ALLOW_CONTAINER_CREATE:-false}
+      # Verification (P2)
+      S3_PRIVATE_BUCKET: ${S3_PRIVATE_BUCKET:-}
+      AZURE_STORAGE_PRIVATE_CONTAINER_NAME: ${AZURE_STORAGE_PRIVATE_CONTAINER_NAME:-}
+      PRIVATE_UPLOADS_DIR: ${PRIVATE_UPLOADS_DIR:-private-uploads/verification}
+      # Keys the document-number and IP hashes. Rotating it orphans every
+      # existing hash, so duplicate detection restarts from that point.
+      VERIFICATION_HASH_PEPPER: ${VERIFICATION_HASH_PEPPER:-}
+      # Staging only: lets verification be enabled before the authorisation is
+      # recorded. NODE_ENV is hardcoded to "production" in packages/api/Dockerfile,
+      # so this has no effect there regardless of what is set here.
+      VERIFICATION_ALLOW_UNAUTHORISED: ${VERIFICATION_ALLOW_UNAUTHORISED:-false}
+      DIDIT_API_KEY: ${DIDIT_API_KEY:-}
+      DIDIT_WEBHOOK_SECRET: ${DIDIT_WEBHOOK_SECRET:-}
+      DIDIT_WORKFLOW_ID: ${DIDIT_WORKFLOW_ID:-}
+      DIDIT_BASE_URL: ${DIDIT_BASE_URL:-https://verification.didit.me}
+    volumes:
+      - api_media:/app/packages/api/media
+      - api_private_uploads:/app/packages/api/private-uploads
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      # HTTPS
+      - "traefik.http.routers.bns-api.rule=Host(`${API_DOMAIN:-api.buynsellem.com}`)"
+      - "traefik.http.routers.bns-api.entrypoints=websecure"
+      - "traefik.http.routers.bns-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bns-api.service=bns-api"
+
+      # HTTP -> HTTPS redirect
+      - "traefik.http.routers.bns-api-http.rule=Host(`${API_DOMAIN:-api.buynsellem.com}`)"
+      - "traefik.http.routers.bns-api-http.entrypoints=web"
+      - "traefik.http.routers.bns-api-http.middlewares=bns-redirect-https"
+      - "traefik.http.middlewares.bns-redirect-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.bns-redirect-https.redirectscheme.permanent=true"
+      - "traefik.http.services.bns-api.loadbalancer.server.port=3000"
+
+  web:
+    image: ${IMAGE_REGISTRY:-ghcr.io/yvan2xero/bns-v2}/web:${IMAGE_TAG:?Set IMAGE_TAG}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
+      # Server-side rendering reaches the API on the internal network.
+      API_INTERNAL_URL: http://api:3000
+      NEXT_PUBLIC_WEB_URL: ${NEXT_PUBLIC_WEB_URL:-https://${WEB_DOMAIN:-buynsellem.com}}
+      # Shared links open the native app: /.well-known association files.
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      ANDROID_SHA256_CERT_FINGERPRINTS: ${ANDROID_SHA256_CERT_FINGERPRINTS:-}
+      CHAT_PUBLIC_URL: ${CHAT_PUBLIC_URL:-https://${CHAT_DOMAIN:-chat.buynsellem.com}}
+      NOVU_APPLICATION_IDENTIFIER: ${NOVU_APPLICATION_IDENTIFIER:-}
+      NOVU_API_URL: ${NOVU_API_URL:-https://api.novu.co}
+      NOVU_SOCKET_URL: ${NOVU_SOCKET_URL:-}
+    depends_on:
+      - api
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      # HTTPS apex — serves the app
+      - "traefik.http.routers.bns-web.rule=Host(`${WEB_DOMAIN:-buynsellem.com}`)"
+      - "traefik.http.routers.bns-web.entrypoints=websecure"
+      - "traefik.http.routers.bns-web.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bns-web.service=bns-web"
+      # HTTPS www — 301 redirect to apex
+      - "traefik.http.routers.bns-web-www.rule=Host(`${WEB_WWW_DOMAIN:-www.buynsellem.com}`)"
+      - "traefik.http.routers.bns-web-www.entrypoints=websecure"
+      - "traefik.http.routers.bns-web-www.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bns-web-www.middlewares=bns-www-to-apex"
+      - "traefik.http.routers.bns-web-www.service=bns-web"
+      # Middleware: www -> apex permanent redirect (preserves path and query)
+      - "traefik.http.middlewares.bns-www-to-apex.redirectregex.regex=^https://[^/]+(.*)"
+      - "traefik.http.middlewares.bns-www-to-apex.redirectregex.replacement=https://${WEB_DOMAIN:-buynsellem.com}$${1}"
+      - "traefik.http.middlewares.bns-www-to-apex.redirectregex.permanent=true"
+      # HTTP -> HTTPS redirect (both apex and www; www will then 301 to apex)
+      - "traefik.http.routers.bns-web-http.rule=Host(`${WEB_DOMAIN:-buynsellem.com}`) || Host(`${WEB_WWW_DOMAIN:-www.buynsellem.com}`)"
+      - "traefik.http.routers.bns-web-http.entrypoints=web"
+      - "traefik.http.routers.bns-web-http.middlewares=bns-redirect-https"
+      - "traefik.http.services.bns-web.loadbalancer.server.port=3001"
+
+  chat-service:
+    image: ${IMAGE_REGISTRY:-ghcr.io/yvan2xero/bns-v2}/chat-service:${IMAGE_TAG:?Set IMAGE_TAG}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      PAYLOAD_API_URL: http://api:3000/api
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://${WEB_DOMAIN:-buynsellem.com},https://${WEB_WWW_DOMAIN:-www.buynsellem.com}}
+      CHAT_SERVICE_EMAIL: ${CHAT_SERVICE_EMAIL}
+      CHAT_SERVICE_PASSWORD: ${CHAT_SERVICE_PASSWORD}
+
+      PORT: 4000
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      # HTTPS
+      - "traefik.http.routers.bns-chat.rule=Host(`${CHAT_DOMAIN:-chat.buynsellem.com}`)"
+      - "traefik.http.routers.bns-chat.entrypoints=websecure"
+      - "traefik.http.routers.bns-chat.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bns-chat.service=bns-chat"
+      # HTTP -> HTTPS redirect
+      - "traefik.http.routers.bns-chat-http.rule=Host(`${CHAT_DOMAIN:-chat.buynsellem.com}`)"
+      - "traefik.http.routers.bns-chat-http.entrypoints=web"
+      - "traefik.http.routers.bns-chat-http.middlewares=bns-redirect-https"
+      - "traefik.http.services.bns-chat.loadbalancer.server.port=4000"
+
+  search-indexer:
+    image: ${IMAGE_REGISTRY:-ghcr.io/yvan2xero/bns-v2}/search-indexer:${IMAGE_TAG:?Set IMAGE_TAG}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      PAYLOAD_API_URL: http://api:3000/api
+    depends_on:
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      api:
+        condition: service_started
+    networks:
+      - dokploy-network
+
+volumes:
+  mongo_data:
+  mongo_keyfile:
+  redis_data:
+  meili_data:
+  api_media:
+  api_private_uploads:
+
+networks:
+  dokploy-network:
+    external: true

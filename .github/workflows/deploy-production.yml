@@ -1,0 +1,142 @@
+name: Deploy → Production (AKS)
+
+# Production is the Pulumi stack in infra/ (docs/runbook-aks-production.md).
+#
+#   tag v1.2.3 pushed → Build & Push builds the images → this workflow:
+#     1. preview  — preflight (make check, live part skipped) and `pulumi
+#                   preview`, its diff in the run summary. No approval needed.
+#     2. deploy   — waits for a reviewer of the `production` environment, then
+#                   `pulumi up` with imageTag=v1.2.3, then the live preflight.
+#
+# Rollback: Actions → "Deploy → Production (AKS)" → Run workflow, "Use workflow
+# from" an older tag (or `make rollback v=1.1.0`): same preview, same approval.
+#
+# The release deployed is always the tag this run is on (github.ref_name), and
+# both environments accept only `v*` tags: the production credentials cannot
+# be reached from a branch, even by a modified workflow.
+#
+# One-time setup (runbook, "Deploying from GitHub Actions"): the Pulumi state
+# in Azure Blob (vars.PULUMI_BACKEND_URL), an Entra app with federated
+# credentials for the environments `production-preview` and `production`, and
+# in both environments (tags v* only) the secrets AZURE_CLIENT_ID, AZURE_TENANT_ID,
+# AZURE_SUBSCRIPTION_ID, PULUMI_CONFIG_PASSPHRASE and PULUMI_STACK_CONFIG
+# (`make prod-ci-setup`). Reviewers are set on `production` only.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+# Never two production deploys at once, and never cancel one halfway.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # OIDC sign-in to Azure, no stored password
+
+env:
+  STACK: ${{ vars.PRODUCTION_STACK || 'azure-prod' }}
+  TAG: ${{ github.ref_name }}
+  PULUMI_BACKEND_URL: ${{ vars.PULUMI_BACKEND_URL }}
+
+jobs:
+  preview:
+    name: Preview ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    environment: production-preview
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Refuse anything but a release tag
+        run: |
+          [[ "$GITHUB_REF" == refs/tags/v* && "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "::error::run this from a release tag (vX.Y.Z), not $GITHUB_REF"; exit 1; }
+
+      - uses: ./.github/actions/pulumi-setup
+        with:
+          stack: ${{ env.STACK }}
+          tag: ${{ env.TAG }}
+          stack-config: ${{ secrets.PULUMI_STACK_CONFIG }}
+          passphrase: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Preflight (everything but the live cluster)
+        working-directory: infra
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          MONGODB_ATLAS_PUBLIC_KEY: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}
+          MONGODB_ATLAS_PRIVATE_KEY: ${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}
+        run: bun scripts/preflight.ts --stack "$STACK" --skip-live
+
+      - name: pulumi preview
+        working-directory: infra
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          MONGODB_ATLAS_PUBLIC_KEY: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}
+          MONGODB_ATLAS_PRIVATE_KEY: ${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}
+        run: |
+          set -o pipefail
+          pulumi preview --stack "$STACK" --diff --non-interactive --color never 2>&1 | tee preview.txt
+          {
+            echo "## Production preview — $TAG on \`$STACK\`"
+            echo
+            echo "Approve the **deploy** job to apply exactly this."
+            echo
+            echo '```diff'
+            tail -c 60000 preview.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy ${{ github.ref_name }}
+    needs: preview
+    runs-on: ubuntu-latest
+    # Reviewers set on this environment must approve before the job starts.
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/pulumi-setup
+        with:
+          stack: ${{ env.STACK }}
+          tag: ${{ env.TAG }}
+          stack-config: ${{ secrets.PULUMI_STACK_CONFIG }}
+          passphrase: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: pulumi up
+        working-directory: infra
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          MONGODB_ATLAS_PUBLIC_KEY: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}
+          MONGODB_ATLAS_PRIVATE_KEY: ${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}
+        run: pulumi up --stack "$STACK" --yes --skip-preview --non-interactive --color never
+
+      - name: Wait for the rollout
+        run: |
+          rg=$(cd infra && pulumi stack output resourceGroupName --stack "$STACK")
+          cluster=$(cd infra && pulumi stack output clusterName --stack "$STACK")
+          az aks get-credentials --resource-group "$rg" --name "$cluster" --overwrite-existing --only-show-errors
+          for d in web chat-service search-indexer; do
+            kubectl -n bns rollout status "deployment/$d" --timeout=10m
+          done
+          if kubectl -n bns get deployment api >/dev/null 2>&1; then
+            kubectl -n bns rollout status deployment/api --timeout=10m
+          fi
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+
+      - name: Live preflight
+        working-directory: infra
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          MONGODB_ATLAS_PUBLIC_KEY: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}
+          MONGODB_ATLAS_PRIVATE_KEY: ${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}
+        run: bun scripts/preflight.ts --stack "$STACK"

@@ -1,0 +1,46 @@
+[
+	{
+		"key": "balance-funded",
+		"request": {
+			"method": "GET",
+			"path": "/sync/accounts/{id}/balance",
+			"when": "balance:{id}=funded"
+		},
+		"response": {
+			"status": 200,
+			"body": {
+				"balance": { "available": { "XAF": 41500, "EUR": 3 }, "pending": 7200 }
+			}
+		},
+		"assumed": ["A11"]
+	},
+	{
+		"key": "balance-unknown",
+		"request": {
+			"method": "GET",
+			"path": "/sync/accounts/{id}/balance",
+			"when": "balance:{id}=initial"
+		},
+		"response": { "status": 404, "body": { "message": "Account not found" } }
+	},
+	{
+		"key": "history",
+		"request": { "method": "GET", "path": "/balance/history" },
+		"response": {
+			"status": 200,
+			"body": {
+				"items": [
+					{
+						"id": "h_{refundKey}",
+						"type": "refund",
+						"reference": "ref_{refundKey}",
+						"amount": -3000,
+						"currency": "XAF",
+						"created_at": "2026-10-02T10:00:00Z"
+					}
+				]
+			}
+		},
+		"assumed": ["A12"]
+	}
+]

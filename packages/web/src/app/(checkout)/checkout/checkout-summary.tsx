@@ -1,0 +1,379 @@
+"use client";
+
+import {
+	AlertTriangle,
+	ImageOff,
+	LoaderCircle,
+	Lock,
+	MapPin,
+	Phone,
+	RotateCcw,
+	Star,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import type { ReactNode } from "react";
+import { CartShopHeader } from "~/components/shop/cart-shop-header";
+import { Button } from "~/components/ui/button";
+import { useAppConfig } from "~/hooks/use-app-config";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { type ApiError, resolveErrorMessage } from "~/lib/apiError";
+import { quoteDifferences } from "~/lib/checkout-form";
+import type { CartView, QuoteResponse } from "~/types/order";
+import { ProtectionFeeRow } from "./protection-fee-row";
+
+function Changed({ on, children }: { on: boolean; children: ReactNode }) {
+	const t = useTranslations("Checkout");
+	if (!on) return <>{children}</>;
+	return (
+		<span className="rounded bg-warn-soft px-1 font-semibold text-warn-ink">
+			{children} <span className="ml-1 text-xs">({t("changed")})</span>
+		</span>
+	);
+}
+
+function SellerCard({
+	shop,
+	phone,
+	seller,
+}: {
+	shop: NonNullable<CartView["shop"]>;
+	phone: string | null;
+	seller: QuoteResponse["seller"];
+}) {
+	const t = useTranslations("Checkout");
+	const locale = useLocale() === "en" ? "en" : "fr";
+	const reviews = shop.totalReviews ?? 0;
+	const address = seller?.address ?? shop.address ?? null;
+	const sinceYear = seller?.sinceYear ?? shop.sinceYear ?? null;
+
+	return (
+		<div className="space-y-2">
+			<p className="font-semibold text-ink-muted text-xs uppercase tracking-wide">
+				{t("sellerLabel")}
+			</p>
+			<div className="space-y-3 rounded-xl border border-line bg-canvas p-3.5">
+				<CartShopHeader shop={shop} size="sm" />
+				{sinceYear ? (
+					<p className="text-ink-muted text-xs">
+						{t("sellerSince", { year: String(sinceYear) })}
+					</p>
+				) : null}
+				{address ? (
+					<p className="flex items-start gap-1.5 text-[13px] text-ink-soft">
+						<MapPin aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+						{address}
+					</p>
+				) : null}
+				{reviews > 0 || phone ? (
+					<div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-soft">
+						{reviews > 0 ? (
+							<span className="inline-flex items-center gap-1.5">
+								<Star
+									aria-hidden
+									className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]"
+								/>
+								{t("sellerRating", {
+									rating: (shop.rating ?? 0).toLocaleString(locale, {
+										maximumFractionDigits: 1,
+									}),
+									count: reviews,
+								})}
+							</span>
+						) : null}
+						{phone ? (
+							<span className="inline-flex items-center gap-1.5">
+								<Phone aria-hidden className="h-3.5 w-3.5" />
+								{phone}
+							</span>
+						) : null}
+					</div>
+				) : null}
+				<p className="text-ink-muted text-xs leading-relaxed">
+					{t("sellerIsShop")}
+				</p>
+			</div>
+		</div>
+	);
+}
+
+/**
+ * The aside of the single checkout page. Before a quote it can only show the
+ * cart; every amount after that is the quote's own, and the place button
+ * stays disabled until the buyer has ticked the summary on screen.
+ */
+export function CheckoutSummary({
+	cart,
+	quote,
+	previousQuote,
+	quoting,
+	quoteError,
+	onRetryQuote,
+	accepted,
+	onAccept,
+	canPlace,
+	placing,
+	placeError,
+	onPlace,
+}: {
+	cart: CartView;
+	quote: QuoteResponse | null;
+	previousQuote: QuoteResponse | null;
+	quoting: boolean;
+	/** Only when the quote failed for something other than the address, which the address form shows itself. */
+	quoteError: ApiError | null;
+	onRetryQuote: (() => void) | null;
+	accepted: boolean;
+	onAccept: (accepted: boolean) => void;
+	canPlace: boolean;
+	placing: boolean;
+	placeError: ApiError | null;
+	onPlace: () => void;
+}) {
+	const t = useTranslations("Checkout");
+	const tRoot = useTranslations();
+	const locale = useLocale() === "en" ? "en" : "fr";
+	const formatOrderMoney = useOrderMoney();
+	const { withdrawalDays } = useAppConfig();
+	const money = (amount: number) => formatOrderMoney(amount, locale);
+	const changed = quote ? quoteDifferences(previousQuote, quote) : new Set();
+
+	const lines = quote
+		? quote.summary.lines.map((line, i) => ({
+				key: `${line.title}-${line.variantLabel}-${i}`,
+				...line,
+				changed: changed.has(`line:${i}`),
+			}))
+		: cart.lines
+				.filter((line) => line.available)
+				.map((line) => ({ key: line.id, ...line, changed: false }));
+	const amounts = quote?.summary.amounts;
+	const delivery = quote?.summary.delivery;
+	const mobileMoney = quote?.summary.paymentMethod === "mobile_money";
+	const withdrawal = quote?.preContract.withdrawal;
+	const methodLabel = (method: string) =>
+		method === "pickup"
+			? t("pickupAtShop")
+			: method === "courier"
+				? t("courierDelivery")
+				: t("sellerDelivery");
+
+	return (
+		<aside className="space-y-4 rounded-2xl border border-line bg-surface p-5 lg:sticky lg:top-6">
+			<div className="flex items-center justify-between gap-3">
+				<h2 className="font-bold text-ink text-xl">{t("summaryTitle")}</h2>
+				<Link
+					href="/cart"
+					className="inline-flex min-h-11 items-center text-brand text-sm underline"
+				>
+					{t("editCart")}
+				</Link>
+			</div>
+
+			{cart.shop ? (
+				<SellerCard
+					shop={cart.shop}
+					phone={quote?.preContract.seller.phone ?? null}
+					seller={quote?.seller}
+				/>
+			) : null}
+
+			{previousQuote && quote ? (
+				<div
+					role="alert"
+					className="flex gap-3 rounded-xl border border-[#FCD34D] bg-warn-faint p-3"
+				>
+					<AlertTriangle className="h-5 w-5 shrink-0 text-warn-ink-soft" />
+					<div>
+						<p className="font-semibold text-sm text-warn-ink">
+							{t("quoteChanged")}
+						</p>
+						<p className="text-warn-ink text-xs">{t("quoteChangedBody")}</p>
+					</div>
+				</div>
+			) : null}
+
+			<ul className="space-y-3">
+				{lines.map((line) => (
+					<li key={line.key} className="flex items-center gap-3">
+						<div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-brand-soft">
+							{line.imageUrl ? (
+								<Image
+									src={line.imageUrl}
+									alt=""
+									fill
+									sizes="56px"
+									className="object-cover"
+								/>
+							) : (
+								<ImageOff
+									aria-hidden="true"
+									className="h-4 w-4 text-ink-faint"
+								/>
+							)}
+						</div>
+						<div className="min-w-0 flex-1 text-sm">
+							<p className="truncate font-semibold text-ink">{line.title}</p>
+							<p className="text-ink-muted text-xs">
+								<Changed on={line.changed}>
+									{[
+										line.variantLabel,
+										t("quantity", { quantity: line.quantity }),
+									]
+										.filter(Boolean)
+										.join(" · ")}
+								</Changed>
+							</p>
+						</div>
+						<p className="whitespace-nowrap font-semibold text-ink text-sm">
+							{money(line.lineSubtotal)}
+						</p>
+					</li>
+				))}
+			</ul>
+
+			<dl className="space-y-2 border-line border-t pt-3 text-sm">
+				<div className="flex justify-between gap-3">
+					<dt className="text-ink-soft">{t("subtotal")}</dt>
+					<dd className="font-medium text-ink">
+						<Changed on={changed.has("subtotal")}>
+							{money(amounts?.subtotal ?? cart.subtotal)}
+						</Changed>
+					</dd>
+				</div>
+				<div className="flex justify-between gap-3">
+					<dt className="text-ink-soft">
+						{delivery ? (
+							<Changed on={changed.has("etaText")}>
+								{`${methodLabel(delivery.method)} · ${delivery.etaText}`}
+							</Changed>
+						) : (
+							t("deliveryRow")
+						)}
+					</dt>
+					<dd className="text-right font-medium text-ink">
+						{amounts ? (
+							<Changed on={changed.has("deliveryFee")}>
+								{amounts.deliveryFee === 0
+									? t("free")
+									: money(amounts.deliveryFee)}
+							</Changed>
+						) : (
+							<span className="font-normal text-ink-muted">
+								{t("deliveryPending")}
+							</span>
+						)}
+					</dd>
+				</div>
+				{mobileMoney && amounts && amounts.buyerProtectionFee > 0 ? (
+					<ProtectionFeeRow amount={money(amounts.buyerProtectionFee)} />
+				) : null}
+				{amounts ? (
+					<div className="flex items-baseline justify-between gap-3 border-line border-t pt-2.5">
+						<dt className="font-bold text-base text-ink">{t("totalLabel")}</dt>
+						<dd className="font-extrabold text-2xl text-brand">
+							<Changed on={changed.has("total")}>
+								{money(amounts.total)}
+							</Changed>
+						</dd>
+					</div>
+				) : null}
+			</dl>
+			{quoting ? (
+				<p className="flex items-center gap-2 text-ink-muted text-sm">
+					<LoaderCircle className="h-4 w-4 animate-spin" />
+					{t("loadingQuote")}
+				</p>
+			) : amounts ? (
+				<p className="text-ink-muted text-xs">
+					{mobileMoney ? t("payNowNote") : t("payOnDeliveryNote")}
+				</p>
+			) : (
+				<p className="text-ink-muted text-xs">{t("totalPending")}</p>
+			)}
+			{quoteError && !quote ? (
+				<div className="space-y-2">
+					<p role="alert" className="text-red-700 text-sm">
+						{resolveErrorMessage(quoteError, tRoot)}
+					</p>
+					{onRetryQuote ? (
+						<Button
+							type="button"
+							variant="outline"
+							className="min-h-11"
+							onClick={onRetryQuote}
+						>
+							{t("retryQuote")}
+						</Button>
+					) : null}
+				</div>
+			) : null}
+
+			<div className="flex gap-2.5 rounded-xl bg-brand-soft p-3">
+				<RotateCcw aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+				<div className="space-y-0.5">
+					<p className="font-bold text-ink text-sm">
+						{t("withdrawalBoxTitle", {
+							days: withdrawal?.days ?? withdrawalDays,
+						})}
+					</p>
+					<p className="text-[13px] text-ink-soft leading-relaxed">
+						{t("withdrawalBoxBody")}
+						{withdrawal ? ` ${withdrawal.costs[locale]}` : ""}
+					</p>
+				</div>
+			</div>
+
+			<div className="flex items-start gap-3">
+				<input
+					id="accept-pre-contract"
+					type="checkbox"
+					className="mt-0.5 h-5 w-5 shrink-0"
+					disabled={!quote}
+					checked={accepted}
+					onChange={(event) => onAccept(event.target.checked)}
+				/>
+				<label
+					htmlFor="accept-pre-contract"
+					className="text-ink-soft text-sm leading-relaxed"
+				>
+					{t.rich("acceptSalesTerms", {
+						shop: quote?.preContract.seller.name ?? cart.shop?.name ?? "",
+						link: (chunks) => (
+							<a
+								href="#pre-contract"
+								className="font-semibold text-brand underline"
+							>
+								{chunks}
+							</a>
+						),
+					})}
+				</label>
+			</div>
+
+			{placeError ? (
+				<p role="alert" className="text-red-700 text-sm">
+					{resolveErrorMessage(placeError, tRoot)}
+				</p>
+			) : null}
+			<Button
+				type="button"
+				className="min-h-12 w-full bg-brand-fill font-bold text-base hover:bg-brand-strong"
+				disabled={!canPlace || placing}
+				onClick={onPlace}
+			>
+				{placing ? (
+					<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+				) : (
+					<Lock aria-hidden className="mr-2 h-4 w-4" />
+				)}
+				{amounts
+					? mobileMoney
+						? t("placeOrderPay", { total: money(amounts.total) })
+						: t("placeOrderConfirm", { total: money(amounts.total) })
+					: t("placeOrderIdle")}
+			</Button>
+		</aside>
+	);
+}

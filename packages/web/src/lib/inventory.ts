@@ -1,0 +1,244 @@
+import { z } from "zod";
+import { optionalAmount } from "./product-form";
+import { relationId } from "./relation-id";
+import type { InventoryVariant } from "./shop-api";
+import { variantLabel } from "./variants";
+
+export interface InventoryDraft {
+	startedAt: string;
+	counts: Record<string, string>;
+}
+
+const key = (shopId: string) => `bns:inventory:${shopId}`;
+
+function isInventoryDraft(value: unknown): value is InventoryDraft {
+	if (typeof value !== "object" || value === null) return false;
+	const draft = value as { startedAt?: unknown; counts?: unknown };
+	if (typeof draft.startedAt !== "string") return false;
+	if (typeof draft.counts !== "object" || draft.counts === null) return false;
+	return Object.values(draft.counts).every(
+		(entry) => typeof entry === "string",
+	);
+}
+
+/** Browser storage may be unavailable (private mode, blocked site data): never throw. */
+export function loadDraft(shopId: string): InventoryDraft | null {
+	try {
+		const raw = window.localStorage.getItem(key(shopId));
+		if (!raw) return null;
+		const parsed: unknown = JSON.parse(raw);
+		return isInventoryDraft(parsed) ? parsed : null;
+	} catch {
+		return null;
+	}
+}
+
+export function saveDraft(shopId: string, draft: InventoryDraft): void {
+	try {
+		window.localStorage.setItem(key(shopId), JSON.stringify(draft));
+	} catch {
+		// The count still works; only "resume later" is lost.
+	}
+}
+
+export function clearDraft(shopId: string): void {
+	try {
+		window.localStorage.removeItem(key(shopId));
+	} catch {
+		// Nothing to clear.
+	}
+}
+
+export interface CountLine {
+	variantId: string;
+	expected: number;
+	counted: number | null;
+	cost: number | null;
+}
+
+export interface CountStats {
+	counted: number;
+	withGap: number;
+	missing: number;
+	surplus: number;
+	costDelta: number;
+}
+
+export function countDeltas(lines: CountLine[]): CountStats {
+	let counted = 0;
+	let withGap = 0;
+	let missing = 0;
+	let surplus = 0;
+	let costDelta = 0;
+	for (const line of lines) {
+		if (line.counted === null) continue;
+		counted++;
+		const delta = line.counted - line.expected;
+		if (delta !== 0) withGap++;
+		if (delta < 0) missing += delta;
+		if (delta > 0) surplus += delta;
+		costDelta += delta * (line.cost ?? 0);
+	}
+	return { counted, withGap, missing, surplus, costDelta };
+}
+
+export const countFormSchema = z.object({
+	rows: z.array(
+		z.object({
+			variantId: z.string(),
+			productTitle: z.string(),
+			label: z.string(),
+			sku: z.string().nullable(),
+			barcode: z.string().nullable().optional(),
+			expected: z.number(),
+			cost: z.number().nullable(),
+			image: z.string().nullable().optional(),
+			categoryId: z.string().nullable().optional(),
+			counted: optionalAmount,
+		}),
+	),
+});
+
+export type CountFormState = z.infer<typeof countFormSchema>;
+export type CountRow = CountFormState["rows"][number];
+
+/** Tracked variants of the shop, sorted by product, with any saved draft merged in. */
+export function rowsFromVariants(
+	variants: InventoryVariant[],
+	draft: InventoryDraft,
+	defaultLabel: string,
+): CountRow[] {
+	return variants
+		.filter((variant) => variant.trackInventory)
+		.map((variant) => {
+			const product =
+				typeof variant.product === "object" ? variant.product : null;
+			const image = product?.images?.[0]?.image;
+			return {
+				variantId: variant.id,
+				productTitle: product?.title ?? "",
+				label: variantLabel(variant.optionValues, defaultLabel),
+				sku: variant.sku,
+				barcode: variant.barcode ?? null,
+				expected: variant.stockOnHand,
+				cost: variant.cost ?? null,
+				image:
+					image && typeof image === "object"
+						? (image.thumbnailURL ?? image.url ?? null)
+						: null,
+				categoryId: relationId(product?.category),
+				counted: draft.counts[variant.id] ?? "",
+			};
+		})
+		.sort((a, b) => a.productTitle.localeCompare(b.productTitle));
+}
+
+/** The subset of the form worth keeping across a reload: only the rows someone typed into. */
+export function draftFromRows(
+	startedAt: string,
+	rows: CountRow[],
+): InventoryDraft {
+	const counts: Record<string, string> = {};
+	for (const row of rows) {
+		if (row.counted.trim() !== "") counts[row.variantId] = row.counted;
+	}
+	return { startedAt, counts };
+}
+
+/**
+ * Any row with a non-blank count, valid or not. This is what gates the
+ * submit button: a row a seller typed garbage into (a paste, or a physical
+ * keyboard ignoring `inputMode="numeric"`) must still let them press submit
+ * and find out why, via the form's own validation — never be indistinguishable
+ * from an empty screen with nothing to save.
+ */
+export function hasAnyInput(rows: Pick<CountRow, "counted">[]): boolean {
+	return rows.some((row) => row.counted.trim() !== "");
+}
+
+export type CountFilter = "all" | "todo" | "counted" | "gap";
+
+function matchesFilter(
+	filter: CountFilter,
+	expected: number,
+	counted: number | null,
+): boolean {
+	if (filter === "todo") return counted === null;
+	if (filter === "counted") return counted !== null;
+	if (filter === "gap") return counted !== null && counted !== expected;
+	return true;
+}
+
+/** A scanned or typed code naming the row outright: its barcode or its SKU. */
+function isExactMatch(
+	row: Pick<CountRow, "sku" | "barcode">,
+	q: string,
+): boolean {
+	if (!q) return false;
+	const code = q.replace(/\s/g, "");
+	return (row.barcode ?? "") === code || (row.sku ?? "").toLowerCase() === q;
+}
+
+/**
+ * The form keeps every row (so nothing typed is lost to a filter); this picks
+ * the indexes the table shows, in order, before pagination. A row whose
+ * barcode or SKU is exactly the query leads, so a scan lands on its row.
+ */
+export function visibleRowIndexes(
+	rows: Pick<
+		CountRow,
+		| "productTitle"
+		| "label"
+		| "sku"
+		| "barcode"
+		| "expected"
+		| "counted"
+		| "categoryId"
+	>[],
+	options: {
+		filter: CountFilter;
+		query: string;
+		/** A category and its descendants; null shows every category. */
+		categoryIds: ReadonlySet<string> | null;
+		parse: (value: string) => number | null;
+	},
+): number[] {
+	const q = options.query.trim().toLowerCase();
+	const exact: number[] = [];
+	const indexes: number[] = [];
+	rows.forEach((row, index) => {
+		if (options.categoryIds && !options.categoryIds.has(row.categoryId ?? "")) {
+			return;
+		}
+		const exactMatch = isExactMatch(row, q);
+		const haystack =
+			`${row.productTitle} ${row.label} ${row.sku ?? ""} ${row.barcode ?? ""}`.toLowerCase();
+		if (q && !exactMatch && !haystack.includes(q)) return;
+		if (
+			!matchesFilter(options.filter, row.expected, options.parse(row.counted))
+		)
+			return;
+		(exactMatch ? exact : indexes).push(index);
+	});
+	return [...exact, ...indexes];
+}
+
+/** A category id and every id below it, from the flat category list. */
+export function categoryFamily(
+	categories: { id: string; parent?: unknown }[],
+	categoryId: string,
+): Set<string> {
+	const ids = new Set([categoryId]);
+	let grew = true;
+	while (grew) {
+		grew = false;
+		for (const category of categories) {
+			const parent = relationId(category.parent);
+			if (parent && ids.has(parent) && !ids.has(category.id)) {
+				ids.add(category.id);
+				grew = true;
+			}
+		}
+	}
+	return ids;
+}

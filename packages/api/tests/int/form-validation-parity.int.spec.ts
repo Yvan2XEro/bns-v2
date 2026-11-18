@@ -1,0 +1,694 @@
+// @vitest-environment node
+import { readFileSync } from "node:fs";
+import { describe, expect, it, vi } from "vitest";
+
+const { validateListingAttributesMock } = vi.hoisted(() => ({
+	validateListingAttributesMock: vi.fn(
+		async (): Promise<{ field: string; message: string }[]> => [],
+	),
+}));
+vi.mock("../../src/hooks/validation", () => ({
+	validateListingAttributes: validateListingAttributesMock,
+}));
+
+import {
+	emptyProductForm,
+	productFormIssues,
+	syncVariantRows,
+} from "../../../mobile/src/lib/productForm";
+import { Listings } from "../../src/collections/Listings";
+import { attributeValueIssues } from "../../src/contracts/categoryAttributes";
+import { issuesFromErrorBody } from "../../src/contracts/formIssues";
+import {
+	listingInputIssues,
+	listingIssueStep,
+} from "../../src/contracts/listingValidation";
+import {
+	barcodeIssue,
+	isValidBarcode,
+	productInputIssues,
+	productIssueStep,
+} from "../../src/contracts/productValidation";
+import { ServiceError } from "../../src/lib/serviceError";
+import { createProduct, parseProductInput } from "../../src/services/products";
+import { fakePayload } from "./helpers/fakePayload";
+
+/**
+ * The product rules live once, in `contracts/productValidation.ts`. The
+ * service refuses with exactly what `productInputIssues` reports, and the
+ * clients import the same function — so a form that lets a step through can
+ * no longer be refused at submit for a rule it could have known.
+ */
+const valid = {
+	title: "Samsung Galaxy S24",
+	category: "cat-1",
+	status: "active",
+	options: [],
+	variants: [{ optionValues: {}, price: 1000 }],
+};
+const withColour = {
+	...valid,
+	options: [{ name: "Couleur", values: ["Noir", "Blanc"] }],
+	variants: [
+		{ optionValues: { Couleur: "Noir" }, price: 1000 },
+		{ optionValues: { Couleur: "Blanc" }, price: 1000 },
+	],
+};
+
+const CASES: Array<{ name: string; body: Record<string, unknown> }> = [
+	{ name: "a complete simple product", body: valid },
+	{ name: "a complete product with options", body: withColour },
+	{ name: "a 2-character title", body: { ...valid, title: "ab" } },
+	{ name: "a 121-character title", body: { ...valid, title: "x".repeat(121) } },
+	{ name: "a numeric title", body: { ...valid, title: 42 } },
+	{ name: "no category", body: { ...valid, category: "" } },
+	{
+		name: "11 photos",
+		body: { ...valid, images: Array.from({ length: 11 }, (_, i) => `m${i}`) },
+	},
+	{
+		name: "a 5001-character description",
+		body: { ...valid, description: "x".repeat(5001) },
+	},
+	{ name: "an unknown status", body: { ...valid, status: "live" } },
+	{
+		name: "four options",
+		body: {
+			...valid,
+			options: ["a", "b", "c", "d"].map((name) => ({ name, values: ["1"] })),
+		},
+	},
+	{
+		name: "an option without values",
+		body: { ...valid, options: [{ name: "Couleur", values: [] }] },
+	},
+	{
+		name: "an option value of 31 characters",
+		body: {
+			...withColour,
+			options: [{ name: "Couleur", values: ["Noir", "x".repeat(31)] }],
+		},
+	},
+	{
+		name: "two options with the same name",
+		body: {
+			...valid,
+			options: [
+				{ name: "Couleur", values: ["Noir"] },
+				{ name: "couleur", values: ["Blanc"] },
+			],
+		},
+	},
+	{
+		name: "a variant priced blank",
+		body: { ...valid, variants: [{ optionValues: {}, price: "" }] },
+	},
+	{
+		name: "a variant priced 12.5",
+		body: { ...valid, variants: [{ optionValues: {}, price: 12.5 }] },
+	},
+	{
+		name: "a negative cost",
+		body: { ...valid, variants: [{ optionValues: {}, price: 1, cost: -1 }] },
+	},
+	{
+		name: "a 61-character SKU",
+		body: {
+			...valid,
+			variants: [{ optionValues: {}, price: 1, sku: "x".repeat(61) }],
+		},
+	},
+	{
+		name: "two variants sharing a SKU",
+		body: {
+			...withColour,
+			variants: withColour.variants.map((v) => ({ ...v, sku: "S24" })),
+		},
+	},
+	{
+		name: "a valid EAN-13 barcode, spaces included",
+		body: {
+			...valid,
+			variants: [{ optionValues: {}, price: 1, barcode: "4006381 333931" }],
+		},
+	},
+	{
+		name: "a barcode with a wrong check digit",
+		body: {
+			...valid,
+			variants: [{ optionValues: {}, price: 1, barcode: "4006381333932" }],
+		},
+	},
+	{
+		name: "a barcode with letters",
+		body: {
+			...valid,
+			variants: [{ optionValues: {}, price: 1, barcode: "ABC123456789" }],
+		},
+	},
+	{
+		name: "a numeric barcode",
+		body: {
+			...valid,
+			variants: [{ optionValues: {}, price: 1, barcode: 4006381333931 }],
+		},
+	},
+	{
+		name: "two variants sharing a barcode",
+		body: {
+			...withColour,
+			variants: withColour.variants.map((v) => ({
+				...v,
+				barcode: "96385074",
+			})),
+		},
+	},
+	{
+		name: "a variant using a value its option does not have",
+		body: {
+			...withColour,
+			variants: [{ optionValues: { Couleur: "Rouge" }, price: 1 }],
+		},
+	},
+	{
+		name: "two variants with the same options",
+		body: {
+			...withColour,
+			variants: [withColour.variants[0], withColour.variants[0]],
+		},
+	},
+	{
+		name: "two variants without options",
+		body: { ...valid, variants: [valid.variants[0], valid.variants[0]] },
+	},
+	{ name: "no variant", body: { ...valid, variants: [] } },
+	{
+		name: "a preparation time of 721 hours",
+		body: { ...valid, delivery: { handlingHours: 721 } },
+	},
+	{
+		name: "a 2001-character return policy",
+		body: { ...valid, returnPolicy: "x".repeat(2001) },
+	},
+	{ name: "a 61-month warranty", body: { ...valid, warrantyMonths: 61 } },
+];
+
+describe("product rules: the service refuses exactly what the shared rules report", () => {
+	for (const { name, body } of CASES) {
+		it(name, () => {
+			const issues = productInputIssues(body);
+			let refusal: unknown = null;
+			try {
+				parseProductInput(body);
+			} catch (error) {
+				refusal = error;
+			}
+			if (issues.length === 0) {
+				expect(refusal).toBeNull();
+				return;
+			}
+			expect(refusal).toBeInstanceOf(ServiceError);
+			expect(refusal).toMatchObject({
+				code: "generic.validation",
+				status: 400,
+				details: { issues },
+			});
+		});
+	}
+
+	it("every refusal names a field the wizard can send the seller back to", () => {
+		for (const { body } of CASES) {
+			for (const issue of productInputIssues(body)) {
+				expect(issue.path).not.toBe("");
+				expect(["info", "variants", "publish"]).toContain(
+					productIssueStep(issue.path),
+				);
+			}
+		}
+	});
+});
+
+describe("photo limit: the forms refuse what the service refuses", () => {
+	const photos = (n: number) => Array.from({ length: n }, (_, i) => `m${i}`);
+	const payload = (photosIncluded: number) =>
+		fakePayload(
+			{
+				users: [{ id: "u-1" }],
+				categories: [{ id: "cat-1", name: "Phones" }],
+				shops: [{ id: "s-1", status: "active", owner: "u-1", level: 2 }],
+				"shop-members": [
+					{
+						id: "m-1",
+						shop: "s-1",
+						user: "u-1",
+						role: "owner",
+						status: "active",
+					},
+				],
+				products: [],
+				"product-variants": [],
+				"stock-movements": [],
+				listings: [],
+			},
+			{ globals: { "app-settings": { media: { photosIncluded } } } },
+		);
+
+	it.each([
+		[3, 3, true],
+		[3, 4, false],
+		[5, 5, true],
+		[5, 6, false],
+		[1, 2, false],
+	])("limit %i, %i photos: accepted %s by both", async (limit, count, ok) => {
+		const body = { ...valid, images: photos(count) };
+		const issues = productInputIssues(body, { photoLimit: limit });
+		const refusal = await createProduct(
+			payload(limit),
+			{ id: "u-1" },
+			"s-1",
+			body,
+		)
+			.then(() => null)
+			.catch((error) => error);
+		expect(issues.length === 0).toBe(ok);
+		if (ok) {
+			expect(refusal).toBeNull();
+			return;
+		}
+		expect(refusal).toMatchObject({
+			code: "media.photoLimit",
+			status: 400,
+			details: { issues, limit },
+		});
+	});
+
+	it("both clients read the refusal back onto the photos", () => {
+		const issues = productInputIssues(
+			{ ...valid, images: photos(4) },
+			{ photoLimit: 3 },
+		);
+		expect(
+			issuesFromErrorBody({
+				code: "media.photoLimit",
+				details: { issues, limit: 3 },
+			}),
+		).toEqual([{ path: "images", rule: "photoLimit", params: { max: 3 } }]);
+		expect(productIssueStep("images")).toBe("info");
+		expect(listingIssueStep("images")).toBe("photos");
+	});
+
+	it("an edit above the limit may keep its photos, not add one", () => {
+		const body = { ...valid, images: photos(6) };
+		expect(
+			productInputIssues(body, { photoLimit: 3, previousImageCount: 6 }),
+		).toEqual([]);
+		expect(
+			productInputIssues(
+				{ ...valid, images: photos(7) },
+				{ photoLimit: 3, previousImageCount: 6 },
+			).map((issue) => issue.rule),
+		).toEqual(["photoLimit"]);
+	});
+});
+
+describe("barcode rule", () => {
+	it("accepts EAN-8, UPC-A, EAN-13 and GTIN-14 with a valid check digit", () => {
+		for (const code of [
+			"96385074",
+			"036000291452",
+			"4006381333931",
+			"10012345678902",
+		]) {
+			expect(isValidBarcode(code)).toBe(true);
+		}
+	});
+
+	it("refuses other lengths, letters and a wrong check digit", () => {
+		for (const code of [
+			"1234567",
+			"123456789",
+			"4006381333932",
+			"40063813339A1",
+		]) {
+			expect(isValidBarcode(code)).toBe(false);
+		}
+	});
+
+	it("leaves a blank barcode alone", () => {
+		expect(barcodeIssue("")).toBeNull();
+		expect(barcodeIssue("  ")).toBeNull();
+		expect(barcodeIssue(null)).toBeNull();
+		expect(barcodeIssue(42)).toBe("text");
+	});
+});
+
+describe("product rules: the mobile wizard runs the same rules", () => {
+	it("flags what the server would refuse, on the server's paths", () => {
+		const form = emptyProductForm();
+		form.title = "Samsung";
+		form.category = { id: "cat-1", name: "Phones", slug: "phones" };
+		form.hasVariants = true;
+		form.options = [{ name: "Couleur", values: ["Noir", "Blanc"] }];
+		form.variants = syncVariantRows(form).map((row) => ({
+			...row,
+			price: "1000",
+			sku: "S24",
+		}));
+		form.handlingHours = "900";
+		const paths = productFormIssues(form, []).map((issue) => issue.path);
+		expect(paths).toEqual(["variants.1.sku", "delivery.handlingHours"]);
+	});
+
+	it("flags a barcode the server would refuse", () => {
+		const form = emptyProductForm();
+		form.title = "Samsung";
+		form.category = { id: "cat-1", name: "Phones", slug: "phones" };
+		form.variants = [
+			{ ...form.variants[0], price: "1000", barcode: "4006381333932" },
+		];
+		expect(productFormIssues(form, [])).toEqual([
+			{ path: "variants.0.barcode", rule: "barcode" },
+		]);
+	});
+});
+
+describe("one rule module, every caller", () => {
+	const read = (path: string) =>
+		readFileSync(new URL(path, import.meta.url), "utf8");
+
+	it.each([
+		[
+			"the product service",
+			"../../src/services/products.ts",
+			"productValidation",
+		],
+		[
+			"the listings hook",
+			"../../src/collections/Listings.ts",
+			"listingValidation",
+		],
+		["the listings hook", "../../src/collections/Listings.ts", "photoLimit"],
+		["the product service", "../../src/services/products.ts", "photoLimit"],
+		[
+			"the web photo picker",
+			"../../../web/src/components/listing/image-picker.tsx",
+			"photoLimit",
+		],
+		[
+			"the web app config",
+			"../../../web/src/hooks/use-app-config.tsx",
+			"photoLimit",
+		],
+		[
+			"the mobile photo helpers",
+			"../../../mobile/src/lib/photoLimit.ts",
+			"photoLimit",
+		],
+		[
+			"the mobile app config",
+			"../../../mobile/src/contexts/AppConfigContext.tsx",
+			"photoLimit",
+		],
+		[
+			"the attribute check",
+			"../../src/hooks/validation.ts",
+			"categoryAttributes",
+		],
+		[
+			"the mobile product wizard",
+			"../../../mobile/src/lib/productForm.ts",
+			"productValidation",
+		],
+		[
+			"the mobile listing forms",
+			"../../../mobile/src/lib/listingForm.ts",
+			"listingValidation",
+		],
+		[
+			"the web listing creation",
+			"../../../web/src/lib/listing-issues.ts",
+			"listingValidation",
+		],
+		[
+			"the web seller product editor",
+			"../../../web/src/lib/product-form.ts",
+			"productValidation",
+		],
+		[
+			"the review photo service",
+			"../../src/services/reviewPhotos.ts",
+			"reviewPhotos",
+		],
+		[
+			"the web review form",
+			"../../../web/src/lib/review-photos.ts",
+			"reviewPhotos",
+		],
+		[
+			"the mobile review form",
+			"../../../mobile/src/lib/reviewPhotos.ts",
+			"reviewPhotos",
+		],
+	])("%s imports contracts/%s", (_, file, module) => {
+		expect(read(file)).toMatch(new RegExp(`contracts/${module}"`));
+	});
+});
+
+describe("attribute rules", () => {
+	const defs = [
+		{ slug: "brand", name: "Marque", type: "text", required: true },
+		{ slug: "km", name: "Kilométrage", type: "number", min: 0, max: 500000 },
+		{
+			slug: "fuel",
+			name: "Carburant",
+			type: "select",
+			options: [{ value: "diesel" }, "petrol"],
+		},
+		{ slug: "ac", name: "Clim", type: "boolean" },
+	];
+
+	it("reports each refusal on attributes.<slug>", () => {
+		expect(
+			attributeValueIssues(defs, {
+				km: "12",
+				fuel: "electric",
+				ac: "true",
+			}).map((issue) => [issue.path, issue.rule]),
+		).toEqual([
+			["attributes.brand", "required"],
+			["attributes.km", "number"],
+			["attributes.fuel", "option"],
+			["attributes.ac", "boolean"],
+		]);
+	});
+
+	it("checks the condition like any other select attribute", () => {
+		const condition = {
+			slug: "condition",
+			name: "État",
+			type: "select",
+			options: [{ value: "new", label: "Neuf" }, { value: "good" }],
+		};
+		expect(attributeValueIssues([condition], { condition: "good" })).toEqual(
+			[],
+		);
+		expect(
+			attributeValueIssues([condition], { condition: "Neuf" }).map((issue) => [
+				issue.path,
+				issue.rule,
+			]),
+		).toEqual([["attributes.condition", "option"]]);
+	});
+
+	it("enforces bounds only once they are set", () => {
+		expect(attributeValueIssues(defs, { brand: "x", km: 600000 })).toEqual([
+			expect.objectContaining({ path: "attributes.km", rule: "max" }),
+		]);
+		expect(
+			attributeValueIssues([{ slug: "n", type: "number" }], { n: -5 }),
+		).toEqual([]);
+	});
+});
+
+describe("classified listing rules", () => {
+	const product = {
+		price: { enabled: true, required: true },
+		photos: { enabled: true, required: true },
+	};
+	const body = {
+		title: "iPhone",
+		description: "desc",
+		category: "cat-1",
+		location: "Douala",
+		price: 1000,
+		images: [{ image: "m1" }],
+	};
+
+	it("accepts a complete listing", () => {
+		expect(listingInputIssues(body, { preset: product })).toEqual([]);
+	});
+
+	it("names each missing field and the step that shows it", () => {
+		const issues = listingInputIssues(
+			{ ...body, title: " ", location: "", price: undefined, images: [] },
+			{ preset: product },
+		);
+		expect(
+			issues.map((issue) => [issue.path, listingIssueStep(issue.path)]),
+		).toEqual([
+			["title", "describe"],
+			["location", "details"],
+			["price", "details"],
+			["images", "photos"],
+		]);
+	});
+
+	it("refuses a tag the chosen category does not get, once tags are loaded", () => {
+		expect(
+			listingInputIssues(
+				{ ...body, tags: ["t-delivery", "t-visit"] },
+				{ preset: product, tags: ["t-delivery"] },
+			),
+		).toEqual([{ path: "tags", rule: "category", params: { count: 1 } }]);
+		expect(
+			listingInputIssues({ ...body, tags: ["t-visit"] }, { preset: product }),
+		).toEqual([]);
+	});
+
+	it("refuses a fourth image only when the listing grows past three", () => {
+		const four = Array.from({ length: 4 }, (_, i) => ({ image: `m${i}` }));
+		expect(
+			listingInputIssues({ ...body, images: four }, { preset: product }),
+		).toEqual([{ path: "images", rule: "photoLimit", params: { max: 3 } }]);
+		expect(
+			listingInputIssues(
+				{ ...body, images: four },
+				{ preset: product, previousImageCount: 5 },
+			),
+		).toEqual([]);
+	});
+
+	it("follows the photo limit the public config serves", () => {
+		const four = Array.from({ length: 4 }, (_, i) => ({ image: `m${i}` }));
+		expect(
+			listingInputIssues(
+				{ ...body, images: four },
+				{ preset: product, photoLimit: 5 },
+			),
+		).toEqual([]);
+		expect(
+			listingInputIssues(
+				{ ...body, images: four },
+				{ preset: product, photoLimit: 2, previousImageCount: 3 },
+			),
+		).toEqual([{ path: "images", rule: "photoLimit", params: { max: 2 } }]);
+	});
+});
+
+describe("the listings hook answers with the field it refuses", () => {
+	const beforeChange = Listings.hooks?.beforeChange?.[0] as (
+		args: unknown,
+	) => Promise<Record<string, unknown>>;
+	const payload = fakePayload({
+		categories: [
+			{ id: "cat-0", slug: "electronics", listingForm: { type: "product" } },
+			{
+				id: "cat-1",
+				slug: "phones",
+				parent: "cat-0",
+				listingForm: { type: "product" },
+			},
+			{ id: "cat-9", slug: "holiday", listingForm: { type: "rental" } },
+		],
+		tags: [
+			{ id: "t-delivery", slug: "delivery", categories: ["cat-0"] },
+			{ id: "t-visit", slug: "visit", categories: ["cat-9"] },
+		],
+	});
+	const create = (data: Record<string, unknown>) =>
+		beforeChange({
+			operation: "create",
+			data: {
+				title: "iPhone",
+				description: "desc",
+				category: "cat-1",
+				location: "Douala",
+				images: [],
+				...data,
+			},
+			req: { payload, user: { id: "u-1" }, context: {} },
+		});
+
+	it("a missing price is a ValidationError on `price`", async () => {
+		await expect(create({ price: null })).rejects.toMatchObject({
+			status: 400,
+			data: { errors: [{ path: "price" }] },
+		});
+	});
+
+	it("a condition is an attribute: the retired field is not checked", async () => {
+		await expect(
+			create({ price: 10, condition: "mint" }),
+		).resolves.toBeTruthy();
+	});
+
+	it("attribute refusals are ValidationErrors on `attributes.<slug>`", async () => {
+		validateListingAttributesMock.mockResolvedValueOnce([
+			{ field: "brand", message: "Marque is required" },
+		]);
+		await expect(create({ price: 10 })).rejects.toMatchObject({
+			data: {
+				errors: [{ path: "attributes.brand", message: "Marque is required" }],
+			},
+		});
+	});
+
+	it("a tag inherited from an ancestor category is accepted", async () => {
+		await expect(
+			create({ price: 10, tags: ["t-delivery"] }),
+		).resolves.toMatchObject({ tags: ["t-delivery"] });
+	});
+
+	it("a tag the category does not get is a ValidationError on `tags`", async () => {
+		await expect(
+			create({ price: 10, tags: ["t-delivery", "t-visit"] }),
+		).rejects.toMatchObject({
+			status: 400,
+			data: { errors: [{ path: "tags" }] },
+		});
+	});
+
+	it("the product service drops the tags a new category does not get", async () => {
+		const data = await beforeChange({
+			operation: "update",
+			data: {
+				title: "iPhone",
+				category: "cat-9",
+				price: 10,
+				tags: ["t-delivery", "t-visit"],
+			},
+			originalDoc: { category: "cat-1", tags: ["t-delivery", "t-visit"] },
+			req: { payload, user: null, context: { productService: true } },
+		});
+		expect(data.tags).toEqual(["t-visit"]);
+	});
+
+	it("both clients read those paths back out of the response body", () => {
+		expect(
+			issuesFromErrorBody({
+				errors: [
+					{
+						name: "ValidationError",
+						data: { errors: [{ path: "price", message: "x" }] },
+					},
+				],
+			}),
+		).toEqual([{ path: "price", rule: "invalid" }]);
+		expect(
+			issuesFromErrorBody({
+				code: "generic.validation",
+				details: { issues: [{ path: "variants.0.sku", rule: "taken" }] },
+			}),
+		).toEqual([{ path: "variants.0.sku", rule: "taken" }]);
+	});
+});

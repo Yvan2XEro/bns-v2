@@ -1,0 +1,344 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useRef, useState } from "react";
+import {
+	AccessibilityInfo,
+	ActivityIndicator,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
+import { CheckoutButton } from "@/src/components/checkout/CheckoutButton";
+import { CheckoutGate } from "@/src/components/checkout/CheckoutGate";
+import { CheckoutHeader } from "@/src/components/checkout/CheckoutHeader";
+import {
+	useAppLocale,
+	useCheckoutFlow,
+} from "@/src/components/checkout/CheckoutProvider";
+import { FormError } from "@/src/components/checkout/FormError";
+import { OrderSummaryCard } from "@/src/components/checkout/OrderSummaryCard";
+import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPicker";
+import { PinnedActionBar } from "@/src/components/checkout/PinnedActionBar";
+import { PreContractPanel } from "@/src/components/checkout/PreContractPanel";
+import { SellerCard } from "@/src/components/checkout/SellerCard";
+import { SplitReview } from "@/src/components/checkout/SplitReview";
+import { ScreenColumn } from "@/src/components/layout/ScreenColumn";
+import { formStyles } from "@/src/components/seller/formStyles";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
+import { useCart } from "@/src/hooks/useCart";
+import { ApiError } from "@/src/lib/api";
+import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
+import {
+	newIdempotencyKey,
+	placeOrderBody,
+	quoteDifferences,
+} from "@/src/lib/checkoutFlow";
+import { isSplitCart } from "@/src/lib/checkoutGroupFlow";
+import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
+import type { PaymentMethod } from "@/src/types/order";
+
+export default function CheckoutReviewScreen() {
+	const c = useShopTheme();
+	return (
+		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
+			<CheckoutHeader current="review" />
+			<CheckoutGate needs="option">
+				<ReviewOrSplit />
+			</CheckoutGate>
+		</SafeAreaView>
+	);
+}
+
+function ReviewOrSplit() {
+	const cart = useCart();
+	const { state } = useCheckoutFlow();
+	if (cart.data && isSplitCart(cart.data) && state.address) {
+		return <SplitReview address={state.address} />;
+	}
+	return <Review />;
+}
+
+const isQuoteChanged = (error: unknown) =>
+	error instanceof ApiError && error.code === ERROR_CODES.checkoutQuoteChanged;
+
+function Review() {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const locale = useAppLocale();
+	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
+	const { state, dispatch, quote, place, requestQuote, addressChoice } =
+		useCheckoutFlow();
+	const cart = useCart();
+	const scroll = useRef<ScrollView>(null);
+	// The order button stays live: pressed before the terms are ticked, it
+	// says why and takes the buyer to the box instead of sitting dimmed.
+	const [termsNudge, setTermsNudge] = useState(false);
+	const backToAddress = () => router.dismissTo("/checkout/address");
+
+	const retryQuote = () => {
+		if (!state.address || !state.option) return;
+		requestQuote(
+			state.address,
+			state.option,
+			state.paymentMethod,
+			(fresh) => dispatch({ type: "quoteLoaded", quote: fresh }),
+			backToAddress,
+		);
+	};
+
+	// A method change re-prices the order (the protection fee is the server's
+	// to compute, never this screen's), so it asks for a fresh quote the same
+	// way picking a different delivery option does.
+	const choosePaymentMethod = (method: PaymentMethod) => {
+		dispatch({ type: "paymentMethodChosen", method });
+		if (!state.address || !state.option) return;
+		requestQuote(
+			state.address,
+			state.option,
+			method,
+			(fresh) => dispatch({ type: "quoteLoaded", quote: fresh }),
+			backToAddress,
+		);
+	};
+
+	// `checkout.quoteChanged` is answered with a new quote, never a retry: the
+	// buyer must see, and tick for, the summary that will actually be placed.
+	const placeOrder = () => {
+		if (state.quote && !state.accepted) {
+			setTermsNudge(true);
+			scroll.current?.scrollToEnd({ animated: true });
+			AccessibilityInfo.announceForAccessibility(t("checkout.acceptRequired"));
+			return;
+		}
+		const placement = placeOrderBody(state, locale);
+		if (!placement) return;
+		const body = addressChoice.save
+			? {
+					...placement,
+					saveAddress: { label: addressChoice.save.label.trim() },
+				}
+			: placement;
+		place.mutate(body, {
+			onSuccess: (placed) => {
+				router.dismissAll();
+				// A mobile_money placement still owes the server its payment
+				// attempt — the pay screen, never the COD confirmation.
+				if (body.paymentMethod === "mobile_money") {
+					router.replace({
+						pathname: "/checkout/[orderId]/pay",
+						params: { orderId: placed.orderId, from: "checkout" },
+					});
+					return;
+				}
+				router.replace({
+					pathname: "/checkout/confirmation/[id]",
+					params: { id: placed.orderId, c: placed.confirmationRequired },
+				});
+			},
+			onError: (error) => {
+				if (!isQuoteChanged(error) || !state.address || !state.option) return;
+				requestQuote(
+					state.address,
+					state.option,
+					state.paymentMethod,
+					(fresh) =>
+						dispatch({
+							type: "quoteChanged",
+							quote: fresh,
+							idempotencyKey: newIdempotencyKey(),
+						}),
+					backToAddress,
+				);
+			},
+		});
+	};
+
+	// Shown above every other outcome, including a quote error: switching
+	// back to COD must stay reachable even when the protected quote the buyer
+	// just asked for comes back refused.
+	const methodPicker = protectedPaymentEnabled ? (
+		<PaymentMethodPicker
+			method={state.paymentMethod}
+			fee={
+				state.quote && state.quote.summary.paymentMethod === "mobile_money"
+					? state.quote.summary.amounts.buyerProtectionFee
+					: null
+			}
+			buyerProtection={buyerProtection}
+			locale={locale}
+			onChoose={choosePaymentMethod}
+		/>
+	) : null;
+
+	if (quote.isPending) {
+		return (
+			<ScreenColumn width="reading">
+				<ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+					{methodPicker}
+					<View
+						style={[
+							styles.loading,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+						accessibilityRole="progressbar"
+						accessibilityLabel={t("checkout.loadingQuote")}
+					>
+						<ActivityIndicator color={c.primary} />
+						<Text style={[styles.loadingText, { color: c.body }]}>
+							{t("checkout.loadingQuote")}
+						</Text>
+					</View>
+				</ScrollView>
+			</ScreenColumn>
+		);
+	}
+	if (!state.quote) {
+		return (
+			<ScreenColumn width="reading">
+				<ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+					{methodPicker}
+					<View style={{ gap: 12 }}>
+						<FormError
+							message={quote.error ? resolveErrorMessage(quote.error, t) : null}
+						/>
+						<View style={formStyles.row}>
+							<CheckoutButton
+								variant="outline"
+								label={t("common.back")}
+								onPress={() => router.back()}
+							/>
+							<CheckoutButton
+								label={t("checkout.retryQuote")}
+								onPress={retryQuote}
+								style={{ flex: 1 }}
+							/>
+						</View>
+					</View>
+				</ScrollView>
+			</ScreenColumn>
+		);
+	}
+
+	const placeError =
+		place.error && !isQuoteChanged(place.error) ? place.error : null;
+	const shown = placeError ?? quote.error;
+	const total = formatPrice(state.quote.summary.amounts.total, locale);
+
+	return (
+		<View style={{ flex: 1 }}>
+			<ScreenColumn width="reading">
+				<ScrollView
+					ref={scroll}
+					contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 32 }}
+				>
+					{methodPicker}
+					{state.previousQuote ? (
+						<View
+							style={[styles.notice, { backgroundColor: c.warningSoft }]}
+							accessibilityRole="alert"
+						>
+							<Ionicons name="alert-circle" size={20} color={c.warningText} />
+							<View style={{ flex: 1, gap: 2 }}>
+								<Text style={[styles.noticeTitle, { color: c.warningText }]}>
+									{t("checkout.quoteChanged")}
+								</Text>
+								<Text style={[styles.noticeBody, { color: c.warningText }]}>
+									{t("checkout.quoteChangedBody")}
+								</Text>
+							</View>
+						</View>
+					) : null}
+					{cart.data && !isSplitCart(cart.data) && cart.data.shop ? (
+						<SellerCard
+							shop={cart.data.shop}
+							seller={state.quote.seller}
+							phone={state.quote.preContract.seller.phone}
+						/>
+					) : null}
+					<OrderSummaryCard
+						quote={state.quote}
+						changed={quoteDifferences(state.previousQuote, state.quote)}
+						locale={locale}
+					/>
+					<PreContractPanel
+						contract={state.quote.preContract}
+						paymentMethod={state.quote.summary.paymentMethod}
+						language={state.contractLocale ?? locale}
+						appLanguage={locale}
+						onLanguage={(next) =>
+							dispatch({ type: "contractLocale", locale: next })
+						}
+					/>
+					<Pressable
+						onPress={() => {
+							setTermsNudge(false);
+							dispatch({ type: "accepted", accepted: !state.accepted });
+						}}
+						accessibilityRole="checkbox"
+						accessibilityLabel={t("checkout.acceptTerms")}
+						accessibilityState={{ checked: state.accepted }}
+						style={styles.accept}
+					>
+						<Ionicons
+							name={state.accepted ? "checkbox" : "square-outline"}
+							size={24}
+							color={state.accepted ? c.link : c.muted}
+						/>
+						<Text style={[styles.acceptText, { color: c.text }]}>
+							{t("checkout.acceptTerms")}
+						</Text>
+					</Pressable>
+					<FormError
+						message={
+							termsNudge && !state.accepted
+								? t("checkout.acceptRequired")
+								: null
+						}
+					/>
+					<FormError message={shown ? resolveErrorMessage(shown, t) : null} />
+				</ScrollView>
+			</ScreenColumn>
+			<PinnedActionBar>
+				<CheckoutButton
+					label={t("checkout.placeOrderTotal", { total })}
+					onPress={placeOrder}
+					disabled={!state.quote}
+					loading={place.isPending}
+				/>
+			</PinnedActionBar>
+		</View>
+	);
+}
+
+const styles = StyleSheet.create({
+	notice: { flexDirection: "row", gap: 10, padding: 14, borderRadius: 14 },
+	noticeTitle: { fontSize: 15, lineHeight: 22, fontFamily: Fonts.bodySemibold },
+	noticeBody: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.body },
+	accept: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		minHeight: 48,
+	},
+	acceptText: { flex: 1, fontSize: 15, lineHeight: 21, fontFamily: Fonts.body },
+	loading: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		padding: 16,
+		borderRadius: 16,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
+	loadingText: {
+		flex: 1,
+		fontSize: 15,
+		lineHeight: 22,
+		fontFamily: Fonts.body,
+	},
+});
