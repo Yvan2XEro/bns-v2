@@ -23,34 +23,39 @@ export function ConsentNotice({
 	checked,
 	onToggle,
 	error,
+	method = "vendor",
 }: {
 	checked: boolean;
 	onToggle: (checked: boolean) => void;
 	error?: string | null;
+	/** `manual`: the photos stay with us and a moderator reviews them. */
+	method?: "manual" | "vendor";
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const ns =
+		method === "manual"
+			? "verification.identity.manualConsent"
+			: "verification.identity.consent";
 
 	return (
 		<View
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
-			<Text style={[styles.title, { color: c.text }]}>
-				{t("verification.identity.consent.title")}
-			</Text>
+			<Text style={[styles.title, { color: c.text }]}>{t(`${ns}.title`)}</Text>
 			<Text style={[styles.paragraph, { color: c.body }]}>
-				{t("verification.identity.consent.intro")}
+				{t(`${ns}.intro`)}
 			</Text>
 			{NOTICE_KEYS.map((key) => (
 				<Text key={key} style={[styles.paragraph, { color: c.body }]}>
-					{t(`verification.identity.consent.${key}`)}
+					{t(`${ns}.${key}`)}
 				</Text>
 			))}
 
 			<Pressable
 				accessibilityRole="checkbox"
 				accessibilityState={{ checked }}
-				accessibilityLabel={t("verification.identity.consent.checkboxLabel")}
+				accessibilityLabel={t(`${ns}.checkboxLabel`)}
 				onPress={() => onToggle(!checked)}
 				style={styles.checkboxRow}
 				hitSlop={6}
@@ -67,7 +72,7 @@ export function ConsentNotice({
 					) : null}
 				</View>
 				<Text style={[styles.checkboxLabel, { color: c.text }]}>
-					{t("verification.identity.consent.checkboxLabel")}
+					{t(`${ns}.checkboxLabel`)}
 				</Text>
 			</Pressable>
 

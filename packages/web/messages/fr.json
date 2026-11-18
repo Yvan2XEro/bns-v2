@@ -1938,7 +1938,10 @@
 				"name": "Nom (tel que lu)",
 				"liveness": "Détection de vivacité",
 				"faceMatch": "Correspondance faciale",
-				"vendorConsole": "Ouvrir dans la console du prestataire"
+				"vendorConsole": "Ouvrir dans la console du prestataire",
+				"method": "Méthode",
+				"manualMethod": "Vérification manuelle",
+				"manualHint": "Aucun contrôle automatique : comparez le selfie aux photos de la pièce, puis validez la checklist."
 			},
 			"kycStatus": {
 				"not_started": "Non commencé",
@@ -1986,7 +1989,12 @@
 				"registration_number_matches_document": "Le numéro d'enregistrement correspond au document",
 				"niu_matches_certificate": "Le NIU correspond au certificat",
 				"representative_matches_identity_or_mandate": "Le représentant correspond à sa pièce d'identité ou à son mandat",
-				"documents_legible_and_current": "Les documents sont lisibles et à jour"
+				"documents_legible_and_current": "Les documents sont lisibles et à jour",
+				"document_genuine_and_legible": "La pièce semble authentique et chaque champ est lisible",
+				"document_not_expired": "La pièce n'est pas expirée",
+				"selfie_matches_document": "Le visage du selfie correspond à la photo de la pièce",
+				"name_matches_account": "Le nom sur la pièce correspond au compte",
+				"holder_is_adult": "La date de naissance montre que le titulaire a 18 ans ou plus"
 			},
 			"documents": {
 				"title": "Documents",
@@ -2404,6 +2412,27 @@
 				"checkboxError": "Merci d'accepter la notice pour continuer.",
 				"start": "Démarrer la vérification",
 				"starting": "Démarrage…"
+			},
+			"manual": {
+				"title": "Vérifiez votre identité",
+				"intro": "Envoyez des photos nettes de votre carte nationale d'identité, passeport ou titre de séjour, et un selfie où vous la tenez à côté de votre visage. Un modérateur BuyNSellem les vérifie, en général sous 2 jours ouvrés.",
+				"submit": "Envoyer pour vérification",
+				"submitting": "Envoi…",
+				"hint": {
+					"identity_front": "Le côté avec votre photo. Les quatre coins visibles, sans reflet, texte lisible.",
+					"identity_back": "L'autre côté de la carte. Pour un passeport, la page avec votre signature.",
+					"identity_selfie": "Tenez la pièce à côté de votre visage, côté photo vers l'objectif. Votre visage et la pièce doivent être nets."
+				}
+			},
+			"manualConsent": {
+				"title": "Avant d'envoyer",
+				"intro": "Pour vérifier votre identité, un modérateur BuyNSellem examine les photos que vous envoyez ici. Lisez ce que cela implique avant de continuer.",
+				"collects": "Ce que nous collectons : des photos du recto et du verso d'une pièce d'identité (CNI, passeport ou titre de séjour) et un selfie où vous la tenez.",
+				"vendor": "Ces photos restent sur le stockage de BuyNSellem. Elles ne sont envoyées à aucun prestataire de vérification externe. Seuls des modérateurs habilités peuvent les ouvrir, et chaque consultation est enregistrée.",
+				"retention": "Nous conservons le dossier de vérification 90 jours après une décision définitive (jusqu'à un an si la demande a été révoquée pour fraude), et la trace qu'une vérification a eu lieu pendant 5 ans, comme la loi l'exige.",
+				"rights": "Vous pouvez demander à consulter ou supprimer ces informations à tout moment, sauf ce que la loi nous oblige à conserver.",
+				"contact": "Contact : privacy@buynsellem.com",
+				"checkboxLabel": "J'ai lu cette notice et j'accepte que les modérateurs de BuyNSellem vérifient ma pièce et mon selfie."
 			}
 		},
 		"return": {
@@ -2573,7 +2602,10 @@
 			"niu_certificate": "Certificat NIU",
 			"legal_representative_id": "Pièce d'identité du représentant légal",
 			"mandate": "Mandat",
-			"other": "Autre document"
+			"other": "Autre document",
+			"identity_front": "Pièce d'identité — recto",
+			"identity_back": "Pièce d'identité — verso",
+			"identity_selfie": "Selfie avec votre pièce"
 		},
 		"noRequest": "Aucune demande de vérification d'entreprise n'est ouverte. Démarrez-en une depuis le centre de vérification.",
 		"backToHub": "Retour au centre de vérification",

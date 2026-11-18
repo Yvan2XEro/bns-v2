@@ -199,6 +199,9 @@ services:
       # Photon geocoder (komoot/photon) served to web and mobile through
       # /api/public/config — clients carry no geocoder setting of their own.
       PHOTON_URL: ${PHOTON_URL:-https://photon.overbrand.net}
+      # Category photos for the taxonomy import (seed/taxonomy); without it the
+      # categories are still created, only their pictures are skipped.
+      PIXABAY_API_KEY: ${PIXABAY_API_KEY:-}
       # Sentry and PostHog: set here only; /api/public/config hands the apps
       # their send-only keys and /api/relay/* forwards their events.
       SENTRY_DSN: ${SENTRY_DSN:-}

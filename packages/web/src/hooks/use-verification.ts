@@ -224,6 +224,42 @@ export function useSubmitVerification(
 	});
 }
 
+export interface SubmitIdentityVariables {
+	requestId: string;
+	/** First submission only; a resubmission from `needs_info` sends none. */
+	consent: { consentVersion: string; locale: "fr" | "en" } | null;
+}
+
+/**
+ * Submits a level-2 request checked by hand (`identityMethod: "manual"`):
+ * the identity photos are already uploaded, the consent goes with the submit.
+ */
+export function useSubmitIdentity(
+	shopId: string,
+): UseMutationResult<
+	OwnerVerificationRequest,
+	ApiError,
+	SubmitIdentityVariables
+> {
+	const queryClient = useQueryClient();
+	return useMutation<
+		OwnerVerificationRequest,
+		ApiError,
+		SubmitIdentityVariables
+	>({
+		mutationKey: [...verificationKey(shopId), "submit-identity"],
+		mutationFn: ({ requestId, consent }) =>
+			apiPost<OwnerVerificationRequest>(
+				`/api/verification-requests/${requestId}/submit`,
+				consent ?? undefined,
+			),
+		retry: false,
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: verificationKey(shopId) });
+		},
+	});
+}
+
 /** Withdraws a draft. Not gated by the feature flag: withdrawal is never intake. */
 export function useDeleteVerificationDraft(
 	shopId: string,

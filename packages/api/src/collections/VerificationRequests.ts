@@ -89,6 +89,19 @@ export const LEVEL3_CHECKLIST_ITEMS = [
 	"documents_legible_and_current",
 ] as const;
 
+/**
+ * What a reviewer confirms before approving a level-2 request checked by
+ * hand (`kyc.provider: "manual"`): the vendor's liveness and face match are
+ * replaced by a person comparing the selfie with the document.
+ */
+export const LEVEL2_MANUAL_CHECKLIST_ITEMS = [
+	"document_genuine_and_legible",
+	"document_not_expired",
+	"selfie_matches_document",
+	"name_matches_account",
+	"holder_is_adult",
+] as const;
+
 const options = <T extends readonly string[]>(values: T) =>
 	values.map((value) => ({ label: value, value }));
 
@@ -256,7 +269,7 @@ export const VerificationRequests: CollectionConfig = {
 						{
 							name: "provider",
 							type: "select",
-							options: options(["didit", "smileid"] as const),
+							options: options(["didit", "smileid", "manual"] as const),
 							admin: { width: "33%" },
 						},
 						{

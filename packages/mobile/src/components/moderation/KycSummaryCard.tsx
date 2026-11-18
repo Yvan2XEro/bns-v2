@@ -18,6 +18,21 @@ export function KycSummaryCard({ kyc }: { kyc: Kyc | null | undefined }) {
 	const locale = i18n.language?.startsWith("en") ? "en-US" : "fr-FR";
 
 	if (!kyc) return null;
+	// Checked by hand: no vendor outcome to show, only the method. The
+	// photos themselves are in `DocumentList`.
+	if (kyc.provider === "manual") {
+		return (
+			<ModerationCard title={t("moderation.verifKycTitle")}>
+				<FactRow
+					label={t("moderation.verifKycMethod")}
+					value={t("moderation.verifKycManualMethod")}
+				/>
+				<Text style={[styles.manualHint, { color: c.muted }]}>
+					{t("moderation.verifKycManualHint")}
+				</Text>
+			</ModerationCard>
+		);
+	}
 
 	const expiresOn = formatDate(kyc.documentExpiresAt, undefined, locale);
 	const fullName = [kyc.givenNames, kyc.familyName].filter(Boolean).join(" ");
@@ -104,6 +119,7 @@ export function KycSummaryCard({ kyc }: { kyc: Kyc | null | undefined }) {
 }
 
 const styles = StyleSheet.create({
+	manualHint: { fontSize: 13, lineHeight: 18, fontFamily: Fonts.body },
 	vendorLink: {
 		flexDirection: "row",
 		alignItems: "center",

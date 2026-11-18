@@ -2160,7 +2160,18 @@
 		"paymentsHoldPlacedMessage": "Les nouveaux versements de la boutique sont bloqués.",
 		"paymentsHoldReleasedMessage": "Les versements reprennent.",
 		"paymentsAccountApprovedMessage": "La boutique peut être payée sur ce compte.",
-		"paymentsAccountRejectedMessage": "Aucun versement ne partira sur ce compte."
+		"paymentsAccountRejectedMessage": "Aucun versement ne partira sur ce compte.",
+		"verifChecklist_document_genuine_and_legible": "La pièce semble authentique et chaque champ est lisible",
+		"verifChecklist_document_not_expired": "La pièce n'est pas expirée",
+		"verifChecklist_selfie_matches_document": "Le visage du selfie correspond à la photo de la pièce",
+		"verifChecklist_name_matches_account": "Le nom sur la pièce correspond au compte",
+		"verifChecklist_holder_is_adult": "La date de naissance montre que le titulaire a 18 ans ou plus",
+		"verifDocumentKind_identity_front": "Pièce d'identité — recto",
+		"verifDocumentKind_identity_back": "Pièce d'identité — verso",
+		"verifDocumentKind_identity_selfie": "Selfie avec votre pièce",
+		"verifKycMethod": "Méthode",
+		"verifKycManualMethod": "Vérification manuelle",
+		"verifKycManualHint": "Aucun contrôle automatique : comparez le selfie aux photos de la pièce, puis validez la checklist."
 	},
 	"shop": {
 		"deliveryCities": "Livraison ou retrait disponible à : {{cities}}",
@@ -2693,6 +2704,27 @@
 				"title": "Impossible de démarrer pour l'instant",
 				"body": "La vérification d'identité n'est pas disponible pour cette boutique en ce moment. Consultez le centre de vérification pour connaître l'état actuel.",
 				"backToHub": "Retour à la vérification"
+			},
+			"manual": {
+				"title": "Vérifiez votre identité",
+				"intro": "Envoyez des photos nettes de votre carte nationale d'identité, passeport ou titre de séjour, et un selfie où vous la tenez à côté de votre visage. Un modérateur BuyNSellem les vérifie, en général sous 2 jours ouvrés.",
+				"submit": "Envoyer pour vérification",
+				"submitting": "Envoi…",
+				"hint": {
+					"identity_front": "Le côté avec votre photo. Les quatre coins visibles, sans reflet, texte lisible.",
+					"identity_back": "L'autre côté de la carte. Pour un passeport, la page avec votre signature.",
+					"identity_selfie": "Tenez la pièce à côté de votre visage, côté photo vers l'objectif. Votre visage et la pièce doivent être nets."
+				}
+			},
+			"manualConsent": {
+				"title": "Avant d'envoyer",
+				"intro": "Pour vérifier votre identité, un modérateur BuyNSellem examine les photos que vous envoyez ici. Lisez ce que cela implique avant de continuer.",
+				"collects": "Ce que nous collectons : des photos du recto et du verso d'une pièce d'identité (CNI, passeport ou titre de séjour) et un selfie où vous la tenez.",
+				"vendor": "Ces photos restent sur le stockage de BuyNSellem. Elles ne sont envoyées à aucun prestataire de vérification externe. Seuls des modérateurs habilités peuvent les ouvrir, et chaque consultation est enregistrée.",
+				"retention": "Nous conservons le dossier de vérification 90 jours après une décision définitive (jusqu'à un an si la demande a été révoquée pour fraude), et la trace qu'une vérification a eu lieu pendant 5 ans, comme la loi l'exige.",
+				"rights": "Vous pouvez demander à consulter ou supprimer ces informations à tout moment, sauf ce que la loi nous oblige à conserver.",
+				"contact": "Contact : privacy@buynsellem.com",
+				"checkboxLabel": "J'ai lu cette notice et j'accepte que les modérateurs de BuyNSellem vérifient ma pièce et mon selfie."
 			}
 		},
 		"return": {
@@ -2860,7 +2892,9 @@
 			"addPage": "Ajouter une page",
 			"addPages": "Ajouter des pages",
 			"send_one": "Envoyer {{count}} page",
-			"send": "Envoyer {{count}} pages"
+			"send": "Envoyer {{count}} pages",
+			"hintOneSide": "Prenez ou choisissez une photo nette de ce côté : les quatre coins visibles, sans reflet.",
+			"hintSelfie": "Caméra frontale : tenez votre pièce à côté de votre visage, côté photo vers l'objectif."
 		},
 		"documentKind": {
 			"rccm_extract": "Extrait RCCM",
@@ -2868,7 +2902,10 @@
 			"niu_certificate": "Certificat NIU",
 			"legal_representative_id": "Pièce d'identité du représentant légal",
 			"mandate": "Mandat",
-			"other": "Autre document"
+			"other": "Autre document",
+			"identity_front": "Pièce d'identité — recto",
+			"identity_back": "Pièce d'identité — verso",
+			"identity_selfie": "Selfie avec votre pièce"
 		},
 		"requirements": {
 			"title": "Documents demandés",

@@ -297,12 +297,17 @@ export const AppSettings: GlobalConfig = {
 				{
 					name: "kycProvider",
 					type: "select",
-					defaultValue: "didit",
+					defaultValue: "manual",
 					options: [
-						{ label: "Didit", value: "didit" },
+						{ label: "Manual review (free)", value: "manual" },
+						{ label: "Didit (paid)", value: "didit" },
 						{ label: "Smile ID", value: "smileid" },
 					],
 					required: true,
+					admin: {
+						description:
+							"Manual: the seller uploads both sides of their ID and a selfie holding it, and a moderator compares them (level-2 checklist). Didit: a paid vendor session (document, liveness, face match). A request already submitted keeps the method it was submitted with.",
+					},
 				},
 				{
 					name: "autoApproveIdentity",

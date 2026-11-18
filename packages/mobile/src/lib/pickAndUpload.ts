@@ -51,6 +51,7 @@ export type VerificationDocumentSource = "camera" | "library" | "document";
  */
 export async function pickVerificationDocument(
 	source: VerificationDocumentSource,
+	options: { frontCamera?: boolean } = {},
 ): Promise<PickedFile | null> {
 	if (source === "document") {
 		const result = await DocumentPicker.getDocumentAsync({
@@ -75,7 +76,12 @@ export async function pickVerificationDocument(
 
 	const result =
 		source === "camera"
-			? await ImagePicker.launchCameraAsync({ quality: 0.85 })
+			? await ImagePicker.launchCameraAsync({
+					quality: 0.85,
+					...(options.frontCamera
+						? { cameraType: ImagePicker.CameraType.front }
+						: {}),
+				})
 			: await ImagePicker.launchImageLibraryAsync({
 					mediaTypes: ["images"],
 					quality: 0.85,

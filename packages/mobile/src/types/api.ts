@@ -1163,6 +1163,9 @@ export type BusinessType =
 	| "cooperative";
 
 export type VerificationDocumentKind =
+	| "identity_front"
+	| "identity_back"
+	| "identity_selfie"
 	| "rccm_extract"
 	| "entreprenant_declaration"
 	| "niu_certificate"
@@ -1249,6 +1252,8 @@ export interface OwnerVerificationRequest {
 /** GET /api/shops/:id/verification */
 export interface ShopVerificationResponse {
 	enabled: boolean;
+	/** `manual`: the seller uploads the `identity_*` photos, a moderator reviews them. */
+	identityMethod: "manual" | "vendor";
 	capabilities: ShopCapabilities;
 	levelExpiresAt: string | null;
 	consentVersion: string | null;
@@ -1318,7 +1323,7 @@ export interface ModerationVerificationDetail {
 		consent: OwnerVerificationRequest["consent"];
 		kyc:
 			| (Omit<NonNullable<OwnerVerificationRequest["kyc"]>, "status"> & {
-					provider: "didit" | "smileid" | null;
+					provider: "didit" | "smileid" | "manual" | null;
 					status:
 						| "not_started"
 						| "pending"

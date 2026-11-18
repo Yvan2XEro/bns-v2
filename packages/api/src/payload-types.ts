@@ -488,7 +488,7 @@ export interface VerificationRequest {
    * Level 2 only. No biometric or image data is ever stored here.
    */
   kyc?: {
-    provider?: ('didit' | 'smileid') | null;
+    provider?: ('didit' | 'smileid' | 'manual') | null;
     sessionRef?: string | null;
     status?: ('not_started' | 'pending' | 'approved' | 'declined' | 'review' | 'abandoned' | 'error') | null;
     attempts?: number | null;
@@ -836,6 +836,9 @@ export interface VerificationDocument {
   request: string | VerificationRequest;
   shop: string | Shop;
   kind:
+    | 'identity_front'
+    | 'identity_back'
+    | 'identity_selfie'
     | 'rccm_extract'
     | 'entreprenant_declaration'
     | 'niu_certificate'
@@ -7185,7 +7188,7 @@ export interface AppSetting {
      * Off: clients hide verification entry points and the seller write routes return verification.disabled. Existing requests stay readable, reviewers keep deciding, and the retention job keeps running.
      */
     enabled?: boolean | null;
-    kycProvider: 'didit' | 'smileid';
+    kycProvider: 'manual' | 'didit' | 'smileid';
     /**
      * Off at launch: every identity decision is taken by a person. On, a level-2 request the vendor approved with no review signal is approved automatically.
      */

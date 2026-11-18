@@ -17,7 +17,13 @@ export const MAX_CAPTURE_PAGES = 6;
  * The sources a slot offers. A binary built before the scanner module landed
  * (or a device without Play services) falls back to the pickers it always had.
  */
-export function captureSources(scannerAvailable: boolean): CaptureSource[] {
+export function captureSources(
+	scannerAvailable: boolean,
+	kind?: VerificationDocumentKind,
+): CaptureSource[] {
+	// A selfie is a photo of a face, not a page: no edge-detecting scanner,
+	// no PDF.
+	if (kind === "identity_selfie") return ["camera", "library"];
 	return scannerAvailable
 		? ["scan", "library", "document"]
 		: ["camera", "library", "document"];
@@ -112,7 +118,16 @@ export function toFileUri(path: string): string {
 
 /** Identity documents have two sides; everything else is "every page". */
 export function captureHintKey(kind: VerificationDocumentKind): string {
+	if (kind === "identity_selfie") return "verification.capture.hintSelfie";
+	if (kind === "identity_front" || kind === "identity_back") {
+		return "verification.capture.hintOneSide";
+	}
 	return kind === "legal_representative_id"
 		? "verification.capture.hintTwoSides"
 		: "verification.capture.hintPages";
+}
+
+/** The selfie is taken with the front camera; every document with the back one. */
+export function usesFrontCamera(kind: VerificationDocumentKind): boolean {
+	return kind === "identity_selfie";
 }

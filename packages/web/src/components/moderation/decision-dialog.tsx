@@ -34,6 +34,7 @@ import {
 	REVOKE_REASONS,
 } from "~/lib/verification";
 import {
+	type ChecklistItem,
 	type ChecklistState,
 	checklistComplete,
 	type DecisionAction,
@@ -59,7 +60,7 @@ function toDecisionBody(
 	action: DecisionAction,
 	values: FormValues,
 	checklist: ChecklistState,
-	requestedLevel: 2 | 3,
+	checklistItems: readonly ChecklistItem[] | null,
 ): VerificationDecisionAction {
 	switch (action) {
 		case "claim":
@@ -76,7 +77,7 @@ function toDecisionBody(
 			return {
 				action: "approve",
 				note: values.note || null,
-				checklist: requestedLevel === 3 ? checklist : undefined,
+				checklist: checklistItems ? checklist : undefined,
 			};
 		case "reject":
 			return {
@@ -97,13 +98,14 @@ function toDecisionBody(
 function DecisionForm({
 	action,
 	requestId,
-	requestedLevel,
+	checklistItems,
 	checklist,
 	onClose,
 }: {
 	action: DecisionAction;
 	requestId: string;
-	requestedLevel: 2 | 3;
+	/** `checklistItemsFor(request)`: null when approval needs no checklist. */
+	checklistItems: readonly ChecklistItem[] | null;
 	checklist: ChecklistState;
 	onClose: () => void;
 }) {
@@ -120,8 +122,8 @@ function DecisionForm({
 	const reasons = REASONS_BY_ACTION[action] ?? [];
 	const checklistBlocksApprove =
 		action === "approve" &&
-		requestedLevel === 3 &&
-		!checklistComplete(checklist);
+		checklistItems !== null &&
+		!checklistComplete(checklist, checklistItems);
 
 	const sellerTemplate = (reason: string) =>
 		t(
@@ -140,7 +142,7 @@ function DecisionForm({
 		try {
 			await decide.mutateAsync({
 				requestId,
-				body: toDecisionBody(action, values, checklist, requestedLevel),
+				body: toDecisionBody(action, values, checklist, checklistItems),
 			});
 			onClose();
 		} catch (error) {
@@ -291,13 +293,14 @@ function DecisionForm({
 export function DecisionDialog({
 	action,
 	requestId,
-	requestedLevel,
+	checklistItems,
 	checklist,
 	onClose,
 }: {
 	action: DecisionAction | null;
 	requestId: string;
-	requestedLevel: 2 | 3;
+	/** `checklistItemsFor(request)`: null when approval needs no checklist. */
+	checklistItems: readonly ChecklistItem[] | null;
 	checklist: ChecklistState;
 	onClose: () => void;
 }) {
@@ -309,7 +312,7 @@ export function DecisionDialog({
 						key={action}
 						action={action}
 						requestId={requestId}
-						requestedLevel={requestedLevel}
+						checklistItems={checklistItems}
 						checklist={checklist}
 						onClose={onClose}
 					/>

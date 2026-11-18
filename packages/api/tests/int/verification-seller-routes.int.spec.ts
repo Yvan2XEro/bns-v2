@@ -918,3 +918,99 @@ function reviewerOnlyFieldNames(fields: unknown): string[] {
 	}
 	return names;
 }
+
+describe("level 2 under manual review", () => {
+	const MANUAL = { ...AUTHORISED, kycProvider: "manual" as const };
+	const draft = {
+		id: "vr-1",
+		shop: "s-1",
+		submittedBy: "u-1",
+		requestedLevel: 2,
+		status: "draft",
+		openKey: "s-1:2",
+	};
+	const doc = (kind: string, i: number) => ({
+		id: `d-${i}`,
+		request: "vr-1",
+		shop: "s-1",
+		kind,
+		sha256: `h-${i}`,
+		uploadedBy: "u-1",
+		originalFilename: `${kind}.jpg`,
+		mimeType: "image/jpeg",
+		filesize: 1000,
+		createdAt: "2026-10-01T00:00:00.000Z",
+	});
+
+	it("tells the client the method and lists the identity photos as the requirements", async () => {
+		const payload = seed({
+			settings: MANUAL,
+			requests: [draft],
+			documents: [doc("identity_front", 0)],
+		});
+		asOwner(payload);
+		const { GET } = await import(SHOP_VERIFICATION_ROUTE);
+		const body = await (
+			await GET(get("http://x/api/shops/s-1/verification"), params("s-1"))
+		).json();
+		expect(body.identityMethod).toBe("manual");
+		expect(body.nextLevel.requirements).toEqual([
+			{ key: "identity_document", status: "missing" },
+			{ key: "selfie", status: "missing" },
+		]);
+	});
+
+	it("reports a vendor method while Didit is configured", async () => {
+		const payload = seed();
+		asOwner(payload);
+		const { GET } = await import(SHOP_VERIFICATION_ROUTE);
+		const body = await (
+			await GET(get("http://x/api/shops/s-1/verification"), params("s-1"))
+		).json();
+		expect(body.identityMethod).toBe("vendor");
+	});
+
+	it("submits with the consent in the body once the three photos are there", async () => {
+		const payload = seed({
+			settings: MANUAL,
+			requests: [draft],
+			documents: ["identity_front", "identity_back", "identity_selfie"].map(
+				doc,
+			),
+		});
+		asOwner(payload);
+		const { POST } = await import(SUBMIT_ROUTE);
+
+		const refused = await POST(
+			post("http://x/api/verification-requests/vr-1/submit"),
+			params("vr-1"),
+		);
+		expect(refused.status).toBe(409);
+		expect((await refused.json()).code).toBe("verification.consentRequired");
+
+		// The app posts `{}` on every submit: still "no consent", not a 400.
+		const empty = await POST(
+			post("http://x/api/verification-requests/vr-1/submit", {}),
+			params("vr-1"),
+		);
+		expect(empty.status).toBe(409);
+
+		const malformed = await POST(
+			post("http://x/api/verification-requests/vr-1/submit", { locale: "de" }),
+			params("vr-1"),
+		);
+		expect(malformed.status).toBe(400);
+
+		const response = await POST(
+			post("http://x/api/verification-requests/vr-1/submit", {
+				consentVersion: "v1",
+				locale: "en",
+			}),
+			params("vr-1"),
+		);
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		expect(body.status).toBe("submitted");
+		expect(body.consent).toMatchObject({ version: "v1", locale: "en" });
+	});
+});

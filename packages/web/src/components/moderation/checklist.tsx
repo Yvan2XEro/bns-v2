@@ -1,20 +1,23 @@
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import {
-	CHECKLIST_ITEMS,
-	type ChecklistState,
+import type {
+	ChecklistItem,
+	ChecklistState,
 } from "~/lib/verification-decision";
 
 /**
- * The five checks a level-3 reviewer confirms before approving. Real
+ * The checks a reviewer confirms before approving (`checklistItemsFor`): the
+ * level-3 business checks, or the level-2 identity checks done by hand. Real
  * `<button>` toggles (`aria-pressed`), not a bare styled `<div>`, so each item
  * is reachable and labelled without pulling in a switch primitive nobody
  * else in this codebase depends on yet.
  */
 export function Checklist({
+	items,
 	value,
 	onChange,
 }: {
+	items: readonly ChecklistItem[];
 	value: ChecklistState;
 	onChange: (next: ChecklistState) => void;
 }) {
@@ -26,7 +29,7 @@ export function Checklist({
 				<CardTitle>{t("review.checklist.title")}</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-2">
-				{CHECKLIST_ITEMS.map((item) => {
+				{items.map((item) => {
 					const checked = value[item] === true;
 					return (
 						<button

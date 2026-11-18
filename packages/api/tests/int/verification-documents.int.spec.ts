@@ -41,6 +41,9 @@ describe("verification-documents access", () => {
 		// kind only the server knows about is removed rather than left as a
 		// promise no screen keeps.
 		expect([...DOCUMENT_KINDS]).toEqual([
+			"identity_front",
+			"identity_back",
+			"identity_selfie",
 			"rccm_extract",
 			"entreprenant_declaration",
 			"niu_certificate",

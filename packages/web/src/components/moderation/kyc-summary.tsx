@@ -20,6 +20,24 @@ export function KycSummary({ kyc }: { kyc: Kyc | null | undefined }) {
 	const locale = useLocale();
 
 	if (!kyc) return null;
+	// Checked by hand: there is no vendor outcome to show, only the method.
+	// The documents themselves are in the viewer next to this card.
+	if (kyc.provider === "manual") {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>{t("review.kyc.title")}</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-2">
+					<Row
+						label={t("review.kyc.method")}
+						value={t("review.kyc.manualMethod")}
+					/>
+					<p className="text-ink-muted text-sm">{t("review.kyc.manualHint")}</p>
+				</CardContent>
+			</Card>
+		);
+	}
 
 	const expiresAt = kyc.documentExpiresAt
 		? new Date(kyc.documentExpiresAt).toLocaleDateString(locale)

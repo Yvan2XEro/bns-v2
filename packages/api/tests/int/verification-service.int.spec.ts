@@ -761,3 +761,137 @@ describe("niu duplicate detection across a case mismatch", () => {
 		);
 	});
 });
+
+describe("manual identity review (kycProvider: manual)", () => {
+	const MANUAL = { ...AUTHORISED, kycProvider: "manual" };
+	const CONSENT = { consentVersion: "kyc-2026-10-v1", locale: "fr" as const };
+	const draftL2 = (over: Record<string, unknown> = {}) => ({
+		id: "vr-1",
+		shop: "s-1",
+		submittedBy: "u-1",
+		requestedLevel: 2,
+		status: "draft",
+		openKey: "s-1:2",
+		...over,
+	});
+	const docs = (kinds: string[]) =>
+		kinds.map((kind, i) => ({
+			id: `d-${i}`,
+			request: "vr-1",
+			shop: "s-1",
+			kind,
+			sha256: `h-${i}`,
+			uploadedBy: "u-1",
+		}));
+	const ALL = ["identity_front", "identity_back", "identity_selfie"];
+	const FULL_L2_CHECKLIST = {
+		document_genuine_and_legible: true,
+		document_not_expired: true,
+		selfie_matches_document: true,
+		name_matches_account: true,
+		holder_is_adult: true,
+	};
+	const seedManual = (kinds: string[], request = draftL2()) => {
+		const payload = seed({ requests: [request], settings: MANUAL });
+		payload.store["verification-documents"].push(...docs(kinds));
+		return payload;
+	};
+
+	it("refuses a vendor session: there is none to start", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const payload = seedManual([]);
+		await expect(
+			startKycSession(payload, OWNER, "vr-1", { ...CONSENT, platform: "web" }),
+		).rejects.toMatchObject({ code: "verification.kycUnavailable" });
+		expect(fetchMock).not.toHaveBeenCalled();
+		vi.unstubAllGlobals();
+	});
+
+	it("refuses to submit until the front, the back and the selfie are uploaded", async () => {
+		const payload = seedManual(["identity_front", "identity_selfie"]);
+		await expect(
+			submitRequest(payload, OWNER, "vr-1", { identity: CONSENT }),
+		).rejects.toMatchObject({
+			code: "verification.documentsMissing",
+			status: 409,
+		});
+		expect(requests(payload)[0].status).toBe("draft");
+	});
+
+	it("refuses to submit without the current consent version", async () => {
+		const payload = seedManual(ALL);
+		await expect(submitRequest(payload, OWNER, "vr-1")).rejects.toMatchObject({
+			code: "verification.consentRequired",
+		});
+		await expect(
+			submitRequest(payload, OWNER, "vr-1", {
+				identity: { ...CONSENT, consentVersion: "old" },
+			}),
+		).rejects.toMatchObject({ code: "verification.consentRequired" });
+	});
+
+	it("submits with the consent recorded and the request marked manual, with no vendor flags", async () => {
+		const payload = seedManual(ALL);
+		const updated = await submitRequest(payload, OWNER, "vr-1", {
+			identity: CONSENT,
+		});
+		expect(updated.status).toBe("submitted");
+		expect(requests(payload)[0]).toMatchObject({
+			status: "submitted",
+			consent: { version: "kyc-2026-10-v1", locale: "fr" },
+			kyc: { provider: "manual" },
+		});
+		// No vendor result: no `underage` chip just because `adult` is unset.
+		const codes = (requests(payload)[0].reviewSignals ?? []).map(
+			(s: { code: string }) => s.code,
+		);
+		expect(codes).not.toContain("underage");
+	});
+
+	it("approves only with the level-2 checklist complete, then marks the owner verified", async () => {
+		const payload = seedManual(
+			ALL,
+			draftL2({
+				status: "in_review",
+				assignee: "m-1",
+				claimedAt: "2026-10-01T00:00:00.000Z",
+				kyc: { provider: "manual" },
+			}),
+		);
+		await expect(approveRequest(payload, MOD, "vr-1")).rejects.toMatchObject({
+			code: "verification.checklistIncomplete",
+			status: 400,
+		});
+		await expect(
+			approveRequest(payload, MOD, "vr-1", {
+				checklist: { ...FULL_L2_CHECKLIST, selfie_matches_document: false },
+			}),
+		).rejects.toMatchObject({ code: "verification.checklistIncomplete" });
+
+		await approveRequest(payload, MOD, "vr-1", {
+			checklist: FULL_L2_CHECKLIST,
+		});
+		expect(requests(payload)[0].status).toBe("approved");
+		expect(
+			payload.store.users.find((u) => u.id === "u-1")?.identityVerifiedAt,
+		).toBeTruthy();
+		expect(shop(payload)?.level).toBe(2);
+	});
+
+	it("keeps a request submitted by hand on the manual path after a switch to Didit", async () => {
+		// The admin has since switched to Didit (`AUTHORISED`).
+		const payload = seed({
+			requests: [
+				draftL2({ status: "needs_info", kyc: { provider: "manual" } }),
+			],
+			settings: AUTHORISED,
+		});
+		payload.store["verification-documents"].push(
+			...docs(["identity_front", "identity_back"]),
+		);
+		await expect(submitRequest(payload, OWNER, "vr-1")).rejects.toMatchObject({
+			code: "verification.documentsMissing",
+		});
+	});
+});

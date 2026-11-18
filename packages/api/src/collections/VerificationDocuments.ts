@@ -16,6 +16,12 @@ export const MAX_DOCUMENTS_PER_REQUEST = 10;
 // neither the web nor the mobile upload form could ever produce, which made
 // it a promise to a seller that no screen kept.
 export const DOCUMENT_KINDS = [
+	// Level 2 under manual review (`AppSettings.verification.kycProvider:
+	// "manual"`): the seller's own identity document, both sides, and a
+	// photo of them holding it. A vendor session never produces these.
+	"identity_front",
+	"identity_back",
+	"identity_selfie",
 	"rccm_extract",
 	"entreprenant_declaration",
 	"niu_certificate",

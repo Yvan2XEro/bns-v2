@@ -25,6 +25,7 @@ import {
 	pageAllowance,
 	removePage,
 	retakePage,
+	usesFrontCamera,
 } from "@/src/lib/documentCapture";
 import {
 	isDocumentScannerAvailable,
@@ -103,7 +104,9 @@ export function DocumentSlot({
 			if (outcome.status === "cancel") return { source, pages: [] };
 			return capture("camera", max);
 		}
-		const file = await pickVerificationDocument(source);
+		const file = await pickVerificationDocument(source, {
+			frontCamera: usesFrontCamera(kind),
+		});
 		return { source, pages: file ? [file] : [] };
 	};
 
@@ -178,7 +181,7 @@ export function DocumentSlot({
 			t("verification.documents.chooseSource"),
 			t(captureHintKey(kind)),
 			[
-				...captureSources(scannerAvailable).map((source) => ({
+				...captureSources(scannerAvailable, kind).map((source) => ({
 					text: t(SOURCE_LABEL[source]),
 					onPress: () => void start(source),
 				})),

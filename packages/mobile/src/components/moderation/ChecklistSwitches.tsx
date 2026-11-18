@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { CHECKLIST_ITEMS, type ChecklistItem } from "@/src/lib/verification";
+import type { ChecklistItem } from "@/src/lib/verification";
 import { ModerationCard } from "./ModerationKit";
 import { useModerationTheme } from "./theme";
 import { tonesOf } from "./tones";
@@ -9,22 +9,25 @@ import { tonesOf } from "./tones";
 export type ChecklistState = Partial<Record<ChecklistItem, boolean>>;
 
 /**
- * The five checks a level-3 reviewer confirms before approving. The row is
+ * The checks a reviewer confirms before approving (`checklistItemsFor`): the
+ * level-3 business checks, or the level-2 identity checks done by hand. The row is
  * the switch (`accessibilityRole="switch"`): the whole line toggles, and the
  * platform's own Switch shows the state, so each item is reachable and
  * labelled with its current state.
  */
 export function ChecklistSwitches({
+	items,
 	value,
 	onChange,
 }: {
+	items: readonly ChecklistItem[];
 	value: ChecklistState;
 	onChange: (next: ChecklistState) => void;
 }) {
 	const c = useModerationTheme();
 	const k = tonesOf(c);
 	const { t } = useTranslation();
-	const done = CHECKLIST_ITEMS.filter((item) => value[item] === true).length;
+	const done = items.filter((item) => value[item] === true).length;
 
 	return (
 		<ModerationCard
@@ -34,15 +37,15 @@ export function ChecklistSwitches({
 					style={[
 						styles.count,
 						{
-							color: done === CHECKLIST_ITEMS.length ? k.successText : c.muted,
+							color: done === items.length ? k.successText : c.muted,
 						},
 					]}
 				>
-					{done}/{CHECKLIST_ITEMS.length}
+					{done}/{items.length}
 				</Text>
 			}
 		>
-			{CHECKLIST_ITEMS.map((item) => {
+			{items.map((item) => {
 				const checked = value[item] === true;
 				const label = t(`moderation.verifChecklist_${item}`);
 				const toggle = () => onChange({ ...value, [item]: !checked });

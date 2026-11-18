@@ -8,7 +8,10 @@ import type { KycProvider } from "./types";
  * new file behind this interface and a switch of
  * `AppSettings.verification.kycProvider` — nothing else changes.
  */
-export function getKycProvider(name: "didit" | "smileid"): KycProvider {
+export function getKycProvider(
+	name: "manual" | "didit" | "smileid",
+): KycProvider {
+	// "manual" has no vendor session: the seller uploads documents instead.
 	if (name === "didit") return diditProvider;
 	throw new ServiceError(ERROR_CODES.verificationKycUnavailable, 503);
 }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ReviewerRequestDetail, VerificationStatus } from "./verification";
 import {
+	LEVEL2_MANUAL_CHECKLIST_ITEMS,
 	LEVEL3_CHECKLIST_ITEMS,
 	REJECT_REASONS,
 	REQUEST_INFO_REASONS,
@@ -83,13 +84,33 @@ export type DecisionValues = DecisionFormValues;
 /** The level-3 checklist, in the fixed order the reviewer works through. */
 export const CHECKLIST_ITEMS = LEVEL3_CHECKLIST_ITEMS;
 
-export type ChecklistState = Partial<
-	Record<(typeof CHECKLIST_ITEMS)[number], boolean>
->;
+export type ChecklistItem =
+	| (typeof LEVEL3_CHECKLIST_ITEMS)[number]
+	| (typeof LEVEL2_MANUAL_CHECKLIST_ITEMS)[number];
+
+export type ChecklistState = Partial<Record<ChecklistItem, boolean>>;
+
+/**
+ * The checklist a request needs before approval, or null when it needs none:
+ * level 3 always, level 2 only when a person checks the identity documents
+ * instead of the vendor (`kyc.provider: "manual"`).
+ */
+export function checklistItemsFor(request: {
+	requestedLevel: 2 | 3;
+	kyc?: { provider?: string | null } | null;
+}): readonly ChecklistItem[] | null {
+	if (request.requestedLevel === 3) return LEVEL3_CHECKLIST_ITEMS;
+	return request.kyc?.provider === "manual"
+		? LEVEL2_MANUAL_CHECKLIST_ITEMS
+		: null;
+}
 
 /** True only once every item has been explicitly confirmed. */
-export function checklistComplete(checklist: ChecklistState): boolean {
-	return CHECKLIST_ITEMS.every((item) => checklist[item] === true);
+export function checklistComplete(
+	checklist: ChecklistState,
+	items: readonly ChecklistItem[] = CHECKLIST_ITEMS,
+): boolean {
+	return items.every((item) => checklist[item] === true);
 }
 
 type ViewerPermissions = ReviewerRequestDetail["viewer"];

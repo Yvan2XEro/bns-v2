@@ -1,8 +1,11 @@
 import type { Payload } from "payload";
 
+export type KycProviderSetting = "manual" | "didit" | "smileid";
+
 export interface VerificationSettings {
 	enabled: boolean;
-	kycProvider: "didit" | "smileid";
+	/** "manual" is free: documents uploaded by the seller, checked by a moderator. */
+	kycProvider: KycProviderSetting;
 	autoApproveIdentity: boolean;
 	consentVersion: string | null;
 }
@@ -48,6 +51,13 @@ export function assertAuthorised(
 	return `Verification cannot be enabled until the Law 2024/017 authorisation is recorded: missing ${missing.join(", ")}.`;
 }
 
+/** How a level-2 identity check is carried out, as a client needs to know it. */
+export function identityMethod(
+	settings: Pick<VerificationSettings, "kycProvider">,
+): "manual" | "vendor" {
+	return settings.kycProvider === "manual" ? "manual" : "vendor";
+}
+
 /** Fails closed: an unreadable settings global means verification stays off. */
 export async function getVerificationSettings(
 	payload: Payload,
@@ -66,7 +76,10 @@ export async function getVerificationSettings(
 		)?.consentVersion;
 		return {
 			enabled: v?.enabled === true,
-			kycProvider: provider === "smileid" ? "smileid" : "didit",
+			// An unset value is the free manual review, like the field's default:
+			// a paid vendor is only ever used once someone picked it.
+			kycProvider:
+				provider === "didit" || provider === "smileid" ? provider : "manual",
 			autoApproveIdentity: v?.autoApproveIdentity === true,
 			// Trimmed like the version a client sends back (kyc-session's body
 			// schema): a stray space typed in the admin otherwise refused
@@ -77,7 +90,7 @@ export async function getVerificationSettings(
 	} catch {
 		return {
 			enabled: false,
-			kycProvider: "didit",
+			kycProvider: "manual",
 			autoApproveIdentity: false,
 			consentVersion: null,
 		};

@@ -22,12 +22,19 @@ export function ConsentNotice({
 	checked,
 	onToggle,
 	error,
+	method = "vendor",
 }: {
 	checked: boolean;
 	onToggle: (checked: boolean) => void;
 	error?: string | null;
+	/** `manual`: the documents stay with us and a moderator reviews them. */
+	method?: "manual" | "vendor";
 }) {
-	const t = useTranslations("Verification.identity.consent");
+	const t = useTranslations(
+		method === "manual"
+			? "Verification.identity.manualConsent"
+			: "Verification.identity.consent",
+	);
 
 	return (
 		<div className="space-y-3 rounded-2xl border border-line bg-surface p-5">

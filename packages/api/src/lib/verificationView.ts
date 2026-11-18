@@ -27,7 +27,10 @@ import {
 	type ShopCapabilities,
 	shopCapabilities,
 } from "./shopCapabilities";
-import { getVerificationSettings } from "./verificationSettings";
+import {
+	getVerificationSettings,
+	identityMethod,
+} from "./verificationSettings";
 
 /** The owner's view of a request. Reviewer-only fields are absent, not null. */
 export interface OwnerVerificationRequest {
@@ -97,6 +100,11 @@ export interface OwnerVerificationRequest {
 /** GET /api/shops/{id}/verification */
 export interface ShopVerificationResponse {
 	enabled: boolean;
+	/**
+	 * How level 2 is checked: `vendor` opens a hosted session (kyc-session),
+	 * `manual` asks for the `identity_*` documents and a moderator's review.
+	 */
+	identityMethod: "manual" | "vendor";
 	capabilities: ShopCapabilities;
 	levelExpiresAt: string | null;
 	consentVersion: string | null;
@@ -399,6 +407,7 @@ export async function getShopVerificationView(
 				requirements: verificationRequirements(
 					nextLevelBase.level,
 					nextLevelBase.level === 2 ? ownerLevel2 : ownerLevel3,
+					identityMethod(settings),
 				),
 			}
 		: null;
@@ -418,6 +427,7 @@ export async function getShopVerificationView(
 
 	return {
 		enabled: settings.enabled,
+		identityMethod: identityMethod(settings),
 		capabilities,
 		levelExpiresAt: shop.levelExpiresAt ?? null,
 		consentVersion: settings.consentVersion,

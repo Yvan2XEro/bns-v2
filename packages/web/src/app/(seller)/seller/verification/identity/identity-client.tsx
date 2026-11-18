@@ -7,6 +7,7 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "~/components/ui/button";
 import { ConsentNotice } from "~/components/verification/consent-notice";
+import { ManualIdentity } from "~/components/verification/manual-identity";
 import {
 	useOpenVerificationRequest,
 	useShopVerification,
@@ -77,6 +78,11 @@ export function IdentityClient({ shopId }: { shopId: string }) {
 				</Button>
 			</div>
 		);
+	}
+
+	// Checked by hand: photos uploaded here, no vendor session.
+	if (view.identityMethod === "manual") {
+		return <ManualIdentity shopId={shopId} view={view} />;
 	}
 
 	const onValid = async ({ accepted }: ConsentFormValues) => {

@@ -163,6 +163,28 @@ export function useSubmitVerification(
 	});
 }
 
+/**
+ * Submits a level-2 request checked by hand (`identityMethod: "manual"`): the
+ * identity photos are already uploaded, the consent goes with the submit
+ * (none on a resubmission from `needs_info`).
+ */
+export function useSubmitIdentity(
+	shopId: string | undefined,
+	requestId: string | undefined,
+) {
+	const invalidate = useInvalidateVerification(shopId);
+	return useMutation({
+		mutationFn: (
+			consent: { consentVersion: string; locale: "fr" | "en" } | null,
+		) =>
+			api.post<OwnerVerificationRequest>(
+				`/api/verification-requests/${requestId}/submit`,
+				consent ?? {},
+			),
+		onSuccess: invalidate,
+	});
+}
+
 /** Withdrawal, not intake: a seller may delete their own draft before ever submitting it. */
 export function useDeleteVerificationDraft(shopId: string | undefined) {
 	const invalidate = useInvalidateVerification(shopId);

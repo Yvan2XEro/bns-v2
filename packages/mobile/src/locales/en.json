@@ -2157,7 +2157,18 @@
 		"paymentsHoldPlacedMessage": "The shop's new payouts are held.",
 		"paymentsHoldReleasedMessage": "Payouts resume.",
 		"paymentsAccountApprovedMessage": "The shop can now be paid to this account.",
-		"paymentsAccountRejectedMessage": "No payout will go to this account."
+		"paymentsAccountRejectedMessage": "No payout will go to this account.",
+		"verifChecklist_document_genuine_and_legible": "The document looks genuine and every field is readable",
+		"verifChecklist_document_not_expired": "The document is not expired",
+		"verifChecklist_selfie_matches_document": "The face in the selfie matches the document photo",
+		"verifChecklist_name_matches_account": "The name on the document matches the account",
+		"verifChecklist_holder_is_adult": "The date of birth shows the holder is 18 or over",
+		"verifDocumentKind_identity_front": "ID — front",
+		"verifDocumentKind_identity_back": "ID — back",
+		"verifDocumentKind_identity_selfie": "Selfie holding your ID",
+		"verifKycMethod": "Method",
+		"verifKycManualMethod": "Manual review",
+		"verifKycManualHint": "No automatic check: compare the selfie with the document photos, then confirm the checklist."
 	},
 	"shop": {
 		"deliveryCities": "Delivery or pickup available in: {{cities}}",
@@ -2690,6 +2701,27 @@
 				"title": "This cannot be started right now",
 				"body": "Identity verification is not available for this shop at the moment. Check the verification hub for the current status.",
 				"backToHub": "Back to verification"
+			},
+			"manual": {
+				"title": "Verify your identity",
+				"intro": "Upload clear photos of your national ID card, passport or residence permit, and a selfie holding it next to your face. A BuyNSellem moderator checks them, usually within 2 working days.",
+				"submit": "Submit for review",
+				"submitting": "Submitting…",
+				"hint": {
+					"identity_front": "The side with your photo. All four corners visible, no glare, text readable.",
+					"identity_back": "The other side of the card. For a passport, the page with your signature.",
+					"identity_selfie": "Hold the document next to your face, photo side towards the camera. Your face and the document must both be sharp."
+				}
+			},
+			"manualConsent": {
+				"title": "Before you submit",
+				"intro": "To verify your identity, a BuyNSellem moderator looks at the photos you upload here. Please read what this involves before you continue.",
+				"collects": "What we collect: photos of both sides of an identity document (national ID, passport or residence permit) and a selfie of you holding it.",
+				"vendor": "These photos stay on BuyNSellem's own storage. They are not sent to any outside verification company. Only authorised moderators can open them, and every view is logged.",
+				"retention": "We keep the verification file for 90 days after a final decision (up to a year if the request was revoked for fraud), and a record that verification took place for 5 years, as the law requires.",
+				"rights": "You can ask to see or delete this information at any time, except for what the law requires us to keep.",
+				"contact": "Contact: privacy@buynsellem.com",
+				"checkboxLabel": "I have read this notice and I agree that BuyNSellem's moderators check my document and selfie."
 			}
 		},
 		"return": {
@@ -2857,7 +2889,9 @@
 			"addPage": "Add a page",
 			"addPages": "Add pages",
 			"send_one": "Send {{count}} page",
-			"send": "Send {{count}} pages"
+			"send": "Send {{count}} pages",
+			"hintOneSide": "Take or pick one clear photo of this side: all four corners visible, no glare.",
+			"hintSelfie": "Use the front camera: hold your ID next to your face, photo side towards the camera."
 		},
 		"documentKind": {
 			"rccm_extract": "RCCM extract",
@@ -2865,7 +2899,10 @@
 			"niu_certificate": "NIU certificate",
 			"legal_representative_id": "Legal representative's ID",
 			"mandate": "Mandate",
-			"other": "Other document"
+			"other": "Other document",
+			"identity_front": "ID — front",
+			"identity_back": "ID — back",
+			"identity_selfie": "Selfie holding your ID"
 		},
 		"requirements": {
 			"title": "Documents required",

@@ -43,8 +43,9 @@ import {
 import {
 	availableActions,
 	badgeForLevel,
-	CHECKLIST_ITEMS,
+	type ChecklistItem,
 	checklistComplete,
+	checklistItemsFor,
 	type ReviewerAction,
 } from "@/src/lib/verification";
 
@@ -85,8 +86,11 @@ function reducer(state: State, patch: Partial<State>): State {
 }
 
 /** Every item confirmed, never partially — the API refuses an incomplete checklist just the same. */
-function checklistPayload(checklist: ChecklistState): Record<string, boolean> {
-	const entries: [string, boolean][] = CHECKLIST_ITEMS.map((item) => [
+function checklistPayload(
+	checklist: ChecklistState,
+	items: readonly ChecklistItem[],
+): Record<string, boolean> {
+	const entries: [string, boolean][] = items.map((item) => [
 		item,
 		checklist[item] === true,
 	]);
@@ -117,8 +121,10 @@ export default function VerificationReviewScreen() {
 					(a, b) => ACTION_STYLE[a].order - ACTION_STYLE[b].order,
 				)
 			: [];
+	const checklistItems = request ? checklistItemsFor(request) : null;
 	const approveDisabled =
-		request?.requestedLevel === 3 && !checklistComplete(state.checklist);
+		checklistItems !== null &&
+		!checklistComplete(state.checklist, checklistItems);
 	const activeConfig = state.activeAction
 		? decisionSchema(state.activeAction)
 		: null;
@@ -174,8 +180,8 @@ export default function VerificationReviewScreen() {
 						? result.text || undefined
 						: undefined,
 				checklist:
-					action === "approve" && request.requestedLevel === 3
-						? checklistPayload(state.checklist)
+					action === "approve" && checklistItems
+						? checklistPayload(state.checklist, checklistItems)
 						: undefined,
 			},
 			{
@@ -273,8 +279,9 @@ export default function VerificationReviewScreen() {
 						<DocumentList documents={request.documents} />
 						{/* The checklist confirms what the documents show, so it
 						    comes after them, last, right above the bar. */}
-						{request.requestedLevel === 3 ? (
+						{checklistItems ? (
 							<ChecklistSwitches
+								items={checklistItems}
 								value={state.checklist}
 								onChange={(checklist) => patch({ checklist })}
 							/>

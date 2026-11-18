@@ -29,6 +29,25 @@ export const REQUIRED_DOCUMENTS = {
 	readonly RequirementDocumentKind[]
 >;
 
+/**
+ * Level 2 checked by hand: both sides of the identity document and a photo
+ * of the seller holding it. A passport's "back" is the page with the
+ * signature.
+ */
+export const IDENTITY_DOCUMENT_KINDS = [
+	"identity_front",
+	"identity_back",
+	"identity_selfie",
+] as const;
+export type IdentityDocumentKind = (typeof IDENTITY_DOCUMENT_KINDS)[number];
+
+export function missingIdentityDocumentKinds(
+	documents: { kind: string }[],
+): IdentityDocumentKind[] {
+	const present = new Set(documents.map((d) => d.kind));
+	return IDENTITY_DOCUMENT_KINDS.filter((kind) => !present.has(kind));
+}
+
 export function requiredDocumentKinds(business: {
 	businessType?: RequirementBusinessType | null;
 	legalRepresentativeIsOwner?: boolean | null;
@@ -117,10 +136,14 @@ const KYC_PROVIDED = ["pending", "review", "approved"];
  * `request` is the one on file for `level` (null when none). Each item says
  * whether it is still missing, provided on a draft, being reviewed, accepted
  * with the request, or turned down by the identity vendor.
+ *
+ * `identityMethod` is how level 2 is checked: by the vendor's session, or by
+ * a moderator looking at the documents the seller uploaded.
  */
 export function verificationRequirements(
 	level: 2 | 3,
 	request: RequirementRequestInput | null,
+	identityMethod: "manual" | "vendor" = "vendor",
 ): VerificationRequirement[] {
 	const live =
 		request && !CLOSED_STATUSES.includes(request.status) ? request : null;
@@ -131,6 +154,19 @@ export function verificationRequirements(
 		if (UNDER_REVIEW_STATUSES.includes(live.status)) return "in_review";
 		return "provided";
 	};
+
+	if (level === 2 && identityMethod === "manual") {
+		const present = new Set((live?.documents ?? []).map((d) => d.kind));
+		return [
+			{
+				key: "identity_document",
+				status: statusOf(
+					present.has("identity_front") && present.has("identity_back"),
+				),
+			},
+			{ key: "selfie", status: statusOf(present.has("identity_selfie")) },
+		];
+	}
 
 	if (level === 2) {
 		const kyc = live?.kyc ?? null;

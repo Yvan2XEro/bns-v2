@@ -432,10 +432,51 @@ export const CHECKLIST_ITEMS = [
 	"documents_legible_and_current",
 ] as const;
 
-export type ChecklistItem = (typeof CHECKLIST_ITEMS)[number];
+/** Mirrors `LEVEL2_MANUAL_CHECKLIST_ITEMS` in the API's `VerificationRequests`. */
+export const LEVEL2_MANUAL_CHECKLIST_ITEMS = [
+	"document_genuine_and_legible",
+	"document_not_expired",
+	"selfie_matches_document",
+	"name_matches_account",
+	"holder_is_adult",
+] as const;
+
+export type ChecklistItem =
+	| (typeof CHECKLIST_ITEMS)[number]
+	| (typeof LEVEL2_MANUAL_CHECKLIST_ITEMS)[number];
+
+/**
+ * The checklist a request needs before approval, or null when it needs none:
+ * level 3 always, level 2 only when a person checks the identity documents
+ * instead of the vendor (`kyc.provider: "manual"`).
+ */
+export function checklistItemsFor(request: {
+	requestedLevel: 2 | 3;
+	kyc?: { provider?: string | null } | null;
+}): readonly ChecklistItem[] | null {
+	if (request.requestedLevel === 3) return CHECKLIST_ITEMS;
+	return request.kyc?.provider === "manual"
+		? LEVEL2_MANUAL_CHECKLIST_ITEMS
+		: null;
+}
 
 export function checklistComplete(
 	checklist: Partial<Record<ChecklistItem, boolean>>,
+	items: readonly ChecklistItem[] = CHECKLIST_ITEMS,
 ): boolean {
-	return CHECKLIST_ITEMS.every((item) => checklist[item] === true);
+	return items.every((item) => checklist[item] === true);
+}
+
+/** Level 2 under manual review: what the seller uploads, in order. */
+export const IDENTITY_KINDS = [
+	"identity_front",
+	"identity_back",
+	"identity_selfie",
+] as const satisfies readonly VerificationDocumentKind[];
+
+export function missingIdentityKinds(
+	documents: { kind: VerificationDocumentKind }[],
+): VerificationDocumentKind[] {
+	const present = new Set(documents.map((d) => d.kind));
+	return IDENTITY_KINDS.filter((kind) => !present.has(kind));
 }

@@ -143,3 +143,26 @@ describe("scanner glue", () => {
 		);
 	});
 });
+
+describe("identity photos (manual level 2)", () => {
+	it("takes a selfie with the camera or the library, never the scanner or a PDF", () => {
+		expect(captureSources(true, "identity_selfie")).toEqual([
+			"camera",
+			"library",
+		]);
+		expect(captureSources(true, "identity_front")).toEqual([
+			"scan",
+			"library",
+			"document",
+		]);
+	});
+
+	it("gives each identity photo its own hint", () => {
+		expect(captureHintKey("identity_selfie")).toBe(
+			"verification.capture.hintSelfie",
+		);
+		expect(captureHintKey("identity_back")).toBe(
+			"verification.capture.hintOneSide",
+		);
+	});
+});

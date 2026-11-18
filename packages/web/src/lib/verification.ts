@@ -35,6 +35,9 @@ export type BusinessType =
 	| "cooperative";
 
 export type DocumentKind =
+	| "identity_front"
+	| "identity_back"
+	| "identity_selfie"
 	| "rccm_extract"
 	| "entreprenant_declaration"
 	| "niu_certificate"
@@ -134,6 +137,8 @@ export interface OwnerVerificationRequest {
 /** `GET /api/shops/{id}/verification`. */
 export interface ShopVerificationResponse {
 	enabled: boolean;
+	/** `manual`: the seller uploads `IDENTITY_KINDS` and a moderator reviews them. */
+	identityMethod: "manual" | "vendor";
 	capabilities: ShopCapabilities;
 	levelExpiresAt: string | null;
 	consentVersion: string | null;
@@ -592,6 +597,29 @@ export const REVOKE_REASONS = [
 	"business_closed",
 	"identity_reused",
 	"other",
+] as const;
+
+/** Level 2 under manual review: what the seller uploads, in order. */
+export const IDENTITY_KINDS = [
+	"identity_front",
+	"identity_back",
+	"identity_selfie",
+] as const satisfies readonly DocumentKind[];
+
+export function missingIdentityKinds(
+	documents: { kind: DocumentKind }[],
+): DocumentKind[] {
+	const present = new Set(documents.map((d) => d.kind));
+	return IDENTITY_KINDS.filter((kind) => !present.has(kind));
+}
+
+/** Mirrors `LEVEL2_MANUAL_CHECKLIST_ITEMS` in the API's `VerificationRequests`. */
+export const LEVEL2_MANUAL_CHECKLIST_ITEMS = [
+	"document_genuine_and_legible",
+	"document_not_expired",
+	"selfie_matches_document",
+	"name_matches_account",
+	"holder_is_adult",
 ] as const;
 
 export const LEVEL3_CHECKLIST_ITEMS = [

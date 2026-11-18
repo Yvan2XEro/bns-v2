@@ -2,11 +2,15 @@ import type { Payload, PayloadRequest, Where } from "payload";
 import { canActOn, isAdmin } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
 import {
+	LEVEL2_MANUAL_CHECKLIST_ITEMS,
 	LEVEL3_CHECKLIST_ITEMS,
 	REJECT_REASONS,
 	REVOKE_REASONS,
 } from "../collections/VerificationRequests";
-import { businessDetailsComplete } from "../contracts/verificationRequirements";
+import {
+	businessDetailsComplete,
+	missingIdentityDocumentKinds,
+} from "../contracts/verificationRequirements";
 import { assertNotSuspended } from "../hooks/suspensionGuard";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { getKycProvider } from "../lib/kyc";
@@ -375,7 +379,7 @@ export async function computeReviewSignals(
 	const kyc: SignalInput["kyc"] =
 		overrides.kyc !== undefined
 			? overrides.kyc
-			: request.kyc?.status
+			: request.kyc?.status && request.kyc.provider !== "manual"
 				? {
 						status: request.kyc.status,
 						givenNames: request.kyc.givenNames ?? null,
@@ -633,11 +637,18 @@ export async function openRequest(
 	);
 }
 
+/**
+ * `identity` is the consent a seller gives when they submit a level-2
+ * request for manual review — the notice they read is shown on the same
+ * screen as the upload, there is no vendor session to record it on.
+ */
 export async function submitRequest(
 	payload: Payload,
 	actor: ServiceUser,
 	requestId: string,
+	options: { identity?: { consentVersion: string; locale: "fr" | "en" } } = {},
 ): Promise<VerificationRequest> {
+	const settings = await getVerificationSettings(payload);
 	return withTransaction(
 		payload,
 		async (req) => {
@@ -654,6 +665,43 @@ export async function submitRequest(
 			const name: TransitionName = isResubmit ? "resubmit" : "submit";
 			const now = new Date().toISOString();
 			const patch: Record<string, unknown> = { submittedAt: now };
+
+			// Level 2 checked by hand: a request keeps the method it was first
+			// submitted with, a draft takes the one configured now.
+			const manual =
+				request.requestedLevel === 2 &&
+				(isResubmit
+					? request.kyc?.provider === "manual"
+					: settings.kycProvider === "manual");
+			if (manual) {
+				const documents = await req.payload.find({
+					collection: "verification-documents",
+					depth: 0,
+					pagination: false,
+					overrideAccess: true,
+					req,
+					where: { request: { equals: request.id } },
+				});
+				if (missingIdentityDocumentKinds(documents.docs).length > 0) {
+					throw error(ERROR_CODES.verificationDocumentsMissing, 409);
+				}
+				if (!isResubmit) {
+					const consent = options.identity;
+					if (
+						!consent ||
+						!settings.consentVersion ||
+						consent.consentVersion !== settings.consentVersion
+					) {
+						throw error(ERROR_CODES.verificationConsentRequired, 409);
+					}
+					patch.consent = {
+						acceptedAt: now,
+						version: consent.consentVersion,
+						locale: consent.locale,
+					};
+					patch.kyc = { ...(request.kyc ?? {}), provider: "manual" };
+				}
+			}
 			if (isResubmit) {
 				patch.infoRequests = (request.infoRequests ?? []).map((entry) =>
 					entry.respondedAt ? entry : { ...entry, respondedAt: now },
@@ -669,7 +717,9 @@ export async function submitRequest(
 				actor.id,
 			);
 			await recomputeShopLevel(req, relationId(updated.shop) ?? "", "manual");
-			return updated.requestedLevel === 3
+			// A manual level-2 request has no vendor result to flag, but its
+			// photos can still be someone else's (`duplicate_document`).
+			return updated.requestedLevel === 3 || manual
 				? await refreshSignals(req, updated)
 				: updated;
 		},
@@ -846,9 +896,20 @@ async function applyApproval(
 	const shopId = relationId(request.shop) ?? "";
 	const shop = await loadShop(req, shopId);
 	const level: 2 | 3 = request.requestedLevel === 3 ? 3 : 2;
-	if (level === 3) {
+	const checklistItems: readonly string[] | null =
+		level === 3
+			? LEVEL3_CHECKLIST_ITEMS
+			: request.kyc?.provider === "manual"
+				? LEVEL2_MANUAL_CHECKLIST_ITEMS
+				: null;
+	if (checklistItems) {
+		// No automatic approval without a vendor result: a person must have
+		// compared the selfie with the document.
+		if (transitionName === "auto_approve" && level === 2) {
+			throw error(ERROR_CODES.verificationInvalidTransition, 409);
+		}
 		const checklist = input.checklist ?? {};
-		if (!LEVEL3_CHECKLIST_ITEMS.every((item) => checklist[item] === true)) {
+		if (!checklistItems.every((item) => checklist[item] === true)) {
 			throw error(ERROR_CODES.verificationChecklistIncomplete, 400);
 		}
 	}
@@ -1352,6 +1413,12 @@ export async function startKycSession(
 			const settings = await getVerificationSettings(payload);
 			if (!settings.enabled) {
 				throw error(ERROR_CODES.verificationDisabled, 403);
+			}
+
+			// Manual review has no vendor session: the seller uploads the
+			// `identity_*` documents and submits instead.
+			if (settings.kycProvider === "manual") {
+				throw error(ERROR_CODES.verificationKycUnavailable, 409);
 			}
 
 			const request = await loadRequest(req, requestId);

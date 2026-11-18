@@ -20,6 +20,7 @@ import {
 	availableActions,
 	type ChecklistState,
 	checklistComplete,
+	checklistItemsFor,
 	type DecisionAction,
 } from "~/lib/verification-decision";
 
@@ -69,8 +70,10 @@ export function ReviewClient({ id }: { id: string }) {
 	const detail = query.data;
 	const { request, shop, owner } = detail;
 	const actions = availableActions(detail.viewer, request.status);
+	const checklistItems = checklistItemsFor(request);
 	const approveDisabled =
-		request.requestedLevel === 3 && !checklistComplete(state.checklist);
+		checklistItems !== null &&
+		!checklistComplete(state.checklist, checklistItems);
 
 	function handleSelect(action: DecisionAction) {
 		// Neither is reversible-by-mistake — release undoes a claim, and
@@ -127,8 +130,9 @@ export function ReviewClient({ id }: { id: string }) {
 						signals={request.reviewSignals}
 						otherRequests={detail.otherRequests}
 					/>
-					{request.requestedLevel === 3 && (
+					{checklistItems && (
 						<Checklist
+							items={checklistItems}
 							value={state.checklist}
 							onChange={(checklist) => patch({ checklist })}
 						/>
@@ -147,7 +151,7 @@ export function ReviewClient({ id }: { id: string }) {
 			<DecisionDialog
 				action={state.activeAction}
 				requestId={id}
-				requestedLevel={request.requestedLevel}
+				checklistItems={checklistItems}
 				checklist={state.checklist}
 				onClose={() => patch({ activeAction: null })}
 			/>

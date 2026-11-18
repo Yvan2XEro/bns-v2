@@ -17,6 +17,7 @@ import { fillOf } from "@/src/components/shop/ink";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { ConsentNotice } from "@/src/components/verification/ConsentNotice";
+import { ManualIdentity } from "@/src/components/verification/ManualIdentity";
 import { useIdentityConsentForm } from "@/src/hooks/useIdentityConsentForm";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
@@ -36,6 +37,7 @@ export default function IdentityConsentScreen() {
 		onStart,
 		startDisabled,
 		isStarting,
+		requestId,
 	} = useIdentityConsentForm();
 
 	return (
@@ -83,7 +85,26 @@ export default function IdentityConsentScreen() {
 				/>
 			) : null}
 
-			{!isLoading && !isError && query.data && canProceed ? (
+			{/* Checked by hand: photos uploaded here, no vendor session. */}
+			{!isLoading &&
+			!isError &&
+			shop &&
+			query.data?.identityMethod === "manual" &&
+			canProceed ? (
+				<ScreenColumn width="reading">
+					<ManualIdentity
+						shopId={shop.id}
+						requestId={requestId}
+						view={query.data}
+					/>
+				</ScreenColumn>
+			) : null}
+
+			{!isLoading &&
+			!isError &&
+			query.data &&
+			query.data.identityMethod !== "manual" &&
+			canProceed ? (
 				<ScreenColumn width="reading">
 					<ScrollView
 						contentContainerStyle={styles.content}

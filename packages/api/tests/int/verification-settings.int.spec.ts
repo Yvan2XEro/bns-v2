@@ -115,7 +115,7 @@ describe("getVerificationSettings", () => {
 		};
 		expect(await getVerificationSettings(payload)).toEqual({
 			enabled: false,
-			kycProvider: "didit",
+			kycProvider: "manual",
 			autoApproveIdentity: false,
 			consentVersion: null,
 		});
