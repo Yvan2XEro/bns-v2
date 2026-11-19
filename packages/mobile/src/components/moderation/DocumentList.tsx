@@ -6,7 +6,10 @@ import { Fonts } from "@/constants/theme";
 import { useDocumentUrl } from "@/src/hooks/useModerationVerification";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
-import type { ModerationVerificationDetail } from "@/src/types/api";
+import type {
+	ModerationVerificationDetail,
+	SignedDocumentUrl,
+} from "@/src/types/api";
 import { DecisionButton, InlineNotice, ModerationCard } from "./ModerationKit";
 import { useModerationTheme } from "./theme";
 import { tonesOf } from "./tones";
@@ -15,12 +18,14 @@ type DocumentMeta =
 	ModerationVerificationDetail["request"]["documents"][number];
 
 /**
- * Every open is a logged view of a real person's identity papers: a signed
- * URL is requested only when the reviewer explicitly taps "View document",
- * never prefetched for the list and never cached past the 60 seconds the
- * server grants it. A PDF cannot render inline on native, so it opens in the
- * system browser instead of an image; an image renders with
- * `cachePolicy="none"` so it never outlives the URL on this device.
+ * Every open is a logged view of a real person's identity papers, so nothing
+ * is fetched until the reviewer taps "View document". From then on, tapping
+ * an image document's chip is itself the request to see it: it opens at once.
+ * An image already shown stays mounted (hidden) while this screen is open, so
+ * switching back is instant, with no reload and no second logged view.
+ * Images render with `cachePolicy="none"`: kept in memory for this screen,
+ * never written to the device. A PDF cannot render inline on native, so it
+ * opens in the system browser, and only on its own tap.
  */
 export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 	const c = useModerationTheme();
@@ -29,24 +34,50 @@ export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 	const [activeId, setActiveId] = useState<string | null>(
 		documents[0]?.id ?? null,
 	);
+	const [loaded, setLoaded] = useState<Record<string, SignedDocumentUrl>>({});
+	const [viewing, setViewing] = useState(false);
 	const documentUrl = useDocumentUrl();
 	const active = documents.find((doc) => doc.id === activeId) ?? null;
+	const activeLoaded = active ? Boolean(loaded[active.id]) : false;
+	const pendingForActive =
+		documentUrl.isPending && documentUrl.variables === active?.id;
+	const errorForActive =
+		documentUrl.isError && documentUrl.variables === active?.id;
 
-	function selectDocument(id: string) {
-		documentUrl.reset();
-		setActiveId(id);
-	}
-
-	function view() {
-		if (!active) return;
-		documentUrl.mutate(active.id, {
+	function open(doc: DocumentMeta) {
+		setViewing(true);
+		documentUrl.mutate(doc.id, {
 			onSuccess: (result) => {
-				if (!result.mimeType.startsWith("image/")) {
+				if (result.mimeType.startsWith("image/")) {
+					setLoaded((current) => ({ ...current, [doc.id]: result }));
+				} else {
+					// A PDF cannot render inline: it opens in the browser, so it
+					// is never opened without its own tap.
 					void WebBrowser.openBrowserAsync(result.url);
 				}
 			},
 		});
 	}
+
+	function selectDocument(id: string) {
+		setActiveId(id);
+		const doc = documents.find((d) => d.id === id);
+		if (
+			viewing &&
+			doc &&
+			!doc.purgedAt &&
+			!loaded[id] &&
+			// Reviewer metadata has no mime type; a PDF is known by its name.
+			!/\.pdf$/i.test(doc.originalFilename ?? "")
+		) {
+			open(doc);
+		}
+	}
+
+	const labelOf = (doc: DocumentMeta) =>
+		doc.kind
+			? t(`moderation.verifDocumentKind_${doc.kind}`)
+			: t("moderation.verifDocumentUnknownKind");
 
 	if (documents.length === 0) return null;
 
@@ -60,9 +91,7 @@ export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 				<View style={styles.chips}>
 					{documents.map((doc) => {
 						const selected = doc.id === activeId;
-						const label = doc.kind
-							? t(`moderation.verifDocumentKind_${doc.kind}`)
-							: t("moderation.verifDocumentUnknownKind");
+						const label = labelOf(doc);
 						return (
 							<Pressable
 								key={doc.id}
@@ -104,19 +133,19 @@ export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 				/>
 			) : null}
 
-			{active && !active.purgedAt && !documentUrl.data ? (
+			{active && !active.purgedAt && !activeLoaded ? (
 				// Every open is logged, so it is an explicit, labelled tap.
 				<DecisionButton
 					variant="secondary"
 					icon="eye-outline"
 					label={t("moderation.verifDocumentView")}
-					onPress={view}
-					pending={documentUrl.isPending}
+					onPress={() => open(active)}
+					pending={pendingForActive}
 					grow={0}
 				/>
 			) : null}
 
-			{documentUrl.isError ? (
+			{errorForActive ? (
 				<InlineNotice
 					text={resolveErrorMessage(
 						documentUrl.error,
@@ -126,21 +155,25 @@ export function DocumentList({ documents }: { documents: DocumentMeta[] }) {
 				/>
 			) : null}
 
-			{documentUrl.data &&
-			active &&
-			documentUrl.data.mimeType.startsWith("image/") ? (
-				<Image
-					source={{ uri: documentUrl.data.url }}
-					cachePolicy="none"
-					style={[styles.preview, { backgroundColor: c.bg }]}
-					contentFit="contain"
-					accessibilityLabel={
-						active.kind
-							? t(`moderation.verifDocumentKind_${active.kind}`)
-							: t("moderation.verifDocumentUnknownKind")
-					}
-				/>
-			) : null}
+			{documents.map((doc) => {
+				const signed = loaded[doc.id];
+				if (!signed) return null;
+				return (
+					<Image
+						key={doc.id}
+						source={{ uri: signed.url }}
+						cachePolicy="none"
+						style={[
+							styles.preview,
+							{ backgroundColor: c.bg },
+							doc.id !== activeId && styles.hidden,
+						]}
+						contentFit="contain"
+						accessibilityLabel={labelOf(doc)}
+						accessibilityElementsHidden={doc.id !== activeId}
+					/>
+				);
+			})}
 		</ModerationCard>
 	);
 }
@@ -157,4 +190,5 @@ const styles = StyleSheet.create({
 	},
 	chipText: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
 	preview: { width: "100%", height: 360, borderRadius: 12 },
+	hidden: { display: "none" },
 });
