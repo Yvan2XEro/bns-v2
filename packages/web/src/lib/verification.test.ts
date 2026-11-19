@@ -3,6 +3,7 @@ import {
 	badgeLabelKey,
 	buildTimeline,
 	canOpenRequest,
+	type DocumentKind,
 	formatRenewalWindow,
 	LEVEL3_CHECKLIST_ITEMS,
 	levelLadder,
@@ -470,4 +471,32 @@ describe("reason lists mirrored from the API", () => {
 			"documents_legible_and_current",
 		]);
 	});
+});
+
+describe("document kind labels", () => {
+	// `satisfies` makes a new DocumentKind a compile error here until it is
+	// listed, and the loop below then demands its label everywhere it shows.
+	const KINDS = Object.keys({
+		identity_front: true,
+		identity_back: true,
+		identity_selfie: true,
+		rccm_extract: true,
+		entreprenant_declaration: true,
+		niu_certificate: true,
+		legal_representative_id: true,
+		mandate: true,
+		other: true,
+	} satisfies Record<DocumentKind, true>) as DocumentKind[];
+
+	for (const locale of ["en", "fr"] as const) {
+		it(`${locale}: every kind is labelled for the seller and the moderator`, async () => {
+			const messages = await Bun.file(
+				new URL(`../../messages/${locale}.json`, import.meta.url),
+			).json();
+			for (const kind of KINDS) {
+				expect(messages.Verification.documentKind[kind]).toBeString();
+				expect(messages.Moderation.review.documentKind[kind]).toBeString();
+			}
+		});
+	}
 });

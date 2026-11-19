@@ -2010,7 +2010,10 @@
 				"niu_certificate": "NIU certificate",
 				"legal_representative_id": "Legal representative's ID",
 				"mandate": "Mandate",
-				"other": "Other document"
+				"other": "Other document",
+				"identity_front": "ID — front",
+				"identity_back": "ID — back",
+				"identity_selfie": "Selfie holding the ID"
 			},
 			"action": {
 				"claim": "Claim",

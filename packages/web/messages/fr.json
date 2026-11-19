@@ -2010,7 +2010,10 @@
 				"niu_certificate": "Certificat NIU",
 				"legal_representative_id": "Pièce d'identité du représentant légal",
 				"mandate": "Mandat",
-				"other": "Autre document"
+				"other": "Autre document",
+				"identity_front": "Pièce d'identité — recto",
+				"identity_back": "Pièce d'identité — verso",
+				"identity_selfie": "Selfie avec la pièce"
 			},
 			"action": {
 				"claim": "Prendre en charge",
