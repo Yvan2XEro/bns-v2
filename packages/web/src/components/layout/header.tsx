@@ -15,6 +15,7 @@ import { useNavCategories } from "~/hooks/use-nav-categories";
 import { usePlacePreferences } from "~/hooks/use-place-preferences";
 import { useScrolledPast } from "~/hooks/use-scrolled-past";
 import { useUnreadMessages } from "~/hooks/use-unread-messages";
+import { isModerator } from "~/lib/moderation-verification";
 import {
 	accountSections,
 	gatedHref,
@@ -74,6 +75,7 @@ export function Header({ novu, categories, shop }: HeaderProps) {
 
 	const sections = accountSections({
 		ordersEnabled,
+		moderation: isModerator(user),
 		shopEntry: entry
 			? {
 					href: entry.href,

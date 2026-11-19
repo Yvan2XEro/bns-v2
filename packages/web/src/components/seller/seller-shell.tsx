@@ -1,11 +1,11 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Toaster } from "sonner";
 import { NotificationInbox } from "~/components/layout/notification-inbox";
+import { WorkspacePageMetaProvider } from "~/components/workspace/page-meta";
 import { novuInbox } from "~/lib/novu";
 import { shopProfileRules } from "~/lib/shop-profile";
 import { isBrandColor, shopTheme } from "~/lib/shop-theme";
 import type { MyShopResponse } from "~/types";
-import { SellerPageMetaProvider } from "./seller-page-meta";
 import { SellerSidebar } from "./seller-sidebar";
 import { SellerTheme } from "./seller-theme";
 import { SellerTopBar } from "./seller-top-bar";
@@ -45,7 +45,7 @@ export async function SellerShell({
 					retail={shopProfileRules(shop.profile).retail}
 				/>
 				<div className="min-w-0 flex-1">
-					<SellerPageMetaProvider>
+					<WorkspacePageMetaProvider>
 						<SellerTopBar
 							shopId={shop.id}
 							shopName={shop.name}
@@ -63,7 +63,7 @@ export async function SellerShell({
 						/>
 						<SuspensionBanner shop={shop} locale={locale} />
 						<div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">{children}</div>
-					</SellerPageMetaProvider>
+					</WorkspacePageMetaProvider>
 				</div>
 			</div>
 		</SellerTheme>

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	ArrowLeftRight,
 	Flag,
 	Inbox,
 	type LucideIcon,
@@ -10,9 +11,12 @@ import {
 	ShieldCheck,
 	Store,
 } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import {
+	WorkspaceNavLink,
+	WorkspaceSidebar,
+} from "~/components/workspace/workspace-sidebar";
 import {
 	useModerationQueue,
 	useModerationSummary,
@@ -23,7 +27,6 @@ import {
 	type OpsSection,
 	sectionCount,
 } from "~/lib/moderation-console";
-import { cn } from "~/lib/utils";
 
 const ICONS: Record<OpsSection, LucideIcon> = {
 	queue: Inbox,
@@ -43,50 +46,55 @@ const BADGE: Partial<Record<OpsSection, string>> = {
 	risk: "bg-red-900 text-red-200",
 };
 
-/** The moderation sidebar's sections with their live counts, the current one highlighted. */
-export function OpsNav() {
+/**
+ * The moderation sidebar: the shared workspace frame (the seller space uses
+ * the same one) with the sections and their live counts, the audit notice,
+ * and the way back to the marketplace.
+ */
+export function OpsSidebar() {
 	const t = useTranslations("ModerationConsole");
-	const pathname = usePathname();
+	const tShell = useTranslations("Moderation.shell");
+	const pathname = usePathname() ?? "/moderation";
 	const summary = useModerationSummary();
 	const queue = useModerationQueue({});
 	const queueTotal = queue.data?.pages[0]?.total;
 
 	return (
-		<nav
-			aria-label={t("nav.label")}
-			className="flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-col"
+		<WorkspaceSidebar
+			header={
+				<div className="p-4">
+					<p className="font-bold font-heading text-sm text-white">
+						{tShell("title")}
+					</p>
+					<p className="text-[#94A3B8] text-xs">{tShell("subtitle")}</p>
+				</div>
+			}
+			navLabel={t("nav.label")}
+			footerNote={
+				<p className="mb-2 rounded-lg bg-white/5 p-3 text-[#CBD5E1] text-xs">
+					{tShell("auditNotice")}
+				</p>
+			}
+			exits={[
+				{
+					href: "/",
+					label: tShell("backToSite"),
+					icon: ArrowLeftRight,
+					highlight: true,
+				},
+			]}
 		>
-			{OPS_SECTIONS.map(({ key, href }) => {
-				const active = isSectionActive(pathname, href);
-				const Icon = ICONS[key];
-				const count = sectionCount(key, summary.data, queueTotal);
-				return (
-					<Link
-						key={key}
-						href={href}
-						aria-current={active ? "page" : undefined}
-						className={cn(
-							"flex h-10 shrink-0 items-center gap-2.5 rounded-lg px-3 font-medium text-sm focus-visible:outline-2 focus-visible:outline-blue-400",
-							active
-								? "bg-[#1E293B] font-semibold text-white"
-								: "text-[#CBD5E1] hover:bg-white/5 hover:text-white",
-						)}
-					>
-						<Icon aria-hidden="true" className="h-4 w-4" />
-						{t(`nav.${key}`)}
-						{count ? (
-							<span
-								className={cn(
-									"ml-auto flex h-5 min-w-[22px] items-center justify-center rounded-full px-1.5 font-bold text-[11px] tabular-nums",
-									BADGE[key] ?? "bg-slate-700 text-white",
-								)}
-							>
-								{count}
-							</span>
-						) : null}
-					</Link>
-				);
-			})}
-		</nav>
+			{OPS_SECTIONS.map(({ key, href }) => (
+				<WorkspaceNavLink
+					key={key}
+					href={href}
+					icon={ICONS[key]}
+					label={t(`nav.${key}`)}
+					active={isSectionActive(pathname, href)}
+					count={sectionCount(key, summary.data, queueTotal)}
+					countClassName={BADGE[key]}
+				/>
+			))}
+		</WorkspaceSidebar>
 	);
 }

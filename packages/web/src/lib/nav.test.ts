@@ -182,6 +182,16 @@ describe("account menu", () => {
 		expect(sections[1].links.map((l) => l.key)).toEqual(["myListings"]);
 	});
 
+	test("a moderator's menu leads to the moderation space, nobody else's does", () => {
+		const keysOf = (moderation?: boolean) =>
+			accountSections({ ordersEnabled: true, shopEntry: null, moderation })
+				.at(-1)
+				?.links.map((l) => l.key);
+		expect(keysOf(true)).toEqual(["moderation", "profileAndSettings", "help"]);
+		expect(keysOf(false)).toEqual(["profileAndSettings", "help"]);
+		expect(keysOf()).toEqual(["profileAndSettings", "help"]);
+	});
+
 	test("help ends on WhatsApp when a support number exists, else the contact page", () => {
 		expect(helpLinks().at(-1)).toEqual({ key: "contact", href: "/contact" });
 		expect(helpLinks("+237 6 99 00 00 00").at(-1)?.href).toBe(
@@ -197,6 +207,7 @@ describe("account menu", () => {
 			...accountSections({
 				ordersEnabled: true,
 				shopEntry: { href: "/seller" },
+				moderation: true,
 			}).flatMap((s) => [s.heading, ...s.links.map((l) => l.key)]),
 			"openShop",
 		]);

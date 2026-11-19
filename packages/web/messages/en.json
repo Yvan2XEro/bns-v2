@@ -342,6 +342,7 @@
 		"myListings": "My listings",
 		"shopSpace": "Shop space",
 		"openShop": "Open a shop",
+		"moderation": "Moderation",
 		"profileAndSettings": "Profile and settings",
 		"language": "Language",
 		"shortcuts": "Category shortcuts",
@@ -1864,7 +1865,7 @@
 			"title": "BuyNSellem moderation",
 			"subtitle": "Internal team space",
 			"auditNotice": "Every document view and every decision is written to the moderation log.",
-			"signedInAs": "Signed in as {name}",
+			"backToSite": "Back to the marketplace",
 			"errorTitle": "Something went wrong",
 			"errorBody": "Please try again in a moment.",
 			"retry": "Try again"

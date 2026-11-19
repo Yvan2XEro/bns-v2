@@ -342,6 +342,7 @@
 		"myListings": "Mes annonces",
 		"shopSpace": "Espace boutique",
 		"openShop": "Ouvrir une boutique",
+		"moderation": "Modération",
 		"profileAndSettings": "Profil et paramètres",
 		"language": "Langue",
 		"shortcuts": "Raccourcis des rubriques",
@@ -1864,7 +1865,7 @@
 			"title": "Modération BuyNSellem",
 			"subtitle": "Espace équipe interne",
 			"auditNotice": "Chaque consultation de document et chaque décision est inscrite au journal de modération.",
-			"signedInAs": "Connecté : {name}",
+			"backToSite": "Retour au site",
 			"errorTitle": "Une erreur est survenue",
 			"errorBody": "Réessayez dans un instant.",
 			"retry": "Réessayer"

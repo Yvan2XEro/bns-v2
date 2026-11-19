@@ -185,6 +185,8 @@ export interface AccountSection {
 export function accountSections(input: {
 	ordersEnabled: boolean;
 	shopEntry: { href: "/seller" | "/shop/new"; shopName?: string } | null;
+	/** A moderator or admin: the menu leads to the moderation space. */
+	moderation?: boolean;
 }): AccountSection[] {
 	const purchases: NavLink[] = [
 		...(input.ordersEnabled ? [{ key: "myOrders", href: "/purchases" }] : []),
@@ -208,6 +210,9 @@ export function accountSections(input: {
 		{
 			heading: null,
 			links: [
+				...(input.moderation
+					? [{ key: "moderation", href: "/moderation" }]
+					: []),
 				{ key: "profileAndSettings", href: "/profile/me" },
 				{ key: "help", href: "/help" },
 			],
