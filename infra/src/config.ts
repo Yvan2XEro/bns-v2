@@ -224,3 +224,36 @@ function mongoBackupConfig(): MongoBackupConfig | null {
 	};
 }
 export const mongoBackup = mongoBackupConfig();
+
+// ─── Overbrand observability (optional) ─────────────────────────────────────
+// With `observability` set, the cluster runs the Overbrand agent
+// (grafana/k8s-monitoring, src/kubernetes/observability.ts): pod logs, cluster
+// state, container and node metrics, pushed to the shared Overbrand stack
+// (github.com/overbrand/observability) labelled project=bns.
+//
+//   pulumi config set --path observability.username bns-aks
+//   pulumi config set --secret observabilityIngestPassword <from scripts/ingest-user.sh>
+//   # optional: observability.ingestDomain (ingest.overbrand.net),
+//   #           observability.env (production), observability.clusterName (bns-<stack>)
+export interface ObservabilityConfig {
+	ingestDomain: string;
+	username: string;
+	password: pulumi.Output<string>;
+	env: string;
+	clusterName: string;
+}
+
+function observabilityConfig(): ObservabilityConfig | null {
+	const raw = cfg.getObject<Partial<ObservabilityConfig>>("observability");
+	if (!raw) return null;
+	if (!raw.username)
+		throw new Error("observability.username is required (the ingest user)");
+	return {
+		ingestDomain: raw.ingestDomain ?? "ingest.overbrand.net",
+		username: raw.username,
+		password: cfg.requireSecret("observabilityIngestPassword"),
+		env: raw.env ?? "production",
+		clusterName: raw.clusterName ?? `bns-${pulumi.getStack()}`,
+	};
+}
+export const observability = observabilityConfig();

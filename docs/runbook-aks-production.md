@@ -199,6 +199,25 @@ search indexer rebuilds Meilisearch from the database. Then check:
 Production is open. Hand the next releases to CI: the one-time setup below,
 ending with `make prod-ci-setup`.
 
+### Monitoring
+
+Metrics, logs, uptime and alerts live in the shared Overbrand stack
+([overbrand/observability](https://github.com/overbrand/observability)).
+To send this cluster's pod logs, container, node and cluster metrics there,
+create its credential (`scripts/ingest-user.sh bns-aks` in that repo, the
+entry appended to the stack's `INGEST_USERS`), then:
+
+```bash
+pulumi config set --path observability.username bns-aks --stack azure-prod
+pulumi config set --secret observabilityIngestPassword <password> --stack azure-prod
+make infra-up STACK=azure-prod
+```
+
+Everything arrives labelled `project=bns`, and the generic alerts (crash
+loops, pods not ready, HPA at maximum, volumes filling, a failed
+`mongodb-backup` job…) reach the BNS Telegram group and address. The public
+URLs are probed from there too (`uptime/bns.yml`).
+
 ## Later releases: GitHub Actions, with your approval
 
 From the second release on, CI deploys. The first deploy (steps 1–7, with

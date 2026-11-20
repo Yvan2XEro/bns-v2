@@ -3,6 +3,7 @@ import type * as pulumi from "@pulumi/pulumi";
 import * as config from "../config";
 import { type DatabaseTarget, deployApps } from "./apps";
 import { deployNginxStack } from "./nginx";
+import { deployObservability } from "./observability";
 
 export function deployKubernetes(
 	kubeconfig: pulumi.Output<string>,
@@ -35,4 +36,7 @@ export function deployKubernetes(
 		acmeEmail: config.acmeEmail,
 		tlsIssuer: config.tlsIssuer,
 	});
+
+	// The Overbrand agent, once the stack has an `observability` block.
+	if (config.observability) deployObservability(provider, config.observability);
 }
