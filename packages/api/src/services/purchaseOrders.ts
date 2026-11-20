@@ -16,6 +16,12 @@ import { ERROR_CODES } from "../lib/errors";
 import { liveMarketOfShop, timezoneOfShop } from "../lib/markets";
 import { localDateAt, localParts, shiftDays } from "../lib/marketTime";
 import { getProvider } from "../lib/payments";
+import type { ProviderName } from "../lib/payments/types";
+import {
+	openCheckout,
+	platformReturnUrl,
+	resolvePlatformProviders,
+} from "../lib/platformPayments";
 import { firstImageUrls } from "../lib/productThumbnails";
 import { getCounterStore } from "../lib/rateLimit";
 import { relationId } from "../lib/relationId";
@@ -1901,6 +1907,7 @@ export async function payResellerCharge(
 	);
 	if (live?.checkoutUrl) return { checkoutUrl: live.checkoutUrl };
 
+	const order = await resolvePlatformProviders(payload);
 	const intent = await withTransaction(payload, async (req) => {
 		const created = await createPaymentIntent(
 			payload,
@@ -1911,7 +1918,7 @@ export async function payResellerCharge(
 				customerId: user.id,
 				amount: charge.amount,
 				currency,
-				provider: "notchpay",
+				provider: order[0] ?? "notchpay",
 				idempotencyKey: `reseller-charge:${charge.id}:${attempts.length + 1}`,
 				now,
 			},
@@ -1937,18 +1944,28 @@ export async function payResellerCharge(
 
 	const serverUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL ?? "";
 	let checkout: { checkoutUrl?: string; providerReference: string };
+	let usedProvider: ProviderName;
 	try {
-		checkout = await getProvider("notchpay").createPayment({
-			reference: String(intent.reference),
-			amount: charge.amount,
-			currency,
-			description: `Resale charge ${charge.id}`,
-			callbackUrl: new URL(
-				NOTCHPAY_SETTLEMENT_CALLBACK_PATH,
-				serverUrl,
-			).toString(),
-			customer: { email: user.email ?? "", name: user.name ?? undefined },
-		});
+		({ provider: usedProvider, checkout } = await openCheckout({
+			order,
+			getProvider,
+			payload,
+			scope: "[resale]",
+			build: (name) => ({
+				reference: String(intent.reference),
+				amount: charge.amount,
+				currency,
+				description: `Resale charge ${charge.id}`,
+				callbackUrl: platformReturnUrl(
+					name,
+					serverUrl,
+					String(intent.reference),
+					"/seller/resale",
+					NOTCHPAY_SETTLEMENT_CALLBACK_PATH,
+				),
+				customer: { email: user.email ?? "", name: user.name ?? undefined },
+			}),
+		}));
 	} catch (error) {
 		payload.logger.error({
 			msg: "[resale] provider refused to create the charge payment",
@@ -1965,6 +1982,7 @@ export async function payResellerCharge(
 			{
 				providerReference: checkout.providerReference,
 				checkoutUrl: checkout.checkoutUrl ?? null,
+				...(usedProvider !== intent.provider ? { provider: usedProvider } : {}),
 			},
 			req,
 		),

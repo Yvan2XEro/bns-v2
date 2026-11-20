@@ -143,6 +143,12 @@ services:
       NOTCHPAY_PUBLIC_KEY: ${NOTCHPAY_PUBLIC_KEY}
       NOTCHPAY_HASH_KEY: ${NOTCHPAY_HASH_KEY}
       NOTCHPAY_BASE_URL: ${NOTCHPAY_BASE_URL:-https://api.notchpay.co}
+      # CamPay: BuyNSellem's own revenue (boosts, commissions, resale charges), see AppSettings > Payments to BuyNSellem.
+      CAMPAY_BASE_URL: ${CAMPAY_BASE_URL:-https://www.campay.net}
+      CAMPAY_PERMANENT_TOKEN: ${CAMPAY_PERMANENT_TOKEN:-}
+      CAMPAY_USERNAME: ${CAMPAY_USERNAME:-}
+      CAMPAY_PASSWORD: ${CAMPAY_PASSWORD:-}
+      CAMPAY_WEBHOOK_KEY: ${CAMPAY_WEBHOOK_KEY:-}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

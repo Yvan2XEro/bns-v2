@@ -63,7 +63,7 @@ type PaymentMethod = "mobilemoney" | "card";
 
 interface BoostApiResponse {
 	paymentId: string;
-	provider: "notchpay" | "stripe";
+	provider: "notchpay" | "stripe" | "campay";
 	checkoutUrl?: string;
 }
 

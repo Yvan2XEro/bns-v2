@@ -646,6 +646,45 @@ export const AppSettings: GlobalConfig = {
 			],
 		},
 		{
+			name: "platformPayments",
+			type: "group",
+			label: "Payments to BuyNSellem (boosts, commissions, resale charges)",
+			admin: {
+				description:
+					"Read by lib/platformPayments.ts. The money BuyNSellem collects for itself; protected payment (below) has its own provider. Only a provider whose keys are set on the API is used.",
+			},
+			fields: [
+				{
+					type: "row",
+					fields: [
+						{
+							name: "provider",
+							type: "select",
+							label: "Primary provider",
+							defaultValue: "notchpay",
+							required: true,
+							options: [
+								{ label: "NotchPay", value: "notchpay" },
+								{ label: "CamPay", value: "campay" },
+							],
+							admin: { width: "50%" },
+						},
+						{
+							name: "failover",
+							type: "checkbox",
+							label: "Fall back to the other provider",
+							defaultValue: true,
+							admin: {
+								width: "50%",
+								description:
+									"When the primary is not configured or refuses to open the payment, the other one opens it. Each payment is settled by the provider that opened it.",
+							},
+						},
+					],
+				},
+			],
+		},
+		{
 			name: "payments",
 			type: "group",
 			label: "Payments (protected payment)",

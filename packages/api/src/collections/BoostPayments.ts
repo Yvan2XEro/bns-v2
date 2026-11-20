@@ -104,6 +104,7 @@ export const BoostPayments: CollectionConfig = {
 					options: [
 						{ label: "NotchPay", value: "notchpay" },
 						{ label: "Stripe (Apple Pay)", value: "stripe" },
+						{ label: "CamPay", value: "campay" },
 					],
 					required: true,
 					admin: { width: "50%" },

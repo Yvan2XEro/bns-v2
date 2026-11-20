@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { parseCamPayTransaction } from "./payments/campay";
 import { parseNotchPayWebhookEvent } from "./payments/notchpay";
 import { parseStripeWebhookEvent } from "./payments/stripe";
 import { isRecord, type NormalizedWebhookEvent } from "./payments/types";
@@ -66,6 +67,8 @@ export function retainedWebhookRaw(
 	const normalized =
 		provider === "stripe"
 			? parseStripeWebhookEvent(raw)
-			: parseNotchPayWebhookEvent(raw);
+			: provider === "campay"
+				? parseCamPayTransaction(raw)
+				: parseNotchPayWebhookEvent(raw);
 	return { ...normalized, redacted: true };
 }

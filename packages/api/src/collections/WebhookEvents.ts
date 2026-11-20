@@ -34,6 +34,7 @@ export const WebhookEvents: CollectionConfig = {
 					options: [
 						{ label: "NotchPay", value: "notchpay" },
 						{ label: "Stripe", value: "stripe" },
+						{ label: "CamPay", value: "campay" },
 						{ label: "Didit", value: "didit" },
 						{ label: "Smile ID", value: "smileid" },
 						// The shared FakeMarketplaceProvider signs every webhook in tests

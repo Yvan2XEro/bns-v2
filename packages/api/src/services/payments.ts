@@ -230,6 +230,8 @@ async function moveIntentToPending(
 	details: {
 		providerReference: string;
 		checkoutUrl: string | null;
+		/** The provider that opened the checkout, when failover picked another than the intent was created with. */
+		provider?: ProviderName;
 		now?: Date;
 	},
 	req: TxReq,
@@ -238,6 +240,7 @@ async function moveIntentToPending(
 	const data: Partial<PaymentIntent> = {
 		providerReference: details.providerReference,
 		checkoutUrl: details.checkoutUrl,
+		...(details.provider ? { provider: details.provider } : {}),
 	};
 	if (transitionPath(intent.status, "pending").length > 0) {
 		const moved = await saveIntentIf(
@@ -277,6 +280,8 @@ export function markIntentPending(
 	details: {
 		providerReference: string;
 		checkoutUrl: string | null;
+		/** The provider that opened the checkout, when failover picked another than the intent was created with. */
+		provider?: ProviderName;
 		now?: Date;
 	},
 	req?: TxReq,

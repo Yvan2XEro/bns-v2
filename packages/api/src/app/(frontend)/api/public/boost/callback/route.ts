@@ -2,6 +2,7 @@ import config from "@payload-config";
 import { getPayload } from "payload";
 import { appRedirectPage } from "@/lib/appRedirectPage";
 import { getProvider } from "@/lib/payments";
+import { returnStatusOf, settleCamPayReturn } from "@/services/campayReturn";
 import { type SettleOutcome, settlePayment } from "@/services/payments";
 
 type CallbackStatus = "success" | "pending" | "failed";
@@ -33,6 +34,20 @@ export async function GET(request: Request) {
 		// L'activation est gérée par le webhook Stripe ; on relaie juste le statut
 		status =
 			url.searchParams.get("status") === "success" ? "success" : "failed";
+	} else if (provider === "campay") {
+		// CamPay n'ajoute rien de fiable à l'URL : notre référence y est (`ref`),
+		// et le paiement est relu chez CamPay avant tout règlement.
+		try {
+			const payload = await getPayload({ config });
+			status = returnStatusOf(
+				await settleCamPayReturn(payload, url.searchParams.get("ref")),
+			);
+		} catch (error) {
+			console.error(
+				"[boost callback] CamPay verification failed:",
+				error instanceof Error ? error.message : error,
+			);
+		}
 	} else if (providerReference) {
 		try {
 			const payload = await getPayload({ config });

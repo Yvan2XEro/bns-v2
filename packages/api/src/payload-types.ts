@@ -2179,7 +2179,7 @@ export interface PaymentIntent {
   customerDeletedAt?: string | null;
   amount: number;
   currency: string;
-  provider: 'notchpay' | 'stripe';
+  provider: 'notchpay' | 'stripe' | 'campay';
   providerReference?: string | null;
   reference?: string | null;
   status: 'created' | 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'expired';
@@ -2737,7 +2737,7 @@ export interface BoostPayment {
   amount: number;
   duration: '7' | '14' | '30';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
-  paymentProvider: 'notchpay' | 'stripe';
+  paymentProvider: 'notchpay' | 'stripe' | 'campay';
   paymentReference?: string | null;
   paymentUrl?: string | null;
   boostedUntil?: string | null;
@@ -2752,7 +2752,7 @@ export interface BoostPayment {
  */
 export interface WebhookEvent {
   id: string;
-  provider: 'notchpay' | 'stripe' | 'didit' | 'smileid' | 'fake' | 'yango' | 'campost';
+  provider: 'notchpay' | 'stripe' | 'campay' | 'didit' | 'smileid' | 'fake' | 'yango' | 'campost';
   providerEventId: string;
   type?: string | null;
   reference?: string | null;
@@ -7313,6 +7313,16 @@ export interface AppSetting {
     };
   };
   /**
+   * Read by lib/platformPayments.ts. The money BuyNSellem collects for itself; protected payment (below) has its own provider. Only a provider whose keys are set on the API is used.
+   */
+  platformPayments: {
+    provider: 'notchpay' | 'campay';
+    /**
+     * When the primary is not configured or refuses to open the payment, the other one opens it. Each payment is settled by the provider that opened it.
+     */
+    failover?: boolean | null;
+  };
+  /**
    * Read by lib/paymentSettings.ts. Enabling the flag or a market is refused until the gate record below holds evidence for G1, G2, G4, G5, G6 (and G3 under provider_hold) and the API runs with PROTECTED_PAYMENT_ALLOWED=true.
    */
   payments: {
@@ -7629,6 +7639,12 @@ export interface AppSettingsSelect<T extends boolean = true> {
                     enabled?: T;
                   };
             };
+      };
+  platformPayments?:
+    | T
+    | {
+        provider?: T;
+        failover?: T;
       };
   payments?:
     | T

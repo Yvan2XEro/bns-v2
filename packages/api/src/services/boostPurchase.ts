@@ -9,6 +9,10 @@ import type {
 	PaymentProvider,
 	ProviderName,
 } from "../lib/payments/types";
+import {
+	openCheckout,
+	resolvePlatformProviders,
+} from "../lib/platformPayments";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { withTransaction } from "../lib/transactions";
@@ -51,12 +55,16 @@ export function buildCallbackUrl(
 	listingId: string,
 	appReturnUrl: string | undefined,
 	providerName: ProviderName,
+	reference?: string,
 ): string {
 	const url = new URL("/api/public/boost/callback", serverUrl);
 	url.searchParams.set("listingId", listingId);
 	url.searchParams.set("provider", providerName);
 	if (appReturnUrl) url.searchParams.set("appReturnUrl", appReturnUrl);
 	// NotchPay appends &reference=… (its id) and &trxref=… (ours) on redirect.
+	// CamPay appends nothing we can rely on: ours goes in the URL itself.
+	if (providerName === "campay" && reference)
+		url.searchParams.set("ref", reference);
 	return url.toString();
 }
 
@@ -73,8 +81,14 @@ export async function startBoostPurchase(
 	const price = findBoostPrice(input.duration);
 	if (!price)
 		throw new BoostPurchaseError(ERROR_CODES.boostInvalidDuration, 400);
-	const providerName: ProviderName =
-		input.providerName === "stripe" ? "stripe" : "notchpay";
+	// Card is Stripe. Mobile money ("notchpay" from released clients, or
+	// "mobile_money") is BuyNSellem's own revenue: the admin's provider, with
+	// failover (lib/platformPayments.ts).
+	const order: ProviderName[] =
+		input.providerName === "stripe"
+			? ["stripe"]
+			: await resolvePlatformProviders(payload);
+	const providerName: ProviderName = order[0] ?? "notchpay";
 
 	const listing = await payload
 		.findByID({
@@ -97,9 +111,10 @@ export async function startBoostPurchase(
 		throw new BoostPurchaseError(ERROR_CODES.boostListingNotPublished, 409);
 	}
 
-	let provider: PaymentProvider;
+	// The first provider must at least be configured before anything is
+	// written; a refusal when it opens the payment falls to the next one.
 	try {
-		provider = deps.getProvider(providerName);
+		deps.getProvider(providerName);
 	} catch (error) {
 		payload.logger.error({
 			msg: "[boost] payment provider is not configured",
@@ -171,20 +186,28 @@ export async function startBoostPurchase(
 
 	// Outside the transaction: a network call must not hold it open.
 	let checkout: CreatePaymentResult;
+	let usedProvider: ProviderName;
 	try {
-		checkout = await provider.createPayment({
-			reference: String(intent.reference),
-			amount: price.amount,
-			currency: price.currency,
-			description: `Boost annonce: ${listing.title}`,
-			callbackUrl: buildCallbackUrl(
-				input.serverUrl,
-				String(listing.id),
-				input.returnUrl,
-				providerName,
-			),
-			customer: { email: input.email },
-		});
+		({ provider: usedProvider, checkout } = await openCheckout({
+			order,
+			getProvider: deps.getProvider,
+			payload,
+			scope: "[boost]",
+			build: (name) => ({
+				reference: String(intent.reference),
+				amount: price.amount,
+				currency: price.currency,
+				description: `Boost annonce: ${listing.title}`,
+				callbackUrl: buildCallbackUrl(
+					input.serverUrl,
+					String(listing.id),
+					input.returnUrl,
+					name,
+					String(intent.reference),
+				),
+				customer: { email: input.email },
+			}),
+		}));
 	} catch (error) {
 		payload.logger.error({
 			msg: "[boost] provider refused to create the payment",
@@ -210,6 +233,7 @@ export async function startBoostPurchase(
 			{
 				providerReference: checkout.providerReference,
 				checkoutUrl: checkout.checkoutUrl ?? null,
+				...(usedProvider !== providerName ? { provider: usedProvider } : {}),
 			},
 			req,
 		);
@@ -223,6 +247,9 @@ export async function startBoostPurchase(
 			data: {
 				paymentReference: checkout.providerReference,
 				paymentUrl: checkout.checkoutUrl ?? null,
+				...(usedProvider !== providerName
+					? { paymentProvider: usedProvider }
+					: {}),
 			},
 		});
 	});
@@ -230,7 +257,7 @@ export async function startBoostPurchase(
 	return {
 		paymentId: boostPaymentId,
 		intentId: String(intent.id),
-		provider: providerName,
+		provider: usedProvider,
 		checkoutUrl: checkout.checkoutUrl ?? null,
 		clientSecret: checkout.clientSecret ?? null,
 	};

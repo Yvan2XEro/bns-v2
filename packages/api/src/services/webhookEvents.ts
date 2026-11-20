@@ -69,7 +69,9 @@ function redactedBody(provider: string, raw: unknown): WebhookEvent["raw"] {
 function isPaymentProvider(
 	provider: WebhookEvent["provider"],
 ): provider is ProviderName {
-	return provider === "notchpay" || provider === "stripe";
+	return (
+		provider === "notchpay" || provider === "stripe" || provider === "campay"
+	);
 }
 
 export interface RecordWebhookEventInput {

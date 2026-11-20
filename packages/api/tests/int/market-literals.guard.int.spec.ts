@@ -38,6 +38,7 @@ const ALLOW: Array<[string, string, (string | string[])?]> = [
 	["api/src/lib/payments/fakeMarketplace.ts", "test double default currency", '"XAF"'],
 	["api/src/seed/", "seed data: category price labels"],
 	["api/src/lib/payments/notchpayMarketplace.ts", "provider wire key: the per-currency balance object is read at XAF until a second payout market", "value.XAF"],
+	["api/src/lib/payments/campay.ts", "provider wire constraint: CamPay collects XAF only, so it refuses any other currency before calling out"],
 	["api/src/scripts/syncNotificationWorkflows.ts", "Novu workflow copy synced by this script; user-gated, the payload carries no currency yet (release-record carry)", ["{{payload.", "numberProperty("]],
 	["api/src/scripts/debugMine.ts", "local debug script: fixture phone and city, never on a request path", ['"+2376', 'city: "douala"']],
 	["web/src/lib/shipment-tracking.ts", `DELIVERY_TIMEZONE: ${TZ}`],
@@ -109,7 +110,8 @@ describe("the international rule: a retired market literal fails the build", () 
 
 	it("keeps the allowlist on one screen and reasoned", () => {
 		// 40: the widened needle (spaced/bare +237, any-case Douala/Yaoundé) surfaced honest copy and geodata rows.
-		expect(ALLOW.length).toBeLessThanOrEqual(40);
+		// 41: CamPay, an XAF-only provider, states its one currency (lib/payments/campay.ts).
+		expect(ALLOW.length).toBeLessThanOrEqual(41);
 		expect(ALLOW.filter(([, reason]) => reason.length < 8)).toEqual([]);
 	});
 

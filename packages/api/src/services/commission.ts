@@ -17,6 +17,12 @@ import {
 } from "../lib/orderMath";
 import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
 import { getProvider } from "../lib/payments";
+import type { ProviderName } from "../lib/payments/types";
+import {
+	openCheckout,
+	platformReturnUrl,
+	resolvePlatformProviders,
+} from "../lib/platformPayments";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import {
@@ -868,6 +874,7 @@ export async function payInvoice(
 
 	const totalDue = invoice.totalDue ?? 0;
 	const currency = invoice.currency;
+	const order = await resolvePlatformProviders(payload);
 	const intent = await withTransaction(payload, (req) =>
 		createPaymentIntent(
 			payload,
@@ -878,7 +885,7 @@ export async function payInvoice(
 				customerId: user.id,
 				amount: totalDue,
 				currency,
-				provider: "notchpay",
+				provider: order[0] ?? "notchpay",
 				idempotencyKey,
 				now,
 			},
@@ -888,18 +895,28 @@ export async function payInvoice(
 
 	const serverUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL ?? "";
 	let checkout: { checkoutUrl?: string; providerReference: string };
+	let usedProvider: ProviderName;
 	try {
-		checkout = await getProvider("notchpay").createPayment({
-			reference: String(intent.reference),
-			amount: totalDue,
-			currency,
-			description: `Commission BuyNSellem ${invoice.invoiceNumber}`,
-			callbackUrl: new URL(
-				NOTCHPAY_SETTLEMENT_CALLBACK_PATH,
-				serverUrl,
-			).toString(),
-			customer: { email: user.email ?? "", name: user.name ?? undefined },
-		});
+		({ provider: usedProvider, checkout } = await openCheckout({
+			order,
+			getProvider,
+			payload,
+			scope: "[commission]",
+			build: (name) => ({
+				reference: String(intent.reference),
+				amount: totalDue,
+				currency,
+				description: `Commission BuyNSellem ${invoice.invoiceNumber}`,
+				callbackUrl: platformReturnUrl(
+					name,
+					serverUrl,
+					String(intent.reference),
+					"/seller/payments",
+					NOTCHPAY_SETTLEMENT_CALLBACK_PATH,
+				),
+				customer: { email: user.email ?? "", name: user.name ?? undefined },
+			}),
+		}));
 	} catch (error) {
 		payload.logger.error({
 			msg: "[commission] provider refused to create the payment",
@@ -916,6 +933,7 @@ export async function payInvoice(
 			{
 				providerReference: checkout.providerReference,
 				checkoutUrl: checkout.checkoutUrl ?? null,
+				...(usedProvider !== intent.provider ? { provider: usedProvider } : {}),
 			},
 			req,
 		),

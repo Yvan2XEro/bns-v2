@@ -277,6 +277,31 @@ if (checkValues) {
 		else ok("NotchPay keys set");
 	} else fail("NotchPay keys missing (NOTCHPAY_PUBLIC_KEY, NOTCHPAY_HASH_KEY)");
 
+	// CamPay is optional (AppSettings > Payments to BuyNSellem), but half a
+	// configuration is never right: it would not be offered, silently.
+	const campayCredentials = Boolean(
+		value("CAMPAY_PERMANENT_TOKEN") ||
+			(value("CAMPAY_USERNAME") && value("CAMPAY_PASSWORD")),
+	);
+	const campayAny = [
+		"CAMPAY_PERMANENT_TOKEN",
+		"CAMPAY_USERNAME",
+		"CAMPAY_PASSWORD",
+		"CAMPAY_WEBHOOK_KEY",
+	].some((k) => value(k));
+	if (campayCredentials && value("CAMPAY_WEBHOOK_KEY")) {
+		if (/demo\.campay\.net/.test(value("CAMPAY_BASE_URL")))
+			warn("CamPay points at the sandbox (demo.campay.net)");
+		else if (/api\.campay\.net/.test(value("CAMPAY_BASE_URL")))
+			fail(
+				"CAMPAY_BASE_URL is api.campay.net, which does not exist: use https://www.campay.net",
+			);
+		else ok("CamPay keys set");
+	} else if (campayAny)
+		fail(
+			"CamPay half configured: a permanent token (or username and password) and CAMPAY_WEBHOOK_KEY are all needed",
+		);
+
 	if (value("EMAIL_PROVIDER") || value("RESEND_API_KEY") || value("SMTP_HOST"))
 		ok("email configured");
 	else

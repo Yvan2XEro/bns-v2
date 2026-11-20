@@ -7,7 +7,12 @@ import {
 } from "../services/webhookEvents";
 import { ERROR_CODES, errorResponse } from "./errors";
 import { getPaymentSettings } from "./paymentSettings";
-import { getProvider } from "./payments";
+import {
+	type CamPayProvider,
+	campayCallbackFields,
+	getCamPayProvider,
+	getProvider,
+} from "./payments";
 import type { MarketplaceProvider } from "./payments/marketplace";
 import { getMarketplaceProvider } from "./payments/marketplaceRegistry";
 import {
@@ -33,6 +38,12 @@ async function receive(
 	provider: WebhookEvent["provider"],
 	verify: Verify,
 	loadPayload: () => Promise<Payload>,
+	/**
+	 * What to store instead of the request body, once `verify` has passed:
+	 * CamPay's callback is never trusted, so the transaction read back from
+	 * CamPay is what gets stored and settled.
+	 */
+	kept?: () => Record<string, unknown> | undefined,
 ): Promise<Response> {
 	const rawBody = await request.text();
 	const headers = Object.fromEntries(request.headers.entries());
@@ -54,12 +65,17 @@ async function receive(
 
 	const payload = await loadPayload();
 
+	const replacement = kept?.();
 	let raw: unknown;
-	try {
-		raw = JSON.parse(rawBody);
-	} catch {
-		console.warn(`${scope} verified body is not JSON`);
-		return errorResponse(ERROR_CODES.badRequest, 400);
+	if (replacement) {
+		raw = replacement;
+	} else {
+		try {
+			raw = JSON.parse(rawBody);
+		} catch {
+			console.warn(`${scope} verified body is not JSON`);
+			return errorResponse(ERROR_CODES.badRequest, 400);
+		}
 	}
 
 	let recorded: { id: string; duplicate: boolean };
@@ -68,7 +84,7 @@ async function receive(
 			provider,
 			event,
 			raw,
-			rawBody,
+			rawBody: replacement ? JSON.stringify(replacement) : rawBody,
 		});
 	} catch (error) {
 		payload.logger.error({
@@ -168,5 +184,39 @@ export async function handleMarketplaceWebhook(
 		providerId,
 		(rawBody, headers) => provider.verifyWebhook(rawBody, headers),
 		async () => payload,
+	);
+}
+
+/**
+ * CamPay's callback: a GET with query parameters or a POST body, depending
+ * on how the CamPay app is set up, sent once and never retried. Its JWT is
+ * checked, then the transaction is read back from CamPay and that record,
+ * not the callback, is stored and settled. A lost callback is caught by the
+ * reconciliation job, which polls CamPay for anything still pending.
+ */
+export async function handleCamPayWebhook(request: Request): Promise<Response> {
+	const scope = "[webhook:campay]";
+	let provider: CamPayProvider;
+	try {
+		provider = getCamPayProvider();
+	} catch {
+		console.error(`${scope} provider is not configured`);
+		return errorResponse(ERROR_CODES.server, 500);
+	}
+	const query = new URL(request.url).searchParams;
+	let transaction: Record<string, unknown> | undefined;
+	return receive(
+		scope,
+		request,
+		"campay",
+		async (rawBody) => {
+			const verified = await provider.verifyCallback(
+				campayCallbackFields(rawBody, query),
+			);
+			transaction = verified.transaction;
+			return verified.event;
+		},
+		payloadFromConfig,
+		() => transaction,
 	);
 }

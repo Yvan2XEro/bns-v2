@@ -501,7 +501,7 @@ export interface BoostPayment {
 	/** Duration in days */
 	duration: BoostDuration;
 	status: BoostStatus;
-	paymentProvider: "notchpay";
+	paymentProvider: "notchpay" | "stripe" | "campay";
 	paymentReference?: string | null;
 	paymentUrl?: string | null;
 	createdAt: string;

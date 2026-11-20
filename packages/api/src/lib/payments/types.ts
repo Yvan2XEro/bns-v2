@@ -1,4 +1,4 @@
-export type ProviderName = "notchpay" | "stripe";
+export type ProviderName = "notchpay" | "stripe" | "campay";
 
 export interface CreatePaymentParams {
 	/** Our reference, sent to the provider: `PI-{intentId}`. */

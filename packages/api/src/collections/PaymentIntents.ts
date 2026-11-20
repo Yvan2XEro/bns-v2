@@ -42,6 +42,7 @@ const customerOrStaffField: FieldAccess = ({ req: { user }, doc }) => {
 const PROVIDER_OPTIONS = [
 	{ label: "NotchPay", value: "notchpay" },
 	{ label: "Stripe", value: "stripe" },
+	{ label: "CamPay", value: "campay" },
 ];
 
 /**
