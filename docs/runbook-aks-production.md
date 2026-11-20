@@ -189,7 +189,8 @@ Then `make check` must end with no ✗. The API boots and runs its boot tasks (i
 ones staging already ran are recorded in `deploy_tasks` and skipped. The
 search indexer rebuilds Meilisearch from the database. Then check:
 
-- `https://api.<domain>/api/public/config` answers;
+- `https://api.<domain>/api/health` answers 200 with `"status":"ok"`
+  (`"degraded"` means Redis is unreachable; a 503 means MongoDB is);
 - sign-in, a search, a listing page with its photos, a COD order end to end;
 - B: trigger a first backup (`kubectl -n bns create job --from=cronjob/mongodb-backup first-backup`),
   check the job succeeds and the archive appears in the backup account;

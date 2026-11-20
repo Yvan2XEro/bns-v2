@@ -602,7 +602,7 @@ const probes: Array<[string, string]> = [
 	[`https://${domain}/`, "web"],
 	...(paused
 		? []
-		: ([[`https://api.${domain}/api/public/config`, "api"]] as Array<
+		: ([[`https://api.${domain}/api/health`, "api"]] as Array<
 				[string, string]
 			>)),
 ];

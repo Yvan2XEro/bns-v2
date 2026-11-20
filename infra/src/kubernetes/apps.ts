@@ -559,16 +559,20 @@ export function deployApps(cfg: AppsConfig): void {
 										},
 										{ name: "PUBLIC_WEB_URL", value: `https://${domain}` },
 									],
-									// The API has no /api/health: /api/public/config is the route
-									// every client calls first, served once Payload is up.
+									// /api/health: 503 when MongoDB is unreachable, 200 otherwise
+									// (also "degraded" with Redis down, so a Redis outage does not
+									// empty the Service). No liveness probe on it: a database
+									// outage must not restart healthy pods.
 									// A first boot (indexes, the market, workflows) gets five minutes.
 									startupProbe: {
-										httpGet: { path: "/api/public/config", port: 3000 },
+										httpGet: { path: "/api/health", port: 3000 },
 										periodSeconds: 10,
+										// A check waits up to 2 s per dependency.
+										timeoutSeconds: 5,
 										failureThreshold: 30,
 									},
 									readinessProbe: {
-										httpGet: { path: "/api/public/config", port: 3000 },
+										httpGet: { path: "/api/health", port: 3000 },
 										periodSeconds: 10,
 										timeoutSeconds: 5,
 									},
